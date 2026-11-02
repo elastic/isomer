@@ -33,6 +33,23 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * reaches it through the shared dispatcher — that is the design, not a leak.
  */
 const RULES = {
+  '@elastic/isomer-lowering-lens': {
+    '.': [
+      'react',
+      'react-dom',
+      '@elastic/isomer-studio',
+      '@elastic/isomer-sdk',
+      '@elastic/isomer-runtime',
+      '@kbn',
+    ],
+    './inspector': [
+      'react-dom',
+      '@elastic/isomer-studio',
+      '@elastic/isomer-sdk',
+      '@elastic/isomer-runtime',
+      '@kbn',
+    ],
+  },
   '@elastic/isomer-sdk': {
     '.': ['react-dom', 'react-dom/server'],
     './text': ['react-dom', 'react-dom/server'],
@@ -100,6 +117,7 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
 
 /** Packages a package must never reach: no specifier in its source, no entry in its dependency fields. */
 const FORBIDDEN_PACKAGES = {
+  '@elastic/isomer-lowering-lens': ['@kbn'],
   '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
   '@elastic/isomer-studio': [
     '@playwright/test',

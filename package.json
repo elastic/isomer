@@ -61,6 +61,7 @@
     "@elastic/isomer-agent-tools": "workspace:*",
     "@elastic/isomer-evals": "workspace:*",
     "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-lowering-lens": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",

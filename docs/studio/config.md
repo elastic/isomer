@@ -65,8 +65,10 @@ React/HTML/snapshot markup, JSX editing and apps are unaffected. Hot updates
 retain the route and editor draft. Omit `images` or set it to `true` to preserve
 the default image behavior.
 
-The root repository config uses browser-only mode with slides and Decks; the
-slides pack's own config keeps images enabled. Custom apps should follow Decks
+The root repository config uses browser-only mode with slides and Decks alongside the
+[Lens envelope/response inspector](../lowering-lens/index.md#browser-inspector).
+The inspector replays supplied responses locally; it does not execute queries.
+The slides pack's own config keeps images enabled. Custom apps should follow Decks
 and hide image actions when `rasterizePng` or `renderPdf` is absent.
 
 ## Featured primitives

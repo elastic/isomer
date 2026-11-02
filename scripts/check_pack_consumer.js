@@ -238,6 +238,30 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     const specifiers = exportSpecifiers(pkg.manifest);
 
+    // The full entry sweep includes optional APIs, such as a browser inspector.
+    // Install their optional peers here, not as dependencies of the portable core.
+    const optionalPeers = Object.keys(
+      pkg.manifest.peerDependencies ?? {}
+    ).filter(
+      (peer) => pkg.manifest.peerDependenciesMeta?.[peer]?.optional === true
+    );
+    if (optionalPeers.length > 0) {
+      execFileSync(
+        process.execPath,
+        ['--eval', `${failOnWarning} require('${packageName}');`],
+        { cwd: consumerDir, stdio: 'inherit' }
+      );
+    }
+    for (const peer of optionalPeers) {
+      const installed = installedDependency(pkg, peer);
+      if (!installed) {
+        throw new Error(
+          `${packageName}: optional peer "${peer}" is needed to exercise all exports`
+        );
+      }
+      linkDirectory(installed, join(pkg.dir, 'node_modules', peer));
+    }
+
     // Node loads the CommonJS build.
     execFileSync(
       process.execPath,
@@ -284,7 +308,7 @@ try {
       ? 'node and browser'
       : 'node';
     console.log(
-      `${packageName}: ${specifiers.length} packed entry point(s) require, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
+      `${packageName}: ${specifiers.length} packed entry point(s) require, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}) and optional peers for the full entry sweep (${optionalPeers.join(', ')}).`
     );
   }
 
