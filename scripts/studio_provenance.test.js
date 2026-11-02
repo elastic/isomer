@@ -29,6 +29,7 @@ const passing = {
   checkoutSha: env.STUDIO_HEAD_SHA,
   config: 'isomer-studio.config.ts',
   images: false,
+  base: '/review/',
   data: 'examples-only; no live data',
 };
 
@@ -53,6 +54,7 @@ describe('Studio provenance', () => {
     { images: true },
     { data: 'live data' },
     { version: 2 },
+    { base: './' },
   ])('refuses a wrong build contract %j', (change) => {
     expect(() =>
       assertStudioProvenance({ ...passing, ...change }, expected)

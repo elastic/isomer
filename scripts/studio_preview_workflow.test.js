@@ -38,6 +38,7 @@ const env = {
   RUN_ATTEMPT: '2',
   PR_NUMBER: '280',
   REPOSITORY: 'elastic/isomer',
+  PREVIEW_PREFIX: '/_preview/elastic/isomer/pull/280',
 };
 const context = {
   repo: { owner: 'elastic', repo: 'isomer' },
@@ -152,6 +153,7 @@ const metadata = {
   config: 'isomer-studio.config.ts',
   images: false,
   data: 'examples-only; no live data',
+  base: `/_preview/elastic/isomer/pull/280/studio/${head}/123-2/`,
 };
 const extract = (change = {}, extra = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'studio-archive-'));
@@ -199,6 +201,7 @@ describe('trusted Studio archive gate', () => {
     { runAttempt: '1' },
     { prNumber: '281' },
     { images: 0 },
+    { base: './' },
   ])('rejects forged metadata %j', (change) => {
     const result = extract(change);
     expect(result.status).not.toBe(0);

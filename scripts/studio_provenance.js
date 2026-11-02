@@ -48,6 +48,9 @@ export const assertStudioProvenance = (metadata, expected) => {
     metadata.config !== 'isomer-studio.config.ts' ||
     metadata.data !== 'examples-only; no live data' ||
     metadata.images !== false ||
+    typeof metadata.base !== 'string' ||
+    !metadata.base.startsWith('/') ||
+    !metadata.base.endsWith('/') ||
     metadata.version !== 1
   ) {
     throw new Error(
@@ -74,6 +77,7 @@ export const writeStudioProvenance = (out, env = process.env) => {
     checkoutSha,
     config: 'isomer-studio.config.ts',
     images: false,
+    base: env.STUDIO_BROWSER_BASE,
     data: 'examples-only; no live data',
     packages: Object.fromEntries(
       workspacePackages().map(({ manifest }) => [
