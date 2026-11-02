@@ -173,6 +173,19 @@ jobs:
       - studio
     runs-on: ubuntu-latest
     steps:
+      - name: Verify deployment eligibility
+        uses: actions/github-script@v9
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              ...context.repo, pull_number: context.payload.pull_request.number,
+            });
+            if (pr.data.state !== 'open' || pr.data.head.sha !== process.env.HEAD_SHA ||
+                pr.data.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              throw new Error('Documentation preview is stale or no longer eligible.');
+            }
       - name: Create Deployment
         uses: actions/github-script@v9
         id: deployment

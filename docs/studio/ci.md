@@ -50,7 +50,9 @@ rejects traversal, links, special files, duplicate entries and excessive size.
 
 Documentation can deploy when the Studio build fails; the workflow reports the
 missing Studio preview explicitly. When Studio succeeds, its digest and archive
-validation remain required, not best-effort steps. Deploy-only retries reuse
+validation remain required, not best-effort steps. Both deployment paths first
+verify that the PR is still open at the current head in the same repository;
+an old docs-only retry cannot replace a newer preview. Deploy-only retries reuse
 the successful producer's attempt, independently checked against GitHub's job
 API, rather than relabeling the artifact with the deployment retry's attempt.
 The metadata, asset base and preview path all retain that producer attempt.

@@ -208,6 +208,40 @@ describe('documentation deployment isolation', () => {
     }
     expect(deploy).not.toContain('continue-on-error');
   });
+  it.each([
+    ['open', head, 'elastic/isomer', true],
+    ['closed', head, 'elastic/isomer', false],
+    ['open', 'f'.repeat(40), 'elastic/isomer', false],
+    ['open', head, 'attacker/isomer', false],
+  ])(
+    'checks docs eligibility without depending on Studio: %s %s %s',
+    async (state, sha, repository, eligible) => {
+      const step = workflow
+        .split('- name: Verify deployment eligibility')[1]
+        .split('- name: Create Deployment')[0];
+      expect(step).not.toContain('if:');
+      const code = step.split('script: |\n')[1].replace(/^ {12}/gm, '');
+      const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
+      const result = new AsyncFunction('github', 'context', 'process', code)(
+        {
+          rest: {
+            pulls: {
+              get: async () => ({
+                data: { state, head: { sha, repo: { full_name: repository } } },
+              }),
+            },
+          },
+        },
+        context,
+        { env }
+      );
+      if (eligible) {
+        await expect(result).resolves.toBeUndefined();
+      } else {
+        await expect(result).rejects.toThrow('stale or no longer eligible');
+      }
+    }
+  );
 });
 
 const metadata = {
