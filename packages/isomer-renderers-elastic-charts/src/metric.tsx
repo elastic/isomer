@@ -49,7 +49,7 @@ export function metricDatum(
   node: MetricTrendNode,
   tile: MetricTile,
   theme: ChartsTheme
-): MetricDatum {
+) {
   const paint = metricTileColor(node, tile);
   const color =
     paint.color ?? (paint.tone ? theme.tone[paint.tone] : theme.accent);
@@ -99,7 +99,7 @@ export function metricDatum(
       : {}),
   };
   if (typeof tile.primary.value !== 'number') {
-    return { ...base, value: format(tile.primary) };
+    return { ...base, value: format(tile.primary) } satisfies MetricDatum;
   }
   const numeric = {
     ...base,
@@ -112,7 +112,7 @@ export function metricDatum(
       ),
   };
   return tile.progress
-    ? {
+    ? ({
         ...numeric,
         domainMin: tile.progress.min ?? 0,
         domainMax: tile.progress.max,
@@ -121,8 +121,8 @@ export function metricDatum(
           value: tile.primary.label,
           target: tile.progress.label ?? 'Target',
         },
-      }
-    : numeric;
+      } satisfies MetricDatum)
+    : (numeric satisfies MetricDatum);
 }
 
 export function MetricTrendChart({

@@ -64,6 +64,10 @@ disabled in the shared browser-only host.
 | `/testing` `compareMetricCapture` | Node-only matched-context semantic/pixel gate |
 | `/testing` `MetricCapturePixels`, `MetricCaptureCandidate`, `MetricCaptureResult` | Decoded RGBA inputs, observed visible text, portable candidate model/context and explicit passed/failed result |
 
+`metricDatum` exposes an inferred structural return, checked internally against
+Elastic Charts' `MetricDatum`. Public declarations do not pull the engine's
+implementation-only declaration graph into every host's typecheck.
+
 ## Real Lens reference gate
 
 **No valid authorized sanitized real Lens capture is available in this slice.**
