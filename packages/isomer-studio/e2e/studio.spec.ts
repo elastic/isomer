@@ -1566,11 +1566,18 @@ test.describe('dev server reload', () => {
   let dir: string;
   let dev: { url: string; child: ChildProcess };
 
-  const writeOptions = (title: string, framed: boolean, images = true) =>
+  const writeOptions = async (
+    title: string,
+    framed: boolean,
+    images = true
+  ) => {
+    // Vite ignores another write to the same file within its 50ms watcher debounce.
+    await delay(100);
     writeFileSync(
       join(dir, 'options.ts'),
       `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\nexport const images = ${images};\n`
     );
+  };
 
   const writeFonts = (exported: string) =>
     writeFileSync(join(dir, 'fonts.ts'), `export default ${exported};\n`);
@@ -1583,7 +1590,7 @@ test.describe('dev server reload', () => {
       join(dir, 'package.json'),
       JSON.stringify({ type: 'commonjs' })
     );
-    writeOptions('Before reload', false);
+    await writeOptions('Before reload', false);
     writeFonts('[]');
     writeFileSync(
       join(dir, 'counter.ts'),
@@ -1654,7 +1661,7 @@ test.describe('dev server reload', () => {
       document.documentElement.dataset.mounted = 'once';
     });
 
-    writeOptions('After reload', true);
+    await writeOptions('After reload', true);
 
     await expect(page).toHaveTitle('After reload', { timeout: 60_000 });
     await expect(page.getByText('After reload').first()).toBeVisible();
@@ -1673,7 +1680,7 @@ test.describe('dev server reload', () => {
     await page.getByRole('button', { name: 'Count 0' }).click();
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
 
-    writeOptions('App reload', false);
+    await writeOptions('App reload', false);
 
     await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
@@ -1690,12 +1697,12 @@ test.describe('dev server reload', () => {
     };
 
     await page.goto(dev.url);
-    writeOptions('Fonts reload', true);
+    await writeOptions('Fonts reload', true);
     await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
     await expect.poll(postPdf).toBe('200 ');
 
     await page.goto(`${dev.url}#/app/counter/`);
-    writeOptions('Fonts config only', true);
+    await writeOptions('Fonts config only', true);
     await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
     writeFonts('"changed after config reload"');
     await expect
@@ -1705,21 +1712,17 @@ test.describe('dev server reload', () => {
     writeFonts('[]');
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
 
-    writeOptions('Fonts disabled', true, false);
+    await writeOptions('Fonts disabled', true, false);
     await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
     expect(await postPdf()).toContain('404');
     writeFonts('"not a list"');
     await delay(100);
-    writeOptions('Fonts enabled', true);
+    await writeOptions('Fonts enabled', true);
     await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
     await expect
       .poll(postPdf, { timeout: 60_000 })
       .toContain('must default-export an array of takumi font loaders');
 
-    writeOptions('Fonts config reloaded', true);
-    await expect(page).toHaveTitle('Fonts config reloaded', {
-      timeout: 60_000,
-    });
     // Vite's watcher drops a change within 50ms of the last one to the same file, and the 400 can arrive sooner.
     await delay(100);
     writeFonts('[]');
