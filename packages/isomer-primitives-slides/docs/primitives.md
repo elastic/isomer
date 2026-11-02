@@ -11,7 +11,7 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `catalog.ts`    | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`; and the host-facing `name`, which the prompt does not print.                                              |
 | `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
 | `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
-| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. A direct import in `src/stylesheet.ts` loads its registration for `slideStylesheet()`.               |
+| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `slideStyleModules` in `src/stylesheet.ts` lists it for `slideStylesheet()`.                         |
 | `react.tsx`     | The React renderer, exported as `react`. It serves the `snapshot` surface too.                                                                                                 |
 | `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
 | `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
@@ -222,19 +222,16 @@ The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*`
 
 ## Registering the primitive
 
-Beside its own folder, a new primitive has four hand-maintained stops:
+Beside its own folder, a new primitive has five hand-maintained stops:
 
 1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description. A primitive that sizes itself exports its step from `fit.ts` ([Size steps](theme.md#size-steps)), and one that builds wraps its definition in `withBuild` ([Builds](builds.md#making-a-primitive-build)).
 2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
 3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
 4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
 5. `src/theme/components/<group>.ts`, its theme group, and its place in `SLIDE_THEME` in `src/theme/theme.ts`.
+6. `src/stylesheet.ts`: the import of its style module and its place in `slideStyleModules`.
 
-The builds follow from the registry: `slideBuilds` reads `build`. The stylesheet has its own library-owned inventory: add a direct import of each new `styles.ts` to `src/stylesheet.ts`, which also imports the shared registration file `src/theme/modules.ts`. `slideStylesheet` calls Distillate's registry-based `stylesheetCollector()` after those files load; neither primitive definitions nor hosts maintain a list of style modules.
-
-Style registration is a real side effect owned by this package. Its `package.json` marks `lib/*/primitives/*/styles.js` and `lib/*/theme/modules.js` as side-effectful for both the ESM and CommonJS builds, plus the matching source files for source-based Studio and tests. The builds emit individual files, so those patterns match the actual packed registrations. Distillate's metadata cannot override this package's metadata. Keep these exemptions when copying the pack; if a build instead bundles registration into one output file, mark that output and retain the registrations during the library build too. Direct imports need no inventory-barrel exemption; if replaced by a side-effect-only barrel, mark both the barrel and the registration files. Retaining registration JavaScript does not disable artifact CSS pruning.
-
-The theme cannot follow from the registry: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
+The builds follow from the registry: `slideBuilds` reads `build`. The stylesheet does not, so a bundle that imports only `slideStylesheet` keeps the style modules without every renderer; `slideStyleModules` references each module by value, which keeps it in that bundle while the package declares no side effects. The theme cannot follow from the registry: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -245,7 +242,7 @@ export const slideDeckPrimitives = [
 ] as const;
 ```
 
-The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add. `src/stylesheet.test.ts` checks the direct-import inventory against the registration files, bundles the source stylesheet and both packed public entries with rolldown, and checks retained files and exact CSS output. It also guards artifact CSS pruning. Run `pnpm build` before tests that exercise the packed files.
+The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add. `src/stylesheet.test.ts` guards the sixth: with the registry loaded, CSS from `slideStyleModules` alone must match `slideStylesheet()`, and a rolldown bundle of the stylesheet alone must keep every style file.
 
 ## Authoring with JSX
 
