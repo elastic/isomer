@@ -15,8 +15,6 @@ export {
   type MetricReading,
   type MetricTile,
   type MetricTrendModel,
-  METRIC_LIMITS,
-  metricFormatSchema,
 } from './model/declarations';
 export {
   type AlignedMetricPoint,

@@ -8,7 +8,6 @@
 export {
   createElasticChartsRendererOverrides,
   elasticChartsRendererOverrides,
-  metricDatum,
   MetricTrendChart,
 } from './metric';
 export {

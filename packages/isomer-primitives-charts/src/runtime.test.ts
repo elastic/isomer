@@ -18,15 +18,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   chartFrame,
-  chartPrimitives,
   chartsPack,
-  chartsStyleAdapter,
   chartsThemes,
-  metricContrast,
   metricExamples,
   type MetricTrendNode,
   metricTrendPrimitive,
 } from './index';
+import { chartsStyleAdapter, metricContrast } from './theme';
+
+const chartPrimitives = [metricTrendPrimitive] as const;
 
 const runtime = createIsomerRuntime({
   packs: [chartsPack],

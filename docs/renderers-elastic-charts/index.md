@@ -83,18 +83,17 @@ disabled in the shared browser-only host.
 | Entry/export | Contract |
 | --- | --- |
 | Root `MetricTrendChart` | Mounted browser renderer; validated `MetricTrendNode`, optional portable `theme`, optional host engine `baseTheme`, optional `context` |
-| Root `metricDatum(node, tile, theme)` | Pure adapter returning exact Elastic Charts `MetricDatum`, including secondary badges and optional progress |
 | Root `elasticChartsRendererOverrides` | React-only runtime override map; no parsing, collection, fallback or inventory replacement |
 | Root `createElasticChartsRendererOverrides` | Bind React overrides to a host-resolved light/dark engine theme pair |
 | Root `projectElasticChartsTheme`, `ElasticChartsThemeSource` | Explicit engine-to-portable projection with a structural input, without leaking engine declaration internals |
 | Root `elasticChartsThemes` | Standalone engine-default projections for consistent browser/HTML/snapshot setup |
-| `/testing` `metricCaptureSchema`, `MetricCaptureFixture` | Version-1 closed fixture and inferred type for a sanitized authorized real Lens reference |
+| `/testing` `MetricCaptureFixture` | Version-1 closed fixture for a sanitized authorized real Lens reference; `compareMetricCapture` validates it |
 | `/testing` `compareMetricCapture` | Node-only matched-context semantic/pixel gate |
 | `/testing` `MetricCapturePixels`, `MetricCaptureCandidate`, `MetricCaptureResult` | Decoded RGBA inputs, observed visible text, portable candidate model/context and explicit passed/failed result |
 
-`metricDatum` exposes an inferred structural return, checked internally against
-Elastic Charts' `MetricDatum`. Public declarations do not pull the engine's
-implementation-only declaration graph into every host's typecheck.
+Engine data and settings are built internally and checked against Elastic
+Charts' types. Public declarations do not pull the engine's implementation-only
+declaration graph into every host's typecheck.
 
 ## Real Lens reference gate
 

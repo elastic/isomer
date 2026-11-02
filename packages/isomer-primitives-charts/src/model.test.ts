@@ -12,7 +12,6 @@ import {
   alignMetricTrends,
   compareMetric,
   formatMetricValue,
-  METRIC_LIMITS,
   metricText,
   type MetricTile,
   metricTileColor,
@@ -21,6 +20,7 @@ import {
   type MetricTrendModel,
   metricTrendSchema,
 } from './model';
+import { METRIC_LIMITS } from './model/declarations';
 
 const base = (): MetricTrendModel => ({
   type: 'metricTrend',

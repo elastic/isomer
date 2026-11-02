@@ -20,7 +20,7 @@ colors can use the engine's CSS color notation.
 | Value | Owner |
 | --- | --- |
 | `chartsThemes` | Standalone portable fallback light/dark colors. Not EUI, Kibana, or Elastic Charts defaults |
-| `defaultChartTokens` | Standalone baseline: system font, 16px base font, 4px spacing unit |
+| `chartsThemes.light.tokens` | Standalone baseline: system font, 16px base font, 4px spacing unit |
 | `createChartTokens(source)` | Portable layout roles derived from the host's base typography and spacing |
 | `elasticChartsThemes` in the browser package | Projection of installed Elastic Charts light/dark defaults; standalone semantic status colors are explicitly inherited from the portable fallback |
 | Authored metric layout | The composition: alignment, density, value position and fit/default font policy |

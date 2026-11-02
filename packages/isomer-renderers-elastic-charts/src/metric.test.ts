@@ -16,7 +16,8 @@ import {
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
-import { elasticChartsRendererOverrides, metricDatum } from './index';
+import { elasticChartsRendererOverrides } from './index';
+import { metricDatum } from './metric';
 
 const example = metricExamples[0]!;
 const node = (tile: MetricTile): MetricTrendNode => ({

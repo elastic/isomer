@@ -70,8 +70,7 @@ export const metricTrendPrimitive = definePrimitive({
   },
 });
 
-/** Ordered chart inventory; currently contains only the metric/trend primitive. */
-export const chartPrimitives = [metricTrendPrimitive] as const;
+const chartPrimitives = [metricTrendPrimitive] as const;
 /**
  * Portable chart pack with standalone style defaults and authoring examples.
  * Bind a host style adapter/frame separately when using application themes.
@@ -91,11 +90,9 @@ export {
   type MetricReading,
   type MetricTile,
   type MetricTrendModel,
-  METRIC_LIMITS,
   alignMetricTrends,
   compareMetric,
   formatMetricValue,
-  metricFormatSchema,
   metricText,
   metricTileColor,
   metricTiles,
@@ -106,25 +103,15 @@ export {
   type ChartsRenderContext,
   type ChartsTheme,
   type ChartsThemes,
-  type ChartStyleCollector,
-  CHART_STYLE_COLLECTOR,
   chartFrame,
-  chartsStyleAdapter,
   chartsThemes,
   createChartFrame,
   createChartsStyleAdapter,
-  metricContrast,
 } from './theme';
 export {
   type ChartTokens,
   type ChartTokenSource,
   METRIC_GLYPHS,
   createChartTokens,
-  defaultChartTokens,
 } from './tokens';
-export {
-  type MetricTrendNode,
-  type MetricViewProps,
-  MetricDataTable,
-  MetricView,
-} from './view';
+export { type MetricTrendNode, type MetricViewProps, MetricView } from './view';

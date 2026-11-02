@@ -116,10 +116,8 @@ const captureShape: typeof captureMetadataShape & {
  * declaration does not independently establish authorization or capture origin.
  * A fixture alone is not evidence that real Lens parity has been measured.
  */
-export const metricCaptureSchema: z.ZodObject<
-  typeof captureShape,
-  z.core.$strict
-> = z.strictObject(captureShape);
+const metricCaptureSchema: z.ZodObject<typeof captureShape, z.core.$strict> =
+  z.strictObject(captureShape);
 /**
  * Validated fixture shape inferred from metricCaptureSchema.
  * `provenance` records the owner's authorization/sanitization claims, not verified

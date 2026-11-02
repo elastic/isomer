@@ -44,7 +44,7 @@ only React, before runtime inventory composition. It never replaces collection.
 `ChartsTheme` is resolved host presentation: colors plus typography and geometry
 in `tokens`. `createChartTokens` derives baseline roles from the host's font
 family, base font size and spacing unit. The host can replace layout roles.
-`chartsThemes` and `defaultChartTokens` are standalone fallbacks, **not** Elastic
+`chartsThemes` (with standalone tokens) is a fallback, **not** Elastic
 Charts or Kibana themes. The browser package projects its engine defaults instead.
 See [Theme ownership](theme.md) for the application boundary and the Kibana comparison.
 `MetricView` accepts a theme directly; runtime React may receive it through
@@ -52,9 +52,9 @@ See [Theme ownership](theme.md) for the application boundary and the Kibana comp
 snapshot receives its frame theme. Omitted browser context uses light.
 
 `createChartsStyleAdapter(themes)` and `createChartFrame(themes)` use the same
-host-resolved light/dark pair for HTML and snapshots. Their standalone exports
-`chartsStyleAdapter` and `chartFrame` use `chartsThemes`.
-The adapter creates a fresh `ChartStyleCollector` per render, walks the
+host-resolved light/dark pair for HTML and snapshots. `chartsPack` carries an
+adapter bound to `chartsThemes`; `chartFrame` is the matching standalone frame.
+The adapter creates a fresh style collector per render, walks the
 whole inventory's child tree and runs each definition's collector before markup.
 `metricTrendPrimitive.collectStyles` records the metric stylesheet. The
 `isomer-metric-v1` collector tag rejects an incompatible adapter at construction.
@@ -86,23 +86,21 @@ The root exports the `/model` API below, plus:
 
 | Export | Contract |
 | --- | --- |
-| `metricTrendPrimitive`, `chartPrimitives`, `chartsPack` | One primitive and its hand-maintained inventory; examples, catalog, schema, styles and all adaptations |
+| `metricTrendPrimitive`, `chartsPack` | The primitive and its pack; examples, catalog, schema, styles and all adaptations |
 | `metricExamples` | Synthetic Requests, service-health breakdown/progress, aligned secondary trends and collapse examples |
-| `MetricView`, `MetricDataTable` | Baseline/shared React tree and timestamp table |
+| `MetricView` | Baseline/shared React tree, including the timestamp table |
 | `MetricTrendNode`, `MetricViewProps` | Model plus SDK node fields; shared view props |
-| `createChartTokens`, `ChartTokenSource`, `ChartTokens`, `defaultChartTokens` | Host-derived portable layout roles and explicitly standalone defaults |
+| `createChartTokens`, `ChartTokenSource`, `ChartTokens` | Host-derived portable layout roles |
 | `chartsThemes`, `ChartsThemes`, `chartFrame` | Standalone fallback pair and optional content frame |
 | `createChartFrame`, `createChartsStyleAdapter` | Bind the frame and HTML adapter to one host-resolved theme pair |
 | `METRIC_GLYPHS` | Semantic direction alternatives, independent of geometry |
-| `chartsStyleAdapter`, `CHART_STYLE_COLLECTOR` | HTML/snapshot styling and compatibility tag |
-| `ChartStyleCollector`, `ChartsRenderContext`, `ChartsTheme` | Collector, optional host event/theme context, frame palette |
-| `metricContrast` | Black/white contrast choice for opaque six-digit authored colors |
+| `ChartsRenderContext`, `ChartsTheme` | Optional host event/theme context, frame palette |
 
 `/model` exports:
 
 | Export | Contract |
 | --- | --- |
-| `metricTrendSchema`, `metricFormatSchema` | Closed Zod declarations with cross-field validation |
+| `metricTrendSchema` | Closed Zod declaration with cross-field validation |
 | `MetricTrendModel`, `MetricTile`, `MetricReading`, `MetricFormat` | Inferred, JSON-serializable declarations |
 | `compareMetric`, `MetricComparison` | Exact signed difference, optional relative magnitude, neutral-by-default status and display text |
 | `alignMetricTrends`, `AlignedMetricPoint` | Sorted union of instants; independent primary/secondary nulls |
@@ -110,7 +108,12 @@ The root exports the `/model` API below, plus:
 | `metricTileColor` | Explicit tile, matching palette and chart paint precedence, with independent status |
 | `formatMetricValue`, `metricTimeLabel` | Portable text formatting and timezone/offset-aware timestamp labels |
 | `metricText` | Shared semantic text adaptation |
-| `METRIC_LIMITS` | 100 tiles, 2,000 points per series, 10,000 points across all tiles/series, 1,000 characters per label; relative-change suppression threshold 1,000 |
+
+`metricTiles`, `metricTimeLabel` and `metricText` are public so another renderer
+reuses collapse, time-label and nonvisual rules instead of copying them.
+`metricTrendSchema` enforces the authoring budgets: 100 tiles, 2,000 points per
+series, 10,000 points across all tiles and series, and 1,000 characters per label.
+Relative change is suppressed at a magnitude of 1,000.
 
 The root requires React and Zod peers. `react-dom` belongs to the host rendering
 HTML/snapshot through the runtime, not this pack's root. Packages publish
