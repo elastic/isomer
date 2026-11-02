@@ -42,6 +42,18 @@ const comparisonTile = (
 });
 
 describe('portable formatting', () => {
+  it('reports an empty tile inventory without throwing during cross-field validation', () => {
+    expect(metricTrendSchema.safeParse({ ...base(), tiles: [] }).success).toBe(
+      false
+    );
+    expect(
+      metricTrendSchema.safeParse({
+        ...base(),
+        tiles: [],
+        collapse: { operation: 'sum', label: 'Total' },
+      }).success
+    ).toBe(false);
+  });
   it('keeps the secondary reading distinct from its comparison in nonvisual output', () => {
     const text = metricText({
       ...base(),

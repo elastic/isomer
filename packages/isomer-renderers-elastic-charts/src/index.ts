@@ -6,7 +6,13 @@
  */
 
 export {
+  createElasticChartsRendererOverrides,
   elasticChartsRendererOverrides,
   metricDatum,
   MetricTrendChart,
 } from './metric';
+export {
+  type ElasticChartsThemeSource,
+  elasticChartsThemes,
+  projectElasticChartsTheme,
+} from './theme';

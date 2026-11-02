@@ -15,24 +15,29 @@ import {
   LineSeries,
   Metric,
   type MetricDatum,
+  type PartialTheme,
   ScaleType,
   Settings,
 } from '@elastic/charts';
 import {
   alignMetricTrends,
-  CHART_THEME,
   type ChartsRenderContext,
   type ChartsTheme,
-  chartsThemes,
   compareMetric,
   formatMetricValue,
-  metricContrast,
+  METRIC_GLYPHS,
   type MetricTile,
   metricTileColor,
   type MetricTrendNode,
   metricTrendPrimitive,
   MetricView,
 } from '@elastic/isomer-primitives-charts';
+
+import {
+  elasticChartsThemes,
+  type ElasticChartsThemeSource,
+  projectElasticChartsTheme,
+} from './theme';
 
 function TooltipLabel({
   children,
@@ -44,7 +49,27 @@ function TooltipLabel({
   return <span title={label}>{children}</span>;
 }
 
-/** Pure adapter, exported so hosts can inspect the exact Elastic Charts metric input. */
+interface SecondaryMetricFields {
+  value: string;
+  label?: string;
+  labelPosition: 'before' | 'after' | 'tooltip';
+  labelTooltip: typeof TooltipLabel;
+  badgeColor?: string;
+  ariaDescription?: string;
+  icon?: string;
+  badgeBorderColor?: { mode: 'auto' };
+}
+
+interface MetricTextFields {
+  title: string;
+  color: string;
+  subtitle?: string;
+  valueColor?: string;
+  icon?: () => React.ReactElement;
+  extra?: SecondaryMetricFields;
+}
+
+/** Pure adapter; numeric readings stay numeric so progress never becomes a gauge or formatted string. */
 export function metricDatum(
   node: MetricTrendNode,
   tile: MetricTile,
@@ -53,92 +78,248 @@ export function metricDatum(
   const paint = metricTileColor(node, tile);
   const color =
     paint.color ?? (paint.tone ? theme.tone[paint.tone] : theme.accent);
-  const compared = compareMetric(tile, node.locale);
-  const secondary = tile.secondary;
   const format = (reading: MetricTile['primary']) =>
     reading.formatted ??
     formatMetricValue(reading.value, {
       ...reading.format,
       locale: reading.format?.locale ?? node.locale ?? 'en-US',
     });
-  const base = {
+  const base: MetricTextFields = {
     title: tile.title ?? tile.primary.label,
-    ...(tile.subtitle ? { subtitle: tile.subtitle } : {}),
-    color: node.applyColorTo !== 'value' ? color : theme.background,
-    valueColor: node.applyColorTo === 'value' ? color : metricContrast(color),
-    ...(tile.icon ? { icon: () => <span>{tile.icon}</span> } : {}),
-    ...(secondary
-      ? {
-          extra: {
-            value:
-              secondary.comparison?.visuals === 'icon'
-                ? ''
-                : (compared?.formatted ?? format(secondary)),
-            ...(secondary.labelPosition === 'hidden'
-              ? {}
-              : { label: secondary.label }),
-            labelPosition:
-              secondary.labelPosition === 'hidden'
-                ? ('before' as const)
-                : (secondary.labelPosition ?? ('before' as const)),
-            labelTooltip: TooltipLabel,
-            ...(compared
-              ? {
-                  ariaDescription: compared.description,
-                  ...(secondary.comparison?.visuals === 'value'
-                    ? {}
-                    : { icon: CHART_THEME.glyph[compared.direction] }),
-                  badgeColor: compared.color ?? theme.tone[compared.tone],
-                  badgeBorderColor: { mode: 'auto' as const },
-                }
-              : secondary.color
-                ? { badgeColor: secondary.color }
-                : {}),
-          },
-        }
-      : {}),
+    color: node.applyColorTo === 'value' ? theme.background : color,
   };
+  if (tile.subtitle) {
+    base.subtitle = tile.subtitle;
+  }
+  if (node.applyColorTo === 'value') {
+    base.valueColor = color;
+  }
+  if (tile.icon) {
+    base.icon = () => <span>{tile.icon}</span>;
+  }
+  const extra = secondaryDatum(tile, node.locale, theme, format);
+  if (extra) {
+    base.extra = extra;
+  }
   if (typeof tile.primary.value !== 'number') {
     return { ...base, value: format(tile.primary) } satisfies MetricDatum;
   }
   const numeric = {
     ...base,
     value: tile.primary.value,
-    valueFormatter: (value: number) =>
-      format(
-        value === tile.primary.value
-          ? tile.primary
-          : { ...tile.primary, value, formatted: undefined }
-      ),
+    valueFormatter: (value: number) => {
+      if (value === tile.primary.value) {
+        return format(tile.primary);
+      }
+      return format({ ...tile.primary, value, formatted: undefined });
+    },
   };
-  return tile.progress
-    ? ({
-        ...numeric,
-        domainMin: tile.progress.min ?? 0,
-        domainMax: tile.progress.max,
-        progressBarDirection: tile.progress.direction ?? 'horizontal',
-        progressValueLabels: {
-          value: tile.primary.label,
-          target: tile.progress.label ?? 'Target',
-        },
-      } satisfies MetricDatum)
-    : (numeric satisfies MetricDatum);
+  if (!tile.progress) {
+    return numeric satisfies MetricDatum;
+  }
+  return {
+    ...numeric,
+    domainMin: tile.progress.min ?? 0,
+    domainMax: tile.progress.max,
+    progressBarDirection: tile.progress.direction ?? 'horizontal',
+    progressValueLabels: {
+      value: tile.primary.label,
+      target: tile.progress.label ?? 'Target',
+    },
+  } satisfies MetricDatum;
+}
+
+function secondaryDatum(
+  tile: MetricTile,
+  locale: string | undefined,
+  theme: ChartsTheme,
+  format: (reading: MetricTile['primary']) => string
+): SecondaryMetricFields | undefined {
+  const secondary = tile.secondary;
+  if (!secondary) {
+    return undefined;
+  }
+  const compared = compareMetric(tile, locale);
+  const extra: SecondaryMetricFields = {
+    value:
+      secondary.comparison?.visuals === 'icon'
+        ? ''
+        : (compared?.formatted ?? format(secondary)),
+    labelPosition:
+      secondary.labelPosition === 'hidden'
+        ? ('before' as const)
+        : (secondary.labelPosition ?? ('before' as const)),
+    labelTooltip: TooltipLabel,
+  };
+  if (secondary.labelPosition !== 'hidden') {
+    extra.label = secondary.label;
+  }
+  if (secondary.color) {
+    extra.badgeColor = secondary.color;
+  }
+  if (!compared) {
+    return extra;
+  }
+  extra.ariaDescription = compared.description;
+  if (secondary.comparison?.visuals !== 'value') {
+    extra.icon = METRIC_GLYPHS[compared.direction];
+  }
+  extra.badgeColor = compared.color ?? theme.tone[compared.tone];
+  extra.badgeBorderColor = { mode: 'auto' };
+  return extra;
+}
+
+/** Application surfaces and authored settings only; sizing/contrast/typography stay with the engine. */
+export function metricSettings(node: MetricTrendNode, theme: ChartsTheme) {
+  const layout = node.layout;
+  return {
+    background: { color: theme.background },
+    metric: {
+      fontFamily: theme.tokens.fontFamily,
+      border: theme.border,
+      barBackground: theme.track,
+      emptyBackground: theme.background,
+      blendingBackground: theme.background,
+      ...(layout?.valueFont && { valueFontSize: layout.valueFont }),
+      ...(layout?.titleAlign && { titlesTextAlign: layout.titleAlign }),
+      ...(layout?.primaryAlign && { valueTextAlign: layout.primaryAlign }),
+      ...(layout?.secondaryAlign && { extraTextAlign: layout.secondaryAlign }),
+      ...(layout?.iconAlign && { iconAlign: layout.iconAlign }),
+      ...(layout?.primaryPosition && { valuePosition: layout.primaryPosition }),
+      ...(layout?.density && {
+        spacing: layout.density === 'compact' ? 'small' : 'large',
+      }),
+    },
+  } satisfies PartialTheme;
+}
+
+interface TileChartProps {
+  node: MetricTrendNode;
+  tile: MetricTile;
+  theme: ChartsTheme;
+  baseTheme: ElasticChartsThemeSource;
+}
+
+function TrendChart({ node, tile, theme, baseTheme }: TileChartProps) {
+  const trend = tile.trend;
+  if (!trend) {
+    return null;
+  }
+  const aligned = alignMetricTrends(trend);
+  let Series: typeof LineSeries | typeof BarSeries | typeof AreaSeries =
+    LineSeries;
+  if (trend.shape === 'bars') {
+    Series = BarSeries;
+  }
+  if (trend.shape === 'area') {
+    Series = AreaSeries;
+  }
+  let label = `${tile.primary.label} over time`;
+  if (trend.secondary) {
+    label += ` and ${tile.secondary!.label}`;
+  }
+  label += `; ${trend.timeZone ?? 'UTC'}; ${trend.gap ?? 'gap'} policy`;
+  return (
+    <div
+      data-elastic-trend=""
+      style={{ height: theme.tokens.trend.height }}
+      role="img"
+      aria-label={label}>
+      <Chart size={{ width: '100%', height: theme.tokens.trend.height }}>
+        <Settings
+          baseTheme={theme.mode === 'dark' ? DARK_THEME : LIGHT_THEME}
+          locale={node.locale ?? 'en-US'}
+          showLegend={false}
+          theme={[baseTheme, { background: { color: theme.background } }]}
+        />
+        {(['primary', 'secondary'] as const).map((name) => {
+          const reading = name === 'primary' ? tile.primary : tile.secondary;
+          if (!reading || (name === 'secondary' && !trend.secondary)) {
+            return null;
+          }
+          let points = aligned.map((point) => ({
+            x: point.time,
+            y: point[name] ?? (trend.gap === 'zero' ? 0 : null),
+          }));
+          if (trend.gap === 'connect') {
+            points = points.filter((point) => point.y !== null);
+          }
+          return (
+            <Series
+              key={name}
+              id={reading.label}
+              data={points}
+              xAccessor="x"
+              yAccessors={['y']}
+              xScaleType={ScaleType.Time}
+              yScaleType={ScaleType.Linear}
+              timeZone={trend.timeZone ?? 'UTC'}
+              yNice={false}
+              color={name === 'primary' ? theme.accent : theme.secondary}
+              tickFormat={(value: unknown) => {
+                if (typeof value !== 'number') {
+                  return String(value);
+                }
+                return formatMetricValue(value, {
+                  ...reading.format,
+                  locale: reading.format?.locale ?? node.locale ?? 'en-US',
+                });
+              }}
+            />
+          );
+        })}
+      </Chart>
+    </div>
+  );
+}
+
+function MetricTileChart(props: TileChartProps) {
+  const { node, tile, theme, baseTheme } = props;
+  const height =
+    node.layout?.density === 'compact'
+      ? theme.tokens.tile.compactHeight
+      : theme.tokens.tile.height;
+  return (
+    <>
+      <div data-elastic-metric="" style={{ height }}>
+        <Chart size={{ width: '100%', height }}>
+          <Settings
+            baseTheme={theme.mode === 'dark' ? DARK_THEME : LIGHT_THEME}
+            locale={node.locale ?? 'en-US'}
+            theme={[baseTheme, metricSettings(node, theme)]}
+          />
+          <Metric id={tile.key} data={[[metricDatum(node, tile, theme)]]} />
+        </Chart>
+      </div>
+      <TrendChart {...props} />
+    </>
+  );
 }
 
 export function MetricTrendChart({
   node,
-  theme = chartsThemes.light,
+  theme: suppliedTheme,
+  baseTheme,
   context = {},
 }: {
   node: MetricTrendNode;
   theme?: ChartsTheme | undefined;
+  baseTheme?: ElasticChartsThemeSource | undefined;
   context?: ChartsRenderContext | undefined;
 }) {
+  const mode = suppliedTheme?.mode ?? 'light';
+  const engineTheme = baseTheme ?? (mode === 'dark' ? DARK_THEME : LIGHT_THEME);
+  const theme =
+    suppliedTheme ??
+    projectElasticChartsTheme(
+      engineTheme,
+      mode,
+      elasticChartsThemes[mode].tone
+    );
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
-  const tokens = CHART_THEME;
   return (
     <MetricView
       node={node}
@@ -146,181 +327,47 @@ export function MetricTrendChart({
       context={context}
       renderTile={
         mounted
-          ? (tile) => {
-              const metric = metricDatum(node, tile, theme);
-              const textColor =
-                node.applyColorTo === 'value'
-                  ? theme.text
-                  : metricContrast(metric.color);
-              const height =
-                node.layout?.density === 'compact'
-                  ? tokens.tile.compactHeight
-                  : tokens.tile.height;
-              const trend = tile.trend;
-              const primaryFormat = {
-                ...tile.primary.format,
-                locale: tile.primary.format?.locale ?? node.locale ?? 'en-US',
-              };
-              return (
-                <>
-                  <div data-elastic-metric="" style={{ height }}>
-                    <Chart size={{ width: '100%', height }}>
-                      <Settings
-                        baseTheme={
-                          theme.mode === 'dark' ? DARK_THEME : LIGHT_THEME
-                        }
-                        locale={node.locale ?? 'en-US'}
-                        theme={{
-                          background: { color: theme.background },
-                          metric: {
-                            fontFamily: tokens.fontFamily,
-                            minHeight: height,
-                            border: theme.border,
-                            textDarkColor: textColor,
-                            textLightColor: textColor,
-                            textSubtitleDarkColor: textColor,
-                            textSubtitleLightColor: textColor,
-                            textExtraDarkColor: textColor,
-                            textExtraLightColor: textColor,
-                            barBackground: theme.track,
-                            emptyBackground: theme.background,
-                            blendingBackground: theme.background,
-                            nonFiniteText: 'N/A',
-                            valueFontSize:
-                              node.layout?.valueFont === 'fit'
-                                ? 'fit'
-                                : tokens.font.value,
-                            minValueFontSize: tokens.font.minimumValue,
-                            titleWeight: tokens.font.weight,
-                            titlesTextAlign: node.layout?.titleAlign ?? 'left',
-                            valueTextAlign: node.layout?.primaryAlign ?? 'left',
-                            extraTextAlign:
-                              node.layout?.secondaryAlign ?? 'left',
-                            iconAlign: node.layout?.iconAlign ?? 'left',
-                            valuePosition:
-                              node.layout?.primaryPosition ?? 'middle',
-                            spacing:
-                              node.layout?.density === 'compact'
-                                ? 'small'
-                                : 'large',
-                          },
-                        }}
-                      />
-                      <Metric id={tile.key} data={[[metric]]} />
-                    </Chart>
-                  </div>
-                  {trend ? (
-                    <div
-                      data-elastic-trend=""
-                      style={{ height: tokens.trend.height }}
-                      role="img"
-                      aria-label={`${tile.primary.label} over time${trend.secondary ? ` and ${tile.secondary!.label}` : ''}; ${trend.timeZone ?? 'UTC'}; ${trend.gap ?? 'gap'} policy`}>
-                      <Chart
-                        size={{ width: '100%', height: tokens.trend.height }}>
-                        <Settings
-                          baseTheme={
-                            theme.mode === 'dark' ? DARK_THEME : LIGHT_THEME
-                          }
-                          locale={node.locale ?? 'en-US'}
-                          showLegend={false}
-                          theme={{
-                            background: { color: theme.background },
-                            lineSeriesStyle: {
-                              line: { strokeWidth: tokens.trend.stroke },
-                            },
-                            areaSeriesStyle: {
-                              area: { opacity: tokens.trend.opacity },
-                            },
-                          }}
-                        />
-                        {(['primary', 'secondary'] as const).map((name) => {
-                          if (name === 'secondary' && !trend.secondary) {
-                            return null;
-                          }
-                          const points = alignMetricTrends(trend).map(
-                            (point) => ({
-                              x: point.time,
-                              y:
-                                point[name] ??
-                                (trend.gap === 'zero' ? 0 : null),
-                            })
-                          );
-                          const Series =
-                            trend.shape === 'bars'
-                              ? BarSeries
-                              : trend.shape === 'area'
-                                ? AreaSeries
-                                : LineSeries;
-                          return (
-                            <Series
-                              key={name}
-                              id={
-                                name === 'primary'
-                                  ? tile.primary.label
-                                  : tile.secondary!.label
-                              }
-                              data={
-                                trend.gap === 'connect'
-                                  ? points.filter((p) => p.y !== null)
-                                  : points
-                              }
-                              xAccessor="x"
-                              yAccessors={['y']}
-                              xScaleType={ScaleType.Time}
-                              yScaleType={ScaleType.Linear}
-                              timeZone={trend.timeZone ?? 'UTC'}
-                              color={
-                                name === 'primary'
-                                  ? theme.accent
-                                  : theme.secondary
-                              }
-                              yNice={false}
-                              tickFormat={(value: unknown) =>
-                                typeof value === 'number'
-                                  ? formatMetricValue(
-                                      value,
-                                      name === 'primary'
-                                        ? primaryFormat
-                                        : {
-                                            ...tile.secondary?.format,
-                                            locale:
-                                              tile.secondary?.format?.locale ??
-                                              node.locale ??
-                                              'en-US',
-                                          }
-                                    )
-                                  : String(value)
-                              }
-                            />
-                          );
-                        })}
-                      </Chart>
-                    </div>
-                  ) : null}
-                </>
-              );
-            }
+          ? (tile) => (
+              <MetricTileChart
+                node={node}
+                tile={tile}
+                theme={theme}
+                baseTheme={engineTheme}
+              />
+            )
           : undefined
       }
     />
   );
 }
 
-/** Only React is replaced. Collection, parsing and every nonvisual surface stay with the primitive. */
-export const elasticChartsRendererOverrides = {
-  metricTrend: {
-    react: (
-      node: MetricTrendNode,
-      {
-        context,
-        theme,
-      }: Parameters<typeof metricTrendPrimitive.renderers.react>[1]
-    ) => (
-      <MetricTrendChart
-        node={node}
-        context={context}
-        theme={theme ?? context.chartTheme}
-      />
-    ),
-  },
-};
+/** Replace React only; collection, parsing and nonvisual adaptations stay with the primitive. */
+export function createElasticChartsRendererOverrides(baseThemes: {
+  light: ElasticChartsThemeSource;
+  dark: ElasticChartsThemeSource;
+}) {
+  return {
+    metricTrend: {
+      react: (
+        node: MetricTrendNode,
+        {
+          context,
+          theme = context.chartTheme,
+        }: Parameters<typeof metricTrendPrimitive.renderers.react>[1]
+      ) => (
+        <MetricTrendChart
+          node={node}
+          context={context}
+          theme={theme}
+          baseTheme={baseThemes[theme?.mode ?? 'light']}
+        />
+      ),
+    },
+  };
+}
+
+export const elasticChartsRendererOverrides =
+  createElasticChartsRendererOverrides({
+    light: LIGHT_THEME,
+    dark: DARK_THEME,
+  });

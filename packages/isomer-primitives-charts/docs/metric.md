@@ -99,5 +99,6 @@ not a claim of pixel-identical Lens layout.
 
 The baseline React renderer is shared by HTML and snapshots. No rasterizer is
 added; an optional host backend may rasterize that tree. Browser engine defaults
-remain Elastic Charts' own; pack-owned values come from `CHART_THEME`.
+remain Elastic Charts' own. Baseline layout and projected host styles travel in
+`ChartsTheme.tokens`; see [Theme ownership](theme.md).
 See the [real-reference blocker](../../isomer-renderers-elastic-charts/docs/index.md#real-lens-reference-gate).

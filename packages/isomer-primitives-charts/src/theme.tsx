@@ -12,43 +12,12 @@ import type {
 } from '@elastic/isomer-sdk';
 import type { HTMLStyleAdapter } from '@elastic/isomer-sdk/html';
 
-export const CHART_THEME = {
-  fontFamily: 'Arial, sans-serif',
-  tile: {
-    width: 320,
-    height: 200,
-    compactHeight: 160,
-    padding: 16,
-    compactPadding: 8,
-    gap: 12,
-    border: 1,
-    radius: 4,
-  },
-  font: {
-    title: 16,
-    value: 40,
-    minimumValue: 16,
-    secondary: 14,
-    small: 12,
-    weight: 500,
-    lineHeight: 1.4,
-  },
-  trend: {
-    width: 300,
-    height: 80,
-    stroke: 2,
-    opacity: 0.18,
-    padding: 4,
-    barRatio: 0.7,
-    pointRadius: 2,
-  },
-  frame: { width: 960, padding: 24 },
-  glyph: { up: '\u2191', down: '\u2193', unchanged: '=', unavailable: '?' },
-} as const;
+import { type ChartTokens, defaultChartTokens } from './tokens';
 
-/** Colors use the model's opaque six-digit hex contract. */
+/** Resolved host presentation. Metric accent/tone paints must be opaque six-digit hex. */
 export interface ChartsTheme {
   mode: 'light' | 'dark';
+  tokens: ChartTokens;
   background: string;
   text: string;
   muted: string;
@@ -59,9 +28,13 @@ export interface ChartsTheme {
   tone: Record<'neutral' | 'good' | 'bad' | 'warning', string>;
 }
 
-export const chartsThemes: { light: ChartsTheme; dark: ChartsTheme } = {
+export type ChartsThemes = { light: ChartsTheme; dark: ChartsTheme };
+
+/** Standalone fallback palettes, not Kibana/EUI themes or Elastic Charts defaults. */
+export const chartsThemes: ChartsThemes = {
   light: {
     mode: 'light',
+    tokens: defaultChartTokens,
     background: '#ffffff',
     text: '#1d1e24',
     muted: '#535966',
@@ -78,6 +51,7 @@ export const chartsThemes: { light: ChartsTheme; dark: ChartsTheme } = {
   },
   dark: {
     mode: 'dark',
+    tokens: defaultChartTokens,
     background: '#1d1e24',
     text: '#f1f3f5',
     muted: '#b3b9c5',
@@ -110,72 +84,75 @@ const isNode = (value: unknown): value is PrimitiveNode =>
     typeof value.type === 'string'
   );
 
-export const chartsStyleAdapter: HTMLStyleAdapter<
-  PrimitiveNode,
-  ChartStyleCollector,
-  ChartsRenderContext
-> = {
-  styleCollector: CHART_STYLE_COLLECTOR,
-  createCollector: () => ({ rules: new Set() }),
-  collectViewStyles: (
-    composition,
-    dispatcher,
-    collector,
-    context,
-    _options,
-    scope
-  ) => {
-    const visit = (value: unknown) => {
-      if (!isNode(value)) {
-        return;
-      }
-      dispatcher.collectStyles(value, collector, context);
-      for (const child of scope.walk(value)) {
-        visit(child.node);
-      }
-    };
-    composition.body.forEach(visit);
-  },
-  createRenderContext: (_collector, options) => ({
-    chartTheme:
-      chartsThemes[
-        options.scheme ?? (options.theme === 'dark' ? 'dark' : 'light')
-      ],
-  }),
-  renderStyles: (collector) =>
-    collector.rules.has('metric')
-      ? `
-.isomer-metric {font-family:${CHART_THEME.fontFamily};line-height:${CHART_THEME.font.lineHeight}}
+/** Use the same host-resolved themes for HTML and the snapshot frame. */
+export function createChartsStyleAdapter(
+  themes: ChartsThemes
+): HTMLStyleAdapter<PrimitiveNode, ChartStyleCollector, ChartsRenderContext> {
+  return {
+    styleCollector: CHART_STYLE_COLLECTOR,
+    createCollector: () => ({ rules: new Set() }),
+    collectViewStyles: (
+      composition,
+      dispatcher,
+      collector,
+      context,
+      _options,
+      scope
+    ) => {
+      const visit = (value: unknown) => {
+        if (!isNode(value)) {
+          return;
+        }
+        dispatcher.collectStyles(value, collector, context);
+        for (const child of scope.walk(value)) {
+          visit(child.node);
+        }
+      };
+      composition.body.forEach(visit);
+    },
+    createRenderContext: (_collector, options) => ({
+      chartTheme:
+        themes[options.scheme ?? (options.theme === 'dark' ? 'dark' : 'light')],
+    }),
+    renderStyles: (collector) =>
+      collector.rules.has('metric')
+        ? `
 .isomer-metric * {box-sizing:border-box}
 .isomer-metric button {font:inherit;cursor:pointer}
-.isomer-metric button:focus-visible {outline:${CHART_THEME.trend.stroke}px solid currentColor}
-.isomer-metric table {border-collapse:collapse;width:100%}
-.isomer-metric th,.isomer-metric td {padding:${CHART_THEME.tile.compactPadding}px;text-align:left;border-bottom:${CHART_THEME.tile.border}px solid currentColor}
+.isomer-metric button:focus-visible {outline:revert}
 .isomer-metric summary {cursor:pointer}
 `
-      : '',
-};
+        : '',
+  };
+}
+
+export const chartsStyleAdapter = createChartsStyleAdapter(chartsThemes);
 
 /** Hosts may reframe charts, but must supply the same ChartsTheme to every frame. */
-export const chartFrame: Frame<ChartsTheme> = {
-  defaultWidth: CHART_THEME.frame.width,
-  sizing: 'content',
-  theme: chartsThemes,
-  estimateHeight: () => CHART_THEME.tile.height + CHART_THEME.frame.padding * 2,
-  wrap: (header, body, { width, theme }) => (
-    <section
-      style={{
-        width,
-        padding: CHART_THEME.frame.padding,
-        background: theme.background,
-        color: theme.text,
-        fontFamily: CHART_THEME.fontFamily,
-      }}>
-      {header.title ? <h1>{header.title}</h1> : null}
-      {body}
-    </section>
-  ),
-};
+export function createChartFrame(themes: ChartsThemes): Frame<ChartsTheme> {
+  return {
+    defaultWidth: themes.light.tokens.frame.width,
+    sizing: 'content',
+    theme: themes,
+    estimateHeight: () =>
+      themes.light.tokens.tile.height + themes.light.tokens.frame.padding * 2,
+    wrap: (header, body, { width, theme }) => (
+      <section
+        style={{
+          width,
+          padding: theme.tokens.frame.padding,
+          background: theme.background,
+          color: theme.text,
+          fontFamily: theme.tokens.fontFamily,
+        }}>
+        {header.title ? <h1>{header.title}</h1> : null}
+        {body}
+      </section>
+    ),
+  };
+}
+
+export const chartFrame = createChartFrame(chartsThemes);
 
 /** Black or white text chosen from the authored opaque tile color. */
 export function metricContrast(color: string): string {

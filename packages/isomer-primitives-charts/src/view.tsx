@@ -11,7 +11,6 @@ import { nodeAnchor, type PrimitiveNode } from '@elastic/isomer-sdk';
 import {
   alignMetricTrends,
   compareMetric,
-  formatMetricValue,
   metricText,
   type MetricTile,
   metricTileColor,
@@ -19,42 +18,42 @@ import {
   metricTimeLabel,
   type MetricTrendModel,
 } from './model';
+import { formatReading, formatSample } from './model/readings';
 import {
-  CHART_THEME,
   type ChartsRenderContext,
   type ChartsTheme,
   chartsThemes,
   metricContrast,
 } from './theme';
+import { METRIC_GLYPHS } from './tokens';
 
 export type MetricTrendNode = MetricTrendModel & PrimitiveNode;
 
 export function MetricDataTable({
   tile,
   locale,
+  theme = chartsThemes.light,
 }: {
   tile: MetricTile;
   locale?: string | undefined;
+  theme?: ChartsTheme;
 }) {
   if (!tile.trend) {
     return null;
   }
   const cell = {
-    padding: CHART_THEME.tile.compactPadding,
+    padding: theme.tokens.tile.compactPadding,
     textAlign: 'left' as const,
-    borderBottom: `${CHART_THEME.tile.border}px solid currentColor`,
+    borderBottom: `${theme.tokens.tile.border}px solid currentColor`,
   };
   const formatted = (value: number, reading: MetricTile['primary']) =>
-    formatMetricValue(value, {
-      ...reading.format,
-      locale: reading.format?.locale ?? locale ?? 'en-US',
-    });
+    formatSample(value, reading, locale);
   return (
     <table
       style={{
         borderCollapse: 'collapse',
         width: '100%',
-        fontSize: CHART_THEME.font.secondary,
+        fontSize: theme.tokens.font.secondary,
       }}>
       <caption>
         Trend data: {tile.title ?? tile.primary.label} (
@@ -109,7 +108,7 @@ function Trend({ tile, theme }: { tile: MetricTile; theme: ChartsTheme }) {
   if (!all.length) {
     return <p>No trend readings</p>;
   }
-  const t = CHART_THEME.trend;
+  const t = theme.tokens.trend;
   const zero = tile.trend.gap === 'zero';
   const baseline =
     zero || tile.trend.shape === 'area' || tile.trend.shape === 'bars';
@@ -242,18 +241,14 @@ export function MetricView({
   context = {},
   renderTile,
 }: MetricViewProps) {
-  const tokens = CHART_THEME;
+  const tokens = theme.tokens;
   const tiles = metricTiles(node);
   const columns = Math.min(
     node.layout?.columns ?? 3,
     Math.max(tiles.length, node.layout?.minTiles ?? 1)
   );
-  const reading = (r: MetricTile['primary']) =>
-    r.formatted ??
-    formatMetricValue(r.value, {
-      ...r.format,
-      locale: r.format?.locale ?? node.locale ?? 'en-US',
-    });
+  const reading = (value: MetricTile['primary']) =>
+    formatReading(value, node.locale);
   return (
     <figure
       {...nodeAnchor(context, node)}
@@ -397,7 +392,7 @@ export function MetricView({
                             }}>
                             {compared &&
                             secondary.comparison?.visuals !== 'value'
-                              ? `${tokens.glyph[compared.direction]} `
+                              ? `${METRIC_GLYPHS[compared.direction]} `
                               : null}
                             {secondary.comparison?.visuals !== 'icon'
                               ? (compared?.formatted ?? reading(secondary))
@@ -415,11 +410,11 @@ export function MetricView({
                       <label>
                         {tile.progress.label ?? 'Progress'}:{' '}
                         {reading(tile.primary)} /{' '}
-                        {reading({
-                          ...tile.primary,
-                          value: tile.progress.max,
-                          formatted: undefined,
-                        })}
+                        {formatSample(
+                          tile.progress.max,
+                          tile.primary,
+                          node.locale
+                        )}
                       </label>
                       {typeof tile.primary.value === 'number' ? (
                         <meter
@@ -475,7 +470,11 @@ export function MetricView({
               {tile.trend ? (
                 <details>
                   <summary>View trend data</summary>
-                  <MetricDataTable tile={tile} locale={node.locale} />
+                  <MetricDataTable
+                    tile={tile}
+                    locale={node.locale}
+                    theme={theme}
+                  />
                 </details>
               ) : null}
             </section>

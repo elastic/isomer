@@ -41,16 +41,20 @@ only React, before runtime inventory composition. It never replaces collection.
 
 ## Theme and surfaces
 
-`CHART_THEME` is the authoring source for pack-owned lengths, fonts, ratios and
-glyphs; `chartsThemes` owns the light/dark palette. Custom `ChartsTheme` supplies
-mode, background, text, muted, border, accent, secondary, track and tone colors.
-Theme colors use opaque six-digit hex; malformed contrast inputs throw rather
-than silently choosing unreadable text.
+`ChartsTheme` is resolved host presentation: colors plus typography and geometry
+in `tokens`. `createChartTokens` derives baseline roles from the host's font
+family, base font size and spacing unit. The host can replace layout roles.
+`chartsThemes` and `defaultChartTokens` are standalone fallbacks, **not** Elastic
+Charts or Kibana themes. The browser package projects its engine defaults instead.
+See [Theme ownership](theme.md) for the application boundary and the Kibana comparison.
 `MetricView` accepts a theme directly; runtime React may receive it through
 `context.chartTheme`; HTML resolves its explicit theme through the adapter;
 snapshot receives its frame theme. Omitted browser context uses light.
 
-`chartsStyleAdapter` creates a fresh `ChartStyleCollector` per render, walks the
+`createChartsStyleAdapter(themes)` and `createChartFrame(themes)` use the same
+host-resolved light/dark pair for HTML and snapshots. Their standalone exports
+`chartsStyleAdapter` and `chartFrame` use `chartsThemes`.
+The adapter creates a fresh `ChartStyleCollector` per render, walks the
 whole inventory's child tree and runs each definition's collector before markup.
 `metricTrendPrimitive.collectStyles` records the metric stylesheet. The
 `isomer-metric-v1` collector tag rejects an incompatible adapter at construction.
@@ -86,7 +90,10 @@ The root exports the `/model` API below, plus:
 | `metricExamples` | Synthetic Requests, service-health breakdown/progress, aligned secondary trends and collapse examples |
 | `MetricView`, `MetricDataTable` | Baseline/shared React tree and timestamp table |
 | `MetricTrendNode`, `MetricViewProps` | Model plus SDK node fields; shared view props |
-| `CHART_THEME`, `chartsThemes`, `chartFrame` | Design source, palettes and optional content frame |
+| `createChartTokens`, `ChartTokenSource`, `ChartTokens`, `defaultChartTokens` | Host-derived portable layout roles and explicitly standalone defaults |
+| `chartsThemes`, `ChartsThemes`, `chartFrame` | Standalone fallback pair and optional content frame |
+| `createChartFrame`, `createChartsStyleAdapter` | Bind the frame and HTML adapter to one host-resolved theme pair |
+| `METRIC_GLYPHS` | Semantic direction alternatives, independent of geometry |
 | `chartsStyleAdapter`, `CHART_STYLE_COLLECTOR` | HTML/snapshot styling and compatibility tag |
 | `ChartStyleCollector`, `ChartsRenderContext`, `ChartsTheme` | Collector, optional host event/theme context, frame palette |
 | `metricContrast` | Black/white contrast choice for opaque six-digit authored colors |
@@ -108,3 +115,12 @@ The root exports the `/model` API below, plus:
 The root requires React and Zod peers. `react-dom` belongs to the host rendering
 HTML/snapshot through the runtime, not this pack's root. Packages publish
 CommonJS for Node, ESM for bundlers and declarations, at the workspace version.
+
+## Source map for reviewers
+
+The public `/model` entry is a curated barrel. `model/declarations.ts` owns field
+shapes and inferred types; `model/validation.ts` names the cross-reading and
+cross-tile checks. `model/readings.ts` owns formatting and comparison rules,
+`model/collapse.ts` owns presentation aggregation, and
+`model/presentation.ts` owns alignment, paint selection and nonvisual output.
+Those modules remain platform-neutral and keep the same public model exports.

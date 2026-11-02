@@ -95,14 +95,23 @@ export {
 export {
   type ChartsRenderContext,
   type ChartsTheme,
+  type ChartsThemes,
   type ChartStyleCollector,
   CHART_STYLE_COLLECTOR,
-  CHART_THEME,
   chartFrame,
   chartsStyleAdapter,
   chartsThemes,
+  createChartFrame,
+  createChartsStyleAdapter,
   metricContrast,
 } from './theme';
+export {
+  type ChartTokens,
+  type ChartTokenSource,
+  METRIC_GLYPHS,
+  createChartTokens,
+  defaultChartTokens,
+} from './tokens';
 export {
   type MetricTrendNode,
   type MetricViewProps,

@@ -9,12 +9,13 @@ import '@elastic/charts/dist/theme_light.css';
 
 import { useState } from 'react';
 import {
-  CHART_THEME,
-  chartsThemes,
   metricExamples,
   metricTrendSchema,
 } from '@elastic/isomer-primitives-charts';
-import { MetricTrendChart } from '@elastic/isomer-renderers-elastic-charts';
+import {
+  elasticChartsThemes,
+  MetricTrendChart,
+} from '@elastic/isomer-renderers-elastic-charts';
 import type { StudioAppProps } from '@elastic/isomer-studio';
 
 export default function MetricApp({ theme }: StudioAppProps) {
@@ -39,7 +40,8 @@ export default function MetricApp({ theme }: StudioAppProps) {
     error = caught.message;
   }
   return (
-    <section style={{ padding: CHART_THEME.frame.padding }}>
+    <section
+      style={{ padding: elasticChartsThemes[theme].tokens.frame.padding }}>
       <h1>Metric / trend</h1>
       <p>
         Portable metric fixtures and Elastic Charts browser rendering. Synthetic
@@ -79,7 +81,7 @@ export default function MetricApp({ theme }: StudioAppProps) {
       {result?.success ? (
         <MetricTrendChart
           node={result.data}
-          theme={chartsThemes[theme]}
+          theme={elasticChartsThemes[theme]}
           context={{ onEvent: (event) => setLastAction(JSON.stringify(event)) }}
         />
       ) : null}

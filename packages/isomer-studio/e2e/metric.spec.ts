@@ -124,13 +124,17 @@ for (const mode of ['dev', 'static']) {
       await expect(table).toContainText('gap');
       await expect(chart.locator('.echMetricText__title')).toHaveCSS(
         'color',
-        'rgb(255, 255, 255)'
+        'rgb(17, 28, 44)'
       );
       await page.getByRole('button', { name: 'Dark', exact: true }).click();
       await expect(chart.locator('.echMetricText__title')).toHaveCSS(
         'color',
-        'rgb(0, 0, 0)'
+        'rgb(17, 28, 44)'
       );
+      await page.screenshot({
+        path: testInfo.outputPath(`metric-${mode}-dark.png`),
+        fullPage: true,
+      });
       await page.getByRole('button', { name: 'Light', exact: true }).click();
       await chart.locator('[data-elastic-trend] canvas').waitFor();
       await page.screenshot({

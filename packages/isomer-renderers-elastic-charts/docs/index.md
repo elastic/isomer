@@ -17,13 +17,18 @@ peer rather than a bundled copy.
 ```ts
 import '@elastic/charts/dist/theme_light.css';
 
-import { chartFrame, chartsPack } from '@elastic/isomer-primitives-charts';
-import { elasticChartsRendererOverrides } from '@elastic/isomer-renderers-elastic-charts';
+import {
+  chartsPack, createChartFrame, createChartsStyleAdapter,
+} from '@elastic/isomer-primitives-charts';
+import {
+  elasticChartsRendererOverrides, elasticChartsThemes,
+} from '@elastic/isomer-renderers-elastic-charts';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 
 const runtime = createIsomerRuntime({
   packs: [chartsPack],
-  frames: { chart: chartFrame },
+  frames: { chart: createChartFrame(elasticChartsThemes) },
+  styleAdapter: createChartsStyleAdapter(elasticChartsThemes),
   rendererOverrides: elasticChartsRendererOverrides,
 });
 ```
@@ -31,7 +36,27 @@ const runtime = createIsomerRuntime({
 Load Elastic Charts' structural stylesheet in the browser host, not a Node
 entry. The package root intentionally imports no CSS so CommonJS consumers can
 load it. `MetricTrendChart` can also be mounted directly with a validated `node`,
-`theme` and optional `context.onEvent`.
+`theme`, optional host `baseTheme`, and optional `context.onEvent`.
+
+The browser inherits Elastic Charts' typography, responsive value sizing,
+contrast and un-authored layout defaults. Only application surface styles and
+explicit composition settings override them; there is no hardcoded Arial/40px
+value or parallel browser visualization palette.
+
+For an application host, obtain its resolved light/dark engine themes (for
+example Kibana's chart theme service, which uses `getChartsTheme(coreTheme)`).
+Use `projectElasticChartsTheme(base, mode, statusColors, tokens)` to create the
+portable theme for each mode; `tokens` can come from `createChartTokens` with
+the application's typography and spacing. Status colors are explicit because an
+engine palette does not encode good/bad semantics. Pass the portable pair to
+`createChartFrame` and `createChartsStyleAdapter`, and the engine pair to
+`createElasticChartsRendererOverrides`. Direct mounts receive both `theme` and
+`baseTheme`. Host themes are consumed without mutating engine singletons.
+
+`elasticChartsThemes` is the standalone projection of installed engine defaults,
+with fallback semantic status colors. The primitive pack's `chartsThemes` is
+instead a standalone portable fallback, not an EUI/Elastic Charts theme.
+See [Theme ownership and the Kibana comparison](../../isomer-primitives-charts/docs/theme.md).
 
 The component renders `MetricView`, the pack's shared React tree, on the server
 and initial hydration. After mount it supplies Elastic Charts tile content to
@@ -57,9 +82,12 @@ disabled in the shared browser-only host.
 
 | Entry/export | Contract |
 | --- | --- |
-| Root `MetricTrendChart` | Mounted browser renderer; props are validated `MetricTrendNode`, optional `ChartsTheme` (light by default), optional `ChartsRenderContext` |
+| Root `MetricTrendChart` | Mounted browser renderer; validated `MetricTrendNode`, optional portable `theme`, optional host engine `baseTheme`, optional `context` |
 | Root `metricDatum(node, tile, theme)` | Pure adapter returning exact Elastic Charts `MetricDatum`, including secondary badges and optional progress |
 | Root `elasticChartsRendererOverrides` | React-only runtime override map; no parsing, collection, fallback or inventory replacement |
+| Root `createElasticChartsRendererOverrides` | Bind React overrides to a host-resolved light/dark engine theme pair |
+| Root `projectElasticChartsTheme`, `ElasticChartsThemeSource` | Explicit engine-to-portable projection with a structural input, without leaking engine declaration internals |
+| Root `elasticChartsThemes` | Standalone engine-default projections for consistent browser/HTML/snapshot setup |
 | `/testing` `metricCaptureSchema`, `MetricCaptureFixture` | Version-1 closed fixture and inferred type for a sanitized authorized real Lens reference |
 | `/testing` `compareMetricCapture` | Node-only matched-context semantic/pixel gate |
 | `/testing` `MetricCapturePixels`, `MetricCaptureCandidate`, `MetricCaptureResult` | Decoded RGBA inputs, observed visible text, portable candidate model/context and explicit passed/failed result |
