@@ -68,6 +68,9 @@ the default image behavior.
 The root repository config uses browser-only mode with slides and Decks alongside the
 [Lens envelope/response inspector](../../isomer-lowering-lens/docs/index.md#browser-inspector).
 The inspector replays supplied responses locally; it does not execute queries.
+The separate [Metric / trend app](../../isomer-renderers-elastic-charts/docs/index.md)
+renders validated portable fixtures with Elastic Charts. It uses its own chart
+theme rather than mixing chart and slide palettes, and does not bind Lens input.
 The slides pack's own config keeps images enabled. Custom apps should follow Decks
 and hide image actions when `rasterizePng` or `renderPdf` is absent.
 

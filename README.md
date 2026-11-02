@@ -128,8 +128,10 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Browse, check, and publish a pack's primitives | [`@elastic/isomer-studio`](packages/isomer-studio/README.md) |
 | Hand a runtime to an agent as tools | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 | Plan native ES\|QL Lens and inspect recorded responses | [`@elastic/isomer-lowering-lens`](packages/isomer-lowering-lens/README.md) |
+| Author portable metric/trend tiles and adaptations | [`@elastic/isomer-primitives-charts`](packages/isomer-primitives-charts/README.md) |
+| Render metric/trend in the browser with Elastic Charts | [`@elastic/isomer-renderers-elastic-charts`](packages/isomer-renderers-elastic-charts/README.md) |
 
-The published packages ship together at one version: the SDK and runtime, a host-side rasterizer, the Studio, and the portable Lens lowering core. The reference pack, the evals harness, and the agent tools stay private in the repository.
+The published packages ship together at one version: the SDK and runtime, a host-side rasterizer, the Studio, the portable Lens lowering core, and metric/trend primitives and browser rendering. The slides reference pack, the evals harness, and the agent tools stay private in the repository.
 
 ## Development
 

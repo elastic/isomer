@@ -49,7 +49,18 @@ Docs define behavior; instructions guide changes. Investigate discrepancies rath
 
 The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, and `surfaces/`. Stage barrels there are hand-maintained the same way as the SDK's.
 
-`packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
+`packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Host-specific Kibana packs iterate in that repo; the portable chart contract and browser renderer below are owned here.
+
+`packages/isomer-primitives-charts` owns the portable metric/trend model, primitive,
+theme and adaptations. Its `/model` entry is platform-neutral. Read its
+[contract](packages/isomer-primitives-charts/docs/index.md) and
+[metric inventory](packages/isomer-primitives-charts/docs/metric.md).
+`packages/isomer-renderers-elastic-charts` supplies React-only browser overrides
+and the matched-capture comparison gate; read its
+[contract and real-reference blocker](packages/isomer-renderers-elastic-charts/docs/index.md).
+These packages contain no Lens binders, form-based planning, query execution,
+gauges or other chart types. Keep their runtime theme homogeneous and preserve
+the primitive's collector when applying overrides.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
