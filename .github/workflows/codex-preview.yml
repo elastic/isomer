@@ -46,81 +46,9 @@ jobs:
           files: |
             docs/**
             packages/*/docs/**
-            packages/**
-            scripts/**
-            isomer-studio.config.ts
-            package.json
-            pnpm-lock.yaml
-            pnpm-workspace.yaml
-            tsconfig*.json
-            .github/workflows/codex-preview.yml
-            .github/actions/isomer-studio/**
           files_ignore: |
+            .github/**
             README.md
-
-  studio:
-    needs: check
-    if: needs.check.outputs.any_modified == 'true'
-    outputs:
-      producer_attempt: ${{ steps.identity.outputs.attempt }}
-    permissions:
-      contents: read
-    runs-on: ubuntu-latest
-    env:
-      STUDIO_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      STUDIO_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
-      STUDIO_BROWSER_BASE: /_preview/${{ github.repository }}/${{ github.event_name == 'pull_request' && format('pull/{0}', github.event.pull_request.number) || format('tree/{0}', github.ref_name) }}/studio/${{ github.event.pull_request.head.sha || github.sha }}/${{ github.run_id }}-${{ github.run_attempt }}/
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ env.STUDIO_HEAD_SHA }}
-          persist-credentials: false
-      - uses: pnpm/action-setup@v6.0.6
-      - uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - uses: ./.github/actions/playwright-chromium
-      - run: pnpm build
-      - uses: ./.github/actions/isomer-studio
-        with:
-          config: isomer-studio.config.ts
-          out: .artifacts/studio
-          base: ${{ env.STUDIO_BROWSER_BASE }}
-          report: .artifacts/studio-report.xml
-          artifact-name: studio-${{ env.STUDIO_HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
-          upload-site: 'false'
-      - name: Record head build identity
-        run: node scripts/studio_provenance.js .artifacts/studio
-      - name: Record producer attempt
-        id: identity
-        run: printf 'attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
-      - name: Browser-only artifact smoke check
-        env:
-          STUDIO_BROWSER_SITE: .artifacts/studio
-        run: pnpm test:browser browser_only.spec.ts
-      - name: Upload head Studio
-        uses: actions/upload-artifact@v4
-        with:
-          name: studio-${{ env.STUDIO_HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .artifacts/studio
-          if-no-files-found: error
-      - name: Upload browser failure evidence
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: studio-browser-failures-${{ env.STUDIO_HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            test-results/
-            playwright-report/
-          if-no-files-found: ignore
-      - name: Review artifact
-        env:
-          REVIEW_RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          printf '### Browser-only Studio\nHead: `%s`\n\nRun: %s (attempt %s)\n\nExamples only; no live data. Forks can download and serve the artifact locally.\n' \
-            "$STUDIO_HEAD_SHA" "$REVIEW_RUN" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_STEP_SUMMARY"
 
   build:
     needs: check
@@ -149,7 +77,7 @@ jobs:
           && needs.check.outputs.any_modified == 'true'
         run: |
           echo "::warning::Preview deployments are only available for PRs from the same repository, not from forks." \
-            "Use the downloadable Studio artifact, or push an authorized branch to the upstream repository."
+            "You can either change the event to pull_request_target or push the branch to the upstream repository instead."
       - name: Skip build
         if: needs.check.outputs.any_modified == 'false'
         run: |
@@ -157,35 +85,17 @@ jobs:
 
   deploy:
     if: >
-      !cancelled()
-      && needs.build.result == 'success'
-      && needs.check.outputs.any_modified == 'true'
-      && github.event_name == 'pull_request'
+      needs.check.outputs.any_modified == 'true'
+      && contains(fromJSON('["pull_request", "pull_request_target"]'), github.event_name)
       && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       id-token: write
       deployments: write
-      actions: read
-      pull-requests: read
     needs:
       - check
       - build
-      - studio
     runs-on: ubuntu-latest
     steps:
-      - name: Verify deployment eligibility
-        uses: actions/github-script@v9
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        with:
-          script: |
-            const pr = await github.rest.pulls.get({
-              ...context.repo, pull_number: context.payload.pull_request.number,
-            });
-            if (pr.data.state !== 'open' || pr.data.head.sha !== process.env.HEAD_SHA ||
-                pr.data.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
-              throw new Error('Documentation preview is stale or no longer eligible.');
-            }
       - name: Create Deployment
         uses: actions/github-script@v9
         id: deployment
@@ -229,112 +139,6 @@ jobs:
             find docs -type l -ls
             exit 1
           fi
-      - name: Download independently identified Studio archive
-        id: archive
-        if: needs.studio.result == 'success'
-        uses: actions/github-script@v9
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          PRODUCER_ATTEMPT: ${{ needs.studio.outputs.producer_attempt }}
-        with:
-          script: |
-            const { createHash } = require('node:crypto');
-            const { writeFileSync } = require('node:fs');
-            const pr = await github.rest.pulls.get({
-              ...context.repo, pull_number: context.payload.pull_request.number,
-            });
-            if (pr.data.state !== 'open' || pr.data.head.sha !== process.env.HEAD_SHA ||
-                pr.data.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
-              throw new Error('Studio preview is stale or no longer eligible.');
-            }
-            const run = await github.rest.actions.getWorkflowRun({
-              ...context.repo, run_id: context.runId,
-            });
-            if (run.data.event !== 'pull_request' ||
-                run.data.path !== '.github/workflows/codex-preview.yml' ||
-                run.data.repository.full_name !== `${context.repo.owner}/${context.repo.repo}` ||
-                run.data.run_attempt !== Number(process.env.RUN_ATTEMPT)) {
-              throw new Error('Unexpected Studio workflow identity.');
-            }
-            const attempt = Number(process.env.PRODUCER_ATTEMPT);
-            if (!Number.isSafeInteger(attempt) || attempt < 1 ||
-                attempt > Number(process.env.RUN_ATTEMPT)) {
-              throw new Error('Invalid Studio producer attempt.');
-            }
-            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
-              ...context.repo, run_id: context.runId, attempt_number: attempt, per_page: 100,
-            });
-            const producers = jobs.filter(job => job.name === 'studio' &&
-              job.conclusion === 'success' && job.run_attempt === attempt);
-            if (producers.length !== 1) throw new Error('Unverified Studio producer job.');
-            const name = `studio-${process.env.HEAD_SHA}-${context.runId}-${attempt}`;
-            const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
-              ...context.repo, run_id: context.runId, per_page: 100,
-            });
-            const found = artifacts.filter(a => a.name === name && !a.expired);
-            if (found.length !== 1 || !/^sha256:[a-f0-9]{64}$/.test(found[0].digest ?? '')) {
-              throw new Error('Missing, ambiguous or unverifiable Studio artifact.');
-            }
-            const artifact = found[0];
-            const archive = await github.rest.actions.downloadArtifact({
-              ...context.repo, artifact_id: artifact.id, archive_format: 'zip',
-            });
-            const bytes = Buffer.from(archive.data);
-            const digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
-            if (digest !== artifact.digest) throw new Error('Studio archive digest mismatch.');
-            writeFileSync('studio.zip', bytes);
-            core.setOutput('producer-attempt', String(attempt));
-            core.summary.addRaw(`Studio artifact ${artifact.id}, ${digest}\n`).write();
-      - name: Validate and stage browser-only Studio
-        if: needs.studio.result == 'success'
-        env:
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ steps.archive.outputs.producer-attempt }}
-          REPOSITORY: ${{ github.repository }}
-          PREVIEW_PREFIX: ${{ needs.build.outputs.path_prefix }}
-        run: |
-          python3 - <<'PY'
-          import json, os, pathlib, stat, zipfile
-          head, run, attempt = (os.environ[k] for k in ('HEAD_SHA', 'RUN_ID', 'RUN_ATTEMPT'))
-          target = pathlib.Path('docs') / 'studio' / head / f'{run}-{attempt}'
-          with zipfile.ZipFile('studio.zip') as archive:
-              entries = archive.infolist()
-              if len(entries) > 20000 or sum(e.file_size for e in entries) > 512 * 1024 * 1024:
-                  raise ValueError('Studio archive exceeds deployment limits')
-              paths = set()
-              for entry in entries:
-                  path = pathlib.PurePosixPath(entry.filename)
-                  kind = stat.S_IFMT(entry.external_attr >> 16)
-                  if (path.is_absolute() or '..' in path.parts or '\\' in entry.filename
-                          or str(path) != entry.filename.rstrip('/')
-                          or kind not in (0, stat.S_IFREG, stat.S_IFDIR)
-                          or entry.filename in paths):
-                      raise ValueError('Unsafe Studio archive entry')
-                  paths.add(entry.filename)
-              if archive.getinfo('build.json').file_size > 64 * 1024:
-                  raise ValueError('Studio build metadata is too large')
-              metadata = json.loads(archive.read('build.json'))
-              expected = dict(version=1, headSha=head, checkoutSha=head,
-                              repository=os.environ['REPOSITORY'],
-                              runId=run, runAttempt=attempt,
-                              prNumber=os.environ['PR_NUMBER'],
-                              config='isomer-studio.config.ts', images=False,
-                              data='examples-only; no live data')
-              expected['base'] = f"{os.environ['PREVIEW_PREFIX']}/studio/{head}/{run}-{attempt}/"
-              if any(type(metadata.get(k)) is not type(v) or metadata.get(k) != v for k, v in expected.items()):
-                  raise ValueError('Studio build provenance mismatch')
-              if 'index.html' not in paths or any(p.startswith('png/') for p in paths):
-                  raise ValueError('Not a browser-only Studio')
-              if target.exists():
-                  raise ValueError('Studio deployment path already exists')
-              archive.extractall(target)
-          PY
-      - name: Report unavailable Studio preview
-        if: needs.studio.result != 'success'
-        run: echo "::warning::Studio build did not succeed. Deploying documentation without a Studio preview; inspect the Studio job for the failure."
       - uses: elastic/docs-actions/aws/auth@v1
         with:
           aws_role_name_prefix: codex-eng-preview-
@@ -370,15 +174,6 @@ jobs:
               environment_url: `https://codex.elastic.dev${process.env.PATH_PREFIX}`,
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
-      - name: Studio preview location
-        if: steps.s3-upload.outcome == 'success' && needs.studio.result == 'success'
-        env:
-          PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PRODUCER_ATTEMPT: ${{ steps.archive.outputs.producer-attempt }}
-        run: |
-          printf '### Studio preview (live verification pending)\nhttps://codex.elastic.dev%s/studio/%s/%s-%s/\n\nHead: `%s`. Verify JS/WASM/CSS/fonts and both themes before treating this as hosted browser evidence.\n' \
-            "$PATH_PREFIX" "$HEAD_SHA" "$GITHUB_RUN_ID" "$PRODUCER_ATTEMPT" "$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
 
   update-link-index:
     needs:

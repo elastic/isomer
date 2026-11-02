@@ -745,6 +745,26 @@ describe('IsomerStudio', () => {
       }
     });
 
+    it('disables supplied image capabilities when images is false', async () => {
+      const rasterizePng = vi.fn<RasterizePng>();
+      render(
+        <IsomerStudio
+          runtime={framedRuntime}
+          images={false}
+          {...{ rasterizePng }}
+        />
+      );
+      await findEditor();
+
+      expect(
+        screen.getByRole('region', { name: 'Web preview' })
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'PNG preview' })
+      ).not.toBeInTheDocument();
+      expect(rasterizePng).not.toHaveBeenCalled();
+    });
+
     it('shows the host rasterization beneath the snapshot surface', async () => {
       const rasterizePng = vi
         .fn<RasterizePng>()

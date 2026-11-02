@@ -57,28 +57,17 @@ export default defineStudioConfig({
 });
 ```
 
-`build` writes no `png/` directory. Neither static nor dev hosts advertise PNG
-or PDF actions, and the static host does not fetch a PNG manifest. Dev's `/png`
-and `/pdf` routes return 404 with an explicit disabled message. The backend and
-the `imageFonts` module are not loaded. `check --png` rejects the contradictory
-config rather than silently skipping the requested check.
+This skips the image backend, `imageFonts` and PNG prerendering. The Studio hides
+PNG/PDF controls, does not fetch a PNG manifest, and returns 404 for dev `/png`
+and `/pdf` requests. `check --png` rejects this config.
 
-This is not a runtime surface switch: the Web panel still shows the runtime's
-React/HTML/snapshot markup, and `check` still checks snapshot markup when the
-runtime provides it. JSX editing, apps and existing editor workers continue
-to work. Hot updates change image availability without reloading the page or
-discarding the editor draft. Omitting `images`, or setting it to `true`,
-preserves existing PNG/PDF behavior.
+React/HTML/snapshot markup, JSX editing and apps are unaffected. Hot updates
+retain the route and editor draft. Omit `images` or set it to `true` to preserve
+the default image behavior.
 
-The repository's shared `isomer-studio.config.ts` selects this mode, retaining
-the slides pack and Decks app. The slides pack's own example config retains the
-default image-enabled behavior for consumer coverage. The root TypeScript
-config includes the slides sources, apps and decks so the Node config loader
-applies the same JSX settings across that shared config's imports.
-
-Apps should hide image actions when the corresponding host capability is
-absent. Decks hides its PDF action without `renderPdf`, including static builds,
-rather than showing an unavailable download.
+The root repository config uses browser-only mode with slides and Decks; the
+slides pack's own config keeps images enabled. Custom apps should follow Decks
+and hide image actions when `rasterizePng` or `renderPdf` is absent.
 
 ## Featured primitives
 

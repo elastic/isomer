@@ -288,8 +288,9 @@ const Studio = ({
   colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
-  const rasterizePng = images === false ? undefined : hostRasterizePng;
-  const renderPdf = images === false ? undefined : hostRenderPdf;
+  const imagesEnabled = images === undefined || images === true;
+  const rasterizePng = imagesEnabled ? hostRasterizePng : undefined;
+  const renderPdf = imagesEnabled ? hostRenderPdf : undefined;
   const docs = useMemo(() => describeRuntime(runtime), [runtime]);
   const shim = useMemo(() => createShim(runtime.primitives), [runtime]);
   const schemaFor = useCallback(

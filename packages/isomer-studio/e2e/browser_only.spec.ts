@@ -28,7 +28,7 @@ const cli =
 const config =
   process.env.STUDIO_CONFIG ?? join(root, 'isomer-studio.config.ts');
 const route = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
-const base = process.env.STUDIO_BROWSER_BASE ?? '/review/nested/';
+const base = '/studio/';
 
 test('browser-only static build keeps Web/JSX/apps without image requests', async ({
   page,
@@ -105,13 +105,8 @@ Module._load = function (id, ...args) {
       }
     });
     page.on('pageerror', (error) => errors.push(error.message));
-    // Codex canonicalizes the directory URL without a trailing slash.
+    // The absolute base must also work when a host omits the trailing slash.
     await page.goto(`${server.url.slice(0, -1)}${route}`);
-    if (process.env.STUDIO_BROWSER_SITE) {
-      await expect(
-        page.getByRole('complementary', { name: 'Build provenance' })
-      ).toContainText(process.env.STUDIO_HEAD_SHA!);
-    }
     await expect(page.locator('.monaco-editor').first()).toBeVisible();
     await expect(
       page.getByRole('region', { name: 'Web preview', exact: true })

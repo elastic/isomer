@@ -47,6 +47,51 @@ jobs:
             playwright-report/
           if-no-files-found: ignore
 
+  studio:
+    name: Studio preview
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    env:
+      STUDIO_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      STUDIO_BROWSER_SITE: .artifacts/studio
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.STUDIO_HEAD_SHA }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright-chromium
+      - run: pnpm build
+      - name: Confirm preview source
+        run: |
+          test "$(git rev-parse HEAD)" = "$STUDIO_HEAD_SHA"
+          printf 'Studio source: `%s` (run %s, attempt %s)\n' \
+            "$STUDIO_HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_STEP_SUMMARY"
+      - uses: ./.github/actions/isomer-studio
+        with:
+          config: isomer-studio.config.ts
+          out: .artifacts/studio
+          base: /studio/
+          report: .artifacts/studio-report.xml
+          artifact-name: studio-${{ env.STUDIO_HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Exercise the built preview
+        run: pnpm test:browser browser_only.spec.ts --grep 'browser-only static build'
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-browser-failures-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test-results/
+            playwright-report/
+          if-no-files-found: ignore
+
   peers:
     name: peers (${{ matrix.target }})
     runs-on: ubuntu-latest

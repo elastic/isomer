@@ -71,17 +71,7 @@ export const mountStudio = (
     root.render(
       <IsomerStudio
         {...next}
-        {...{ apps, transformJsx }}
-        rasterizePng={
-          next.images === undefined || next.images === true
-            ? rasterizePng
-            : undefined
-        }
-        renderPdf={
-          next.images === undefined || next.images === true
-            ? renderPdf
-            : undefined
-        }
+        {...{ apps, transformJsx, rasterizePng, renderPdf }}
         configProblems={problems}
       />
     );
