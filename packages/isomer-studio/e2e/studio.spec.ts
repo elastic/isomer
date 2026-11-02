@@ -210,8 +210,7 @@ const editFirstString = async (page: Page) => {
 
 const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
-/** Opens the app from Home and the nav, deep-links a sub-path in a fresh document, and checks its styles and `Preview`. */
-const exerciseApp = async (page: Page, url: string) => {
+const navigateApp = async (page: Page, url: string) => {
   await page.goto(url);
   await expect(
     page.getByRole('heading', {
@@ -245,9 +244,9 @@ const exerciseApp = async (page: Page, url: string) => {
       ).toBeVisible();
     }
   }
+};
 
-  // Force a document load without racing reload against a same-document hash navigation.
-  await page.goto('about:blank');
+const exerciseApp = async (page: Page, url: string) => {
   await page.goto(`${url}#/app/${APP_ID}/a/b`);
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/a/b$`));
   const main = page.locator('main').first();
@@ -646,7 +645,13 @@ test.describe('static build', () => {
     await expect(railButtons.last()).toBeInViewport();
   });
 
-  test('serves apps, their chunks and their CSS from the sub-path', async ({
+  test('opens apps from Home, the nav and page links', async ({ page }) => {
+    const problems = watchProblems(page);
+    await navigateApp(page, site.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('serves a deep-linked app, its chunks and CSS from the sub-path', async ({
     page,
   }) => {
     const problems = watchProblems(page);
@@ -1385,7 +1390,13 @@ test.describe('dev server', () => {
     expect(problems).toEqual([]);
   });
 
-  test('serves apps and their CSS', async ({ page }) => {
+  test('opens apps from Home, the nav and page links', async ({ page }) => {
+    const problems = watchProblems(page);
+    await navigateApp(page, dev.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('serves a deep-linked app and its CSS', async ({ page }) => {
     const problems = watchProblems(page);
     await exerciseApp(page, dev.url);
     expect(problems).toEqual([]);
