@@ -73,6 +73,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # This job only runs `node` scripts; skip lockfile-based pnpm cache lookup.
+          package-manager-cache: false
       # A dispatch has no `before`, so it always ships.
       - id: ships
         env:
