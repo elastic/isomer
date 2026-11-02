@@ -197,13 +197,7 @@ const PdfButton = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string>();
   if (!renderPdf) {
-    return (
-      <EuiToolTip content="PDFs render under isomer-studio dev.">
-        <EuiButton size="s" iconType="download" isDisabled>
-          Download PDF
-        </EuiButton>
-      </EuiToolTip>
-    );
+    return null;
   }
   const onClick = async () => {
     setBusy(true);

@@ -150,6 +150,15 @@ Module._load = function (id, ...args) {
       await expect(
         page.getByRole('heading', { name: 'Decks', exact: true }).first()
       ).toBeVisible();
+      await page
+        .getByRole('button', { name: /Isomer: one composition, every surface/ })
+        .click();
+      await expect(
+        page.getByRole('button', { name: 'Start', exact: true })
+      ).toBeVisible();
+      await expect(page.getByRole('button', { name: /PDF/ })).toHaveCount(0);
+      await page.getByRole('button', { name: 'Start', exact: true }).click();
+      await expect(page.getByRole('button', { name: /PDF/ })).toHaveCount(0);
     }
     await expect(page.getByRole('button', { name: /PDF/ })).toHaveCount(0);
     expect(images).toEqual([]);
