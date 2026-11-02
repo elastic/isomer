@@ -11,13 +11,12 @@ import { nodeAnchor, type PrimitiveNode } from '@elastic/isomer-sdk';
 import {
   alignMetricTrends,
   compareMetric,
-  metricText,
   type MetricTile,
   metricTileColor,
-  metricTiles,
-  metricTimeLabel,
   type MetricTrendModel,
 } from './model';
+import { metricTiles } from './model/collapse';
+import { metricText, metricTimeLabel } from './model/presentation';
 import { formatReading, formatSample } from './model/readings';
 import {
   type ChartsRenderContext,

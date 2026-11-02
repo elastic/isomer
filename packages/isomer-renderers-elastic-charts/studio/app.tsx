@@ -8,10 +8,8 @@
 import '@elastic/charts/dist/theme_light.css';
 
 import { useState } from 'react';
-import {
-  metricExamples,
-  metricTrendSchema,
-} from '@elastic/isomer-primitives-charts';
+import { metricExamples } from '@elastic/isomer-primitives-charts';
+import { metricTrendSchema } from '@elastic/isomer-primitives-charts/model';
 import {
   elasticChartsThemes,
   MetricTrendChart,

@@ -20,18 +20,20 @@ import {
   Settings,
 } from '@elastic/charts';
 import {
-  alignMetricTrends,
   type ChartsRenderContext,
   type ChartsTheme,
-  compareMetric,
-  formatMetricValue,
   METRIC_GLYPHS,
-  type MetricTile,
-  metricTileColor,
   type MetricTrendNode,
   metricTrendPrimitive,
   MetricView,
 } from '@elastic/isomer-primitives-charts';
+import {
+  alignMetricTrends,
+  compareMetric,
+  formatMetricValue,
+  type MetricTile,
+  metricTileColor,
+} from '@elastic/isomer-primitives-charts/model';
 
 import {
   elasticChartsThemes,

@@ -14,7 +14,8 @@ import {
 import { md } from '@elastic/isomer-sdk/markdown';
 
 import { metricExamples } from './examples';
-import { metricText, metricTrendSchema } from './model';
+import { metricTrendSchema } from './model';
+import { metricText } from './model/presentation';
 import {
   type ChartsRenderContext,
   chartsStyleAdapter,
@@ -83,22 +84,6 @@ export const chartsPack = definePrimitivePack<ChartsTheme>({
 });
 
 export { metricExamples } from './examples';
-export {
-  type AlignedMetricPoint,
-  type MetricComparison,
-  type MetricFormat,
-  type MetricReading,
-  type MetricTile,
-  type MetricTrendModel,
-  alignMetricTrends,
-  compareMetric,
-  formatMetricValue,
-  metricText,
-  metricTileColor,
-  metricTiles,
-  metricTimeLabel,
-  metricTrendSchema,
-} from './model';
 export {
   type ChartsRenderContext,
   type ChartsTheme,

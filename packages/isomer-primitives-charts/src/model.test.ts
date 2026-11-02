@@ -12,15 +12,14 @@ import {
   alignMetricTrends,
   compareMetric,
   formatMetricValue,
-  metricText,
   type MetricTile,
   metricTileColor,
-  metricTiles,
-  metricTimeLabel,
   type MetricTrendModel,
   metricTrendSchema,
 } from './model';
+import { metricTiles } from './model/collapse';
 import { METRIC_LIMITS } from './model/declarations';
+import { metricText, metricTimeLabel } from './model/presentation';
 
 const base = (): MetricTrendModel => ({
   type: 'metricTrend',

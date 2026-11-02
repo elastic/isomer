@@ -5,10 +5,10 @@
  * 2.0.
  */
 
-export { metricTiles } from './model/collapse';
 /**
- * Platform-neutral metric contract. Declarations, cross-field validation,
- * reading semantics and presentation aggregation are kept in separate modules.
+ * Platform-neutral `./model` import boundary: schemas, resolved model types and
+ * the reading/paint/alignment rules every renderer shares. Later chart families
+ * add their own names here as they land; React, engines and the pack stay out.
  */
 export {
   type MetricFormat,
@@ -19,9 +19,7 @@ export {
 export {
   type AlignedMetricPoint,
   alignMetricTrends,
-  metricText,
   metricTileColor,
-  metricTimeLabel,
 } from './model/presentation';
 export {
   type MetricComparison,

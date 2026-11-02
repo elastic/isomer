@@ -52,7 +52,10 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Host-specific Kibana packs iterate in that repo; the portable chart contract and browser renderer below are owned here.
 
 `packages/isomer-primitives-charts` owns the portable metric/trend model, primitive,
-theme and adaptations. Its `/model` entry is platform-neutral. Read its
+theme and adaptations. Its `/model` entry is the platform-neutral import
+boundary for schemas and resolved-model rules; the root is the pack/authoring
+API and does not re-export `/model`. Later chart families extend this package
+one complete slice at a time, exporting names only when that slice uses them. Read its
 [contract](packages/isomer-primitives-charts/docs/index.md) and
 [metric inventory](packages/isomer-primitives-charts/docs/metric.md).
 `packages/isomer-renderers-elastic-charts` supplies React-only browser overrides

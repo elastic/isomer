@@ -10,9 +10,9 @@ import {
   chartsPack,
   chartsThemes,
   metricExamples,
-  type MetricTile,
   type MetricTrendNode,
 } from '@elastic/isomer-primitives-charts';
+import type { MetricTile } from '@elastic/isomer-primitives-charts/model';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 

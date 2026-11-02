@@ -6,10 +6,18 @@ description: Portable metric/trend declarations, primitive, theme and nonvisual 
 # Charts
 
 `@elastic/isomer-primitives-charts` owns the portable `metricTrend` vocabulary.
-`/model` is platform-neutral: Zod schemas, inferred serializable types and pure
-formatting, alignment, comparison and collapse helpers. It reaches no React,
-SDK, runtime, browser engine or Lens module. The root adds the SDK primitive,
-React baseline, pack, collector and frame. Both entries use named exports.
+It has two deliberate entries with named exports and no overlap:
+
+- `/model` is the platform-neutral import boundary: Zod schemas, inferred
+  serializable types and the reading, comparison, paint and alignment rules a
+  renderer shares. It reaches no React, SDK, runtime, browser engine or Lens
+  module. Renderers and lowering code import model names only from here.
+- The root is the pack and authoring API: the SDK primitive, pack, examples,
+  React baseline view, theme, tokens and frame. It does not re-export `/model`.
+
+Later chart families (gauge, datatable and others) extend this same package one
+complete slice at a time, adding names to these entries only as each slice
+needs them. Nothing is exported in advance of the chart that uses it.
 
 This slice deliberately contains only metric/trend. There are no gauges,
 form-based Lens plans, Lens binders, saved-object interpretation, paste-to-render
@@ -82,7 +90,7 @@ Do not pass untrusted models directly to `MetricView` or pure helpers.
 
 ## Public API
 
-The root exports the `/model` API below, plus:
+Root exports:
 
 | Export | Contract |
 | --- | --- |
@@ -104,13 +112,11 @@ The root exports the `/model` API below, plus:
 | `MetricTrendModel`, `MetricTile`, `MetricReading`, `MetricFormat` | Inferred, JSON-serializable declarations |
 | `compareMetric`, `MetricComparison` | Exact signed difference, optional relative magnitude, neutral-by-default status and display text |
 | `alignMetricTrends`, `AlignedMetricPoint` | Sorted union of instants; independent primary/secondary nulls |
-| `metricTiles` | Effective tiles after optional homogeneous presentation collapse; never mutates sources |
 | `metricTileColor` | Explicit tile, matching palette and chart paint precedence, with independent status |
-| `formatMetricValue`, `metricTimeLabel` | Portable text formatting and timezone/offset-aware timestamp labels |
-| `metricText` | Shared semantic text adaptation |
+| `formatMetricValue` | Portable reading and sample formatting |
 
-`metricTiles`, `metricTimeLabel` and `metricText` are public so another renderer
-reuses collapse, time-label and nonvisual rules instead of copying them.
+Collapse, timestamp labels and the text adaptation stay internal; the shared
+view and the primitive's text/Markdown surfaces apply them.
 `metricTrendSchema` enforces the authoring budgets: 100 tiles, 2,000 points per
 series, 10,000 points across all tiles and series, and 1,000 characters per label.
 Relative change is suppressed at a magnitude of 1,000.
@@ -126,4 +132,4 @@ shapes and inferred types; `model/validation.ts` names the cross-reading and
 cross-tile checks. `model/readings.ts` owns formatting and comparison rules,
 `model/collapse.ts` owns presentation aggregation, and
 `model/presentation.ts` owns alignment, paint selection and nonvisual output.
-Those modules remain platform-neutral and keep the same public model exports.
+Those modules remain platform-neutral; only the barrel decides what is public.
