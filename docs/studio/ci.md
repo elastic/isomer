@@ -76,6 +76,10 @@ Give the app its own directory, not the one the Studio's or the pack's docs buil
 
 For eligible same-repository PRs, Isomer's Codex deployment stages the verified
 archive at `studio/<headSha>/<runId>-<attempt>/` below the docs preview prefix.
+It builds with that full absolute `base`, because Codex canonicalizes directory
+URLs without a trailing slash. `build.json` records this base, which deployment
+checks independently; to review a downloaded archive locally, serve its contents
+at that recorded path rather than at `/`.
 The deployment job executes no scripts from the PR checkout. Its summary gives
 the exact preview and artifact identity. An uploaded archive or successful S3
 sync is not proof the hosting policy permits an interactive app: verify the

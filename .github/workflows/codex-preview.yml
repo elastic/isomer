@@ -67,6 +67,7 @@ jobs:
     env:
       STUDIO_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       STUDIO_PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+      STUDIO_BROWSER_BASE: /_preview/${{ github.repository }}/${{ github.event_name == 'pull_request' && format('pull/{0}', github.event.pull_request.number) || format('tree/{0}', github.ref_name) }}/studio/${{ github.event.pull_request.head.sha || github.sha }}/${{ github.run_id }}-${{ github.run_attempt }}/
     steps:
       - uses: actions/checkout@v6
         with:
@@ -84,6 +85,7 @@ jobs:
         with:
           config: isomer-studio.config.ts
           out: .artifacts/studio
+          base: ${{ env.STUDIO_BROWSER_BASE }}
           report: .artifacts/studio-report.xml
           artifact-name: studio-${{ env.STUDIO_HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
           upload-site: 'false'
@@ -256,6 +258,7 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
           REPOSITORY: ${{ github.repository }}
+          PREVIEW_PREFIX: ${{ needs.build.outputs.path_prefix }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib, stat, zipfile
@@ -284,6 +287,7 @@ jobs:
                               prNumber=os.environ['PR_NUMBER'],
                               config='isomer-studio.config.ts', images=False,
                               data='examples-only; no live data')
+              expected['base'] = f"{os.environ['PREVIEW_PREFIX']}/studio/{head}/{run}-{attempt}/"
               if any(type(metadata.get(k)) is not type(v) or metadata.get(k) != v for k, v in expected.items()):
                   raise ValueError('Studio build provenance mismatch')
               if 'index.html' not in paths or any(p.startswith('png/') for p in paths):

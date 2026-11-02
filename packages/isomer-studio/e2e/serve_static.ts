@@ -34,9 +34,12 @@ export const serveStatic = async (
 ): Promise<StaticServer> => {
   const server = createServer((request, response) => {
     const { pathname } = new URL(request.url ?? '/', 'http://localhost');
-    const inside = pathname.startsWith(base)
-      ? pathname.slice(base.length)
-      : undefined;
+    const inside =
+      pathname === base.slice(0, -1)
+        ? ''
+        : pathname.startsWith(base)
+          ? pathname.slice(base.length)
+          : undefined;
     const relativePath =
       inside === undefined ? undefined : normalize(inside || 'index.html');
     if (relativePath === undefined || relativePath.startsWith('..')) {

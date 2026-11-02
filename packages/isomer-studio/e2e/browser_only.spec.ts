@@ -28,6 +28,7 @@ const cli =
 const config =
   process.env.STUDIO_CONFIG ?? join(root, 'isomer-studio.config.ts');
 const route = process.env.STUDIO_EDIT_ROUTE ?? '#/dev/slideHeading/0';
+const base = process.env.STUDIO_BROWSER_BASE ?? '/review/nested/';
 
 test('browser-only static build keeps Web/JSX/apps without image requests', async ({
   page,
@@ -89,13 +90,13 @@ Module._load = function (id, ...args) {
           '--out',
           site,
           '--base',
-          '/review/nested/',
+          base,
         ],
         { stdio: 'pipe' }
       );
     }
     expect(existsSync(join(site, 'png'))).toBe(false);
-    server = await serveStatic(site, '/review/nested/');
+    server = await serveStatic(site, base);
     const images: string[] = [];
     const errors: string[] = [];
     page.on('request', (request) => {
@@ -104,7 +105,8 @@ Module._load = function (id, ...args) {
       }
     });
     page.on('pageerror', (error) => errors.push(error.message));
-    await page.goto(`${server.url}${route}`);
+    // Codex canonicalizes the directory URL without a trailing slash.
+    await page.goto(`${server.url.slice(0, -1)}${route}`);
     if (process.env.STUDIO_BROWSER_SITE) {
       await expect(
         page.getByRole('complementary', { name: 'Build provenance' })
