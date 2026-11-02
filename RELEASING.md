@@ -25,7 +25,7 @@ Releases come only from `main`. A `feat:` commit releases the next minor; while 
 
 ## Snapshots under `next`
 
-Every push to `main` runs the **Changes** job in `release.yml`: `node scripts/publish_snapshot.js --since <previous head>` applies the rule above that decides which commits cut a release, and only a push that would count runs the **Snapshot** job. Snapshots publish from that file because npm Trusted Publishing is bound to it. The job runs `pnpm verify`, then `scripts/publish_snapshot.js`, which publishes every non-private package under the `next` dist-tag with no git tag, commit, or GitHub Release:
+Every push to `main` runs the **Changes** job in `release.yml`: `node scripts/publish_snapshot.js --since <previous head>` applies the rule above that decides which commits cut a release, and only a push that would count runs the **Snapshot** job. Snapshots publish from that file because npm Trusted Publishing is bound to it. The `ci` workflow has already verified the commit, so the job runs `pnpm build` and `pnpm check:pack-contents`, then `scripts/publish_snapshot.js`, which publishes every non-private package under the `next` dist-tag with no git tag, commit, or GitHub Release:
 
 - Every package shares one version, a prerelease of the patch after the latest `v*` tag: `<major>.<minor>.<patch + 1>-main.<UTC commit time>.g<short sha>`. It sorts after that release and before the next one, and no `latest` or `^x.y.z` range admits it.
 - Every `workspace:` dependency and peer resolves to that same snapshot (`workspace:*` exactly, `workspace:^` as `^<snapshot>`), so an `@next` set is one consistent build of `main`: `npm install @elastic/isomer-sdk@next @elastic/isomer-runtime@next` gets a matching pair, and the Studio's Takumi is the one it was built with.
@@ -35,7 +35,7 @@ To publish one by hand, dispatch **Publish a Release** with **snapshot** enabled
 
 ## Move CI onto shared infrastructure
 
-Pull-request checks currently run on GitHub Actions and call `pnpm verify`. A shared CI pipeline should call the same script.
+Pull-request checks currently run on GitHub Actions, which split the scripts `pnpm verify` runs across parallel jobs. A shared CI pipeline should call the same scripts.
 
 - [`catalog-info.yaml`](catalog-info.yaml) is the service-catalog descriptor. Add a pipeline resource there when the pipeline exists.
 - [`.buildkite/pull-requests.json`](.buildkite/pull-requests.json) is a disabled template for pull-request builds. Enable it and point `pipeline_slug` at the registered pipeline.

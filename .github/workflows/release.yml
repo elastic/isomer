@@ -104,8 +104,9 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
-      - uses: ./.github/actions/playwright-chromium
-      - run: pnpm verify
+      # `ci` verifies this commit; a snapshot only builds and checks what it packs.
+      - run: pnpm build
+      - run: pnpm check:pack-contents
       # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
       - run: npm install -g npm@^11.5.1
       # A prerelease under `next`; no tag, commit, or GitHub Release. See RELEASING.md.
