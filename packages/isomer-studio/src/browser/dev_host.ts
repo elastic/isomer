@@ -48,7 +48,9 @@ const renderPdf: RenderPdf = async (compositions, { title, signal } = {}) => {
 };
 
 /** `isomer-studio dev`: the server compiles JSX, rasterizes PNGs and writes PDFs. */
-export const devHost = ({ runtime }: StudioConfig): StudioHost => ({
+export const devHost = ({ runtime, images }: StudioConfig): StudioHost => ({
   transformJsx,
-  ...(runtime.surfaces.snapshot ? { rasterizePng, renderPdf } : {}),
+  ...(images !== false && runtime.surfaces.snapshot
+    ? { rasterizePng, renderPdf }
+    : {}),
 });

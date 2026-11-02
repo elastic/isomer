@@ -147,6 +147,9 @@ export const buildSite = async ({
     })
   );
 
+  if (config.images === false) {
+    return { pngs: 0, failures: [] };
+  }
   const rasterize = createRasterizer(
     config.runtime,
     imageFontsOf(config, configPath, importModule)

@@ -20,6 +20,8 @@ Check a pack and upload its Studio with the composite action, or with `isomer-st
 
 In this repository, run `pnpm build` first so the Studio's `lib/` exists.
 
+The shared browser-only config is built from the exact head in the Codex workflow, separately from merge-context verification. Artifact diagnostics are not trusted provenance; deployment derives expectations from GitHub event/API identity and verifies the archive digest before staging. See the [package CI docs](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/ci.md) for the trust boundary and separate hosted-evidence requirement.
+
 Related: [root and CLI](/studio/entry-points/root.md).
 
 [^docs]: Package docs

@@ -17,6 +17,7 @@ import { compositionKey } from '../model/composition_key';
 import type { PngManifest } from '../model/png_manifest';
 import { PngSurface } from '../surfaces/png_surface';
 
+import { devHost } from './dev_host';
 import { staticHost } from './static_host';
 
 const runtime = createIsomerRuntime<unknown, StyledRenderContext, unknown>({
@@ -136,5 +137,21 @@ describe('staticHost', () => {
       packs: [componentsPack],
     });
     expect(staticHost({ runtime: plain }).rasterizePng).toBeUndefined();
+  });
+
+  it('disables image hosts without fetching a manifest, retaining JSX and snapshot markup', () => {
+    const fetchMock = serveManifest();
+    for (const host of [staticHost, devHost]) {
+      const disabled = host({ runtime, images: false });
+      expect(disabled.rasterizePng).toBeUndefined();
+      expect(disabled.renderPdf).toBeUndefined();
+      expect(disabled.transformJsx).toBeTypeOf('function');
+      expect(host({ runtime, images: true }).rasterizePng).toBeTypeOf(
+        'function'
+      );
+      expect(host({ runtime }).rasterizePng).toBeTypeOf('function');
+    }
+    expect(runtime.surfaces.snapshot).toBeDefined();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

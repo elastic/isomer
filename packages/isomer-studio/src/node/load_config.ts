@@ -7,14 +7,13 @@
 
 import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import * as nodeModule from 'node:module';
-import { createRequire } from 'node:module';
+import nodeModule, { createRequire, register } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { ReactNode } from 'react';
-import type * as TsxCommonJsApi from 'tsx/cjs/api';
-import type * as TsxEsmApi from 'tsx/esm/api';
+import type { register as RegisterCommonJs } from 'tsx/cjs/api';
+import type { register as RegisterEsm } from 'tsx/esm/api';
 import type { ScopedImport } from 'tsx/esm/api';
 
 import type { StudioConfig } from '../config';
@@ -209,7 +208,10 @@ const registerTsx = async (
     (await Promise.all([
       importNative('tsx/cjs/api'),
       importNative('tsx/esm/api'),
-    ])) as [typeof TsxCommonJsApi, typeof TsxEsmApi];
+    ])) as [
+      { register: typeof RegisterCommonJs },
+      { register: typeof RegisterEsm },
+    ];
   const previous = process.env.TSX_TSCONFIG_PATH;
   if (tsconfig !== undefined) {
     process.env.TSX_TSCONFIG_PATH = tsconfig;
@@ -240,6 +242,9 @@ export const studioConfigFrom = (
     throw new Error(
       `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
     );
+  }
+  if (config.images !== undefined && typeof config.images !== 'boolean') {
+    throw new Error(`${configPath}: images must be a boolean.`);
   }
   const problems = appProblems(config.apps);
   if (problems.length) {
@@ -290,11 +295,9 @@ export const registerProjectResolution = (configPath: string): void => {
     registerHooks({ resolve: resolveSync(data) });
     return;
   }
-  nodeModule.register(
-    `./resolve_hooks${RUNS_FROM_SOURCE ? '.ts' : '.js'}`,
-    moduleUrl,
-    { data }
-  );
+  register(`./resolve_hooks${RUNS_FROM_SOURCE ? '.ts' : '.js'}`, moduleUrl, {
+    data,
+  });
   patchRequire(data);
 };
 

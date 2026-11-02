@@ -64,11 +64,24 @@ export const mountStudio = (
     problems.push(
       ...featuredProblems(next.featured, runtimePrimitiveTypes(next.runtime))
     );
+    if (next.images !== undefined && typeof next.images !== 'boolean') {
+      problems.push('images must be a boolean; image generation is disabled.');
+    }
     document.title = next.title ?? 'Isomer Studio';
     root.render(
       <IsomerStudio
         {...next}
-        {...{ apps, transformJsx, rasterizePng, renderPdf }}
+        {...{ apps, transformJsx }}
+        rasterizePng={
+          next.images === undefined || next.images === true
+            ? rasterizePng
+            : undefined
+        }
+        renderPdf={
+          next.images === undefined || next.images === true
+            ? renderPdf
+            : undefined
+        }
         configProblems={problems}
       />
     );

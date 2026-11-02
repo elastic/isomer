@@ -34,6 +34,7 @@ export default defineStudioConfig({
 | `compose(nodes, { theme })` | No       | Wraps example nodes in a composition, for full control. Wins over `previewExample`. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                                       |
 | `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                                                                                            |
 | `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                                                                                     |
+| `images`                    | No       | Defaults to `true`. `false` disables host PNG/PDF generation and static PNG prerendering without removing the runtime's snapshot markup. See [Browser-only mode](#browser-only-mode).                                                                                                                         |
 | `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                                                                                   |
 
 ## `previewExample` and `compose`
@@ -43,6 +44,37 @@ Examples are nodes, not compositions. Every place the Studio needs a composition
 The default fits a pack whose primitives render inside a plain `view`. A pack whose frame requires a particular root says how one node is shown with `previewExample`. The slides frame draws exactly one `slideFrame`, so the slides `previewExample` wraps a lone node in a preview slide, and passes a node that is already a `slideFrame` through unwrapped. `compose` replaces both when a pack needs to shape several nodes too.
 
 `compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition; with `previewExample`, the Studio does. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
+
+## Browser-only mode
+
+Set `images: false` for a Studio that renders in the browser without running the
+host image backend:
+
+```ts
+export default defineStudioConfig({
+  runtime,
+  images: false,
+});
+```
+
+`build` writes no `png/` directory. Neither static nor dev hosts advertise PNG
+or PDF actions, and the static host does not fetch a PNG manifest. Dev's `/png`
+and `/pdf` routes return 404 with an explicit disabled message. The backend and
+the `imageFonts` module are not loaded. `check --png` rejects the contradictory
+config rather than silently skipping the requested check.
+
+This is not a runtime surface switch: the Web panel still shows the runtime's
+React/HTML/snapshot markup, and `check` still checks snapshot markup when the
+runtime provides it. JSX editing, apps and existing editor workers continue
+to work. Hot updates change image availability without reloading the page or
+discarding the editor draft. Omitting `images`, or setting it to `true`,
+preserves existing PNG/PDF behavior.
+
+The repository's shared `isomer-studio.config.ts` selects this mode, retaining
+the slides pack and Decks app. The slides pack's own example config retains the
+default image-enabled behavior for consumer coverage. The root TypeScript
+config includes the slides sources, apps and decks so the Node config loader
+applies the same JSX settings across that shared config's imports.
 
 ## Featured primitives
 

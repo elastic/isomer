@@ -103,6 +103,11 @@ const runCommand = async (
     case 'check': {
       const importModule = createStudioImporter(configPath, { loader });
       const config = await loadStudioConfig(configPath, { importModule });
+      if (args.png && config.images === false) {
+        throw new Error(
+          '--png conflicts with images: false in the Studio config.'
+        );
+      }
       const rasterizePng = args.png
         ? createRasterizer(
             config.runtime,
