@@ -4,7 +4,9 @@ Read [AGENTS.md](AGENTS.md) first: conventions, invariants, and where things liv
 
 ## Development
 
-Prerequisites: Node.js 22 or later (see `.nvmrc`) and pnpm via Corepack.
+Prerequisites: Node.js 22 or later (see `.nvmrc`), pnpm via Corepack, and
+Python 3 (`python3` on `PATH`) for the trusted Studio deployment archive tests.
+Those tests execute the workflow's actual Python ZIP validation gate.
 
 ```sh
 corepack enable

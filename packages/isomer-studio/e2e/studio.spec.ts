@@ -210,7 +210,7 @@ const editFirstString = async (page: Page) => {
 
 const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
-/** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
+/** Opens the app from Home and the nav, deep-links a sub-path in a fresh document, and checks its styles and `Preview`. */
 const exerciseApp = async (page: Page, url: string) => {
   await page.goto(url);
   await expect(
@@ -246,8 +246,9 @@ const exerciseApp = async (page: Page, url: string) => {
     }
   }
 
+  // Force a document load without racing reload against a same-document hash navigation.
+  await page.goto('about:blank');
   await page.goto(`${url}#/app/${APP_ID}/a/b`);
-  await page.reload();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/a/b$`));
   const main = page.locator('main').first();
 
@@ -1565,10 +1566,10 @@ test.describe('dev server reload', () => {
   let dir: string;
   let dev: { url: string; child: ChildProcess };
 
-  const writeOptions = (title: string, framed: boolean) =>
+  const writeOptions = (title: string, framed: boolean, images = true) =>
     writeFileSync(
       join(dir, 'options.ts'),
-      `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\n`
+      `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\nexport const images = ${images};\n`
     );
 
   const writeFonts = (exported: string) =>
@@ -1604,7 +1605,7 @@ test.describe('dev server reload', () => {
         "import { createElement } from 'react';",
         "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
         `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
-        "import { framed, title } from './options';",
+        "import { framed, images, title } from './options';",
         '',
         'const card = {',
         '  defaultWidth: 320,',
@@ -1615,6 +1616,7 @@ test.describe('dev server reload', () => {
         '',
         'export default {',
         '  title,',
+        '  images,',
         "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
         "  imageFonts: './fonts.ts',",
         '  runtime: createIsomerRuntime({',
@@ -1692,11 +1694,32 @@ test.describe('dev server reload', () => {
     await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
     await expect.poll(postPdf).toBe('200 ');
 
+    await page.goto(`${dev.url}#/app/counter/`);
+    writeOptions('Fonts config only', true);
+    await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
+    writeFonts('"changed after config reload"');
+    await expect
+      .poll(postPdf, { timeout: 60_000 })
+      .toContain('must default-export an array of takumi font loaders');
+    await delay(100);
+    writeFonts('[]');
+    await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
+
+    writeOptions('Fonts disabled', true, false);
+    await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
+    expect(await postPdf()).toContain('404');
     writeFonts('"not a list"');
+    await delay(100);
+    writeOptions('Fonts enabled', true);
+    await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
     await expect
       .poll(postPdf, { timeout: 60_000 })
       .toContain('must default-export an array of takumi font loaders');
 
+    writeOptions('Fonts config reloaded', true);
+    await expect(page).toHaveTitle('Fonts config reloaded', {
+      timeout: 60_000,
+    });
     // Vite's watcher drops a change within 50ms of the last one to the same file, and the 400 can arrive sooner.
     await delay(100);
     writeFonts('[]');

@@ -13,6 +13,14 @@ import { join } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
+const python = spawnSync('python3', ['--version'], { encoding: 'utf8' });
+if (python.error || python.status !== 0) {
+  throw new Error(
+    'Studio archive tests require Python 3 (python3 on PATH). See CONTRIBUTING.md.',
+    { cause: python.error }
+  );
+}
+
 const workflow = readFileSync(
   new URL('../.github/workflows/codex-preview.yml', import.meta.url),
   'utf8'
@@ -51,9 +59,12 @@ const invokeDownload = async ({
   artifacts,
   stale = false,
   apiError = false,
+  producerAttempt = '2',
+  producerJobs,
 } = {}) => {
   const bytes = Buffer.from('independently identified archive');
   const writeFileSync = vi.fn();
+  const setOutput = vi.fn();
   const github = {
     rest: {
       pulls: {
@@ -77,22 +88,31 @@ const invokeDownload = async ({
           },
         }),
         listWorkflowRunArtifacts: vi.fn(),
+        listJobsForWorkflowRunAttempt: vi.fn(),
         downloadArtifact: vi.fn().mockResolvedValue({ data: bytes }),
       },
     },
     paginate: apiError
       ? vi.fn().mockRejectedValue(new Error('API denied'))
-      : vi.fn().mockResolvedValue(
-          artifacts ?? [
-            {
-              id: 456,
-              name: `studio-${head}-123-2`,
-              expired: false,
-              digest:
-                digest ??
-                `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
-            },
-          ]
+      : vi.fn(async (method) =>
+          method === github.rest.actions.listJobsForWorkflowRunAttempt
+            ? (producerJobs ?? [
+                {
+                  name: 'studio',
+                  conclusion: 'success',
+                  run_attempt: Number(producerAttempt),
+                },
+              ])
+            : (artifacts ?? [
+                {
+                  id: 456,
+                  name: `studio-${head}-123-${producerAttempt}`,
+                  expired: false,
+                  digest:
+                    digest ??
+                    `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+                },
+              ])
         ),
   };
   const AsyncFunction = Object.getPrototypeOf(async () => {}).constructor;
@@ -108,10 +128,14 @@ const invokeDownload = async ({
     github,
     context,
     (name) => (name === 'node:crypto' ? { createHash } : { writeFileSync }),
-    { summary: { addRaw: () => ({ write: vi.fn() }) } },
-    { env },
+    {
+      summary: { addRaw: () => ({ write: vi.fn() }) },
+      setOutput,
+    },
+    { env: { ...env, PRODUCER_ATTEMPT: producerAttempt } },
     Buffer
   );
+  expect(setOutput).toHaveBeenCalledWith('producer-attempt', producerAttempt);
   return writeFileSync;
 };
 
@@ -140,6 +164,50 @@ describe('trusted Studio workflow download', () => {
       'Missing, ambiguous'
     );
   });
+  it('reuses an independently verified earlier producer on a deploy-only retry', async () => {
+    expect(await invokeDownload({ producerAttempt: '1' })).toHaveBeenCalled();
+  });
+  it.each(['', '0', '3', '1.5'])(
+    'rejects invalid producer attempt %j',
+    async (producerAttempt) => {
+      await expect(invokeDownload({ producerAttempt })).rejects.toThrow(
+        'Invalid Studio producer'
+      );
+    }
+  );
+  it('rejects an attempt without a successful producer', async () => {
+    await expect(invokeDownload({ producerJobs: [] })).rejects.toThrow(
+      'Unverified Studio producer'
+    );
+  });
+  it.each([
+    [{ name: 'studio', conclusion: 'failure', run_attempt: 2 }],
+    [{ name: 'studio', conclusion: 'success', run_attempt: 1 }],
+    [{ name: 'other', conclusion: 'success', run_attempt: 2 }],
+  ])('rejects a mismatched producer job %j', async (job) => {
+    await expect(invokeDownload({ producerJobs: [job] })).rejects.toThrow(
+      'Unverified Studio producer'
+    );
+  });
+});
+
+describe('documentation deployment isolation', () => {
+  it('allows docs after Studio failure but keeps Studio validation mandatory on success', () => {
+    const deploy = workflow
+      .split('\n  deploy:')[1]
+      .split('\n  update-link-index:')[0];
+    expect(deploy).toContain("needs.build.result == 'success'");
+    expect(deploy).toContain('!cancelled()');
+    for (const step of [
+      'Download independently identified Studio archive',
+      'Validate and stage browser-only Studio',
+    ]) {
+      expect(
+        deploy.split(`- name: ${step}`)[1].split('\n      - ')[0]
+      ).toContain("if: needs.studio.result == 'success'");
+    }
+    expect(deploy).not.toContain('continue-on-error');
+  });
 });
 
 const metadata = {
@@ -155,7 +223,7 @@ const metadata = {
   data: 'examples-only; no live data',
   base: `/_preview/elastic/isomer/pull/280/studio/${head}/123-2/`,
 };
-const extract = (change = {}, extra = {}) => {
+const extract = (change = {}, extra = {}, expectedEnv = {}) => {
   const dir = mkdtempSync(join(tmpdir(), 'studio-archive-'));
   try {
     const make = spawnSync(
@@ -181,7 +249,7 @@ with zipfile.ZipFile('studio.zip', 'w') as archive:
     expect(make.status).toBe(0);
     return spawnSync('python3', ['-c', extraction], {
       cwd: dir,
-      env: { ...process.env, ...env },
+      env: { ...process.env, ...env, ...expectedEnv },
       encoding: 'utf8',
     });
   } finally {
@@ -192,6 +260,18 @@ with zipfile.ZipFile('studio.zip', 'w') as archive:
 describe('trusted Studio archive gate', () => {
   it('accepts a browser-only archive matching independently supplied event identity', () => {
     expect(extract().status).toBe(0);
+  });
+  it('stages an earlier verified producer without rewriting its base or metadata', () => {
+    expect(
+      extract(
+        {
+          runAttempt: '1',
+          base: `/_preview/elastic/isomer/pull/280/studio/${head}/123-1/`,
+        },
+        {},
+        { RUN_ATTEMPT: '1' }
+      ).status
+    ).toBe(0);
   });
   it.each([
     { headSha: 'f'.repeat(40) },

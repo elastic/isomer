@@ -149,6 +149,7 @@ export const startDevServer = async ({
   }
   assertSingleReact(configPath);
   const server: Server = createServer();
+  // Keep previously loaded roots watched while fonts are lazy or images disabled.
   const fontFiles = new Set<string>();
   const modules = await loadVite();
   const vite = await modules.vite.createServer(
@@ -172,7 +173,6 @@ export const startDevServer = async ({
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
       : await loadStudioConfig(configPath, { importModule });
-    fontFiles.clear();
     if (config.images === false) {
       return { config, renderers: undefined };
     }
@@ -182,7 +182,6 @@ export const startDevServer = async ({
       }
       const namespace: unknown = await runner.import(path);
       const node = await vite.environments.ssr.moduleGraph.getModuleByUrl(path);
-      fontFiles.clear();
       if (node?.file) {
         fontFiles.add(node.file);
       }

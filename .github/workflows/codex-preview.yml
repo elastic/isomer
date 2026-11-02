@@ -61,6 +61,8 @@ jobs:
   studio:
     needs: check
     if: needs.check.outputs.any_modified == 'true'
+    outputs:
+      producer_attempt: ${{ steps.identity.outputs.attempt }}
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -91,6 +93,9 @@ jobs:
           upload-site: 'false'
       - name: Record head build identity
         run: node scripts/studio_provenance.js .artifacts/studio
+      - name: Record producer attempt
+        id: identity
+        run: printf 'attempt=%s\n' "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_OUTPUT"
       - name: Browser-only artifact smoke check
         env:
           STUDIO_BROWSER_SITE: .artifacts/studio
@@ -152,7 +157,9 @@ jobs:
 
   deploy:
     if: >
-      needs.check.outputs.any_modified == 'true'
+      !cancelled()
+      && needs.build.result == 'success'
+      && needs.check.outputs.any_modified == 'true'
       && github.event_name == 'pull_request'
       && github.event.pull_request.head.repo.full_name == github.repository
     permissions:
@@ -210,10 +217,13 @@ jobs:
             exit 1
           fi
       - name: Download independently identified Studio archive
+        id: archive
+        if: needs.studio.result == 'success'
         uses: actions/github-script@v9
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
+          PRODUCER_ATTEMPT: ${{ needs.studio.outputs.producer_attempt }}
         with:
           script: |
             const { createHash } = require('node:crypto');
@@ -234,7 +244,18 @@ jobs:
                 run.data.run_attempt !== Number(process.env.RUN_ATTEMPT)) {
               throw new Error('Unexpected Studio workflow identity.');
             }
-            const name = `studio-${process.env.HEAD_SHA}-${context.runId}-${process.env.RUN_ATTEMPT}`;
+            const attempt = Number(process.env.PRODUCER_ATTEMPT);
+            if (!Number.isSafeInteger(attempt) || attempt < 1 ||
+                attempt > Number(process.env.RUN_ATTEMPT)) {
+              throw new Error('Invalid Studio producer attempt.');
+            }
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRunAttempt, {
+              ...context.repo, run_id: context.runId, attempt_number: attempt, per_page: 100,
+            });
+            const producers = jobs.filter(job => job.name === 'studio' &&
+              job.conclusion === 'success' && job.run_attempt === attempt);
+            if (producers.length !== 1) throw new Error('Unverified Studio producer job.');
+            const name = `studio-${process.env.HEAD_SHA}-${context.runId}-${attempt}`;
             const artifacts = await github.paginate(github.rest.actions.listWorkflowRunArtifacts, {
               ...context.repo, run_id: context.runId, per_page: 100,
             });
@@ -250,13 +271,15 @@ jobs:
             const digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
             if (digest !== artifact.digest) throw new Error('Studio archive digest mismatch.');
             writeFileSync('studio.zip', bytes);
+            core.setOutput('producer-attempt', String(attempt));
             core.summary.addRaw(`Studio artifact ${artifact.id}, ${digest}\n`).write();
       - name: Validate and stage browser-only Studio
+        if: needs.studio.result == 'success'
         env:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ATTEMPT: ${{ steps.archive.outputs.producer-attempt }}
           REPOSITORY: ${{ github.repository }}
           PREVIEW_PREFIX: ${{ needs.build.outputs.path_prefix }}
         run: |
@@ -296,6 +319,9 @@ jobs:
                   raise ValueError('Studio deployment path already exists')
               archive.extractall(target)
           PY
+      - name: Report unavailable Studio preview
+        if: needs.studio.result != 'success'
+        run: echo "::warning::Studio build did not succeed. Deploying documentation without a Studio preview; inspect the Studio job for the failure."
       - uses: elastic/docs-actions/aws/auth@v1
         with:
           aws_role_name_prefix: codex-eng-preview-
@@ -332,13 +358,14 @@ jobs:
               log_url: `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
             })
       - name: Studio preview location
-        if: steps.s3-upload.outcome == 'success'
+        if: steps.s3-upload.outcome == 'success' && needs.studio.result == 'success'
         env:
           PATH_PREFIX: ${{ needs.build.outputs.path_prefix }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PRODUCER_ATTEMPT: ${{ steps.archive.outputs.producer-attempt }}
         run: |
           printf '### Studio preview (live verification pending)\nhttps://codex.elastic.dev%s/studio/%s/%s-%s/\n\nHead: `%s`. Verify JS/WASM/CSS/fonts and both themes before treating this as hosted browser evidence.\n' \
-            "$PATH_PREFIX" "$HEAD_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" "$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
+            "$PATH_PREFIX" "$HEAD_SHA" "$GITHUB_RUN_ID" "$PRODUCER_ATTEMPT" "$HEAD_SHA" >> "$GITHUB_STEP_SUMMARY"
 
   update-link-index:
     needs:
