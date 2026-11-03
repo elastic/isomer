@@ -513,9 +513,10 @@ test('capture comparison cases', async ({ browser }) => {
       if (!metrics.length) {
         continue;
       }
-      // `forceNow` also fixes panels with their own relative time range.
+      // `forceNow` also fixes panels with their own relative time range. Kibana reads it from the whole URL, so `&`
+      // ends it before the hash.
       await page.goto(
-        `${KIBANA_PAGES}/app/dashboards?forceNow=${SAMPLE_DATA_DAY}#/view/${dashboardId}?_g=(time:(from:'${TIME_RANGE.from}',to:'${TIME_RANGE.to}'))`
+        `${KIBANA_PAGES}/app/dashboards?forceNow=${SAMPLE_DATA_DAY}&#/view/${dashboardId}?_g=(time:(from:'${TIME_RANGE.from}',to:'${TIME_RANGE.to}'))`
       );
       await waitForRender(page);
 
