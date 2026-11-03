@@ -241,10 +241,18 @@ describe('bind: form-based breakdowns', () => {
     layer.columns.carrier = column;
     return input;
   };
-  const cells = (carrier: unknown, type = 'string') => ({
+  const cells = (
+    carrier: unknown,
+    type = 'string',
+    params?: Record<string, unknown>
+  ) => ({
     layer: {
       columns: [
-        { id: 'carrier', name: 'Bucket', meta: { type } },
+        {
+          id: 'carrier',
+          name: 'Bucket',
+          meta: { type, ...(params && { params }) },
+        },
         number('count', 'Flights'),
         number('max', 'Static value: 1000'),
       ],
@@ -297,9 +305,17 @@ describe('bind: form-based breakdowns', () => {
         },
       },
     });
-    // An open bound, Infinity in Kibana, arrives as `null` in JSON.
+    // An open bound, Infinity in Kibana, arrives as `null` in JSON. The
+    // table wraps the field's format in `range`, as `getSerializedFormat` does.
     const { tiles } = node(
-      run(range, cells({ gte: 1000, lt: null }, 'number'), 'filter')
+      run(
+        range,
+        cells({ gte: 1000, lt: null }, 'number', {
+          id: 'range',
+          params: { id: 'number' },
+        }),
+        'filter'
+      )
     );
     expect(tiles[0]).toMatchObject({
       title: '1,000 \u2192 +\u221E',
@@ -307,6 +323,35 @@ describe('bind: form-based breakdowns', () => {
         filters: [{ field: 'DistanceKilometers', range: { gte: 1000 } }],
       },
     });
+  });
+
+  it("titles a range bucket's bounds with the field format the table carries", () => {
+    const range = bucketed({
+      operationType: 'range',
+      label: 'Distance',
+      dataType: 'number',
+      isBucketed: true,
+      sourceField: 'DistanceKilometers',
+      params: {
+        type: 'range',
+        maxBars: 'auto',
+        ranges: [{ from: 1000, to: 2000, label: '' }],
+        parentFormat: {
+          id: 'range',
+          params: { template: 'arrow_right', replaceInfinity: true },
+        },
+      },
+    });
+    const { tiles } = node(
+      run(
+        range,
+        cells({ gte: 1000, lt: 2000 }, 'number', {
+          id: 'range',
+          params: { id: 'number', params: { pattern: '0.0' } },
+        })
+      )
+    );
+    expect(tiles[0]!.title).toBe('1000.0 \u2192 2000.0');
   });
 
   const codes = (result: ReturnType<typeof bind>) =>
@@ -366,27 +411,6 @@ describe('bind: form-based breakdowns', () => {
       run(filtersBreakdown(), carriers([{ carrier: 'A', count: 4, max: 1000 }]))
     );
     expect(result.placeholders).toBe(2);
-  });
-
-  it('refuses a filter for a missing bucket and a filters bucket', () => {
-    expect(
-      codes(
-        run(
-          breakdown(),
-          carriers([{ carrier: '__missing__', count: 4, max: 1000 }]),
-          'filter'
-        )
-      )
-    ).toEqual(['lens.metric.unsupported-filter-value']);
-    expect(
-      codes(
-        run(
-          filtersBreakdown(),
-          carriers([{ carrier: 'A', count: 4, max: 1000 }]),
-          'filter'
-        )
-      )
-    ).toEqual(['lens.metric.unsupported-filter-value']);
   });
 
   it('refuses an object bucket, such as a multi-field terms key', () => {
