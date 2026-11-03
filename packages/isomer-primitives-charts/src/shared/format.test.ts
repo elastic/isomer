@@ -11,7 +11,14 @@ import { formatValue, toPattern, type ValueFormat } from './format';
 
 // Expected strings are `@elastic/numeral` output for the pattern Lens builds
 // from each format (`supported_formats.ts` `decimalsToPattern`), captured in Kibana.
-const CASES: Array<[number, ValueFormat | undefined, string, string]> = [
+const CASES: Array<
+  [
+    number,
+    Exclude<ValueFormat, { kind: 'duration' }> | undefined,
+    string,
+    string,
+  ]
+> = [
   [1234.5678, undefined, '0,0.[000]', '1,234.568'],
   [12, undefined, '0,0.[000]', '12'],
   [0, undefined, '0,0.[000]', '0'],

@@ -20,7 +20,31 @@ import {
 import type {
   ResolvedMetric,
   ResolvedMetricTile,
+  TileIconGlyph,
 } from '@elastic/isomer-primitives-charts/model';
+
+const glyphIcon =
+  ({ paths }: TileIconGlyph) =>
+  ({
+    width,
+    height,
+    color,
+  }: {
+    width: number;
+    height: number;
+    color: string;
+  }) => (
+    <svg viewBox="0 0 16 16" width={width} height={height} aria-hidden="true">
+      {paths.map(({ d, evenOdd }) => (
+        <path
+          key={d}
+          d={d}
+          fill={color}
+          {...(evenOdd ? { fillRule: 'evenodd', clipRule: 'evenodd' } : {})}
+        />
+      ))}
+    </svg>
+  );
 
 const TooltipLabel = ({
   children,
@@ -59,13 +83,16 @@ export const toDatum = (
     title,
     subtitle,
     value,
+    values,
     number,
+    icon,
     fill,
     valueColor,
     secondary,
     visual,
   } = tile;
   const base = {
+    ...(icon ? { icon: glyphIcon(icon) } : {}),
     color: visual?.kind === 'progress' ? visual.color : fill,
     ...(title === undefined ? {} : { title }),
     ...(subtitle === undefined ? {} : { subtitle }),
@@ -88,6 +115,9 @@ export const toDatum = (
           ? LayoutDirection.Horizontal
           : LayoutDirection.Vertical,
     };
+  }
+  if (values) {
+    return { ...base, value: values };
   }
   if (number === undefined) {
     return visual?.kind === 'trend'
@@ -137,6 +167,7 @@ export const toTheme = ({ layout, tokens }: ResolvedMetric): PartialTheme => ({
     valuePosition: layout.valuePosition,
     valueFontSize: layout.valueSize,
     spacing: layout.density === 'compact' ? 'small' : 'large',
+    iconAlign: layout.iconAlign,
     border: tokens.border,
     barBackground: tokens.barBackground,
     nonFiniteText: tokens.missing,

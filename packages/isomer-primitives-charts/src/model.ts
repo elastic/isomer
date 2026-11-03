@@ -18,6 +18,12 @@ export {
   type MetricTile,
   metricSchema,
 } from './metric/schema';
+export {
+  type TileIcon,
+  type TileIconGlyph,
+  TILE_ICONS,
+  tileIconGlyphs,
+} from './metric/tile_icons';
 export { type ValueFormat, formatValue } from './shared/format';
 export {
   type Scheme,

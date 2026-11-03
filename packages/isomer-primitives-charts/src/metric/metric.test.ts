@@ -300,6 +300,39 @@ describe('value palette colors', () => {
   });
 });
 
+describe('icons and multivalue readings', () => {
+  it('resolves an icon glyph and lists each formatted reading', () => {
+    const { tiles, layout } = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: [1536, 'n/a'],
+          format: { kind: 'bytes' },
+          icon: 'bell',
+        },
+      ],
+    });
+    expect(layout.iconAlign).toBe('right');
+    expect(tiles[0]).toMatchObject({
+      value: '1.50KB, n/a',
+      values: ['1.50KB', 'n/a'],
+      number: undefined,
+      icon: { paths: [{ evenOdd: true }] },
+      reading: '1.50KB, n/a',
+    });
+  });
+
+  it('rejects an unknown icon and an empty multivalue reading', () => {
+    expect(issues(tile({ icon: 'rocket' })).map(([path]) => path)).toEqual([
+      'tiles.0.icon',
+    ]);
+    expect(issues(tile({ value: [] })).map(([path]) => path)).toEqual([
+      'tiles.0.value',
+    ]);
+  });
+});
+
 describe('metric limits', () => {
   it('draws an empty grid, padded with placeholders', () => {
     expect(issues({ type: 'metric', tiles: [] })).toEqual([]);
