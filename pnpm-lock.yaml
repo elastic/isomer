@@ -232,6 +232,9 @@ importers:
       '@elastic/esql':
         specifier: ^4.36.0
         version: 4.36.0
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
       zod:
         specifier: ^4.5.4
         version: 4.6.5
@@ -367,7 +370,7 @@ importers:
     devDependencies:
       '@elastic/charts':
         specifier: 73.3.2
-        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)
+        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
       '@elastic/datemath':
         specifier: 5.0.3
         version: 5.0.3(moment@2.31.0)
@@ -6423,10 +6426,10 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
-  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)':
+  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
     dependencies:
       '@popperjs/core': 2.11.8
-      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)
+      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)
       bezier-easing: 2.1.0
       chroma-js: 2.6.0
       classnames: 2.5.1
@@ -6444,7 +6447,7 @@ snapshots:
       re-reselect: 4.0.1(reselect@5.3.0)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1)
       ts-debounce: 4.0.0
       utility-types: 3.11.0
       uuid: 14.0.3
@@ -6962,7 +6965,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)':
+  '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@standard-schema/utils': 0.3.0
@@ -6972,7 +6975,7 @@ snapshots:
       reselect: 5.3.0
     optionalDependencies:
       react: 18.3.1
-      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1)
 
   '@rolldown/binding-android-arm-eabi@1.2.13':
     optional: true
@@ -9909,14 +9912,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       redux: 4.2.1
 
-  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1):
+  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1):
     dependencies:
       '@types/use-sync-external-store': 0.0.6
       react: 18.3.1
       use-sync-external-store: 1.7.0(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.31
-      redux: 4.2.1
+      redux: 5.0.1
 
   react-remove-scroll-bar@2.3.8(@types/react@18.3.31)(react@18.3.1):
     dependencies:

@@ -5,19 +5,31 @@ description: Plan native ES|QL Lens saved objects and project their responses, w
 
 # Lens lowering
 
-`@elastic/isomer-lowering-lens` turns one native ES|QL Lens saved object into a versioned, plain-JSON plan a host can execute, and projects a recorded ES|QL response onto a planned layer's Lens columns. It draws nothing and chooses no primitive: chart binding arrives with each chart, and form-based Lens is refused rather than approximated.
+`@elastic/isomer-lowering-lens` turns one native ES|QL Lens saved object into a versioned, plain-JSON plan a host can execute, projects a recorded ES|QL response onto a planned layer's Lens columns, and binds the projected tables to an Isomer chart node. It draws nothing; form-based Lens is refused rather than approximated.
 
 ```ts
 import { plan, readResponse } from '@elastic/isomer-lowering-lens';
+import { bind } from '@elastic/isomer-lowering-lens/charts';
 
 const planned = plan({ savedObject, dataViews });
 if (planned.status === 'planned') {
-  const [layer] = planned.plan.layers;
-  const read = readResponse(layer, esqlResponse);
+  const tables = planned.plan.layers.map((layer) =>
+    readResponse(layer, responses[layer.layerId])
+  );
+  // After checking every read is `ready`:
+  const bound = bind(
+    planned.plan,
+    tables.map(({ table }) => table)
+  );
 }
 ```
 
-The package has one entry and `zod` as its only peer. It depends on `@elastic/esql`, the parser Kibana uses, to find each query's parameters, and imports no React, DOM, Node built-in, SDK, runtime or Studio, so a browser, a server or a native app can load it. A bundler must resolve the `browser` or `node` export condition, which the parser's `antlr4` requires. Hosts own retrieving saved objects and metadata, authorization, credentials and running queries.
+| Entry | What it holds |
+| --- | --- |
+| `@elastic/isomer-lowering-lens` | `plan` and `readResponse`. `zod` is its only peer; it depends on `@elastic/esql`, the parser Kibana uses, to find each query's parameters. |
+| `@elastic/isomer-lowering-lens/charts` | `bind`, which reads chart schemas from `@elastic/isomer-primitives-charts/model`. |
+
+Neither entry imports React, the DOM, a Node built-in, the SDK, the runtime, Studio or a chart engine, so a browser, a server or a native app can load them, and planning never loads binding. A bundler must resolve the `browser` or `node` export condition, which the parser's `antlr4` requires. Hosts own retrieving saved objects and metadata, authorization, credentials and running queries.
 
 ## Planning
 
@@ -75,9 +87,15 @@ Run the query text as it is; don't append to or rewrite the ES|QL. Bind `params`
 
 Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, `is_running`, or a table of more than 200,000 cells (rows times Lens columns, since several columns can read one field) is `invalid`, with no table.
 
+## Binding a chart
+
+`bind(plan, tables, { filterAction? })` takes a plan and one `readResponse` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with its breakdown field and raw value as the filter.
+
+The metric is the first chart bound. [Metric](metric.md) lists what it supports and refuses.
+
 ## Limits
 
-Both functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be acyclic plain JSON: no accessors, symbols, holes, custom prototypes, or non-JSON values such as `NaN`. As in `JSON.stringify`, an object property set to `undefined` is treated as absent. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and object keys. Identifiers and parameter names are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
+All three functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be acyclic plain JSON: no accessors, symbols, holes, custom prototypes, or non-JSON values such as `NaN`. As in `JSON.stringify`, an object property set to `undefined` is treated as absent. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and object keys. Identifiers and parameter names are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
 
 ## Lens inspector
 
