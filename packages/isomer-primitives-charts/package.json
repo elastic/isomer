@@ -58,7 +58,8 @@
   },
   "dependencies": {
     "@elastic/isomer-sdk": "workspace:*",
-    "@elastic/numeral": "2.5.1"
+    "@elastic/numeral": "2.5.1",
+    "moment": "2.31.0"
   },
   "peerDependencies": {
     "react": ">=18 <20",

@@ -260,6 +260,9 @@ importers:
       '@elastic/numeral':
         specifier: 2.5.1
         version: 2.5.1
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
       react:
         specifier: '>=18 <20'
         version: 18.3.1
