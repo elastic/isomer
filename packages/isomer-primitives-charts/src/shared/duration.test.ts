@@ -5,6 +5,9 @@
  * 2.0.
  */
 
+import 'moment/locale/fr';
+
+import moment from 'moment';
 import { describe, expect, it } from 'vitest';
 
 import { formatValue, type ValueFormat } from './format';
@@ -969,5 +972,47 @@ const CASES: Array<[number, ValueFormat, string]> = [
 describe('formatValue: duration', () => {
   it.each(CASES)('formats %s with %j as %s', (value, format, expected) => {
     expect(formatValue(value, format)).toBe(expected);
+  });
+
+  it("reads an omitted unit and output as DurationFormat's defaults: seconds, humanized", () => {
+    const humanized = CASES.filter(
+      ([, format]) =>
+        format.kind === 'duration' &&
+        format.from === 'seconds' &&
+        format.to === 'humanize'
+    );
+    expect(humanized.length).toBeGreaterThan(0);
+    for (const [value, , expected] of humanized) {
+      expect(formatValue(value, { kind: 'duration' })).toBe(expected);
+    }
+  });
+
+  it("names a fixed unit by default, as Lens's duration format sets `showSuffix`", () => {
+    const named = CASES.filter(
+      ([, format]) =>
+        format.kind === 'duration' &&
+        format.to?.startsWith('as') === true &&
+        format.showSuffix === true &&
+        !format.short &&
+        format.spaceBeforeSuffix !== false
+    );
+    expect(named.length).toBeGreaterThan(0);
+    for (const [value, format, expected] of named) {
+      const { showSuffix: _shown, ...rest } = format as Extract<
+        ValueFormat,
+        { kind: 'duration' }
+      >;
+      expect(formatValue(value, rest)).toBe(expected);
+    }
+  });
+
+  it("reads English under another host locale and leaves the host's locale alone", () => {
+    moment.locale('fr');
+    try {
+      expect(formatValue(3600, { kind: 'duration' })).toBe('an hour');
+      expect(moment.locale()).toBe('fr');
+    } finally {
+      moment.locale('en');
+    }
   });
 });
