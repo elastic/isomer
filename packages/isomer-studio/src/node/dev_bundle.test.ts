@@ -7,9 +7,30 @@
 
 // @vitest-environment node
 
-import { describe, expect, it } from 'vitest';
+import { createServer } from 'node:http';
 
-import { withImporters } from './dev_bundle';
+import { describe, expect, it, vi } from 'vitest';
+
+import { devViteConfig, withImporters } from './dev_bundle';
+import { loadVite } from './vite';
+
+// As the installed CLI runs, from `lib/`.
+vi.mock('./app_bundle', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./app_bundle')>()),
+  RUNS_FROM_SOURCE: false,
+}));
+
+it('pre-bundles the Emotion JSX runtime that lazy TSX apps compile to', async () => {
+  const { optimizeDeps } = devViteConfig({
+    configPath: '/work/pack/isomer-studio.config.ts',
+    server: createServer(),
+    onConfigChange: () => Promise.resolve(),
+    modules: await loadVite(),
+  });
+  expect(optimizeDeps?.include).toContain(
+    '@elastic/isomer-studio > @emotion/react/jsx-dev-runtime'
+  );
+});
 
 interface FakeModule {
   file: string;

@@ -10,6 +10,7 @@
     "lint-staged.config.js",
     "packages/isomer-primitives-slides/src",
     "packages/isomer-primitives-slides/studio",
-    "packages/isomer-primitives-slides/decks"
+    "packages/isomer-primitives-slides/decks",
+    "packages/isomer-lowering-lens/studio"
   ]
 }

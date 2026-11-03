@@ -57,6 +57,8 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-studio` is the `isomer-studio` CLI: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. Its `bin` runs the CommonJS build, which loads Vite with `import()`; it ships its browser app prebuilt in `lib/app` and keeps React at 18 until EUI allows 19. `dev` runs on Vite and hot-updates a changed config in place; `build` stays on esbuild. `pnpm studio:dev` runs the CLI from source against the root `isomer-studio.config.ts`, which gathers the in-repo packs with `images: false`. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
 
+`packages/isomer-lowering-lens` plans native ES|QL Lens saved objects into versioned JSON plans and projects ES|QL responses onto their Lens columns, exporting `plan` and `readResponse`. It depends on `zod` alone and must never reach React, the SDK, the runtime, Studio or `@kbn/*`, which `scripts/check_module_graph.js` enforces. Its Studio app lives in its unpublished `studio/` folder. Hosts own retrieval, metadata and running queries.
+
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
 ## Release posture
