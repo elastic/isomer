@@ -286,6 +286,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `micromark-util-symbol` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol` |  |
 | `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
+| `moment-timezone` | 0.6.1 | MIT | `node_modules/.pnpm/moment-timezone@0.6.1/node_modules/moment-timezone` |  |
 | `monaco-editor` | 0.44.0 | MIT | `node_modules/.pnpm/monaco-editor@0.44.0/node_modules/monaco-editor` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `nanoid` | 3.3.20 | MIT | `node_modules/.pnpm/nanoid@3.3.20/node_modules/nanoid` |  |

@@ -73,6 +73,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `micromark-util-symbol` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol` |  |
 | `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
+| `moment-timezone` | 0.6.1 | MIT | `node_modules/.pnpm/moment-timezone@0.6.1/node_modules/moment-timezone` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `tree-dump` | 1.1.0 | Apache-2.0 | `node_modules/.pnpm/tree-dump@1.1.0_tslib@2.8.1/node_modules/tree-dump` |  |
 | `tslib` | 2.8.1 | 0BSD | `node_modules/.pnpm/tslib@2.8.1/node_modules/tslib` |  |

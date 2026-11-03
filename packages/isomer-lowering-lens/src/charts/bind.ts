@@ -23,12 +23,14 @@ import {
   savedObjectSchema,
 } from '../schema';
 
-import { bindMetric } from './metric/bind';
+import { bindMetric, type DateContext } from './metric/bind';
 import { metricStateSchema, normalizeMetricState } from './metric/state';
 
 export interface BindOptions {
-  /** Gives each breakdown tile an action with this name and its field = value filter. */
+  /** Gives each breakdown tile an action with this name and the filter Lens builds for its bucket. */
   readonly filterAction?: string;
+  /** The host's date format and time zone, for date readings and titles. */
+  readonly dates?: DateContext;
 }
 
 export type LensBindResult =
@@ -98,7 +100,7 @@ const VISUALIZATION = [
 export const bind = (
   plan: unknown,
   tables: unknown,
-  { filterAction }: BindOptions = {}
+  { filterAction, dates }: BindOptions = {}
 ): LensBindResult => {
   const parsedPlan = parseArgument(
     plan,
@@ -167,6 +169,7 @@ export const bind = (
     tables: read,
     layers,
     filterAction,
+    dates,
   });
   if (!bound.ok) {
     return { status: bound.status, diagnostics: bound.diagnostics };
