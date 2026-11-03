@@ -7,7 +7,14 @@
 
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
-import { DARK_THEME, LIGHT_THEME } from '@elastic/charts';
+import {
+  DARK_THEME,
+  LayoutDirection,
+  LIGHT_THEME,
+  MetricTrendShape,
+} from '@elastic/charts';
+import { getComputed } from '@elastic/eui';
+import { EuiThemeBorealis } from '@elastic/eui-theme-borealis';
 import {
   chartTokens,
   metricExamples,
@@ -25,12 +32,23 @@ const byKey = (key: string) =>
   metricExamples.find(({ tiles }) => tiles[0]?.key === key)!;
 
 const example = byKey('requests');
+const progress = byKey('disk');
 const text = byKey('top-country');
 
 const datums = (node: typeof example, scheme: 'light' | 'dark' = 'light') => {
   const resolved = resolveMetric(node, scheme);
   return resolved.tiles.map((tile) => toDatum(tile, resolved.tokens));
 };
+
+describe('default colors', () => {
+  it.each([
+    ['light', 'LIGHT'],
+    ['dark', 'DARK'],
+  ] as const)("match Lens's euiColorVis2 in %s", (scheme, mode) => {
+    const { euiColorVis2 } = getComputed(EuiThemeBorealis, {}, mode).colors.vis;
+    expect(chartTokens[scheme].progress).toBe(euiColorVis2);
+  });
+});
 
 describe('chart tokens', () => {
   it.each([
@@ -95,6 +113,77 @@ describe('toDatum', () => {
         badgeTextColor: '#09724D',
         icon: '↑',
       },
+    });
+  });
+
+  it('maps a trend, keeping gaps', () => {
+    const [datum] = datums(example);
+    expect(datum).toMatchObject({
+      trendShape: MetricTrendShape.Area,
+      trendA11yTitle: 'Requests',
+    });
+    expect((datum as { trend: { y: number }[] }).trend[4]!.y).toBeNaN();
+  });
+
+  it('keeps a trend tile with one point, which Elastic Charts draws without a line', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 3,
+          color: 'primary',
+          visual: { kind: 'trend', points: [{ x: 0, y: 3 }] },
+        },
+      ],
+    });
+    expect(datum).toMatchObject({ color: '#0B64DD', trend: [{ x: 0, y: 3 }] });
+  });
+
+  it('maps progress onto the bar color and domain', () => {
+    expect(datums(progress, 'dark')[0]).toMatchObject({
+      color: '#61A2FF',
+      value: 412_316_860_416,
+      domainMax: 549_755_813_888,
+      progressBarDirection: LayoutDirection.Horizontal,
+      extra: { value: '512GB', badgeColor: '#2B394F' },
+    });
+    expect(datums(progress)[0]).not.toHaveProperty('domainMin');
+  });
+
+  it('passes a nonzero min, which Elastic Charts labels as value and target', () => {
+    const [tile] = progress.tiles;
+    const [datum] = datums({
+      ...progress,
+      tiles: [{ ...tile!, visual: { kind: 'progress', min: 10, max: 10 } }],
+    });
+    expect(datum).toMatchObject({ domainMin: 10, domainMax: 10 });
+  });
+
+  it('keeps a missing progress reading as an empty bar', () => {
+    const [tile] = progress.tiles;
+    const [datum] = datums({ ...progress, tiles: [{ ...tile!, value: null }] });
+    expect(datum).toMatchObject({
+      color: '#61A2FF',
+      value: Number.NaN,
+      domainMax: 549_755_813_888,
+    });
+    expect(datum && 'valueFormatter' in datum && datum.valueFormatter(0)).toBe(
+      'N/A'
+    );
+  });
+
+  it('keeps a missing reading empty on an empty progress range too', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [
+        { key: 'a', value: null, visual: { kind: 'progress', min: 5, max: 5 } },
+      ],
+    });
+    expect(datum).toMatchObject({
+      value: Number.NaN,
+      domainMin: 5,
+      domainMax: 5,
     });
   });
 

@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { colorSchema } from '../shared/color';
 import { valueFormatSchema } from '../shared/format';
+import { pointsSchema } from '../shared/series';
 
 // One pack-wide sanity cap; renderers truncate long text.
 const LIMIT = 10_000;
@@ -78,6 +79,39 @@ const secondarySchema = z
     'A second reading under the value: a resolved `value`, or a `change` derived from a previous reading.'
   );
 
+const visualSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .object({
+        kind: z.literal('trend'),
+        points: pointsSchema,
+        shape: z
+          .enum(['area', 'bars'])
+          .optional()
+          .describe('Defaults to `area`.'),
+      })
+      .strict()
+      .describe('A sparkline behind the value.'),
+    z
+      .object({
+        kind: z.literal('progress'),
+        max: z
+          .number()
+          .finite()
+          .describe(
+            'Equal to `min`, the bar fills halfway; below `min`, it fills from the far end, as Elastic Charts draws them.'
+          ),
+        min: z.number().finite().optional().describe('Defaults to 0.'),
+        direction: z
+          .enum(['horizontal', 'vertical'])
+          .optional()
+          .describe('Defaults to `vertical`.'),
+      })
+      .strict()
+      .describe('A bar filled from `min` to `max` by the tile’s value.'),
+  ])
+  .describe('A trend or a progress bar; a tile shows at most one.');
+
 const metricTileSchema = z
   .object({
     key: text.describe(
@@ -103,6 +137,7 @@ const metricTileSchema = z
         'Paint the tile background or the value text. Defaults to `background`.'
       ),
     secondary: secondarySchema.optional(),
+    visual: visualSchema.optional(),
   })
   .strict()
   .check((ctx) => {

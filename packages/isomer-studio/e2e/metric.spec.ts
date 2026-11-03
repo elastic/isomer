@@ -89,6 +89,7 @@ for (const mode of ['dev', 'static']) {
       await expect(tiles.first()).toContainText('Requests');
       await expect(tiles.first()).toContainText('182,340');
       await expect(tiles.first()).toContainText('+11.10%');
+      await expect(page.locator('.echMetric svg path').first()).toBeVisible();
 
       // The chart follows the Studio's color mode across the shadow root.
       await page.goto(`${url}#/dev/metric/${textExample}`);

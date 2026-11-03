@@ -49,6 +49,8 @@ export interface ChartTokens {
   border: string;
   /** Unfilled part of a progress bar. */
   barBackground: string;
+  /** Progress fill when a tile sets no color (Lens `euiColorVis2`). */
+  progress: string;
   onLight: TextTokens;
   onDark: TextTokens;
   missing: string;
@@ -71,6 +73,7 @@ const onDark: TextTokens = {
 };
 const shared = {
   fontFamily: 'Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
+  progress: '#61A2FF',
   onLight,
   onDark,
   missing: 'N/A',
