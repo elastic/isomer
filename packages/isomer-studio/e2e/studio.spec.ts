@@ -1943,6 +1943,31 @@ test.describe('browser-only', () => {
       await expect(heading).toHaveCount(0);
       await expect(lines).toHaveText(draft);
       expect(page.url()).toBe(`${dev.url}${EDIT_ROUTE}`);
+
+      if (APP_ID === 'decks') {
+        // A deck showing its PNG falls back to the slide when the PNG surface goes away.
+        const output = page.getByRole('group', { name: 'Output' });
+        const png = output.getByRole('button', { name: 'PNG', exact: true });
+        await page.goto(`${dev.url}#/app/decks/isomer-every-surface/1/0`);
+        await expect(
+          page.locator('[data-test-subj="deckStage"]')
+        ).toBeVisible();
+        await delay(100);
+        writeConfig(true);
+        await png.click();
+        await expect(
+          page.locator('[data-test-subj="deckOutput"]')
+        ).toBeVisible();
+        await delay(100);
+        writeConfig(false);
+        await expect(png).toHaveCount(0);
+        await expect(
+          page.locator('[data-test-subj="deckStage"]')
+        ).toBeVisible();
+        await expect(
+          output.getByRole('button', { name: 'Slide', exact: true })
+        ).toHaveAttribute('aria-pressed', 'true');
+      }
     } finally {
       dev.child.kill('SIGTERM');
     }
