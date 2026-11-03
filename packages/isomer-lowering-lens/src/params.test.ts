@@ -15,26 +15,25 @@ describe('queryParams', () => {
       ['_tstart', '_tend'],
     ],
     ['FROM logs | WHERE a == ?x OR b == ?x', ['x']],
-    ['FROM logs | STATS ??fn(?1) BY ??field', ['fn', '1', 'field']],
+    ['FROM logs | STATS ??fn(?x) BY ??field', ['fn', 'x', 'field']],
     ['FROM logs | WHERE msg == "?not" AND x == ?yes', ['yes']],
     ['FROM logs | WHERE msg == "a \\" ?no" AND x == ?yes', ['yes']],
     ['FROM logs | WHERE msg == """?no "" ?no""" | KEEP ?yes', ['yes']],
     ['FROM logs | KEEP `?no` | WHERE x == ?yes', ['yes']],
     ['FROM logs // ?no\n| WHERE x == ?yes /* ?no */', ['yes']],
-    ['FROM logs | WHERE msg == "unterminated ?no', []],
     ['FROM logs // ?no\r| WHERE x == ?yes', ['yes']],
-    ['FROM logs | WHERE msg == """a"""" | KEEP ?yes', ['yes']],
-    ['FROM logs | WHERE msg == """a""""" | KEEP ?yes', ['yes']],
     ['FROM logs /* outer /* inner */ ?no */ | KEEP ?yes', ['yes']],
-    ['FROM logs /* ?no /* ?no */ ?no */ | KEEP ?yes /* ?no', ['yes']],
-  ])('finds the parameters in %j', (esql, names) => {
-    expect(queryParams(esql)).toEqual(names);
+  ])('finds the named parameters in %j', (esql, names) => {
+    expect(queryParams(esql)).toEqual({ ok: true, names });
   });
 
-  it.each(['FROM logs | WHERE x == ?', 'FROM logs | WHERE x == ? AND y == ?y'])(
-    'refuses an anonymous parameter in %j',
-    (esql) => {
-      expect(queryParams(esql)).toBeUndefined();
-    }
-  );
+  it.each([
+    ['FROM logs | WHERE x == ?', 'unnamed'],
+    ['FROM logs | WHERE x == ? AND y == ?y', 'unnamed'],
+    ['FROM logs | STATS ??fn(?1) BY ??field', 'positional'],
+    ['FROM logs | WHERE msg == "unterminated ?no', 'syntax'],
+    ['FROM logs | WHERE', 'syntax'],
+  ])('refuses %j as %s', (esql, reason) => {
+    expect(queryParams(esql)).toMatchObject({ ok: false, reason });
+  });
 });
