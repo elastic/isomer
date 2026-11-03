@@ -120,7 +120,8 @@ const planLayer = (
     ignoreGlobalFilters?: boolean | undefined;
   },
   savedObject: LensSavedObject,
-  dataViews: readonly DataViewMetadata[]
+  dataViews: readonly DataViewMetadata[],
+  layerIds: readonly string[]
 ):
   | { ok: true; layer: FormLayerPlan }
   | { ok: false; result: LensPlanResult } => {
@@ -147,11 +148,16 @@ const planLayer = (
       [...path, 'incompleteColumns']
     );
   }
-  if (layer.linkToLayers?.length) {
+  // Lens links a metric's trendline layer to its main layer so the editor
+  // removes and re-points them together; each layer still runs on its own.
+  const unknownLink = layer.linkToLayers?.find(
+    (linked) => !layerIds.includes(linked)
+  );
+  if (unknownLink !== undefined) {
     return refuse(
-      'unsupported',
-      'lens.form.linked-layer',
-      'Linked layers are not planned.',
+      'invalid',
+      'lens.form.unknown-linked-layer',
+      `The layer links to "${unknownLink}", which the datasource lacks.`,
       [...path, 'linkToLayers']
     );
   }
@@ -296,6 +302,7 @@ const planLayer = (
       kind: 'form',
       layerId,
       dataView: reference.id,
+      linkedTo: layer.linkToLayers ?? [],
       columns: layer.columnOrder.map((columnId) => ({
         ...layer.columns[columnId],
         columnId,
@@ -347,7 +354,13 @@ export const planForm = (
   }
   const layers: FormLayerPlan[] = [];
   for (const [layerId, layer] of entries) {
-    const planned = planLayer(layerId, layer, savedObject, dataViews);
+    const planned = planLayer(
+      layerId,
+      layer,
+      savedObject,
+      dataViews,
+      entries.map(([id]) => id)
+    );
     if (!planned.ok) {
       return planned.result;
     }
