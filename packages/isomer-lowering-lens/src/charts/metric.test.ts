@@ -595,6 +595,38 @@ describe('bind: dates', () => {
     }
   );
 
+  it('reads each date of a multivalue reading', () => {
+    const { layer } = lastSeen();
+    const many = {
+      layer: {
+        ...layer,
+        response: {
+          ...layer.response,
+          values: [[['2026-11-02T13:45:00.000Z', '2026-11-03T13:45:00.000Z']]],
+        },
+      },
+    };
+    expect(
+      node(run(vis(), many, { dates: { format: 'MMM D', timeZone: 'UTC' } }))
+        .tiles[0]!.value
+    ).toEqual(['Nov 2', 'Nov 3']);
+  });
+
+  it('refuses a time zone moment-timezone does not know, rather than reading UTC', () => {
+    const result = run(vis(), lastSeen(), {
+      dates: { format, timeZone: 'Europe/Lisbn' },
+    });
+    expect(result).toMatchObject({
+      status: 'unsupported',
+      diagnostics: [
+        {
+          code: 'lens.metric.unsupported-date',
+          path: ['options', 'dates', 'timeZone'],
+        },
+      ],
+    });
+  });
+
   it('refuses a date without the host’s date context, and nanosecond dates', () => {
     expect(codes(run(vis(), lastSeen()))).toEqual([
       'lens.metric.unsupported-date',
@@ -810,6 +842,58 @@ describe('bind: secondary metric', () => {
       });
     }
   );
+
+  it('signs a rise once when its custom pattern already signs it', () => {
+    const signedPattern = {
+      layer: {
+        columns: [
+          num('visits'),
+          num('previous', {
+            params: { format: { id: 'custom', params: { pattern: '+0.0' } } },
+          }),
+        ],
+        response: {
+          columns: [
+            { name: 'visits', type: 'long' },
+            { name: 'previous', type: 'long' },
+          ],
+          values: [[30, 28]],
+        },
+      },
+    };
+    expect(
+      node(
+        run(
+          vis({ ...compare(), secondaryNameVisibility: 'hidden' }),
+          signedPattern
+        )
+      ).tiles[0]!.secondary
+    ).toMatchObject({ value: '+2.0' });
+  });
+
+  it('formats each value of a multivalue secondary reading, as `formatTextArray` does', () => {
+    const many = {
+      layer: {
+        columns: [
+          num('visits'),
+          num('previous', {
+            params: { format: { id: 'number', params: { decimals: 0 } } },
+          }),
+        ],
+        response: {
+          columns: [
+            { name: 'visits', type: 'long' },
+            { name: 'previous', type: 'long' },
+          ],
+          values: [[30, [1000, 2000]]],
+        },
+      },
+    };
+    expect(
+      node(run(vis({ secondaryMetricAccessor: 'previous' }), many)).tiles[0]!
+        .secondary
+    ).toMatchObject({ value: '["1,000","2,000"]' });
+  });
 
   it('reverses the palette', () => {
     expect(

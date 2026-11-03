@@ -23,7 +23,8 @@ import {
   savedObjectSchema,
 } from '../schema';
 
-import { bindMetric, type DateContext } from './metric/bind';
+import type { DateContext } from './dates';
+import { bindMetric } from './metric/bind';
 import { metricStateSchema, normalizeMetricState } from './metric/state';
 
 export interface BindOptions {
