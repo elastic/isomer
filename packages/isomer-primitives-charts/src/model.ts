@@ -20,7 +20,11 @@ export {
   resolveMetric,
   tileIconGlyphs,
 } from './metric';
-export { type ValueFormat, formatValue } from './shared/format';
+export {
+  type ValueFormat,
+  formatValue,
+  valueFormatSchema,
+} from './shared/format';
 export {
   type Scheme,
   type ValuePalette,

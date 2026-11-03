@@ -385,6 +385,35 @@ describe('bind: named palettes', () => {
     ).toEqual({ palette: 'status', step: 2, of: 3 });
   });
 
+  it('refuses more bands than a value palette has, without building them', () => {
+    const huge = status('number');
+    expect(
+      codes(
+        run(
+          vis({ palette: { ...huge, params: { ...huge.params, steps: 1e9 } } }),
+          single(40)
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-palette']);
+  });
+
+  it('keeps band order when `reverse` is saved, as `computePaletteParams` does', () => {
+    const reversed = status('number');
+    expect(
+      node(
+        run(
+          vis({
+            palette: {
+              ...reversed,
+              params: { ...reversed.params, reverse: true },
+            },
+          }),
+          single(40)
+        )
+      ).tiles[0]!.color
+    ).toEqual({ palette: 'status', step: 1, of: 3 });
+  });
+
   it('refuses a palette that is not a value palette', () => {
     expect(
       codes(
@@ -590,6 +619,21 @@ describe('bind: secondary metric', () => {
     primary: unknown,
     value: unknown
   ) => node(run(vis(state), pair(primary, value))).tiles[0]!.secondary;
+
+  it('falls back to the compare palette for an unknown or inherited palette ID', () => {
+    for (const paletteId of ['unknown', 'constructor']) {
+      expect(
+        secondary(
+          {
+            ...compare(),
+            secondaryTrend: { ...compare().secondaryTrend, paletteId },
+          },
+          10,
+          4
+        )
+      ).toEqual(secondary(compare(), 10, 4));
+    }
+  });
 
   it('labels it by default on legacy state', () => {
     expect(secondary({ secondaryMetricAccessor: 'previous' }, 1, 2)).toEqual({
@@ -818,6 +862,17 @@ describe('bind: progress and trend', () => {
     });
   });
 
+  it('refuses a trend breakdown column the trend table lacks', () => {
+    expect(
+      codes(
+        run(
+          { ...trendState, trendlineBreakdownByAccessor: 'host' },
+          trend([['2026-11-02T00:00:00.000Z', 3]])
+        )
+      )
+    ).toEqual(['lens.metric.missing-column']);
+  });
+
   it('refuses two trend points at one instant', () => {
     expect(
       codes(
@@ -846,6 +901,15 @@ describe('bind: refusals', () => {
     expect(result.status).toBe('unsupported');
     expect(codes(result)).toContain(code);
   });
+
+  it.each([-1, 21, 1.5])(
+    'refuses %s decimals, outside what the format can read',
+    (decimals) => {
+      const params = { format: { id: 'number', params: { decimals } } };
+      const result = run(vis(), single(5, { params }));
+      expect(codes(result)).toEqual(['lens.metric.unsupported-format']);
+    }
+  );
 
   it('reports an unsupported format', () => {
     const params = { format: { id: 'duration', params: {} } };
