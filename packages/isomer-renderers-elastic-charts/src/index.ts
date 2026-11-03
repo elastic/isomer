@@ -5,12 +5,6 @@
  * 2.0.
  */
 
-import { createChartsPack } from '@elastic/isomer-primitives-charts';
-
-import { elasticChartsRenderers } from './metric';
-
 export { type MetricChartProps, MetricChart } from './metric';
+export { elasticChartsPack } from './pack';
 export { elasticChartsReset } from './reset';
-
-/** The charts pack drawn with Elastic Charts. */
-export const elasticChartsPack = createChartsPack(elasticChartsRenderers);

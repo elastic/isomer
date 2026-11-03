@@ -5,25 +5,17 @@
  * 2.0.
  */
 
-import { useRef } from 'react';
-import {
-  Chart,
-  DARK_THEME,
-  LIGHT_THEME,
-  Metric,
-  Settings,
-} from '@elastic/charts';
+import { Metric } from '@elastic/charts';
 import type { ChartRenderers } from '@elastic/isomer-primitives-charts';
 import {
   type MetricNode,
-  type ResolvedMetric,
   resolveMetric,
   type Scheme,
 } from '@elastic/isomer-primitives-charts/model';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
+import { type ChartDrawing, ElasticChart } from './chart';
 import { toDatum, toTheme } from './datum';
-import { useScheme } from './scheme';
 
 const rows = <T,>(items: T[], columns: number): T[][] =>
   Array.from({ length: Math.ceil(items.length / columns) }, (_, row) =>
@@ -37,58 +29,31 @@ export interface MetricChartProps {
   scheme?: Scheme | undefined;
 }
 
-/** Text of every tile, for server markup and before the chart mounts. */
-const Readings = ({ resolved }: { resolved: ResolvedMetric }) => (
-  <ul>
-    {resolved.tiles.map(({ key, reading }) => (
-      <li key={key}>{reading}</li>
-    ))}
-  </ul>
-);
-
-const MetricView = ({
-  node,
-  scheme: fixed,
-  attributes,
-}: MetricChartProps & { attributes?: Readonly<Record<string, string>> }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const scheme = useScheme(ref, fixed);
-  const resolved = resolveMetric(node, scheme ?? 'light');
+const drawMetric = (node: MetricNode, scheme: Scheme): ChartDrawing => {
+  const resolved = resolveMetric(node, scheme);
   const { tiles, columns, tokens } = resolved;
   const grid = rows(
     tiles.map((tile) => toDatum(tile, tokens)),
     columns
   );
-  return (
-    <div
-      {...attributes}
-      ref={ref}
-      style={{ position: 'relative', height: '100%' }}>
-      {scheme === undefined ? (
-        <Readings resolved={resolved} />
-      ) : (
-        <>
-          {/* Sizes the chart only when the host's height is indefinite. */}
-          <div
-            style={{
-              height: grid.length * tokens.rowHeight,
-              maxHeight: '100%',
-            }}
-          />
-          <div style={{ position: 'absolute', inset: 0 }}>
-            <Chart>
-              <Settings
-                baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
-                theme={toTheme(resolved)}
-              />
-              <Metric id="metric" data={grid} />
-            </Chart>
-          </div>
-        </>
-      )}
-    </div>
-  );
+  return {
+    readings: tiles,
+    height: grid.length * tokens.rowHeight,
+    theme: toTheme(resolved),
+    series: <Metric id="metric" data={grid} />,
+  };
 };
+
+const MetricView = ({
+  node,
+  scheme,
+  attributes,
+}: MetricChartProps & { attributes?: Readonly<Record<string, string>> }) => (
+  <ElasticChart
+    {...{ scheme, attributes }}
+    draw={(painted) => drawMetric(node, painted)}
+  />
+);
 
 /** A `metric` node drawn with Elastic Charts' `Metric` chart. */
 export const MetricChart = (props: MetricChartProps) => (
