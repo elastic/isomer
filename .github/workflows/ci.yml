@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 # `static`, `test`, `browser`, and `studio-consumer` split `pnpm verify` across parallel jobs: together they run every
 # script it runs. Keep them in step with it. `peers` runs what depends on Node and the peers at the other versions.
