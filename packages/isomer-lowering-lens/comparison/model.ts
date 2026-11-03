@@ -33,7 +33,7 @@ export const modelReadings = (
       background: tile?.fill,
       valueColor: tile?.valueColor,
       'secondary.label': tile?.secondary?.label,
-      'secondary.value': tile?.secondary?.value ?? tile?.secondary?.badge?.text,
+      'secondary.value': tile?.secondary?.value,
       'secondary.badge.background': tile?.secondary?.badge?.background,
     };
   });

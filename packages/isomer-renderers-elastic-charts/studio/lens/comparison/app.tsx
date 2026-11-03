@@ -102,7 +102,7 @@ const modelValue = (
 
 /**
  * Reads a drawing once two reads agree, since Elastic Charts fits metric text after layout, and again whenever
- * the drawing changes afterwards, as on a hot update. A read belongs to its `key`, so a new case or theme stays
+ * the drawing changes afterwards, as on a hot update of its markup or styles. A read belongs to its `key`, so a new case or theme stays
  * pending until its own drawing settles.
  */
 const useSettledFingerprint = (
@@ -143,19 +143,23 @@ const useSettledFingerprint = (
     };
     settle();
     // Re-renders that leave the drawing as it was do not restart the read.
-    const observer = new MutationObserver(() => {
+    const recheck = () => {
       if (timer === undefined && JSON.stringify(read()) !== current) {
         settle();
       }
-    });
+    };
+    const observer = new MutationObserver(recheck);
     observer.observe(root, {
       subtree: true,
       childList: true,
       attributes: true,
       characterData: true,
     });
+    // Stylesheet changes, such as a CSS hot update, mutate no node the observer sees.
+    const watch = setInterval(recheck, 1000);
     return () => {
       clearInterval(timer);
+      clearInterval(watch);
       observer.disconnect();
     };
   }, [root, extract, key]);

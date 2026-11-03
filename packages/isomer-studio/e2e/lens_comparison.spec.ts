@@ -124,6 +124,11 @@ const compare = async (
 };
 
 test.describe('Lens comparison', () => {
+  test.skip(
+    Boolean(process.env.STUDIO_CONFIG),
+    'The Lens comparison app is in the repository config, not consumer configs'
+  );
+
   let dev: { url: string; child: ChildProcess };
 
   test.beforeAll(async () => {
@@ -189,6 +194,32 @@ test.describe('Lens comparison', () => {
       );
     });
   }
+
+  test('re-reads the drawing when only its styles change', async ({ page }) => {
+    const comparison = cases.find(({ reference }) =>
+      reference.fingerprint.tiles.some(
+        ({ valueAlign }) => valueAlign === 'right'
+      )
+    )!;
+    expect((await compare(page, dev.url, comparison)).status).toBe('pass');
+    await page
+      .locator('[aria-label="Isomer drawing"] section.isomer')
+      .evaluate((section) => {
+        const sheet = new CSSStyleSheet();
+        sheet.replaceSync(
+          '.echMetricText__valueBlock{justify-content:flex-start !important}'
+        );
+        const shadow = section.getRootNode() as ShadowRoot;
+        shadow.adoptedStyleSheets = [...shadow.adoptedStyleSheets, sheet];
+      });
+    await expect(page.getByLabel('Comparison')).toHaveAttribute(
+      'data-status',
+      'fail',
+      {
+        timeout: 10_000,
+      }
+    );
+  });
 
   test('replays in the Chromium build the cases were captured in', ({
     browser,
@@ -259,6 +290,10 @@ test.describe('Lens comparison', () => {
 test('a static build bundles the cases, their screenshots and Kibana fonts', async ({
   page,
 }) => {
+  test.skip(
+    Boolean(process.env.STUDIO_CONFIG),
+    'The Lens comparison app is in the repository config, not consumer configs'
+  );
   const base = '/lens-comparison/review/';
   const dir = mkdtempSync(join(tmpdir(), 'isomer-lens-comparison-'));
   try {
