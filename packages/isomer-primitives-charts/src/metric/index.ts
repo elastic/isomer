@@ -22,10 +22,12 @@ const catalog = {
   name: 'Metric',
   description:
     'Tiles of headline readings. Keys are unique; `null` reads N/A, never zero. Numbers carry a `format`, never preformatted strings.',
-  purpose: 'Show one reading, or one per breakdown value.',
+  purpose:
+    'Show one reading, or one per breakdown value, with an optional comparison, trend or progress bar.',
   useWhen: [
     'The answer is a number: a count, rate, size or percentage now.',
     'The change from an earlier reading matters; give `secondary.kind: "change"` the previous value.',
+    'A short history or a target adds context; add a `trend` or a `progress` visual.',
   ],
   avoidWhen: ['The reader must compare many values exactly or read an axis.'],
   example,
