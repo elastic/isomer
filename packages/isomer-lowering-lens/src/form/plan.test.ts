@@ -145,6 +145,13 @@ describe('plan: form-based refusals', () => {
       'lens.form.invalid-math',
     ],
     [
+      'a math function named like an inherited property',
+      (layer) =>
+        ((layer.columns[MATH]!.params as Record<string, unknown>).tinymathAst =
+          { type: 'function', name: 'constructor', args: [`${FORMULA}X0`] }),
+      'lens.form.invalid-math',
+    ],
+    [
       'a math function with the wrong arity',
       (layer) =>
         ((layer.columns[MATH]!.params as Record<string, unknown>).tinymathAst =

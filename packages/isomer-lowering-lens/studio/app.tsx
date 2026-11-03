@@ -11,7 +11,7 @@ import type {
   LensPlanResult,
   LensResponseResult,
 } from '@elastic/isomer-lowering-lens';
-import { plan, readResponse } from '@elastic/isomer-lowering-lens';
+import { plan, readResponse, readTable } from '@elastic/isomer-lowering-lens';
 
 import { requestsResponse, twoLayerInput } from '../src/native_esql.fixtures';
 
@@ -105,7 +105,13 @@ export default function LensInspectorApp() {
   };
   const runRead = () => {
     const parsed = parse(response);
-    setRead('error' in parsed ? parsed : readResponse(layer, parsed.value));
+    setRead(
+      'error' in parsed
+        ? parsed
+        : layer?.kind === 'form'
+          ? readTable(layer, parsed.value)
+          : readResponse(layer, parsed.value)
+    );
   };
 
   return (
@@ -114,9 +120,10 @@ export default function LensInspectorApp() {
       style={{ padding: 24, display: 'grid', gap: 12 }}>
       <h1 style={{ fontSize: 24, fontWeight: 600 }}>Lens inspector</h1>
       <p>
-        Plans a native ES|QL Lens saved object and replays a recorded response
-        through <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched
-        or executed, and nothing is drawn: this shows the plan a host would run,
+        Plans a native ES|QL or form-based Lens saved object and replays a
+        recorded ES|QL response or Lens <code>Datatable</code> through{' '}
+        <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
+        executed, and nothing is drawn: this shows the plan a host would run,
         not a chart.
       </p>
       <label htmlFor={`${id}-input`}>
@@ -167,18 +174,33 @@ export default function LensInspectorApp() {
             ))}
           </select>
           <pre aria-label="Query" style={pre}>
-            {layer ? clip(layer.query.esql, TEXT_CHARACTERS) : ''}
+            {layer?.kind === 'esql'
+              ? clip(layer.query.esql, TEXT_CHARACTERS)
+              : planned && 'status' in planned && planned.status === 'planned'
+                ? clip(pretty(planned.plan.query ?? null), TEXT_CHARACTERS)
+                : ''}
           </pre>
           <pre aria-label="Layer plan" style={pre}>
             {layer
               ? clip(
-                  pretty({ columns: layer.columns, host: layer.host }),
+                  pretty(
+                    layer.kind === 'esql'
+                      ? { columns: layer.columns, host: layer.host }
+                      : {
+                          dataView: layer.dataView,
+                          linkedTo: layer.linkedTo,
+                          columns: layer.columns,
+                          host: layer.host,
+                        }
+                  ),
                   TEXT_CHARACTERS
                 )
               : ''}
           </pre>
           <label htmlFor={`${id}-response`}>
-            {'Recorded ES|QL response: { columns, values }'}
+            {layer?.kind === 'form'
+              ? "Lens Datatable: { type: 'datatable', columns, rows }"
+              : 'Recorded ES|QL response: { columns, values }'}
           </label>
           <textarea
             id={`${id}-response`}

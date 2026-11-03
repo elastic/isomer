@@ -105,4 +105,4 @@ All three functions copy their arguments before reading them, so results share n
 
 ## Lens inspector
 
-`pnpm studio:dev` includes a **Lens inspector** app (`#/app/lens/`) in the repository's Studio. It plans the input you paste, shows each layer's query and `host` section, and projects a pasted response into a table, showing at most 50 rows and 200 characters per cell. It is Studio code, not part of the package. It fetches and executes nothing, and draws no chart.
+`pnpm studio:dev` includes a **Lens inspector** app (`#/app/lens/`) in the repository's Studio. It plans the input you paste, shows each layer's query (a form-based layer shows the plan's saved query) and plan, and projects a pasted ES|QL response or Lens `Datatable` into a table, showing at most 50 rows and 200 characters per cell. It is Studio code, not part of the package. It fetches and executes nothing, and draws no chart.

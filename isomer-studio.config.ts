@@ -36,7 +36,7 @@ export default defineStudioConfig({
       id: 'lens',
       title: 'Lens inspector',
       description:
-        'Plan a native ES|QL Lens saved object and replay a recorded response; nothing is fetched or executed.',
+        'Plan an ES|QL or form-based Lens saved object and replay a recorded response; nothing is fetched or executed.',
       load: () => import('./packages/isomer-lowering-lens/studio/app'),
     },
   ],

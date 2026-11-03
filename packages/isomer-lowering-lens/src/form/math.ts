@@ -7,6 +7,8 @@
 
 import { z } from 'zod';
 
+import { own } from '../own';
+
 // `@kbn/tinymath`'s AST as Lens persists it in a `math` column's
 // `params.tinymathAst`: a number, a referenced column's ID or variable, or a
 // function.
@@ -99,7 +101,7 @@ export const checkMath = (
       variables.add(current.value);
       return undefined;
     }
-    const arity = MATH_FUNCTIONS[current.name];
+    const arity = own(MATH_FUNCTIONS, current.name);
     if (!arity) {
       return `"${current.name}" is not a Lens formula math function.`;
     }
