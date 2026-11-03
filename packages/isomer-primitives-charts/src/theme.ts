@@ -35,6 +35,10 @@ export interface TextTokens {
 interface ToneTokens {
   /** Tile fill: EUI Borealis severity colors, `primary` for `primary`. */
   solid: string;
+  /** Badge fill: EUI `euiColorBackgroundLight*`. */
+  softBackground: string;
+  /** Badge text: EUI `euiColorText*`. */
+  softText: string;
 }
 
 /** Colors and sizes every renderer draws a chart with. */
@@ -83,13 +87,41 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     border: '#E3E8F2',
     barBackground: '#ECF1F9',
     tones: {
-      default: { solid: '#E3E8F2' },
-      primary: { solid: '#0B64DD' },
-      neutral: { solid: '#B5E5F2' },
-      success: { solid: '#24C292' },
-      warning: { solid: '#FCD883' },
-      risk: { solid: '#FF995E' },
-      danger: { solid: '#EE4C48' },
+      default: {
+        solid: '#E3E8F2',
+        softBackground: '#E3E8F2',
+        softText: '#384861',
+      },
+      primary: {
+        solid: '#0B64DD',
+        softBackground: '#D9E8FF',
+        softText: '#1750BA',
+      },
+      neutral: {
+        solid: '#B5E5F2',
+        softBackground: '#CFEEF7',
+        softText: '#0F658A',
+      },
+      success: {
+        solid: '#24C292',
+        softBackground: '#C9F3E3',
+        softText: '#09724D',
+      },
+      warning: {
+        solid: '#FCD883',
+        softBackground: '#FDE9B5',
+        softText: '#6A4906',
+      },
+      risk: {
+        solid: '#FF995E',
+        softBackground: '#FFDEBF',
+        softText: '#9E3A16',
+      },
+      danger: {
+        solid: '#EE4C48',
+        softBackground: '#FDDDD8',
+        softText: '#A71627',
+      },
     },
   },
   dark: {
@@ -98,13 +130,41 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     border: '#2B394F',
     barBackground: '#1D2A3E',
     tones: {
-      default: { solid: '#E3E8F2' },
-      primary: { solid: '#61A2FF' },
-      neutral: { solid: '#B5E5F2' },
-      success: { solid: '#24C292' },
-      warning: { solid: '#FCD883' },
-      risk: { solid: '#FF995E' },
-      danger: { solid: '#EE4C48' },
+      default: {
+        solid: '#E3E8F2',
+        softBackground: '#2B394F',
+        softText: '#B4C1D5',
+      },
+      primary: {
+        solid: '#61A2FF',
+        softBackground: '#0D2F5E',
+        softText: '#61A2FF',
+      },
+      neutral: {
+        solid: '#B5E5F2',
+        softBackground: '#003447',
+        softText: '#37B8DC',
+      },
+      success: {
+        solid: '#24C292',
+        softBackground: '#0D362B',
+        softText: '#24C292',
+      },
+      warning: {
+        solid: '#FCD883',
+        softBackground: '#3D3014',
+        softText: '#FCD883',
+      },
+      risk: {
+        solid: '#FF995E',
+        softBackground: '#4A221C',
+        softText: '#FF995E',
+      },
+      danger: {
+        solid: '#EE4C48',
+        softBackground: '#491D27',
+        softText: '#F6726A',
+      },
     },
   },
 };

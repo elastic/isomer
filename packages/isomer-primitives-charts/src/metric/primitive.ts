@@ -23,7 +23,10 @@ const catalog = {
   description:
     'Tiles of headline readings. Keys are unique; `null` reads N/A, never zero. Numbers carry a `format`, never preformatted strings.',
   purpose: 'Show one reading, or one per breakdown value.',
-  useWhen: ['The answer is a number: a count, rate, size or percentage now.'],
+  useWhen: [
+    'The answer is a number: a count, rate, size or percentage now.',
+    'The change from an earlier reading matters; give `secondary.kind: "change"` the previous value.',
+  ],
   avoidWhen: ['The reader must compare many values exactly or read an axis.'],
   example,
 } satisfies PrimitiveCatalogEntry;
@@ -35,10 +38,14 @@ const metricText = (node: MetricNode): string =>
     .join('\n');
 
 const metricMarkdown = (node: MetricNode) => {
-  const lines = resolveMetric(node).tiles.map(({ title, subtitle, value }) => {
-    const rest = [subtitle, value].filter(Boolean).join(', ');
-    return title ? [md.strong(title), md.text(`: ${rest}`)] : [md.text(rest)];
-  });
+  const lines = resolveMetric(node).tiles.map(
+    ({ title, subtitle, value, secondary }) => {
+      const rest = [subtitle, value, secondary?.description]
+        .filter(Boolean)
+        .join(', ');
+      return title ? [md.strong(title), md.text(`: ${rest}`)] : [md.text(rest)];
+    }
+  );
   return lines.length === 1
     ? md.paragraph(...lines[0]!)
     : md.list(lines.map((line) => md.paragraph(...line)));

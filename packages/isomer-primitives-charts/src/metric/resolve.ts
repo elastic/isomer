@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-import { resolveFill, textOn } from '../shared/color';
+import {
+  type ColorRef,
+  resolveBadge,
+  resolveFill,
+  textOn,
+} from '../shared/color';
 import { formatValue } from '../shared/format';
 import {
   type ChartTokens,
@@ -15,6 +20,21 @@ import {
 } from '../theme';
 
 import type { MetricNode, MetricTile } from './schema';
+
+type Direction = 'up' | 'down' | 'flat';
+
+const GLYPHS: Record<Direction, string> = { up: '↑', down: '↓', flat: '=' };
+
+interface ResolvedSecondary {
+  label?: string | undefined;
+  labelPosition: 'before' | 'after' | 'tooltip';
+  value?: string | undefined;
+  badge?:
+    | { background: string; text: string; glyph?: string | undefined }
+    | undefined;
+  /** Screen-reader wording, e.g. `up 12.50%`. */
+  description: string;
+}
 
 /** A tile with its text formatted and its colors concrete, ready to draw. */
 export interface ResolvedMetricTile {
@@ -31,6 +51,7 @@ export interface ResolvedMetricTile {
   valueColor?: string | undefined;
   /** Text colors that read on `fill`. */
   text: TextTokens;
+  secondary?: ResolvedSecondary | undefined;
   /** One line naming everything the tile shows. */
   reading: string;
 }
@@ -40,6 +61,7 @@ type Align = 'left' | 'center' | 'right';
 interface MetricLayout {
   titleAlign: Align;
   valueAlign: Align;
+  secondaryAlign: Align;
   valuePosition: 'top' | 'middle' | 'bottom';
   valueSize: 'default' | 'fit';
   density: 'compact' | 'default';
@@ -56,9 +78,66 @@ export interface ResolvedMetric {
 const DEFAULT_LAYOUT: MetricLayout = {
   titleAlign: 'left',
   valueAlign: 'right',
+  secondaryAlign: 'right',
   valuePosition: 'bottom',
   valueSize: 'default',
   density: 'default',
+};
+
+/** A `+` on a rise, unless the format already signs it. */
+const signed = (delta: number, formatted: string) =>
+  delta > 0 && !formatted.startsWith('+') ? `+${formatted}` : formatted;
+
+const CHANGE_COLORS: Record<
+  'good' | 'bad' | 'neutral',
+  Record<Direction, ColorRef>
+> = {
+  good: { up: 'success', down: 'danger', flat: 'default' },
+  bad: { up: 'danger', down: 'success', flat: 'default' },
+  neutral: { up: 'default', down: 'default', flat: 'default' },
+};
+
+const resolveSecondary = (
+  { value, format, secondary }: MetricTile,
+  tokens: ChartTokens
+): ResolvedSecondary | undefined => {
+  if (!secondary) {
+    return undefined;
+  }
+  const { label, labelPosition = 'before' } = secondary;
+  if (secondary.kind === 'value') {
+    const shown =
+      typeof secondary.value === 'number'
+        ? formatValue(secondary.value, secondary.format)
+        : secondary.value;
+    const { badge } = secondary;
+    const glyph = badge?.direction && GLYPHS[badge.direction];
+    return {
+      label,
+      labelPosition,
+      value: shown,
+      badge: badge && { ...resolveBadge(badge.color, tokens), glyph },
+      description: [label, glyph, shown].filter(Boolean).join(' '),
+    };
+  }
+  const delta = (value as number) - secondary.previous;
+  const direction: Direction = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat';
+  const relative =
+    (secondary.show ?? 'relative') === 'relative' && secondary.previous !== 0;
+  const shown = relative
+    ? signed(
+        delta,
+        formatValue(delta / Math.abs(secondary.previous), { kind: 'percent' })
+      )
+    : signed(delta, formatValue(delta, format));
+  const color = CHANGE_COLORS[secondary.increase ?? 'neutral'][direction];
+  return {
+    label,
+    labelPosition,
+    value: shown,
+    badge: { ...resolveBadge(color, tokens), glyph: GLYPHS[direction] },
+    description: `${label ? `${label} ` : ''}${direction === 'flat' ? 'unchanged' : direction} ${shown}`,
+  };
 };
 
 const resolveTile = (
@@ -76,6 +155,7 @@ const resolveTile = (
   const paint = color && resolveFill(color, tokens);
   const paintsValue = colorTarget === 'value';
   const fill = paintsValue || !paint ? tokens.background : paint;
+  const secondary = resolveSecondary(tile, tokens);
   const resolved: ResolvedMetricTile = {
     key,
     title,
@@ -85,7 +165,10 @@ const resolveTile = (
     fill,
     valueColor: paintsValue ? paint : undefined,
     text: textOn(fill, tokens),
-    reading: [title, subtitle, shown].filter(Boolean).join(', '),
+    secondary,
+    reading: [title, subtitle, shown, secondary?.description]
+      .filter(Boolean)
+      .join(', '),
   };
   return resolved;
 };

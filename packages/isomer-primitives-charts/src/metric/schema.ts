@@ -15,6 +15,69 @@ const LIMIT = 10_000;
 const text = z.string().trim().min(1).max(LIMIT);
 const align = z.enum(['left', 'center', 'right']);
 
+const secondaryLabel = {
+  label: text
+    .optional()
+    .describe('Names the secondary value. Omit to hide it.'),
+  labelPosition: z
+    .enum(['before', 'after', 'tooltip'])
+    .optional()
+    .describe(
+      'Where the label sits relative to the value. Defaults to `before`.'
+    ),
+};
+
+const secondarySchema = z
+  .discriminatedUnion('kind', [
+    z
+      .object({
+        kind: z.literal('value'),
+        ...secondaryLabel,
+        value: z
+          .union([z.number().finite(), text])
+          .optional()
+          .describe('The secondary reading. Omit to show only the badge.'),
+        format: valueFormatSchema.optional(),
+        badge: z
+          .object({
+            color: colorSchema,
+            direction: z
+              .enum(['up', 'down', 'flat'])
+              .optional()
+              .describe('Adds ↑, ↓ or = to the badge.'),
+          })
+          .strict()
+          .optional()
+          .describe('Draws the secondary value in a colored badge.'),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal('change'),
+        ...secondaryLabel,
+        previous: z
+          .number()
+          .finite()
+          .describe('The earlier reading the tile’s value is compared with.'),
+        increase: z
+          .enum(['good', 'bad', 'neutral'])
+          .optional()
+          .describe(
+            'Whether a rise is good (green), bad (red) or neither. Defaults to `neutral`.'
+          ),
+        show: z
+          .enum(['absolute', 'relative'])
+          .optional()
+          .describe(
+            '`absolute` shows the difference in the tile’s format; `relative` the percentage change. Defaults to `relative`.'
+          ),
+      })
+      .strict(),
+  ])
+  .describe(
+    'A second reading under the value: a resolved `value`, or a `change` derived from a previous reading.'
+  );
+
 const metricTileSchema = z
   .object({
     key: text.describe(
@@ -39,8 +102,20 @@ const metricTileSchema = z
       .describe(
         'Paint the tile background or the value text. Defaults to `background`.'
       ),
+    secondary: secondarySchema.optional(),
   })
-  .strict();
+  .strict()
+  .check((ctx) => {
+    const { value, secondary } = ctx.value;
+    if (secondary?.kind === 'change' && typeof value !== 'number') {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'a `change` needs a numeric `value`',
+        path: ['secondary'],
+        input: secondary,
+      });
+    }
+  });
 
 /** Schema of a `metric` node. */
 export const metricSchema = z
@@ -63,6 +138,7 @@ export const metricSchema = z
       .object({
         titleAlign: align.optional().describe('Defaults to `left`.'),
         valueAlign: align.optional().describe('Defaults to `right`.'),
+        secondaryAlign: align.optional().describe('Defaults to `right`.'),
         valuePosition: z
           .enum(['top', 'middle', 'bottom'])
           .optional()
