@@ -6,7 +6,20 @@ The distribution dependency closure of `@elastic/isomer-lowering-lens`. Regenera
 
 Packages a consumer installs with these libraries. Their license texts are folded into `NOTICE.txt`. Peer dependencies are supplied by the consumer and are not listed here.
 
-_No runtime `dependencies` entry is declared._
+| Package | Version | SPDX | Path | Optional dependencies |
+| --- | --- | --- | --- | --- |
+| `@elastic/esql` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql@4.36.0/node_modules/@elastic/esql` |  |
+| `@elastic/esql-ast` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-ast@4.36.0/node_modules/@elastic/esql-ast` |  |
+| `@elastic/esql-definitions` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.36.0/node_modules/@elastic/esql-definitions` |  |
+| `@elastic/esql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-grammar@4.36.0/node_modules/@elastic/esql-grammar` |  |
+| `@elastic/esql-parser` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-parser@4.36.0/node_modules/@elastic/esql-parser` |  |
+| `@elastic/esql-promql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-promql-grammar@4.36.0/node_modules/@elastic/esql-promql-grammar` |  |
+| `@elastic/esql-traversal` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-traversal@4.36.0/node_modules/@elastic/esql-traversal` |  |
+| `@elastic/esql-types` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-types@4.36.0/node_modules/@elastic/esql-types` |  |
+| `@elastic/pretty-printer` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+pretty-printer@4.36.0/node_modules/@elastic/pretty-printer` |  |
+| `antlr4` | 4.13.2 | BSD-3-Clause | `node_modules/.pnpm/antlr4@4.13.2/node_modules/antlr4` |  |
+| `tree-dump` | 1.1.0 | Apache-2.0 | `node_modules/.pnpm/tree-dump@1.1.0_tslib@2.8.1/node_modules/tree-dump` |  |
+| `tslib` | 2.8.1 | 0BSD | `node_modules/.pnpm/tslib@2.8.1/node_modules/tslib` |  |
 
 ## Optional dependencies
 

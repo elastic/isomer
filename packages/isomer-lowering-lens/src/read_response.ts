@@ -5,13 +5,9 @@
  * 2.0.
  */
 
-import { copyJson, JSON_LIMITS } from './json';
+import { JSON_LIMITS } from './json';
 import type { LensDiagnostic, LensResponseResult } from './schema';
-import {
-  esqlResponseSchema,
-  issueDiagnostics,
-  layerPlanSchema,
-} from './schema';
+import { esqlResponseSchema, layerPlanSchema, parseArgument } from './schema';
 
 const invalid = (diagnostics: LensDiagnostic[]): LensResponseResult => ({
   status: 'invalid',
@@ -26,87 +22,60 @@ export const readResponse = (
   layer: unknown,
   response: unknown
 ): LensResponseResult => {
-  const copiedLayer = copyJson(layer);
-  if (!copiedLayer.ok) {
-    return invalid([
-      {
-        code: 'lens.response.invalid-json',
-        message: copiedLayer.message,
-        path: ['layer'],
-      },
-    ]);
+  const parsedLayer = parseArgument(
+    layer,
+    layerPlanSchema,
+    {
+      json: 'lens.response.invalid-json',
+      shape: 'lens.response.invalid-layer',
+    },
+    ['layer']
+  );
+  if (!parsedLayer.ok) {
+    return invalid(parsedLayer.diagnostics);
   }
-  const copiedResponse = copyJson(response);
-  if (!copiedResponse.ok) {
-    return invalid([
-      {
-        code: 'lens.response.invalid-json',
-        message: copiedResponse.message,
-        path: ['response'],
-      },
-    ]);
+  const parsedResponse = parseArgument(
+    response,
+    esqlResponseSchema,
+    {
+      json: 'lens.response.invalid-json',
+      shape: 'lens.response.invalid-shape',
+    },
+    ['response']
+  );
+  if (!parsedResponse.ok) {
+    return invalid(parsedResponse.diagnostics);
   }
-  const parsedLayer = layerPlanSchema.safeParse(copiedLayer.value);
-  if (!parsedLayer.success) {
-    return invalid(
-      issueDiagnostics('lens.response.invalid-layer', parsedLayer.error, [
-        'layer',
-      ])
-    );
-  }
-  const parsed = esqlResponseSchema.safeParse(copiedResponse.value);
-  if (!parsed.success) {
-    return invalid(
-      issueDiagnostics('lens.response.invalid-shape', parsed.error, [
-        'response',
-      ])
-    );
-  }
-  const { layerId, columns: lensColumns } = parsedLayer.data;
+  const { layerId, columns: lensColumns } = parsedLayer.value;
   const {
     columns,
     values,
     is_partial: isPartial,
     is_running: isRunning,
-  } = parsed.data;
+  } = parsedResponse.value;
 
-  const diagnostics: LensDiagnostic[] = [];
-  if (isPartial === true || isRunning === true) {
-    diagnostics.push({
-      code: 'lens.response.incomplete',
-      message: 'A partial or still-running response cannot be projected.',
-      path: ['response', isRunning === true ? 'is_running' : 'is_partial'],
-    });
+  if (isRunning === true) {
+    return invalid([
+      {
+        code: 'lens.response.incomplete',
+        message: 'A still-running response cannot be projected.',
+        path: ['response', 'is_running'],
+      },
+    ]);
   }
-  const positions = new Map<string, number>();
-  columns.forEach(({ name }, index) => {
-    if (positions.has(name)) {
-      diagnostics.push({
-        code: 'lens.response.duplicate-column',
-        message: `More than one response column is named "${name}".`,
-        path: ['response', 'columns', index],
-      });
-    }
-    positions.set(name, index);
-  });
-  lensColumns.forEach(({ fieldName }, index) => {
-    if (!positions.has(fieldName)) {
-      diagnostics.push({
-        code: 'lens.response.missing-column',
-        message: `The response has no column "${fieldName}".`,
-        path: ['layer', 'columns', index, 'fieldName'],
-      });
-    }
-  });
-  values.forEach((row, index) => {
-    if (row.length !== columns.length) {
-      diagnostics.push({
-        code: 'lens.response.row-width',
-        message: `Row ${index} has ${row.length} cells for ${columns.length} columns.`,
-        path: ['response', 'values', index],
-      });
-    }
-  });
+  const positions = new Map(columns.map(({ name }, index) => [name, index]));
+  const diagnostics: LensDiagnostic[] = lensColumns.flatMap(
+    ({ fieldName }, index) =>
+      positions.has(fieldName)
+        ? []
+        : [
+            {
+              code: 'lens.response.missing-column',
+              message: `The response has no column "${fieldName}".`,
+              path: ['layer', 'columns', index, 'fieldName'],
+            },
+          ]
+  );
   // Several Lens columns may read one field, so the table can outgrow the response.
   if (values.length * lensColumns.length > JSON_LIMITS.values) {
     diagnostics.push({
@@ -129,6 +98,7 @@ export const readResponse = (
       layerId,
       columns: projected.map(({ lens, type }) => ({ lens, type })),
       rows: values.map((row) => projected.map(({ index }) => row[index]!)),
+      partial: isPartial === true,
     },
   };
 };
