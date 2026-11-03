@@ -5,91 +5,40 @@
  * 2.0.
  */
 
-const WORD = /[A-Za-z0-9_]/;
+import { Parser, Walker } from '@elastic/esql';
 
-/** The end of the quoted, backquoted or commented run starting at `start`, or `start` if there is none. */
-const skip = (esql: string, start: number): number => {
-  if (esql.startsWith('"""', start)) {
-    const end = esql.indexOf('"""', start + 3);
-    if (end === -1) {
-      return esql.length;
-    }
-    // The lexer takes up to two more quotes as part of a raw string's closing run.
-    let close = end + 3;
-    while (close < end + 5 && esql[close] === '"') {
-      close += 1;
-    }
-    return close;
-  }
-  const open = esql[start];
-  if (open === '"' || open === '`') {
-    let index = start + 1;
-    while (index < esql.length && esql[index] !== open) {
-      index += open === '"' && esql[index] === '\\' ? 2 : 1;
-    }
-    return index + 1;
-  }
-  if (esql.startsWith('//', start)) {
-    let index = start + 2;
-    while (
-      index < esql.length &&
-      esql[index] !== '\n' &&
-      esql[index] !== '\r'
-    ) {
-      index += 1;
-    }
-    return index;
-  }
-  if (esql.startsWith('/*', start)) {
-    let depth = 1;
-    let index = start + 2;
-    while (index < esql.length && depth > 0) {
-      if (esql.startsWith('/*', index)) {
-        depth += 1;
-        index += 2;
-      } else if (esql.startsWith('*/', index)) {
-        depth -= 1;
-        index += 2;
-      } else {
-        index += 1;
-      }
-    }
-    return index;
-  }
-  return start;
-};
+/** Why {@link queryParams} found no parameter list a host can bind by name. */
+export type QueryParamsRefusal = 'syntax' | 'unnamed' | 'positional';
+
+/** What {@link queryParams} found. */
+export type QueryParams =
+  | { readonly ok: true; readonly names: string[] }
+  | {
+      readonly ok: false;
+      readonly reason: QueryParamsRefusal;
+      readonly message: string;
+    };
 
 /**
- * The named and numbered parameters (`?name`, `??name`, `?1`) an ES|QL query references, in first-use order,
- * or `undefined` when it has an anonymous `?`, which a host could only bind by position.
- * A lexical scan: strings, quoted identifiers and comments (which nest) are skipped, nothing is parsed.
+ * The named parameters (`?name`, `??name`) an ES|QL query references, in first-use order, found as Kibana finds them: `Parser.parse` and `Walker.params`.
+ * Kibana binds parameters by name only, so a query with a syntax error, an anonymous `?` or a positional `?1` is refused.
  */
-export const queryParams = (esql: string): string[] | undefined => {
-  const names = new Set<string>();
-  let index = 0;
-  while (index < esql.length) {
-    const next = skip(esql, index);
-    if (next !== index) {
-      index = next;
-      continue;
-    }
-    if (esql[index] !== '?') {
-      index += 1;
-      continue;
-    }
-    let start = index + 1;
-    if (esql[start] === '?') {
-      start += 1;
-    }
-    let end = start;
-    while (end < esql.length && WORD.test(esql[end]!)) {
-      end += 1;
-    }
-    if (end === start) {
-      return undefined;
-    }
-    names.add(esql.slice(start, end));
-    index = end;
+export const queryParams = (esql: string): QueryParams => {
+  const { root, errors } = Parser.parse(esql);
+  const [error] = errors;
+  if (error) {
+    return { ok: false, reason: 'syntax', message: error.message };
   }
-  return [...names];
+  const names = new Set<string>();
+  for (const { paramType, value, text } of Walker.params(root)) {
+    if (paramType !== 'named') {
+      return {
+        ok: false,
+        reason: paramType === 'positional' ? 'positional' : 'unnamed',
+        message: `Parameter \`${text}\` is ${paramType}, and only named parameters can be bound.`,
+      };
+    }
+    names.add(String(value));
+  }
+  return { ok: true, names: [...names] };
 };

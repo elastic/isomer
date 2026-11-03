@@ -534,7 +534,7 @@ Copyright Elasticsearch B.V.
 
 ---
 
-This product depends on @elastic/esql-definitions@4.31.0, licensed under Elastic-2.0.
+This product depends on @elastic/esql-definitions@4.36.0, licensed under Elastic-2.0.
 
 @elastic/esql-definitions (Shared definitions for the ES|QL language).
 Copyright 2025-2026 Elasticsearch B.V.

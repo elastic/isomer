@@ -21,11 +21,19 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@babel/types` | 7.29.8 | MIT | `node_modules/.pnpm/@babel+types@7.29.8/node_modules/@babel/types` |  |
 | `@base2/pretty-print-object` | 1.0.1 | BSD-2-Clause | `node_modules/.pnpm/@base2+pretty-print-object@1.0.1/node_modules/@base2/pretty-print-object` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
-| `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
+| `@elastic/esql` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql@4.36.0/node_modules/@elastic/esql` |  |
+| `@elastic/esql-ast` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-ast@4.36.0/node_modules/@elastic/esql-ast` |  |
+| `@elastic/esql-definitions` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.36.0/node_modules/@elastic/esql-definitions` |  |
+| `@elastic/esql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-grammar@4.36.0/node_modules/@elastic/esql-grammar` |  |
+| `@elastic/esql-parser` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-parser@4.36.0/node_modules/@elastic/esql-parser` |  |
+| `@elastic/esql-promql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-promql-grammar@4.36.0/node_modules/@elastic/esql-promql-grammar` |  |
+| `@elastic/esql-traversal` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-traversal@4.36.0/node_modules/@elastic/esql-traversal` |  |
+| `@elastic/esql-types` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-types@4.36.0/node_modules/@elastic/esql-types` |  |
 | `@elastic/eui` | 123.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui@123.1.0_@elastic+datemath@5.0.3_moment@2.31.0__@elastic+eui-theme-borealis_0545661ad584fdf73b0459b64f946f43/node_modules/@elastic/eui` |  |
 | `@elastic/eui-theme-borealis` | 8.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-borealis@8.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18._9b163b4f2fc10823334ba28c294bafcc/node_modules/@elastic/eui-theme-borealis` |  |
 | `@elastic/eui-theme-common` | 10.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-common@10.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18.3_fbe9488fb79dd10ae7c646de20371fd6/node_modules/@elastic/eui-theme-common` |  |
 | `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
+| `@elastic/pretty-printer` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+pretty-printer@4.36.0/node_modules/@elastic/pretty-printer` |  |
 | `@elastic/prismjs-esql` | 4.31.0 | MIT | `node_modules/.pnpm/@elastic+prismjs-esql@4.31.0/node_modules/@elastic/prismjs-esql` |  |
 | `@emotion/babel-plugin` | 11.13.5 | MIT | `node_modules/.pnpm/@emotion+babel-plugin@11.13.5/node_modules/@emotion/babel-plugin` |  |
 | `@emotion/cache` | 11.14.0 | MIT | `node_modules/.pnpm/@emotion+cache@11.14.0/node_modules/@emotion/cache` |  |
@@ -123,6 +131,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@ungap/structured-clone` | 1.4.0 | ISC | `node_modules/.pnpm/@ungap+structured-clone@1.4.0/node_modules/@ungap/structured-clone` |  |
 | `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
+| `antlr4` | 4.13.2 | BSD-3-Clause | `node_modules/.pnpm/antlr4@4.13.2/node_modules/antlr4` |  |
 | `aria-hidden` | 1.2.6 | MIT | `node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden` |  |
 | `attr-accept` | 2.2.5 | MIT | `node_modules/.pnpm/attr-accept@2.2.5/node_modules/attr-accept` |  |
 | `babel-plugin-macros` | 3.1.0 | MIT | `node_modules/.pnpm/babel-plugin-macros@3.1.0/node_modules/babel-plugin-macros` |  |
@@ -356,6 +365,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `takumi-pdf` | 0.18.3 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.18.3_react@18.3.1/node_modules/takumi-pdf` |  |
 | `tiny-invariant` | 1.3.3 | MIT | `node_modules/.pnpm/tiny-invariant@1.3.3/node_modules/tiny-invariant` |  |
 | `tinyglobby` | 0.2.17 | MIT | `node_modules/.pnpm/tinyglobby@0.2.17/node_modules/tinyglobby` |  |
+| `tree-dump` | 1.1.0 | Apache-2.0 | `node_modules/.pnpm/tree-dump@1.1.0_tslib@2.8.1/node_modules/tree-dump` |  |
 | `trim-lines` | 3.0.1 | MIT | `node_modules/.pnpm/trim-lines@3.0.1/node_modules/trim-lines` |  |
 | `trim-trailing-lines` | 1.1.4 | MIT | `node_modules/.pnpm/trim-trailing-lines@1.1.4/node_modules/trim-trailing-lines` |  |
 | `trough` | 1.0.5 | MIT | `node_modules/.pnpm/trough@1.0.5/node_modules/trough` |  |
@@ -543,7 +553,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
-| `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
+| `@elastic/esql-definitions` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.36.0/node_modules/@elastic/esql-definitions` |  |
 | `@elastic/eui` | 123.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui@123.1.0_@elastic+datemath@5.0.3_moment@2.31.0__@elastic+eui-theme-borealis_0545661ad584fdf73b0459b64f946f43/node_modules/@elastic/eui` |  |
 | `@elastic/eui-theme-borealis` | 8.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-borealis@8.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18._9b163b4f2fc10823334ba28c294bafcc/node_modules/@elastic/eui-theme-borealis` |  |
 | `@elastic/eui-theme-common` | 10.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-common@10.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18.3_fbe9488fb79dd10ae7c646de20371fd6/node_modules/@elastic/eui-theme-common` |  |
