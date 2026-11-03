@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 
+import { actionSchema } from '../shared/action';
 import { colorSchema } from '../shared/color';
 import { valueFormatSchema } from '../shared/format';
 import { pointsSchema } from '../shared/series';
@@ -138,6 +139,7 @@ const metricTileSchema = z
       ),
     secondary: secondarySchema.optional(),
     visual: visualSchema.optional(),
+    action: actionSchema.optional(),
   })
   .strict()
   .check((ctx) => {
@@ -161,6 +163,15 @@ export const metricSchema = z
       .max(LIMIT)
       .describe(
         'One tile, or one per breakdown value in display order. None draws an empty grid.'
+      ),
+    placeholders: z
+      .number()
+      .int()
+      .min(0)
+      .max(LIMIT)
+      .optional()
+      .describe(
+        'Empty cells after the tiles, as Lens pads a breakdown to the most values it can return. Defaults to 0.'
       ),
     columns: z
       .number()

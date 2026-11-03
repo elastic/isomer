@@ -78,6 +78,13 @@ for (const mode of ['dev', 'static']) {
           .toBeTruthy();
         url = /Isomer Studio: (http\S+)/.exec(output)![1]!;
       }
+      const actions: string[] = [];
+      page.on('console', (message) => {
+        const text = message.text();
+        if (text.startsWith('isomer action ')) {
+          actions.push(text.slice('isomer action '.length));
+        }
+      });
       await page.goto(`${url}#/dev/metric/0`);
       await expect(
         page.getByRole('heading', { name: 'Metric', exact: true })
@@ -127,6 +134,18 @@ for (const mode of ['dev', 'static']) {
       await expect.poll(rootSize).toEqual([150, 150]);
       await setSectionStyle('height', '100px');
       await expect.poll(rootSize).toEqual([100, 100]);
+
+      await page.goto(`${url}#/dev/metric/1`);
+      await expect(tiles).toHaveCount(3);
+      await tiles.filter({ hasText: 'web-02' }).click();
+      await expect.poll(() => actions.length).toBe(1);
+      expect(JSON.parse(actions[0]!)).toEqual({
+        name: 'dashboard/filter',
+        context: {
+          key: 'web-02',
+          filters: [{ field: 'host.name', value: 'web-02' }],
+        },
+      });
 
       expect(errors).toEqual([]);
     } finally {

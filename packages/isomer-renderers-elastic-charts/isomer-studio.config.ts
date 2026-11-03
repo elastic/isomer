@@ -16,6 +16,10 @@ export default defineStudioConfig({
   title: 'Isomer Charts',
   runtime: createIsomerRuntime({ packs: [elasticChartsPack] }),
   stylesheet: () => `${elasticChartsReset}${elasticChartsStylesheet}`,
+  // Actions surface in the browser console.
+  createReactContext: () => ({
+    onEvent: (event) => console.info('isomer action', JSON.stringify(event)),
+  }),
   featured: ['metric'],
   images: false,
 });

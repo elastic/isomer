@@ -6,6 +6,7 @@
 type MetricNode = {
   type: 'metric';
   tiles: MetricTile[]; // in display order; keys unique; none is an empty grid
+  placeholders?: number; // empty cells after the tiles, default 0
   columns?: number; // tiles per row, default 3
   layout?: {
     titleAlign?: Align; // default 'left'
@@ -54,10 +55,22 @@ type MetricTile = {
         min?: number;
         direction?: 'horizontal' | 'vertical';
       };
+  action?: {
+    name: string;
+    filters?: (
+      // what Lens filters a bucket by
+      | { field: string; value: Raw } // a value
+      | { field: string; values: Raw[]; negate?: boolean } // any, or none, of the values
+      | { field: string; exists: boolean } // a missing bucket: exists: false
+      | { field: string; range: { gte?: number; lt?: number } } // a range bucket
+      | { query: string | Json; language: 'kuery' | 'lucene' } // a filters bucket
+    )[];
+    context?: Json;
+  };
 };
 ```
 
-Tile counts, columns and text share one cap of 10,000; renderers truncate text that does not fit.
+Tile counts, columns, placeholders and text share one cap of 10,000; renderers truncate text that does not fit.
 
 ## Colors
 
@@ -99,4 +112,5 @@ Text colors are picked for contrast with the fill.
 | trend | `trend`, `trendShape` | an area or step path over the tile's lower half, broken at `null` |
 | progress | `domainMax`, `domainMin` when not 0, `progressBarDirection` | a filled bar |
 | layout | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement |
-| columns | the `data` grid | rows of tiles |
+| columns, placeholders | the `data` grid, padded with `undefined` cells | rows of tiles, then empty cells |
+| action | `onElementClick` | a press handler |

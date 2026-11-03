@@ -5,7 +5,7 @@
 | Export | What it is |
 | --- | --- |
 | `elasticChartsPack` | The charts pack, drawn with Elastic Charts. |
-| `MetricChart` | The metric as a component: `node` and an optional `scheme`. |
+| `MetricChart` | The metric as a component: `node`, optional `onEvent`, optional `scheme`. |
 | `elasticChartsReset` | The part of EUI's global reset Elastic Charts relies on, as CSS, for hosts without EUI. |
 
 ```ts
@@ -25,6 +25,10 @@ A chart follows the host's `color-scheme` where it is drawn, falling back to the
 ## Server rendering
 
 Elastic Charts measures its container in the browser. Until the chart mounts, including in the `html` surface and on `snapshot`, it renders each tile's reading as a list item. There is no server-drawn chart.
+
+## Actions
+
+A tile with an `action` raises it through the render context's `onEvent`. Without `onEvent`, or when no tile has an action, the chart is inert. Elastic Charts makes a whole chart interactive or none of it, so when only some tiles have an action, the others still show as clickable but raise nothing.
 
 ## Size
 

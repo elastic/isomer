@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { toActionEvent } from '../shared/action';
 import {
   type ColorRef,
   resolveBadge,
@@ -71,6 +72,7 @@ export interface ResolvedMetricTile {
         direction: 'horizontal' | 'vertical';
         color: string;
       };
+  action?: { name: string; context: Record<string, unknown> };
   /** One line naming everything the tile shows. */
   reading: string;
 }
@@ -89,6 +91,8 @@ interface MetricLayout {
 /** What {@link resolveMetric} returns: the grid, layout, tiles and tokens a renderer draws. */
 export interface ResolvedMetric {
   columns: number;
+  /** Empty cells drawn after the tiles. */
+  placeholders: number;
   layout: MetricLayout;
   tiles: ResolvedMetricTile[];
   tokens: ChartTokens;
@@ -163,8 +167,17 @@ const resolveTile = (
   tile: MetricTile,
   tokens: ChartTokens
 ): ResolvedMetricTile => {
-  const { key, title, subtitle, value, format, color, colorTarget, visual } =
-    tile;
+  const {
+    key,
+    title,
+    subtitle,
+    value,
+    format,
+    color,
+    colorTarget,
+    visual,
+    action,
+  } = tile;
   const number = typeof value === 'number' ? value : undefined;
   const shown =
     value === null
@@ -218,6 +231,9 @@ const resolveTile = (
       color: paint ?? tokens.progress,
     };
   }
+  if (action) {
+    resolved.action = toActionEvent(action, key);
+  }
   return resolved;
 };
 
@@ -228,7 +244,11 @@ export const resolveMetric = (
 ): ResolvedMetric => {
   const tokens = chartTokens[scheme];
   return {
-    columns: Math.max(1, Math.min(node.columns ?? 3, node.tiles.length)),
+    columns: Math.max(
+      1,
+      Math.min(node.columns ?? 3, node.tiles.length + (node.placeholders ?? 0))
+    ),
+    placeholders: node.placeholders ?? 0,
     layout: {
       ...DEFAULT_LAYOUT,
       ...Object.fromEntries(

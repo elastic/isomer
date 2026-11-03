@@ -28,6 +28,7 @@ const pack = createChartsPack({
 - **One resolver per chart.** `resolveMetric(node, scheme)` turns a node into formatted strings, concrete colors and defaults. Renderers map its output and never re-derive it, so every engine shows the same text and colors.
 - **Elastic Charts is the visual reference.** `chartTokens` mirrors Elastic Charts' light and dark themes and EUI Borealis colors, and the Elastic Charts renderer's tests check them against the installed Elastic Charts themes.
 - **Numbers read as Kibana reads them.** Number, percent, bytes and bits formats compile to the numeral pattern Lens builds and run through `@elastic/numeral`, as Kibana's field formats do; a `pattern` format takes any numeral pattern, and a `duration` follows Kibana's duration format on `moment`. Both read English whatever locale the host set globally.
+- **Actions are data.** An interactive mark carries an `action`: a name, the mark's identity as `filters` of field and raw value, and optional JSON `context`. Activating the mark raises `{ name, context: { ...context, key, filters } }` through the render context's `onEvent`. A mark without one is inert.
 
 ## Charts
 

@@ -40,6 +40,28 @@ export const example: MetricNode = {
   ],
 };
 
+/** A breakdown: one tile per host, colored by status, each raising a filter action. */
+export const breakdownExample: MetricNode = {
+  type: 'metric',
+  columns: 3,
+  tiles: [
+    ['web-01', 0.42, 'success'],
+    ['web-02', 0.81, 'warning'],
+    ['web-03', 0.97, 'danger'],
+  ].map(([host, cpu, color]) => ({
+    key: host as string,
+    title: host as string,
+    subtitle: 'CPU',
+    value: cpu as number,
+    format: { kind: 'percent', decimals: 1 },
+    color: color as 'success' | 'warning' | 'danger',
+    action: {
+      name: 'dashboard/filter',
+      filters: [{ field: 'host.name', value: host as string }],
+    },
+  })),
+};
+
 /** Progress toward a maximum, with a resolved secondary value in a badge. */
 export const progressExample: MetricNode = {
   type: 'metric',
@@ -93,4 +115,9 @@ export const textExample: MetricNode = {
 };
 
 /** Every example, for galleries and tests. */
-export const examples: MetricNode[] = [example, progressExample, textExample];
+export const examples: MetricNode[] = [
+  example,
+  breakdownExample,
+  progressExample,
+  textExample,
+];

@@ -20,9 +20,9 @@ import {
   resolveMetric,
   type Scheme,
 } from '@elastic/isomer-primitives-charts/model';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { type ActionEventRef, nodeAnchor } from '@elastic/isomer-sdk';
 
-import { toDatum, toTheme } from './datum';
+import { tileAction, toDatum, toTheme } from './datum';
 import { useScheme } from './scheme';
 
 const rows = <T,>(items: T[], columns: number): T[][] =>
@@ -33,6 +33,8 @@ const rows = <T,>(items: T[], columns: number): T[][] =>
 /** Props of {@link MetricChart}. */
 export interface MetricChartProps {
   node: MetricNode;
+  /** Receives a tile's action; absent renders the chart inert. */
+  onEvent?: ((event: ActionEventRef) => void) | undefined;
   /** Paint in this scheme instead of following the host. */
   scheme?: Scheme | undefined;
 }
@@ -48,17 +50,23 @@ const Readings = ({ resolved }: { resolved: ResolvedMetric }) => (
 
 const MetricView = ({
   node,
+  onEvent,
   scheme: fixed,
   attributes,
 }: MetricChartProps & { attributes?: Readonly<Record<string, string>> }) => {
   const ref = useRef<HTMLDivElement>(null);
   const scheme = useScheme(ref, fixed);
   const resolved = resolveMetric(node, scheme ?? 'light');
-  const { tiles, columns, tokens } = resolved;
+  const { tiles, columns, placeholders, tokens } = resolved;
   const grid = rows(
-    tiles.map((tile) => toDatum(tile, tokens)),
+    [
+      ...tiles.map((tile) => toDatum(tile, tokens)),
+      ...Array.from({ length: placeholders }, () => undefined),
+    ],
     columns
   );
+  const interactive =
+    onEvent !== undefined && tiles.some(({ action }) => action);
   return (
     <div
       {...attributes}
@@ -80,6 +88,16 @@ const MetricView = ({
               <Settings
                 baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
                 theme={toTheme(resolved)}
+                {...(interactive
+                  ? {
+                      onElementClick: (events) => {
+                        const action = tileAction(resolved, events);
+                        if (action) {
+                          onEvent(action);
+                        }
+                      },
+                    }
+                  : {})}
               />
               <Metric id="metric" data={grid} />
             </Chart>
@@ -98,6 +116,10 @@ export const MetricChart = (props: MetricChartProps) => (
 /** `react` renderers for the charts pack, drawn with Elastic Charts. */
 export const elasticChartsRenderers: ChartRenderers = {
   metric: (node, { context }) => (
-    <MetricView node={node} attributes={nodeAnchor(context, node)} />
+    <MetricView
+      node={node}
+      onEvent={context.onEvent}
+      attributes={nodeAnchor(context, node)}
+    />
   ),
 };

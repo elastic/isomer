@@ -13,7 +13,13 @@ import { describe, expect, it } from 'vitest';
 import { createChartsPack } from '../pack';
 import { sparkShade } from '../shared/color';
 
-import { example, examples, progressExample, textExample } from './examples';
+import {
+  breakdownExample,
+  example,
+  examples,
+  progressExample,
+  textExample,
+} from './examples';
 import { resolveMetric } from './resolve';
 import { type MetricNode, metricSchema } from './schema';
 
@@ -245,6 +251,18 @@ describe('resolveMetric', () => {
     });
   });
 
+  it('raises the action with the tile key and filters', () => {
+    expect(
+      resolveMetric(breakdownExample).tiles.map(({ action }) => action)
+    ).toContainEqual({
+      name: 'dashboard/filter',
+      context: {
+        key: 'web-02',
+        filters: [{ field: 'host.name', value: 'web-02' }],
+      },
+    });
+  });
+
   it('fills layout defaults and limits columns to the tiles', () => {
     expect(resolveMetric(textExample)).toMatchObject({
       columns: 2,
@@ -257,12 +275,56 @@ describe('resolveMetric', () => {
   });
 });
 
+describe('action filters', () => {
+  const action = (filters: object[]) =>
+    tile({ action: { name: 'filter', filters } });
+
+  it('accepts every filter Lens builds for a bucket and passes it through', () => {
+    const filters = [
+      { field: 'host', value: 'a' },
+      { field: 'host', values: ['a', 'b'], negate: true },
+      { field: 'host', exists: false },
+      { field: 'bytes', range: { gte: 0, lt: 1024 } },
+      { query: 'response : 500', language: 'kuery' },
+    ];
+    expect(issues(action(filters))).toEqual([]);
+    expect(
+      resolveMetric(action(filters) as MetricNode).tiles[0]!.action
+    ).toEqual({
+      name: 'filter',
+      context: { key: 'a', filters },
+    });
+  });
+
+  it.each([
+    [{ field: 'host', values: [] }],
+    [{ field: 'host', range: { gte: 'a' } }],
+    [{ query: 'x', language: 'esql' }],
+    [{ field: 'host', value: 'a', exists: true }],
+  ])('rejects %j', (filter) => {
+    expect(issues(action([filter]))).toHaveLength(1);
+  });
+});
+
 describe('metric limits', () => {
   it('draws an empty grid', () => {
     expect(issues({ type: 'metric', tiles: [] })).toEqual([]);
     expect(resolveMetric({ type: 'metric', tiles: [] })).toMatchObject({
       columns: 1,
       tiles: [],
+    });
+  });
+
+  it('pads a grid with placeholders', () => {
+    expect(
+      resolveMetric({
+        type: 'metric',
+        tiles: [{ key: 'a', value: 1 }],
+        placeholders: 4,
+      })
+    ).toMatchObject({ columns: 3, placeholders: 4 });
+    expect(resolveMetric({ type: 'metric', tiles: [] })).toMatchObject({
+      placeholders: 0,
     });
   });
 
@@ -298,6 +360,17 @@ describe('metric text and markdown', () => {
     ).toMatchInlineSnapshot(
       `"**Requests**: Last 24 hours, 182,340, vs previous day up +11.10%"`
     );
+  });
+});
+
+describe('metric breakdown text', () => {
+  it('reads every breakdown tile', () => {
+    expect(runtime.surfaces.text.renderNode(breakdownExample as PrimitiveNode))
+      .toMatchInlineSnapshot(`
+      "web-01, CPU, 42.0%
+      web-02, CPU, 81.0%
+      web-03, CPU, 97.0%"
+    `);
   });
 });
 
