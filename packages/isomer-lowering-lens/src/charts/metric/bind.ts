@@ -28,7 +28,7 @@ import type {
   LensTable,
 } from '../../schema';
 import { collapseRows } from '../collapse';
-import { toValueFormat } from '../format';
+import { fromFieldFormat, toValueFormat } from '../format';
 import {
   type Bounds,
   colorForValue,
@@ -198,52 +198,43 @@ const columnFormat = (
   if (!bound) {
     return undefined;
   }
-  const mapped = toValueFormat(bound.lens.params);
-  if (!mapped.ok) {
-    problems.add(
-      'unsupported',
-      'unsupported-format',
-      mapped.outOfRange
-        ? `The "${mapped.id}" format of column "${bound.lens.columnId}" has parameters out of range.`
-        : `The "${mapped.id}" format of column "${bound.lens.columnId}" is not supported yet.`
-    );
-    return undefined;
-  }
+  const { columnId, params, meta } = bound.lens;
   // `lens_format_column` formats number columns only; others keep their data view format.
   if (!bound.numeric) {
-    const saved = bound.lens.meta?.params;
-    if (!isDate(bound) && !isPlainTextFormat(saved)) {
-      const id = isRecord(saved) ? saved.id : undefined;
+    if (!isDate(bound) && !isPlainTextFormat(meta?.params)) {
+      const id = isRecord(meta?.params) ? meta.params.id : undefined;
       problems.add(
         'unsupported',
         'unsupported-format',
-        `The "${typeof id === 'string' ? id : 'unknown'}" format of column "${bound.lens.columnId}" is not supported yet.`
+        `The "${typeof id === 'string' ? id : 'unknown'}" format of column "${columnId}" is not supported yet.`
       );
     }
     return undefined;
   }
-  // A table's own format, from the data view, applies when Lens sets none;
-  // Kibana wraps a terms column's format in a `terms` format.
-  const saved = bound.lens.meta?.params;
-  const rendered =
+  const mapped = toValueFormat(params);
+  if (mapped.ok && mapped.format) {
+    return mapped.format;
+  }
+  // Without a Lens format, the table's own data view format applies; Kibana
+  // wraps a terms column's format in a `terms` format.
+  const saved = meta?.params;
+  const viewed = fromFieldFormat(
     isRecord(saved) && saved.id === 'terms' && isRecord(saved.params)
       ? saved.params
-      : saved;
-  if (
-    mapped.format === undefined &&
-    typeof rendered === 'object' &&
-    rendered !== null &&
-    !Array.isArray(rendered) &&
-    !(rendered.id === 'number' && rendered.params === undefined)
-  ) {
+      : saved
+  );
+  const failed = !mapped.ok ? mapped : !viewed.ok ? viewed : undefined;
+  if (failed) {
     problems.add(
       'unsupported',
       'unsupported-format',
-      `Column "${bound.lens.columnId}" reads with its data view's format, which is not supported yet.`
+      failed.outOfRange
+        ? `The "${failed.id}" format of column "${columnId}" has parameters out of range.`
+        : `The "${failed.id}" format of column "${columnId}" is not supported yet.`
     );
     return undefined;
   }
-  return mapped.format;
+  return viewed.ok ? viewed.format : undefined;
 };
 
 const isDate = ({ lens, type }: BoundColumn) =>
