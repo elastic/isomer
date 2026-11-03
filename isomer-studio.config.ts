@@ -18,6 +18,7 @@ import {
   elasticChartsPack,
   elasticChartsReset,
 } from './packages/isomer-renderers-elastic-charts/src/index';
+import { lensComparisonApp } from './packages/isomer-renderers-elastic-charts/studio/lens/comparison/registration';
 import { lensChartApp } from './packages/isomer-renderers-elastic-charts/studio/lens/registration';
 import { elasticChartsStylesheet } from './packages/isomer-renderers-elastic-charts/studio/stylesheet';
 
@@ -41,6 +42,7 @@ export default defineStudioConfig({
       load: () => import('./packages/isomer-lowering-lens/studio/app'),
     },
     lensChartApp,
+    lensComparisonApp,
   ],
   images: false,
   imageFonts: './packages/isomer-primitives-slides/studio/image_fonts.ts',
