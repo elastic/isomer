@@ -17,6 +17,21 @@ describe('matchesForbidden', () => {
     expect(matchesForbidden('@kbn/foo', '@kbn')).toBe(true);
   });
 
+  it('covers the specifier alone under `=name`', () => {
+    expect(
+      matchesForbidden(
+        '@elastic/isomer-primitives-charts',
+        '=@elastic/isomer-primitives-charts'
+      )
+    ).toBe(true);
+    expect(
+      matchesForbidden(
+        '@elastic/isomer-primitives-charts/model',
+        '=@elastic/isomer-primitives-charts'
+      )
+    ).toBe(false);
+  });
+
   it('covers Node built-ins in both spellings under `node:`', () => {
     for (const specifier of [
       'node:fs',

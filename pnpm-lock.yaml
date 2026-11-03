@@ -229,6 +229,9 @@ importers:
 
   packages/isomer-lowering-lens:
     dependencies:
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
       zod:
         specifier: ^4.5.4
         version: 4.6.5

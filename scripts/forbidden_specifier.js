@@ -9,8 +9,10 @@ import { builtinModules } from 'node:module';
 
 const BUILTINS = new Set(builtinModules);
 
-/** Whether `specifier` falls under `forbidden`: the package and its subpaths, or, for `node:`, any Node built-in, bare or prefixed. */
+/** Whether `specifier` falls under `forbidden`: the package and its subpaths; for `=name`, that specifier alone; for `node:`, any Node built-in, bare or prefixed. */
 export const matchesForbidden = (specifier, forbidden) =>
   forbidden === 'node:'
     ? specifier.startsWith('node:') || BUILTINS.has(specifier.split('/')[0])
-    : specifier === forbidden || specifier.startsWith(`${forbidden}/`);
+    : forbidden.startsWith('=')
+      ? specifier === forbidden.slice(1)
+      : specifier === forbidden || specifier.startsWith(`${forbidden}/`);
