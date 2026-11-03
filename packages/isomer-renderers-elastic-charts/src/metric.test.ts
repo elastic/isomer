@@ -162,38 +162,42 @@ describe('chart tokens', () => {
   it.each([
     ['light', LIGHT_THEME],
     ['dark', DARK_THEME],
-  ] as const)('match Elastic Charts’ %s metric theme', (scheme, theme) => {
-    const tokens = chartTokens[scheme];
-    expect({
-      fontFamily: tokens.fontFamily,
-      textDarkColor: tokens.onLight.title,
-      textSubtitleDarkColor: tokens.onLight.subtitle,
-      textExtraDarkColor: tokens.onLight.extra,
-      textLightColor: tokens.onDark.title,
-      textSubtitleLightColor: tokens.onDark.subtitle,
-      textExtraLightColor: tokens.onDark.extra,
-      border: tokens.border,
-      barBackground: tokens.barBackground,
-      nonFiniteText: tokens.missing,
-      titleWeight: tokens.titleWeight,
-      minHeight: tokens.minHeight,
-      background: tokens.background,
-    }).toEqual({
-      fontFamily: theme.metric.fontFamily,
-      textDarkColor: theme.metric.textDarkColor,
-      textSubtitleDarkColor: theme.metric.textSubtitleDarkColor,
-      textExtraDarkColor: theme.metric.textExtraDarkColor,
-      textLightColor: theme.metric.textLightColor,
-      textSubtitleLightColor: theme.metric.textSubtitleLightColor,
-      textExtraLightColor: theme.metric.textExtraLightColor,
-      border: theme.metric.border,
-      barBackground: theme.metric.barBackground,
-      nonFiniteText: theme.metric.nonFiniteText,
-      titleWeight: theme.metric.titleWeight,
-      minHeight: theme.metric.minHeight,
-      background: theme.background.color,
-    });
-  });
+  ] as const)(
+    'match Elastic Charts’ %s metric theme, as Kibana overrides it',
+    (scheme, theme) => {
+      const tokens = chartTokens[scheme];
+      expect({
+        fontFamily: tokens.fontFamily,
+        textDarkColor: tokens.onLight.title,
+        textSubtitleDarkColor: tokens.onLight.subtitle,
+        textExtraDarkColor: tokens.onLight.extra,
+        textLightColor: tokens.onDark.title,
+        textSubtitleLightColor: tokens.onDark.subtitle,
+        textExtraLightColor: tokens.onDark.extra,
+        border: tokens.border,
+        barBackground: tokens.barBackground,
+        nonFiniteText: tokens.missing,
+        titleWeight: tokens.titleWeight,
+        minHeight: tokens.minHeight,
+        background: tokens.background,
+      }).toEqual({
+        // Kibana's charts plugin prepends its numeric face to every font family (`applyNumericFontFamily`).
+        fontFamily: `'Elastic UI Numeric', ${theme.metric.fontFamily}`,
+        textDarkColor: theme.metric.textDarkColor,
+        textSubtitleDarkColor: theme.metric.textSubtitleDarkColor,
+        textExtraDarkColor: theme.metric.textExtraDarkColor,
+        textLightColor: theme.metric.textLightColor,
+        textSubtitleLightColor: theme.metric.textSubtitleLightColor,
+        textExtraLightColor: theme.metric.textExtraLightColor,
+        border: theme.metric.border,
+        barBackground: theme.metric.barBackground,
+        nonFiniteText: theme.metric.nonFiniteText,
+        titleWeight: theme.metric.titleWeight,
+        minHeight: theme.metric.minHeight,
+        background: theme.background.color,
+      });
+    }
+  );
 });
 
 describe('toDatum', () => {

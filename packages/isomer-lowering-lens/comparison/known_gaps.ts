@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { type FingerprintKind, NUMERIC_GLYPHS } from './fingerprint';
+import type { FingerprintKind } from './fingerprint';
 
 /** A difference Isomer does not close yet, keyed by feature and never by case. */
 export interface KnownGap {
@@ -18,15 +18,4 @@ export interface KnownGap {
   issue?: string;
 }
 
-export const KNOWN_GAPS: readonly KnownGap[] = [
-  {
-    kind: 'metric',
-    path: /\.(value|title)Width$/,
-    when: (tile, field) => {
-      const text = tile[field.replace(/Width$/, '')];
-      return typeof text === 'string' && NUMERIC_GLYPHS.test(text);
-    },
-    reason:
-      "Kibana's charts theme puts its Elastic UI Numeric font before Inter; Isomer's chart tokens follow Elastic Charts' default stack, so digits and their punctuation draw in Inter.",
-  },
-];
+export const KNOWN_GAPS: readonly KnownGap[] = [];

@@ -74,7 +74,9 @@ const onDark: TextTokens = {
   extra: '#CAD3E2',
 };
 const shared = {
-  fontFamily: 'Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif',
+  // Kibana's charts theme puts its numeric face before Elastic Charts' stack; a host without it falls back to Inter.
+  fontFamily:
+    "'Elastic UI Numeric', Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
   progress: '#61A2FF',
   onLight,
   onDark,

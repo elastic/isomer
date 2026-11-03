@@ -67,7 +67,7 @@ The comparison also fails when the drawing's color scheme or device scale is not
 
 `comparison/known_gaps.ts` lists the differences Isomer does not close yet, each keyed by a feature and its fields, never by a case, with the reason. A difference a gap covers is shown but does not fail the comparison. Close a gap by fixing the feature, then delete its entry.
 
-One gap is open: Kibana's charts theme puts its `Elastic UI Numeric` font before Inter, and Isomer's chart tokens follow Elastic Charts' default stack. Digits, spaces and the punctuation that font covers draw in Inter, so the full width of any text containing one of them differs, which is most titles and every reading. The gap covers those full widths only: the width of the runs outside that font is compared for every text.
+None is open. The last one closed when the chart tokens took Kibana's font stack: Kibana's charts plugin puts its `Elastic UI Numeric` face before Elastic Charts' stack, and the tokens now do too.
 
 ## Held-out cases
 

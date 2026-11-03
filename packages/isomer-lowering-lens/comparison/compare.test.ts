@@ -223,37 +223,6 @@ describe('compareFingerprints', () => {
       'tiles[0].box.width',
     ]);
   });
-
-  describe('the Elastic UI Numeric gap', () => {
-    it('covers the width of text Elastic UI Numeric draws', () => {
-      const actual = fingerprint(dateValue);
-      actual.tiles[0]!.valueWidth -= 9;
-      const differences = compareFingerprints(fingerprint(dateValue), actual);
-      expect(differences.map(({ path, gap }) => [path, Boolean(gap)])).toEqual([
-        ['tiles[0].valueWidth', true],
-      ]);
-      expect(failures(differences)).toEqual([]);
-    });
-
-    it('still compares the letters of text it covers', () => {
-      const actual = fingerprint(breakdown);
-      expect(actual.tiles[1]!.title).toMatch(/[.-]/);
-      actual.tiles[1]!.titleWidth! += 5;
-      actual.tiles[1]!.titleLetterWidth! += 5;
-      expect(failing(fingerprint(breakdown), actual)).toEqual([
-        { path: 'tiles[1].titleLetterWidth', feature: 'layout.text' },
-      ]);
-    });
-
-    it('does not cover the width of text it does not draw', () => {
-      const actual = fingerprint(dateValue);
-      expect(actual.tiles[0]!.title).toBe('Latest');
-      actual.tiles[0]!.titleWidth! -= 2;
-      expect(failing(fingerprint(dateValue), actual)).toEqual([
-        { path: 'tiles[0].titleWidth', feature: 'layout.text' },
-      ]);
-    });
-  });
 });
 
 describe('caseSchema', () => {
