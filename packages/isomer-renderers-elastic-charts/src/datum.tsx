@@ -104,8 +104,8 @@ export const toDatum = (
   if (visual?.kind === 'progress') {
     return {
       ...base,
-      // A missing reading draws an empty bar labelled with the missing text.
-      value: number ?? visual.min,
+      // As Lens does, a missing reading is NaN, which Elastic Charts' meter leaves empty.
+      value: number ?? Number.NaN,
       valueFormatter: () => value,
       // An explicit `domainMin` switches Elastic Charts to value/target labels, which Lens never sets.
       ...(visual.min === 0 ? {} : { domainMin: visual.min }),

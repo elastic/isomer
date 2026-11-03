@@ -176,12 +176,24 @@ describe('resolveMetric', () => {
     [-5, 0, -10, 0.5],
     [5, 0, -10, 0],
     [150, 0, 100, 1],
-  ])('fills %d on [%d, %d] to %d', (value, min, max, ratio) => {
-    const [only] = resolveMetric({
-      type: 'metric',
-      tiles: [{ key: 'a', value, visual: { kind: 'progress', min, max } }],
-    }).tiles;
+  ])('accepts and fills %d on [%d, %d] to %d', (value, min, max, ratio) => {
+    const node = {
+      type: 'metric' as const,
+      tiles: [
+        { key: 'a', value, visual: { kind: 'progress' as const, min, max } },
+      ],
+    };
+    expect(runtime.validate(compose(node)).errors).toEqual([]);
+    const [only] = resolveMetric(node).tiles;
     expect(only!.visual).toMatchObject({ kind: 'progress', ratio });
+  });
+
+  it.each([0, 1])('accepts a trend of %d points', (count) => {
+    const points = Array.from({ length: count }, (_, x) => ({ x, y: 1 }));
+    expect(
+      runtime.validate(compose(tile({ visual: { kind: 'trend', points } })))
+        .errors
+    ).toEqual([]);
   });
 
   it('paints the value instead of the tile, and reads a missing value as N/A', () => {

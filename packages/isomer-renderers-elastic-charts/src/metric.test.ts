@@ -262,12 +262,26 @@ describe('toDatum', () => {
     const [datum] = datums({ ...progress, tiles: [{ ...tile!, value: null }] });
     expect(datum).toMatchObject({
       color: '#61A2FF',
-      value: 0,
+      value: Number.NaN,
       domainMax: 549_755_813_888,
     });
     expect(datum && 'valueFormatter' in datum && datum.valueFormatter(0)).toBe(
       'N/A'
     );
+  });
+
+  it('keeps a missing reading empty on an empty progress range too', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [
+        { key: 'a', value: null, visual: { kind: 'progress', min: 5, max: 5 } },
+      ],
+    });
+    expect(datum).toMatchObject({
+      value: Number.NaN,
+      domainMin: 5,
+      domainMax: 5,
+    });
   });
 
   it('maps text, missing and value-painted tiles', () => {
