@@ -57,6 +57,7 @@ describe('plan', () => {
     ]);
     expect(layers).toEqual([
       {
+        kind: 'esql',
         layerId: 'layer1',
         query: {
           language: 'esql',
@@ -149,8 +150,14 @@ describe('plan', () => {
 
   it.each([
     [
-      'a form-based datasource',
+      'a form-based datasource with no layers',
       { formBased: { layers: {} } },
+      'lens.no-layers',
+      ['savedObject', 'attributes', 'state', 'datasourceStates', 'formBased'],
+    ],
+    [
+      'a legacy `indexpattern` datasource',
+      { indexpattern: { layers: {} } },
       'lens.unsupported-datasource',
       ['savedObject', 'attributes', 'state', 'datasourceStates'],
     ],

@@ -95,6 +95,7 @@ export const esqlDatasourceSchema = z
 /** One layer's executable contract; `readResponse` re-validates it, so a stored plan can be read back. */
 export const layerPlanSchema = z
   .object({
+    kind: z.literal('esql'),
     layerId: id,
     query: z.object({ language: z.literal('esql'), esql }).strict(),
     columns: z
@@ -132,7 +133,45 @@ export const esqlResponseSchema = z
 export type LensSavedObject = z.infer<typeof savedObjectSchema>;
 export type DataViewMetadata = z.infer<typeof dataViewSchema>;
 export type LensColumn = z.infer<typeof columnSchema>;
+/** An ES|QL layer's plan. */
 export type LensLayerPlan = z.infer<typeof layerPlanSchema>;
+
+export const HOST_NEEDS = [
+  'dataView',
+  'timeRange',
+  'now',
+  'barTarget',
+] as const;
+
+/** Context a host must supply to run a form-based layer. */
+export type HostNeed = (typeof HOST_NEEDS)[number];
+
+export const formLayerPlanSchema = z
+  .object({
+    kind: z.literal('form'),
+    layerId: id,
+    dataView: id,
+    columns: z
+      .array(z.object({ columnId: id, operationType: id }).catchall(json))
+      .max(512),
+    host: z
+      .object({
+        timeField: id.nullable(),
+        applyFilters: z.boolean(),
+        sampling: z.number().positive().max(1),
+        needs: z.array(z.enum(HOST_NEEDS)),
+      })
+      .strict(),
+  })
+  .strict();
+
+/** A form-based layer's plan: its validated Lens columns, in Lens order, and what the host supplies. */
+export type FormLayerPlan = z.infer<typeof formLayerPlanSchema>;
+
+export const anyLayerPlanSchema = z.discriminatedUnion('kind', [
+  layerPlanSchema,
+  formLayerPlanSchema,
+]);
 export type EsqlResponse = z.infer<typeof esqlResponseSchema>;
 
 export interface LensPlan {
@@ -142,9 +181,11 @@ export interface LensPlan {
     readonly reference: LensSavedObject['references'][number];
     readonly metadata?: DataViewMetadata;
   }[];
+  /** The saved KQL or Lucene query of a form-based plan, verbatim; `null` for ES|QL. */
+  readonly query: JsonObject | null;
   /** Saved filters, verbatim, for the layers whose `host.applyFilters` is true. */
   readonly filters: readonly JsonObject[];
-  readonly layers: readonly LensLayerPlan[];
+  readonly layers: readonly (LensLayerPlan | FormLayerPlan)[];
 }
 
 export type LensPlanResult =

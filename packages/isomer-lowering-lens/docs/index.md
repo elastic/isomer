@@ -5,7 +5,7 @@ description: Plan native ES|QL Lens saved objects and project their responses, w
 
 # Lens lowering
 
-`@elastic/isomer-lowering-lens` turns one native ES|QL Lens saved object into a versioned, plain-JSON plan a host can execute, projects a recorded ES|QL response onto a planned layer's Lens columns, and binds the projected tables to an Isomer chart node. It draws nothing; form-based Lens is refused rather than approximated.
+`@elastic/isomer-lowering-lens` turns one native ES|QL or form-based Lens saved object into a versioned, plain-JSON plan a host can execute, projects the responses onto each planned layer's Lens columns, and binds the projected tables to an Isomer chart node. It draws nothing, and it writes no query: a form-based plan states Lens's own column graph for the host to run.
 
 ```ts
 import { plan, readResponse } from '@elastic/isomer-lowering-lens';
@@ -35,30 +35,36 @@ Neither entry imports React, the DOM, a Node built-in, the SDK, the runtime, Stu
 
 `plan({ savedObject, dataViews? })` takes a Lens saved object (`id`, `type: 'lens'`, `attributes`, `references`) and, optionally, metadata for the data views it references (`id`, `title`, and optional `timeFieldName`, `fieldFormats`, `fieldLabels`). Metadata is never fetched or guessed; a data view without it is listed without it.
 
-The only datasource planned is `textBased`, native ES|QL. Each layer needs `query: { esql }` and `columns`, each with a unique `columnId` and the response `fieldName` it reads; several columns may read one field. Labels, `meta`, `params` and any other column state are kept as they are.
+A saved object has one datasource: `textBased`, native ES|QL, or `formBased`.
+
+- **ES|QL.** Each layer needs `query: { esql }` and `columns`, each with a unique `columnId` and the response `fieldName` it reads; several columns may read one field. Labels, `meta`, `params` and any other column state are kept as they are.
+- **Form-based.** Each layer needs its `indexpattern-datasource-layer-<layerId>` data view reference, and a `columnOrder` that lists each of its `columns` once. Every column's operation must be one Lens defines, its references must name columns in the layer with no cycle, and a formula's math column must keep the `tinymathAst` Lens saved, using only Lens formula functions with their arity. Formulas are never reparsed from their text. Each column is kept verbatim, in Lens order.
 
 A planned result is `{ status: 'planned', plan }`, where `plan` has:
 
-| Field       | What it holds                                                                                                                      |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `version`   | `1`.                                                                                                                               |
-| `source`    | The saved object, as validated.                                                                                                    |
-| `dataViews` | Each `index-pattern` reference, with its metadata when supplied.                                                                   |
-| `filters`   | The saved filters, verbatim.                                                                                                       |
-| `layers`    | Per layer: `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
+| Field       | What it holds                                                                                                                                                                                                                                                                        |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `version`   | `1`.                                                                                                                                                                                                                                                                                 |
+| `source`    | The saved object, as validated.                                                                                                                                                                                                                                                      |
+| `dataViews` | Each `index-pattern` reference, with its metadata when supplied.                                                                                                                                                                                                                     |
+| `query`     | A form-based plan's saved KQL or Lucene query, verbatim; `null` for ES\|QL.                                                                                                                                                                                                          |
+| `filters`   | The saved filters, verbatim.                                                                                                                                                                                                                                                         |
+| `layers`    | Per ES\|QL layer: `kind: 'esql'`, `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. Per form-based layer: `kind: 'form'`, `layerId`, the `dataView` ID, the saved `columns` with their `columnId`, and `host`. |
 
 Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a partial plan. Each diagnostic has a stable `code`, a `message`, and a `path` into the input with numeric array indexes.
 
-| Refused as    | When                                                                                                                                                                                                                      |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `unsupported` | A form-based or mixed datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or a global query other than empty KQL/Lucene or a copy of every layer's ES\|QL. |
-| `invalid`     | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, or metadata for a data view that is repeated or not referenced.                                       |
+| Refused as    | When                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `unsupported` | A mixed or other datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or an ES\|QL global query other than empty KQL/Lucene or a copy of every layer's ES\|QL. In a form-based layer: an operation Lens does not define, an incomplete column, or linked layers.                                                                          |
+| `invalid`     | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, or metadata for a data view that is repeated or not referenced. In a form-based layer: a missing data view reference, a `columnOrder` that does not match `columns`, a malformed column, a missing or circular reference, a broken formula, or a formula without a valid saved AST. |
 
 Kibana saves native ES|QL Lens with the layer's ES|QL repeated as the global `state.query`; that copy is accepted only when every layer has exactly the same text.
 
 ## What a host runs
 
 Each layer's `host` says what the host must supply. Nothing in it is defaulted.
+
+For an ES|QL layer:
 
 | Field          | Meaning                                                                                                         |
 | -------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -68,15 +74,26 @@ Each layer's `host` says what the host must supply. Nothing in it is defaulted.
 
 Run the query text as it is. Apply filters and the time range as the ES|QL request's Query DSL `filter`, and bind `params` through the request's `params`; don't append to or rewrite the ES|QL. A layer with `applyFilters: false` gets neither the saved nor the host's filters. Parameters are found by a lexical scan that skips strings, quoted identifiers and comments; the query is not parsed or validated.
 
+For a form-based layer, the host runs Lens's columns as Lens does, with the plan's `query` and `filters`:
+
+| Field          | Meaning                                                                                                                                                                                                                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `timeField`    | The data view's time field from the supplied metadata, or `null`.                                                                                                                                                                                         |
+| `applyFilters` | Whether the plan's `query`, `filters` and the host's own global filters apply.                                                                                                                                                                            |
+| `sampling`     | Lens's random-sampling probability, 1 for none.                                                                                                                                                                                                           |
+| `needs`        | What the host must supply: `dataView` when its metadata was not given, `timeRange` for a time-based data view, a time shift, reduced time range, time scale or `time_range`, `now` for `now`, and `barTarget` for an `auto` date histogram or `interval`. |
+
 ## Reading a response
 
 `readResponse(layer, response)` takes one planned layer, revalidated so a stored plan can be read back, and a complete ES|QL response `{ columns: [{ name, type }], values }` as Elasticsearch returns it. It returns `{ status: 'ready', table: { layerId, columns, rows } }`: each column carries its Lens column and the response `type`, and each row follows Lens order.
 
 Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, or `is_partial` / `is_running` is `invalid`, with no table.
 
+A form-based layer reads back through `readTable(layer, datatable)`, which takes the Kibana `Datatable` Lens's expression produces (`{ type: 'datatable', columns: [{ id, name, meta }], rows: [{ [id]: value }] }`) and returns the same `table`. Columns match by Lens column ID. Every column no other column references must be present; a formula's parts may be. Each column keeps the table's `name` as its label and its `meta`, and takes the planned column's Lens format. A missing or repeated column is `invalid`.
+
 ## Binding a chart
 
-`bind(plan, tables, { filterAction? })` takes a plan and one `readResponse` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with its breakdown field and raw value as the filter.
+`bind(plan, tables, { filterAction? })` takes a plan and one `readResponse` or `readTable` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with its breakdown field and raw value as the filter.
 
 The metric is the first chart bound. [Metric](metric.md) lists what it supports and refuses.
 

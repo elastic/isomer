@@ -13,9 +13,9 @@ import { z } from 'zod';
 
 import { copyJson, type JsonValue } from '../json';
 import {
+  anyLayerPlanSchema,
   columnSchema,
   issueDiagnostics,
-  layerPlanSchema,
   type LensDiagnostic,
   type LensTable,
   savedObjectSchema,
@@ -49,7 +49,13 @@ const planSchema = z
         z.custom<JsonValue>(() => true)
       )
     ),
-    layers: z.array(layerPlanSchema).min(1),
+    query: z
+      .record(
+        z.string(),
+        z.custom<JsonValue>(() => true)
+      )
+      .nullable(),
+    layers: z.array(anyLayerPlanSchema).min(1),
   })
   .strict();
 
@@ -180,6 +186,7 @@ export const bind = (
   const bound = bindMetric({
     state: normalizeMetricState(parsedState.data),
     tables: read,
+    layers,
     filterAction,
   });
   if (!bound.ok) {

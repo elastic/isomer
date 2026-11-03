@@ -122,18 +122,18 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 
 ## Which package
 
-| You want to                                                                | Start with                                                                                                                          |
-| -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Render compositions in a host: a Kibana plugin, a Slack bot, an MCP server | [`@elastic/isomer-runtime`](packages/isomer-runtime/README.md), then its [quick start](packages/isomer-runtime/docs/quick-start.md) |
-| Write primitives, a theme, or a frame                                      | [`@elastic/isomer-sdk`](packages/isomer-sdk/README.md), then its [quick start](packages/isomer-sdk/docs/quick-start.md)             |
-| Copy a working pack                                                        | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack                      |
-| Turn the `snapshot` surface into PNG, SVG, or PDF                          | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md)                                                            |
-| Score what a model composes from your pack                                 | [`@elastic/isomer-evals`](packages/isomer-evals/README.md)                                                                          |
-| Browse, check, and publish a pack's primitives                             | [`@elastic/isomer-studio`](packages/isomer-studio/README.md)                                                                        |
-| Hand a runtime to an agent as tools                                        | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md)                                                              |
-| Plan native ES\|QL Lens, read its responses and bind them to charts        | [`@elastic/isomer-lowering-lens`](packages/isomer-lowering-lens/README.md)                                                          |
-| Author chart primitives any engine can draw                                | [`@elastic/isomer-primitives-charts`](packages/isomer-primitives-charts/README.md)                                                  |
-| Draw chart primitives with Elastic Charts                                  | [`@elastic/isomer-renderers-elastic-charts`](packages/isomer-renderers-elastic-charts/README.md)                                    |
+| You want to                                                                   | Start with                                                                                                                          |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Render compositions in a host: a Kibana plugin, a Slack bot, an MCP server    | [`@elastic/isomer-runtime`](packages/isomer-runtime/README.md), then its [quick start](packages/isomer-runtime/docs/quick-start.md) |
+| Write primitives, a theme, or a frame                                         | [`@elastic/isomer-sdk`](packages/isomer-sdk/README.md), then its [quick start](packages/isomer-sdk/docs/quick-start.md)             |
+| Copy a working pack                                                           | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack                      |
+| Turn the `snapshot` surface into PNG, SVG, or PDF                             | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md)                                                            |
+| Score what a model composes from your pack                                    | [`@elastic/isomer-evals`](packages/isomer-evals/README.md)                                                                          |
+| Browse, check, and publish a pack's primitives                                | [`@elastic/isomer-studio`](packages/isomer-studio/README.md)                                                                        |
+| Hand a runtime to an agent as tools                                           | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md)                                                              |
+| Plan ES\|QL and form-based Lens, read their responses and bind them to charts | [`@elastic/isomer-lowering-lens`](packages/isomer-lowering-lens/README.md)                                                          |
+| Author chart primitives any engine can draw                                   | [`@elastic/isomer-primitives-charts`](packages/isomer-primitives-charts/README.md)                                                  |
+| Draw chart primitives with Elastic Charts                                     | [`@elastic/isomer-renderers-elastic-charts`](packages/isomer-renderers-elastic-charts/README.md)                                    |
 
 The published packages ship together at one version: the two a host installs, a host-side rasterizer, the Studio, the Lens lowering, and the chart primitives with their Elastic Charts renderers. The reference pack, the evals harness, and the agent tools stay private in the repository.
 

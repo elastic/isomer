@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 
+import { planForm } from './form/plan';
 import { copyJson } from './json';
 import { queryParams } from './params';
 import type {
@@ -109,11 +110,15 @@ export const plan = (input: unknown): LensPlanResult => {
   }
 
   const { state } = savedObject.attributes;
-  if (Object.keys(state.datasourceStates).join() !== 'textBased') {
+  const datasources = Object.keys(state.datasourceStates).join();
+  if (datasources === 'formBased') {
+    return planForm(savedObject, dataViews);
+  }
+  if (datasources !== 'textBased') {
     return refuse(
       'unsupported',
       'lens.unsupported-datasource',
-      'Only native ES|QL (`textBased`) saved objects are planned; form-based and mixed datasources are not.',
+      'Only one native ES|QL (`textBased`) or form-based (`formBased`) datasource is planned; mixed and other datasources are not.',
       [...STATE, 'datasourceStates']
     );
   }
@@ -208,6 +213,7 @@ export const plan = (input: unknown): LensPlanResult => {
       );
     }
     planned.push({
+      kind: 'esql',
       layerId,
       query: { language: 'esql', esql: layer.query.esql },
       columns: layer.columns,
@@ -230,6 +236,7 @@ export const plan = (input: unknown): LensPlanResult => {
           const metadata = dataViews.find(({ id }) => id === reference.id);
           return metadata ? { reference, metadata } : { reference };
         }),
+      query: null,
       filters: state.filters ?? [],
       layers: planned,
     },

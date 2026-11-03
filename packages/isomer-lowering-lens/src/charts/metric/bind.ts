@@ -20,7 +20,12 @@ import {
 } from '@elastic/isomer-primitives-charts/model';
 
 import type { JsonValue } from '../../json';
-import type { LensDiagnostic, LensTable } from '../../schema';
+import type {
+  FormLayerPlan,
+  LensDiagnostic,
+  LensLayerPlan,
+  LensTable,
+} from '../../schema';
 import { collapseRows } from '../collapse';
 import { toValueFormat } from '../format';
 import {
@@ -51,8 +56,68 @@ const TREND_PALETTES: Record<string, readonly [Tone, Tone, Tone]> = {
 export interface MetricBindContext {
   state: MetricState;
   tables: readonly LensTable[];
+  /** The plan's layers, for the form-based column state a table lacks. */
+  layers: readonly (LensLayerPlan | FormLayerPlan)[];
   filterAction?: string | undefined;
 }
+
+type PlannedColumn = FormLayerPlan['columns'][number];
+
+const isRecord = (value: unknown): value is Record<string, JsonValue> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** A form-based column's saved state, or `undefined` for ES|QL. */
+const plannedColumn = (
+  { layers }: MetricBindContext,
+  layerId: string,
+  columnId: string | undefined
+): PlannedColumn | undefined => {
+  const layer = layers.find((planned) => planned.layerId === layerId);
+  return layer?.kind === 'form'
+    ? layer.columns.find((column) => column.columnId === columnId)
+    : undefined;
+};
+
+/** `getMaxPossibleNumValues`: how many tiles a breakdown can have. */
+const maxPossibleTiles = (column: PlannedColumn | undefined): number => {
+  const params = isRecord(column?.params) ? column.params : {};
+  if (column?.operationType === 'terms' && typeof params.size === 'number') {
+    return params.size + (params.otherBucket === true ? 1 : 0);
+  }
+  if (column?.operationType === 'filters' && Array.isArray(params.filters)) {
+    return params.filters.length;
+  }
+  return 0;
+};
+
+/** The labels Kibana's terms format gives Lens's `__other__` and `__missing__` buckets. */
+const bucketLabels = (
+  bound: BoundColumn,
+  column: PlannedColumn | undefined
+): { other?: string; missing?: string } => {
+  const rendered = bound.lens.meta?.params;
+  if (
+    isRecord(rendered) &&
+    rendered.id === 'terms' &&
+    isRecord(rendered.params)
+  ) {
+    const { otherBucketLabel, missingBucketLabel } = rendered.params;
+    return {
+      ...(typeof otherBucketLabel === 'string' && otherBucketLabel
+        ? { other: otherBucketLabel }
+        : {}),
+      ...(typeof missingBucketLabel === 'string' && missingBucketLabel
+        ? { missing: missingBucketLabel }
+        : {}),
+    };
+  }
+  // Lens's terms column sets `otherBucketLabel: 'Other'` and no missing label.
+  return column?.operationType === 'terms' &&
+    isRecord(column.params) &&
+    column.params.otherBucket === true
+    ? { other: 'Other' }
+    : {};
+};
 
 export type MetricBound =
   | { ok: true; node: MetricNode }
@@ -81,12 +146,15 @@ const signedReading = (delta: number, format: ValueFormat | undefined) => {
   return delta > 0 && shown !== formatValue(0, format) ? `+${shown}` : shown;
 };
 
+/** Kibana's `MISSING_TOKEN`, a missing terms bucket. */
+const MISSING = '__missing__';
+
 /** A cell as Kibana's field formats convert it to text, missing labels included. */
 const formatCell = (
   value: JsonValue | undefined,
   format: ValueFormat | undefined
 ) =>
-  value === null || value === undefined
+  value === null || value === undefined || value === MISSING
     ? '(null)'
     : value === ''
       ? '(blank)'
@@ -112,8 +180,32 @@ const columnFormat = (
     );
     return undefined;
   }
-  // `lens_format_column` formats number columns only.
-  return bound.numeric ? mapped.format : undefined;
+  if (!bound.numeric) {
+    // `lens_format_column` formats number columns only.
+    return undefined;
+  }
+  // A table's own format, from the data view, applies when Lens sets none;
+  // Kibana wraps a terms column's format in a `terms` format.
+  const saved = bound.lens.meta?.params;
+  const rendered =
+    isRecord(saved) && saved.id === 'terms' && isRecord(saved.params)
+      ? saved.params
+      : saved;
+  if (
+    mapped.format === undefined &&
+    typeof rendered === 'object' &&
+    rendered !== null &&
+    !Array.isArray(rendered) &&
+    !(rendered.id === 'number' && rendered.params === undefined)
+  ) {
+    problems.add(
+      'unsupported',
+      'unsupported-format',
+      `Column "${bound.lens.columnId}" reads with its data view's format, which is not supported yet.`
+    );
+    return undefined;
+  }
+  return mapped.format;
 };
 
 const isDate = ({ lens, type }: BoundColumn) =>
@@ -424,16 +516,32 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
   }
 
   const canCollapse = Boolean(state.collapseFn) && metric.numeric;
+  // A static max keeps the value its author set, so it collapses with `max`.
+  const staticMax =
+    plannedColumn(context, state.layerId, state.maxAccessor)?.operationType ===
+    'static_value';
   const rows: readonly Row[] = canCollapse
     ? collapseRows(
         table.rows,
         [],
         [metric, secondary, max]
           .filter((bound): bound is BoundColumn => bound !== undefined)
-          .map(({ index }) => ({ index, fn: state.collapseFn! }))
+          .map(({ index }) => ({
+            index,
+            fn: index === max?.index && staticMax ? 'max' : state.collapseFn!,
+          }))
       )
     : table.rows;
   const breakdown = canCollapse ? undefined : breakdownColumn;
+  const breakdownPlan = plannedColumn(
+    context,
+    state.layerId,
+    breakdown?.lens.columnId
+  );
+  const labels = breakdown ? bucketLabels(breakdown, breakdownPlan) : {};
+  const placeholders = breakdown
+    ? Math.max(0, maxPossibleTiles(breakdownPlan) - rows.length)
+    : 0;
   const tileRows: readonly Row[] = breakdown
     ? rows
     : rows.length
@@ -473,7 +581,11 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
           : null;
     const breakdownValue = cell(row, breakdown);
     const title = breakdown
-      ? formatCell(breakdownValue ?? null, breakdownFormat)
+      ? breakdownValue === '__other__' && labels.other
+        ? labels.other
+        : breakdownValue === MISSING && labels.missing
+          ? labels.missing
+          : formatCell(breakdownValue ?? null, breakdownFormat)
       : metric.label;
     const subtitle = breakdown ? metric.label : state.subtitle;
     const base = breakdown ? JSON.stringify(breakdownValue ?? null) : 'metric';
@@ -565,7 +677,22 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     }
     if (filterAction && breakdown) {
       const filterValue = breakdownValue ?? null;
-      if (filterValue === null || typeof filterValue !== 'object') {
+      // A field = value filter fits an ES|QL column and a single-field terms
+      // bucket; Lens filters Other, missing, `filters` and `range` buckets otherwise.
+      const byValue =
+        breakdownPlan === undefined ||
+        (breakdownPlan.operationType === 'terms' &&
+          !(
+            isRecord(breakdownPlan.params) &&
+            Array.isArray(breakdownPlan.params.secondaryFields) &&
+            breakdownPlan.params.secondaryFields.length > 0
+          ));
+      if (
+        byValue &&
+        filterValue !== '__other__' &&
+        filterValue !== MISSING &&
+        (filterValue === null || typeof filterValue !== 'object')
+      ) {
         tile.action = {
           name: filterAction,
           filters: [{ field: breakdown.lens.fieldName, value: filterValue }],
@@ -574,7 +701,7 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         problems.add(
           'unsupported',
           'unsupported-filter-value',
-          'A multivalue breakdown cannot be a filter yet.'
+          'Filtering by this breakdown bucket is not supported yet.'
         );
       }
     }
@@ -605,6 +732,7 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       type: 'metric',
       tiles,
       ...(state.maxCols ? { columns: state.maxCols } : {}),
+      ...(placeholders > 0 ? { placeholders } : {}),
       ...(Object.keys(layout).length ? { layout } : {}),
     },
   };
