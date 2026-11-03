@@ -49,14 +49,14 @@ A planned result is `{ status: 'planned', plan }`, where `plan` has:
 | `dataViews` | Each `index-pattern` reference, with its metadata when supplied. |
 | `query` | A form-based plan's saved KQL or Lucene query, verbatim. An ES\|QL plan has none. |
 | `filters` | The saved Kibana filters, verbatim: `meta` beside the query, not Query DSL. |
-| `layers` | Per ES\|QL layer: `kind: 'esql'`, `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. Per form-based layer: `kind: 'form'`, `layerId`, the `dataView` ID, the saved `columns` with their `columnId`, and `host`. |
+| `layers` | Per ES\|QL layer: `kind: 'esql'`, `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. Per form-based layer: `kind: 'form'`, `layerId`, the `dataView` ID, `linkedTo` (the layers Lens's editor ties it to, such as a metric trendline's main layer), the saved `columns` with their `columnId`, and `host`. |
 
 Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a partial plan. `invalid` means the input is malformed or Kibana could not draw it either; `unsupported` means Kibana draws it but this package does not plan it yet. Each diagnostic has a stable `code`, a `message`, and a `path` into the input with numeric array indexes.
 
 | Refused as | When |
 | --- | --- |
-| `unsupported` | A mixed or other datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or an ES\|QL global query other than empty KQL/Lucene or a copy of one layer's ES\|QL. In a form-based layer: an operation Lens does not define, an incomplete column, or linked layers. |
-| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, metadata for a data view that is repeated or not referenced, or a layer whose plan would exceed the `JSON_LIMITS` `readResponse` applies to it (its columns plus one value per parameter name). In a form-based layer: a missing data view reference, a `columnOrder` that does not match `columns`, a malformed column, a missing or circular reference, a broken formula, or a formula without a valid saved AST. |
+| `unsupported` | A mixed or other datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or an ES\|QL global query other than empty KQL/Lucene or a copy of one layer's ES\|QL. In a form-based layer: an operation Lens does not define or an incomplete column. |
+| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, metadata for a data view that is repeated or not referenced, or a layer whose plan would exceed the `JSON_LIMITS` `readResponse` applies to it (its columns plus one value per parameter name). In a form-based layer: a missing data view reference, a link to a layer the datasource lacks, a `columnOrder` that does not match `columns`, a malformed column, a missing or circular reference, a broken formula, or a formula without a valid saved AST. |
 
 Kibana saves native ES|QL Lens with a layer's ES|QL repeated as the global `state.query`; with several layers it mirrors the first. The copy is accepted when its text is exactly one layer's.
 

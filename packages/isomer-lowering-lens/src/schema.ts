@@ -261,6 +261,8 @@ export const formLayerPlanSchema = z
     kind: z.literal('form'),
     layerId: id,
     dataView: id,
+    /** Layers Lens's editor ties this one to, such as a metric trendline's main layer. */
+    linkedTo: z.array(id),
     columns: z
       .array(z.object({ columnId: id, operationType: id }).catchall(json))
       .max(512),
