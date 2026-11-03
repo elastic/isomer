@@ -238,6 +238,43 @@ describe('resolveMetric', () => {
   });
 });
 
+describe('value palette colors', () => {
+  it('fills and badges with a palette band', () => {
+    const [only] = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 1,
+          color: { palette: 'status', step: 2, of: 3 },
+          secondary: {
+            kind: 'value',
+            value: 2,
+            badge: { color: { palette: 'status', step: 0, of: 3 } },
+          },
+        },
+      ],
+    }).tiles;
+    expect(only).toMatchObject({
+      fill: '#F6726A',
+      secondary: { badge: { background: '#24C292' } },
+    });
+  });
+
+  it('rejects a band past the palette', () => {
+    const paths = (node: object) => issues(node).map(([path]) => path);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 3, of: 3 } }))
+    ).toEqual(['tiles.0.color']);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 0, of: 6 } }))
+    ).toEqual(['tiles.0.color.of']);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 4, of: 5 } }))
+    ).toEqual([]);
+  });
+});
+
 describe('metric limits', () => {
   it('draws an empty grid, padded with placeholders', () => {
     expect(issues({ type: 'metric', tiles: [] })).toEqual([]);

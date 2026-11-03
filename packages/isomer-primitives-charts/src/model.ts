@@ -19,4 +19,11 @@ export {
   metricSchema,
 } from './metric/schema';
 export { type ValueFormat, formatValue } from './shared/format';
-export { type Scheme, chartTokens } from './theme';
+export {
+  type Scheme,
+  type ValuePalette,
+  MAX_PALETTE_BANDS,
+  VALUE_PALETTES,
+  chartTokens,
+  valuePaletteColors,
+} from './theme';

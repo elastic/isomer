@@ -14,9 +14,22 @@ import {
   MetricTrendShape,
 } from '@elastic/charts';
 import {
+  euiPaletteComplementary,
+  euiPaletteCool,
+  euiPaletteForStatus,
+  euiPaletteForTemperature,
+  euiPaletteGray,
+  euiPaletteGreen,
+  euiPaletteRed,
+  euiPaletteWarm,
+  getComputed,
+} from '@elastic/eui';
+import { EuiThemeBorealis } from '@elastic/eui-theme-borealis';
+import {
   chartTokens,
   metricExamples,
   resolveMetric,
+  valuePaletteColors,
 } from '@elastic/isomer-primitives-charts/model';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { NODE_ANCHOR_ATTRIBUTE } from '@elastic/isomer-sdk';
@@ -36,6 +49,37 @@ const datums = (node: typeof example, scheme: 'light' | 'dark' = 'light') => {
   const resolved = resolveMetric(node, scheme);
   return resolved.tiles.map((tile) => toDatum(tile, resolved.tokens));
 };
+
+// The palette registry maps each Lens palette to these EUI generators.
+const EUI_PALETTES = {
+  status: euiPaletteForStatus,
+  temperature: euiPaletteForTemperature,
+  complementary: euiPaletteComplementary,
+  negative: euiPaletteRed,
+  positive: euiPaletteGreen,
+  cool: euiPaletteCool,
+  warm: euiPaletteWarm,
+  gray: euiPaletteGray,
+};
+
+describe('value palettes', () => {
+  it.each(['LIGHT', 'DARK'] as const)(
+    'match EUI Borealis’ palette generators in %s mode',
+    (mode) => {
+      const colors = getComputed(EuiThemeBorealis, {}, mode).colors.vis;
+      expect(
+        Object.fromEntries(
+          Object.entries(EUI_PALETTES).map(([id, generate]) => [
+            id,
+            [1, 2, 3, 4, 5].map((bands) =>
+              generate(bands, { colors }).map((color) => color.toUpperCase())
+            ),
+          ])
+        )
+      ).toEqual(valuePaletteColors);
+    }
+  );
+});
 
 describe('chart tokens', () => {
   it.each([
