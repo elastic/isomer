@@ -22,6 +22,8 @@ const EPOCH = Date.UTC(2026, 0, 1);
 const DAY = 86_400_000;
 const TIME_BUCKETS = 12;
 const CATEGORIES = 3;
+/** More rows than a preview needs; every bucket column multiplies them. */
+export const MAX_SYNTHETIC_ROWS = 10_000;
 
 /** FNV-1a, so each column's values follow from its identity and the seed. */
 const hash = (text: string) => {
@@ -74,6 +76,13 @@ const isRecord = (value: unknown): value is Record<string, JsonValue> =>
 
 const isPercent = (params: unknown) =>
   isRecord(params) && isRecord(params.format) && params.format.id === 'percent';
+
+/** How many rows every combination of the bucket columns makes, counted before any is built. */
+const rowCount = (columns: readonly Column[]) =>
+  columns.reduce(
+    (count, { buckets }) => (buckets ? count * buckets.length : count),
+    1
+  );
 
 /** The rows of every combination of the bucket columns, and seeded values for the rest. */
 const rows = (columns: readonly Column[], { seed, maxColumns }: Options) => {
@@ -231,12 +240,28 @@ export const synthesize = (
   options: Options
 ): { layerId: string; result: LensResponseResult }[] =>
   plan.layers.map((layer) => {
+    const tooMany = (count: number) => ({
+      layerId: layer.layerId,
+      result: {
+        status: 'invalid' as const,
+        diagnostics: [
+          {
+            code: 'studio.synthetic.too-many-rows',
+            message: `Synthetic data for this layer would have ${count} rows, more than ${MAX_SYNTHETIC_ROWS}.`,
+            path: ['layers', layer.layerId],
+          },
+        ],
+      },
+    });
     if (layer.kind === 'esql') {
       const columns = esqlColumns(layer);
       const unique = columns.filter(
         (column, index) =>
           columns.findIndex(({ id }) => id === column.id) === index
       );
+      if (rowCount(unique) > MAX_SYNTHETIC_ROWS) {
+        return tooMany(rowCount(unique));
+      }
       return {
         layerId: layer.layerId,
         result: readResponse(layer, {
@@ -256,6 +281,9 @@ export const synthesize = (
       };
     }
     const columns = formColumns(layer);
+    if (rowCount(columns) > MAX_SYNTHETIC_ROWS) {
+      return tooMany(rowCount(columns));
+    }
     return {
       layerId: layer.layerId,
       result: readTable(layer, {
