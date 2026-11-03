@@ -249,6 +249,134 @@ describe('bind: form-based breakdowns', () => {
   });
 });
 
+describe('bind: form-based trends', () => {
+  // Lens adds a metric's trendline as a layer linked to the main one.
+  const trended = () => ({
+    savedObject: {
+      id: 'flights-trend',
+      type: 'lens',
+      references: [
+        {
+          type: 'index-pattern',
+          id: 'flights',
+          name: 'indexpattern-datasource-layer-main',
+        },
+        {
+          type: 'index-pattern',
+          id: 'flights',
+          name: 'indexpattern-datasource-layer-trend',
+        },
+      ],
+      attributes: {
+        title: 'Flights',
+        visualizationType: 'lnsMetric',
+        state: {
+          query: { query: '', language: 'kuery' },
+          filters: [],
+          datasourceStates: {
+            formBased: {
+              layers: {
+                main: {
+                  columnOrder: ['count'],
+                  columns: {
+                    count: {
+                      operationType: 'count',
+                      label: 'Flights',
+                      customLabel: true,
+                      dataType: 'number',
+                      isBucketed: false,
+                      sourceField: '___records___',
+                    },
+                  },
+                },
+                trend: {
+                  linkToLayers: ['main'],
+                  columnOrder: ['time', 'trendCount'],
+                  columns: {
+                    time: {
+                      operationType: 'date_histogram',
+                      label: 'timestamp',
+                      dataType: 'date',
+                      isBucketed: true,
+                      sourceField: 'timestamp',
+                      params: { interval: 'auto', includeEmptyRows: true },
+                    },
+                    trendCount: {
+                      operationType: 'count',
+                      label: 'Flights',
+                      dataType: 'number',
+                      isBucketed: false,
+                      sourceField: '___records___',
+                    },
+                  },
+                },
+              },
+            },
+          },
+          visualization: {
+            layerId: 'main',
+            layerType: 'data',
+            metricAccessor: 'count',
+            trendlineLayerId: 'trend',
+            trendlineLayerType: 'metricTrendline',
+            trendlineTimeAccessor: 'time',
+            trendlineMetricAccessor: 'trendCount',
+          },
+        },
+      },
+    },
+  });
+
+  it('plans the linked trendline layer and draws its sparkline', () => {
+    const lensPlan = planned(trended());
+    expect(
+      lensPlan.layers.map((layer) => [
+        layer.layerId,
+        layer.kind === 'form' ? layer.linkedTo : [],
+      ])
+    ).toEqual([
+      ['main', []],
+      ['trend', ['main']],
+    ]);
+    const { tiles } = node(
+      run(trended(), {
+        main: { columns: [number('count', 'Flights')], rows: [{ count: 30 }] },
+        trend: {
+          columns: [
+            { id: 'time', name: 'timestamp', meta: { type: 'date' } },
+            number('trendCount', 'Flights'),
+          ],
+          rows: [
+            { time: 2000, trendCount: 20 },
+            { time: 1000, trendCount: 10 },
+          ],
+        },
+      })
+    );
+    expect(tiles[0]!.visual).toEqual({
+      kind: 'trend',
+      points: [
+        { x: 1000, y: 10 },
+        { x: 2000, y: 20 },
+      ],
+    });
+  });
+
+  it('refuses a link to a layer the datasource lacks', () => {
+    const input = trended();
+    (
+      input.savedObject.attributes.state.datasourceStates.formBased.layers
+        .trend as { linkToLayers: string[] }
+    ).linkToLayers = ['gone'];
+    const result = plan(input);
+    expect(
+      result.status === 'planned'
+        ? []
+        : result.diagnostics.map(({ code }) => code)
+    ).toEqual(['lens.form.unknown-linked-layer']);
+  });
+});
+
 describe('readTable', () => {
   const layer = planned(totalFlights()).layers[0]!;
 
