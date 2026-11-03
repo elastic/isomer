@@ -173,7 +173,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:45.933Z"
+    "capturedAt": "2026-11-03T21:32:35.256Z"
   },
   "reference": {
     "fingerprint": {
@@ -192,27 +192,148 @@
             "width": 393.88,
             "height": 148
           },
-          "background": "#ffffff",
           "value": "38.5MB",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 120,
-          "valueLetterWidth": 41,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 393.88,
+                "height": 148
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 358.03,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "artifacts.elastic.co",
+              "textWidth": 145
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 358.03,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Bytes",
+              "textWidth": 39
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__label": {
+              "box": {
+                "x": 228.88,
+                "y": 76.02,
+                "width": 51,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "Median",
+              "textWidth": 51
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
+              "box": {
+                "x": 283.88,
+                "y": 73.02,
+                "width": 101,
+                "height": 22.8
+              },
+              "style": {
+                "background": "#c9f3e3"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>echBadge__text": {
+              "box": {
+                "x": 294.88,
+                "y": 76.02,
+                "width": 62,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "+38.5MB",
+              "textWidth": 62
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
+              "box": {
+                "x": 360.88,
+                "y": 76.02,
+                "width": 13,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "↑",
+              "textWidth": 13
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 264.88,
+                "y": 95.81,
+                "width": 120,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "38.5",
+              "textWidth": 79
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 343.88,
+                "y": 103.81,
+                "width": 41,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "MB",
+              "textWidth": 41
+            }
+          },
           "title": "artifacts.elastic.co",
-          "titleFontSize": 16,
-          "titleWidth": 145,
-          "titleLetterWidth": 137,
           "subtitle": "Bytes",
-          "titlesAlign": "left",
-          "valueAlign": "right",
-          "extraAlign": "right",
           "secondary": {
             "label": "Median",
-            "value": "+38.5MB",
-            "badge": {
-              "background": "#c9f3e3",
-              "color": "#09724d"
-            }
+            "value": "+38.5MB"
           }
         },
         {
@@ -226,27 +347,148 @@
             "width": 393.88,
             "height": 148
           },
-          "background": "#ffffff",
           "value": "12.0MB",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 120,
-          "valueLetterWidth": 41,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 393.88,
+                "height": 148
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 358.97,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "cdn.elastic-elastic-elastic.org",
+              "textWidth": 235
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 358.97,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Bytes",
+              "textWidth": 39
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__label": {
+              "box": {
+                "x": 229.88,
+                "y": 76.02,
+                "width": 51,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "Median",
+              "textWidth": 51
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
+              "box": {
+                "x": 284.88,
+                "y": 73.02,
+                "width": 101,
+                "height": 22.8
+              },
+              "style": {
+                "background": "#c9f3e3"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>echBadge__text": {
+              "box": {
+                "x": 295.88,
+                "y": 76.02,
+                "width": 62,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "+12.0MB",
+              "textWidth": 62
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
+              "box": {
+                "x": 361.88,
+                "y": 76.02,
+                "width": 13,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "↑",
+              "textWidth": 13
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 265.88,
+                "y": 95.81,
+                "width": 120,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "12.0",
+              "textWidth": 79
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 344.88,
+                "y": 103.81,
+                "width": 41,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "MB",
+              "textWidth": 41
+            }
+          },
           "title": "cdn.elastic-elastic-elastic.org",
-          "titleFontSize": 16,
-          "titleWidth": 235,
-          "titleLetterWidth": 207,
           "subtitle": "Bytes",
-          "titlesAlign": "left",
-          "valueAlign": "right",
-          "extraAlign": "right",
           "secondary": {
             "label": "Median",
-            "value": "+12.0MB",
-            "badge": {
-              "background": "#c9f3e3",
-              "color": "#09724d"
-            }
+            "value": "+12.0MB"
           }
         },
         {
@@ -260,27 +502,148 @@
             "width": 393.88,
             "height": 148
           },
-          "background": "#ffffff",
           "value": "2.2MB",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 97,
-          "valueLetterWidth": 41,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 393.88,
+                "height": 148
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 358.03,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "elastic-elastic-elastic.org",
+              "textWidth": 203
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 358.03,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Bytes",
+              "textWidth": 39
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__label": {
+              "box": {
+                "x": 237.88,
+                "y": 77.02,
+                "width": 51,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "Median",
+              "textWidth": 51
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
+              "box": {
+                "x": 292.88,
+                "y": 74.02,
+                "width": 92,
+                "height": 22.8
+              },
+              "style": {
+                "background": "#c9f3e3"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>echBadge__text": {
+              "box": {
+                "x": 303.88,
+                "y": 77.02,
+                "width": 53,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "+2.2MB",
+              "textWidth": 53
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
+              "box": {
+                "x": 360.88,
+                "y": 77.02,
+                "width": 13,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "↑",
+              "textWidth": 13
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 287.88,
+                "y": 96.81,
+                "width": 97,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "2.2",
+              "textWidth": 56
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 343.88,
+                "y": 104.81,
+                "width": 41,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "MB",
+              "textWidth": 41
+            }
+          },
           "title": "elastic-elastic-elastic.org",
-          "titleFontSize": 16,
-          "titleWidth": 203,
-          "titleLetterWidth": 179,
           "subtitle": "Bytes",
-          "titlesAlign": "left",
-          "valueAlign": "right",
-          "extraAlign": "right",
           "secondary": {
             "label": "Median",
-            "value": "+2.2MB",
-            "badge": {
-              "background": "#c9f3e3",
-              "color": "#09724d"
-            }
+            "value": "+2.2MB"
           }
         },
         {
@@ -294,27 +657,148 @@
             "width": 393.88,
             "height": 148
           },
-          "background": "#ffffff",
           "value": "23.3MB",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 120,
-          "valueLetterWidth": 41,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 393.88,
+                "height": 148
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 358.97,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "www.elastic.co",
+              "textWidth": 117
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 358.97,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Bytes",
+              "textWidth": 39
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__label": {
+              "box": {
+                "x": 229.88,
+                "y": 77.02,
+                "width": 51,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "Median",
+              "textWidth": 51
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
+              "box": {
+                "x": 284.88,
+                "y": 74.02,
+                "width": 101,
+                "height": 22.8
+              },
+              "style": {
+                "background": "#c9f3e3"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>echBadge__text": {
+              "box": {
+                "x": 295.88,
+                "y": 77.02,
+                "width": 62,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "+23.3MB",
+              "textWidth": 62
+            },
+            "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
+              "box": {
+                "x": 361.88,
+                "y": 77.02,
+                "width": 13,
+                "height": 16.8
+              },
+              "style": {
+                "color": "#09724d",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "500"
+              },
+              "text": "↑",
+              "textWidth": 13
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 265.88,
+                "y": 96.81,
+                "width": 120,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "23.3",
+              "textWidth": 79
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 344.88,
+                "y": 104.81,
+                "width": 41,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "MB",
+              "textWidth": 41
+            }
+          },
           "title": "www.elastic.co",
-          "titleFontSize": 16,
-          "titleWidth": 117,
-          "titleLetterWidth": 109,
           "subtitle": "Bytes",
-          "titlesAlign": "left",
-          "valueAlign": "right",
-          "extraAlign": "right",
           "secondary": {
             "label": "Median",
-            "value": "+23.3MB",
-            "badge": {
-              "background": "#c9f3e3",
-              "color": "#09724d"
-            }
+            "value": "+23.3MB"
           }
         }
       ],

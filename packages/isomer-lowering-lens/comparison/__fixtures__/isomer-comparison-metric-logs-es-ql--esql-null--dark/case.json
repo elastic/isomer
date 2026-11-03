@@ -106,7 +106,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:16:18.029Z"
+    "capturedAt": "2026-11-03T21:33:05.983Z"
   },
   "reference": {
     "fingerprint": {
@@ -125,18 +125,53 @@
             "width": 389.88,
             "height": 184
           },
-          "background": "#111c2c",
           "value": "N/A",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 64,
-          "valueLetterWidth": 52,
-          "title": "Average bytes",
-          "titleFontSize": 16,
-          "titleWidth": 112,
-          "titleLetterWidth": 108,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 184
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 373.88,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Average bytes",
+              "textWidth": 112
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 317.88,
+                "y": 132.81,
+                "width": 64,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "N/A",
+              "textWidth": 64
+            }
+          },
+          "title": "Average bytes"
         }
       ],
       "empty": 0

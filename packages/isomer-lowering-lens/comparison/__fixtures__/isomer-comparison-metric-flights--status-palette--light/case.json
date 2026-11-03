@@ -261,7 +261,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:43.008Z"
+    "capturedAt": "2026-11-03T21:32:32.211Z"
   },
   "reference": {
     "fingerprint": {
@@ -280,19 +280,70 @@
             "width": 262.58,
             "height": 184
           },
-          "background": "#f6726a",
           "value": "49.266",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 125,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 184
+              },
+              "style": {
+                "background": "#f6726a"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Logstash Airways",
+              "textWidth": 134
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Average delay",
+              "textWidth": 97
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 128.58,
+                "y": 132.81,
+                "width": 125,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "49.266",
+              "textWidth": 125
+            }
+          },
           "title": "Logstash Airways",
-          "titleFontSize": 16,
-          "titleWidth": 134,
-          "titleLetterWidth": 130,
-          "subtitle": "Average delay",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Average delay"
         },
         {
           "position": [
@@ -305,19 +356,70 @@
             "width": 262.58,
             "height": 184
           },
-          "background": "#24c292",
           "value": "47.23",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 102,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 184
+              },
+              "style": {
+                "background": "#24c292"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "ES-Air",
+              "textWidth": 51
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Average delay",
+              "textWidth": 97
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 151.58,
+                "y": 132.81,
+                "width": 102,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "47.23",
+              "textWidth": 102
+            }
+          },
           "title": "ES-Air",
-          "titleFontSize": 16,
-          "titleWidth": 51,
-          "titleLetterWidth": 41,
-          "subtitle": "Average delay",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Average delay"
         },
         {
           "position": [
@@ -330,19 +432,70 @@
             "width": 262.59,
             "height": 184
           },
-          "background": "#24c292",
           "value": "46.911",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 125,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.59,
+                "height": 184
+              },
+              "style": {
+                "background": "#24c292"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 234.25,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Kibana Airlines",
+              "textWidth": 112
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 234.25,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#1d2a3e",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Average delay",
+              "textWidth": 97
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 129.59,
+                "y": 132.81,
+                "width": 125,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "46.911",
+              "textWidth": 125
+            }
+          },
           "title": "Kibana Airlines",
-          "titleFontSize": 16,
-          "titleWidth": 112,
-          "titleLetterWidth": 108,
-          "subtitle": "Average delay",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Average delay"
         }
       ],
       "empty": 0

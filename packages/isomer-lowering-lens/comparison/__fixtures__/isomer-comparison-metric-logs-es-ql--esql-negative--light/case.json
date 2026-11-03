@@ -106,7 +106,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:45.430Z"
+    "capturedAt": "2026-11-03T21:32:34.641Z"
   },
   "reference": {
     "fingerprint": {
@@ -125,18 +125,69 @@
             "width": 389.88,
             "height": 184
           },
-          "background": "#ffffff",
           "value": "-14,074",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 142,
-          "valueLetterWidth": 0,
-          "title": "Change",
-          "titleFontSize": 16,
-          "titleWidth": 59,
-          "titleLetterWidth": 59,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 184
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 373.88,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Change",
+              "textWidth": 59
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 239.88,
+                "y": 132.81,
+                "width": 142,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "14,074",
+              "textWidth": 125
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 239.88,
+                "y": 140.81,
+                "width": 17,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "-",
+              "textWidth": 17
+            }
+          },
+          "title": "Change"
         }
       ],
       "empty": 0

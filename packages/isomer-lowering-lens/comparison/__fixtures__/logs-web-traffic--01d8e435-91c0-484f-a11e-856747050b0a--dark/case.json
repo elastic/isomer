@@ -137,7 +137,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:16:11.281Z"
+    "capturedAt": "2026-11-03T21:32:59.504Z"
   },
   "reference": {
     "fingerprint": {
@@ -156,18 +156,69 @@
             "width": 389.88,
             "height": 188
           },
-          "background": "#111c2c",
           "value": "5.20%",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 104,
-          "valueLetterWidth": 0,
-          "title": "HTTP 4xx (%)",
-          "titleFontSize": 16,
-          "titleWidth": 107,
-          "titleLetterWidth": 61,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 188
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 373.88,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "HTTP 4xx (%)",
+              "textWidth": 107
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 277.88,
+                "y": 136.81,
+                "width": 104,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "5.20",
+              "textWidth": 79
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 356.88,
+                "y": 144.81,
+                "width": 25,
+                "height": 33
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "%",
+              "textWidth": 25
+            }
+          },
+          "title": "HTTP 4xx (%)"
         }
       ],
       "empty": 0

@@ -24,7 +24,7 @@ import { expect, type Page, test } from '@playwright/test';
 import type { JsonObject } from '../../src/json';
 import type { ComparisonCase, LayerData } from '../case';
 import { caseSchema, platformOf } from '../case';
-import { extractMetricFingerprint, NUMERIC_GLYPHS } from '../fingerprint';
+import { extractMetricFingerprint } from '../fingerprint';
 
 import { type CapturedFont, writeCaseIndex } from './case_index';
 import { AUTHORED_DASHBOARDS, dashboardSavedObject } from './scenarios';
@@ -523,10 +523,7 @@ test('capture comparison cases', async ({ browser }) => {
       for (const { panelIndex } of metrics) {
         const panel = page.locator(`[data-test-embeddable-id="${panelIndex}"]`);
         const read = await panel.evaluate(readPanel);
-        const fingerprint = await panel.evaluate(
-          extractMetricFingerprint,
-          NUMERIC_GLYPHS.source
-        );
+        const fingerprint = await panel.evaluate(extractMetricFingerprint);
         if (!read || !fingerprint) {
           // A skipped panel would leave the baseline smaller than the last capture's.
           throw new Error(

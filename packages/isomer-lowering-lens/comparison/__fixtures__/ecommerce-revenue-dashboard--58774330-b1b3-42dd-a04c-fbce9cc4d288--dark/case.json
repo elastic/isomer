@@ -207,7 +207,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:56.169Z"
+    "capturedAt": "2026-11-03T21:32:45.013Z"
   },
   "reference": {
     "fingerprint": {
@@ -226,18 +226,69 @@
             "width": 389.88,
             "height": 188
           },
-          "background": "#111c2c",
           "value": "$64.42",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 119,
-          "valueLetterWidth": 0,
-          "title": "Median spending",
-          "titleFontSize": 16,
-          "titleWidth": 130,
-          "titleLetterWidth": 126,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 188
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 355.17,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Median spending",
+              "textWidth": 130
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 262.88,
+                "y": 136.81,
+                "width": 119,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "64.42",
+              "textWidth": 102
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 262.88,
+                "y": 144.81,
+                "width": 17,
+                "height": 33
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "$",
+              "textWidth": 17
+            }
+          },
+          "title": "Median spending"
         }
       ],
       "empty": 0

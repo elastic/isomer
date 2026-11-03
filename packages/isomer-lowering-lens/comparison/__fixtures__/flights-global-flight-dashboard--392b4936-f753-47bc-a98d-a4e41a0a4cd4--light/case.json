@@ -166,7 +166,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:31.167Z"
+    "capturedAt": "2026-11-03T21:32:21.003Z"
   },
   "reference": {
     "fingerprint": {
@@ -185,18 +185,53 @@
             "width": 257.25,
             "height": 216
           },
-          "background": "#ffffff",
           "value": "11,847",
-          "valueColor": "#111c2c",
-          "valueFontSize": 42,
-          "valueWidth": 146,
-          "valueLetterWidth": 0,
-          "title": "Total flights",
-          "titleFontSize": 16,
-          "titleWidth": 93,
-          "titleLetterWidth": 89,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 257.25,
+                "height": 216
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 241.25,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Total flights",
+              "textWidth": 93
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 103.25,
+                "y": 157.61,
+                "width": 146,
+                "height": 50.39
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "42px",
+                "fontWeight": "500"
+              },
+              "text": "11,847",
+              "textWidth": 146
+            }
+          },
+          "title": "Total flights"
         }
       ],
       "empty": 0

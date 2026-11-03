@@ -33,6 +33,17 @@ const dateValue = load(
 const fingerprint = ({ reference }: ComparisonCase) =>
   structuredClone(reference.fingerprint);
 
+/** The key of a tile's drawn element whose key ends with `suffix`. */
+const drawnKey = (drawing: MetricFingerprint, tile: number, suffix: string) => {
+  const key = Object.keys(drawing.tiles[tile]!.elements).find((candidate) =>
+    candidate.endsWith(suffix)
+  );
+  if (!key) {
+    throw new Error(`Tile ${tile} draws no element ending ${suffix}.`);
+  }
+  return key;
+};
+
 /** The features of the differences that fail the comparison. */
 const failing = (
   reference: MetricFingerprint,
@@ -71,9 +82,31 @@ describe('compareFingerprints', () => {
 
   it('fails a changed badge color', () => {
     const actual = fingerprint(breakdown);
-    actual.tiles[2]!.secondary!.badge!.background = '#ff0000';
+    const key = drawnKey(actual, 2, '>echBadge__content');
+    actual.tiles[2]!.elements[key]!.style.background = '#ff0000';
     expect(failing(fingerprint(breakdown), actual)).toEqual([
-      { path: 'tiles[2].secondary.badge.background', feature: 'color' },
+      { path: `tiles[2].elements.${key}.style.background`, feature: 'color' },
+    ]);
+  });
+
+  it('fails a changed font size', () => {
+    const actual = fingerprint(breakdown);
+    const key = drawnKey(actual, 0, '>echMetricText__subtitle');
+    actual.tiles[0]!.elements[key]!.style.fontSize = '20px';
+    expect(failing(fingerprint(breakdown), actual)).toEqual([
+      {
+        path: `tiles[0].elements.${key}.style.fontSize`,
+        feature: 'layout.font',
+      },
+    ]);
+  });
+
+  it('fails a missing element by its identity', () => {
+    const actual = fingerprint(breakdown);
+    const key = drawnKey(actual, 0, '>echBadge__content>span');
+    delete actual.tiles[0]!.elements[key];
+    expect(failing(fingerprint(breakdown), actual)).toEqual([
+      { path: `tiles[0].elements.${key}`, feature: 'identity' },
     ]);
   });
 
@@ -125,19 +158,12 @@ describe('compareFingerprints', () => {
     ]);
   });
 
-  it('fails a progress bar drawn along the other axis', () => {
-    const actual = fingerprint(progress);
-    actual.tiles[0]!.progress!.orientation = 'vertical';
-    expect(failing(fingerprint(progress), actual)).toEqual([
-      { path: 'tiles[0].progress.orientation', feature: 'layout.align' },
-    ]);
-  });
-
   it('fails a progress bar painted at no length while keeping its value', () => {
     const actual = fingerprint(progress);
-    actual.tiles[0]!.progress!.end = actual.tiles[0]!.progress!.start;
+    const key = drawnKey(actual, 0, '>echMeterBar');
+    actual.tiles[0]!.elements[key]!.box.width = 0;
     expect(failing(fingerprint(progress), actual)).toEqual([
-      { path: 'tiles[0].progress.end', feature: 'progress.geometry' },
+      { path: `tiles[0].elements.${key}.box.width`, feature: 'layout.element' },
     ]);
   });
 
@@ -152,11 +178,12 @@ describe('compareFingerprints', () => {
     expect(failing(fingerprint(breakdown), near)).toEqual([]);
   });
 
-  it('fails a changed alignment', () => {
+  it('fails a reading drawn somewhere else in its tile', () => {
     const actual = fingerprint(progress);
-    actual.tiles[0]!.valueAlign = 'left';
+    const key = drawnKey(actual, 0, '>echMetricText__value');
+    actual.tiles[0]!.elements[key]!.box.x -= 50;
     expect(failing(fingerprint(progress), actual)).toEqual([
-      { path: 'tiles[0].valueAlign', feature: 'layout.align' },
+      { path: `tiles[0].elements.${key}.box.x`, feature: 'layout.element' },
     ]);
   });
 
@@ -185,9 +212,11 @@ describe('compareFingerprints', () => {
     ]);
   });
 
-  it('compares text widths only on the platform the reference was captured on', () => {
+  it('compares text and the boxes it sizes only on the platform the reference was captured on', () => {
     const actual = fingerprint(dateValue);
-    actual.tiles[0]!.titleWidth! -= 2;
+    const key = drawnKey(actual, 0, '>echMetricText__value');
+    actual.tiles[0]!.elements[key]!.textWidth! -= 2;
+    actual.tiles[0]!.elements[key]!.box.width -= 2;
     const elsewhere = dateValue.context.platform === 'linux' ? 'mac' : 'linux';
     const compare = (platform: Platform) =>
       compareFingerprints(fingerprint(dateValue), actual, {
@@ -198,14 +227,18 @@ describe('compareFingerprints', () => {
           platform,
         },
       });
+    const paths = [
+      `tiles[0].elements.${key}.box.width`,
+      `tiles[0].elements.${key}.textWidth`,
+    ];
     expect(
       failures(compare(dateValue.context.platform)).map(({ path }) => path)
-    ).toEqual(['tiles[0].titleWidth']);
+    ).toEqual(paths);
     const off = compare(elsewhere);
     expect(failures(off)).toEqual([]);
     expect(
       off.map(({ path, uncompared }) => [path, Boolean(uncompared)])
-    ).toEqual([['tiles[0].titleWidth', true]]);
+    ).toEqual(paths.map((path) => [path, true]));
   });
 
   it('compares everything else on any platform', () => {

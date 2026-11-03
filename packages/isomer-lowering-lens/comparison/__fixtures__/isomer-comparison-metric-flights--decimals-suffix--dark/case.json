@@ -183,7 +183,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:16:14.558Z"
+    "capturedAt": "2026-11-03T21:33:02.548Z"
   },
   "reference": {
     "fingerprint": {
@@ -202,18 +202,69 @@
             "width": 389.88,
             "height": 184
           },
-          "background": "#111c2c",
           "value": "623.57 USD",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 188,
-          "valueLetterWidth": 56,
-          "title": "Ticket price",
-          "titleFontSize": 16,
-          "titleWidth": 93,
-          "titleLetterWidth": 89,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 184
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 355.17,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Ticket price",
+              "textWidth": 93
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 193.88,
+                "y": 132.81,
+                "width": 188,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "623.57",
+              "textWidth": 125
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 318.88,
+                "y": 140.81,
+                "width": 63,
+                "height": 33
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "USD",
+              "textWidth": 63
+            }
+          },
+          "title": "Ticket price"
         }
       ],
       "empty": 0

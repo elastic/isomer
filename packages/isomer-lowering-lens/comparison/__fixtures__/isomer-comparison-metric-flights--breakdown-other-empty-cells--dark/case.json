@@ -238,7 +238,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:16:14.876Z"
+    "capturedAt": "2026-11-03T21:33:02.852Z"
   },
   "reference": {
     "fingerprint": {
@@ -257,19 +257,70 @@
             "width": 262.58,
             "height": 148
           },
-          "background": "#111c2c",
           "value": "2,159",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 102,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 148
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "IT",
+              "textWidth": 15
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#cad3e2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Flights",
+              "textWidth": 44
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 151.58,
+                "y": 95.81,
+                "width": 102,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "2,159",
+              "textWidth": 102
+            }
+          },
           "title": "IT",
-          "titleFontSize": 16,
-          "titleWidth": 15,
-          "titleLetterWidth": 15,
-          "subtitle": "Flights",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Flights"
         },
         {
           "position": [
@@ -282,19 +333,70 @@
             "width": 262.58,
             "height": 148
           },
-          "background": "#111c2c",
           "value": "1,833",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 102,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 148
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "US",
+              "textWidth": 21
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#cad3e2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Flights",
+              "textWidth": 44
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 151.58,
+                "y": 95.81,
+                "width": 102,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "1,833",
+              "textWidth": 102
+            }
+          },
           "title": "US",
-          "titleFontSize": 16,
-          "titleWidth": 21,
-          "titleLetterWidth": 21,
-          "subtitle": "Flights",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Flights"
         },
         {
           "position": [
@@ -307,19 +409,70 @@
             "width": 262.59,
             "height": 148
           },
-          "background": "#111c2c",
           "value": "994",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 69,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.59,
+                "height": 148
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 234.25,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "CN",
+              "textWidth": 23
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 234.25,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#cad3e2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Flights",
+              "textWidth": 44
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 185.59,
+                "y": 95.81,
+                "width": 69,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "994",
+              "textWidth": 69
+            }
+          },
           "title": "CN",
-          "titleFontSize": 16,
-          "titleWidth": 23,
-          "titleLetterWidth": 23,
-          "subtitle": "Flights",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Flights"
         },
         {
           "position": [
@@ -332,19 +485,70 @@
             "width": 262.58,
             "height": 148
           },
-          "background": "#111c2c",
           "value": "825",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 69,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 148
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "CA",
+              "textWidth": 23
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#cad3e2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Flights",
+              "textWidth": 44
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 184.58,
+                "y": 96.81,
+                "width": 69,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "825",
+              "textWidth": 69
+            }
+          },
           "title": "CA",
-          "titleFontSize": 16,
-          "titleWidth": 23,
-          "titleLetterWidth": 23,
-          "subtitle": "Flights",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Flights"
         },
         {
           "position": [
@@ -357,19 +561,70 @@
             "width": 262.58,
             "height": 148
           },
-          "background": "#111c2c",
           "value": "6,036",
-          "valueColor": "#e3e8f2",
-          "valueFontSize": 36,
-          "valueWidth": 102,
-          "valueLetterWidth": 0,
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 262.58,
+                "height": 148
+              },
+              "style": {
+                "background": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 233.3,
+                "height": 20
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Other",
+              "textWidth": 45
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
+              "box": {
+                "x": 8,
+                "y": 28,
+                "width": 233.3,
+                "height": 21.8
+              },
+              "style": {
+                "color": "#cad3e2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "14px",
+                "fontWeight": "400"
+              },
+              "text": "Flights",
+              "textWidth": 44
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 151.58,
+                "y": 96.81,
+                "width": 102,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#e3e8f2",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "6,036",
+              "textWidth": 102
+            }
+          },
           "title": "Other",
-          "titleFontSize": 16,
-          "titleWidth": 45,
-          "titleLetterWidth": 45,
-          "subtitle": "Flights",
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "subtitle": "Flights"
         }
       ],
       "empty": 1

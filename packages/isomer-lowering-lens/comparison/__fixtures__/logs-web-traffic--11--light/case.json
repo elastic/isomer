@@ -172,7 +172,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:38.949Z"
+    "capturedAt": "2026-11-03T21:32:28.139Z"
   },
   "reference": {
     "fingerprint": {
@@ -191,18 +191,53 @@
             "width": 389.88,
             "height": 188
           },
-          "background": "#68bc00",
           "value": "1,000",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 102,
-          "valueLetterWidth": 0,
-          "title": "Unique Visitors",
-          "titleFontSize": 16,
-          "titleWidth": 115,
-          "titleLetterWidth": 111,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 188
+              },
+              "style": {
+                "background": "#68bc00"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 373.88,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Unique Visitors",
+              "textWidth": 115
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 279.88,
+                "y": 136.81,
+                "width": 102,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "1,000",
+              "textWidth": 102
+            }
+          },
+          "title": "Unique Visitors"
         }
       ],
       "empty": 0

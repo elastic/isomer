@@ -33,8 +33,12 @@ export interface DrawnContext {
   platform: CaseContext['platform'];
 }
 
-/** Features whose readings depend on how the platform rasterizes text. */
-const PLATFORM_FEATURES = new Set(['layout.text']);
+/** Features that differ by platform: text rasterization, the boxes text sizes, and how font families serialize. */
+const PLATFORM_FEATURES = new Set([
+  'layout.text',
+  'layout.element',
+  'font.family',
+]);
 
 const EXACT: Tolerance = { type: 'exact' };
 

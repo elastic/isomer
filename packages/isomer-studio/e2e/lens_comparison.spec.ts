@@ -29,7 +29,6 @@ import {
 import {
   extractMetricFingerprint,
   type Fingerprint,
-  NUMERIC_GLYPHS,
 } from '../../isomer-lowering-lens/comparison/fingerprint';
 import {
   readCases,
@@ -140,75 +139,97 @@ test.describe('Lens comparison', () => {
     await once(dev.child, 'exit');
   });
 
-  // Each moves a drawn element without touching the class Elastic Charts aligns it with.
-  for (const { field, from, css } of [
+  // Each changes Isomer's drawing without touching a class Elastic Charts draws by, and must fail.
+  for (const { name, from, css, edit, expected } of [
     {
-      field: 'valueAlign',
-      from: 'right',
+      name: 'the value moved left',
+      from: '--count--light',
       css: '.echMetricText__valueBlock{justify-content:flex-start !important}',
+      expected: /echMetricText__value\.box\.x layout\.element$/,
     },
     {
-      field: 'iconAlign',
-      from: 'right',
+      name: 'the value moved down',
+      from: '--icon-centered-top--light',
+      css: '.echMetricText__valueBlock{grid-row:-2 !important}',
+      expected: /echMetricText__value\.box\.y layout\.element$/,
+    },
+    {
+      name: 'the icon moved to the other side',
+      from: '--icon-centered-top--light',
       css: '.echMetricText__icon{grid-column:1 !important}',
+      expected: /echMetricText__icon[^ ]*\.box\.x layout\.element$/,
     },
     {
-      field: 'extraAlign',
-      from: 'right',
+      name: 'the comparison badge centered',
+      from: '--esql-breakdown-compare--light',
       css: '.echMetricText__extraBlock{justify-content:center !important}',
+      expected: /echBadge__content\.box\.x layout\.element$/,
+    },
+    {
+      name: 'a subtitle drawn larger',
+      from: '--secondary-metric--light',
+      css: '.echMetricText__subtitle{font-size:20px !important}',
+      expected: /echMetricText__subtitle\.style\.fontSize layout\.font$/,
+    },
+    {
+      name: 'the sparkline shrunk',
+      from: '--trendline--light',
+      css: '.echSingleMetricSparkline__svg{width:50% !important}',
+      expected: /echSingleMetricSparkline__svg\.box\.width layout\.element$/,
+    },
+    {
+      name: 'the comparison arrow reversed',
+      from: '--esql-breakdown-compare--light',
+      edit: (section: Element) => {
+        const glyph = [
+          ...section.querySelectorAll('.echBadge__content > span'),
+        ].find(({ textContent }) => textContent?.trim() === '↑');
+        if (glyph) {
+          glyph.textContent = '↓';
+        }
+      },
+      expected: /echBadge__content>span\.text text$/,
     },
   ] as const) {
-    test(`reads ${field} as drawn, not from class names`, async ({ page }) => {
-      const comparison = cases.find(({ reference }) =>
-        reference.fingerprint.tiles.some((tile) => tile[field] === from)
+    test(`fails ${name}`, async ({ page }) => {
+      const comparison = cases.find(({ id }) => id.endsWith(from));
+      expect(comparison, `a case ending ${from}`).toBeDefined();
+      // Compares the drawing with itself, before and after the change.
+      expect((await compare(page, dev.url, comparison!)).status).not.toBe(
+        'pending'
       );
-      expect(comparison, `a case with a ${from} ${field}`).toBeDefined();
-      expect((await compare(page, dev.url, comparison!)).status).toBe('pass');
       const drawing = page.locator(
         '[aria-label="Isomer drawing"] section.isomer'
       );
-      const before = await drawing.evaluate(
-        extractMetricFingerprint,
-        NUMERIC_GLYPHS.source
-      );
-      await drawing.evaluate((section, rule) => {
-        const sheet = new CSSStyleSheet();
-        sheet.replaceSync(rule);
-        const shadow = section.getRootNode() as ShadowRoot;
-        shadow.adoptedStyleSheets = [...shadow.adoptedStyleSheets, sheet];
-      }, css);
-      const after = await drawing.evaluate(
-        extractMetricFingerprint,
-        NUMERIC_GLYPHS.source
-      );
+      const before = await drawing.evaluate(extractMetricFingerprint);
+      if (css) {
+        await drawing.evaluate((section, rule) => {
+          const sheet = new CSSStyleSheet();
+          sheet.replaceSync(rule);
+          const shadow = section.getRootNode() as ShadowRoot;
+          shadow.adoptedStyleSheets = [...shadow.adoptedStyleSheets, sheet];
+        }, css);
+      }
+      if (edit) {
+        await drawing.evaluate(edit);
+      }
+      const after = await drawing.evaluate(extractMetricFingerprint);
       expect(
         failures(compareFingerprints(before!, after)).map(
           ({ path, feature }) => `${path} ${feature}`
         )
-      ).toEqual(
-        expect.arrayContaining([
-          expect.stringMatching(
-            new RegExp(`^tiles\\[\\d+\\]\\.${field} layout\\.align$`)
-          ),
-        ])
-      );
+      ).toEqual(expect.arrayContaining([expect.stringMatching(expected)]));
     });
   }
 
   test('re-reads the drawing when only its styles change', async ({ page }) => {
-    const comparison = cases.find(({ reference }) =>
-      reference.fingerprint.tiles.some(
-        ({ valueAlign }) => valueAlign === 'right'
-      )
-    )!;
+    const comparison = cases.find(({ id }) => id.endsWith('--count--light'))!;
     expect((await compare(page, dev.url, comparison)).status).toBe('pass');
     await page
       .locator('[aria-label="Isomer drawing"] section.isomer')
       .evaluate((section) => {
         const sheet = new CSSStyleSheet();
-        sheet.replaceSync(
-          '.echMetricText__valueBlock{justify-content:flex-start !important}'
-        );
+        sheet.replaceSync('.echMetricText__value{color:#ff0000 !important}');
         const shadow = section.getRootNode() as ShadowRoot;
         shadow.adoptedStyleSheets = [...shadow.adoptedStyleSheets, sheet];
       });
@@ -242,7 +263,9 @@ test.describe('Lens comparison', () => {
     expect(differences).toEqual(
       expect.arrayContaining([
         expect.stringMatching(/^context\.scheme context dark light/),
-        expect.stringMatching(/^tiles\[0\]\.background color /),
+        expect.stringMatching(
+          /^tiles\[0\]\.elements\.echMetric\.style\.background color /
+        ),
       ])
     );
   });

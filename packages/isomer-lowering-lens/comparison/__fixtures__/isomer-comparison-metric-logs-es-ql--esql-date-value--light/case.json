@@ -106,7 +106,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:45.848Z"
+    "capturedAt": "2026-11-03T21:32:35.137Z"
   },
   "reference": {
     "fingerprint": {
@@ -125,18 +125,53 @@
             "width": 389.88,
             "height": 184
           },
-          "background": "#ffffff",
           "value": "Dec 24, 2026 @ 21:45:26.749",
-          "valueColor": "#111c2c",
-          "valueFontSize": 16,
-          "valueWidth": 228,
-          "valueLetterWidth": 46,
-          "title": "Latest",
-          "titleFontSize": 16,
-          "titleWidth": 50,
-          "titleLetterWidth": 50,
-          "titlesAlign": "left",
-          "valueAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 184
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
+              "box": {
+                "x": 8,
+                "y": 8,
+                "width": 373.88,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Latest",
+              "textWidth": 50
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 153.88,
+                "y": 156.81,
+                "width": 228,
+                "height": 19.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Dec 24, 2026 @ 21:45:26.749",
+              "textWidth": 228
+            }
+          },
+          "title": "Latest"
         }
       ],
       "empty": 0

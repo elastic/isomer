@@ -12,48 +12,33 @@ export interface Box {
   height: number;
 }
 
+/** An element a tile paints: what it draws, where, and in which style. */
+export interface DrawnElement {
+  /** Relative to the tile. */
+  box: Box;
+  /** The element's own text, not its descendants'. */
+  text?: string;
+  /** The drawn width of that text. */
+  textWidth?: number;
+  style: Record<string, string>;
+}
+
 export interface MetricTileFingerprint {
   /** `[row, column]` in the chart's grid. */
   position: [number, number];
   box: Box;
-  background: string;
+  /** The readings, for checking the drawing against the resolved model. */
   title?: string;
   subtitle?: string;
   /** Extra text below the value when there is no secondary metric. */
   extra?: string;
   value: string;
-  valueColor: string;
-  valueFontSize: number;
-  /** Drawn widths of the text runs, which differ when a font is substituted. */
-  valueWidth: number;
-  /** The drawn width of the runs Kibana's numeric font face does not cover. */
-  valueLetterWidth: number;
-  titleFontSize?: number;
-  titleWidth?: number;
-  titleLetterWidth?: number;
-  /** Where each text sits in its block as drawn: `left`, `right`, `center` or `offset`. */
-  titlesAlign?: string;
-  valueAlign?: string;
-  extraAlign?: string;
-  /** Which side of the tile the icon is drawn on. */
-  iconAlign?: string;
-  secondary?: {
-    label?: string;
-    value?: string;
-    badge?: { background: string; color: string };
-  };
-  progress?: {
-    now: number;
-    min: number;
-    max: number;
-    color: string;
-    orientation: 'horizontal' | 'vertical';
-    /** Where the painted bar starts and ends along the track, from its left or bottom, as fractions of it. */
-    start: number;
-    end: number;
-  };
+  secondary?: { label?: string; value?: string };
+  progress?: { now: number; min: number; max: number };
   /** Each subpath of the sparkline's area, as flat `[x, y, …]` in its unit `viewBox`. */
-  trend?: { color: string; paths: number[][] };
+  trend?: { paths: number[][] };
+  /** Every element the tile paints, keyed by its place among Elastic Charts' classes. */
+  elements: Record<string, DrawnElement>;
 }
 
 export interface MetricFingerprint {
@@ -65,17 +50,12 @@ export interface MetricFingerprint {
   empty: number;
 }
 
-/** Kibana's `Elastic UI Numeric` `unicode-range`: U+20, U+24-25, U+28-29, U+2B-2F, U+30-3A, U+A0, U+202F, U+2212. */
-export const NUMERIC_GLYPHS =
-  /[\x20\x24\x25\x28\x29\x2b-\x2f\x30-\x3a\xa0\u202f\u2212]/;
-
 /**
  * Reads an Elastic Charts `Metric` drawing under `root`. It references nothing outside its body, so Playwright
- * can serialize it into any page; `numericGlyphs` is {@link NUMERIC_GLYPHS}'s source.
+ * can serialize it into any page.
  */
 export const extractMetricFingerprint = (
-  root: Element,
-  numericGlyphs: string
+  root: Element
 ): MetricFingerprint | null => {
   const container = root.matches('.echMetricContainer')
     ? root
@@ -110,229 +90,164 @@ export const extractMetricFingerprint = (
     const collapsed = shown.replace(/\s+/g, ' ').trim();
     return collapsed || undefined;
   };
-  const px = (element: Element | null) =>
-    element ? round(parseFloat(getComputedStyle(element).fontSize)) : undefined;
-  const textNodes = (element: Element | null) => {
-    const walker =
-      element && document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    const nodes: Text[] = [];
-    while (walker?.nextNode()) {
-      nodes.push(walker.currentNode as Text);
-    }
-    return nodes;
-  };
-  // Spans only the text nodes, so a block or clamped wrapper's box does not count as text.
-  const extentOf = (element: Element | null) => {
-    const nodes = textNodes(element);
-    if (!nodes.length) {
-      return undefined;
-    }
-    const range = document.createRange();
-    range.setStart(nodes[0]!, 0);
-    range.setEnd(nodes.at(-1)!, nodes.at(-1)!.length);
-    return range.getBoundingClientRect();
-  };
-  const extent = (element: Element | null) =>
-    round(extentOf(element)?.width ?? 0);
-  const numeric = new RegExp(numericGlyphs);
-  const letterWidth = (element: Element | null) => {
-    let total = 0;
-    for (const node of textNodes(element)) {
-      let start = -1;
-      for (let index = 0; index <= node.data.length; index += 1) {
-        const letter =
-          index < node.data.length && !numeric.test(node.data[index]!);
-        if (letter && start < 0) {
-          start = index;
-        } else if (!letter && start >= 0) {
-          const range = document.createRange();
-          range.setStart(node, start);
-          range.setEnd(node, index);
-          total += range.getBoundingClientRect().width;
-          start = -1;
+  const relative = (rect: DOMRect, to: DOMRect): Box => ({
+    x: round(rect.x - to.x),
+    y: round(rect.y - to.y),
+    width: round(rect.width),
+    height: round(rect.height),
+  });
+  const transparent = (color: string) =>
+    color === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(color);
+  // Only what paints: its own text, a fill or border, a shape, or the progress meter.
+  const paints = (
+    element: Element,
+    style: CSSStyleDeclaration,
+    ownText: string
+  ) =>
+    ownText !== '' ||
+    !transparent(style.backgroundColor) ||
+    (parseFloat(style.borderTopWidth) > 0 &&
+      !transparent(style.borderTopColor)) ||
+    ['svg', 'path', 'rect', 'circle', 'img'].includes(
+      element.tagName.toLowerCase()
+    ) ||
+    element.getAttribute('role') === 'meter';
+  const nameOf = (element: Element) =>
+    [...element.classList].find(
+      (name) => name.startsWith('ech') && !name.includes('--')
+    ) ?? element.tagName.toLowerCase();
+
+  const readElements = (tile: Element) => {
+    const tileBox = tile.getBoundingClientRect();
+    const elements: Record<string, DrawnElement> = {};
+    const walk = (element: Element, path: string) => {
+      const style = getComputedStyle(element);
+      if (
+        style.display === 'none' ||
+        style.visibility === 'hidden' ||
+        element.matches('.echScreenReaderOnly')
+      ) {
+        return;
+      }
+      const own = [...element.childNodes].filter(
+        (node): node is Text =>
+          node.nodeType === Node.TEXT_NODE && (node as Text).data.trim() !== ''
+      );
+      const ownText = own
+        .map(({ data }) => data)
+        .join('')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const rect = element.getBoundingClientRect();
+      if ((rect.width > 0 && rect.height > 0) || ownText) {
+        if (paints(element, style, ownText)) {
+          let key = path;
+          for (let occurrence = 2; key in elements; occurrence += 1) {
+            key = `${path}#${occurrence}`;
+          }
+          const drawn: DrawnElement = {
+            box: relative(rect, tileBox),
+            style: {},
+          };
+          if (ownText) {
+            const range = document.createRange();
+            range.setStart(own[0]!, 0);
+            range.setEnd(own.at(-1)!, own.at(-1)!.length);
+            drawn.text = ownText;
+            drawn.textWidth = round(range.getBoundingClientRect().width);
+            drawn.style.color = hex(style.color);
+            drawn.style.fontFamily = style.fontFamily;
+            drawn.style.fontSize = style.fontSize;
+            drawn.style.fontWeight = style.fontWeight;
+          }
+          if (!transparent(style.backgroundColor)) {
+            drawn.style.background = hex(style.backgroundColor);
+          }
+          if (
+            ['path', 'rect', 'circle'].includes(
+              element.tagName.toLowerCase()
+            ) &&
+            style.fill !== 'none'
+          ) {
+            drawn.style.fill = hex(style.fill);
+          }
+          if (style.opacity !== '1') {
+            drawn.style.opacity = style.opacity;
+          }
+          // An identity matrix draws as no transform at all.
+          if (
+            style.transform !== 'none' &&
+            style.transform !== 'matrix(1, 0, 0, 1, 0, 0)'
+          ) {
+            drawn.style.transform = style.transform;
+          }
+          elements[key] = drawn;
         }
       }
-    }
-    return round(total);
-  };
-  // Within a pixel of an edge is at it, which absorbs subpixel rounding. A text that fills its block shows
-  // no alignment, so its block's and its own computed alignment stand in.
-  const alignment = (
-    block: Element | null,
-    content: Element | null,
-    shown: DOMRect | undefined = extentOf(content)
-  ) => {
-    if (!block || !content || !shown?.width) {
-      return undefined;
-    }
-    const box = block.getBoundingClientRect();
-    const style = getComputedStyle(block);
-    const left = shown.left - box.left - parseFloat(style.paddingLeft);
-    const right = box.right - parseFloat(style.paddingRight) - shown.right;
-    if (left <= 1 && right <= 1) {
-      const justify = style.justifyContent;
-      const align = getComputedStyle(content).textAlign;
-      return /end|right/.test(justify)
-        ? 'right'
-        : justify === 'center'
-          ? 'center'
-          : /end|right/.test(align)
-            ? 'right'
-            : align === 'center'
-              ? 'center'
-              : 'left';
-    }
-    return left <= 1
-      ? 'left'
-      : right <= 1
-        ? 'right'
-        : Math.abs(left - right) <= 1
-          ? 'center'
-          : 'offset';
+      for (const child of element.children) {
+        walk(child, `${path}>${nameOf(child)}`);
+      }
+    };
+    walk(tile, nameOf(tile));
+    return elements;
   };
 
   // An empty grid cell is an `.echMetric` too, but only a drawn tile is a figure.
-  const drawn = [...container.querySelectorAll('.echMetric[role="figure"]')];
-  const tiles = drawn.map((tile): MetricTileFingerprint => {
+  const drawnTiles = [
+    ...container.querySelectorAll('.echMetric[role="figure"]'),
+  ];
+  const tiles = drawnTiles.map((tile): MetricTileFingerprint => {
     const id = tile.getAttribute('aria-labelledby') ?? '';
     const [, row = '0', column = '0'] = /-(\d+)-(\d+)$/.exec(id) ?? [];
-    const box = tile.getBoundingClientRect();
-    const titleText = tile.querySelector('.echMetricText__title');
-    const valueText = tile.querySelector('.echMetricText__value');
-    const titles = tile.querySelector('.echMetricText__titlesBlock');
-    const valueBlock = tile.querySelector('.echMetricText__valueBlock');
-    const extraBlock = tile.querySelector('.echMetricText__extraBlock');
-    const icon = tile.querySelector('.echMetricText__icon');
     const fingerprint: MetricTileFingerprint = {
       position: [Number(row), Number(column)],
-      box: {
-        x: round(box.x - origin.x),
-        y: round(box.y - origin.y),
-        width: round(box.width),
-        height: round(box.height),
-      },
-      background: hex(getComputedStyle(tile).backgroundColor),
-      value: text(valueText) ?? '',
-      valueColor: hex(valueText ? getComputedStyle(valueText).color : ''),
-      valueFontSize: px(valueText) ?? 0,
-      valueWidth: extent(valueText),
-      valueLetterWidth: letterWidth(valueText),
+      box: relative(tile.getBoundingClientRect(), origin),
+      value: text(tile.querySelector('.echMetricText__value')) ?? '',
+      elements: readElements(tile),
     };
-    const title = text(titleText);
-    if (titleText && title !== undefined) {
-      fingerprint.title = title;
-      fingerprint.titleFontSize = px(
-        titleText.querySelector('span') ?? titleText
-      )!;
-      fingerprint.titleWidth = extent(titleText);
-      fingerprint.titleLetterWidth = letterWidth(titleText);
-    }
-    const subtitle = text(tile.querySelector('.echMetricText__subtitle'));
-    if (subtitle !== undefined) {
-      fingerprint.subtitle = subtitle;
-    }
-    const extra = text(tile.querySelector('.echMetricText__extra'));
-    if (extra !== undefined) {
-      fingerprint.extra = extra;
-    }
-    // A secondary metric is measured by its own box, which includes a badge's padding.
-    const extraContent =
-      extraBlock?.querySelector('.echSecondaryMetric') ??
-      extraBlock?.querySelector('.echMetricText__extra') ??
-      null;
-    const placements: [
-      keyof MetricTileFingerprint,
-      Element | null,
-      Element | null,
-      DOMRect | undefined,
-    ][] = [
-      ['titlesAlign', titles, titleText, extentOf(titleText)],
-      ['valueAlign', valueBlock, valueText, extentOf(valueText)],
-      [
-        'extraAlign',
-        extraBlock,
-        extraContent,
-        extraContent?.matches('.echSecondaryMetric')
-          ? extraContent.getBoundingClientRect()
-          : extentOf(extraContent),
-      ],
+    const readings: ['title' | 'subtitle' | 'extra', string][] = [
+      ['title', '.echMetricText__title'],
+      ['subtitle', '.echMetricText__subtitle'],
+      ['extra', '.echMetricText__extra'],
     ];
-    for (const [key, block, content, shown] of placements) {
-      const align = alignment(block, content, shown);
-      if (align !== undefined) {
-        (fingerprint as unknown as Record<string, string>)[key] = align;
+    for (const [key, selector] of readings) {
+      const reading = text(tile.querySelector(selector));
+      if (reading !== undefined) {
+        fingerprint[key] = reading;
       }
-    }
-    if (icon) {
-      // The icon wrapper stretches across the row; the glyph inside it is what moves.
-      const drawnIcon = (
-        icon.querySelector('svg, img') ??
-        icon.firstElementChild ??
-        icon
-      ).getBoundingClientRect();
-      fingerprint.iconAlign =
-        drawnIcon.left + drawnIcon.width / 2 < box.left + box.width / 2
-          ? 'left'
-          : 'right';
     }
     const secondary = tile.querySelector('.echSecondaryMetric');
     if (secondary) {
       // The value is a badge when Lens colors it, and plain text otherwise.
       const shown = secondary.querySelector('.echSecondaryMetric__value');
-      const badgeText = shown?.querySelector('.echBadge__text');
-      const badge = badgeText ? shown : null;
       const label = text(secondary.querySelector('.echSecondaryMetric__label'));
-      const value = text(badgeText ?? shown);
+      const value = text(
+        shown?.querySelector('.echBadge__text') ?? shown ?? null
+      );
       fingerprint.secondary = {
         ...(label === undefined ? {} : { label }),
         ...(value === undefined ? {} : { value }),
-        ...(badge
-          ? {
-              badge: {
-                background: hex(getComputedStyle(badge).backgroundColor),
-                color: hex(getComputedStyle(badge).color),
-              },
-            }
-          : {}),
       };
     }
     const meter = tile.querySelector('[role="meter"]');
     if (meter) {
-      const fill = meter.firstElementChild ?? meter;
-      const track = (
-        meter.closest('.echMeter') ?? meter
-      ).getBoundingClientRect();
-      const bar = meter.getBoundingClientRect();
-      const vertical = Boolean(meter.closest('.echMeter--vertical'));
-      const along = (from: number) =>
-        vertical
-          ? round((track.bottom - from) / (track.height || 1), 4)
-          : round((from - track.left) / (track.width || 1), 4);
       fingerprint.progress = {
         now: Number(meter.getAttribute('aria-valuenow')),
         min: Number(meter.getAttribute('aria-valuemin')),
         max: Number(meter.getAttribute('aria-valuemax')),
-        color: hex(getComputedStyle(fill).backgroundColor),
-        orientation: vertical ? 'vertical' : 'horizontal',
-        start: along(vertical ? bar.bottom : bar.left),
-        end: along(vertical ? bar.top : bar.right),
       };
     }
-    const sparkline = tile.querySelector('.echSingleMetricSparkline__svg');
-    if (sparkline) {
-      const path = sparkline.querySelector('path');
-      const d = path?.getAttribute('d') ?? '';
-      const paths = d
-        .split(/(?=M)/)
-        .map((segment) =>
-          (segment.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? []).map((n) =>
-            round(Number(n), 4)
-          )
-        )
-        .filter((points) => points.length);
+    const path = tile.querySelector('.echSingleMetricSparkline__svg path');
+    if (path) {
       fingerprint.trend = {
-        color: hex(path ? getComputedStyle(path).fill : ''),
-        paths,
+        paths: (path.getAttribute('d') ?? '')
+          .split(/(?=M)/)
+          .map((segment) =>
+            (segment.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi) ?? []).map((n) =>
+              round(Number(n), 4)
+            )
+          )
+          .filter((points) => points.length),
       };
     }
     return fingerprint;
@@ -345,6 +260,6 @@ export const extractMetricFingerprint = (
     tiles: tiles.sort(
       ({ position: [ra, ca] }, { position: [rb, cb] }) => ra - rb || ca - cb
     ),
-    empty: container.querySelectorAll(':scope > li').length - drawn.length,
+    empty: container.querySelectorAll(':scope > li').length - drawnTiles.length,
   };
 };

@@ -30,11 +30,8 @@ export const modelReadings = (
       subtitle: tile?.subtitle,
       // Elastic Charts' `getTextParts` lists a multivalue reading in brackets.
       value: tile?.values ? `[${tile.values.join(', ')}]` : tile?.value,
-      background: tile?.fill,
-      valueColor: tile?.valueColor,
       'secondary.label': tile?.secondary?.label,
       'secondary.value': tile?.secondary?.value,
-      'secondary.badge.background': tile?.secondary?.badge?.background,
     };
   });
 };

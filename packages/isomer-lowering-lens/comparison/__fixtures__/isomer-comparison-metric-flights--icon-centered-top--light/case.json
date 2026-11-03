@@ -184,7 +184,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T19:15:43.108Z"
+    "capturedAt": "2026-11-03T21:32:32.310Z"
   },
   "reference": {
     "fingerprint": {
@@ -203,19 +203,89 @@
             "width": 389.88,
             "height": 184
           },
-          "background": "#ffffff",
           "value": "84m",
-          "valueColor": "#111c2c",
-          "valueFontSize": 36,
-          "valueWidth": 71,
-          "valueLetterWidth": 25,
-          "title": "Total distance",
-          "titleFontSize": 16,
-          "titleWidth": 110,
-          "titleLetterWidth": 106,
-          "titlesAlign": "center",
-          "valueAlign": "center",
-          "iconAlign": "right"
+          "elements": {
+            "echMetric": {
+              "box": {
+                "x": 0,
+                "y": 0,
+                "width": 389.88,
+                "height": 184
+              },
+              "style": {
+                "background": "#ffffff"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
+              "box": {
+                "x": 8,
+                "y": 51.19,
+                "width": 373.88,
+                "height": 20
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "16px",
+                "fontWeight": "500"
+              },
+              "text": "Total distance",
+              "textWidth": 110
+            },
+            "echMetric>echMetricText>echMetricText__icon>svg": {
+              "box": {
+                "x": 365.88,
+                "y": 8,
+                "width": 16,
+                "height": 16
+              },
+              "style": {}
+            },
+            "echMetric>echMetricText>echMetricText__icon>svg>path": {
+              "box": {
+                "x": 366.88,
+                "y": 9,
+                "width": 14,
+                "height": 14
+              },
+              "style": {
+                "fill": "#111c2c"
+              }
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
+              "box": {
+                "x": 159.44,
+                "y": 8,
+                "width": 71,
+                "height": 43.19
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "36px",
+                "fontWeight": "500"
+              },
+              "text": "84",
+              "textWidth": 46
+            },
+            "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
+              "box": {
+                "x": 205.44,
+                "y": 16,
+                "width": 25,
+                "height": 33
+              },
+              "style": {
+                "color": "#111c2c",
+                "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+                "fontSize": "27px",
+                "fontWeight": "500"
+              },
+              "text": "m",
+              "textWidth": 25
+            }
+          },
+          "title": "Total distance"
         }
       ],
       "empty": 0

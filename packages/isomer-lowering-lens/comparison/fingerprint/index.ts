@@ -5,14 +5,15 @@
  * 2.0.
  */
 
-import {
-  extractMetricFingerprint,
-  type MetricFingerprint,
-  NUMERIC_GLYPHS,
-} from './metric';
+import { extractMetricFingerprint, type MetricFingerprint } from './metric';
 
-export type { Box, MetricFingerprint, MetricTileFingerprint } from './metric';
-export { NUMERIC_GLYPHS, extractMetricFingerprint } from './metric';
+export type {
+  Box,
+  DrawnElement,
+  MetricFingerprint,
+  MetricTileFingerprint,
+} from './metric';
+export { extractMetricFingerprint } from './metric';
 
 /** One fingerprint per kind of drawing a dashboard panel can hold. */
 export type Fingerprint = MetricFingerprint;
@@ -46,31 +47,37 @@ export const FINGERPRINT_KINDS: Record<
   FingerprintKindDefinition
 > = {
   metric: {
-    extract: (root) => extractMetricFingerprint(root, NUMERIC_GLYPHS.source),
+    extract: extractMetricFingerprint,
     classes: [
       { path: /^(width|height)$/, feature: 'context.size', tolerance: pixel },
       {
-        path: /^(tiles|empty)$|\.position/,
+        path: /^(tiles|empty)$|\.position|\.elements(\.[^.]+)?$/,
         feature: 'identity',
         tolerance: exact,
       },
-      { path: /\.box\./, feature: 'layout.box', tolerance: pixel },
-      { path: /Width$/, feature: 'layout.text', tolerance: pixel },
+      { path: /^tiles\[\]\.box\./, feature: 'layout.box', tolerance: pixel },
       {
-        path: /FontSize$/,
+        path: /\.elements\.[^.]+\.box\./,
+        feature: 'layout.element',
+        tolerance: pixel,
+      },
+      { path: /\.textWidth$/, feature: 'layout.text', tolerance: pixel },
+      {
+        path: /\.style\.fontFamily$/,
+        feature: 'font.family',
+        tolerance: exact,
+      },
+      {
+        path: /\.style\.font(Size|Weight)$/,
         feature: 'layout.font',
         tolerance: exact,
       },
       {
-        path: /Align$|\.orientation$/,
-        feature: 'layout.align',
+        path: /\.style\.(color|background|fill)$/,
+        feature: 'color',
         tolerance: exact,
       },
-      {
-        path: /\.progress\.(start|end)$/,
-        feature: 'progress.geometry',
-        tolerance: exact,
-      },
+      { path: /\.style\./, feature: 'paint', tolerance: exact },
       {
         path: /\.trend\.paths\[\]\[\]$/,
         feature: 'trend.geometry',
@@ -86,9 +93,8 @@ export const FINGERPRINT_KINDS: Record<
         feature: 'progress.value',
         tolerance: exact,
       },
-      { path: /(background|[cC]olor)$/, feature: 'color', tolerance: exact },
       {
-        path: /\.(title|subtitle|extra|value|label)$|\.secondary$/,
+        path: /\.(title|subtitle|extra|value|label|text)$|\.secondary$/,
         feature: 'text',
         tolerance: exact,
       },
