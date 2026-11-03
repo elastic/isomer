@@ -33,6 +33,26 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * reaches it through the shared dispatcher — that is the design, not a leak.
  */
 const RULES = {
+  '@elastic/isomer-primitives-charts': {
+    '.': ['react-dom', '@elastic/charts', '@elastic/isomer-runtime', '@kbn'],
+    './model': [
+      'react',
+      'react-dom',
+      '@elastic/charts',
+      '@elastic/isomer-sdk',
+      '@elastic/isomer-runtime',
+      '@kbn',
+      'node:',
+    ],
+  },
+  '@elastic/isomer-renderers-elastic-charts': {
+    '.': [
+      '@elastic/isomer-runtime',
+      '@elastic/isomer-lowering-lens',
+      '@kbn',
+      'node:',
+    ],
+  },
   '@elastic/isomer-lowering-lens': {
     '.': [
       'react',
@@ -53,7 +73,9 @@ const RULES = {
 };
 
 const matchesForbidden = (specifier, forbidden) =>
-  specifier === forbidden || specifier.startsWith(`${forbidden}/`);
+  specifier === forbidden ||
+  specifier.startsWith(`${forbidden}/`) ||
+  (forbidden.endsWith(':') && specifier.startsWith(forbidden));
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
@@ -110,6 +132,8 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
 
 /** Packages a package must never reach: no specifier in its source, no entry in its dependency fields. */
 const FORBIDDEN_PACKAGES = {
+  '@elastic/isomer-primitives-charts': ['@kbn'],
+  '@elastic/isomer-renderers-elastic-charts': ['@kbn'],
   '@elastic/isomer-lowering-lens': ['@kbn'],
   '@elastic/isomer-agent-tools': ['@modelcontextprotocol/sdk'],
   '@elastic/isomer-studio': [

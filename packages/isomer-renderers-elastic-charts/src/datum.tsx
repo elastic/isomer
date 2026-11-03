@@ -1,0 +1,133 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+// Kept out of the package's declarations: Elastic Charts' own types fail
+// `skipLibCheck: false` consumers.
+
+import type { ReactNode } from 'react';
+import {
+  LayoutDirection,
+  type MetricDatum,
+  MetricTrendShape,
+  type PartialTheme,
+  type SecondaryMetricProps,
+} from '@elastic/charts';
+import type {
+  ResolvedMetric,
+  ResolvedMetricTile,
+} from '@elastic/isomer-primitives-charts/model';
+
+const TooltipLabel = ({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) => <span title={label}>{children}</span>;
+
+const toExtra = ({
+  label,
+  labelPosition,
+  value,
+  badge,
+  description,
+}: NonNullable<ResolvedMetricTile['secondary']>): SecondaryMetricProps => ({
+  value: value ?? '',
+  ...(label === undefined ? {} : { label, labelPosition }),
+  ...(labelPosition === 'tooltip' ? { labelTooltip: TooltipLabel } : {}),
+  ...(badge
+    ? {
+        badgeColor: badge.background,
+        badgeTextColor: badge.text,
+        ...(badge.glyph ? { icon: badge.glyph } : {}),
+      }
+    : {}),
+  ariaDescription: description,
+});
+
+/** One Elastic Charts datum per resolved tile. */
+export const toDatum = (
+  tile: ResolvedMetricTile,
+  tokens: ResolvedMetric['tokens']
+): MetricDatum => {
+  const {
+    title,
+    subtitle,
+    value,
+    number,
+    fill,
+    valueColor,
+    secondary,
+    visual,
+  } = tile;
+  const base = {
+    color: visual?.kind === 'progress' ? visual.color : fill,
+    ...(title === undefined ? {} : { title }),
+    ...(subtitle === undefined ? {} : { subtitle }),
+    ...(valueColor === undefined
+      ? {}
+      : { valueColor, background: tokens.background }),
+    ...(secondary ? { extra: toExtra(secondary) } : {}),
+  };
+  if (number === undefined) {
+    return visual?.kind === 'trend'
+      ? { ...base, value, ...trend(visual, title) }
+      : { ...base, value };
+  }
+  const numeric = { ...base, value: number, valueFormatter: () => value };
+  if (visual?.kind === 'trend') {
+    return { ...numeric, ...trend(visual, title) };
+  }
+  if (visual?.kind === 'progress') {
+    return {
+      ...numeric,
+      domainMin: visual.min,
+      domainMax: visual.max,
+      progressBarDirection:
+        visual.direction === 'horizontal'
+          ? LayoutDirection.Horizontal
+          : LayoutDirection.Vertical,
+    };
+  }
+  return numeric;
+};
+
+const trend = (
+  { points, shape }: Extract<ResolvedMetricTile['visual'], { kind: 'trend' }>,
+  title: string | undefined
+) => ({
+  trend: points.map(({ x, y }) => ({ x, y: y ?? NaN })),
+  trendShape: shape === 'bars' ? MetricTrendShape.Bars : MetricTrendShape.Area,
+  ...(title === undefined ? {} : { trendA11yTitle: title }),
+});
+
+const WEIGHTS = { 400: 'normal', 500: 500, 700: 'bold' } as const;
+
+/** Elastic Charts' metric theme from the resolved layout and tokens. */
+export const toTheme = ({ layout, tokens }: ResolvedMetric): PartialTheme => ({
+  background: { color: tokens.background },
+  metric: {
+    fontFamily: tokens.fontFamily,
+    textDarkColor: tokens.onLight.title,
+    textSubtitleDarkColor: tokens.onLight.subtitle,
+    textExtraDarkColor: tokens.onLight.extra,
+    textLightColor: tokens.onDark.title,
+    textSubtitleLightColor: tokens.onDark.subtitle,
+    textExtraLightColor: tokens.onDark.extra,
+    titlesTextAlign: layout.titleAlign,
+    valueTextAlign: layout.valueAlign,
+    extraTextAlign: layout.secondaryAlign,
+    valuePosition: layout.valuePosition,
+    valueFontSize: layout.valueSize,
+    spacing: layout.density === 'compact' ? 'small' : 'large',
+    border: tokens.border,
+    barBackground: tokens.barBackground,
+    nonFiniteText: tokens.missing,
+    titleWeight: WEIGHTS[tokens.titleWeight],
+    minHeight: tokens.minHeight,
+  },
+});

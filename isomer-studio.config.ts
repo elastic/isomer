@@ -21,6 +21,14 @@ export default defineStudioConfig({
         'Plan a native ES|QL Lens saved object and replay a recorded response; nothing is fetched or executed.',
       load: () => import('./packages/isomer-lowering-lens/studio/app'),
     },
+    {
+      id: 'metric',
+      title: 'Metric',
+      description:
+        'Metric examples drawn with Elastic Charts; edit the JSON to try a node.',
+      load: () =>
+        import('./packages/isomer-renderers-elastic-charts/studio/app'),
+    },
   ],
   images: false,
   imageFonts: './packages/isomer-primitives-slides/studio/image_fonts.ts',
