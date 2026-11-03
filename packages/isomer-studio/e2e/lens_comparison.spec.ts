@@ -184,6 +184,24 @@ test.describe('Lens comparison', () => {
       expected: /echMetricText__value\.hidden visibility$/,
     },
     {
+      name: 'the readings faded out by their wrapper',
+      from: '--count--light',
+      css: '.echMetricText{opacity:0 !important}',
+      expected: /echMetricText__value\.style\.opacity paint$/,
+    },
+    {
+      name: 'the tile borders recolored',
+      from: '--breakdown-grid--light',
+      css: '.echMetric{border-color:#ff0000 !important}',
+      expected: /elements\.echMetric\.style\.borderColor color$/,
+    },
+    {
+      name: 'the icon drawn as another glyph',
+      from: '--icon-centered-top--light',
+      css: '.echMetricText__icon path{d:path("M15 8A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z")}',
+      expected: /echMetricText__icon>svg>path\.shape shape$/,
+    },
+    {
       name: 'the sparkline shrunk',
       from: '--trendline--light',
       css: '.echSingleMetricSparkline__svg{width:50% !important}',

@@ -163,16 +163,34 @@ describe('bind: form-based filters without a breakdown', () => {
     ]);
   });
 
-  it('raises a last value as its phrase, as `top_hits` does', () => {
-    const last = {
-      operationType: 'last_value',
-      dataType: 'string',
-      sourceField: 'Carrier',
-      params: { sortField: 'timestamp', showArrayValues: false },
-    };
-    expect(filters(last, 'JetBeats')).toEqual([
+  const last = {
+    operationType: 'last_value',
+    dataType: 'string',
+    sourceField: 'Carrier',
+    params: { sortField: 'timestamp', showArrayValues: false },
+  };
+
+  it.each([
+    ['a last value', last],
+    // `filtered_metric` hands a wrapped `top_hits` its own filter.
+    [
+      'a filtered last value',
+      { ...last, filter: { query: 'Cancelled: true', language: 'kuery' } },
+    ],
+    ['a time-windowed last value', { ...last, reducedTimeRange: '1h' }],
+  ])('raises %s as its phrase, as `top_hits` does', (_, column) => {
+    expect(filters(column, 'JetBeats')).toEqual([
       { field: 'Carrier', value: 'JetBeats' },
     ]);
+  });
+
+  it('raises a multivalue last value as its phrases', () => {
+    expect(
+      filters({ ...last, params: { ...last.params, showArrayValues: true } }, [
+        'JetBeats',
+        'Kibana Airlines',
+      ])
+    ).toEqual([{ field: 'Carrier', values: ['JetBeats', 'Kibana Airlines'] }]);
   });
 
   it('raises a filtered metric as its query, as `filtered_metric` does', () => {

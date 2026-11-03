@@ -309,10 +309,10 @@
           ],
           "rows": [
             {
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1039,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1037,
               "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1": 604800000,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 148.42857142857142,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 148.42857142857142,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 148.14285714285714,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 148.14285714285714,
               "ce816876-e92d-4b1a-bbb0-ed7637fc0eea": 300
             }
           ],
@@ -320,7 +320,7 @@
             "type": "esaggs",
             "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
             "statistics": {
-              "totalCount": 1039
+              "totalCount": 1037
             }
           }
         }
@@ -356,7 +356,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T22:42:28.643Z"
+    "capturedAt": "2026-11-03T23:33:13.725Z"
   },
   "reference": {
     "fingerprint": {
@@ -376,7 +376,7 @@
             "height": 156
           },
           "interactive": false,
-          "value": "148.43",
+          "value": "148.14",
           "elements": {
             "echMetric": {
               "style": {
@@ -418,7 +418,7 @@
                 "fontSize": "36px",
                 "fontWeight": "500"
               },
-              "text": "148.43",
+              "text": "148.14",
               "textRect": {
                 "x": 256.88,
                 "y": 103.81,
@@ -434,7 +434,8 @@
             },
             "echMetric>echMeter": {
               "style": {
-                "background": "#ecf1f9"
+                "background": "#ecf1f9",
+                "borderRadius": "8px"
               },
               "box": {
                 "x": 8,
@@ -444,29 +445,33 @@
               }
             },
             "echMetric>echMeter>echMeterBar": {
-              "style": {},
+              "style": {
+                "borderRadius": "8px",
+                "boxShadow": "rgb(255, 255, 255) 0px 0px 0px 2px"
+              },
               "box": {
                 "x": 8,
-                "y": 78.72,
+                "y": 78.86,
                 "width": 4,
-                "height": 69.28
+                "height": 69.14
               }
             },
             "echMetric>echMeter>echMeterBar>echMeterFillPaint": {
               "style": {
-                "background": "#fcd883"
+                "background": "#fcd883",
+                "borderRadius": "8px"
               },
               "box": {
                 "x": 8,
-                "y": 78.72,
+                "y": 78.86,
                 "width": 4,
-                "height": 69.28
+                "height": 69.14
               }
             }
           },
           "title": "Trxns / day",
           "progress": {
-            "now": 49.48,
+            "now": 49.38,
             "min": 0,
             "max": 100
           }

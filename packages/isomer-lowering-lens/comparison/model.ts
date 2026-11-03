@@ -38,6 +38,7 @@ export const modelReadings = (
         : tile?.fill
       )?.toLowerCase(),
       fill: tile?.fill?.toLowerCase(),
+      border: tile && tokens.border.toLowerCase(),
       // Elastic Charts draws the value in the title's ink unless the tile paints it.
       valueColor: (tile?.valueColor ?? tile?.text.title)?.toLowerCase(),
       ...(tile?.visual?.kind === 'progress'
@@ -58,6 +59,7 @@ export const modelReadings = (
 /** Where a drawn element's paint comes from in the resolved model, by the end of its fingerprint path. */
 const PAINT_SOURCES: readonly [RegExp, string][] = [
   [/^elements\.echMetric\.style\.background$/, 'background'],
+  [/^elements\.echMetric\.style\.borderColor$/, 'border'],
   [/>echMeter\.style\.background$/, 'progress.track'],
   [/>echMeterFillPaint\.style\.background$/, 'progress.fill'],
   [/>echMetricText__title>span\.style\.color$/, 'text.title'],

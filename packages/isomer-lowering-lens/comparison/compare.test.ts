@@ -26,6 +26,7 @@ const trendline = load('isomer-comparison-metric-flights--trendline--light');
 const progress = load(
   'isomer-comparison-metric-flights--progress-horizontal--light'
 );
+const icon = load('isomer-comparison-metric-flights--icon-centered-top--light');
 const dateValue = load(
   'isomer-comparison-metric-logs-es-ql--esql-date-value--light'
 );
@@ -184,6 +185,16 @@ describe('compareFingerprints', () => {
     actual.tiles[0]!.elements[key]!.textRect!.x -= 50;
     expect(failing(fingerprint(progress), actual)).toEqual([
       { path: `tiles[0].elements.${key}.textRect.x`, feature: 'layout.text' },
+    ]);
+  });
+
+  it('fails an icon drawn as another glyph in the same box', () => {
+    const actual = fingerprint(icon);
+    const key = drawnKey(actual, 0, '>echMetricText__icon>svg>path');
+    actual.tiles[0]!.elements[key]!.shape =
+      'd=M 15 8 A 7 7 0 1 1 1 8 a 7 7 0 0 1 14 0 Z';
+    expect(failing(fingerprint(icon), actual)).toEqual([
+      { path: `tiles[0].elements.${key}.shape`, feature: 'shape' },
     ]);
   });
 

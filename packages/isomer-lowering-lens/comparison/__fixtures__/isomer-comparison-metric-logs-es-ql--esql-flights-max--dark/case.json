@@ -122,7 +122,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T22:43:27.591Z"
+    "capturedAt": "2026-11-03T23:34:05.138Z"
   },
   "reference": {
     "fingerprint": {
@@ -200,7 +200,8 @@
             },
             "echMetric>echMeter": {
               "style": {
-                "background": "#172336"
+                "background": "#172336",
+                "borderRadius": "8px"
               },
               "box": {
                 "x": 8,
@@ -210,7 +211,10 @@
               }
             },
             "echMetric>echMeter>echMeterBar": {
-              "style": {},
+              "style": {
+                "borderRadius": "8px",
+                "boxShadow": "rgb(17, 28, 44) 0px 0px 0px 2px"
+              },
               "box": {
                 "x": 8,
                 "y": 153.89,
@@ -220,7 +224,8 @@
             },
             "echMetric>echMeter>echMeterBar>echMeterFillPaint": {
               "style": {
-                "background": "#61a2ff"
+                "background": "#61a2ff",
+                "borderRadius": "8px"
               },
               "box": {
                 "x": 8,

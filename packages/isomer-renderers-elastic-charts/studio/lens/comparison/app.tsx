@@ -210,17 +210,27 @@ export default function LensComparisonApp({
         : [],
     [replayed, comparison, reference]
   );
-  const composition = useMemo((): Composition | undefined => {
-    if (replayed.status !== 'bound') {
-      return undefined;
-    }
-    const checked = runtime.validate({
-      type: 'view',
-      body: [replayed.node],
-      theme,
-    });
-    return checked.valid ? checked.composition : undefined;
-  }, [replayed, runtime, theme]);
+  const checked = useMemo(
+    () =>
+      replayed.status === 'bound'
+        ? runtime.validate({ type: 'view', body: [replayed.node], theme })
+        : undefined,
+    [replayed, runtime, theme]
+  );
+  const composition: Composition | undefined = checked?.valid
+    ? checked.composition
+    : undefined;
+  // Why Isomer draws nothing: lowering refused the panel, or validation refused the bound node.
+  const diagnostics =
+    replayed.status !== 'bound'
+      ? replayed.diagnostics
+      : checked && !composition
+        ? checked.errors.map(({ code, message, path: at }) => ({
+            code: code ?? 'isomer.validation',
+            message,
+            path: at ? at.split('.') : [],
+          }))
+        : undefined;
 
   const view = `${comparison.id}/${theme}`;
   const [root, setRoot] = useState<{ view: string; shadow: ShadowRoot } | null>(
@@ -260,7 +270,7 @@ export default function LensComparisonApp({
   const failing = differences && failures(differences);
   const status = missing
     ? 'missing'
-    : replayed.status !== 'bound'
+    : diagnostics
       ? 'refused'
       : fonts instanceof Error
         ? 'error'
@@ -409,14 +419,16 @@ export default function LensComparisonApp({
               : status === 'fail'
                 ? `${failing!.length} differences from Kibana`
                 : status === 'refused'
-                  ? 'Isomer could not lower this panel'
+                  ? replayed.status === 'bound'
+                    ? 'Isomer refused the node it bound'
+                    : 'Isomer could not lower this panel'
                   : status === 'error'
                     ? `Kibana's fonts did not load: ${(fonts as Error).message}`
                     : 'Comparing…'}
         </h2>
-        {replayed.status !== 'bound' ? (
+        {diagnostics ? (
           <ul role="alert" aria-label="Diagnostics">
-            {replayed.diagnostics.map(({ code, message, path: at }, index) => (
+            {diagnostics.map(({ code, message, path: at }, index) => (
               <li key={index}>
                 <code>{code}</code> at <code>{at.join('.') || '(root)'}</code>:{' '}
                 {message}

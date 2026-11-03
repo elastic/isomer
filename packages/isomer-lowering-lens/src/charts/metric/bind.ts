@@ -608,7 +608,7 @@ const bucketFilter = (
 
 /**
  * The filter Kibana builds when a tile with no breakdown is clicked: `top_hits`' phrase for a last value,
- * `filtered_metric`'s query for a metric Lens filters or time-windows, and `createMetricFilter`'s existence
+ * which `filtered_metric` passes through, `filtered_metric`'s query for any other metric Lens filters, and `createMetricFilter`'s existence
  * for any other metric over a field. A formula, pipeline or ES|QL column has none.
  */
 const metricFilter = (
@@ -635,7 +635,7 @@ const metricFilter = (
       ? { query, language }
       : undefined;
   }
-  // A time window wraps the metric in a `filtered_metric` with no query to filter by.
+  // A time window wraps any other metric in a `filtered_metric` with no query to filter by.
   if (planned.reducedTimeRange || field === '___records___') {
     return undefined;
   }

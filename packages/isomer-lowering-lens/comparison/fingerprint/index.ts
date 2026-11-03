@@ -79,11 +79,12 @@ export const FINGERPRINT_KINDS: Record<
         tolerance: exact,
       },
       {
-        path: /\.style\.(color|background|fill)$/,
+        path: /\.style\.(color|background|fill|stroke|borderColor)$/,
         feature: 'color',
         tolerance: exact,
       },
       { path: /\.style\./, feature: 'paint', tolerance: exact },
+      { path: /\.elements\.[^.]+\.shape$/, feature: 'shape', tolerance: exact },
       {
         path: /\.trend\.paths\[\]\[\]$/,
         feature: 'trend.geometry',

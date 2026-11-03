@@ -26,6 +26,8 @@ export interface DrawnElement {
   visibleRect?: Box;
   /** Set when clipping leaves none of the element visible. */
   hidden?: true;
+  /** An SVG shape's geometry, numbers rounded to two places. */
+  shape?: string;
   style: Record<string, string>;
 }
 
@@ -45,7 +47,7 @@ export interface MetricTileFingerprint {
   progress?: { now: number; min: number; max: number };
   /** Each subpath of the sparkline's area, as flat `[x, y, …]` in its unit `viewBox`. */
   trend?: { paths: number[][] };
-  /** Every element the tile paints, keyed by its place among Elastic Charts' classes. */
+  /** Every element the tile paints, keyed by its place among Elastic Charts' classes. Opacity, filters, clips and blending its wrappers apply are recorded on it. */
   elements: Record<string, DrawnElement>;
 }
 
@@ -118,14 +120,64 @@ export const extractMetricFingerprint = (
   const transparent = (color: string) =>
     color === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(color);
   // What paints a box: a fill or border, a shape, an image, or the progress meter.
+  const SHAPES: Record<string, readonly string[]> = {
+    path: ['d'],
+    polygon: ['points'],
+    polyline: ['points'],
+    rect: ['x', 'y', 'width', 'height', 'rx', 'ry'],
+    circle: ['cx', 'cy', 'r'],
+    ellipse: ['cx', 'cy', 'rx', 'ry'],
+    line: ['x1', 'y1', 'x2', 'y2'],
+  };
+  const SIDES = ['Top', 'Right', 'Bottom', 'Left'] as const;
+  const bordered = (style: CSSStyleDeclaration) =>
+    SIDES.some(
+      (side) =>
+        parseFloat(
+          style.getPropertyValue(`border-${side.toLowerCase()}-width`)
+        ) > 0 &&
+        !transparent(
+          style.getPropertyValue(`border-${side.toLowerCase()}-color`)
+        )
+    );
   const paints = (element: Element, style: CSSStyleDeclaration) =>
     !transparent(style.backgroundColor) ||
-    (parseFloat(style.borderTopWidth) > 0 &&
-      !transparent(style.borderTopColor)) ||
-    ['svg', 'path', 'rect', 'circle', 'img'].includes(
-      element.tagName.toLowerCase()
-    ) ||
+    bordered(style) ||
+    style.boxShadow !== 'none' ||
+    element.tagName.toLowerCase() in SHAPES ||
+    ['svg', 'img'].includes(element.tagName.toLowerCase()) ||
     element.getAttribute('role') === 'meter';
+  // One value when every side shares it, else all four.
+  const sides = (read: (side: string) => string) => {
+    const values = SIDES.map((side) => read(side.toLowerCase()));
+    return new Set(values).size === 1 ? values[0]! : values.join(' ');
+  };
+  // Geometry CSS sets, such as `d: path(…)`, overrides the attribute.
+  const geometry = (element: Element, style: CSSStyleDeclaration) =>
+    (SHAPES[element.tagName.toLowerCase()] ?? [])
+      .map((name) => {
+        const css = style.getPropertyValue(name);
+        const drawn =
+          css && css !== 'auto' && css !== 'none'
+            ? css
+            : (element.getAttribute(name) ?? '');
+        // Path data may run numbers together, as in `0.36.08`; each is spaced apart once rounded.
+        const value = drawn
+          .replace(
+            /-?\d*\.?\d+(?:e[-+]?\d+)?/gi,
+            (n) => ` ${round(Number(n))} `
+          )
+          .replace(/\s+/g, ' ')
+          .trim();
+        return `${name}=${value}`;
+      })
+      .join('; ');
+  // Compositing a wrapper applies to everything under it, whether or not it paints.
+  const EFFECTS = [
+    ['filter', 'none'],
+    ['clip-path', 'none'],
+    ['mix-blend-mode', 'normal'],
+  ] as const;
   const nameOf = (element: Element) =>
     [...element.classList].find(
       (name) => name.startsWith('ech') && !name.includes('--')
@@ -134,8 +186,14 @@ export const extractMetricFingerprint = (
   const readElements = (tile: Element) => {
     const tileBox = tile.getBoundingClientRect();
     const elements: Record<string, DrawnElement> = {};
-    // `clip` is the viewport area every clipping ancestor so far leaves visible.
-    const walk = (element: Element, path: string, clip?: Box) => {
+    interface Inherited {
+      /** The viewport area every clipping ancestor so far leaves visible. */
+      clip?: Box | undefined;
+      opacity: number;
+      effects: string[];
+    }
+    const walk = (element: Element, path: string, inherited: Inherited) => {
+      const { clip } = inherited;
       const style = getComputedStyle(element);
       if (
         style.display === 'none' ||
@@ -157,6 +215,16 @@ export const extractMetricFingerprint = (
       const clips =
         style.overflowX !== 'visible' || style.overflowY !== 'visible';
       const within = clips ? (clip ? intersect(clip, rect) : rect) : clip;
+      const opacity = inherited.opacity * Number(style.opacity);
+      const effects = [
+        ...inherited.effects,
+        ...EFFECTS.filter(
+          ([property, none]) => style.getPropertyValue(property) !== none
+        ).map(
+          ([property]) =>
+            `${nameOf(element)} ${property}: ${style.getPropertyValue(property)}`
+        ),
+      ];
       const fills = paints(element, style);
       if ((rect.width > 0 && rect.height > 0) || ownText) {
         if (fills || ownText) {
@@ -197,16 +265,45 @@ export const extractMetricFingerprint = (
           if (!transparent(style.backgroundColor)) {
             drawn.style.background = hex(style.backgroundColor);
           }
-          if (
-            ['path', 'rect', 'circle'].includes(
-              element.tagName.toLowerCase()
-            ) &&
-            style.fill !== 'none'
-          ) {
-            drawn.style.fill = hex(style.fill);
+          if (bordered(style)) {
+            drawn.style.borderColor = sides((side) =>
+              hex(style.getPropertyValue(`border-${side}-color`))
+            );
+            drawn.style.border = sides(
+              (side) =>
+                `${style.getPropertyValue(`border-${side}-width`)} ${style.getPropertyValue(`border-${side}-style`)}`
+            );
           }
-          if (style.opacity !== '1') {
-            drawn.style.opacity = style.opacity;
+          if (fills && style.borderRadius !== '0px') {
+            drawn.style.borderRadius = style.borderRadius;
+          }
+          if (style.boxShadow !== 'none') {
+            drawn.style.boxShadow = style.boxShadow;
+          }
+          if (element.tagName.toLowerCase() in SHAPES) {
+            if (style.fill !== 'none') {
+              drawn.style.fill = hex(style.fill);
+            }
+            if (style.fillRule !== 'nonzero') {
+              drawn.style.fillRule = style.fillRule;
+            }
+            if (style.stroke !== 'none') {
+              drawn.style.stroke = hex(style.stroke);
+              drawn.style.strokeWidth = style.strokeWidth;
+            }
+            // The sparkline's area is recorded as the tile's `trend`.
+            if (
+              !element.closest('.echSingleMetricSparkline__svg') ||
+              element.tagName !== 'path'
+            ) {
+              drawn.shape = geometry(element, style);
+            }
+          }
+          if (opacity !== 1) {
+            drawn.style.opacity = String(round(opacity, 3));
+          }
+          if (effects.length) {
+            drawn.style.effects = effects.join('; ');
           }
           // An identity matrix draws as no transform at all.
           if (
@@ -222,10 +319,14 @@ export const extractMetricFingerprint = (
         // A clickable title's button draws nothing of its own; `interactive` records it.
         const wrapper =
           child.tagName === 'BUTTON' && nameOf(child) === 'button';
-        walk(child, wrapper ? path : `${path}>${nameOf(child)}`, within);
+        walk(child, wrapper ? path : `${path}>${nameOf(child)}`, {
+          clip: within,
+          opacity,
+          effects,
+        });
       }
     };
-    walk(tile, nameOf(tile));
+    walk(tile, nameOf(tile), { opacity: 1, effects: [] });
     return elements;
   };
 
