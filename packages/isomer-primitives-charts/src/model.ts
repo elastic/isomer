@@ -12,9 +12,20 @@ export {
   type MetricTile,
   type ResolvedMetric,
   type ResolvedMetricTile,
+  type TileIcon,
+  type TileIconGlyph,
+  TILE_ICONS,
   examples as metricExamples,
   metricSchema,
   resolveMetric,
+  tileIconGlyphs,
 } from './metric';
 export { type ValueFormat, formatValue } from './shared/format';
-export { type Scheme, chartTokens } from './theme';
+export {
+  type Scheme,
+  type ValuePalette,
+  MAX_PALETTE_BANDS,
+  VALUE_PALETTES,
+  chartTokens,
+  valuePaletteColors,
+} from './theme';

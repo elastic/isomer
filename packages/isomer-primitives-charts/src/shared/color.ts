@@ -7,26 +7,78 @@
 
 import { z } from 'zod';
 
-import { type ChartTokens, type TextTokens, type Tone, TONES } from '../theme';
+import {
+  type ChartTokens,
+  MAX_PALETTE_BANDS,
+  type TextTokens,
+  type Tone,
+  TONES,
+  VALUE_PALETTES,
+  valuePaletteColors,
+} from '../theme';
 
 const toneSchema = z.enum(TONES);
 
-/** Schema of a mark color: a theme tone or `#rrggbb`. */
-export const colorSchema = z
-  .union([toneSchema, z.string().regex(/^#[0-9a-fA-F]{6}$/)])
+const paletteBandSchema = z
+  .object({
+    palette: z.enum(VALUE_PALETTES),
+    of: z
+      .number()
+      .int()
+      .min(1)
+      .max(MAX_PALETTE_BANDS)
+      .describe('How many bands the palette is split into.'),
+    step: z.number().int().min(0).describe('The band, from 0 and below `of`.'),
+  })
+  .strict()
+  .check((ctx) => {
+    if (ctx.value.step >= ctx.value.of) {
+      ctx.issues.push({
+        code: 'custom',
+        message: '`step` must be below `of`',
+        path: ['step'],
+        input: ctx.value.step,
+      });
+    }
+  })
   .describe(
-    'A theme tone (`default`, `primary`, `neutral`, `success`, `warning`, `risk`, `danger`) or a `#rrggbb` color.'
+    "A band of one of Lens's named value palettes: `status`, `temperature`, `complementary`, `negative`, `positive`, `cool`, `warm` or `gray`."
   );
 
-/** A theme tone or a `#rrggbb` color. */
+const tokenSchema = z
+  .object({ token: z.enum(['progress', 'valueText']) })
+  .strict()
+  .describe(
+    "One of Lens's default colors: `progress` for a progress bar, `valueText` for a painted value."
+  );
+
+/** Schema of a mark color: a theme tone, a value palette band, a default color or `#rrggbb`. */
+export const colorSchema = z
+  .union([
+    toneSchema,
+    z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    paletteBandSchema,
+    tokenSchema,
+  ])
+  .describe(
+    "A theme tone (`default`, `primary`, `neutral`, `success`, `warning`, `risk`, `danger`), a `#rrggbb` color, a value palette band, or one of Lens's default colors."
+  );
+
+/** A theme tone, a value palette band, a default color or a `#rrggbb` color. */
 export type ColorRef = z.infer<typeof colorSchema>;
 
 const isTone = (color: ColorRef): color is Tone =>
-  (TONES as readonly string[]).includes(color);
+  typeof color === 'string' && (TONES as readonly string[]).includes(color);
 
-/** The `#rrggbb` a tone's solid or a hex color reads. */
+/** The `#rrggbb` a tone's solid, a palette band or a hex color reads. */
 const solid = (color: ColorRef, tokens: ChartTokens): string =>
-  isTone(color) ? tokens.tones[color].solid : color;
+  typeof color === 'object'
+    ? 'token' in color
+      ? tokens[color.token]
+      : valuePaletteColors[color.palette][color.of - 1]![color.step]!
+    : isTone(color)
+      ? tokens.tones[color].solid
+      : color;
 
 /** WCAG relative luminance of a `#rrggbb` color. */
 const luminance = (hex: string): number => {
@@ -94,7 +146,7 @@ export const sparkShade = (fill: string): string => {
     .toUpperCase()}`;
 };
 
-/** A fill: a tone's solid color, or the hex itself. */
+/** A fill: a tone's solid color, a palette band, or the hex itself. */
 export const resolveFill = (color: ColorRef, tokens: ChartTokens): string =>
   solid(color, tokens);
 

@@ -51,6 +51,8 @@ export interface ChartTokens {
   barBackground: string;
   /** Progress fill when a tile sets no color (Lens `euiColorVis2`). */
   progress: string;
+  /** Value text when a tile paints its value and sets no color (Lens `euiColorVisText0`). */
+  valueText: string;
   onLight: TextTokens;
   onDark: TextTokens;
   missing: string;
@@ -89,6 +91,7 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     background: '#FFFFFF',
     border: '#E3E8F2',
     barBackground: '#ECF1F9',
+    valueText: '#065B58',
     tones: {
       default: {
         solid: '#E3E8F2',
@@ -132,6 +135,7 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     background: '#111C2C',
     border: '#2B394F',
     barBackground: '#1D2A3E',
+    valueText: '#16C5C0',
     tones: {
       default: {
         solid: '#E3E8F2',
@@ -170,4 +174,87 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
       },
     },
   },
+};
+
+/** Lens's named color-by-value palettes, by palette registry id. */
+export const VALUE_PALETTES = [
+  'status',
+  'temperature',
+  'complementary',
+  'negative',
+  'positive',
+  'cool',
+  'warm',
+  'gray',
+] as const;
+
+export type ValuePalette = (typeof VALUE_PALETTES)[number];
+
+/** The most bands a value palette has: Lens's `LENS_PALETTE_MAX_COLOR_RANGES`. */
+export const MAX_PALETTE_BANDS = 5;
+
+/**
+ * EUI Borealis' `euiPaletteFor*` output for 1–5 bands, indexed by band count
+ * minus one. Borealis gives the same vis colors in both schemes.
+ */
+export const valuePaletteColors: Record<
+  ValuePalette,
+  readonly (readonly string[])[]
+> = {
+  status: [
+    ['#24C292'],
+    ['#24C292', '#F6726A'],
+    ['#24C292', '#FCD883', '#F6726A'],
+    ['#24C292', '#AEE8D2', '#FFC9C2', '#F6726A'],
+    ['#24C292', '#AEE8D2', '#FCD883', '#FFC9C2', '#F6726A'],
+  ],
+  temperature: [
+    ['#61A2FF'],
+    ['#61A2FF', '#F6726A'],
+    ['#61A2FF', '#EBEFF5', '#F6726A'],
+    ['#61A2FF', '#CFE1FF', '#FFD4CF', '#F6726A'],
+    ['#61A2FF', '#CFE1FF', '#F6F9FC', '#FFD4CF', '#F6726A'],
+  ],
+  complementary: [
+    ['#61A2FF'],
+    ['#61A2FF', '#EAAE01'],
+    ['#61A2FF', '#F6F9FC', '#EAAE01'],
+    ['#61A2FF', '#ACCEFE', '#F0D47F', '#EAAE01'],
+    ['#61A2FF', '#ACCEFE', '#F6F9FC', '#F0D47F', '#EAAE01'],
+  ],
+  negative: [
+    ['#FFC9C2'],
+    ['#FEB7B0', '#F6726A'],
+    ['#FDCDC9', '#FDA198', '#F6726A'],
+    ['#FCD8D6', '#FEB7B0', '#FC968D', '#F6726A'],
+    ['#FCDFDD', '#FEC4BF', '#FEAAA2', '#FB8F86', '#F6726A'],
+  ],
+  positive: [
+    ['#AEE8D2'],
+    ['#9FDFC6', '#24C292'],
+    ['#BDE8D8', '#7FD5B4', '#24C292'],
+    ['#CBECE1', '#9FDFC6', '#6DD1AC', '#24C292'],
+    ['#D4EFE6', '#B1E4D1', '#8CD9BB', '#62CEA6', '#24C292'],
+  ],
+  cool: [
+    ['#A3CBFF'],
+    ['#ADCCFF', '#61A2FF'],
+    ['#C4DAFF', '#95BEFF', '#61A2FF'],
+    ['#CFE1FF', '#ADCCFF', '#89B7FF', '#61A2FF'],
+    ['#D6E5FF', '#BAD5FF', '#9FC4FF', '#82B3FF', '#61A2FF'],
+  ],
+  warm: [
+    ['#F6726A'],
+    ['#FFB5AC', '#F6726A'],
+    ['#FFCAC3', '#FE9F96', '#F6726A'],
+    ['#FFD5CF', '#FFB5AC', '#FC948B', '#F6726A'],
+    ['#FFDBD6', '#FFC2BA', '#FFA89F', '#FB8D84', '#F6726A'],
+  ],
+  gray: [
+    ['#8E9FBC'],
+    ['#7B8AA4', '#1D2A3E'],
+    ['#A2AEC4', '#596883', '#1D2A3E'],
+    ['#B6C0D3', '#7B8AA4', '#485872', '#1D2A3E'],
+    ['#C2CBDB', '#92A0B8', '#667690', '#3F4E67', '#1D2A3E'],
+  ],
 };

@@ -12,3 +12,9 @@ export {
   resolveMetric,
 } from './resolve';
 export { type MetricNode, type MetricTile, metricSchema } from './schema';
+export {
+  type TileIcon,
+  type TileIconGlyph,
+  TILE_ICONS,
+  tileIconGlyphs,
+} from './tile_icons';

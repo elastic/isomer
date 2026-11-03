@@ -298,6 +298,107 @@ describe('resolveMetric', () => {
   });
 });
 
+describe('value palette colors', () => {
+  it('fills and badges with a palette band', () => {
+    const [only] = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 1,
+          color: { palette: 'status', step: 2, of: 3 },
+          secondary: {
+            kind: 'value',
+            value: 2,
+            badge: { color: { palette: 'status', step: 0, of: 3 } },
+          },
+        },
+      ],
+    }).tiles;
+    expect(only).toMatchObject({
+      fill: '#F6726A',
+      secondary: { badge: { background: '#24C292' } },
+    });
+  });
+
+  it("paints Lens's default colors from the theme", () => {
+    const [plain, trend] = resolveMetric(
+      {
+        type: 'metric',
+        tiles: [
+          {
+            key: 'a',
+            value: 1,
+            color: { token: 'valueText' },
+            colorTarget: 'value',
+          },
+          {
+            key: 'b',
+            value: 1,
+            color: { token: 'progress' },
+            visual: { kind: 'trend', points: [] },
+          },
+        ],
+      },
+      'dark'
+    ).tiles;
+    expect(plain).toMatchObject({ fill: '#111C2C', valueColor: '#16C5C0' });
+    expect(trend).toMatchObject({ fill: '#61A2FF' });
+  });
+
+  it('rejects a band past the palette', () => {
+    const paths = (node: object) => issues(node).map(([path]) => path);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 3, of: 3 } }))
+    ).toEqual(['tiles.0.color']);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 0, of: 6 } }))
+    ).toEqual(['tiles.0.color.of']);
+    expect(
+      paths(tile({ color: { palette: 'status', step: 4, of: 5 } }))
+    ).toEqual([]);
+  });
+});
+
+describe('icons and multivalue readings', () => {
+  it('resolves an icon glyph and lists each formatted reading', () => {
+    const { tiles, layout } = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: [1536, 'n/a'],
+          format: { kind: 'bytes' },
+          icon: 'bell',
+        },
+      ],
+    });
+    expect(layout.iconAlign).toBe('right');
+    expect(tiles[0]).toMatchObject({
+      value: '1.50KB, n/a',
+      values: ['1.50KB', 'n/a'],
+      number: undefined,
+      icon: { paths: [{ evenOdd: true }] },
+      reading: '1.50KB, n/a',
+    });
+  });
+
+  it('rejects a visual on a multivalue reading, which Lens draws as text', () => {
+    expect(
+      issues(tile({ value: [1, 2], visual: { kind: 'trend', points: [] } }))
+    ).toEqual([['tiles.0.visual', 'a multivalue reading has no `visual`']]);
+  });
+
+  it('rejects an unknown icon and an empty multivalue reading', () => {
+    expect(issues(tile({ icon: 'rocket' })).map(([path]) => path)).toEqual([
+      'tiles.0.icon',
+    ]);
+    expect(issues(tile({ value: [] })).map(([path]) => path)).toEqual([
+      'tiles.0.value',
+    ]);
+  });
+});
+
 describe('action filters', () => {
   const action = (filters: object[]) =>
     tile({ action: { name: 'filter', filters } });
