@@ -116,10 +116,5 @@ Text colors are picked for contrast with the fill.
 | layout                  | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement                                      |
 | columns, placeholders   | the `data` grid, padded with `undefined` cells                               | rows of tiles, then empty cells                                   |
 | icon, `iconAlign`       | `icon`, a 16 × 16 SVG of the glyph's paths in the given color; `iconAlign`   | the glyph beside the title                                        |
-| values                  | a `string[]` value                                                           | the readings as a list                                            |
+| values                  | a `string[]` value; a multivalue tile has no visual, as in Lens              | the readings as a list                                            |
 | action                  | `onElementClick`                                                             | a press handler                                                   |
-
-## Not yet supported
-
-- Tile icons.
-- Duration and custom numeral formats. A lowering reports these instead of approximating them.

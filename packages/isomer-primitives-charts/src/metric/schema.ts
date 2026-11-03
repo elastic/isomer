@@ -133,7 +133,7 @@ const metricTileSchema = z
           .max(LIMIT),
       ])
       .describe(
-        'The headline reading. `null` is missing data and reads `N/A`, never zero. An array lists a multivalue field’s readings, each formatted with `format`.'
+        'The headline reading. `null` is missing data and reads `N/A`, never zero. An array lists a multivalue field’s readings, each formatted with `format`, and takes no `visual`.'
       ),
     format: valueFormatSchema.optional(),
     icon: z
@@ -157,7 +157,15 @@ const metricTileSchema = z
   })
   .strict()
   .check((ctx) => {
-    const { value, secondary } = ctx.value;
+    const { value, secondary, visual } = ctx.value;
+    if (Array.isArray(value) && visual) {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'a multivalue reading has no `visual`',
+        path: ['visual'],
+        input: visual,
+      });
+    }
     if (secondary?.kind === 'change' && typeof value !== 'number') {
       ctx.issues.push({
         code: 'custom',

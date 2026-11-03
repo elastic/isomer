@@ -114,8 +114,9 @@ const DEFAULT_LAYOUT: MetricLayout = {
   iconAlign: 'right',
 };
 
+/** A `+` on a rise, unless the format already signs it. */
 const signed = (delta: number, formatted: string) =>
-  delta > 0 ? `+${formatted}` : formatted;
+  delta > 0 && !formatted.startsWith('+') ? `+${formatted}` : formatted;
 
 const CHANGE_COLORS: Record<
   'good' | 'bad' | 'neutral',

@@ -335,6 +335,27 @@ describe('icons and multivalue readings', () => {
     });
   });
 
+  it('rejects a visual on a multivalue reading, which Lens draws as text', () => {
+    expect(
+      issues(tile({ value: [1, 2], visual: { kind: 'trend', points: [] } }))
+    ).toEqual([['tiles.0.visual', 'a multivalue reading has no `visual`']]);
+  });
+
+  it('signs a rise once when the pattern already signs it', () => {
+    const [only] = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 20,
+          format: { kind: 'pattern', pattern: '+0' },
+          secondary: { kind: 'change', previous: 10, show: 'absolute' },
+        },
+      ],
+    }).tiles;
+    expect(only!.secondary?.value).toBe('+10');
+  });
+
   it('rejects an unknown icon and an empty multivalue reading', () => {
     expect(issues(tile({ icon: 'rocket' })).map(([path]) => path)).toEqual([
       'tiles.0.icon',
