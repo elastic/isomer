@@ -140,7 +140,7 @@ pnpm exec playwright install chromium
 pnpm verify
 ```
 
-On Linux, add `--with-deps` to the Playwright install. `pnpm verify` is the full local gate, and CI runs the same command. [CONTRIBUTING.md](CONTRIBUTING.md) lists what it checks, and [AGENTS.md](AGENTS.md) holds the conventions and invariants, written for a human contributor and a coding agent alike.
+On Linux, add `--with-deps` to the Playwright install. `pnpm verify` is the full local gate, and CI runs the same scripts across parallel jobs. [CONTRIBUTING.md](CONTRIBUTING.md) lists what it checks, and [AGENTS.md](AGENTS.md) holds the conventions and invariants, written for a human contributor and a coding agent alike.
 
 ## License
 
