@@ -519,24 +519,21 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       color !== undefined || paletteApplies
         ? undefined
         : showingBar && metric.numeric
-          ? 'euiColorVis2'
+          ? ({ token: 'progress' } as const)
           : state.applyColorTo === 'value'
-            ? 'euiColorVisText0'
+            ? ({ token: 'valueText' } as const)
             : undefined;
     const points =
       typeof value === 'number'
         ? trends?.get(breakdown ? trendKey(breakdownValue) : 'default')
         : undefined;
+    // A progress bar's own default is the resolver's.
     const paintsDefault =
       typeof value !== 'number'
         ? Boolean(state.applyColorTo)
         : points !== undefined || !(showingBar && max);
     if (defaultFill && paintsDefault) {
-      problems.add(
-        'unsupported',
-        'unsupported-default-color',
-        `Lens paints this tile with its default ${defaultFill}, which is not supported yet.`
-      );
+      tile.color = defaultFill;
     }
     if (typeof value === 'number') {
       if (points) {
