@@ -106,6 +106,44 @@ for (const mode of ['dev', 'static']) {
         'rgb(17, 28, 44)'
       );
 
+      // The renderer's own detection: an ancestor's `color-scheme`, then the OS preference.
+      const chart = page.locator('.echChart');
+      const setSectionStyle = (property: string, value: string) =>
+        chart.evaluate(
+          (element, [name, to]) =>
+            element.closest('section')!.style.setProperty(name!, to!),
+          [property, value]
+        );
+      await setSectionStyle('color-scheme', 'light');
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)'
+      );
+      await page.emulateMedia({ colorScheme: 'light' });
+      await setSectionStyle('color-scheme', 'normal');
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)'
+      );
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(17, 28, 44)'
+      );
+      await page.emulateMedia({ colorScheme: 'light' });
+
+      // One row is `rowHeight` tall in an indefinite host and fits a shorter one.
+      const rootSize = () =>
+        chart.evaluate((element) => {
+          const { clientHeight, scrollHeight } = element.closest<HTMLElement>(
+            'div[style*="position: relative"]'
+          )!;
+          return [clientHeight, scrollHeight];
+        });
+      await expect.poll(rootSize).toEqual([150, 150]);
+      await setSectionStyle('height', '100px');
+      await expect.poll(rootSize).toEqual([100, 100]);
+
       await page.goto(`${url}#/dev/metric/1`);
       await expect(tiles).toHaveCount(3);
       await tiles.filter({ hasText: 'web-02' }).click();
