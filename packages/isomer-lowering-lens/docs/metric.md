@@ -27,9 +27,12 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | No breakdown | One tile from the first row, titled by the metric's name and subtitled by `subtitle`. No rows is one tile reading `null`. |
 | `breakdownByAccessor` | A tile per row in response order, titled by the formatted breakdown value and subtitled by the metric's name; `subtitle` is ignored. A missing value reads `(null)` and an empty one `(blank)`. Keys are the JSON of the raw value, with `#2`, `#3` for repeats. No rows draws an empty grid. |
 | `collapseFn` on a numeric metric | The breakdown is ignored and the metric, secondary and max collapse into one tile with `sum`, `avg`, `min` or `max`, skipping null cells. |
+| `icon`, `iconAlign` | Every tile's `icon`, one of Lens's metric icons, with `layout.iconAlign` from `getEffectiveIconAlign`: `left` unless saved otherwise. |
+| Date cell | Text in the host's `dates.format` and `dates.timeZone`, as Kibana's date format reads it, or the column's own date pattern. A date metric, secondary or breakdown needs `dates`. |
+| Multivalue cell | An array `value`, each element formatted with the column's format or read as a date, as `metricVis` lists them. A multivalue secondary reading or breakdown title reads as Kibana's `formatTextArray` does: the JSON of each formatted value. |
 | `maxCols` | `columns`. |
 | Column name | The custom label when `customLabel` is set, otherwise the field name. |
-| `params.format` | `number`, `percent`, `bytes` and `bits`, with `decimals`, `compact` and `suffix`, on number columns only. With no format, a number reads as the host's default pattern does. |
+| `params.format` | `number`, `percent`, `bytes` and `bits` with `decimals`, `compact` and `suffix`; `custom` as a numeral `pattern`; `duration` with `fromUnit`, `toUnit`, `decimals` and `compact` as Lens translates them. Number columns only. Without a Lens format, a table's data view format applies, to a text column too, which reads as it is only with no format, a transform-free `string` or `boolean`: a `number`, `percent` or `bytes` pattern (Kibana's default pattern when it sets none), or a `duration`, which reads `humanizePrecise` to 1 decimal with short units unless it overrides that. With neither, a number reads as the host's default pattern does. |
 | `color`, `applyColorTo` | `color` and `colorTarget`. A text tile always paints its background, as Lens does. |
 | No color or palette | Lens's `getDefaultColor`: `{ token: 'valueText' }` on a painted value, and `{ token: 'progress' }` on a tile while `showBar` is on; a progress bar keeps the resolver's own default. |
 | Custom `palette` | A concrete `#rrggbb` per tile: stops from `params.stops`, bounds from the data as `getDataBoundsForPalette` gives them, and `workoutColorForValue`'s range and continuity rules. |
@@ -38,7 +41,7 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | Layout | `titlesTextAlign`, `primaryAlign`, `secondaryAlign`, `primaryPosition`, `valueFontMode` and `density` map to `layout`. |
 | `showBar` with `maxAccessor` | A progress bar to the row's max, `vertical` unless `progressDirection` is `horizontal`. A null max is 0, as d3 reads it, so the bar fills halfway as Lens's does. |
 | Trend layer | A sparkline from the trend layer's time and metric columns, matched to tiles by raw breakdown value, sorted by time, with null readings kept as gaps. With `collapseFn`, rows collapse by time. Trend wins over progress. |
-| Breakdown tile with `filterAction` | `{ name: filterAction, filters: [{ field, value }] }` with the breakdown's field and raw value. |
+| Breakdown tile with `filterAction` | `{ name: filterAction, filters: [filter] }`, with the filter Kibana's `createFilter` builds: the field and raw value; for ES\|QL, `exists: false` for a null and `values` for a multivalue cell. |
 
 ## Form-based layers
 
@@ -48,8 +51,8 @@ A form-based metric binds from the same state, with Lens's form-based rules on t
 - A `static_value` max collapses with `max`, so the bar keeps the value its author set.
 - A `terms` breakdown pads the grid to its `size`, plus one for the Other bucket, with `placeholders`; a `filters` breakdown pads to its number of filters.
 - The `__other__` and `__missing__` buckets read as the table's terms format labels them; without one, Other reads `Other` and a missing bucket `(null)`.
-- `filterAction` raises a field = value filter only for a single-field `terms` bucket. Other and missing buckets, multi-field terms, `filters` and `range` buckets are refused for now.
-- A number column with no Lens format and a data view format of its own is refused for now.
+- `filterAction` raises Kibana's bucket filters: a term's value; for Other, `values` of the shown terms with `negate: true`; for a missing bucket, `exists: false`; a `filters` bucket's own query; a `range` bucket's `gte`/`lt`. Multi-field terms and other bucket columns are refused.
+- A `range` bucket reads as its label, or as its bounds in the column's Lens format, else the field format the table's `range` wrapper carries, with Lens's `arrow_right` template and `replaceInfinity` reading open bounds as ∓∞.
 
 ## Secondary metric
 
@@ -70,12 +73,12 @@ A missing secondary reading reads `(null)`, as Kibana's formats print it.
 | --- | --- |
 | `lens.bind.unsupported-visualization` | The saved object is not a metric. |
 | `lens.metric.unsupported-state` | The state has a key Lens does not define. |
-| `lens.metric.unsupported-format` | A `duration`, `custom` or other format, or `decimals` outside 0 to 20. |
+| `lens.metric.unsupported-format` | A Lens or data view format the metric cannot read, such as `currency`, `color` or a text column's `static_lookup`, or `decimals` outside 0 to 20. |
 | `lens.metric.unsupported-palette` | A palette that is not one of Lens's value palettes, or one with more than 5 bands. |
-| `lens.metric.unsupported-icon` | A tile icon. |
-| `lens.metric.unsupported-filter-value` | `filterAction` is set and a breakdown bucket needs more than a field = value filter. |
-| `lens.metric.unsupported-multivalue` | A multivalue or object reading. |
-| `lens.metric.unsupported-date` | A date metric, secondary or breakdown, which needs the host's date format and time zone. |
+| `lens.metric.unsupported-icon` | An icon the metric does not offer. |
+| `lens.metric.unsupported-filter-value` | `filterAction` is set and a breakdown bucket has no filter the metric can raise, such as multi-field terms. |
+| `lens.metric.unsupported-multivalue` | An object or empty multivalue reading. |
+| `lens.metric.unsupported-date` | A date column without `dates`, a time zone moment-timezone does not know, or nanosecond dates. |
 | `lens.metric.unsupported-progress-domain` | A progress max that is not a number or null. |
 | `lens.metric.unrepresentable` | The bound node fails the metric schema, for example more than 10,000 tiles. |
 | `lens.metric.missing-table`, `missing-column` | A table or accessor column is missing, the trend layer's breakdown column included (`invalid`). |

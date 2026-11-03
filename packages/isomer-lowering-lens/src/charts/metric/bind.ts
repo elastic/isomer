@@ -20,7 +20,6 @@ import {
   type ValueFormat,
   type ValuePalette,
 } from '@elastic/isomer-primitives-charts/model';
-import moment from 'moment-timezone';
 
 import type { JsonValue } from '../../json';
 import { own } from '../../own';
@@ -31,6 +30,7 @@ import type {
   LensTable,
 } from '../../schema';
 import { collapseRows } from '../collapse';
+import { type DateContext, isKnownTimeZone, readDate } from '../dates';
 import { fromFieldFormat, toValueFormat } from '../format';
 import {
   type Bounds,
@@ -67,14 +67,6 @@ export interface MetricBindContext {
   layers: readonly (LensLayerPlan | FormLayerPlan)[];
   filterAction?: string | undefined;
   dates?: DateContext | undefined;
-}
-
-/** The host's `dateFormat` and `dateFormat:tz`, which Kibana reads dates with. */
-export interface DateContext {
-  /** A moment pattern, such as Kibana's default `MMM D, YYYY @ HH:mm:ss.SSS`. */
-  format: string;
-  /** An IANA time zone, such as `Europe/Lisbon`. */
-  timeZone: string;
 }
 
 type DateReader = (value: JsonValue | undefined) => string;
@@ -164,36 +156,77 @@ class Problems {
 /** Kibana's `alwaysShowSign`: a `+` unless the value rounds to zero. */
 const signedReading = (delta: number, format: ValueFormat | undefined) => {
   const shown = formatValue(delta, format);
-  return delta > 0 && shown !== formatValue(0, format) ? `+${shown}` : shown;
+  return delta > 0 && shown !== formatValue(0, format) && !shown.startsWith('+')
+    ? `+${shown}`
+    : shown;
 };
 
 /** Kibana's `MISSING_TOKEN`, a missing terms bucket. */
 const MISSING = '__missing__';
 
-/** A cell as Kibana's field formats convert it to text, missing labels included. */
+/**
+ * A cell as Kibana's field formats convert it to text, missing labels
+ * included; a multivalue cell is `formatTextArray`'s JSON of each reading.
+ */
 const formatCell = (
   value: JsonValue | undefined,
   format: ValueFormat | undefined
-) =>
+): string =>
   value === null || value === undefined || value === MISSING
     ? '(null)'
     : value === ''
       ? '(blank)'
       : typeof value === 'number'
         ? formatValue(value, format)
-        : typeof value === 'object'
-          ? JSON.stringify(value)
-          : String(value);
+        : Array.isArray(value)
+          ? JSON.stringify(value.map((each) => formatCell(each, format)))
+          : typeof value === 'object'
+            ? JSON.stringify(value)
+            : String(value);
+
+/** Text formats that read a cell as it is: Kibana's `string` without a transform, and `boolean`. */
+const isPlainTextFormat = (serialized: JsonValue | undefined): boolean => {
+  const inner =
+    isRecord(serialized) &&
+    serialized.id === 'terms' &&
+    isRecord(serialized.params)
+      ? serialized.params
+      : serialized;
+  if (inner === undefined || inner === null) {
+    return true;
+  }
+  if (!isRecord(inner)) {
+    return false;
+  }
+  const params = isRecord(inner.params) ? inner.params : {};
+  return (
+    inner.id === undefined ||
+    inner.id === 'boolean' ||
+    (inner.id === 'string' &&
+      (params.transform === undefined || params.transform === false))
+  );
+};
 
 const columnFormat = (
   bound: BoundColumn | undefined,
   problems: Problems
 ): ValueFormat | undefined => {
-  // `lens_format_column` formats number columns only.
-  if (!bound?.numeric) {
+  if (!bound) {
     return undefined;
   }
   const { columnId, params, meta } = bound.lens;
+  // `lens_format_column` formats number columns only; others keep their data view format.
+  if (!bound.numeric) {
+    if (!isDate(bound) && !isPlainTextFormat(meta?.params)) {
+      const id = isRecord(meta?.params) ? meta.params.id : undefined;
+      problems.add(
+        'unsupported',
+        'unsupported-format',
+        `The "${typeof id === 'string' ? id : 'unknown'}" format of column "${columnId}" is not supported yet.`
+      );
+    }
+    return undefined;
+  }
   const mapped = toValueFormat(params);
   if (mapped.ok && mapped.format) {
     return mapped.format;
@@ -578,12 +611,14 @@ const bucketFilter = (
 
 /**
  * A range bucket's title, as Kibana's `range` format reads it: its label, or
- * its bounds in the column's format, with Lens's `arrow_right` template and
- * infinite bounds as ∓∞.
+ * its bounds in the column's Lens format, else the field format the table's
+ * `range` wrapper carries, with Lens's `arrow_right` template and infinite
+ * bounds as ∓∞.
  */
 const rangeTitle = (
   value: JsonValue,
   planned: PlannedColumn,
+  bound: BoundColumn,
   problems: Problems
 ): string => {
   if (!isRecord(value)) {
@@ -593,7 +628,14 @@ const rangeTitle = (
     return value.label;
   }
   const params = isRecord(planned.params) ? planned.params : {};
-  const mapped = toValueFormat(params);
+  const wrapper = bound.lens.meta?.params;
+  const field =
+    isRecord(wrapper) && wrapper.id === 'range' && isRecord(wrapper.params)
+      ? { id: wrapper.params.id, params: wrapper.params.params }
+      : undefined;
+  const lens = toValueFormat(params);
+  const mapped =
+    lens.ok && !lens.format && field ? fromFieldFormat(field) : lens;
   if (!mapped.ok) {
     problems.add(
       'unsupported',
@@ -605,14 +647,14 @@ const rangeTitle = (
     isRecord(params.parentFormat) && isRecord(params.parentFormat.params)
       ? params.parentFormat.params
       : {};
-  const bound = (end: JsonValue | undefined, infinite: string) =>
-    typeof end === 'number' && Number.isFinite(end)
-      ? formatValue(end, mapped.ok ? mapped.format : undefined)
+  const end = (edge: JsonValue | undefined, infinite: string) =>
+    typeof edge === 'number' && Number.isFinite(edge)
+      ? formatValue(edge, mapped.ok ? mapped.format : undefined)
       : parent.replaceInfinity === true
         ? infinite
-        : formatCell(end ?? null, undefined);
-  const from = bound(value.gte, '\u2212\u221E');
-  const to = bound(value.lt, '+\u221E');
+        : formatCell(edge ?? null, undefined);
+  const from = end(value.gte, '\u2212\u221E');
+  const to = end(value.lt, '+\u221E');
   return parent.template === 'arrow_right'
     ? `${from} \u2192 ${to}`
     : `\u2265 ${from} and < ${to}`;
@@ -640,6 +682,15 @@ const dateReader = (
     );
     return () => '';
   }
+  if (!isKnownTimeZone(dates.timeZone)) {
+    problems.add(
+      'unsupported',
+      'unsupported-date',
+      `The time zone "${dates.timeZone}" is not one moment-timezone knows.`,
+      ['options', 'dates', 'timeZone']
+    );
+    return () => '';
+  }
   const saved = bound.lens.meta?.params;
   const pattern =
     isRecord(saved) &&
@@ -648,16 +699,19 @@ const dateReader = (
     typeof saved.params.pattern === 'string'
       ? saved.params.pattern
       : dates.format;
-  return (value) => {
+  const read: DateReader = (value) => {
     if (value === null || value === undefined) {
       return '(null)';
+    }
+    if (Array.isArray(value)) {
+      return JSON.stringify(value.map(read));
     }
     if (typeof value !== 'string' && typeof value !== 'number') {
       return formatCell(value, undefined);
     }
-    const date = moment.tz(value, dates.timeZone);
-    return date.isValid() ? date.locale('en').format(pattern) : String(value);
+    return readDate(value, pattern, dates.timeZone) ?? String(value);
   };
+  return read;
 };
 
 export const bindMetric = (context: MetricBindContext): MetricBound => {
@@ -750,7 +804,11 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
   const metricDate = dateReader(context, metric, problems);
   const breakdownDate = dateReader(context, breakdown, problems);
   const format = columnFormat(metric, problems);
-  const breakdownFormat = columnFormat(breakdown, problems);
+  // A range bucket's title formats its bounds itself.
+  const breakdownFormat =
+    breakdownPlan?.operationType === 'range'
+      ? undefined
+      : columnFormat(breakdown, problems);
   const trends = bindTrends(context, problems);
   const showingBar = Boolean(state.showBar && state.maxAccessor);
   const keys = new Map<string, number>();
@@ -771,9 +829,11 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     }
     // `metricVis` formats each value of a multivalue reading.
     const reading = (each: JsonValue): number | string =>
-      typeof each === 'number' || typeof each === 'string'
-        ? each
-        : formatCell(each, undefined);
+      metricDate
+        ? metricDate(each)
+        : typeof each === 'number' || typeof each === 'string'
+          ? each
+          : formatCell(each, undefined);
     const value: MetricTile['value'] =
       metricDate && raw !== null && raw !== undefined && !Array.isArray(raw)
         ? metricDate(raw)
@@ -791,7 +851,12 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         : breakdownValue === MISSING && labels.missing
           ? labels.missing
           : breakdownPlan?.operationType === 'range'
-            ? rangeTitle(breakdownValue ?? null, breakdownPlan, problems)
+            ? rangeTitle(
+                breakdownValue ?? null,
+                breakdownPlan,
+                breakdown,
+                problems
+              )
             : breakdownDate
               ? breakdownDate(breakdownValue)
               : formatCell(breakdownValue ?? null, breakdownFormat)

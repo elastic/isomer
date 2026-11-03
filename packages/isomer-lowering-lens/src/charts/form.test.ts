@@ -239,10 +239,18 @@ describe('bind: form-based breakdowns', () => {
     layer.columns.carrier = column;
     return input;
   };
-  const cells = (carrier: unknown, type = 'string') => ({
+  const cells = (
+    carrier: unknown,
+    type = 'string',
+    params?: Record<string, unknown>
+  ) => ({
     layer: {
       columns: [
-        { id: 'carrier', name: 'Bucket', meta: { type } },
+        {
+          id: 'carrier',
+          name: 'Bucket',
+          meta: { type, ...(params && { params }) },
+        },
         number('count', 'Flights'),
         number('max', 'Static value: 1000'),
       ],
@@ -295,9 +303,17 @@ describe('bind: form-based breakdowns', () => {
         },
       },
     });
-    // An open bound, Infinity in Kibana, arrives as `null` in JSON.
+    // An open bound, Infinity in Kibana, arrives as `null` in JSON. The
+    // table wraps the field's format in `range`, as `getSerializedFormat` does.
     const { tiles } = node(
-      run(range, cells({ gte: 1000, lt: null }, 'number'), 'filter')
+      run(
+        range,
+        cells({ gte: 1000, lt: null }, 'number', {
+          id: 'range',
+          params: { id: 'number' },
+        }),
+        'filter'
+      )
     );
     expect(tiles[0]).toMatchObject({
       title: '1,000 \u2192 +\u221E',
@@ -305,6 +321,62 @@ describe('bind: form-based breakdowns', () => {
         filters: [{ field: 'DistanceKilometers', range: { gte: 1000 } }],
       },
     });
+  });
+
+  it("titles a range bucket's bounds with the field format the table carries", () => {
+    const range = bucketed({
+      operationType: 'range',
+      label: 'Distance',
+      dataType: 'number',
+      isBucketed: true,
+      sourceField: 'DistanceKilometers',
+      params: {
+        type: 'range',
+        maxBars: 'auto',
+        ranges: [{ from: 1000, to: 2000, label: '' }],
+        parentFormat: {
+          id: 'range',
+          params: { template: 'arrow_right', replaceInfinity: true },
+        },
+      },
+    });
+    const { tiles } = node(
+      run(
+        range,
+        cells({ gte: 1000, lt: 2000 }, 'number', {
+          id: 'range',
+          params: { id: 'number', params: { pattern: '0.0' } },
+        })
+      )
+    );
+    expect(tiles[0]!.title).toBe('1000.0 \u2192 2000.0');
+  });
+
+  it('refuses a text data view format it cannot read, such as a static lookup', () => {
+    const terms = bucketed({
+      operationType: 'terms',
+      label: 'Carrier',
+      dataType: 'string',
+      isBucketed: true,
+      sourceField: 'Carrier',
+      params: {
+        size: 3,
+        orderBy: { type: 'alphabetical' },
+        orderDirection: 'asc',
+      },
+    });
+    const result = run(
+      terms,
+      cells('JetBeats', 'string', {
+        id: 'terms',
+        params: { id: 'static_lookup', params: { lookupEntries: [] } },
+      })
+    );
+    expect(
+      result.status === 'bound'
+        ? []
+        : result.diagnostics.map(({ code }) => code)
+    ).toEqual(['lens.metric.unsupported-format']);
   });
 
   it('collapses a static max with `max`, keeping the value its author set', () => {
