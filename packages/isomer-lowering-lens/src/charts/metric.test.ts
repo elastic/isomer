@@ -333,10 +333,10 @@ describe('bind: breakdown', () => {
     expect(tiles).toEqual([{ key: 'metric', title: 'Visits', value: 4.5 }]);
   });
 
-  it('is unsupported when the breakdown returns no rows', () => {
-    expect(codes(run(vis({ breakdownByAccessor: 'host' }), layer([])))).toEqual(
-      ['lens.metric.unsupported-empty-breakdown']
-    );
+  it('draws an empty grid when the breakdown returns no rows', () => {
+    expect(
+      node(run(vis({ breakdownByAccessor: 'host' }), layer([]))).tiles
+    ).toEqual([]);
   });
 });
 

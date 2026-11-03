@@ -211,7 +211,7 @@ const bindSecondary = (
   const label =
     visibility === 'hidden' ? undefined : (state.secondaryLabel ?? bound.label);
   const labels = {
-    ...(label ? { label } : {}),
+    ...(label?.trim() ? { label } : {}),
     ...(visibility === 'after' || visibility === 'tooltip'
       ? { labelPosition: visibility }
       : {}),
@@ -452,8 +452,8 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     }
     const tile: MetricTile = {
       key,
-      ...(title ? { title } : {}),
-      ...(subtitle ? { subtitle } : {}),
+      ...(title?.trim() ? { title } : {}),
+      ...(subtitle?.trim() ? { subtitle } : {}),
       value,
       ...(format && typeof value === 'number' ? { format } : {}),
       ...(color && HEX.test(color) ? { color: color } : {}),
@@ -547,19 +547,6 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       ok: false,
       status: 'unsupported',
       diagnostics: problems.unsupported,
-    };
-  }
-  if (tiles.length === 0) {
-    return {
-      ok: false,
-      status: 'unsupported',
-      diagnostics: [
-        {
-          code: 'lens.metric.unsupported-empty-breakdown',
-          message: 'A breakdown with no rows is not supported yet.',
-          path: ['tables', state.layerId],
-        },
-      ],
     };
   }
   const layout = {
