@@ -212,8 +212,8 @@ try {
 
     for (const peer of requiredPeers) {
       const installedPeer =
-        packages.get(peer)?.dir ?? resolve(repoRoot, 'node_modules', peer);
-      if (!existsSync(installedPeer)) {
+        packages.get(peer)?.dir ?? installedDependency(pkg, peer);
+      if (!installedPeer) {
         throw new Error(
           `${packageName}: required peer "${peer}" is not installed`
         );

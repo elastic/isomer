@@ -46,19 +46,22 @@
     "studio:stylesheet": "node studio/write_stylesheet.mjs"
   },
   "dependencies": {
-    "@elastic/charts": "73.3.2",
     "@elastic/isomer-primitives-charts": "workspace:*",
-    "@elastic/isomer-sdk": "workspace:*",
-    "moment": "^2.30.1",
-    "moment-timezone": "^0.5.48"
+    "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
+    "@elastic/charts": "^73.3.2",
+    "moment": "^2.29.1",
+    "moment-timezone": "^0.5.32 || ^0.6.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@elastic/charts": "73.3.2",
     "@elastic/isomer-runtime": "workspace:*",
-    "@elastic/isomer-studio": "workspace:*"
+    "@elastic/isomer-studio": "workspace:*",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.48"
   }
 }

@@ -31,7 +31,7 @@ The Isomer repository has a composite action that runs both and uploads what the
 
 ## Review a pull request
 
-The Isomer repository's **Studio preview** job builds the root `isomer-studio.config.ts` from the PR's head commit, not the merge ref, and uploads it as `studio-<headSha>-<runId>-<attempt>`. Unzip it into a directory named `studio`, serve that directory's parent with `npx serve .`, and open `/studio/`.
+The Isomer repository's **Studio preview** job builds the root `isomer-studio.config.ts` from the PR's head commit, not the merge ref, and uploads it as `studio-<headSha>-<runId>-<attempt>`. Unzip it into a directory named `studio`, serve that directory's parent with `npx serve .`, and open `/studio/`. It also builds the charts pack's own Studio, `packages/isomer-renderers-elastic-charts/isomer-studio.config.ts`, as `studio-charts-<headSha>-<runId>-<attempt>`: unzip it into `studio-charts` beside it and open `/studio-charts/`.
 
 ## Without the action
 

@@ -16,7 +16,7 @@ import '@elastic/charts/dist/theme_only_light.css';
 const runtime = createIsomerRuntime({ packs: [elasticChartsPack] });
 ```
 
-The host loads Elastic Charts' stylesheet once. Colors come from the chart tokens through the chart's theme, so the light stylesheet serves both schemes. Elastic Charts also relies on EUI's global reset; a host without EUI adds `elasticChartsReset` to its styles, or tiles overflow and clip.
+`@elastic/charts` is a peer dependency, with its own `moment` and `moment-timezone` peers, so the host installs it and the stylesheet it imports matches the chart code the renderer draws with. The host loads Elastic Charts' stylesheet once. Colors come from the chart tokens through the chart's theme, so the light stylesheet serves both schemes. Elastic Charts also relies on EUI's global reset; a host without EUI adds `elasticChartsReset` to its styles, or tiles overflow and clip.
 
 ## Scheme
 
