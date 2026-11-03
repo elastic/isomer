@@ -85,7 +85,8 @@ export const elasticChartsRenderers: ChartRenderers = {
   metric: (node, { context }) => (
     <MetricView
       node={node}
-      onEvent={context.onEvent}
+      // Called on the context, which may be a class instance reading its own state.
+      onEvent={context.onEvent && ((event) => context.onEvent!(event))}
       attributes={nodeAnchor(context, node)}
     />
   ),
