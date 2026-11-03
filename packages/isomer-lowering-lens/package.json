@@ -22,6 +22,12 @@
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"
+    },
+    "./charts": {
+      "types": "./lib/cjs/charts/index.d.ts",
+      "import": "./lib/esm/charts/index.js",
+      "require": "./lib/cjs/charts/index.js",
+      "default": "./lib/cjs/charts/index.js"
     }
   },
   "files": [
@@ -32,6 +38,13 @@
     "THIRD_PARTY_LICENSES.md",
     "LICENSE.txt"
   ],
+  "typesVersions": {
+    "*": {
+      "charts": [
+        "./lib/cjs/charts/index.d.ts"
+      ]
+    }
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -42,6 +55,9 @@
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-primitives-charts": "workspace:*"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
