@@ -11,6 +11,9 @@ import {
   colorForValue,
   type CustomPalette,
   customPalette,
+  extent,
+  namedPalette,
+  namedPaletteBands,
   paletteBounds,
 } from './palette';
 
@@ -152,12 +155,26 @@ describe('colorForValue matches workoutColorForValue', () => {
 });
 
 describe('paletteBounds matches getDataBoundsForPalette', () => {
+  const paletteBoundsFor = (
+    metric: readonly unknown[],
+    {
+      max,
+      breakdown,
+      row,
+    }: { max?: readonly unknown[]; breakdown: boolean; row: number }
+  ) =>
+    paletteBounds(extent(metric), {
+      max: max?.[row],
+      hasMax: max !== undefined,
+      breakdown,
+    });
+
   it('centers a single metric with no max', () => {
-    expect(paletteBounds([100], { breakdown: false, row: 0 })).toEqual({
+    expect(paletteBoundsFor([100], { breakdown: false, row: 0 })).toEqual({
       min: 0,
       max: 200,
     });
-    expect(paletteBounds([-100], { breakdown: false, row: 0 })).toEqual({
+    expect(paletteBoundsFor([-100], { breakdown: false, row: 0 })).toEqual({
       min: -200,
       max: 0,
     });
@@ -165,30 +182,40 @@ describe('paletteBounds matches getDataBoundsForPalette', () => {
 
   it("uses the row's max", () => {
     expect(
-      paletteBounds([200], { max: [100], breakdown: false, row: 0 })
+      paletteBoundsFor([200], { max: [100], breakdown: false, row: 0 })
     ).toEqual({ min: 0, max: 100 });
     expect(
-      paletteBounds([200, 400], { max: [100, 150], breakdown: false, row: 1 })
+      paletteBoundsFor([200, 400], {
+        max: [100, 150],
+        breakdown: false,
+        row: 1,
+      })
     ).toEqual({ min: 0, max: 150 });
   });
 
   it('spans the metric across a breakdown with no max', () => {
     expect(
-      paletteBounds([-100, 100, 200, 300], { breakdown: true, row: 0 })
+      paletteBoundsFor([-100, 100, 200, 300], { breakdown: true, row: 0 })
     ).toEqual({ min: -100, max: 300 });
   });
 
   it("uses the row's max across a breakdown", () => {
     const metric = [-100, 100, 200, 300];
     const max = [200, 250, 300, 400];
-    expect(paletteBounds(metric, { max, breakdown: true, row: 2 })).toEqual({
+    expect(paletteBoundsFor(metric, { max, breakdown: true, row: 2 })).toEqual({
       min: 0,
       max: 300,
     });
-    expect(paletteBounds(metric, { max, breakdown: true, row: 0 })).toEqual({
+    expect(paletteBoundsFor(metric, { max, breakdown: true, row: 0 })).toEqual({
       min: 0,
       max: 200,
     });
+  });
+
+  it('counts a null as 0 and scans a column past the argument limit', () => {
+    expect(extent([null, 5, -3])).toEqual({ min: -3, max: 5 });
+    const column = Array.from({ length: 200_000 }, (_, index) => index);
+    expect(extent(column)).toEqual({ min: 0, max: 199_999 });
   });
 });
 
@@ -235,5 +262,22 @@ describe('customPalette', () => {
     });
     expect(palette.rangeMin).toBe(500);
     expect(palette.rangeMax).toBe(1640);
+  });
+});
+
+describe('namedPalette', () => {
+  it('counts bands before building them', () => {
+    expect(namedPaletteBands({ steps: 1e9 })).toBe(1e9);
+    expect(namedPaletteBands({ stops: [{ color: '#000000', stop: 1 }] })).toBe(
+      1
+    );
+    expect(namedPaletteBands({})).toBe(5);
+  });
+
+  it('ignores `reverse`, as `computePaletteParams` sets it false and regenerates colors by name', () => {
+    const params = { steps: 3, reverse: true } as Parameters<
+      typeof namedPalette
+    >[0];
+    expect(namedPalette(params).colors).toEqual([0, 1, 2]);
   });
 });

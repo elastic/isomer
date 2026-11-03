@@ -33,7 +33,8 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | `color`, `applyColorTo` | `color` and `colorTarget`. A text tile always paints its background, as Lens does. |
 | No color or palette | Lens's `getDefaultColor`: `{ token: 'valueText' }` on a painted value, and `{ token: 'progress' }` on a tile while `showBar` is on; a progress bar keeps the resolver's own default. |
 | Custom `palette` | A concrete `#rrggbb` per tile: stops from `params.stops`, bounds from the data as `getDataBoundsForPalette` gives them, and `workoutColorForValue`'s range and continuity rules. |
-| Named `palette` | A band of the same palette, `{ palette, step, of }`, with `steps` (or one per saved stop, or 5) bands spread evenly over the data bounds. The charts theme gives the band its color. |
+| Named `palette` | A band of the same palette, `{ palette, step, of }`, with `steps` (or one per saved stop, or 5) bands spread evenly over the data bounds. The charts theme gives the band its color. `params.reverse` is ignored, as Lens's `computePaletteParams` ignores it. |
+| Palette names | Colors follow the palette's `name`, as `getOverridePaletteColors` regenerates them; saved stop positions apply only when `params.name` is `custom`, as `computePaletteParams` reads it. |
 | Layout | `titlesTextAlign`, `primaryAlign`, `secondaryAlign`, `primaryPosition`, `valueFontMode` and `density` map to `layout`. |
 | `showBar` with `maxAccessor` | A progress bar to the row's max, `vertical` unless `progressDirection` is `horizontal`. A null max is 0, as d3 reads it, so the bar fills halfway as Lens's does. |
 | Trend layer | A sparkline from the trend layer's time and metric columns, matched to tiles by raw breakdown value, sorted by time, with null readings kept as gaps. With `collapseFn`, rows collapse by time. Trend wins over progress. |
@@ -47,7 +48,7 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | `static` | A badge in the saved color. A non-numeric secondary is always static. |
 | `dynamic` against a number | The secondary's own reading, with a badge colored and marked ↑, ↓ or = by its sign against the baseline. |
 | `dynamic` against the primary | `primary − secondary` in the secondary's format, with a `+` unless it rounds to zero, colored by its sign. A missing side reads `N/A` with the middle color. |
-| Palettes | `compare_to` reads `danger`, `default`, `success`; `complementary` reads `primary`, `default`, `warning`; `temperature` reads `primary`, `default`, `danger`; `reversed` swaps the ends. |
+| Palettes | `compare_to` reads `danger`, `default`, `success`; `complementary` reads `primary`, `default`, `warning`; `temperature` reads `primary`, `default`, `danger`; any other ID reads as `compare_to`. `reversed` swaps the ends. |
 | `visuals` | `icon` drops the value and `value` drops the glyph. An icon-only badge with no direction draws no badge. |
 
 A missing secondary reading reads `(null)`, as Kibana's formats print it.
@@ -58,14 +59,14 @@ A missing secondary reading reads `(null)`, as Kibana's formats print it.
 | --- | --- |
 | `lens.bind.unsupported-visualization` | The saved object is not a metric. |
 | `lens.metric.unsupported-state` | The state has a key Lens does not define. |
-| `lens.metric.unsupported-format` | A `duration`, `custom` or other format. |
+| `lens.metric.unsupported-format` | A `duration`, `custom` or other format, or `decimals` outside 0 to 20. |
 | `lens.metric.unsupported-palette` | A palette that is not one of Lens's value palettes, or one with more than 5 bands. |
 | `lens.metric.unsupported-icon` | A tile icon. |
 | `lens.metric.unsupported-multivalue` | A multivalue or object reading. |
 | `lens.metric.unsupported-date` | A date metric, secondary or breakdown, which needs the host's date format and time zone. |
 | `lens.metric.unsupported-progress-domain` | A progress max that is not a number or null. |
 | `lens.metric.unrepresentable` | The bound node fails the metric schema, for example more than 10,000 tiles. |
-| `lens.metric.missing-table`, `missing-column` | A table or accessor column is missing (`invalid`). |
+| `lens.metric.missing-table`, `missing-column` | A table or accessor column is missing, the trend layer's breakdown column included (`invalid`). |
 | `lens.metric.duplicate-trend-time`, `invalid-trend-time` | A trend has two points at one instant, or a row without a timestamp (`invalid`). |
 
 ## Native ES|QL trends

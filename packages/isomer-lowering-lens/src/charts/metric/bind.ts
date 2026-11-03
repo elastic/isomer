@@ -20,13 +20,17 @@ import {
 } from '@elastic/isomer-primitives-charts/model';
 
 import type { JsonValue } from '../../json';
+import { own } from '../../own';
 import type { LensDiagnostic, LensTable } from '../../schema';
 import { collapseRows } from '../collapse';
 import { toValueFormat } from '../format';
 import {
+  type Bounds,
   colorForValue,
   customPalette,
+  extent,
   namedPalette,
+  namedPaletteBands,
   paletteBounds,
 } from '../palette';
 import { type BoundColumn, cell, column } from '../table';
@@ -108,7 +112,9 @@ const columnFormat = (
     problems.add(
       'unsupported',
       'unsupported-format',
-      `The "${mapped.id}" format of column "${bound.lens.columnId}" is not supported yet.`
+      mapped.outOfRange
+        ? `The "${mapped.id}" format of column "${bound.lens.columnId}" has parameters out of range.`
+        : `The "${mapped.id}" format of column "${bound.lens.columnId}" is not supported yet.`
     );
     return undefined;
   }
@@ -168,6 +174,14 @@ const bindTrends = (
   const breakdown = collapseFn
     ? undefined
     : column(table, trendlineBreakdownByAccessor);
+  if (!collapseFn && trendlineBreakdownByAccessor && !breakdown) {
+    problems.add(
+      'invalid',
+      'missing-column',
+      `The trend layer "${trendlineLayerId}" has no breakdown column "${trendlineBreakdownByAccessor}".`
+    );
+    return undefined;
+  }
   const rows = collapseFn
     ? collapseRows(
         table.rows,
@@ -276,7 +290,8 @@ const bindSecondary = (
     raw == null || !Number.isFinite(baseline)
       ? NaN
       : (compareToPrimary ? -1 : 1) * (raw - baseline);
-  const palette = TREND_PALETTES[trend.paletteId] ?? TREND_PALETTES.compare_to!;
+  const palette =
+    own(TREND_PALETTES, trend.paletteId) ?? TREND_PALETTES.compare_to!;
   const [down, flat, up] = trend.reversed ? [...palette].reverse() : palette;
   const showIcon = trend.visuals !== 'value';
   const showValue = trend.visuals !== 'icon';
@@ -313,7 +328,7 @@ const isValuePalette = (name: string): name is ValuePalette =>
 const tileColor = (
   state: MetricState,
   value: number | string | null,
-  bounds: () => ReturnType<typeof paletteBounds>,
+  bounds: () => Bounds,
   problems: Problems
 ): TileColor | undefined => {
   const { palette, color } = state;
@@ -331,19 +346,17 @@ const tileColor = (
         ? undefined
         : hexColor(picked, problems, [...VIS, 'palette']);
     }
-    const named = namedPalette(palette.params, positioned);
-    if (
-      !isValuePalette(palette.name) ||
-      named.colors.length > MAX_PALETTE_BANDS
-    ) {
+    const bands = namedPaletteBands(palette.params);
+    if (!isValuePalette(palette.name) || bands > MAX_PALETTE_BANDS) {
       problems.add(
         'unsupported',
         'unsupported-palette',
-        `The "${palette.name}" palette with ${named.colors.length} bands is not a value palette.`,
+        `The "${palette.name}" palette with ${bands} bands is not a value palette.`,
         [...VIS, 'palette']
       );
       return undefined;
     }
+    const named = namedPalette(palette.params, positioned);
     const step = colorForValue(value, named, bounds());
     return step === undefined
       ? undefined
@@ -454,6 +467,7 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
   const trends = bindTrends(context, problems);
   const showingBar = Boolean(state.showBar && state.maxAccessor);
   const keys = new Map<string, number>();
+  const metricExtent = extent(rows.map((r) => cell(r, metric)));
 
   const tiles = tileRows.map((row, rowIndex): MetricTile => {
     const raw = cell(row, metric);
@@ -485,14 +499,11 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       state,
       value,
       () =>
-        paletteBounds(
-          rows.map((r) => cell(r, metric)),
-          {
-            max: max ? rows.map((r) => cell(r, max)) : undefined,
-            breakdown: Boolean(breakdown),
-            row: rowIndex,
-          }
-        ),
+        paletteBounds(metricExtent, {
+          max: max ? cell(rows[rowIndex]!, max) : undefined,
+          hasMax: Boolean(max),
+          breakdown: Boolean(breakdown),
+        }),
       problems
     );
     const tile: MetricTile = {

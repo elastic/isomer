@@ -81,50 +81,63 @@ export const customPalette = (
 /** Lens's `DEFAULT_COLOR_STEPS`. */
 const DEFAULT_BANDS = 5;
 
+/** How many bands `getOverridePaletteColors` regenerates a named palette with. */
+export const namedPaletteBands = (params: SavedParams) =>
+  params.steps || params.stops?.length || DEFAULT_BANDS;
+
 /**
- * A named palette as `getOverridePaletteColors` regenerates it: `steps` bands,
- * or one per saved stop, spread evenly. Its colors are band indexes.
+ * A named palette as `getOverridePaletteColors` regenerates it, spread evenly,
+ * with band indexes for colors. Check {@link namedPaletteBands} first. Like
+ * `computePaletteParams`, it ignores `params.reverse`.
  */
 export const namedPalette = (
   params: SavedParams,
   positioned = false
-): CustomPalette<number> => {
-  const bands = params.steps || params.stops?.length || DEFAULT_BANDS;
-  return build(
-    Array.from({ length: bands }, (_, band) => band),
+): CustomPalette<number> =>
+  build(
+    Array.from({ length: namedPaletteBands(params) }, (_, band) => band),
     positions(params, positioned),
     params
   );
-};
 
 export interface Bounds {
   min: number;
   max: number;
 }
 
-/**
- * `getDataBoundsForPalette` over every row of the table, coercing cells as its
- * `Math.min`/`Math.max` do, so a `null` counts as 0.
- */
+/** The extremes `Math.min`/`Math.max` find over every row, so a `null` counts as 0. */
+export const extent = (metric: readonly unknown[]): Bounds => {
+  let min = Number.POSITIVE_INFINITY;
+  let max = Number.NEGATIVE_INFINITY;
+  for (const value of metric) {
+    const number = Number(value);
+    if (Number.isNaN(number)) {
+      return { min: NaN, max: NaN };
+    }
+    min = Math.min(min, number);
+    max = Math.max(max, number);
+  }
+  return { min, max };
+};
+
+/** `getDataBoundsForPalette` for one row, from the metric column's {@link extent}. */
 export const paletteBounds = (
-  metric: readonly unknown[],
+  { min: smallest, max: greatest }: Bounds,
   {
     max,
+    hasMax,
     breakdown,
-    row,
-  }: { max?: readonly unknown[] | undefined; breakdown: boolean; row: number }
+  }: { max: unknown; hasMax: boolean; breakdown: boolean }
 ): Bounds => {
-  const smallest = Math.min(...metric.map(Number));
-  const greatest = Math.max(...metric.map(Number));
-  if (!max && !breakdown) {
+  if (!hasMax && !breakdown) {
     return greatest < 0
       ? { min: greatest * 2, max: 0 }
       : { min: 0, max: greatest * 2 };
   }
-  if (breakdown && !max) {
+  if (breakdown && !hasMax) {
     return { min: smallest, max: greatest };
   }
-  return { min: 0, max: max ? Number(max[row]) : greatest };
+  return { min: 0, max: hasMax ? Number(max) : greatest };
 };
 
 const segment = <T>(

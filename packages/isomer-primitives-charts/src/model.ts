@@ -24,7 +24,11 @@ export {
   TILE_ICONS,
   tileIconGlyphs,
 } from './metric/tile_icons';
-export { type ValueFormat, formatValue } from './shared/format';
+export {
+  type ValueFormat,
+  formatValue,
+  valueFormatSchema,
+} from './shared/format';
 export {
   type Scheme,
   type ValuePalette,
