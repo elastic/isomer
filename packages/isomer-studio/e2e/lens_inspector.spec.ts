@@ -74,7 +74,9 @@ const exercise = async (page: Page, url: string) => {
   const formBased = JSON.parse(original) as {
     savedObject: { attributes: { state: { datasourceStates: object } } };
   };
-  formBased.savedObject.attributes.state.datasourceStates = { formBased: {} };
+  formBased.savedObject.attributes.state.datasourceStates = {
+    indexpattern: {},
+  };
   await input.fill(JSON.stringify(formBased));
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await expect(page.getByText('Status: unsupported')).toBeVisible();

@@ -101,6 +101,9 @@ The metric is the first chart bound. [Metric](metric.md) lists what it supports 
 
 All three functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be finite, acyclic plain JSON: no accessors, symbols, holes, custom prototypes or non-JSON values. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and keys. Identifiers are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
 
-## Lens inspector
+## Studio apps
 
-`pnpm studio:dev` includes a **Lens inspector** app (`#/app/lens/`) in the repository's Studio. It plans the input you paste, shows each layer's query and `host` section, and projects a pasted response into a table, showing at most 50 rows and 200 characters per cell. It is Studio code, not part of the package. It fetches and executes nothing, and draws no chart.
+`pnpm studio:dev` includes two Lens apps in the repository's Studio. Both are Studio code, not part of the package, and neither fetches or executes anything.
+
+- **Lens inspector** (`#/app/lens/`) plans an ES|QL saved object you paste, shows each layer's query and `host` section, and projects a pasted response into a table, showing at most 50 rows and 200 characters per cell.
+- **Lens to chart** (`#/app/lens-chart/`) plans a pasted ES|QL or form-based saved object, generates deterministic synthetic tables for it from a seed and a fixed clock, reads them back through `readResponse` or `readTable`, binds them, validates the composition and draws it. It shows the plan, the tables, the composition with a copy button, and any diagnostics. Its output says throughout that the data is synthetic: it shows lowering, binding and presentation, not what a query would return. The charts Studio (`packages/isomer-renderers-elastic-charts`) includes it too.

@@ -8,6 +8,7 @@
 import React, { type CSSProperties, useId, useState } from 'react';
 import type {
   LensDiagnostic,
+  LensLayerPlan,
   LensPlanResult,
   LensResponseResult,
 } from '@elastic/isomer-lowering-lens';
@@ -81,7 +82,9 @@ export default function LensInspectorApp() {
   const [layerId, setLayerId] = useState('');
   const layers =
     planned && 'status' in planned && planned.status === 'planned'
-      ? planned.plan.layers
+      ? planned.plan.layers.filter(
+          (entry): entry is LensLayerPlan => entry.kind === 'esql'
+        )
       : [];
   const layer = layers.find((entry) => entry.layerId === layerId);
 
