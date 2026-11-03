@@ -21,7 +21,7 @@ type Copied = { ok: true; value: JsonValue } | { ok: false; message: string };
 class Refusal extends Error {}
 
 /**
- * Copies `input` if it is finite, acyclic plain JSON within {@link JSON_LIMITS}.
+ * Copies `input` if it is finite, acyclic plain JSON within {@link JSON_LIMITS}, dropping object properties set to `undefined`.
  * Reads own data properties only, so accessors and proxies' traps never run twice.
  */
 export const copyJson = (input: unknown): Copied => {
@@ -91,7 +91,13 @@ export const copyJson = (input: unknown): Copied => {
       if (!('value' in descriptor)) {
         throw new Refusal('holds an accessor property');
       }
-      characters += key.length;
+      // As in `JSON.stringify`, an object property set to `undefined` is absent.
+      if (!isArray && descriptor.value === undefined) {
+        continue;
+      }
+      if (!isArray) {
+        characters += key.length;
+      }
       const child = copy(descriptor.value, depth + 1);
       if (isArray) {
         (result as JsonValue[]).push(child);

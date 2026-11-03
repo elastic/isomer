@@ -32,7 +32,7 @@ A planned result is `{ status: 'planned', plan }`, where `plan` has:
 | `version` | `1`. |
 | `source` | The saved object, as validated. |
 | `dataViews` | Each `index-pattern` reference, with its metadata when supplied. |
-| `filters` | The saved filters, verbatim. |
+| `filters` | The saved Kibana filters, verbatim: `meta` beside the query, not Query DSL. |
 | `layers` | Per layer: `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
 
 Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a partial plan. Each diagnostic has a stable `code`, a `message`, and a `path` into the input with numeric array indexes.
@@ -54,17 +54,19 @@ Each layer's `host` says what the host must supply. Nothing in it is defaulted.
 | `params` | The named and numbered parameters the query references (`?_tstart`, `??field`, `?1`), which the host must bind. |
 | `applyFilters` | Whether the plan's `filters` and the host's own global filters apply to this layer. |
 
-Run the query text as it is. Apply filters and the time range as the ES|QL request's Query DSL `filter`, and bind `params` through the request's `params`; don't append to or rewrite the ES|QL. A layer with `applyFilters: false` gets neither the saved nor the host's filters. Parameters are found by a lexical scan that skips strings, quoted identifiers and comments; the query is not parsed or validated.
+Run the query text as it is; don't append to or rewrite the ES|QL. Bind `params` through the request's `params`, and send the time range and filters as the request's Query DSL `filter`. A layer with `applyFilters: false` gets neither the saved nor the host's filters.
+
+`filters` holds Kibana `Filter` objects, which a host converts to Query DSL as Kibana does before sending them: skip a filter whose `meta.disabled` is true, put one whose `meta.negate` is true under `must_not`, resolve `meta.index` or `meta.indexRefName` against the saved object's references, and send only the query part, never `meta` or `$state`. The plan does not convert them. Parameters are found by a lexical scan that skips strings, quoted identifiers and comments; the query is not parsed or validated.
 
 ## Reading a response
 
 `readResponse(layer, response)` takes one planned layer, revalidated so a stored plan can be read back, and a complete ES|QL response `{ columns: [{ name, type }], values }` as Elasticsearch returns it. It returns `{ status: 'ready', table: { layerId, columns, rows } }`: each column carries its Lens column and the response `type`, and each row follows Lens order.
 
-Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, or `is_partial` / `is_running` is `invalid`, with no table.
+Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, `is_partial` / `is_running`, or a table of more than 200,000 cells (rows times Lens columns, since several columns can read one field) is `invalid`, with no table.
 
 ## Limits
 
-Both functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be finite, acyclic plain JSON: no accessors, symbols, holes, custom prototypes or non-JSON values. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and keys. Identifiers are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
+Both functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be finite, acyclic plain JSON: no accessors, symbols, holes, custom prototypes or non-JSON values. As in `JSON.stringify`, an object property set to `undefined` is treated as absent. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and object keys. Identifiers and parameter names are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
 
 ## Lens inspector
 
