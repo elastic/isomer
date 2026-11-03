@@ -21,3 +21,6 @@ playwright-report/
 .vscode
 .cursor
 .claude/
+
+# a capture in progress
+packages/isomer-lowering-lens/comparison/__fixtures__.next/

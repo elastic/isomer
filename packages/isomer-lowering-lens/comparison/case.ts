@@ -73,6 +73,8 @@ export const caseSchema = z
       .object({
         kibana: z.object({ version: id, build: id }).strict(),
         elasticCharts: id,
+        /** The Playwright release and its Chromium build the capture drew Kibana in. */
+        browser: z.object({ playwright: id, chromium: id }).strict(),
         /** SHA-256 of each font file Kibana drew with, in `__fixtures__/fonts/`. */
         fonts: z.record(id, id),
         capturedAt: id,

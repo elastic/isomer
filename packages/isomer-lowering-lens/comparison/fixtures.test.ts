@@ -34,7 +34,19 @@ describe('captured fixtures', () => {
     ).toEqual([]);
   });
 
-  it('are captured with the browser the repository tests with', () => {
+  it('were captured with the Playwright release the repository tests with', () => {
+    const playwright =
+      manifest('package.json').devDependencies?.['@playwright/test'];
+    const stale = cases
+      .filter(({ provenance }) => provenance.browser.playwright !== playwright)
+      .map(({ id, provenance }) => `${id} (${provenance.browser.playwright})`);
+    expect(
+      stale,
+      `The repository tests with @playwright/test ${playwright}; recapture with \`pnpm comparison:capture\`.`
+    ).toEqual([]);
+  });
+
+  it("pins the capture browser to the repository's Playwright", () => {
     const playwright =
       manifest('package.json').devDependencies?.['@playwright/test'];
     const compose = readFileSync(

@@ -10,7 +10,13 @@
 
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { join, resolve } from 'node:path';
 
 import { expect, type Page, test } from '@playwright/test';
@@ -29,6 +35,8 @@ const KIBANA = process.env.KIBANA_URL ?? 'http://127.0.0.1:5601';
 /** Kibana as the capture browser reaches it, from inside the compose network. */
 const KIBANA_PAGES = process.env.KIBANA_BROWSER_URL ?? 'http://kibana:5601';
 const CASES = resolve(__dirname, '../__fixtures__');
+/** Written first and swapped in only when the capture succeeds, so a failure leaves the committed cases alone. */
+const NEXT = `${CASES}.next`;
 const COMPOSE = resolve(__dirname, 'compose.yml');
 const SAMPLE_DATA = ['flights', 'logs', 'ecommerce'] as const;
 const SCHEMES = ['light', 'dark'] as const;
@@ -463,6 +471,14 @@ test('capture comparison cases', async ({ browser }) => {
   const ids = dashboards.map(({ id }) => id).sort();
   const authored = new Set(AUTHORED_DASHBOARDS.map(({ id }) => id));
   const elasticCharts = elasticChartsVersion();
+  const capturedWith = {
+    playwright: (
+      JSON.parse(
+        readFileSync(require.resolve('@playwright/test/package.json'), 'utf8')
+      ) as { version: string }
+    ).version,
+    chromium: browser.version(),
+  };
   const metadata = await kibanaMetadata();
   const settings = await api<{
     settings: Record<string, { userValue?: string }>;
@@ -470,8 +486,8 @@ test('capture comparison cases', async ({ browser }) => {
   const dateFormat =
     settings.settings.dateFormat?.userValue ?? 'MMM D, YYYY @ HH:mm:ss.SSS';
 
-  rmSync(CASES, { recursive: true, force: true });
-  const fonts = await captureFonts(join(CASES, 'fonts'));
+  rmSync(NEXT, { recursive: true, force: true });
+  const fonts = await captureFonts(join(NEXT, 'fonts'));
   const written: ComparisonCase[] = [];
 
   // Kibana follows the browser's color scheme, which each pass emulates.
@@ -520,7 +536,7 @@ test('capture comparison cases', async ({ browser }) => {
         const { attributes } = read;
         const references = (attributes.references ?? []) as Json[];
         const id = `${slug(dashboardTitle)}--${slug(panelIndex)}--${scheme}`;
-        const directory = join(CASES, id);
+        const directory = join(NEXT, id);
         mkdirSync(directory, { recursive: true });
         await panel.locator('.echMetricContainer').screenshot({
           path: join(directory, 'reference.png'),
@@ -569,6 +585,7 @@ test('capture comparison cases', async ({ browser }) => {
                 `${metadata.buildNumber} ${metadata.buildSha ?? ''}`.trim(),
             },
             elasticCharts,
+            browser: capturedWith,
             fonts: fonts.digests,
             capturedAt: new Date().toISOString(),
           },
@@ -583,6 +600,8 @@ test('capture comparison cases', async ({ browser }) => {
     }
     await context.close();
   }
-  await writeCaseIndex(CASES, written, fonts.faces);
+  await writeCaseIndex(NEXT, written, fonts.faces);
   expect(written.length).toBeGreaterThan(0);
+  rmSync(CASES, { recursive: true, force: true });
+  renameSync(NEXT, CASES);
 });
