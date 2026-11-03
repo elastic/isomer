@@ -403,6 +403,79 @@ describe('bind: named palettes', () => {
   });
 });
 
+describe('bind: default colors', () => {
+  it('paints the value with euiColorVisText0 when no color applies', () => {
+    expect(
+      node(run(vis({ applyColorTo: 'value' }), single(5))).tiles[0]
+    ).toMatchObject({
+      color: { token: 'valueText' },
+      colorTarget: 'value',
+    });
+  });
+
+  it('fills a trend tile with euiColorVis2 when the bar is on and no color applies', () => {
+    const { tiles } = node(
+      run(
+        vis({
+          maxAccessor: 'max',
+          showBar: true,
+          trendlineLayerId: 'trend',
+          trendlineLayerType: 'metricTrendline',
+          trendlineTimeAccessor: 'time',
+          trendlineMetricAccessor: 'trendValue',
+        }),
+        {
+          layer: {
+            columns: [num('visits'), num('max')],
+            response: {
+              columns: [
+                { name: 'visits', type: 'long' },
+                { name: 'max', type: 'long' },
+              ],
+              values: [[5, 10]],
+            },
+          },
+          trend: {
+            columns: [
+              { columnId: 'time', fieldName: 'bucket', meta: { type: 'date' } },
+              num('trendValue'),
+            ],
+            response: {
+              columns: [
+                { name: 'bucket', type: 'date' },
+                { name: 'trendValue', type: 'long' },
+              ],
+              values: [['2026-11-02T00:00:00.000Z', 3]],
+            },
+          },
+        }
+      )
+    );
+    expect(tiles[0]).toMatchObject({
+      color: { token: 'progress' },
+      visual: { kind: 'trend' },
+    });
+  });
+
+  it('leaves a progress bar to its own default', () => {
+    const { tiles } = node(
+      run(vis({ maxAccessor: 'max', showBar: true }), {
+        layer: {
+          columns: [num('visits'), num('max')],
+          response: {
+            columns: [
+              { name: 'visits', type: 'long' },
+              { name: 'max', type: 'long' },
+            ],
+            values: [[5, 10]],
+          },
+        },
+      })
+    );
+    expect(tiles[0]!.color).toBeUndefined();
+  });
+});
+
 describe('bind: breakdown', () => {
   const layer = (values: unknown[][]) => ({
     layer: {
@@ -763,11 +836,6 @@ describe('bind: progress and trend', () => {
 describe('bind: refusals', () => {
   it.each([
     ['an icon', vis({ icon: 'bell' }), 'lens.metric.unsupported-icon'],
-    [
-      'the default value color',
-      vis({ applyColorTo: 'value' }),
-      'lens.metric.unsupported-default-color',
-    ],
     [
       'unknown state',
       vis({ futureOption: true }),
