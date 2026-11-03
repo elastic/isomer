@@ -29,7 +29,9 @@ The Isomer repository has a composite action that runs both and uploads what the
 | `base` | `./` | The URL path the site is served from. |
 | `artifact-name` | `isomer-studio` | The name of the uploaded site. |
 
-The Isomer repository runs it on the slides pack in its own CI, after `pnpm verify`.
+## Review a pull request
+
+The Isomer repository's **Studio preview** job builds the root `isomer-studio.config.ts` from the PR's head commit, not the merge ref, and uploads it as `studio-<headSha>-<runId>-<attempt>`. Unzip it into a directory named `studio`, serve that directory's parent with `npx serve .`, and open `/studio/`.
 
 ## Without the action
 
@@ -42,7 +44,7 @@ npx isomer-studio build --config isomer-studio.config.ts --out dist/studio
 
 `npx @elastic/isomer-studio check` also works without installing the Studio, but an installed one keeps CI on the version the lockfile pins.
 
-`build` and `check --png` rasterize with `@elastic/isomer-image-takumi`, a native dependency the Studio installs for the platform it runs on.
+`build` and `check --png` rasterize with `@elastic/isomer-image-takumi`, a native dependency the Studio installs for the platform it runs on. A config with [`images: false`](config.md#turning-images-off) never loads it.
 
 ## Deploying with docs
 

@@ -37,15 +37,53 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: pnpm verify
 
-      # `verify` has built every package; the site artifact is a downloadable preview of the PR.
-      - name: Check and build the slides Studio
-        if: ${{ !cancelled() && matrix.node == 24 && steps.install.outcome == 'success' }}
-        uses: ./.github/actions/isomer-studio
+      - name: Upload browser test traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
         with:
-          config: packages/isomer-primitives-slides/isomer-studio.config.ts
+          name: browser-traces-node-${{ matrix.node }}
+          path: test-results/
+          if-no-files-found: ignore
+
+  # Builds the PR head itself, not the merge ref, so the artifact is exactly what was pushed.
+  studio:
+    name: Studio preview
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ env.HEAD_SHA }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.0.6
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/playwright-chromium
+      - run: pnpm build
+      - uses: ./.github/actions/isomer-studio
+        with:
+          config: isomer-studio.config.ts
           out: .artifacts/studio
+          base: /studio/
           report: .artifacts/studio-report.xml
-          artifact-name: slides-studio
+          artifact-name: studio-${{ env.HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Test the built Studio
+        env:
+          STUDIO_BROWSER_ONLY_SITE: .artifacts/studio
+        run: pnpm test:browser studio.spec.ts --grep 'browser-only static build'
+      - name: Upload browser test traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: studio-browser-traces-${{ github.run_attempt }}
+          path: test-results/
+          if-no-files-found: ignore
 
   peers:
     name: peers (${{ matrix.target }})

@@ -20,6 +20,7 @@ import type { ScopedImport } from 'tsx/esm/api';
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
+import { imagesProblem } from '../model/images';
 
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
 import { importNative, moduleUrl } from './node_module.cjs';
@@ -240,6 +241,10 @@ export const studioConfigFrom = (
     throw new Error(
       `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
     );
+  }
+  const images = imagesProblem(config);
+  if (images) {
+    throw new Error(`${configPath}: ${images}`);
   }
   const problems = appProblems(config.apps);
   if (problems.length) {

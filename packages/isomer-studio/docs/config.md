@@ -34,6 +34,7 @@ export default defineStudioConfig({
 | `compose(nodes, { theme })` | No       | Wraps example nodes in a composition, for full control. Wins over `previewExample`. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                                       |
 | `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                                                                                            |
 | `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                                                                                     |
+| `images`                    | No       | `false` turns off PNGs and PDFs: no PNG previews, Decks PDFs or prerendered PNGs, and takumi never loads. See [Turning images off](#turning-images-off).                                                                                                                                                      |
 | `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                                                                                   |
 
 ## `previewExample` and `compose`
@@ -43,6 +44,12 @@ Examples are nodes, not compositions. Every place the Studio needs a composition
 The default fits a pack whose primitives render inside a plain `view`. A pack whose frame requires a particular root says how one node is shown with `previewExample`. The slides frame draws exactly one `slideFrame`, so the slides `previewExample` wraps a lone node in a preview slide, and passes a node that is already a `slideFrame` through unwrapped. `compose` replaces both when a pack needs to shape several nodes too.
 
 `compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition; with `previewExample`, the Studio does. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
+
+## Turning images off
+
+`images: false` keeps the Studio in the browser. Node never loads `@elastic/isomer-image-takumi` or `imageFonts`, `build` writes no PNGs, PNG previews and PDF actions are hidden, and `dev` answers `/png` and `/pdf` with 404. The `snapshot` surface's markup still renders, and `check --png` refuses the config.
+
+Toggling it in `dev` hot-updates in place, keeping the route and the editor's draft. An app that offers PNGs or PDFs should hide those actions when `rasterizePng` or `renderPdf` is absent, as Decks does.
 
 ## Featured primitives
 

@@ -8,6 +8,7 @@
 import type { ChildProcess } from 'node:child_process';
 import { spawn } from 'node:child_process';
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -15,7 +16,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 
 import type { Page } from '@playwright/test';
@@ -58,9 +59,12 @@ const SKIP_DEV = process.env.STUDIO_DEV === '0';
 
 const EDITED_TEXT = 'Edited by the smoke test';
 
-const runCli = (args: readonly string[]): Promise<string> =>
+const runCli = (
+  args: readonly string[],
+  nodeArgs: readonly string[] = []
+): Promise<string> =>
   new Promise((resolvePromise, reject) => {
-    const child = spawn(process.execPath, [CLI, ...args], {
+    const child = spawn(process.execPath, [...nodeArgs, CLI, ...args], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     let output = '';
@@ -210,8 +214,7 @@ const editFirstString = async (page: Page) => {
 
 const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
-/** Opens the app from Home and then one of its pages from the nav, deep-links a sub-path through a reload, and checks its styles and `Preview`. */
-const exerciseApp = async (page: Page, url: string) => {
+const navigateApp = async (page: Page, url: string) => {
   await page.goto(url);
   await expect(
     page.getByRole('heading', {
@@ -245,9 +248,10 @@ const exerciseApp = async (page: Page, url: string) => {
       ).toBeVisible();
     }
   }
+};
 
+const exerciseApp = async (page: Page, url: string) => {
   await page.goto(`${url}#/app/${APP_ID}/a/b`);
-  await page.reload();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/a/b$`));
   const main = page.locator('main').first();
 
@@ -645,7 +649,13 @@ test.describe('static build', () => {
     await expect(railButtons.last()).toBeInViewport();
   });
 
-  test('serves apps, their chunks and their CSS from the sub-path', async ({
+  test('opens apps from Home, the nav and page links', async ({ page }) => {
+    const problems = watchProblems(page);
+    await navigateApp(page, site.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('serves a deep-linked app, its chunks and CSS from the sub-path', async ({
     page,
   }) => {
     const problems = watchProblems(page);
@@ -1281,7 +1291,7 @@ test.describe('decks', () => {
     expect(problems).toEqual([]);
   });
 
-  test('advances on a click, shows a slide on each surface, and needs dev for a PDF', async ({
+  test('advances on a click, shows a slide on each surface, and hides the PDF action without dev', async ({
     page,
   }) => {
     const problems = watchProblems(page);
@@ -1336,7 +1346,7 @@ test.describe('decks', () => {
 
     await expect(
       page.getByRole('button', { name: 'Download PDF', exact: true })
-    ).toBeDisabled();
+    ).toHaveCount(0);
 
     expect(problems).toEqual([]);
   });
@@ -1384,7 +1394,13 @@ test.describe('dev server', () => {
     expect(problems).toEqual([]);
   });
 
-  test('serves apps and their CSS', async ({ page }) => {
+  test('opens apps from Home, the nav and page links', async ({ page }) => {
+    const problems = watchProblems(page);
+    await navigateApp(page, dev.url);
+    expect(problems).toEqual([]);
+  });
+
+  test('serves a deep-linked app and its CSS', async ({ page }) => {
     const problems = watchProblems(page);
     await exerciseApp(page, dev.url);
     expect(problems).toEqual([]);
@@ -1565,11 +1581,18 @@ test.describe('dev server reload', () => {
   let dir: string;
   let dev: { url: string; child: ChildProcess };
 
-  const writeOptions = (title: string, framed: boolean) =>
+  const writeOptions = async (
+    title: string,
+    framed: boolean,
+    images = true
+  ) => {
+    // Vite ignores another write to the same file within its 50ms watcher debounce.
+    await delay(100);
     writeFileSync(
       join(dir, 'options.ts'),
-      `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\n`
+      `export const title = ${JSON.stringify(title)};\nexport const framed = ${framed};\nexport const images = ${images};\n`
     );
+  };
 
   const writeFonts = (exported: string) =>
     writeFileSync(join(dir, 'fonts.ts'), `export default ${exported};\n`);
@@ -1582,7 +1605,7 @@ test.describe('dev server reload', () => {
       join(dir, 'package.json'),
       JSON.stringify({ type: 'commonjs' })
     );
-    writeOptions('Before reload', false);
+    await writeOptions('Before reload', false);
     writeFonts('[]');
     writeFileSync(
       join(dir, 'counter.ts'),
@@ -1604,7 +1627,7 @@ test.describe('dev server reload', () => {
         "import { createElement } from 'react';",
         "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
         `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
-        "import { framed, title } from './options';",
+        "import { framed, images, title } from './options';",
         '',
         'const card = {',
         '  defaultWidth: 320,',
@@ -1615,6 +1638,7 @@ test.describe('dev server reload', () => {
         '',
         'export default {',
         '  title,',
+        '  images,',
         "  apps: [{ id: 'counter', title: 'Counter', load: () => import('./counter') }],",
         "  imageFonts: './fonts.ts',",
         '  runtime: createIsomerRuntime({',
@@ -1652,7 +1676,7 @@ test.describe('dev server reload', () => {
       document.documentElement.dataset.mounted = 'once';
     });
 
-    writeOptions('After reload', true);
+    await writeOptions('After reload', true);
 
     await expect(page).toHaveTitle('After reload', { timeout: 60_000 });
     await expect(page.getByText('After reload').first()).toBeVisible();
@@ -1671,7 +1695,7 @@ test.describe('dev server reload', () => {
     await page.getByRole('button', { name: 'Count 0' }).click();
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
 
-    writeOptions('App reload', false);
+    await writeOptions('App reload', false);
 
     await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
@@ -1688,11 +1712,28 @@ test.describe('dev server reload', () => {
     };
 
     await page.goto(dev.url);
-    writeOptions('Fonts reload', true);
+    await writeOptions('Fonts reload', true);
     await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
     await expect.poll(postPdf).toBe('200 ');
 
+    await page.goto(`${dev.url}#/app/counter/`);
+    await writeOptions('Fonts config only', true);
+    await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
+    writeFonts('"changed after config reload"');
+    await expect
+      .poll(postPdf, { timeout: 60_000 })
+      .toContain('must default-export an array of takumi font loaders');
+    await delay(100);
+    writeFonts('[]');
+    await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
+
+    await writeOptions('Fonts disabled', true, false);
+    await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
+    expect(await postPdf()).toContain('404');
     writeFonts('"not a list"');
+    await delay(100);
+    await writeOptions('Fonts enabled', true);
+    await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
     await expect
       .poll(postPdf, { timeout: 60_000 })
       .toContain('must default-export an array of takumi font loaders');
@@ -1701,5 +1742,127 @@ test.describe('dev server reload', () => {
     await delay(100);
     writeFonts('[]');
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
+  });
+});
+
+test.describe('browser-only', () => {
+  let dir: string;
+  // Beside `CONFIG`, so it resolves packages the same way; the fonts module must never load.
+  const config = join(
+    dirname(CONFIG),
+    `.browser-only-${process.pid}.config.ts`
+  );
+  const writeConfig = (images: boolean) =>
+    writeFileSync(
+      config,
+      `import config from ${JSON.stringify(CONFIG)};\nexport default { ...config, images: ${images}, imageFonts: './missing-fonts.ts' };\n`
+    );
+  const watchImageRequests = (page: Page) => {
+    const urls: string[] = [];
+    page.on('request', (request) => {
+      if (/\/(png|pdf)(\/|$)/.test(new URL(request.url()).pathname)) {
+        urls.push(request.url());
+      }
+    });
+    return urls;
+  };
+
+  test.beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'isomer-browser-only-'));
+  });
+
+  test.beforeEach(() => writeConfig(false));
+
+  test.afterAll(() => {
+    rmSync(config, { force: true });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('static build loads no image backend and offers no PNGs or PDFs', async ({
+    page,
+  }) => {
+    const trap = join(dir, 'no-images.cjs');
+    writeFileSync(
+      trap,
+      [
+        "const { Module } = require('node:module');",
+        'const load = Module._load;',
+        'Module._load = function (id, ...args) {',
+        "  if (/isomer-image-takumi|@takumi-rs/.test(id)) throw new Error('Image backend loaded: ' + id);",
+        '  return load.call(this, id, ...args);',
+        '};',
+      ].join('\n')
+    );
+    const nodeArgs = ['--require', trap];
+    await runCli(['check', '--config', config], nodeArgs);
+    await expect(
+      runCli(['check', '--config', config, '--png'], nodeArgs)
+    ).rejects.toThrow('--png conflicts with images: false');
+    // CI tests the uploaded preview, built from the root config.
+    const prebuilt = process.env.STUDIO_BROWSER_ONLY_SITE;
+    const out = prebuilt ?? join(dir, 'site');
+    const base = prebuilt ? '/studio/' : BASE;
+    if (!prebuilt) {
+      await runCli(
+        ['build', '--config', config, '--out', out, '--base', base],
+        nodeArgs
+      );
+    }
+    expect(existsSync(join(out, 'png'))).toBe(false);
+
+    const site = await serveStatic(out, base);
+    try {
+      const problems = watchProblems(page);
+      const images = watchImageRequests(page);
+      await page.goto(`${site.url}${EDIT_ROUTE}`);
+      await expectMonacoReady(page);
+      await editFirstString(page);
+      await expect(reactPreview(page)).toContainText(EDITED_TEXT);
+      await expect(pngPreview(page)).toHaveCount(0);
+
+      await page.goto(`${site.url}#/app/${APP_ID}/`);
+      await expect(page.locator('main').first()).toBeVisible();
+      await expect(page.getByRole('button', { name: /PDF/ })).toHaveCount(0);
+      expect(images).toEqual([]);
+      expect(problems).toEqual([]);
+    } finally {
+      await site.close();
+    }
+  });
+
+  test('dev hot-updates images, keeping the draft and route', async ({
+    page,
+  }) => {
+    test.skip(SKIP_DEV, 'STUDIO_DEV=0');
+    const dev = await startDev(config);
+    const heading = page.getByRole('heading', { name: 'PNG', exact: true });
+    try {
+      for (const endpoint of ['png', 'pdf']) {
+        const response = await page.request.post(`${dev.url}${endpoint}`, {
+          data: '{}',
+        });
+        expect(response.status()).toBe(404);
+        expect(await response.text()).toContain('images: false');
+      }
+
+      await page.goto(`${dev.url}${EDIT_ROUTE}`);
+      await expectMonacoReady(page);
+      const lines = editor(page).locator('.view-lines');
+      await lines.click();
+      await page.keyboard.press('Control+A');
+      await page.keyboard.insertText('{"type":"invalid","draft":"kept"}');
+      const draft = await lines.innerText();
+      await expect(heading).toHaveCount(0);
+
+      writeConfig(true);
+      await expect(heading).toBeAttached();
+      await delay(100);
+      writeConfig(false);
+      await expect(heading).toHaveCount(0);
+      await expect(lines).toHaveText(draft);
+      expect(page.url()).toBe(`${dev.url}${EDIT_ROUTE}`);
+    } finally {
+      dev.child.kill('SIGTERM');
+    }
   });
 });

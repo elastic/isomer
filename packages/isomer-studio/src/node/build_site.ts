@@ -20,6 +20,7 @@ import { build } from 'esbuild';
 import type { StudioConfig, StudioTheme } from '../config';
 import { composeExample, composeOf } from '../model/compose_example';
 import { compositionKey } from '../model/composition_key';
+import { imagesEnabled } from '../model/images';
 import type { PngManifest } from '../model/png_manifest';
 import { readExamples } from '../model/read_examples';
 
@@ -147,10 +148,12 @@ export const buildSite = async ({
     })
   );
 
-  const rasterize = createRasterizer(
-    config.runtime,
-    imageFontsOf(config, configPath, importModule)
-  );
+  const rasterize =
+    imagesEnabled(config) &&
+    createRasterizer(
+      config.runtime,
+      imageFontsOf(config, configPath, importModule)
+    );
   if (!rasterize) {
     return { pngs: 0, failures: [] };
   }

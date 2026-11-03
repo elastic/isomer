@@ -23,7 +23,7 @@ npx @elastic/isomer-studio build --out dist/studio --base /studio/  # a static s
 npx @elastic/isomer-studio check --report studio-report.json        # a headless CI gate
 ```
 
-Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file, and without one says to run `init`; see [`init`](commands.md#init). Nothing needs installing first: the Studio uses the pack's React, SDK and zod, and brings the runtime. To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the slides pack.
+Each command reads `isomer-studio.config.ts` (or `.tsx` or `.js`) from the current directory unless `--config` names another file, and without one says to run `init`; see [`init`](commands.md#init). Nothing needs installing first: the Studio uses the pack's React, SDK and zod, and brings the runtime. To pin the version and type-check a config, install `@elastic/isomer-studio` and `@elastic/isomer-runtime` as dev dependencies and run `npx isomer-studio`. In this repository, `pnpm studio:dev` runs the Studio from source against the root config.
 
 To try what has merged to `main` since the last release, run `npx @elastic/isomer-studio@next`, with any command and flags after it. `next` is a snapshot of every Isomer package, published on each push to `main` that changes one, as a prerelease (`0.4.1-main.<time>.g<sha>`) that `latest` and `^0.4.0` installs never select. The Studio still loads the SDK, and the runtime when the pack has one, from the pack, so a pack on a released SDK keeps it; install the SDK and runtime at `@next` as well to try their unreleased changes.
 
@@ -104,7 +104,9 @@ The config, the pack and React load from the pack's own `node_modules`. The Stud
 
 ## The slides Studio
 
-This repository's reference pack has a config at `packages/isomer-primitives-slides/isomer-studio.config.ts`. Its Studio is deployed with these docs at [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/), and every CI run uploads a build of it as the `slides-studio` artifact.
+This repository's reference pack has a config at `packages/isomer-primitives-slides/isomer-studio.config.ts`. Its Studio is deployed with these docs at [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/), PNGs included.
+
+The root `isomer-studio.config.ts` gathers every in-repo pack with `images: false`. `pnpm studio:dev` runs it, and each PR's CI uploads a build of it; see [Review a pull request](ci.md#review-a-pull-request).
 
 These docs build in two places, and the app only in one:
 
