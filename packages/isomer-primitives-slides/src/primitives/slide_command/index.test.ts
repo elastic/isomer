@@ -19,6 +19,7 @@ import {
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideFonts } from '../../examples/fonts';
 import { previewSlide } from '../../examples/preview_slide';
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -272,7 +273,7 @@ describe('slideCommand in the DOM', () => {
 
   it('keeps the label apart from the command in the text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
+    expect(renderedHtmlText(html)).toContain(
       `${example.label} $ ${example.command}`
     );
   });

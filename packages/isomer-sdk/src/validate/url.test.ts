@@ -105,7 +105,7 @@ describe('sanitizeAssetUrl', () => {
     ['http', 'http://example.com/a.png'],
     ['relative', '/assets/a.png'],
     ['data image png', 'data:image/png;base64,AAA'],
-    ['data image svg', 'data:image/svg+xml,<'.replace('<', '%3C')],
+    ['data image svg', 'data:image/svg+xml,%3C'],
   ])('allows %s', (_label, url) => {
     expect(sanitizeAssetUrl(url)).toBe(url);
   });
