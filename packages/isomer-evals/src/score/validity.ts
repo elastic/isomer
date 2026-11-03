@@ -15,8 +15,46 @@ import type { EvalFrame, EvalRuntime, ValidityScore } from '../types';
 
 /** Model output with the code fence some models wrap JSON in removed. */
 export const stripCodeFence = (raw: string): string => {
-  const fenced = raw.match(/```(?:json)?\s*\n([\s\S]*?)\s*```/);
-  return (fenced?.[1] ?? raw).trim();
+  const isValidHeader = (opening: number, headerEnd: number): boolean => {
+    let start = opening + 3;
+    if (raw.startsWith('json', start)) {
+      start += 4;
+    }
+    for (let index = start; index < headerEnd; index += 1) {
+      const character = raw[index]!;
+      if (character.trim() !== '') {
+        return false;
+      }
+    }
+    return true;
+  };
+  let searchFrom = 0;
+  while (searchFrom < raw.length) {
+    const opening = raw.indexOf('```', searchFrom);
+    if (opening === -1) {
+      break;
+    }
+
+    const headerEnd = raw.indexOf('\n', opening + 3);
+    if (headerEnd === -1) {
+      break;
+    }
+    let candidate = opening;
+    if (!isValidHeader(candidate, headerEnd)) {
+      candidate = raw.lastIndexOf('```', headerEnd - 1);
+      if (candidate <= opening || !isValidHeader(candidate, headerEnd)) {
+        searchFrom = headerEnd + 1;
+        continue;
+      }
+    }
+
+    const closing = raw.indexOf('```', headerEnd + 1);
+    if (closing === -1) {
+      return raw.trim();
+    }
+    return raw.slice(headerEnd + 1, closing).trim();
+  }
+  return raw.trim();
 };
 
 /** One `generate` call's output, parsed from JSON exactly once. `raw` is the text as the model sent it. */

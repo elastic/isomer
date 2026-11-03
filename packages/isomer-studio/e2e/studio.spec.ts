@@ -58,6 +58,7 @@ const APP_EMOTION = process.env.STUDIO_APP_EMOTION;
 const SKIP_DEV = process.env.STUDIO_DEV === '0';
 
 const EDITED_TEXT = 'Edited by the smoke test';
+type StartedDev = { url: string; child: ChildProcess; output: () => string };
 
 const runCli = (
   args: readonly string[],
@@ -82,9 +83,7 @@ const runCli = (
     );
   });
 
-const startDev = (
-  config = CONFIG
-): Promise<{ url: string; child: ChildProcess }> =>
+const startDev = (config = CONFIG): Promise<StartedDev> =>
   new Promise((resolvePromise, reject) => {
     const child = spawn(
       process.execPath,
@@ -98,7 +97,7 @@ const startDev = (
       output += chunk.toString();
       const [, url] = /Isomer Studio: (http\S+)/.exec(output) ?? [];
       if (url) {
-        resolvePromise({ url, child });
+        resolvePromise({ url, child, output: () => output });
       }
     };
     child.stdout.on('data', onData);
@@ -1355,7 +1354,7 @@ test.describe('decks', () => {
 test.describe('dev server', () => {
   test.skip(SKIP_DEV, 'STUDIO_DEV=0');
 
-  let dev: { url: string; child: ChildProcess };
+  let dev: StartedDev;
 
   test.beforeAll(async () => {
     dev = await startDev();
@@ -1392,6 +1391,83 @@ test.describe('dev server', () => {
     await expectPngLoaded(page);
 
     expect(problems).toEqual([]);
+  });
+
+  test('returns generic request errors and keeps diagnostics in server logs', async ({
+    page,
+  }) => {
+    const cases = [
+      [
+        'png',
+        'not-json-png-diagnostic',
+        'Could not render PNG.',
+        'PNG render failed:',
+      ],
+      [
+        'pdf',
+        'not-json-pdf-diagnostic',
+        'Could not render PDF.',
+        'PDF render failed:',
+      ],
+      [
+        'transform',
+        'const value = <div>',
+        'Could not transform JSX.',
+        'JSX transform failed:',
+      ],
+    ] as const;
+
+    for (const [route, body, publicMessage, logMessage] of cases) {
+      const response = await page.request.post(`${dev.url}${route}`, {
+        data: body,
+      });
+      expect(response.status()).toBe(400);
+      expect(await response.text()).toBe(publicMessage);
+      await expect
+        .poll(() => dev.output())
+        .toMatch(new RegExp(`${logMessage} .+`));
+      expect(dev.output()).not.toContain(publicMessage);
+    }
+
+    const artifacts = join(packageDir, '.artifacts');
+    mkdirSync(artifacts, { recursive: true });
+    const pageErrorDir = mkdtempSync(
+      join(artifacts, 'isomer-studio-page-error-')
+    );
+    const pageConfig = join(pageErrorDir, 'isomer-studio.config.ts');
+    writeFileSync(
+      pageConfig,
+      [
+        "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
+        `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
+        '',
+        'export default {',
+        "  get title() { throw new Error('page-diagnostic-sentinel'); },",
+        '  runtime: createIsomerRuntime({ packs: [componentsPack] }),',
+        '};',
+        '',
+      ].join('\n')
+    );
+    let pageDev: StartedDev | undefined;
+    try {
+      const runningPageDev = await startDev(pageConfig);
+      pageDev = runningPageDev;
+      const response = await page.request.get(runningPageDev.url);
+      expect(response.status()).toBe(500);
+      expect(await response.text()).toBe('Could not render Studio page.');
+      await expect
+        .poll(() => runningPageDev.output())
+        .toContain('page-diagnostic-sentinel');
+      expect(runningPageDev.output()).not.toContain(
+        'Could not render Studio page.'
+      );
+    } finally {
+      if (pageDev) {
+        pageDev.child.removeAllListeners('close');
+        pageDev.child.kill('SIGTERM');
+      }
+      rmSync(pageErrorDir, { recursive: true, force: true });
+    }
   });
 
   test('opens apps from Home, the nav and page links', async ({ page }) => {
@@ -1579,7 +1655,7 @@ test.describe('dev server reload', () => {
 
   // Inside the package, so the config resolves React and the runtime, but outside `node_modules`, which the dev server does not watch.
   let dir: string;
-  let dev: { url: string; child: ChildProcess };
+  let dev: StartedDev;
 
   const writeOptions = async (
     title: string,
@@ -1716,13 +1792,17 @@ test.describe('dev server reload', () => {
     await expect(page).toHaveTitle('Fonts reload', { timeout: 60_000 });
     await expect.poll(postPdf).toBe('200 ');
 
+    const fontErrors = () =>
+      dev.output().split('must default-export an array of takumi font loaders')
+        .length - 1;
     await page.goto(`${dev.url}#/app/counter/`);
     await writeOptions('Fonts config only', true);
     await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
     writeFonts('"changed after config reload"');
     await expect
       .poll(postPdf, { timeout: 60_000 })
-      .toContain('must default-export an array of takumi font loaders');
+      .toBe('400 Could not render PDF.');
+    expect(fontErrors()).toBeGreaterThan(0);
     await delay(100);
     writeFonts('[]');
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
@@ -1730,13 +1810,15 @@ test.describe('dev server reload', () => {
     await writeOptions('Fonts disabled', true, false);
     await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
     expect(await postPdf()).toContain('404');
+    const errorsBefore = fontErrors();
     writeFonts('"not a list"');
     await delay(100);
     await writeOptions('Fonts enabled', true);
     await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
     await expect
       .poll(postPdf, { timeout: 60_000 })
-      .toContain('must default-export an array of takumi font loaders');
+      .toBe('400 Could not render PDF.');
+    expect(fontErrors()).toBeGreaterThan(errorsBefore);
 
     // Vite's watcher drops a change within 50ms of the last one to the same file, and the 400 can arrive sooner.
     await delay(100);

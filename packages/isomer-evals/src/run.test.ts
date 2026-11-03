@@ -531,6 +531,15 @@ describe('parsing model output', () => {
     expect(stripCodeFence('```json\n{"a":1}```')).toBe('{"a":1}');
   });
 
+  it('unwraps the last valid fence when an earlier marker is malformed', () => {
+    expect(stripCodeFence('```not-json ```\n{"a":1}\n```')).toBe('{"a":1}');
+  });
+
+  it('does not backtrack across a long unterminated code-fence body', () => {
+    const raw = `\`\`\`\n${' '.repeat(100_000)}{"a":1}`;
+    expect(stripCodeFence(raw)).toBe(raw.trim());
+  });
+
   it('leaves bare JSON alone', () => {
     expect(parseGenerated('{"a":1}')).toEqual({
       parsed: true,

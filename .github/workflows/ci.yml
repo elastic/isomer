@@ -18,6 +18,8 @@ jobs:
   verify:
     name: verify (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -88,6 +90,8 @@ jobs:
   peers:
     name: peers (${{ matrix.target }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -112,6 +116,8 @@ jobs:
   docs:
     name: docs-builder
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
       - name: Check assembled package docs are committed

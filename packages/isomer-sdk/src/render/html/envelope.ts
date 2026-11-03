@@ -524,7 +524,9 @@ const embedJs = (js: string): string => {
         comment: undefined as string | undefined,
       })),
       ...comments
-        .filter(({ start }) => /^(?:<!--|-->)/.test(js.slice(start, start + 4)))
+        .filter(({ start }) =>
+          /^(?:<!--|--!?>)/.test(js.slice(start, start + 4))
+        )
         .map((comment) => ({ ...comment, index: -1, comment: comment.value })),
     ].sort((a, b) => a.start - b.start);
     for (const edit of edits) {
