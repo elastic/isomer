@@ -33,7 +33,7 @@ A planned result is `{ status: 'planned', plan }`, where `plan` has:
 | `source` | The saved object, as validated. |
 | `dataViews` | Each `index-pattern` reference, with its metadata when supplied. |
 | `filters` | The saved Kibana filters, verbatim: `meta` beside the query, not Query DSL. |
-| `layers` | Per layer: `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
+| `layers` | Per layer: `kind: 'esql'`, `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
 
 Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a partial plan. Each diagnostic has a stable `code`, a `message`, and a `path` into the input with numeric array indexes.
 
