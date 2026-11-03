@@ -105,7 +105,8 @@ All three functions copy their arguments before reading them, so results share n
 
 ## Studio apps
 
-`pnpm studio:dev` includes two Lens apps in the repository's Studio. Both are Studio code, not part of the package, and neither fetches or executes anything.
+`pnpm studio:dev` includes three Lens apps in the repository's Studio. They are Studio code, not part of the package, and none fetches or executes anything.
 
 - **Lens inspector** (`#/app/lens/`) plans the saved object you paste, shows each layer's query (a form-based layer shows the plan's saved query) and plan, and projects a pasted ES|QL response or Lens `Datatable` into a table, showing at most 50 rows and 200 characters per cell. It draws no chart.
 - **Lens to chart** (`#/app/lens-chart/`) plans a pasted ES|QL or form-based saved object, generates deterministic synthetic tables for it from a seed and a fixed clock, reads them back through `readResponse` or `readTable`, binds them, validates the composition and draws it. It shows the plan, the tables, the composition with a copy button, and any diagnostics. Its output says throughout that the data is synthetic: it shows lowering, binding and presentation, not what a query would return. The charts Studio (`packages/isomer-renderers-elastic-charts`) includes it too.
+- **Lens comparison** (`#/app/lens-comparison/<case>`) replays panels captured from a real Kibana and compares Isomer's drawing with Kibana's. [Comparison with Kibana](comparison.md) describes it.

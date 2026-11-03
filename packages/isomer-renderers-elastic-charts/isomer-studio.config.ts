@@ -9,6 +9,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { defineStudioConfig } from '@elastic/isomer-studio';
 
 import { elasticChartsPack, elasticChartsReset } from './src/index';
+import { lensComparisonApp } from './studio/lens/comparison/registration';
 import { lensChartApp } from './studio/lens/registration';
 import { elasticChartsStylesheet } from './studio/stylesheet';
 
@@ -22,6 +23,6 @@ export default defineStudioConfig({
     onEvent: (event) => console.info('isomer action', JSON.stringify(event)),
   }),
   featured: ['metric'],
-  apps: [lensChartApp],
+  apps: [lensChartApp, lensComparisonApp],
   images: false,
 });
