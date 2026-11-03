@@ -22,7 +22,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { NODE_ANCHOR_ATTRIBUTE } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { toDatum, toTheme } from './datum';
+import { tileAction, toDatum, toTheme } from './datum';
 import { elasticChartsPack, MetricChart } from './index';
 
 const [example, breakdown, progress, text] = metricExamples as [
@@ -141,6 +141,26 @@ describe('toDatum', () => {
       valueColor: '#EE4C48',
       background: '#FFFFFF',
     });
+  });
+});
+
+describe('tileAction', () => {
+  it('raises a tile’s action and nothing for a tile without one', () => {
+    const [first, second] = breakdown.tiles;
+    const { action: _omitted, ...inert } = second!;
+    const resolved = resolveMetric({ ...breakdown, tiles: [first!, inert] });
+    const click = (columnIndex: number) =>
+      tileAction(resolved, [
+        { type: 'metricElementEvent', rowIndex: 0, columnIndex },
+      ]);
+    expect(click(0)).toEqual({
+      name: 'dashboard/filter',
+      context: {
+        key: 'web-01',
+        filters: [{ field: 'host.name', value: 'web-01' }],
+      },
+    });
+    expect(click(1)).toBeUndefined();
   });
 });
 

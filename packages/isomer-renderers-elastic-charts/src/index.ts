@@ -10,6 +10,7 @@ import { createChartsPack } from '@elastic/isomer-primitives-charts';
 import { elasticChartsRenderers } from './metric';
 
 export { type MetricChartProps, MetricChart } from './metric';
+export { elasticChartsReset } from './reset';
 
 /** The charts pack drawn with Elastic Charts. */
 export const elasticChartsPack = createChartsPack(elasticChartsRenderers);

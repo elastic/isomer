@@ -20,14 +20,19 @@ const schemeAt = (element: Element): Scheme => {
   return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light';
 };
 
-const ancestors = (element: Element): Element[] =>
-  element.parentElement
-    ? [element, ...ancestors(element.parentElement)]
-    : [element];
+/** `element` and its ancestors, continuing through shadow hosts. */
+export const ancestors = (element: Element): Element[] => {
+  const { parentElement, parentNode } = element;
+  const parent =
+    parentElement ??
+    (parentNode instanceof ShadowRoot ? parentNode.host : undefined);
+  return parent ? [element, ...ancestors(parent)] : [element];
+};
 
 /**
  * The scheme the chart paints in: `fixed` when given, else the host's, followed
- * across OS changes and attribute changes on the element or its ancestors.
+ * across OS changes and attribute changes on the element or its ancestors,
+ * shadow hosts included.
  * `undefined` until mounted, so server markup never guesses.
  */
 export const useScheme = (

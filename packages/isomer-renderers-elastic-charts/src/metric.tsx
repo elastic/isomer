@@ -22,7 +22,7 @@ import {
 } from '@elastic/isomer-primitives-charts/model';
 import { type ActionEventRef, nodeAnchor } from '@elastic/isomer-sdk';
 
-import { toDatum, toTheme } from './datum';
+import { tileAction, toDatum, toTheme } from './datum';
 import { useScheme } from './scheme';
 
 const rows = <T,>(items: T[], columns: number): T[][] =>
@@ -84,13 +84,8 @@ const MetricView = ({
                 theme={toTheme(resolved)}
                 {...(interactive
                   ? {
-                      onElementClick: ([event]) => {
-                        const action =
-                          event &&
-                          'type' in event &&
-                          event.type === 'metricElementEvent' &&
-                          tiles[event.rowIndex * columns + event.columnIndex]
-                            ?.action;
+                      onElementClick: (events) => {
+                        const action = tileAction(resolved, events);
                         if (action) {
                           onEvent(action);
                         }
