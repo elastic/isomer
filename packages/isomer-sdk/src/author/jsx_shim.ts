@@ -17,6 +17,7 @@ import type { z, ZodObject, ZodType } from 'zod';
 import type { Composition } from '../composition/composition';
 import { IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
+import { type ZodWrapperOf } from '../define/zod_introspect';
 
 import {
   type AuthoredChildBrand,
@@ -80,14 +81,7 @@ type LooseSchema<TSchema> = string extends keyof ShapeOf<TSchema>
 type Branded<F> = F extends
   AuthoredChildBrand<string, unknown> | AuthoredTextBrand | AuthoredNodesBrand
   ? F
-  : F extends {
-        _zod: {
-          def: {
-            type: 'optional' | 'nullable' | 'default' | 'readonly';
-            innerType: infer Inner;
-          };
-        };
-      }
+  : F extends ZodWrapperOf<infer Inner>
     ? Branded<Inner>
     : F;
 

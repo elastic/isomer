@@ -13,15 +13,16 @@ import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import type { ReactNode } from 'react';
-import { register as registerCommonJs } from 'tsx/cjs/api';
+import type * as TsxCommonJsApi from 'tsx/cjs/api';
+import type * as TsxEsmApi from 'tsx/esm/api';
 import type { ScopedImport } from 'tsx/esm/api';
-import { register as registerEsm } from 'tsx/esm/api';
 
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
+import { importNative, moduleUrl } from './node_module.cjs';
 import { projectDirectory } from './project_resolution';
 import type { ResolveHooksData } from './resolve_hooks';
 import { patchRequire, resolveSync } from './resolve_hooks';
@@ -200,7 +201,15 @@ export const nearestTsconfig = (configPath: string): string | undefined => {
 };
 
 /** Registers `tsx`'s CommonJS and ESM hooks under one namespace, as `tsImport` does; the CommonJS hook reads `TSX_TSCONFIG_PATH` as it registers. */
-const registerTsx = (tsconfig: string | undefined): ScopedImport => {
+const registerTsx = async (
+  tsconfig: string | undefined
+): Promise<ScopedImport> => {
+  // Both as ESM: on a Node that lacks CommonJS reload for `registerHooks`, tsx's CommonJS build of `tsx/esm/api` registers its loader at a path that does not exist.
+  const [{ register: registerCommonJs }, { register: registerEsm }] =
+    (await Promise.all([
+      importNative('tsx/cjs/api'),
+      importNative('tsx/esm/api'),
+    ])) as [typeof TsxCommonJsApi, typeof TsxEsmApi];
   const previous = process.env.TSX_TSCONFIG_PATH;
   if (tsconfig !== undefined) {
     process.env.TSX_TSCONFIG_PATH = tsconfig;
@@ -283,7 +292,7 @@ export const registerProjectResolution = (configPath: string): void => {
   }
   nodeModule.register(
     `./resolve_hooks${RUNS_FROM_SOURCE ? '.ts' : '.js'}`,
-    import.meta.url,
+    moduleUrl,
     { data }
   );
   patchRequire(data);
@@ -300,12 +309,15 @@ export const createStudioImporter = (
   { loader = 'tsx' }: { loader?: ConfigLoader | undefined } = {}
 ): StudioModuleImporter => {
   if (loader === 'none') {
-    return (path) => import(pathToFileURL(path).href);
+    return (path) => importNative(pathToFileURL(path).href);
   }
-  let scoped: ScopedImport | undefined;
-  return (path) => {
+  let scoped: Promise<ScopedImport> | undefined;
+  return async (path) => {
     scoped ??= registerTsx(nearestTsconfig(configPath));
-    return scoped(pathToFileURL(path).href, import.meta.url);
+    const imported: unknown = await (
+      await scoped
+    )(pathToFileURL(path).href, moduleUrl);
+    return imported;
   };
 };
 

@@ -7,18 +7,27 @@
 
 import { z, type ZodType } from 'zod';
 
-const isSchema = (value: unknown): value is ZodType =>
-  typeof value === 'object' &&
-  value !== null &&
-  '_zod' in value &&
-  typeof (value as ZodType)._zod?.def?.type === 'string';
+import {
+  cloneZodSchema,
+  isZodSchema,
+  unwrapZodOnce,
+  zodDef,
+  zodLazyGetter,
+} from '../define/zod_introspect';
+
+// Wrappers whose executable value is dropped from the authoring copy.
+const VALUE_WRAPPERS: ReadonlySet<string> = new Set([
+  'default',
+  'prefault',
+  'catch',
+]);
 
 /** Input-schema copy without executable defaults or catch values. */
 export const prepareAuthoringInput = (schema: ZodType) => {
   const copies = new Map<ZodType, ZodType>();
   const metadata = z.registry<z.GlobalMeta>();
   const copyValue = (value: unknown): unknown => {
-    if (isSchema(value)) {
+    if (isZodSchema(value)) {
       return copySchema(value);
     }
     if (Array.isArray(value)) {
@@ -45,23 +54,19 @@ export const prepareAuthoringInput = (schema: ZodType) => {
       source,
       z.lazy(() => result)
     );
-    const { def } = source._zod;
-    if (
-      def.type === 'default' ||
-      def.type === 'prefault' ||
-      def.type === 'catch'
-    ) {
-      const { innerType } = def as { type: string; innerType: ZodType };
-      const inner = copySchema(innerType);
+    const def = zodDef(source);
+    const wrapped = unwrapZodOnce(source, VALUE_WRAPPERS);
+    const getter = zodLazyGetter(source);
+    if (wrapped) {
+      const inner = copySchema(wrapped);
       result =
         def.type === 'catch'
-          ? z.clone(inner, inner._zod.def)
+          ? cloneZodSchema(inner, zodDef(inner))
           : z.optional(inner);
-    } else if (def.type === 'lazy') {
-      const { getter } = def as { type: string; getter: () => ZodType };
+    } else if (getter) {
       result = z.lazy(() => copySchema(getter()));
     } else {
-      result = z.clone(source, copyValue(def) as typeof def);
+      result = cloneZodSchema(source, copyValue(def) as typeof def);
     }
     copies.set(source, result);
     const meta = z.globalRegistry.get(source);

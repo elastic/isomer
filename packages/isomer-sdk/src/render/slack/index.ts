@@ -5,55 +5,15 @@
  * 2.0.
  */
 
+export { type SlackAssetCollector, type SlackAssetRequest } from './assets';
 export {
-  type SlackAssetCollector,
-  type SlackAssetRequest,
-  createSlackAssetCollector,
-  isSlackReachableImageUrl,
-} from './assets';
-export {
-  type SlackActionElement,
-  type SlackActionsBlock,
   type SlackBlock,
-  type SlackButtonElement,
-  type SlackCheckboxesElement,
-  type SlackContainerBlock,
-  type SlackContainerChildBlock,
-  type SlackContextBlock,
-  type SlackDividerBlock,
-  type SlackFileReference,
-  type SlackHeaderBlock,
-  type SlackHeaderLevel,
-  type SlackImageBlock,
-  type SlackImageElement,
-  type SlackMrkdwnTextObject,
-  type SlackMultiStaticSelectElement,
-  type SlackOptionGroup,
-  type SlackOptionObject,
-  type SlackOverflowElement,
-  type SlackPlainTextObject,
-  type SlackRadioButtonsElement,
-  type SlackRawTextElement,
-  type SlackRichTextBlock,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
-  type SlackRichTextLink,
-  type SlackRichTextList,
-  type SlackRichTextPreformatted,
-  type SlackRichTextQuote,
   type SlackRichTextSection,
-  type SlackRichTextStyle,
-  type SlackRichTextTag,
   type SlackRichTextText,
-  type SlackSectionAccessory,
-  type SlackSectionBlock,
-  type SlackStaticSelectElement,
-  type SlackTableBlock,
   type SlackTableCell,
-  type SlackTableColumnSetting,
   type SlackTagColor,
-  type SlackTextObject,
-  type SlackVideoBlock,
   SLACK_LIMITS,
 } from './blocks';
 export { type SlackContainerOptions, slackContainer } from './container';
@@ -65,7 +25,6 @@ export {
 } from './envelope';
 
 export {
-  type SlackLinkOptions,
   bold,
   clampSlackText,
   code,
@@ -75,7 +34,6 @@ export {
   italic,
   link,
   slackLinkUrl,
-  strike,
 } from './format';
 
 export { slackLimitProblems, unmodeledSlackBlockTypes } from './limit_problems';

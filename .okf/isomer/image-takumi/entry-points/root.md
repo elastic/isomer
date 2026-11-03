@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-`createTakumiImageBackend`, `renderPng`, `renderPdf`, and their types. See the [package docs](https://github.com/elastic/isomer/blob/main/packages/isomer-image-takumi/docs/index.md) and their API tables.
+`createTakumiImageBackend`, `renderPng`, `renderPdf`, the `TAKUMI_FORMATS` list, the `PDF_ENGINE_CLOSED` code that `close()` rejects calls in flight with, and their types. See the [package docs](https://github.com/elastic/isomer/blob/main/packages/isomer-image-takumi/docs/index.md) and their API tables.
 
 `scale` must be positive and finite, or `png` rejects with a `RangeError`.[^barrel]
 

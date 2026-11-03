@@ -12,11 +12,17 @@ import { iconsByType, type PrimitivePack } from '../pack/primitive_pack';
 // HTML's markup whitespace, never `\s`: a parser reads NBSP and other Unicode separators as part of a name or as text.
 const NUMBER = /^[-+0-9.eE,\t\n\f\r ]*$/;
 const PATH_DATA = /^[-+0-9.eE,\t\n\f\r MmLlHhVvCcSsQqTtAaZz]*$/;
-const TRANSFORM =
-  /^(?:[\t\n\f\r ]*(?:matrix|translate|scale|rotate|skewX|skewY)[\t\n\f\r ]*\([-+0-9.eE,\t\n\f\r ]*\)[\t\n\f\r ]*,?)*[\t\n\f\r ]*$/;
 const PAINT =
   /^(?:none|currentColor|var\(--isomer-icon-(?:accent|bg|fg|muted)(?:[\t\n\f\r ]*,[\t\n\f\r ]*(?:currentColor|#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}))?\))$/;
 const PAINT_RULE = 'is not none, currentColor, or var(--isomer-icon-*)';
+const TRANSFORM_FUNCTIONS = new Set([
+  'matrix',
+  'translate',
+  'scale',
+  'rotate',
+  'skewX',
+  'skewY',
+]);
 
 const NAME = /[A-Za-z][\w:.-]*/y;
 const ATTRIBUTE_NAME = /[^\t\n\f\r "'<>/=]+/y;
@@ -28,6 +34,59 @@ const trimMarkup = (text: string): string =>
   text.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, '');
 
 const isNumber = (value: string): boolean => NUMBER.test(value);
+
+const isTransform = (value: string): boolean => {
+  const isWhitespace = (character: string) =>
+    character === '\t' ||
+    character === '\n' ||
+    character === '\f' ||
+    character === '\r' ||
+    character === ' ';
+  const isArgumentCharacter = (character: string) =>
+    (character >= '0' && character <= '9') ||
+    '+-.eE,\t\n\f\r '.includes(character);
+  const isAsciiLetter = (character: string | undefined) =>
+    character !== undefined &&
+    ((character >= 'A' && character <= 'Z') ||
+      (character >= 'a' && character <= 'z'));
+  const skipWhitespace = (start: number): number => {
+    while (isWhitespace(value[start] ?? '')) {
+      start += 1;
+    }
+    return start;
+  };
+
+  let index = skipWhitespace(0);
+  while (index < value.length) {
+    const nameStart = index;
+    while (isAsciiLetter(value[index])) {
+      index += 1;
+    }
+    if (!TRANSFORM_FUNCTIONS.has(value.slice(nameStart, index))) {
+      return false;
+    }
+
+    index = skipWhitespace(index);
+    if (value[index] !== '(') {
+      return false;
+    }
+    index += 1;
+    while (index < value.length && value[index] !== ')') {
+      if (!isArgumentCharacter(value[index]!)) {
+        return false;
+      }
+      index += 1;
+    }
+    if (value[index] !== ')') {
+      return false;
+    }
+    index = skipWhitespace(index + 1);
+    if (value[index] === ',') {
+      index = skipWhitespace(index + 1);
+    }
+  }
+  return true;
+};
 
 const keyword =
   (...words: string[]) =>
@@ -54,7 +113,7 @@ const ATTRIBUTE_RULES: ReadonlyMap<string, (value: string) => boolean> =
     ['stroke-linejoin', keyword('miter', 'round', 'bevel')],
     ['stroke-opacity', isNumber],
     ['stroke-width', isNumber],
-    ['transform', (value) => TRANSFORM.test(value)],
+    ['transform', isTransform],
     ['viewBox', keyword('0 0 16 16')],
     ['width', isNumber],
     ['x', isNumber],

@@ -293,18 +293,13 @@ describe('buildAuthoringJsonSchema', () => {
     ).toBe('From the options.');
   });
 
-  it('describes named defs and omits listed properties', () => {
+  it('describes named defs', () => {
     const projected = buildAuthoringJsonSchema([metricPrimitive], {
       describe: { tone: 'must be one of the named tones' },
-      omitProperties: ['metric.stacked'],
     });
-    const defs = collectDefs(projected);
-    const tone = defs.tone as { description?: string };
-    const metric = defs.metric as { properties?: Record<string, unknown> };
+    const tone = collectDefs(projected).tone as { description?: string };
 
     expect(tone.description).toBe('must be one of the named tones');
-    expect(metric.properties?.stacked).toBeUndefined();
-    expect(metric.properties?.tone).toBeDefined();
   });
 
   it('serializes smaller than the validator projection', () => {
@@ -401,17 +396,6 @@ describe('buildAuthoringJsonSchema own keys', () => {
 
       expect(pair.properties.a).toEqual({ type: 'string', minLength: 1 });
     });
-  });
-
-  it('never omits a property from an inherited def', () => {
-    const inherited = { properties: { x: {} }, required: ['x'] };
-    withInherited('inherited', inherited, () => {
-      buildAuthoringJsonSchema([leaf('alpha')], {
-        omitProperties: ['inherited.x'],
-      });
-    });
-
-    expect(inherited).toEqual({ properties: { x: {} }, required: ['x'] });
   });
 });
 

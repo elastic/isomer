@@ -6,18 +6,12 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 
 import semver from 'semver';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  publishedNames,
-  publishSnapshot,
-  snapshotVersion,
-} from './publish_snapshot.js';
-import { BUILD_INPUTS } from './semantic_release_workspace.js';
+import { publishSnapshot, snapshotVersion } from './publish_snapshot.js';
 
 const SHA = '1f6b018e0c2d4e6f8a0b1c2d3e4f5a6b7c8d9e0f';
 const SNAPSHOT = '0.4.1-main.20261020203334.g1f6b018';
@@ -63,8 +57,6 @@ vi.mock('./workspace_packages.js', () => ({
 }));
 vi.spyOn(console, 'log').mockImplementation(() => {});
 
-const published = new Set();
-
 beforeEach(() => {
   vi.mocked(execFileSync).mockImplementation((command, args) => {
     if (command === 'git') {
@@ -74,15 +66,11 @@ beforeEach(() => {
         show: '2026-10-20T16:33:34-04:00\n',
       }[args[0]];
     }
-    if (command === 'npm') {
-      return published.has(args[1]) ? `${SNAPSHOT}\n` : '';
-    }
     return '';
   });
 });
 
 afterEach(() => {
-  published.clear();
   vi.clearAllMocks();
 });
 
@@ -97,19 +85,11 @@ const written = () =>
   );
 
 describe('publishSnapshot', () => {
-  it('publishes every public package under next', () => {
+  it('publishes the workspace under next; pnpm skips private and already-published packages', () => {
     publishSnapshot({ dryRun: false });
     const [[, args, options]] = publishCalls();
     expect(args).toEqual([
       '-r',
-      '--filter',
-      '@elastic/isomer-image-takumi',
-      '--filter',
-      '@elastic/isomer-runtime',
-      '--filter',
-      '@elastic/isomer-sdk',
-      '--filter',
-      '@elastic/isomer-studio',
       'publish',
       '--access',
       'public',
@@ -129,21 +109,6 @@ describe('publishSnapshot', () => {
   it('passes --dry-run to pnpm publish', () => {
     publishSnapshot({ dryRun: true });
     expect(publishCalls()[0][1].at(-1)).toBe('--dry-run');
-  });
-
-  it('does nothing when the commit is already published', () => {
-    for (const name of publishedNames(packages)) {
-      published.add(`${name}@${SNAPSHOT}`);
-    }
-    publishSnapshot({ dryRun: false });
-    expect(publishCalls()).toEqual([]);
-    expect(vi.mocked(writeFileSync)).not.toHaveBeenCalled();
-  });
-
-  it('publishes the rest when only some of the set is out', () => {
-    published.add(`@elastic/isomer-sdk@${SNAPSHOT}`);
-    publishSnapshot({ dryRun: false });
-    expect(publishCalls()).toHaveLength(1);
   });
 });
 
@@ -178,40 +143,6 @@ describe('snapshotVersion', () => {
   it('refuses a tag that is not a release', () => {
     expect(() => version({ releaseTag: 'v0.4.0-beta.1' })).toThrow(
       'not a release tag'
-    );
-  });
-});
-
-describe('release.yml push paths', () => {
-  const pushPaths = () => {
-    const workflow = readFileSync(
-      join(import.meta.dirname, '../.github/workflows/release.yml'),
-      'utf-8'
-    );
-    const block = /^ {4}paths:\n((?: {6}- .+\n)+)/m.exec(workflow);
-    return block[1].split('\n').flatMap((line) => {
-      const path = line.trim().replace(/^- /, '');
-      return path ? [path] : [];
-    });
-  };
-
-  it('covers every published package, root build input, and the snapshot itself', async () => {
-    const { repoRoot, workspacePackages } = await vi.importActual(
-      './workspace_packages.js'
-    );
-    const folders = workspacePackages(repoRoot)
-      .filter(({ manifest }) => manifest.private !== true)
-      .map(({ folder }) => `packages/${folder}/**`);
-    expect(new Set(pushPaths())).toEqual(
-      new Set([
-        ...folders,
-        ...BUILD_INPUTS,
-        'package.json',
-        'tsconfig.workspace.json',
-        'pnpm-lock.yaml',
-        'scripts/publish_snapshot.js',
-        '.github/workflows/release.yml',
-      ])
     );
   });
 });

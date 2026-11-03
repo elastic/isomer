@@ -8,6 +8,12 @@
 import { z } from 'zod';
 
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
+import {
+  isJsonObject,
+  type JsonObject,
+  ownDef,
+  parseDefRef,
+} from '../validate/json_helpers';
 
 import { readAuthoredSpec } from './authored_fields';
 import { prepareAuthoringInput } from './authoring_input';
@@ -20,11 +26,7 @@ import {
   ANONYMOUS_DEF,
   createTypePrinter,
   IDENTIFIER,
-  isJsonObject,
   jsDoc,
-  type JsonObject,
-  ownDef,
-  parseDefRef,
   pascalCase,
 } from './schema_to_typescript';
 

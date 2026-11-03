@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-The `isomer-studio` binary runs `init`, `dev`, `build` and `check`, whose flags and exit codes are documented in [Commands](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/commands.md); the root entry exports `defineStudioConfig`, `adoptStylesheet` and the config and app types, documented in [The config](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/config.md). It is ESM only.[^barrel]
+The `isomer-studio` binary runs `init`, `dev`, `build` and `check`, whose flags and exit codes are documented in [Commands](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/commands.md); the root entry exports `defineStudioConfig`, `adoptStylesheet` and the config and app types, documented in [The config](https://github.com/elastic/isomer/blob/main/packages/isomer-studio/docs/config.md). It ships ESM for bundlers and CommonJS, which the binary runs.[^barrel]
 
 `build` replaces a non-empty `--out` only when a previous build's `.isomer-studio-build` marker is there, and the dev server answers only requests whose `Host` is loopback.
 

@@ -20,7 +20,7 @@ const typesEntry = (target) =>
 
 /**
  * One alias per package export, pointing at the source the declaration is
- * built from, so Vitest and the deck never load `dist`. Subpaths come before
+ * built from, so Vitest and the deck never load `lib`. Subpaths come before
  * the root entry because the first matching alias wins.
  *
  * @returns {Array<{ find: string; replacement: string }>}
@@ -42,7 +42,7 @@ export const sourceAliases = () =>
                 replacement: resolve(
                   dir,
                   types
-                    .replace(/^\.\/dist\//, 'src/')
+                    .replace(/^\.\/lib\/cjs\//, 'src/')
                     .replace(/\.d\.ts$/, '.ts')
                 ),
               },

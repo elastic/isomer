@@ -6,17 +6,25 @@
  */
 
 // @ts-check
-// CommonJS in both builds, so `__dirname` locates the worker beside either.
+// CommonJS in source and in both builds, so `__dirname` is the directory it sits in, unless a bundler has inlined it.
 'use strict';
 
 const { existsSync } = require('node:fs');
-const { join } = require('node:path');
+const { dirname, join } = require('node:path');
 
-// The CommonJS build's worker, in `cjs/` beside the ESM build's copy of this file or beside the CommonJS build's.
-const built = [
-  join(__dirname, 'cjs', 'pdf_worker.js'),
-  join(__dirname, 'pdf_worker.js'),
-];
+const here = typeof __dirname === 'string' ? __dirname : undefined;
+const loader = here && join(here, 'pdf_worker_source.cjs');
+
+/** The CommonJS build's worker, the one Node can start: in `lib/cjs` beside either build's copy of this file, else beside the package's `require` entry. */
+const built = () => {
+  const beside = here && join(here, '../cjs/pdf_worker.js');
+  return beside && existsSync(beside)
+    ? beside
+    : join(
+        dirname(require.resolve('@elastic/isomer-image-takumi')),
+        'pdf_worker.js'
+      );
+};
 
 /**
  * The PDF worker's module: the CommonJS build's or, run from `src`, a loader
@@ -26,7 +34,5 @@ const built = [
  * @returns {{ file: string }}
  */
 exports.pdfWorker = () => ({
-  file:
-    built.find((file) => existsSync(file)) ??
-    join(__dirname, 'pdf_worker_source.cjs'),
+  file: loader && existsSync(loader) ? loader : built(),
 });

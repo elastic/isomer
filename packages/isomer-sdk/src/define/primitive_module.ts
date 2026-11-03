@@ -23,8 +23,9 @@ import type { PrimitiveExample } from './primitive_example';
 import type { PrimitiveIcon } from './primitive_icon';
 import type { SlackAssetCollector } from './slack_assets';
 import type { SlackBlock } from './slack_blocks';
-import { formatZodIssues, oneOf } from './zod_format';
+import { oneOf } from './zod_format';
 import { requiredString } from './zod_helpers';
+import { unwrapZodOnce, zodObjectHasCatchall } from './zod_introspect';
 
 export type { PrimitiveNode };
 
@@ -444,19 +445,6 @@ export interface AnyPrimitiveDefinition extends Pick<
   collectStyles?: unknown;
 }
 
-/** Parses `node` against `schema`, appending path-prefixed messages to `errors`. */
-export const validateWithSchema = (
-  schema: PrimitiveSchema,
-  node: unknown,
-  path: string,
-  errors: ValidationError[]
-): void => {
-  const result = schema.safeParse(node, { reportInput: true });
-  if (!result.success) {
-    errors.push(...formatZodIssues(result.error.issues, path));
-  }
-};
-
 /** The `id` every node may carry, unique within a composition. */
 export const bodyNodeIdSchema = requiredString('must be a non-empty string');
 
@@ -565,19 +553,15 @@ const NODE_FIELDS = {
   surfaces: nodeField(bodyNodeSurfacesSchema.optional()),
 };
 
+const OPTIONAL: ReadonlySet<string> = new Set(['optional']);
+
 const isNodeField = (schema: unknown): boolean => {
   let current = schema;
   while (current && typeof current === 'object') {
     if (Object.hasOwn(current, NODE_FIELD)) {
       return true;
     }
-    const { def } = current as {
-      def?: { type?: string; innerType?: unknown };
-    };
-    if (def?.type !== 'optional') {
-      return false;
-    }
-    current = def.innerType;
+    current = unwrapZodOnce(current, OPTIONAL);
   }
   return false;
 };
@@ -597,6 +581,6 @@ const withNodeFields = <TSchema extends PrimitiveSchema>(
   }
   const extended = schema.extend(NODE_FIELDS);
   return (
-    schema.def.catchall === undefined ? extended.strict() : extended
+    zodObjectHasCatchall(schema) ? extended : extended.strict()
   ) as WithNodeFields<TSchema>;
 };

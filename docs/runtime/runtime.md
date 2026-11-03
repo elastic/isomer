@@ -22,18 +22,18 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `formats` | any number | Formats the host ships beyond the runtime's own, reported by `getCapabilities`: a rasterizer's list, such as a takumi backend's `formats`. |
 | `views` | any number | Views pre-registered on the runtime's view registry. |
 | `rendererOverrides` | per type, per surface | One renderer replaced without forking a pack. |
-| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the packs' own adapters, combined. Required when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
+| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the one pack adapter; required to choose when two packs declare one, and when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring schema and declarations `getAuthoringContext` returns: the SDK's `AuthoringJsonSchemaOptions` plus `jsx`. |
 | `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../sdk/composition.md#the-input-budget). |
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `snapshot` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
-`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and the runtime combines the adapters of every pack it loads — each handle is routed to the adapter that owns it, and each pack's `collectStyles` hooks run only against its own pack's adapter, so loading two styled packs yields both stylesheets rather than a choice or a merge. `styleAdapter` replaces all of them at once, which is how a host supplies a no-op for a pack whose CSS it does not want; see [Surfaces](surfaces.md).
+`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and a runtime styles with one: it runs the one composed pack's adapter for every pack, and two packs declaring one throw `AMBIGUOUS_STYLE_ADAPTER`, naming both. `styleAdapter` replaces the packs' adapter, which is how a host chooses between two or supplies a no-op for a pack whose CSS it does not want; see [Surfaces](surfaces.md).
 
-Combining needs each adapter to answer `ownsHandle`. Two pack adapters where one cannot throws `AMBIGUOUS_STYLE_ADAPTER`, naming the pack to fix. A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
+A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
 
-A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Which adapters a pack must agree with follows the routing below: its own if it declares one, every adapter in the composite if it does not. Omitting the tag on either side opts out.
+A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the one adapter the runtime runs. Omitting the tag on either side opts out.
 
 ## Typing the render context
 
@@ -83,7 +83,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | `defaultFrame` is one the runtime holds | `UNKNOWN_FRAME` | `defaultFrame "…" is not one of the supplied frames (…)` |
 | Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
 | A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
-| Every pack `styleAdapter` can route its own handles | `AMBIGUOUS_STYLE_ADAPTER` | `packs … each declare a styleAdapter, but … declares no ownsHandle` |
+| At most one pack declares a `styleAdapter`, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `packs … each declare a styleAdapter, but a runtime styles with one` |
 | Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
 Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.

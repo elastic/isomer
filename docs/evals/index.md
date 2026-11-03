@@ -232,4 +232,4 @@ Types: `EvalCase`, `EvalCaseResult`, `EvalReport`, `EvalRuntime`, `RunEvalsOptio
 
 This package is private and not published to npm; it runs from this repository.
 
-It depends on `@elastic/isomer-sdk` at its own version, and `react` and `zod` are required peers, because the SDK's root and `./author` entries load them; a pack's runtime brings both already. One entry point, built as ESM and CommonJS. The runtime and the slides pack are development dependencies, for the structural-contract test and the recorded corpus; only tests import them.
+It depends on `@elastic/isomer-sdk` at its own version, and `react` and `zod` are required peers, because the SDK's root and `./author` entries load them; a pack's runtime brings both already. One entry point, built as ESM for bundlers and CommonJS, which Node loads. The runtime and the slides pack are development dependencies, for the structural-contract test and the recorded corpus; only tests import them.

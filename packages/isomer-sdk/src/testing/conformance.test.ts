@@ -12,7 +12,6 @@ import type { ValidationError } from '../composition/validation_error';
 import {
   definePrimitive,
   type PrimitiveDefinition,
-  validateWithSchema,
 } from '../define/primitive_module';
 import { createPrimitiveDispatcher } from '../render/primitive_dispatch';
 
@@ -196,7 +195,6 @@ describe('direct schema calls on a chain deeper than the call stack', () => {
 
   it('parses one level through a primitive’s own schema', () => {
     const errors: ValidationError[] = [];
-    validateWithSchema(stack.schema, deep, 'body[0]', errors);
     createPrimitiveDispatcher(fixtureDefinitions).validate(
       deep,
       'body[0]',

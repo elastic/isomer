@@ -18,6 +18,7 @@ import {
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlElementTexts } from '../../content_parity.fixtures';
 import { slideFonts } from '../../examples/fonts';
 import { previewSlide } from '../../examples/preview_slide';
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -270,29 +271,20 @@ describe('slideDiff in Slack past a section', () => {
 });
 
 describe('slideDiff in the DOM', () => {
-  const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#x27;': "'",
-  };
   const panelOf = (node: SlideDiffNode) =>
     /<pre[^>]*>([\s\S]*?)<\/pre>/.exec(
       runtime.surfaces.html.render(compose(node)).html
     )?.[1] ?? '';
-  const textOf = (html: string) =>
-    html
-      .replace(/<[^>]+>/g, '')
-      .replace(
-        /&(?:amp|lt|gt|quot|#x27);/g,
-        (entity) => entities[entity] ?? entity
-      );
+  const panelTextOf = (node: SlideDiffNode) =>
+    renderedHtmlElementTexts(
+      runtime.surfaces.html.render(compose(node)).html,
+      'pre'
+    )[0] ?? '';
 
   it.each(examples.map((node, index) => [index, node] as const))(
     'example %i reads as its unified form, blank lines too',
     (_index, node) => {
-      expect(textOf(panelOf(node))).toBe(text({ ...node, file: undefined }));
+      expect(panelTextOf(node)).toBe(text({ ...node, file: undefined }));
     }
   );
 

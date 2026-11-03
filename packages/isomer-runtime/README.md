@@ -36,7 +36,7 @@ runtime.surfaces.html.render(composition, { theme: 'auto', fluid: true });
 runtime.surfaces.slack.render(composition, { collectAssets: true });
 ```
 
-`packs` is required. `@elastic/isomer-sdk` is a dependency pinned to the same version, so the two install together. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. One entry point, ESM and CommonJS, no Node built-ins; on Node it needs 22.13.0 or later.
+`packs` is required. `@elastic/isomer-sdk` is a dependency pinned to the same version, so the two install together. `zod`, `react`, and `react-dom` (`>=18 <20`) are peers — required, because the root entry always constructs the `react` and `html` surfaces, and `html` loads `react-dom/server`. Two entry points, the root and `./testing`, each ESM for bundlers and CommonJS for Node, no Node built-ins; on Node it needs 22.13.0 or later.
 
 ## Docs
 

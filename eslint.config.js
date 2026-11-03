@@ -95,7 +95,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.{js,cjs}'],
+    files: ['**/*.{js,cjs,mjs}'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {
       globals: globals.node,
@@ -105,13 +105,13 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.cjs'],
+    files: ['**/*.cjs', 'packages/*/bin/*.js', 'packages/*/babel.config.js'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {
-    files: ['**/*.{ts,tsx,js,cjs}'],
+    files: ['**/*.{ts,tsx,js,cjs,mjs}'],
     rules: {
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': [
@@ -126,7 +126,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['**/*.{ts,tsx,js,cjs}'],
+    files: ['**/*.{ts,tsx,js,cjs,mjs}'],
     plugins: {
       perfectionist,
       'simple-import-sort': simpleImportSortPlugin,
@@ -316,7 +316,7 @@ export default tseslint.config(
   },
   {
     ignores: [
-      '**/dist',
+      '**/lib',
       '**/node_modules',
       'coverage',
       '.github',
@@ -325,11 +325,11 @@ export default tseslint.config(
     ],
   },
   {
-    files: ['**/*.{js,cjs,ts,tsx}'],
+    files: ['**/*.{js,cjs,mjs,ts,tsx}'],
     ...prettierRecommended,
   },
   {
-    files: ['**/*.{js,cjs,ts,tsx}'],
+    files: ['**/*.{js,cjs,mjs,ts,tsx}'],
     rules: {
       curly: ['error', 'all'],
     },

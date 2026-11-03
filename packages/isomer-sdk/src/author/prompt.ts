@@ -11,19 +11,13 @@ import {
   type PrimitiveGroup,
   UNCATEGORIZED_GROUP_TITLE,
 } from '../pack/primitive_pack';
+import { isJsonObject } from '../validate/json_helpers';
 
 type JsonSchema = Record<string, unknown>;
 
 /** Which authoring job the prompt frames for the model. */
 export type AuthoringProfileId =
   'general' | 'registered-view-router' | 'compose-from-primitives';
-
-/** Every {@link AuthoringProfileId}. */
-export const AUTHORING_PROFILE_IDS: readonly AuthoringProfileId[] = [
-  'general',
-  'registered-view-router',
-  'compose-from-primitives',
-];
 
 /**
  * A registered view, declared structurally so this module does not import the
@@ -104,12 +98,9 @@ const compactJson = (value: unknown): string =>
     (separator) => `\\u${separator.charCodeAt(0).toString(16)}`
   );
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
 /** Host examples show composition, not provenance. */
 const withoutMeta = (value: unknown): unknown => {
-  if (!isRecord(value) || !('meta' in value)) {
+  if (!isJsonObject(value) || !('meta' in value)) {
     return value;
   }
   const rest = { ...value };

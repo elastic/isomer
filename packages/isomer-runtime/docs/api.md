@@ -19,7 +19,7 @@ Everything `@elastic/isomer-runtime` exports from its entry point and its `./tes
 | `formats` | `readonly string[]` | Formats the host ships beyond the runtime's own, reported by `getCapabilities().formats`; a rasterizer's list, e.g. a takumi backend's `formats`. |
 | `views` | `readonly RegisteredView[]` | Pre-registered on the runtime's view registry. |
 | `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
-| `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces every pack's adapter. Defaults to the packs' own, combined. Required when any pack declares `collectStyles` and no adapter is otherwise available. |
+| `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces the pack's adapter. Defaults to the one pack adapter. Required when two packs declare one, or when any pack declares `collectStyles` and no adapter is otherwise available. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
 | `authoring` | `RuntimeAuthoringOptions` | Options for the authoring schema and declarations `getAuthoringContext` returns. |
 | `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. |
@@ -51,7 +51,7 @@ Each exposes `render` and `renderNode`, plus a `validating` field stating its po
 | `html` | `HTMLRenderResult` | `HTMLRenderResult` | `true` | `HTMLRenderOptions` |
 | `text` | `string` | `string` | `true` | `TextRenderNodeOptions`: `onValidationError` |
 | `markdown` | `string` | `string` | `true` | `MarkdownRenderNodeOptions`: `onValidationError` |
-| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
+| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `baseUrl`, `onValidationError` |
 | `snapshot` | `SnapshotRenderResult` | `SnapshotRenderResult` | `true` | `SnapshotRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
 
 Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SnapshotRenderResult` is a `SnapshotPage`, `{ element, html }`, plus `{ css, width, height, heightMode, warnings }`: `html` is `element`'s static markup, rendered in the same call. `heightMode` is the SDK's `FrameSizing`, `content` when the frame sizes to content and no `height` was given, so `height` is an estimate a backend measures past. `warnings` is a `SnapshotHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.snapshotHeight`, empty when the frame never calls `estimateSnapshotHeight`, when `height` is given, or when the frame sizes to content. The `snapshot` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SnapshotPagesResult`, `{ pages, css, width, height, heightMode, warnings }`: one `SnapshotPage` per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
@@ -67,7 +67,7 @@ Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface
 | `TextRenderNodeOptions` | `onValidationError` |
 | `MarkdownRenderOptions` | `heading`, `onValidationError` |
 | `MarkdownRenderNodeOptions` | `onValidationError` |
-| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
+| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `baseUrl`, `onValidationError` |
 | `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` |
 | `SnapshotRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
 
@@ -130,9 +130,9 @@ Three results carry a `composition`, each with its own rule:
 | `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
 | `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `snapshot` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
 
-## `./testing`
+## Testing
 
-`createRuntimeConformanceHarness(runtime, overrides?)` returns the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`, so a pack's conformance test needs no hand-written bindings. It derives every member the runtime can answer: validation, the `react`, `html`, `text`, `markdown`, and `slack` surfaces (per-node renders collect validation errors rather than throw), `anchorWalk` over the runtime's primitives, and `wrapComposition` titled `CONFORMANCE_FIXTURE_TITLE`. `renderSnapshotNode` and `renderSnapshotComposition` are present only when the runtime has a frame. `renderHTML` forwards `css` and `anchors`, not `names`, which no HTML option carries. `overrides` is a `Partial<PrimitiveConformanceHarness>` that replaces derived members and supplies what a runtime cannot know: `nestForeignChild`, `sizesFromNodeHeights`, `estimateSnapshotHeight`, `assertVarRefsHaveDeclarations`, or a `wrapComposition` that puts the node in the pack's frame.
+The `./testing` subpath exports `createRuntimeConformanceHarness(runtime, overrides?)`, which returns the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`, so a pack's conformance test needs no hand-written bindings. It derives every member the runtime can answer: validation, the `react`, `html`, `text`, `markdown`, and `slack` surfaces (per-node renders collect validation errors rather than throw), `anchorWalk` over the runtime's primitives, and `wrapComposition` titled `CONFORMANCE_FIXTURE_TITLE`. `renderSnapshotNode` and `renderSnapshotComposition` are present only when the runtime has a frame. `renderHTML` forwards `css` and `anchors`, not `names`, which no HTML option carries. `overrides` is a `Partial<PrimitiveConformanceHarness>` that replaces derived members and supplies what a runtime cannot know: `nestForeignChild`, `sizesFromNodeHeights`, `estimateSnapshotHeight`, `assertVarRefsHaveDeclarations`, or a `wrapComposition` that puts the node in the pack's frame.
 
 ```ts
 const harness = createRuntimeConformanceHarness(createIsomerRuntime({ packs: [pack] }));

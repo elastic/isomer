@@ -19,7 +19,7 @@ sources:
 The package metadata and export contract of `@elastic/isomer-sdk`. See [Package facts](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/index.md#package-facts) in the package doc.
 
 - Source available under the Elastic License 2.0 (SPDX: `Elastic-2.0`). Publishes as `@elastic/isomer-sdk` with public access, at the workspace's one version. Peers: `react` `>=18 <20` and `zod` `^4.5.4` are required. `react-dom` `>=18 <20` is optional and needed by `./html`.[^package]
-- The tarball carries `dist`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
+- The tarball carries `lib`, `LICENSE.txt`, `NOTICE.txt`, and `THIRD_PARTY_LICENSES.md`.
 - `zod` stays a peer; do not add it to `dependencies`.
 - Brands use `Symbol.for`.
 - The sdk must not import the runtime.[^agents]

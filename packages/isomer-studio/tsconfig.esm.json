@@ -1,0 +1,27 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "target": "ES2020",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "moduleResolution": "Bundler",
+    "noEmit": false,
+    "declaration": true,
+    "declarationMap": false,
+    "outDir": "lib/esm",
+    "module": "ESNext",
+    "sourceMap": true,
+    "inlineSources": true,
+    "incremental": true,
+    "tsBuildInfoFile": "lib/esm/.tsbuildinfo"
+  },
+  "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "src/fixtures/**",
+    "src/test_setup.ts",
+    "src/dev/monaco_suggest.d.ts"
+  ]
+}

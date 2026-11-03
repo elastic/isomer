@@ -510,6 +510,22 @@ const checkJavaScriptPack = async (tempDir, packed, cli) => {
     title: 'js-pack',
     config: 'isomer-studio.config.js',
   });
+
+  // Node's own `import`, without tsx, must reach the packed SDK's CommonJS build too.
+  rmSync(join(project, 'isomer-studio.config.js'));
+  run(project, process.execPath, [cli, 'init', '--loader', 'none']);
+  const { stdout: checked } = run(project, process.execPath, [
+    cli,
+    'check',
+    '--loader',
+    'none',
+  ]);
+  console.log(checked.trim());
+  if (!/^js-pack: \d+ passed, 0 failed/m.test(checked)) {
+    throw new Error(
+      `init --loader none wrote a config that did not pass:\n${checked}`
+    );
+  }
 };
 
 const KIBANA_PACKAGE = 'src/platform/packages/shared/kbn-consumer-pack';
@@ -594,11 +610,11 @@ const checkColdNpx = async (tempDir, packed) => {
 requireChromium();
 
 const missingBuild = Object.values(PACKED).filter(
-  (folder) => !existsSync(join(repoRoot, 'packages', folder, 'dist'))
+  (folder) => !existsSync(join(repoRoot, 'packages', folder, 'lib'))
 );
 if (
   missingBuild.length > 0 ||
-  !existsSync(join(repoRoot, 'packages/isomer-studio/dist/app'))
+  !existsSync(join(repoRoot, 'packages/isomer-studio/lib/app'))
 ) {
   console.error('Build the workspace first: pnpm build');
   process.exit(1);

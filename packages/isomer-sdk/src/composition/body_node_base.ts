@@ -22,9 +22,6 @@ export const SURFACE_NAMES = [
 /** One of the {@link SURFACE_NAMES}. */
 export type SurfaceName = (typeof SURFACE_NAMES)[number];
 
-/** @deprecated Use {@link SURFACE_NAMES}. */
-export const BODY_NODE_SURFACES: readonly SurfaceName[] = SURFACE_NAMES;
-
 /** The two fields every primitive node carries, whatever its pack. */
 export interface BodyNodeBase {
   /** Unique within a composition, which `validate` enforces and `parse` does not. */

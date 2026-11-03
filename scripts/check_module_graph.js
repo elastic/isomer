@@ -5,13 +5,17 @@
  * 2.0.
  */
 
-// Walks the built ESM graph from each declared entry and fails when a forbidden
-// specifier is reachable. An ES module evaluates its whole top-level import list
+// Bundles the built ESM graph of each declared entry with esbuild, every package
+// external, and fails when a forbidden specifier is reachable. An ES module evaluates its whole top-level import list
 // when any one of its exports is imported, so reachability, not direct import,
 // is what matters.
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { readdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
+
+import { build } from 'esbuild';
 
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
@@ -43,33 +47,22 @@ const matchesForbidden = (specifier, forbidden) =>
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
-const isRelative = (specifier) => specifier.startsWith('.');
-
-/** Every bare specifier reachable from `entryFile`, following relative imports only. */
-const reachableBareSpecifiers = (entryFile) => {
-  const seen = new Set();
-  const bare = new Set();
-  const queue = [resolve(entryFile)];
-
-  while (queue.length > 0) {
-    const file = queue.pop();
-    if (seen.has(file)) {
-      continue;
-    }
-    seen.add(file);
-
-    for (const specifier of specifiersIn(file)) {
-      if (!isRelative(specifier)) {
-        bare.add(specifier);
-        continue;
-      }
-      // The build rewrites relative specifiers to full paths with extensions,
-      // so this resolves without probing for index files.
-      queue.push(resolve(join(dirname(file), specifier)));
-    }
-  }
-
-  return bare;
+/** Every bare specifier reachable from `entryFile` through its relative imports. */
+const reachableBareSpecifiers = async (entryFile) => {
+  const { metafile } = await build({
+    entryPoints: [entryFile],
+    bundle: true,
+    write: false,
+    metafile: true,
+    packages: 'external',
+    platform: 'neutral',
+    logLevel: 'silent',
+  });
+  return new Set(
+    Object.values(metafile.inputs).flatMap(({ imports }) =>
+      imports.filter(({ external }) => external).map(({ path }) => path)
+    )
+  );
 };
 
 const manifests = new Map(
@@ -92,7 +85,7 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     }
 
     const entryFile = join(pkg.dir, target);
-    const reachable = reachableBareSpecifiers(entryFile);
+    const reachable = await reachableBareSpecifiers(entryFile);
     checked += 1;
 
     for (const specifier of reachable) {
@@ -143,6 +136,60 @@ for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {
       }
     }
   }
+}
+
+// A host may bundle `slideStylesheet` without the pack; from the built ESM entry, that bundle must emit what the CommonJS build does.
+const slides = manifests.get('@elastic/isomer-primitives-slides');
+const { import: slidesEsm, require: slidesCjs } = slides.manifest.exports['.'];
+const stylesheetBundle = join(slides.dir, '.stylesheet-check', 'index.mjs');
+const stylesheetOf = (args) =>
+  execFileSync(process.execPath, args, {
+    cwd: slides.dir,
+    encoding: 'utf-8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+try {
+  await build({
+    stdin: {
+      contents: `export { slideStylesheet } from '${slidesEsm}';\n`,
+      resolveDir: slides.dir,
+      loader: 'js',
+    },
+    outfile: stylesheetBundle,
+    bundle: true,
+    format: 'esm',
+    // Isomer packages build ESM for bundlers alone, so only third-party packages stay external.
+    external: [
+      ...Object.keys(slides.manifest.dependencies ?? {}),
+      ...Object.keys(slides.manifest.peerDependencies ?? {}),
+    ].filter((name) => !name.startsWith('@elastic/isomer-')),
+    banner: {
+      js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+    },
+    platform: 'node',
+    logLevel: 'silent',
+  });
+  const bundled = stylesheetOf([
+    '--input-type=module',
+    '--eval',
+    `const { slideStylesheet } = await import(${JSON.stringify(pathToFileURL(stylesheetBundle).href)}); process.stdout.write(slideStylesheet());`,
+  ]);
+  const required = stylesheetOf([
+    '--eval',
+    `process.stdout.write(require(${JSON.stringify(slidesCjs)}).slideStylesheet());`,
+  ]);
+  checked += 1;
+  if (!required.includes('.stat-root')) {
+    violations.push(
+      `${slides.manifest.name}: ${slidesCjs} emits no primitive CSS from slideStylesheet`
+    );
+  } else if (bundled !== required) {
+    violations.push(
+      `${slides.manifest.name}: a bundle of slideStylesheet alone from ${slidesEsm} emits ${bundled.length} characters of CSS; ${slidesCjs} emits ${required.length}`
+    );
+  }
+} finally {
+  rmSync(dirname(stylesheetBundle), { force: true, recursive: true });
 }
 
 if (violations.length > 0) {

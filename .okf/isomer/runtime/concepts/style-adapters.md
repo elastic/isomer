@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Style adapters
-description: The HTML surface runs the host adapter if supplied, otherwise the packs' own, combined.
+description: The HTML surface runs the host adapter if supplied, otherwise the one pack adapter.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
 tags: [isomer, runtime, css]
 status: stable
@@ -17,9 +17,9 @@ sources:
 
 # Definition
 
-The HTML surface runs the host's style adapter if one was passed, otherwise the packs' adapters combined. See the package doc on packs.[^docs]
+The HTML surface runs the host's style adapter if one was passed, otherwise the adapter of the one composed pack that declares one. See the package doc on packs.[^docs]
 
-The combined adapter's render context is a view over each pack's context, not a copy: a key reads from the last pack that has it, with methods bound to their own context, so a class-instance context keeps its private state.[^adapter]
+Two packs declaring an adapter throw `AMBIGUOUS_STYLE_ADAPTER` unless the host passes its own; there is no composite adapter, so a render context is the adapter's own object.[^adapter]
 
 Related: [pack composition](/runtime/concepts/packs.md), [rendering](/sdk/concepts/rendering.md).
 

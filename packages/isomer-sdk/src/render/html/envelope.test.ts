@@ -8,6 +8,7 @@
 import { Script } from 'node:vm';
 
 import { createElement } from 'react';
+import { type DefaultTreeAdapterMap, parseFragment } from 'parse5';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
@@ -93,8 +94,34 @@ const adapter: HTMLStyleAdapter<RawNode, Collector, PrimitiveRenderContext> = {
   getScriptText: () => 'adapter()',
 };
 
-const embeddedScriptOf = (html: string): string =>
-  /<script[^>]*>([\s\S]*)<\/script>/.exec(html)?.[1] ?? '';
+const embeddedScriptOf = (html: string): string => {
+  const textContent = (node: DefaultTreeAdapterMap['childNode']): string =>
+    'value' in node
+      ? node.value
+      : 'childNodes' in node
+        ? node.childNodes.map(textContent).join('')
+        : '';
+  const findScript = (
+    node: DefaultTreeAdapterMap['childNode']
+  ): DefaultTreeAdapterMap['element'] | undefined => {
+    if ('tagName' in node && node.tagName === 'script') {
+      return node;
+    }
+    if ('childNodes' in node) {
+      for (const child of node.childNodes) {
+        const found = findScript(child);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return undefined;
+  };
+  const script = parseFragment(html)
+    .childNodes.map(findScript)
+    .find((node) => node !== undefined);
+  return script?.childNodes.map(textContent).join('') ?? '';
+};
 
 const render = (
   composition: Composition<RawNode>,
@@ -222,15 +249,15 @@ describe('renderHTMLWithDispatcher', () => {
     });
   });
 
-  it('embeds one script that binds root to the section, scoping each part', () => {
+  it('embeds one script that binds root to the section, scoping the adapter’s', () => {
     const { html, js } = render(
       view('<p>x</p>'),
       {},
-      { styleAdapter: adapter, scriptText: 'host()' }
+      { styleAdapter: adapter }
     );
     expect(html.match(/<script/g)).toHaveLength(1);
     expect(html).toMatch(/<\/div><script data-isomer-script="">/);
-    expect(js).toBe('(() => {\nhost()\n})();\n(() => {\nadapter()\n})();');
+    expect(js).toBe('(() => {\nadapter()\n})();');
 
     const script = embeddedScriptOf(html);
     expect(script.match(/document\.currentScript/g)).toHaveLength(2);
@@ -243,7 +270,7 @@ describe('renderHTMLWithDispatcher', () => {
     const { html } = render(
       view('<p>x</p>'),
       {},
-      { scriptText: 'root.ran = true;' }
+      { styleAdapter: { ...adapter, getScriptText: () => 'root.ran = true;' } }
     );
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the emitted script as a browser would.
     const run = new Function('document', embeddedScriptOf(html)) as (
@@ -445,6 +472,7 @@ describe('renderHTMLWithDispatcher', () => {
       'for (let i = 0; i < 2; i++) receiver.tag`</script><!--${String.raw`</SCRIPT><!--`}`;',
       'globalThis.out.push(String.raw`\\<!--`);',
       '--> legacy closing comment',
+      '//--!> legacy closing comment',
     ].join('\n');
     const { html } = render(
       view('<p>x</p>'),

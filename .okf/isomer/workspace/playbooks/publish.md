@@ -24,10 +24,16 @@ sources:
 
 Releases and `next` snapshots publish through the Publish a Release workflow with npm trusted publishing; [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md) is the runbook for dry runs, Trusted Publishers, which commits count, and snapshot versions.
 
-`pnpm semantic-release` runs `semantic-release` 25. The workspace plugin analyzes and writes notes for only the commits that change a package published now or at the last release, a root build input, the root `build` scripts, or a published package's reference in `tsconfig.workspace.json`, then publishes `@elastic/isomer-sdk`, `@elastic/isomer-runtime`, `@elastic/isomer-image-takumi`, and `@elastic/isomer-studio` with `pnpm publish --access public --tag <channel>`. The tag is the semantic-release channel (`alpha` or `beta`), falling back to `latest` for the default release channel. Maintenance ranges such as `1.x` use `release-1.x`, since npm rejects semver ranges as tags.[^releaserc][^workspace-plugin]
+`pnpm semantic-release` runs `semantic-release` 25 on `main` only. The workspace plugin analyzes and writes notes for only the commits that change a package published now or at the last release, a root build input (`BUILD_INPUTS`), or the root `package.json` `build` scripts, writes the release version into every workspace manifest, then runs `pnpm -r publish --access public --tag latest`, which skips private and already-published packages. `@semantic-release/github` creates the release and comments on and labels `released` each included pull request.[^releaserc][^workspace-plugin]
+
+Snapshots use the same rule: the workflow's Changes job runs `scripts/publish_snapshot.js --since <previous head>` and runs the Snapshot job only on `ships=true`, so the workflow has no `paths:` filter to keep in step.[^snapshot]
+
+A publish that fails partway is recovered by hand from the tag; RELEASING.md has the commands.
 
 Related: [workspace](/workspace/concepts/workspace.md), [verify](/workspace/playbooks/verify.md).
 
 [^releaserc]: semantic-release config
 
 [^workspace-plugin]: Workspace publish plugin
+
+[^snapshot]: Snapshot publish script

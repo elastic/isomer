@@ -107,10 +107,9 @@ export interface IsomerRuntimeOptions<
   /**
    * The HTML surface's CSS and class-name strategy.
    *
-   * Defaults to the packs' own adapters, combined — a host loading two styled
-   * packs gets both stylesheets without having to know how either one works.
-   * Pass this to replace that default for every pack at once, or to supply a
-   * no-op when a CSS-bearing pack should emit no CSS.
+   * Defaults to the one pack adapter; two packs that each declare one throw
+   * `AMBIGUOUS_STYLE_ADAPTER` unless this is passed. Pass a no-op when a
+   * CSS-bearing pack should emit no CSS.
    *
    * Required when any pack declares `collectStyles` and no pack (or this
    * option) supplies an adapter.

@@ -13,8 +13,4 @@ export {
 } from './envelope';
 export { exceedsParseBudget } from './format';
 
-export {
-  type AuthoredMarkdownSegment,
-  type SplitAuthoredMarkdownOptions,
-  splitAuthoredMarkdown,
-} from './split';
+export { type AuthoredMarkdownSegment, splitAuthoredMarkdown } from './split';

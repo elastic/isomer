@@ -21,6 +21,7 @@ export {
   TAKUMI_FORMATS,
   createTakumiImageBackend,
 } from './backend';
+export { PDF_ENGINE_CLOSED } from './pdf_engine';
 export {
   type PdfRuntime,
   type RenderPdfOptions,

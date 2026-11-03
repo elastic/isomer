@@ -26,6 +26,7 @@ import {
   type TakumiPdfOptions,
   type TakumiRenderOptions,
 } from './backend';
+import { PDF_ENGINE_CLOSED } from './index';
 
 const require = createRequire(import.meta.url);
 const execFileAsync = promisify(execFile);
@@ -855,13 +856,14 @@ describe('createTakumiImageBackend', () => {
       });
 
       it('rejects a render in flight on close with a coded IsomerError, and starts afresh after', async () => {
+        expect(PDF_ENGINE_CLOSED).toBe('PDF_ENGINE_CLOSED');
         const backend = createTakumiImageBackend();
         await backend.pdf(pages(['a']));
         const inFlight = expect(
           backend.pdf(pages(['a']))
         ).rejects.toMatchObject({
           name: 'IsomerError',
-          code: 'PDF_ENGINE_CLOSED',
+          code: PDF_ENGINE_CLOSED,
           message: 'pdf: the backend was closed',
         });
         await backend.close();

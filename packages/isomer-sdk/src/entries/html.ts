@@ -7,18 +7,10 @@
 
 export {
   type EnhancementDefinition,
-  type HTMLDispatcherRenderOptions,
-  type HTMLEnhancementScope,
   type HTMLRenderDispatcher,
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
-  type HTMLStyleCollection,
-  type HTMLStyleCollectionOptions,
   collectHTMLStyles,
   renderHTMLWithDispatcher,
 } from '../render/html';
-export {
-  type ReactContentDispatcher,
-  type ReactContentOptions,
-} from '../render/react';

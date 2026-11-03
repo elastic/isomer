@@ -7,4 +7,6 @@
  */
 
 // Committed rather than built, so pnpm links the bin before the workspace is built.
-await import('../dist/cli.js');
+'use strict';
+
+require('../lib/cjs/cli.js');

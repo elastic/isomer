@@ -120,8 +120,9 @@ engine.measure(${JSON.stringify(NODE)}, ${JSON.stringify(OPTIONS)}).then(({ widt
   }, 30_000);
 
   it('starts its worker in an ESM host run with a preload, --input-type and a V8 flag', async () => {
-    const host = `import { createPdfEngine } from ${JSON.stringify(engineModule)};
-const engine = createPdfEngine([]);
+    // The package has no `"type"`, so Node loads its source as CommonJS: the exports are the default import.
+    const host = `import engineModule from ${JSON.stringify(engineModule)};
+const engine = engineModule.createPdfEngine([]);
 const { width } = await engine.measure(${JSON.stringify(NODE)}, ${JSON.stringify(OPTIONS)});
 process.stdout.write(typeof width);
 await engine.close();`;

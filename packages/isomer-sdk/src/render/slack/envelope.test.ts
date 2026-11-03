@@ -932,20 +932,6 @@ describe('Slack envelope transforms', () => {
       SLACK_LIMITS.imageAltTextChars
     );
   });
-
-  it('namespaces allocated asset refs when a prefix is given', () => {
-    const { blocks, assets } = renderPostable(
-      { type: 'view', body: [{ type: 'chart', label: 'Series' }] },
-      degradingDispatcher({ collectAssets: true }),
-      { collectAssets: true, assetPrefix: 'charts' }
-    );
-    expect(assets[0]?.ref).toBe('charts-0');
-    expect(blocks).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ slack_file: { ref: 'charts-0' } }),
-      ])
-    );
-  });
 });
 
 describe('Slack envelope count limits', () => {

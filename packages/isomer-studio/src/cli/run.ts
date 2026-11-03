@@ -7,7 +7,7 @@
 
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, relative } from 'node:path';
+import { dirname, isAbsolute, join, relative } from 'node:path';
 
 import { buildSite } from '../node/build_site';
 import { checkStudio } from '../node/check';
@@ -32,7 +32,7 @@ export interface CliIo {
   stderr: (text: string) => void;
   /** Called with the running dev server, which keeps the process alive until it closes. */
   onDevServer?: ((server: DevServer) => void) | undefined;
-  /** Called with the config before it loads; the binary passes `registerProjectResolution`. */
+  /** Called before the CLI imports from the project, with the config or, for `init`, the project's `package.json`; the binary passes `registerProjectResolution`. */
   onConfig?: ((configPath: string) => void) | undefined;
 }
 
@@ -59,6 +59,7 @@ const runCommand = async (
   const { cwd, stdout, stderr } = io;
   const { loader } = args;
   if (args.command === 'init') {
+    io.onConfig?.(join(args.cwd, 'package.json'));
     const written = await writeInitConfig(args.cwd, { loader });
     stdout(
       `Wrote ${displayPath(cwd, written)}. Run \`npx @elastic/isomer-studio\` to open the Studio.\n`

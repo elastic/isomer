@@ -24,7 +24,7 @@ sources:
 
 `authoring: { jsx: true }` adds the JSX props types and components `buildJsxShim` builds, since the runtime cannot see whether a host builds a shim.[^authoring]
 
-`parse` still validates with `buildCompositionJsonSchema`.[^authoring-schema]
+`parse` still validates against the full composition schema, not this projection.[^authoring-schema]
 
 Related: [SDK authoring](/sdk/concepts/authoring.md), [view registry](/runtime/concepts/view-registry.md), [scoring](/evals/concepts/scoring.md).
 
