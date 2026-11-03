@@ -91,6 +91,8 @@ interface MetricLayout {
 /** What {@link resolveMetric} returns: the grid, layout, tiles and tokens a renderer draws. */
 export interface ResolvedMetric {
   columns: number;
+  /** Empty cells drawn after the tiles. */
+  placeholders: number;
   layout: MetricLayout;
   tiles: ResolvedMetricTile[];
   tokens: ChartTokens;
@@ -241,7 +243,11 @@ export const resolveMetric = (
 ): ResolvedMetric => {
   const tokens = chartTokens[scheme];
   return {
-    columns: Math.min(node.columns ?? 3, node.tiles.length),
+    columns: Math.max(
+      1,
+      Math.min(node.columns ?? 3, node.tiles.length + (node.placeholders ?? 0))
+    ),
+    placeholders: node.placeholders ?? 0,
     layout: {
       ...DEFAULT_LAYOUT,
       ...Object.fromEntries(

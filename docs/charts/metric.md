@@ -5,7 +5,8 @@
 ```ts
 type MetricNode = {
   type: 'metric';
-  tiles: MetricTile[]; // 1–100, in display order; keys unique
+  tiles: MetricTile[]; // in display order; keys unique; none is an empty grid
+  placeholders?: number; // empty cells after the tiles, default 0
   columns?: number; // tiles per row, default 3
   layout?: {
     titleAlign?: Align; // default 'left'
@@ -62,6 +63,8 @@ type MetricTile = {
 };
 ```
 
+Tile counts, columns, placeholders and text share one cap of 10,000; renderers truncate text that does not fit.
+
 ## Secondary readings
 
 `kind: 'value'` shows a reading the author or a lowering has already resolved, with an optional badge. Use it to reproduce Lens settings such as a static badge color, a comparison with the primary metric, or a reversed palette.
@@ -98,7 +101,7 @@ Text colors are picked for contrast with the fill.
 | trend                   | `trend`, `trendShape`                                                        | an area or step path over the tile's lower half, broken at `null` |
 | progress                | `domainMax`, `domainMin` when not 0, `progressBarDirection`                  | a filled bar                                                      |
 | layout                  | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement                                      |
-| columns                 | the `data` grid                                                              | rows of tiles                                                     |
+| columns, placeholders   | the `data` grid, padded with `undefined` cells                               | rows of tiles, then empty cells                                   |
 | action                  | `onElementClick`                                                             | a press handler                                                   |
 
 ## Not yet supported

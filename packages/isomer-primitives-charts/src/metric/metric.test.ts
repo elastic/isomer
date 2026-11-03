@@ -238,6 +238,43 @@ describe('resolveMetric', () => {
   });
 });
 
+describe('metric limits', () => {
+  it('draws an empty grid, padded with placeholders', () => {
+    expect(issues({ type: 'metric', tiles: [] })).toEqual([]);
+    expect(resolveMetric({ type: 'metric', tiles: [] })).toMatchObject({
+      columns: 1,
+      placeholders: 0,
+      tiles: [],
+    });
+    expect(
+      resolveMetric({
+        type: 'metric',
+        tiles: [{ key: 'a', value: 1 }],
+        placeholders: 4,
+      })
+    ).toMatchObject({ columns: 3, placeholders: 4 });
+  });
+
+  it('takes long text and many tiles up to one pack-wide cap', () => {
+    expect(issues(tile({ title: 'x'.repeat(10_000) }))).toEqual([]);
+    expect(issues(tile({ title: 'x'.repeat(10_001) }))).toHaveLength(1);
+    const tiles = Array.from({ length: 10_000 }, (_, i) => ({
+      key: String(i),
+      value: i,
+    }));
+    expect(issues({ type: 'metric', tiles, columns: 500 })).toEqual([]);
+  });
+
+  it('reads an empty grid as no text', () => {
+    expect(
+      runtime.surfaces.text.renderNode({
+        type: 'metric',
+        tiles: [],
+      } as PrimitiveNode)
+    ).toBe('');
+  });
+});
+
 describe('metric text and markdown', () => {
   it('reads every tile', () => {
     expect(runtime.surfaces.text.renderNode(breakdownExample as PrimitiveNode))

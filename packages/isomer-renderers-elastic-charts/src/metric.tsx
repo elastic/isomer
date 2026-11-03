@@ -57,8 +57,14 @@ const MetricView = ({
   const ref = useRef<HTMLDivElement>(null);
   const scheme = useScheme(ref, fixed);
   const resolved = resolveMetric(node, scheme ?? 'light');
-  const { tiles, columns, tokens } = resolved;
-  const grid = rows(tiles, columns);
+  const { tiles, columns, placeholders, tokens } = resolved;
+  const grid = rows(
+    [
+      ...tiles.map((tile) => toDatum(tile, tokens)),
+      ...Array.from({ length: placeholders }, () => undefined),
+    ],
+    columns
+  );
   const interactive =
     onEvent !== undefined && tiles.some(({ action }) => action);
   return (
@@ -93,12 +99,7 @@ const MetricView = ({
                     }
                   : {})}
               />
-              <Metric
-                id="metric"
-                data={grid.map((row) =>
-                  row.map((tile) => toDatum(tile, tokens))
-                )}
-              />
+              <Metric id="metric" data={grid} />
             </Chart>
           </div>
         </>
