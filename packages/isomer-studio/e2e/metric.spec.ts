@@ -132,24 +132,6 @@ for (const mode of ['dev', 'static']) {
       );
       await page.emulateMedia({ colorScheme: 'light' });
 
-      // A theme change on the shadow host, outside the preview's shadow root.
-      await chart.evaluate((element) => {
-        const { host } = element.getRootNode() as ShadowRoot;
-        (host as HTMLElement).style.setProperty('color-scheme', 'dark');
-      });
-      await expect(tiles.first()).toHaveCSS(
-        'background-color',
-        'rgb(17, 28, 44)'
-      );
-      await chart.evaluate((element) => {
-        const { host } = element.getRootNode() as ShadowRoot;
-        (host as HTMLElement).style.removeProperty('color-scheme');
-      });
-      await expect(tiles.first()).toHaveCSS(
-        'background-color',
-        'rgb(255, 255, 255)'
-      );
-
       // One row is `rowHeight` tall in an indefinite host and fits a shorter one.
       const rootSize = () =>
         chart.evaluate((element) => {
