@@ -60,14 +60,23 @@ const build = <T>(
 });
 
 /** The custom palette Lens builds from saved `custom` params. */
-export const customPalette = (params: SavedParams): CustomPalette => {
-  const stops = params.stops ?? [];
-  return build(
-    stops.map(({ color }) => color),
-    stops.map(({ stop }) => stop),
+const positions = (params: SavedParams, positioned: boolean) =>
+  positioned ? (params.stops ?? []).map(({ stop }) => stop) : [];
+
+/**
+ * The palette Lens builds from saved `custom` colors. `positioned` is whether
+ * `computePaletteParams` keeps the stop positions, which it decides by
+ * `params.name` rather than the palette's own name.
+ */
+export const customPalette = (
+  params: SavedParams,
+  positioned = true
+): CustomPalette =>
+  build(
+    (params.stops ?? []).map(({ color }) => color),
+    positions(params, positioned),
     params
   );
-};
 
 /** Lens's `DEFAULT_COLOR_STEPS`. */
 const DEFAULT_BANDS = 5;
@@ -76,11 +85,14 @@ const DEFAULT_BANDS = 5;
  * A named palette as `getOverridePaletteColors` regenerates it: `steps` bands,
  * or one per saved stop, spread evenly. Its colors are band indexes.
  */
-export const namedPalette = (params: SavedParams): CustomPalette<number> => {
+export const namedPalette = (
+  params: SavedParams,
+  positioned = false
+): CustomPalette<number> => {
   const bands = params.steps || params.stops?.length || DEFAULT_BANDS;
   return build(
     Array.from({ length: bands }, (_, band) => band),
-    [],
+    positions(params, positioned),
     params
   );
 };

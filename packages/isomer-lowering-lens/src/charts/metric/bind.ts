@@ -318,17 +318,20 @@ const tileColor = (
 ): TileColor | undefined => {
   const { palette, color } = state;
   if (palette?.params && typeof value === 'number' && Number.isFinite(value)) {
+    // `getOverridePaletteColors` reads the palette's name for its colors;
+    // `computePaletteParams` reads `params.name` for its stop positions.
+    const positioned = palette.params.name === 'custom';
     if (palette.name === 'custom') {
       const picked = colorForValue(
         value,
-        customPalette(palette.params),
+        customPalette(palette.params, positioned),
         bounds()
       );
       return picked === undefined
         ? undefined
         : hexColor(picked, problems, [...VIS, 'palette']);
     }
-    const named = namedPalette(palette.params);
+    const named = namedPalette(palette.params, positioned);
     if (
       !isValuePalette(palette.name) ||
       named.colors.length > MAX_PALETTE_BANDS

@@ -104,9 +104,34 @@ const codes = (result: ReturnType<typeof bind>) =>
 
 describe('bind: native ES|QL metric', () => {
   it('binds the "[Logs] Web Traffic" sample Visits panel, which renders compact', () => {
-    expect(node(run(vis(), single(14_074)))).toEqual({
+    // The panel's saved visualization and layer, from the sample dashboard's export.
+    const layerId = '64a4cc71-0a4e-4540-84e2-0d36c8f15b46';
+    expect(
+      node(
+        run(
+          { layerId, layerType: 'data', metricAccessor: 'Visits' },
+          {
+            [layerId]: {
+              esql: 'FROM kibana_sample_data_logs | STATS COUNT(*) | RENAME `COUNT(*)` as `Visits`',
+              columns: [
+                {
+                  columnId: 'Visits',
+                  fieldName: 'Visits',
+                  meta: { type: 'number', esType: 'long' },
+                  inMetricDimension: true,
+                },
+              ],
+              response: {
+                columns: [{ name: 'Visits', type: 'long' }],
+                values: [[14_074]],
+              },
+            },
+          }
+        )
+      )
+    ).toEqual({
       type: 'metric',
-      tiles: [{ key: 'metric', title: 'visits', value: 14_074 }],
+      tiles: [{ key: 'metric', title: 'Visits', value: 14_074 }],
       layout: { density: 'compact' },
     });
   });
@@ -309,6 +334,55 @@ describe('bind: named palettes', () => {
     expect(tiles.map(({ color }) => color)).toEqual(
       [0, 1, 2].map((step) => ({ palette: 'status', step, of: 3 }))
     );
+  });
+
+  it("takes colors by the palette's name and stop positions by `params.name`, as Lens does", () => {
+    const stops = [
+      { color: '#AAAAAA', stop: 10 },
+      { color: '#BBBBBB', stop: 12 },
+      { color: '#CCCCCC', stop: 30 },
+    ];
+    // Custom colors without positions spread evenly over [0, 80].
+    expect(
+      node(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'custom',
+              params: {
+                name: 'status',
+                rangeType: 'number',
+                continuity: 'none',
+                stops,
+              },
+            },
+          }),
+          single(40)
+        )
+      ).tiles[0]!.color
+    ).toBe('#BBBBBB');
+    // Named bands with custom positions: 20 falls below the third stop.
+    expect(
+      node(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'status',
+              params: {
+                name: 'custom',
+                rangeType: 'number',
+                continuity: 'above',
+                steps: 3,
+                stops,
+              },
+            },
+          }),
+          single(20)
+        )
+      ).tiles[0]!.color
+    ).toEqual({ palette: 'status', step: 2, of: 3 });
   });
 
   it('refuses a palette that is not a value palette', () => {
