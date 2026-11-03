@@ -329,6 +329,135 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     );
   }
 
+  // A host plans, reads back and binds a Lens metric through the packed entries:
+  // breakdown titles format through numeral, and the comparison through moment.
+  const loweringName = '@elastic/isomer-lowering-lens';
+  if (packages.has(loweringName)) {
+    const loweringConsumerDir = join(tempDir, 'consumers', loweringName);
+    const esql =
+      'FROM logs | STATS took = AVG(took), before = AVG(took_before) BY bytes';
+    const bindMetric = `const planned = plan({ savedObject: ${JSON.stringify({
+      id: 'took',
+      type: 'lens',
+      references: [],
+      attributes: {
+        title: 'Took',
+        visualizationType: 'lnsMetric',
+        state: {
+          datasourceStates: {
+            textBased: {
+              layers: {
+                layer: {
+                  query: { esql },
+                  columns: [
+                    {
+                      columnId: 'bytes',
+                      fieldName: 'bytes',
+                      meta: { type: 'number' },
+                      params: {
+                        format: { id: 'bytes', params: { decimals: 1 } },
+                      },
+                    },
+                    {
+                      columnId: 'took',
+                      fieldName: 'took',
+                      meta: { type: 'number' },
+                      params: {
+                        format: {
+                          id: 'duration',
+                          params: {
+                            fromUnit: 'seconds',
+                            toUnit: 'asMinutes',
+                            decimals: 1,
+                          },
+                        },
+                      },
+                    },
+                    {
+                      columnId: 'before',
+                      fieldName: 'before',
+                      meta: { type: 'number' },
+                      params: {
+                        format: {
+                          id: 'duration',
+                          params: {
+                            fromUnit: 'seconds',
+                            toUnit: 'asMinutes',
+                            decimals: 1,
+                          },
+                        },
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+          visualization: {
+            layerId: 'layer',
+            layerType: 'data',
+            metricAccessor: 'took',
+            secondaryMetricAccessor: 'before',
+            breakdownByAccessor: 'bytes',
+            secondaryTrend: {
+              type: 'dynamic',
+              visuals: 'both',
+              paletteId: 'compare_to',
+              reversed: false,
+              baselineValue: 'primary',
+            },
+          },
+        },
+      },
+    })} });
+if (planned.status !== 'planned') throw new Error(JSON.stringify(planned));
+const read = readResponse(planned.plan.layers[0], { columns: [{ name: 'took', type: 'double' }, { name: 'before', type: 'double' }, { name: 'bytes', type: 'long' }], values: [[120, 60, 1536]] });
+if (read.status !== 'ready') throw new Error(JSON.stringify(read));
+const bound = bind(planned.plan, [read.table]);
+if (bound.status !== 'bound') throw new Error(JSON.stringify(bound));
+const [tile] = bound.node.tiles;
+if (tile.title !== '1.5KB' || tile.secondary.value !== '+1.0 minutes') throw new Error(JSON.stringify(tile));`;
+    const lowering = packages.get(loweringName);
+    const bundles = ['', '/charts'].map((subpath, index) => {
+      const outfile = join(
+        lowering.dir,
+        '.esm-check',
+        `bind.${index}.node.mjs`
+      );
+      return { subpath, outfile };
+    });
+    for (const { subpath, outfile } of bundles) {
+      await bundleEsm(
+        `${loweringName}${subpath}`,
+        loweringConsumerDir,
+        lowering.manifest,
+        'node',
+        outfile
+      );
+    }
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `${failOnWarning} const { plan, readResponse } = await import(${JSON.stringify(pathToFileURL(bundles[0].outfile).href)});\nconst { bind } = await import(${JSON.stringify(pathToFileURL(bundles[1].outfile).href)});\n${bindMetric}`,
+      ],
+      { cwd: loweringConsumerDir, stdio: 'inherit' }
+    );
+    rmSync(join(lowering.dir, '.esm-check'), { force: true, recursive: true });
+    execFileSync(
+      process.execPath,
+      [
+        '--eval',
+        `${failOnWarning} const { plan, readResponse } = require('${loweringName}');\nconst { bind } = require('${loweringName}/charts');\n${bindMetric}`,
+      ],
+      { cwd: loweringConsumerDir, stdio: 'inherit' }
+    );
+    console.log(
+      `${loweringName}: an ESM bundle of the packed entries and their require each planned, read and bound a metric.`
+    );
+  }
+
   // A consumer compiles every published declaration with `skipLibCheck` off,
   // against whichever `@types/react` this install has.
   for (const types of ['node', 'react', 'react-dom']) {
