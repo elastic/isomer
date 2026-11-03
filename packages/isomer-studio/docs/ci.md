@@ -29,7 +29,7 @@ The Isomer repository has a composite action that runs both and uploads what the
 | `base` | `./` | The URL path the site is served from. |
 | `artifact-name` | `isomer-studio` | The name of the uploaded site. |
 
-The Isomer repository runs it on the slides pack in its own CI, after `pnpm verify`.
+The Isomer repository runs it on the slides pack in its own CI, after the Studio's browser tests.
 
 ## Without the action
 
