@@ -8,6 +8,7 @@
 import type { ComponentType } from 'react';
 import type { IsomerRuntime } from '@elastic/isomer-runtime';
 import type {
+  ActionEventRef,
   Composition,
   PrimitiveIcon,
   PrimitiveNode,
@@ -43,6 +44,8 @@ export type StudioPreviewProps = (
   enhancements?: readonly string[] | undefined;
   /** Called with the shadow root after each render commits, for a host step such as `showSlideBuild`. Never called on the `html` fallback. */
   onCommit?: ((root: ShadowRoot) => void) | undefined;
+  /** Receives the interactions the render raises, as a host routes them; absent renders non-interactively. Never called on the `html` fallback. */
+  onEvent?: ((event: ActionEventRef) => void) | undefined;
 };
 
 /** A surface an app can show: one of the runtime's, or `png`, the host's rasterized snapshot. */

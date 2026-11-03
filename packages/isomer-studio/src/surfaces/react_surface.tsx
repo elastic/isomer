@@ -8,7 +8,11 @@
 import type { ReactNode } from 'react';
 import React, { Component, useLayoutEffect, useMemo } from 'react';
 import { EuiCallOut } from '@elastic/eui';
-import type { Composition, StyledRenderContext } from '@elastic/isomer-sdk';
+import type {
+  ActionEventRef,
+  Composition,
+  StyledRenderContext,
+} from '@elastic/isomer-sdk';
 
 import { useStudio } from '../studio_context';
 
@@ -59,6 +63,7 @@ export interface ReactSurfaceProps {
   enhancements?: readonly string[] | undefined;
   /** Runs after each commit of the shadow root's content; the `html` fallback has no root to hand it. */
   onCommit?: ((root: ShadowRoot) => void) | undefined;
+  onEvent?: ((event: ActionEventRef) => void) | undefined;
 }
 
 const ReactContent = ({
@@ -67,6 +72,7 @@ const ReactContent = ({
   heading,
   enhancements,
   onCommit,
+  onEvent,
   createReactContext,
 }: ReactSurfaceProps & {
   root: ShadowRoot;
@@ -74,8 +80,8 @@ const ReactContent = ({
 }) => {
   const { runtime } = useStudio();
   const context = useMemo(
-    () => createReactContext(root),
-    [createReactContext, root]
+    () => ({ ...createReactContext(root), ...(onEvent ? { onEvent } : {}) }),
+    [createReactContext, root, onEvent]
   );
   useLayoutEffect(() => {
     onCommit?.(root);
@@ -112,6 +118,7 @@ export const ReactSurface = ({
   heading,
   enhancements,
   onCommit,
+  onEvent,
 }: ReactSurfaceProps) => {
   const { createReactContext } = useStudio();
 
@@ -127,6 +134,7 @@ export const ReactSurface = ({
                 heading,
                 enhancements,
                 onCommit,
+                onEvent,
                 createReactContext,
               }}
             />

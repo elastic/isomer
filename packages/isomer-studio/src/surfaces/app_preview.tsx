@@ -26,6 +26,7 @@ export const AppPreview = ({
   heading,
   enhancements,
   onCommit,
+  onEvent,
 }: StudioPreviewProps) => {
   const { compose } = useStudio();
   const composed = useMemo((): Composed => {
@@ -55,7 +56,7 @@ export const AppPreview = ({
     <ScaledPreview {...{ zoom, maxHeight }}>
       <ReactSurface
         composition={composed.composition}
-        {...{ heading, enhancements, onCommit }}
+        {...{ heading, enhancements, onCommit, onEvent }}
       />
     </ScaledPreview>
   );
