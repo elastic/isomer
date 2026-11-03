@@ -78,7 +78,7 @@ With `increase: 'good'` a rise is green and a fall red. `'bad'` swaps them, and 
 These follow Elastic Charts' `Metric` chart:
 
 - A tile with no visual fills with its color.
-- A trend tile also fills with its color and draws the sparkline in a shade of it, as Elastic Charts' `getSparkLineColor` computes.
+- A trend tile also fills with its color and draws the sparkline in a shade of it, as Elastic Charts' `getSparkLineColor` computes. With fewer than two points, or no reading above 0, Elastic Charts draws no line but still paints the tile as a trend tile.
 - A progress tile keeps the chart background and fills the bar with its color, defaulting to Lens's progress blue. Its ratio is d3's `scaleLinear` over `[min, max]`, clamped: an empty range fills halfway and a `max` below `min` fills from the far end.
 - `colorTarget: 'value'` paints the value text instead, on tiles without a visual.
 

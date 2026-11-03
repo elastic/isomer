@@ -24,7 +24,6 @@ export type Point = z.infer<typeof pointSchema>;
 /** Points in strictly increasing `x`, so no instant appears twice. */
 export const pointsSchema = z
   .array(pointSchema)
-  .min(2)
   .max(2000)
   .check((ctx) => {
     ctx.value.forEach((point, index) => {

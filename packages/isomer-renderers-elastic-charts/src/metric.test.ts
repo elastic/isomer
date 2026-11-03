@@ -102,6 +102,21 @@ describe('toDatum', () => {
     expect(trend[4]!.y).toBeNaN();
   });
 
+  it('keeps a trend tile with one point, which Elastic Charts draws without a line', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 3,
+          color: 'primary',
+          visual: { kind: 'trend', points: [{ x: 0, y: 3 }] },
+        },
+      ],
+    });
+    expect(datum).toMatchObject({ color: '#0B64DD', trend: [{ x: 0, y: 3 }] });
+  });
+
   it('maps progress onto the bar color and domain', () => {
     expect(datums(progress, 'dark')[0]).toMatchObject({
       color: '#61A2FF',
