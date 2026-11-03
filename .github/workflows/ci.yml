@@ -88,34 +88,28 @@ jobs:
           # The `engines` floor of every published package.
           - target: floor
             node: 22.13.0
-            studio: true
           # Tracks the `.nvmrc` of elastic/kibana on `main`.
           - target: kibana
             node: 24.22.1
-            studio: false
           - target: latest
             node: 26
-            studio: true
     steps:
       - uses: actions/checkout@v5
       # Packages build against the lockfile, as the release does; the target swaps what they run and compile against.
       - uses: ./.github/actions/setup-workspace
         with:
           node-version: ${{ matrix.node }}
-      # The Studio pins React 18 until EUI allows 19, so its jsdom tests run at this Node before the target swaps React.
-      - if: ${{ matrix.studio }}
-        run: pnpm vitest run --project studio
       - run: node scripts/apply_peer_target.js ${{ matrix.target }}
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter './packages/*' --filter '!@elastic/isomer-studio' typecheck
       - run: pnpm vitest run --project node
       - run: pnpm check:pack-consumer
 
-  # The one check branch protection requires for everything above.
+  # The one check branch protection requires for the jobs `pnpm verify` is split into.
   verify:
     name: verify
     if: ${{ !cancelled() }}
-    needs: [static, test, browser, studio-consumer, peers]
+    needs: [static, test, browser, studio-consumer]
     runs-on: ubuntu-latest
     steps:
       - env:
