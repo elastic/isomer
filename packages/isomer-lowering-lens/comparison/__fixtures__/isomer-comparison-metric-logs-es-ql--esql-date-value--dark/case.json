@@ -106,7 +106,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:06.152Z"
+    "capturedAt": "2026-11-03T21:59:49.462Z"
   },
   "reference": {
     "fingerprint": {
@@ -125,26 +125,22 @@
             "width": 389.88,
             "height": 184
           },
+          "interactive": false,
           "value": "Dec 24, 2026 @ 21:45:26.749",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 373.88,
-                "height": 19.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -152,15 +148,14 @@
                 "fontWeight": "500"
               },
               "text": "Latest",
-              "textWidth": 50
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 50,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 153.88,
-                "y": 156.81,
-                "width": 228,
-                "height": 19.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -168,7 +163,12 @@
                 "fontWeight": "500"
               },
               "text": "Dec 24, 2026 @ 21:45:26.749",
-              "textWidth": 228
+              "textRect": {
+                "x": 153.88,
+                "y": 155.81,
+                "width": 228,
+                "height": 20
+              }
             }
           },
           "title": "Latest"

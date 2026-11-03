@@ -164,7 +164,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:32:32.614Z"
+    "capturedAt": "2026-11-03T21:58:47.942Z"
   },
   "reference": {
     "fingerprint": {
@@ -183,26 +183,22 @@
             "width": 257.25,
             "height": 128
           },
+          "interactive": false,
           "value": "11,847",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#ffffff"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 257.25,
                 "height": 128
               },
-              "style": {
-                "background": "#ffffff"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 241.25,
-                "height": 38.38
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -210,15 +206,14 @@
                 "fontWeight": "500"
               },
               "text": "A deliberately long metric label that also has to truncate somewhere",
-              "textWidth": 240
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 240,
+                "height": 58.38
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 46.38,
-                "width": 229.19,
-                "height": 21.8
-              },
               "style": {
                 "color": "#1d2a3e",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -226,15 +221,14 @@
                 "fontWeight": "400"
               },
               "text": "And a subtitle long enough to wrap or truncate as well",
-              "textWidth": 200
+              "textRect": {
+                "x": 8,
+                "y": 50.38,
+                "width": 200,
+                "height": 33.8
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 124.25,
-                "y": 76.81,
-                "width": 125,
-                "height": 43.19
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -242,7 +236,12 @@
                 "fontWeight": "500"
               },
               "text": "11,847",
-              "textWidth": 125
+              "textRect": {
+                "x": 124.25,
+                "y": 75.81,
+                "width": 125,
+                "height": 44
+              }
             }
           },
           "title": "A deliberately long metric label that also has to truncate somewhere",

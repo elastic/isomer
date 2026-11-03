@@ -679,7 +679,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:02.118Z"
+    "capturedAt": "2026-11-03T21:59:42.077Z"
   },
   "reference": {
     "fingerprint": {
@@ -698,26 +698,22 @@
             "width": 389.88,
             "height": 184
           },
+          "interactive": true,
           "value": "623.57 USD",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 355.17,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -725,15 +721,14 @@
                 "fontWeight": "500"
               },
               "text": "Average ticket price",
-              "textWidth": 157
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 157,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 355.17,
-                "height": 21.8
-              },
               "style": {
                 "color": "#1d2a3e",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -741,15 +736,14 @@
                 "fontWeight": "400"
               },
               "text": "Across all carriers",
-              "textWidth": 117
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 117,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 193.88,
-                "y": 132.81,
-                "width": 188,
-                "height": 43.19
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -757,15 +751,14 @@
                 "fontWeight": "500"
               },
               "text": "623.57",
-              "textWidth": 125
+              "textRect": {
+                "x": 193.88,
+                "y": 131.81,
+                "width": 125,
+                "height": 44
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
-              "box": {
-                "x": 318.88,
-                "y": 140.81,
-                "width": 63,
-                "height": 33
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -773,38 +766,44 @@
                 "fontWeight": "500"
               },
               "text": "USD",
-              "textWidth": 63
+              "textRect": {
+                "x": 318.88,
+                "y": 140.81,
+                "width": 63,
+                "height": 33
+              }
             },
             "echMetric>echSingleMetricSparkline>echSingleMetricSparkline__svg": {
+              "style": {},
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {}
+              "holdsText": true
             },
             "echMetric>echSingleMetricSparkline>echSingleMetricSparkline__svg>rect": {
+              "style": {
+                "fill": "#d6e5ff"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
-              },
-              "style": {
-                "fill": "#d6e5ff"
               }
             },
             "echMetric>echSingleMetricSparkline>echSingleMetricSparkline__svg>path": {
+              "style": {
+                "fill": "#a3c5ff",
+                "transform": "matrix(1, 0, 0, 0.5, 0, 0.5)"
+              },
               "box": {
                 "x": 225.26,
                 "y": 92,
                 "width": 160.28,
                 "height": 92
-              },
-              "style": {
-                "fill": "#a3c5ff",
-                "transform": "matrix(1, 0, 0, 0.5, 0, 0.5)"
               }
             }
           },

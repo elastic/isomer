@@ -165,7 +165,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:03.482Z"
+    "capturedAt": "2026-11-03T21:59:45.691Z"
   },
   "reference": {
     "fingerprint": {
@@ -184,26 +184,22 @@
             "width": 389.88,
             "height": 128
           },
+          "interactive": false,
           "value": "11,847",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 128
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 373.88,
-                "height": 19.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -211,15 +207,14 @@
                 "fontWeight": "500"
               },
               "text": "Flights",
-              "textWidth": 51
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 51,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 27.19,
-                "width": 355.17,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -227,15 +222,14 @@
                 "fontWeight": "400"
               },
               "text": "Dense layout",
-              "textWidth": 89
+              "textRect": {
+                "x": 8,
+                "y": 31.19,
+                "width": 89,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 256.88,
-                "y": 76.81,
-                "width": 125,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -243,7 +237,12 @@
                 "fontWeight": "500"
               },
               "text": "11,847",
-              "textWidth": 125
+              "textRect": {
+                "x": 256.88,
+                "y": 75.81,
+                "width": 125,
+                "height": 44
+              }
             }
           },
           "title": "Flights",

@@ -61,7 +61,8 @@ export const FINGERPRINT_KINDS: Record<
         feature: 'layout.element',
         tolerance: pixel,
       },
-      { path: /\.textWidth$/, feature: 'layout.text', tolerance: pixel },
+      { path: /\.textRect\./, feature: 'layout.text', tolerance: pixel },
+      { path: /\.interactive$/, feature: 'interactivity', tolerance: exact },
       {
         path: /\.style\.fontFamily$/,
         feature: 'font.family',

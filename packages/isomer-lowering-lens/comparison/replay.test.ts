@@ -6,7 +6,7 @@
  */
 
 import { readCases } from './fixtures';
-import { modelReadings } from './model';
+import { modelReadings, modelValue } from './model';
 import { replay } from './replay';
 
 const TEXT_FIELDS = [
@@ -62,6 +62,35 @@ describe('captured cases', () => {
           })
         )
       );
+    }
+  );
+
+  it.each(cases.map((comparison) => [comparison.id, comparison] as const))(
+    '%s resolves the colors Kibana painted',
+    (_, comparison) => {
+      const result = replay(comparison);
+      if (result.status !== 'bound') {
+        throw new Error(`${comparison.id} did not bind.`);
+      }
+      const reference = comparison.reference.fingerprint;
+      const readings = modelReadings(
+        result.node,
+        comparison.context.scheme,
+        reference
+      );
+      const pairs = reference.tiles.flatMap(({ elements }, index) =>
+        Object.entries(elements).flatMap(([key, { style }]) =>
+          Object.entries(style).flatMap(([property, painted]) => {
+            const path = `tiles[${index}].elements.${key}.style.${property}`;
+            const resolved = modelValue(readings, path);
+            return resolved === undefined ? [] : [{ path, painted, resolved }];
+          })
+        )
+      );
+      expect(pairs.length).toBeGreaterThan(0);
+      expect(
+        pairs.filter(({ painted, resolved }) => painted !== resolved)
+      ).toEqual([]);
     }
   );
 });

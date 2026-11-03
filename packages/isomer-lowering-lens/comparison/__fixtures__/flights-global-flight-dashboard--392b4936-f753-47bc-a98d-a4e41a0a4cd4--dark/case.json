@@ -166,7 +166,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:32:52.081Z"
+    "capturedAt": "2026-11-03T21:59:10.163Z"
   },
   "reference": {
     "fingerprint": {
@@ -185,26 +185,22 @@
             "width": 257.25,
             "height": 216
           },
+          "interactive": false,
           "value": "11,847",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 257.25,
                 "height": 216
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 241.25,
-                "height": 19.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -212,15 +208,14 @@
                 "fontWeight": "500"
               },
               "text": "Total flights",
-              "textWidth": 93
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 93,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 103.25,
-                "y": 157.61,
-                "width": 146,
-                "height": 50.39
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -228,7 +223,12 @@
                 "fontWeight": "500"
               },
               "text": "11,847",
-              "textWidth": 146
+              "textRect": {
+                "x": 103.25,
+                "y": 156.61,
+                "width": 146,
+                "height": 51
+              }
             }
           },
           "title": "Total flights"

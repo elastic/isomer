@@ -21,7 +21,7 @@ export interface KnownGap {
 export const KNOWN_GAPS: readonly KnownGap[] = [
   {
     kind: 'metric',
-    path: /\.elements\.[^.]*>echMetricText__title>(button>)?span$/,
+    path: /^tiles\[\]\.interactive$/,
     reason:
       'Kibana makes every dashboard metric clickable, so Elastic Charts draws its title as a button; Isomer does only for a tile with an action, in a host that handles events.',
   },

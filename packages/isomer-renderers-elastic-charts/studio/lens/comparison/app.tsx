@@ -34,7 +34,10 @@ import {
   type Fingerprint,
   FINGERPRINT_KINDS,
 } from '../../../../isomer-lowering-lens/comparison/fingerprint';
-import { modelReadings } from '../../../../isomer-lowering-lens/comparison/model';
+import {
+  modelReadings,
+  modelValue,
+} from '../../../../isomer-lowering-lens/comparison/model';
 import { replay } from '../../../../isomer-lowering-lens/comparison/replay';
 
 /** Where this page draws, as a capture records it. */
@@ -90,15 +93,6 @@ const pretty = (value: unknown) =>
     : typeof value === 'string'
       ? value
       : JSON.stringify(value);
-
-/** The resolved model's value for a fingerprint field, where the model has one. */
-const modelValue = (
-  readings: readonly Record<string, unknown>[],
-  path: string
-) => {
-  const match = /^tiles\[(\d+)\]\.(.+)$/.exec(path);
-  return match ? readings[Number(match[1])]?.[match[2]!] : undefined;
-};
 
 /**
  * Reads a drawing once two reads agree, since Elastic Charts fits metric text after layout, and again whenever

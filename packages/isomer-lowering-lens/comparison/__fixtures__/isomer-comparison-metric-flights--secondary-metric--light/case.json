@@ -221,7 +221,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:32:31.574Z"
+    "capturedAt": "2026-11-03T21:58:46.920Z"
   },
   "reference": {
     "fingerprint": {
@@ -240,26 +240,22 @@
             "width": 389.88,
             "height": 184
           },
+          "interactive": true,
           "value": "47.2 min",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#ffffff"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {
-                "background": "#ffffff"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 355.17,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -267,15 +263,14 @@
                 "fontWeight": "500"
               },
               "text": "Average delay",
-              "textWidth": 110
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 110,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 355.17,
-                "height": 21.8
-              },
               "style": {
                 "color": "#1d2a3e",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -283,15 +278,14 @@
                 "fontWeight": "400"
               },
               "text": "All carriers",
-              "textWidth": 69
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 69,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__label": {
-              "box": {
-                "x": 309.88,
-                "y": 116.02,
-                "width": 41,
-                "height": 16.8
-              },
               "style": {
                 "color": "#1d2a3e",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -299,15 +293,14 @@
                 "fontWeight": "500"
               },
               "text": "Worst",
-              "textWidth": 41
+              "textRect": {
+                "x": 309.88,
+                "y": 115.02,
+                "width": 41,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echSecondaryMetric__value": {
-              "box": {
-                "x": 354.88,
-                "y": 116.02,
-                "width": 27,
-                "height": 16.8
-              },
               "style": {
                 "color": "#1d2a3e",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -315,15 +308,14 @@
                 "fontWeight": "500"
               },
               "text": "360",
-              "textWidth": 27
+              "textRect": {
+                "x": 354.88,
+                "y": 115.02,
+                "width": 27,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 246.88,
-                "y": 132.81,
-                "width": 135,
-                "height": 43.19
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -331,15 +323,14 @@
                 "fontWeight": "500"
               },
               "text": "47.2",
-              "textWidth": 79
+              "textRect": {
+                "x": 246.88,
+                "y": 131.81,
+                "width": 79,
+                "height": 44
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
-              "box": {
-                "x": 325.88,
-                "y": 140.81,
-                "width": 56,
-                "height": 33
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -347,7 +338,12 @@
                 "fontWeight": "500"
               },
               "text": "min",
-              "textWidth": 56
+              "textRect": {
+                "x": 325.88,
+                "y": 140.81,
+                "width": 56,
+                "height": 33
+              }
             }
           },
           "title": "Average delay",

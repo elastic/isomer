@@ -145,13 +145,13 @@ test.describe('Lens comparison', () => {
       name: 'the value moved left',
       from: '--count--light',
       css: '.echMetricText__valueBlock{justify-content:flex-start !important}',
-      expected: /echMetricText__value\.box\.x layout\.element$/,
+      expected: /echMetricText__value\.textRect\.x layout\.text$/,
     },
     {
       name: 'the value moved down',
       from: '--icon-centered-top--light',
       css: '.echMetricText__valueBlock{grid-row:-2 !important}',
-      expected: /echMetricText__value\.box\.y layout\.element$/,
+      expected: /echMetricText__value\.textRect\.y layout\.text$/,
     },
     {
       name: 'the icon moved to the other side',
@@ -164,6 +164,12 @@ test.describe('Lens comparison', () => {
       from: '--esql-breakdown-compare--light',
       css: '.echMetricText__extraBlock{justify-content:center !important}',
       expected: /echBadge__content\.box\.x layout\.element$/,
+    },
+    {
+      name: 'a subtitle aligned the other way',
+      from: '--secondary-metric--light',
+      css: '.echMetricText__subtitle{text-align:right !important}',
+      expected: /echMetricText__subtitle\.textRect\.x layout\.text$/,
     },
     {
       name: 'a subtitle drawn larger',

@@ -14,12 +14,14 @@ export interface Box {
 
 /** An element a tile paints: what it draws, where, and in which style. */
 export interface DrawnElement {
-  /** Relative to the tile. */
-  box: Box;
+  /** Relative to the tile; only for an element that paints a fill, border or shape. */
+  box?: Box;
+  /** Set when that box is sized around text, so it moves with how the platform rasterizes text. */
+  holdsText?: true;
   /** The element's own text, not its descendants'. */
   text?: string;
-  /** The drawn width of that text. */
-  textWidth?: number;
+  /** Where that text is drawn, relative to the tile. */
+  textRect?: Box;
   style: Record<string, string>;
 }
 
@@ -27,6 +29,8 @@ export interface MetricTileFingerprint {
   /** `[row, column]` in the chart's grid. */
   position: [number, number];
   box: Box;
+  /** Elastic Charts draws a clickable tile's title as a button. */
+  interactive: boolean;
   /** The readings, for checking the drawing against the resolved model. */
   title?: string;
   subtitle?: string;
@@ -98,13 +102,8 @@ export const extractMetricFingerprint = (
   });
   const transparent = (color: string) =>
     color === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(color);
-  // Only what paints: its own text, a fill or border, a shape, or the progress meter.
-  const paints = (
-    element: Element,
-    style: CSSStyleDeclaration,
-    ownText: string
-  ) =>
-    ownText !== '' ||
+  // What paints a box: a fill or border, a shape, an image, or the progress meter.
+  const paints = (element: Element, style: CSSStyleDeclaration) =>
     !transparent(style.backgroundColor) ||
     (parseFloat(style.borderTopWidth) > 0 &&
       !transparent(style.borderTopColor)) ||
@@ -139,22 +138,27 @@ export const extractMetricFingerprint = (
         .replace(/\s+/g, ' ')
         .trim();
       const rect = element.getBoundingClientRect();
+      const fills = paints(element, style);
       if ((rect.width > 0 && rect.height > 0) || ownText) {
-        if (paints(element, style, ownText)) {
+        if (fills || ownText) {
           let key = path;
           for (let occurrence = 2; key in elements; occurrence += 1) {
             key = `${path}#${occurrence}`;
           }
-          const drawn: DrawnElement = {
-            box: relative(rect, tileBox),
-            style: {},
-          };
+          const drawn: DrawnElement = { style: {} };
+          // A transparent box is not drawn; only its text is.
+          if (fills) {
+            drawn.box = relative(rect, tileBox);
+            if ((element.textContent ?? '').trim() !== '') {
+              drawn.holdsText = true;
+            }
+          }
           if (ownText) {
             const range = document.createRange();
             range.setStart(own[0]!, 0);
             range.setEnd(own.at(-1)!, own.at(-1)!.length);
             drawn.text = ownText;
-            drawn.textWidth = round(range.getBoundingClientRect().width);
+            drawn.textRect = relative(range.getBoundingClientRect(), tileBox);
             drawn.style.color = hex(style.color);
             drawn.style.fontFamily = style.fontFamily;
             drawn.style.fontSize = style.fontSize;
@@ -185,7 +189,10 @@ export const extractMetricFingerprint = (
         }
       }
       for (const child of element.children) {
-        walk(child, `${path}>${nameOf(child)}`);
+        // A clickable title's button draws nothing of its own; `interactive` records it.
+        const wrapper =
+          child.tagName === 'BUTTON' && nameOf(child) === 'button';
+        walk(child, wrapper ? path : `${path}>${nameOf(child)}`);
       }
     };
     walk(tile, nameOf(tile));
@@ -202,6 +209,7 @@ export const extractMetricFingerprint = (
     const fingerprint: MetricTileFingerprint = {
       position: [Number(row), Number(column)],
       box: relative(tile.getBoundingClientRect(), origin),
+      interactive: Boolean(tile.querySelector('.echMetricText__title button')),
       value: text(tile.querySelector('.echMetricText__value')) ?? '',
       elements: readElements(tile),
     };

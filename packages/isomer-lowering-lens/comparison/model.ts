@@ -22,7 +22,7 @@ export const modelReadings = (
   scheme: Scheme,
   fingerprint: MetricFingerprint
 ): Record<string, unknown>[] => {
-  const { tiles, columns } = resolveMetric(node, scheme);
+  const { tiles, columns, tokens } = resolveMetric(node, scheme);
   return fingerprint.tiles.map(({ position: [row, column] }) => {
     const tile = tiles[row * columns + column];
     return {
@@ -32,6 +32,39 @@ export const modelReadings = (
       value: tile?.values ? `[${tile.values.join(', ')}]` : tile?.value,
       'secondary.label': tile?.secondary?.label,
       'secondary.value': tile?.secondary?.value,
+      // A trend or progress tile keeps the background and paints its color on the sparkline or bar.
+      background: (tile?.visual
+        ? tokens.background
+        : tile?.fill
+      )?.toLowerCase(),
+      fill: tile?.fill?.toLowerCase(),
+      valueColor: tile?.valueColor?.toLowerCase(),
+      'badge.background': tile?.secondary?.badge?.background.toLowerCase(),
+      'badge.text': tile?.secondary?.badge?.text.toLowerCase(),
     };
   });
+};
+
+/** Where a drawn element's paint comes from in the resolved model, by the end of its fingerprint path. */
+const PAINT_SOURCES: readonly [RegExp, string][] = [
+  [/^elements\.echMetric\.style\.background$/, 'background'],
+  [/>echSingleMetricSparkline__svg>rect\.style\.fill$/, 'fill'],
+  [/>echMetricText__value(>echMetricText__part)?\.style\.color$/, 'valueColor'],
+  [/>echBadge__content\.style\.background$/, 'badge.background'],
+  [/>echBadge__content>[^.]+\.style\.color$/, 'badge.text'],
+];
+
+/** The resolved model's value for a fingerprint field such as `tiles[0].value`, where the model has one. */
+export const modelValue = (
+  readings: readonly Record<string, unknown>[],
+  path: string
+) => {
+  const match = /^tiles\[(\d+)\]\.(.+)$/.exec(path);
+  if (!match) {
+    return undefined;
+  }
+  const reading = readings[Number(match[1])];
+  const field = match[2]!;
+  const source = PAINT_SOURCES.find(([pattern]) => pattern.test(field))?.[1];
+  return reading?.[source ?? field];
 };

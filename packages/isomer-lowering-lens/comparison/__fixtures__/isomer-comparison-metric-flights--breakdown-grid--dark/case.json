@@ -234,7 +234,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:02.748Z"
+    "capturedAt": "2026-11-03T21:59:43.306Z"
   },
   "reference": {
     "fingerprint": {
@@ -253,26 +253,22 @@
             "width": 393.88,
             "height": 148
           },
+          "interactive": true,
           "value": "3,031",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 393.88,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 358.03,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -280,15 +276,14 @@
                 "fontWeight": "500"
               },
               "text": "Logstash Airways",
-              "textWidth": 134
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 134,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 358.03,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -296,15 +291,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 282.88,
-                "y": 95.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -312,7 +306,12 @@
                 "fontWeight": "500"
               },
               "text": "3,031",
-              "textWidth": 102
+              "textRect": {
+                "x": 282.88,
+                "y": 94.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "Logstash Airways",
@@ -329,26 +328,22 @@
             "width": 393.88,
             "height": 148
           },
+          "interactive": true,
           "value": "2,985",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 393.88,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 358.97,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -356,15 +351,14 @@
                 "fontWeight": "500"
               },
               "text": "JetBeats",
-              "textWidth": 71
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 71,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 358.97,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -372,15 +366,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 283.88,
-                "y": 95.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -388,7 +381,12 @@
                 "fontWeight": "500"
               },
               "text": "2,985",
-              "textWidth": 102
+              "textRect": {
+                "x": 283.88,
+                "y": 94.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "JetBeats",
@@ -405,26 +403,22 @@
             "width": 393.88,
             "height": 148
           },
+          "interactive": true,
           "value": "2,919",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 393.88,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 358.03,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -432,15 +426,14 @@
                 "fontWeight": "500"
               },
               "text": "ES-Air",
-              "textWidth": 51
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 51,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 358.03,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -448,15 +441,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 282.88,
-                "y": 96.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -464,7 +456,12 @@
                 "fontWeight": "500"
               },
               "text": "2,919",
-              "textWidth": 102
+              "textRect": {
+                "x": 282.88,
+                "y": 95.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "ES-Air",
@@ -481,26 +478,22 @@
             "width": 393.88,
             "height": 148
           },
+          "interactive": true,
           "value": "2,912",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 393.88,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 358.97,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -508,15 +501,14 @@
                 "fontWeight": "500"
               },
               "text": "Kibana Airlines",
-              "textWidth": 112
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 112,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 358.97,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -524,15 +516,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 283.88,
-                "y": 96.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -540,7 +531,12 @@
                 "fontWeight": "500"
               },
               "text": "2,912",
-              "textWidth": 102
+              "textRect": {
+                "x": 283.88,
+                "y": 95.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "Kibana Airlines",

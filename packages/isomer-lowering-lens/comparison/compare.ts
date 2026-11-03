@@ -33,12 +33,8 @@ export interface DrawnContext {
   platform: CaseContext['platform'];
 }
 
-/** Features that differ by platform: text rasterization, the boxes text sizes, and how font families serialize. */
-const PLATFORM_FEATURES = new Set([
-  'layout.text',
-  'layout.element',
-  'font.family',
-]);
+/** Features that differ by platform: drawn text, and how Chromium serializes font families. */
+const PLATFORM_FEATURES = new Set(['layout.text', 'font.family']);
 
 const EXACT: Tolerance = { type: 'exact' };
 
@@ -64,14 +60,16 @@ const within = (tolerance: Tolerance, reference: unknown, actual: unknown) =>
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+/** The value at `path` in `value`, or `undefined`. */
+const at = (value: unknown, path: (string | number)[]) =>
+  path.reduce<unknown>(
+    (held, key) =>
+      (held as Record<string | number, unknown> | undefined)?.[key],
+    value
+  );
+
 const gapFor = (reference: Fingerprint, path: (string | number)[]) => {
-  const holder = path
-    .slice(0, -1)
-    .reduce<unknown>(
-      (value, key) =>
-        (value as Record<string | number, unknown> | undefined)?.[key],
-      reference
-    );
+  const holder = at(reference, path.slice(0, -1));
   const field = String(path.at(-1) ?? '');
   return KNOWN_GAPS.find(
     ({ kind, path: match, when }) =>
@@ -91,10 +89,16 @@ export const compareFingerprints = (
   context?: { expected: CaseContext; drawn: DrawnContext }
 ): Difference[] => {
   const differences: Difference[] = [];
-  const uncomparable = (feature: string) =>
+  // A painted box sized around text moves with the text; a track, fill, icon or sparkline does not.
+  const uncomparable = (feature: string, path: (string | number)[]) =>
     context !== undefined &&
     context.expected.platform !== context.drawn.platform &&
-    PLATFORM_FEATURES.has(feature);
+    (PLATFORM_FEATURES.has(feature) ||
+      (feature === 'layout.element' &&
+        (
+          at(reference, path.slice(0, -2)) as
+            { holdsText?: boolean } | undefined
+        )?.holdsText === true));
   const { classes } = FINGERPRINT_KINDS[reference.kind];
   const classify = (path: (string | number)[]) => {
     const key = pattern(path);
@@ -119,7 +123,7 @@ export const compareFingerprints = (
       actual: got,
       tolerance,
       ...(gap ? { gap } : {}),
-      ...(!gap && uncomparable(feature)
+      ...(!gap && uncomparable(feature, path)
         ? {
             uncompared: `Compared only on ${context!.expected.platform}, where the reference was captured.`,
           }

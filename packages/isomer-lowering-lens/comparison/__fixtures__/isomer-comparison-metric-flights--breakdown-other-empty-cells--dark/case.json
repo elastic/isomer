@@ -238,7 +238,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:02.852Z"
+    "capturedAt": "2026-11-03T21:59:43.911Z"
   },
   "reference": {
     "fingerprint": {
@@ -257,26 +257,22 @@
             "width": 262.58,
             "height": 148
           },
+          "interactive": true,
           "value": "2,159",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 262.58,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 233.3,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -284,15 +280,14 @@
                 "fontWeight": "500"
               },
               "text": "IT",
-              "textWidth": 15
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 15,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 233.3,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -300,15 +295,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 151.58,
-                "y": 95.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -316,7 +310,12 @@
                 "fontWeight": "500"
               },
               "text": "2,159",
-              "textWidth": 102
+              "textRect": {
+                "x": 151.58,
+                "y": 94.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "IT",
@@ -333,26 +332,22 @@
             "width": 262.58,
             "height": 148
           },
+          "interactive": true,
           "value": "1,833",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 262.58,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 233.3,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -360,15 +355,14 @@
                 "fontWeight": "500"
               },
               "text": "US",
-              "textWidth": 21
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 21,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 233.3,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -376,15 +370,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 151.58,
-                "y": 95.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -392,7 +385,12 @@
                 "fontWeight": "500"
               },
               "text": "1,833",
-              "textWidth": 102
+              "textRect": {
+                "x": 151.58,
+                "y": 94.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "US",
@@ -409,26 +407,22 @@
             "width": 262.59,
             "height": 148
           },
+          "interactive": true,
           "value": "994",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 262.59,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 234.25,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -436,15 +430,14 @@
                 "fontWeight": "500"
               },
               "text": "CN",
-              "textWidth": 23
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 23,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 234.25,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -452,15 +445,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 185.59,
-                "y": 95.81,
-                "width": 69,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -468,7 +460,12 @@
                 "fontWeight": "500"
               },
               "text": "994",
-              "textWidth": 69
+              "textRect": {
+                "x": 185.59,
+                "y": 94.81,
+                "width": 69,
+                "height": 44
+              }
             }
           },
           "title": "CN",
@@ -485,26 +482,22 @@
             "width": 262.58,
             "height": 148
           },
+          "interactive": true,
           "value": "825",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 262.58,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 233.3,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -512,15 +505,14 @@
                 "fontWeight": "500"
               },
               "text": "CA",
-              "textWidth": 23
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 23,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 233.3,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -528,15 +520,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 184.58,
-                "y": 96.81,
-                "width": 69,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -544,7 +535,12 @@
                 "fontWeight": "500"
               },
               "text": "825",
-              "textWidth": 69
+              "textRect": {
+                "x": 184.58,
+                "y": 95.81,
+                "width": 69,
+                "height": 44
+              }
             }
           },
           "title": "CA",
@@ -561,26 +557,22 @@
             "width": 262.58,
             "height": 148
           },
+          "interactive": true,
           "value": "6,036",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 262.58,
                 "height": 148
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 233.3,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -588,15 +580,14 @@
                 "fontWeight": "500"
               },
               "text": "Other",
-              "textWidth": 45
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 45,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
-              "box": {
-                "x": 8,
-                "y": 28,
-                "width": 233.3,
-                "height": 21.8
-              },
               "style": {
                 "color": "#cad3e2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -604,15 +595,14 @@
                 "fontWeight": "400"
               },
               "text": "Flights",
-              "textWidth": 44
+              "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 151.58,
-                "y": 96.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -620,7 +610,12 @@
                 "fontWeight": "500"
               },
               "text": "6,036",
-              "textWidth": 102
+              "textRect": {
+                "x": 151.58,
+                "y": 95.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "Other",

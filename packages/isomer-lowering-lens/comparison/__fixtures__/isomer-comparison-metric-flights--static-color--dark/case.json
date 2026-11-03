@@ -164,7 +164,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:03.142Z"
+    "capturedAt": "2026-11-03T21:59:45.004Z"
   },
   "reference": {
     "fingerprint": {
@@ -183,26 +183,22 @@
             "width": 389.88,
             "height": 184
           },
+          "interactive": false,
           "value": "1,516",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#f6726a"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {
-                "background": "#f6726a"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 373.88,
-                "height": 19.19
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -210,15 +206,14 @@
                 "fontWeight": "500"
               },
               "text": "Cancelled",
-              "textWidth": 77
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 77,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 279.88,
-                "y": 132.81,
-                "width": 102,
-                "height": 43.19
-              },
               "style": {
                 "color": "#111c2c",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -226,7 +221,12 @@
                 "fontWeight": "500"
               },
               "text": "1,516",
-              "textWidth": 102
+              "textRect": {
+                "x": 279.88,
+                "y": 131.81,
+                "width": 102,
+                "height": 44
+              }
             }
           },
           "title": "Cancelled"

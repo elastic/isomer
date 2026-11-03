@@ -110,7 +110,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:33:06.066Z"
+    "capturedAt": "2026-11-03T21:59:49.330Z"
   },
   "reference": {
     "fingerprint": {
@@ -129,26 +129,22 @@
             "width": 389.88,
             "height": 184
           },
+          "interactive": false,
           "value": "[deb, css, gz]",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 184
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 373.88,
-                "height": 19.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -156,15 +152,14 @@
                 "fontWeight": "500"
               },
               "text": "Extensions",
-              "textWidth": 84
+              "textRect": {
+                "x": 8,
+                "y": 7,
+                "width": 84,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 143.88,
-                "y": 132.81,
-                "width": 238,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -172,7 +167,12 @@
                 "fontWeight": "500"
               },
               "text": "[deb, css, gz]",
-              "textWidth": 238
+              "textRect": {
+                "x": 143.88,
+                "y": 131.81,
+                "width": 238,
+                "height": 44
+              }
             }
           },
           "title": "Extensions"

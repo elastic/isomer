@@ -161,7 +161,7 @@ describe('compareFingerprints', () => {
   it('fails a progress bar painted at no length while keeping its value', () => {
     const actual = fingerprint(progress);
     const key = drawnKey(actual, 0, '>echMeterBar');
-    actual.tiles[0]!.elements[key]!.box.width = 0;
+    actual.tiles[0]!.elements[key]!.box!.width = 0;
     expect(failing(fingerprint(progress), actual)).toEqual([
       { path: `tiles[0].elements.${key}.box.width`, feature: 'layout.element' },
     ]);
@@ -181,10 +181,21 @@ describe('compareFingerprints', () => {
   it('fails a reading drawn somewhere else in its tile', () => {
     const actual = fingerprint(progress);
     const key = drawnKey(actual, 0, '>echMetricText__value');
-    actual.tiles[0]!.elements[key]!.box.x -= 50;
+    actual.tiles[0]!.elements[key]!.textRect!.x -= 50;
     expect(failing(fingerprint(progress), actual)).toEqual([
-      { path: `tiles[0].elements.${key}.box.x`, feature: 'layout.element' },
+      { path: `tiles[0].elements.${key}.textRect.x`, feature: 'layout.text' },
     ]);
+  });
+
+  it('records a tile drawn clickable where it is not as the open gap', () => {
+    const actual = fingerprint(dateValue);
+    const { interactive } = actual.tiles[0]!;
+    actual.tiles[0]!.interactive = !interactive;
+    expect(
+      compareFingerprints(fingerprint(dateValue), actual).map(
+        ({ path, gap }) => [path, Boolean(gap)]
+      )
+    ).toEqual([['tiles[0].interactive', true]]);
   });
 
   it('fails when nothing was drawn', () => {
@@ -212,33 +223,51 @@ describe('compareFingerprints', () => {
     ]);
   });
 
-  it('compares text and the boxes it sizes only on the platform the reference was captured on', () => {
-    const actual = fingerprint(dateValue);
-    const key = drawnKey(actual, 0, '>echMetricText__value');
-    actual.tiles[0]!.elements[key]!.textWidth! -= 2;
-    actual.tiles[0]!.elements[key]!.box.width -= 2;
-    const elsewhere = dateValue.context.platform === 'linux' ? 'mac' : 'linux';
+  it('compares drawn text and boxes sized around it only on the platform the reference was captured on', () => {
+    const actual = fingerprint(breakdown);
+    const text = drawnKey(actual, 0, '>echBadge__text');
+    const badge = drawnKey(actual, 0, '>echBadge__content');
+    actual.tiles[0]!.elements[text]!.textRect!.width -= 2;
+    actual.tiles[0]!.elements[badge]!.box!.width -= 2;
+    const elsewhere = breakdown.context.platform === 'linux' ? 'mac' : 'linux';
     const compare = (platform: Platform) =>
-      compareFingerprints(fingerprint(dateValue), actual, {
-        expected: dateValue.context,
+      compareFingerprints(fingerprint(breakdown), actual, {
+        expected: breakdown.context,
         drawn: {
-          scheme: dateValue.context.scheme,
+          scheme: breakdown.context.scheme,
           deviceScaleFactor: 1,
           platform,
         },
       });
     const paths = [
-      `tiles[0].elements.${key}.box.width`,
-      `tiles[0].elements.${key}.textWidth`,
+      `tiles[0].elements.${badge}.box.width`,
+      `tiles[0].elements.${text}.textRect.width`,
     ];
     expect(
-      failures(compare(dateValue.context.platform)).map(({ path }) => path)
+      failures(compare(breakdown.context.platform)).map(({ path }) => path)
     ).toEqual(paths);
     const off = compare(elsewhere);
     expect(failures(off)).toEqual([]);
     expect(
       off.map(({ path, uncompared }) => [path, Boolean(uncompared)])
     ).toEqual(paths.map((path) => [path, true]));
+  });
+
+  it('compares a box no text sizes on every platform', () => {
+    const actual = fingerprint(progress);
+    const key = drawnKey(actual, 0, '>echMeterBar');
+    actual.tiles[0]!.elements[key]!.box!.width = 0;
+    const differences = compareFingerprints(fingerprint(progress), actual, {
+      expected: progress.context,
+      drawn: {
+        scheme: progress.context.scheme,
+        deviceScaleFactor: 1,
+        platform: progress.context.platform === 'linux' ? 'mac' : 'linux',
+      },
+    });
+    expect(failures(differences).map(({ path }) => path)).toEqual([
+      `tiles[0].elements.${key}.box.width`,
+    ]);
   });
 
   it('compares everything else on any platform', () => {

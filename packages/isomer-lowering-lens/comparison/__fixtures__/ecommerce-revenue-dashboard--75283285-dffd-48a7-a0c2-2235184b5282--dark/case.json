@@ -208,7 +208,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:32:44.880Z"
+    "capturedAt": "2026-11-03T21:59:01.792Z"
   },
   "reference": {
     "fingerprint": {
@@ -227,26 +227,22 @@
             "width": 389.88,
             "height": 188
           },
+          "interactive": true,
           "value": "$350,884.13",
           "elements": {
             "echMetric": {
+              "style": {
+                "background": "#111c2c"
+              },
               "box": {
                 "x": 0,
                 "y": 0,
                 "width": 389.88,
                 "height": 188
               },
-              "style": {
-                "background": "#111c2c"
-              }
+              "holdsText": true
             },
-            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>button>span": {
-              "box": {
-                "x": 8,
-                "y": 8,
-                "width": 355.17,
-                "height": 20
-              },
+            "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__title>span": {
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -254,15 +250,14 @@
                 "fontWeight": "500"
               },
               "text": "Sum of revenue",
-              "textWidth": 121
+              "textRect": {
+                "x": 8,
+                "y": 8,
+                "width": 121,
+                "height": 20
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
-              "box": {
-                "x": 160.88,
-                "y": 136.81,
-                "width": 221,
-                "height": 43.19
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -270,15 +265,14 @@
                 "fontWeight": "500"
               },
               "text": "350,884.13",
-              "textWidth": 204
+              "textRect": {
+                "x": 177.88,
+                "y": 135.81,
+                "width": 204,
+                "height": 44
+              }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
-              "box": {
-                "x": 160.88,
-                "y": 144.81,
-                "width": 17,
-                "height": 33
-              },
               "style": {
                 "color": "#e3e8f2",
                 "fontFamily": "\"Elastic UI Numeric\", Inter, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
@@ -286,7 +280,12 @@
                 "fontWeight": "500"
               },
               "text": "$",
-              "textWidth": 17
+              "textRect": {
+                "x": 160.88,
+                "y": 144.81,
+                "width": 17,
+                "height": 33
+              }
             }
           },
           "title": "Sum of revenue"
