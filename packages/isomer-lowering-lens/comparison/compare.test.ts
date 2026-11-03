@@ -187,16 +187,37 @@ describe('compareFingerprints', () => {
     ]);
   });
 
-  it('records a tile drawn clickable where it is not as the open gap', () => {
+  it('fails a reading clipped away on any platform', () => {
     const actual = fingerprint(dateValue);
-    const { interactive } = actual.tiles[0]!;
-    actual.tiles[0]!.interactive = !interactive;
+    const key = drawnKey(actual, 0, '>echMetricText__value');
+    actual.tiles[0]!.elements[key]!.hidden = true;
+    const differences = compareFingerprints(fingerprint(dateValue), actual, {
+      expected: dateValue.context,
+      drawn: {
+        scheme: dateValue.context.scheme,
+        deviceScaleFactor: 1,
+        platform: dateValue.context.platform === 'linux' ? 'mac' : 'linux',
+      },
+    });
     expect(
-      compareFingerprints(fingerprint(dateValue), actual).map(
-        ({ path, gap }) => [path, Boolean(gap)]
-      )
-    ).toEqual([['tiles[0].interactive', true]]);
+      failures(differences).map(({ path, feature }) => ({ path, feature }))
+    ).toEqual([
+      { path: `tiles[0].elements.${key}.hidden`, feature: 'visibility' },
+    ]);
   });
+
+  it.each([true, false])(
+    'fails a title drawn clickable where Kibana drew it %s',
+    (interactive) => {
+      const reference = fingerprint(dateValue);
+      reference.tiles[0]!.interactive = interactive;
+      const actual = fingerprint(dateValue);
+      actual.tiles[0]!.interactive = !interactive;
+      expect(failing(reference, actual)).toEqual([
+        { path: 'tiles[0].interactive', feature: 'interactivity' },
+      ]);
+    }
+  );
 
   it('fails when nothing was drawn', () => {
     expect(failing(fingerprint(progress), null)).toEqual([

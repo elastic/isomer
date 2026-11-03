@@ -22,6 +22,10 @@ export interface DrawnElement {
   text?: string;
   /** Where that text is drawn, relative to the tile. */
   textRect?: Box;
+  /** The part of that text its clipping ancestors leave visible; only under one. */
+  visibleRect?: Box;
+  /** Set when clipping leaves none of the element visible. */
+  hidden?: true;
   style: Record<string, string>;
 }
 
@@ -94,12 +98,23 @@ export const extractMetricFingerprint = (
     const collapsed = shown.replace(/\s+/g, ' ').trim();
     return collapsed || undefined;
   };
-  const relative = (rect: DOMRect, to: DOMRect): Box => ({
+  const relative = (rect: Box, to: Box): Box => ({
     x: round(rect.x - to.x),
     y: round(rect.y - to.y),
     width: round(rect.width),
     height: round(rect.height),
   });
+  const intersect = (a: Box, b: Box): Box => {
+    const x = Math.max(a.x, b.x);
+    const y = Math.max(a.y, b.y);
+    return {
+      x,
+      y,
+      width: Math.max(0, Math.min(a.x + a.width, b.x + b.width) - x),
+      height: Math.max(0, Math.min(a.y + a.height, b.y + b.height) - y),
+    };
+  };
+  const empty = ({ width, height }: Box) => width <= 0 || height <= 0;
   const transparent = (color: string) =>
     color === 'transparent' || /rgba\([^)]*,\s*0\)$/.test(color);
   // What paints a box: a fill or border, a shape, an image, or the progress meter.
@@ -119,7 +134,8 @@ export const extractMetricFingerprint = (
   const readElements = (tile: Element) => {
     const tileBox = tile.getBoundingClientRect();
     const elements: Record<string, DrawnElement> = {};
-    const walk = (element: Element, path: string) => {
+    // `clip` is the viewport area every clipping ancestor so far leaves visible.
+    const walk = (element: Element, path: string, clip?: Box) => {
       const style = getComputedStyle(element);
       if (
         style.display === 'none' ||
@@ -138,6 +154,9 @@ export const extractMetricFingerprint = (
         .replace(/\s+/g, ' ')
         .trim();
       const rect = element.getBoundingClientRect();
+      const clips =
+        style.overflowX !== 'visible' || style.overflowY !== 'visible';
+      const within = clips ? (clip ? intersect(clip, rect) : rect) : clip;
       const fills = paints(element, style);
       if ((rect.width > 0 && rect.height > 0) || ownText) {
         if (fills || ownText) {
@@ -152,13 +171,24 @@ export const extractMetricFingerprint = (
             if ((element.textContent ?? '').trim() !== '') {
               drawn.holdsText = true;
             }
+            if (clip && empty(intersect(clip, rect))) {
+              drawn.hidden = true;
+            }
           }
           if (ownText) {
             const range = document.createRange();
             range.setStart(own[0]!, 0);
             range.setEnd(own.at(-1)!, own.at(-1)!.length);
+            const drawnText = range.getBoundingClientRect();
             drawn.text = ownText;
-            drawn.textRect = relative(range.getBoundingClientRect(), tileBox);
+            drawn.textRect = relative(drawnText, tileBox);
+            if (within) {
+              const visible = intersect(within, drawnText);
+              drawn.visibleRect = relative(visible, tileBox);
+              if (empty(visible)) {
+                drawn.hidden = true;
+              }
+            }
             drawn.style.color = hex(style.color);
             drawn.style.fontFamily = style.fontFamily;
             drawn.style.fontSize = style.fontSize;
@@ -192,7 +222,7 @@ export const extractMetricFingerprint = (
         // A clickable title's button draws nothing of its own; `interactive` records it.
         const wrapper =
           child.tagName === 'BUTTON' && nameOf(child) === 'button';
-        walk(child, wrapper ? path : `${path}>${nameOf(child)}`);
+        walk(child, wrapper ? path : `${path}>${nameOf(child)}`, within);
       }
     };
     walk(tile, nameOf(tile));

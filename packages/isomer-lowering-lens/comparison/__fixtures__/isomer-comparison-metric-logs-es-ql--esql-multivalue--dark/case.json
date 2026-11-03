@@ -110,7 +110,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:59:49.330Z"
+    "capturedAt": "2026-11-03T22:43:27.221Z"
   },
   "reference": {
     "fingerprint": {
@@ -157,6 +157,12 @@
                 "y": 7,
                 "width": 84,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 84,
+                "height": 19
               }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value": {
@@ -172,6 +178,12 @@
                 "y": 131.81,
                 "width": 238,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 143.88,
+                "y": 132.81,
+                "width": 238,
+                "height": 43
               }
             }
           },

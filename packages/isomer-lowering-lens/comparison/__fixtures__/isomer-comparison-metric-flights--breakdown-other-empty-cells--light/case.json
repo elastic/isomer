@@ -238,7 +238,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:58:47.124Z"
+    "capturedAt": "2026-11-03T22:42:46.833Z"
   },
   "reference": {
     "fingerprint": {
@@ -285,6 +285,12 @@
                 "y": 8,
                 "width": 15,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 15,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -296,6 +302,12 @@
               },
               "text": "Flights",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 44,
@@ -315,6 +327,12 @@
                 "y": 94.81,
                 "width": 102,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 151.58,
+                "y": 95.81,
+                "width": 102,
+                "height": 43
               }
             }
           },
@@ -360,6 +378,12 @@
                 "y": 8,
                 "width": 21,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 21,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -371,6 +395,12 @@
               },
               "text": "Flights",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 44,
@@ -390,6 +420,12 @@
                 "y": 94.81,
                 "width": 102,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 151.58,
+                "y": 95.81,
+                "width": 102,
+                "height": 43
               }
             }
           },
@@ -435,6 +471,12 @@
                 "y": 8,
                 "width": 23,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 23,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -446,6 +488,12 @@
               },
               "text": "Flights",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 44,
@@ -465,6 +513,12 @@
                 "y": 94.81,
                 "width": 69,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 185.59,
+                "y": 95.81,
+                "width": 69,
+                "height": 43
               }
             }
           },
@@ -510,6 +564,12 @@
                 "y": 8,
                 "width": 23,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 23,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -521,6 +581,12 @@
               },
               "text": "Flights",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 44,
@@ -540,6 +606,12 @@
                 "y": 95.81,
                 "width": 69,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 184.58,
+                "y": 96.81,
+                "width": 69,
+                "height": 43
               }
             }
           },
@@ -585,6 +657,12 @@
                 "y": 8,
                 "width": 45,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 45,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -596,6 +674,12 @@
               },
               "text": "Flights",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 44,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 44,
@@ -615,6 +699,12 @@
                 "y": 95.81,
                 "width": 102,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 151.58,
+                "y": 96.81,
+                "width": 102,
+                "height": 43
               }
             }
           },

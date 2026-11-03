@@ -48,7 +48,7 @@ Recapturing writes to `comparison/__fixtures__.next/` and replaces `comparison/_
 
 A fingerprint is what a drawing shows, read from its DOM. The same extractor reads Kibana's drawing and Isomer's, and records two things per tile.
 
-- **Every element the tile paints**: one with its own text, a fill or a border, an SVG shape, or the progress meter. Each is keyed by its chain of Elastic Charts classes, such as `echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value`, and records its computed color, background, fill, font size, weight and family, opacity and transform. An element that paints a fill, border or shape records its box relative to the tile, marked `holdsText` when text sizes it; an element with its own text records that text and where it is drawn. A moved, resized, recolored or restyled element, text aligned differently inside its box, a changed glyph, and an element one side draws and the other does not all show up without a field written for them.
+- **Every element the tile paints**: one with its own text, a fill or a border, an SVG shape, or the progress meter. Each is keyed by its chain of Elastic Charts classes, such as `echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value`, and records its computed color, background, fill, font size, weight and family, opacity and transform. An element that paints a fill, border or shape records its box relative to the tile, marked `holdsText` when text sizes it; an element with its own text records that text and where it is drawn, and, under an element that clips its overflow, the part left visible. An element clipping leaves none of is marked `hidden`. A moved, resized, recolored or restyled element, text aligned differently inside its box, a changed glyph, and an element one side draws and the other does not all show up without a field written for them.
 - **Its readings**: title, subtitle, extra text, reading, secondary label and value, progress value and range, the sparkline's points with a new subpath at each gap, and whether its title is clickable, which Elastic Charts draws by wrapping it in a button left out of element keys.
 
 Because one extractor reads both drawings, it could miss something on both sides at once, so the replay test also checks every tile's readings, and every color the model resolves, in Kibana's drawing against Isomer's resolved model, which does not go through the extractor.
@@ -59,22 +59,19 @@ Every field belongs to one feature, and each feature has one tolerance. A case c
 
 | Feature | Fields | Tolerance | Largest measured |
 | --- | --- | --- | --- |
-| `text`, `color`, `paint`, `identity`, `interactivity`, `trend.shape` | Texts, colors, opacity and transform, which elements are drawn, tile count and positions, clickable titles, trend subpaths and point counts | Exact | — |
+| `text`, `color`, `paint`, `identity`, `interactivity`, `visibility`, `trend.shape` | Texts, colors, opacity and transform, which elements are drawn, tile count and positions, clickable titles, elements clipped away, trend subpaths and point counts | Exact | — |
 | `layout.font`, `font.family`, `trend.geometry`, `progress.value` | Font sizes, weights and families, sparkline points, progress value and range | Exact | 0 |
 | `layout.box`, `context.size` | Tile boxes, chart size | 1 CSS pixel, for CSS grid rounding | 0.25 px |
 | `layout.element` | Painted boxes | 1 CSS pixel | 0.25 px |
-| `layout.text` | Where text is drawn | 1 CSS pixel | 1 px on Linux |
+| `layout.text` | Where text is drawn, and the part of it left visible | 1 CSS pixel | 1 px on Linux |
 
 The largest measured column is the largest difference across every case, which the browser test prints on each run. A tolerance is set from it, never loosened for one case.
 
-The comparison also fails when the drawing's color scheme or device scale is not the case's. Drawn text, painted boxes sized around text, and how Chromium serializes font families differ by platform, so they are compared only on the platform the case was captured on, Linux; elsewhere, such as a local macOS run, those differences are listed as not compared rather than failing. Tile boxes, progress tracks and fills, icons, sparklines, colors, texts and everything else are compared on every platform.
+The comparison also fails when the drawing's color scheme or device scale is not the case's. Drawn text, painted boxes sized around text, and how Chromium serializes font families differ by platform, so they are compared only on the platform the case was captured on, Linux; elsewhere, such as a local macOS run, those differences are listed as not compared rather than failing. Tile boxes, progress tracks and fills, icons, sparklines, colors, texts, elements clipped away and everything else are compared on every platform.
 
 ## Known gaps
 
-`comparison/known_gaps.ts` lists the differences Isomer does not close yet, each keyed by a feature and its fields, never by a case, with the reason. A difference a gap covers is shown but does not fail the comparison. Close a gap by fixing the feature, then delete its entry. Two are open:
-
-- **Clickable titles** (the `interactive` reading). Kibana makes every dashboard metric clickable, so Elastic Charts draws its title inside a `button`. Isomer does so only for a tile with an action, in a host that handles events. The title's text, colors and fonts are still compared.
-- **The dark progress track.** Kibana paints it `#172336`; Isomer's dark token is Elastic Charts' default, `#1d2a3e`.
+`comparison/known_gaps.ts` lists the differences Isomer does not close yet, each keyed by a feature and its fields, never by a case, with the reason. A difference a gap covers is shown but does not fail the comparison. Close a gap by fixing the feature, then delete its entry. None is open.
 
 ## Held-out cases
 
@@ -82,7 +79,7 @@ One case in four, chosen by a hash of its dashboard and panel, is held out. The 
 
 ## The Studio app
 
-**Lens comparison** (`#/app/lens-comparison/<case>`) shows Kibana's drawing beside Isomer's, or Isomer's over Kibana's with an opacity slider, at the panel's size and with Kibana's fonts. It lists every difference with its feature, Kibana's value, Isomer's, the resolved model's for readings and the colors it resolves (tile background, sparkline fill, value color, badge background and text), and any gap that covers it. The model column tells lowering from rendering: when the model already holds Isomer's value, the bound node was wrong; when it holds Kibana's, the drawing was. Switch the Studio to the case's color scheme to compare it.
+**Lens comparison** (`#/app/lens-comparison/<case>`) shows Kibana's drawing beside Isomer's, or Isomer's over Kibana's with an opacity slider, at the panel's size and with Kibana's fonts. It lists every difference with its feature, Kibana's value, Isomer's, the resolved model's for readings and the colors it resolves (tile background, sparkline fill, progress track and fill, title, subtitle, value and secondary text, badge background and text), and any gap that covers it. The model column tells lowering from rendering: when the model already holds Isomer's value, the bound node was wrong; when it holds Kibana's, the drawing was. It handles events as a dashboard does, so a tile with an action draws its title clickable. Switch the Studio to the case's color scheme to compare it.
 
 ## Adding a panel type
 

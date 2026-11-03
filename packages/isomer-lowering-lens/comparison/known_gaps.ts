@@ -18,18 +18,4 @@ export interface KnownGap {
   issue?: string;
 }
 
-export const KNOWN_GAPS: readonly KnownGap[] = [
-  {
-    kind: 'metric',
-    path: /^tiles\[\]\.interactive$/,
-    reason:
-      'Kibana makes every dashboard metric clickable, so Elastic Charts draws its title as a button; Isomer does only for a tile with an action, in a host that handles events.',
-  },
-  {
-    kind: 'metric',
-    path: /\.elements\.[^.]*>echMeter\.style\.background$/,
-    when: (style) => style.background === '#172336',
-    reason:
-      "Kibana paints the dark progress track #172336; Isomer's dark token is Elastic Charts' default, #1d2a3e.",
-  },
-];
+export const KNOWN_GAPS: readonly KnownGap[] = [];

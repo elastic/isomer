@@ -178,6 +178,12 @@ test.describe('Lens comparison', () => {
       expected: /echMetricText__subtitle\.style\.fontSize layout\.font$/,
     },
     {
+      name: 'the value clipped away',
+      from: '--count--light',
+      css: '.echMetricText__value{width:0 !important;overflow:hidden !important}',
+      expected: /echMetricText__value\.hidden visibility$/,
+    },
+    {
       name: 'the sparkline shrunk',
       from: '--trendline--light',
       css: '.echSingleMetricSparkline__svg{width:50% !important}',

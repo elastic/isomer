@@ -173,7 +173,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:58:50.549Z"
+    "capturedAt": "2026-11-03T22:42:50.191Z"
   },
   "reference": {
     "fingerprint": {
@@ -220,6 +220,12 @@
                 "y": 8,
                 "width": 145,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 145,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -231,6 +237,12 @@
               },
               "text": "Bytes",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 39,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 39,
@@ -250,6 +262,12 @@
                 "y": 75.02,
                 "width": 51,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 228.88,
+                "y": 76.02,
+                "width": 51,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
@@ -277,6 +295,12 @@
                 "y": 75.02,
                 "width": 62,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 294.88,
+                "y": 76.02,
+                "width": 62,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
@@ -288,6 +312,12 @@
               },
               "text": "↑",
               "textRect": {
+                "x": 360.88,
+                "y": 75.02,
+                "width": 13,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 360.88,
                 "y": 75.02,
                 "width": 13,
@@ -307,6 +337,12 @@
                 "y": 94.81,
                 "width": 79,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 264.88,
+                "y": 95.81,
+                "width": 79,
+                "height": 43
               }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
@@ -318,6 +354,12 @@
               },
               "text": "MB",
               "textRect": {
+                "x": 343.88,
+                "y": 103.81,
+                "width": 41,
+                "height": 33
+              },
+              "visibleRect": {
                 "x": 343.88,
                 "y": 103.81,
                 "width": 41,
@@ -371,6 +413,12 @@
                 "y": 8,
                 "width": 235,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 235,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -382,6 +430,12 @@
               },
               "text": "Bytes",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 39,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 39,
@@ -401,6 +455,12 @@
                 "y": 75.02,
                 "width": 51,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 229.88,
+                "y": 76.02,
+                "width": 51,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
@@ -428,6 +488,12 @@
                 "y": 75.02,
                 "width": 62,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 295.88,
+                "y": 76.02,
+                "width": 62,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
@@ -439,6 +505,12 @@
               },
               "text": "↑",
               "textRect": {
+                "x": 361.88,
+                "y": 75.02,
+                "width": 13,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 361.88,
                 "y": 75.02,
                 "width": 13,
@@ -458,6 +530,12 @@
                 "y": 94.81,
                 "width": 79,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 265.88,
+                "y": 95.81,
+                "width": 79,
+                "height": 43
               }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
@@ -469,6 +547,12 @@
               },
               "text": "MB",
               "textRect": {
+                "x": 344.88,
+                "y": 103.81,
+                "width": 41,
+                "height": 33
+              },
+              "visibleRect": {
                 "x": 344.88,
                 "y": 103.81,
                 "width": 41,
@@ -522,6 +606,12 @@
                 "y": 8,
                 "width": 203,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 203,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -533,6 +623,12 @@
               },
               "text": "Bytes",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 39,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 39,
@@ -552,6 +648,12 @@
                 "y": 76.02,
                 "width": 51,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 237.88,
+                "y": 77.02,
+                "width": 51,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
@@ -579,6 +681,12 @@
                 "y": 76.02,
                 "width": 53,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 303.88,
+                "y": 77.02,
+                "width": 53,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
@@ -590,6 +698,12 @@
               },
               "text": "↑",
               "textRect": {
+                "x": 360.88,
+                "y": 76.02,
+                "width": 13,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 360.88,
                 "y": 76.02,
                 "width": 13,
@@ -609,6 +723,12 @@
                 "y": 95.81,
                 "width": 56,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 287.88,
+                "y": 96.81,
+                "width": 56,
+                "height": 43
               }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
@@ -620,6 +740,12 @@
               },
               "text": "MB",
               "textRect": {
+                "x": 343.88,
+                "y": 104.81,
+                "width": 41,
+                "height": 33
+              },
+              "visibleRect": {
                 "x": 343.88,
                 "y": 104.81,
                 "width": 41,
@@ -673,6 +799,12 @@
                 "y": 8,
                 "width": 117,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 117,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -684,6 +816,12 @@
               },
               "text": "Bytes",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 39,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 39,
@@ -703,6 +841,12 @@
                 "y": 76.02,
                 "width": 51,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 229.88,
+                "y": 77.02,
+                "width": 51,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content": {
@@ -730,6 +874,12 @@
                 "y": 76.02,
                 "width": 62,
                 "height": 17
+              },
+              "visibleRect": {
+                "x": 295.88,
+                "y": 77.02,
+                "width": 62,
+                "height": 16
               }
             },
             "echMetric>echMetricText>echMetricText__extraBlock>echSecondaryMetric>echBadge__content>span": {
@@ -741,6 +891,12 @@
               },
               "text": "↑",
               "textRect": {
+                "x": 361.88,
+                "y": 76.02,
+                "width": 13,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 361.88,
                 "y": 76.02,
                 "width": 13,
@@ -760,6 +916,12 @@
                 "y": 95.81,
                 "width": 79,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 265.88,
+                "y": 96.81,
+                "width": 79,
+                "height": 43
               }
             },
             "echMetric>echMetricText>echMetricText__valueBlock>echMetricText__value>echMetricText__part": {
@@ -771,6 +933,12 @@
               },
               "text": "MB",
               "textRect": {
+                "x": 344.88,
+                "y": 104.81,
+                "width": 41,
+                "height": 33
+              },
+              "visibleRect": {
                 "x": 344.88,
                 "y": 104.81,
                 "width": 41,

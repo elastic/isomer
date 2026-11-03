@@ -261,7 +261,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T21:58:47.521Z"
+    "capturedAt": "2026-11-03T22:42:47.231Z"
   },
   "reference": {
     "fingerprint": {
@@ -308,6 +308,12 @@
                 "y": 8,
                 "width": 134,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 134,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -319,6 +325,12 @@
               },
               "text": "Average delay",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 97,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 97,
@@ -338,6 +350,12 @@
                 "y": 131.81,
                 "width": 125,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 128.58,
+                "y": 132.81,
+                "width": 125,
+                "height": 43
               }
             }
           },
@@ -383,6 +401,12 @@
                 "y": 8,
                 "width": 51,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 51,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -394,6 +418,12 @@
               },
               "text": "Average delay",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 97,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 97,
@@ -413,6 +443,12 @@
                 "y": 131.81,
                 "width": 102,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 151.58,
+                "y": 132.81,
+                "width": 102,
+                "height": 43
               }
             }
           },
@@ -458,6 +494,12 @@
                 "y": 8,
                 "width": 112,
                 "height": 20
+              },
+              "visibleRect": {
+                "x": 8,
+                "y": 8,
+                "width": 112,
+                "height": 20
               }
             },
             "echMetric>echMetricText>echMetricText__titlesBlock>echMetricText__subtitle": {
@@ -469,6 +511,12 @@
               },
               "text": "Average delay",
               "textRect": {
+                "x": 8,
+                "y": 32,
+                "width": 97,
+                "height": 17
+              },
+              "visibleRect": {
                 "x": 8,
                 "y": 32,
                 "width": 97,
@@ -488,6 +536,12 @@
                 "y": 131.81,
                 "width": 125,
                 "height": 44
+              },
+              "visibleRect": {
+                "x": 129.59,
+                "y": 132.81,
+                "width": 125,
+                "height": 43
               }
             }
           },

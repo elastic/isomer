@@ -160,6 +160,9 @@ const useSettledFingerprint = (
   return settled?.key === key ? settled.fingerprint : undefined;
 };
 
+/** Handles events as a dashboard does, so a tile with an action draws clickable, as in Kibana. */
+const onEvent = () => {};
+
 /** Compares Isomer's drawing of each captured Lens panel with Kibana's, from the same saved state and data. */
 export default function LensComparisonApp({
   Preview,
@@ -386,7 +389,7 @@ export default function LensComparisonApp({
                   composition={composition}
                   zoom={1}
                   heading={false}
-                  onCommit={onCommit}
+                  {...{ onCommit, onEvent }}
                 />
               ) : null}
             </div>

@@ -6,7 +6,7 @@
  */
 
 import { readCases } from './fixtures';
-import { modelReadings, modelValue } from './model';
+import { hasPaintSource, modelReadings, modelValue } from './model';
 import { replay } from './replay';
 
 const TEXT_FIELDS = [
@@ -82,8 +82,9 @@ describe('captured cases', () => {
         Object.entries(elements).flatMap(([key, { style }]) =>
           Object.entries(style).flatMap(([property, painted]) => {
             const path = `tiles[${index}].elements.${key}.style.${property}`;
-            const resolved = modelValue(readings, path);
-            return resolved === undefined ? [] : [{ path, painted, resolved }];
+            return hasPaintSource(path)
+              ? [{ path, painted, resolved: modelValue(readings, path) }]
+              : [];
           })
         )
       );
