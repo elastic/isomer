@@ -59,7 +59,14 @@ type MetricTile = {
       };
   action?: {
     name: string;
-    filters?: { field: string; value: string | number | boolean | null }[];
+    filters?: (
+      // what Lens filters a bucket by
+      | { field: string; value: Raw } // a value
+      | { field: string; values: Raw[]; negate?: boolean } // any, or none, of the values
+      | { field: string; exists: boolean } // a missing bucket: exists: false
+      | { field: string; range: { gte?: number; lt?: number } } // a range bucket
+      | { query: string | Json; language: 'kuery' | 'lucene' } // a filters bucket
+    )[];
     context?: Json;
   };
 };

@@ -333,6 +333,37 @@ describe('icons and multivalue readings', () => {
   });
 });
 
+describe('action filters', () => {
+  const action = (filters: object[]) =>
+    tile({ action: { name: 'filter', filters } });
+
+  it('accepts every filter Lens builds for a bucket and passes it through', () => {
+    const filters = [
+      { field: 'host', value: 'a' },
+      { field: 'host', values: ['a', 'b'], negate: true },
+      { field: 'host', exists: false },
+      { field: 'bytes', range: { gte: 0, lt: 1024 } },
+      { query: 'response : 500', language: 'kuery' },
+    ];
+    expect(issues(action(filters))).toEqual([]);
+    expect(
+      resolveMetric(action(filters) as MetricNode).tiles[0]!.action
+    ).toEqual({
+      name: 'filter',
+      context: { key: 'a', filters },
+    });
+  });
+
+  it.each([
+    [{ field: 'host', values: [] }],
+    [{ field: 'host', range: { gte: 'a' } }],
+    [{ query: 'x', language: 'esql' }],
+    [{ field: 'host', value: 'a', exists: true }],
+  ])('rejects %j', (filter) => {
+    expect(issues(action([filter]))).toHaveLength(1);
+  });
+});
+
 describe('metric limits', () => {
   it('draws an empty grid, padded with placeholders', () => {
     expect(issues({ type: 'metric', tiles: [] })).toEqual([]);
