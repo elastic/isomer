@@ -127,6 +127,30 @@ describe('readResponse', () => {
     });
   });
 
+  it('refuses a projection past the cell limit, even from a small response', () => {
+    const columns = Array.from({ length: 500 }, (_, index) => ({
+      columnId: `p95-${index}`,
+      fieldName: 'p95',
+    }));
+    const response = (rows: number) => ({
+      columns: [{ name: 'p95', type: 'double' }],
+      values: Array.from({ length: rows }, () => [1]),
+    });
+    // 400 rows by 500 columns is exactly the limit.
+    expect(readResponse({ ...latency, columns }, response(400)).status).toBe(
+      'ready'
+    );
+    expect(readResponse({ ...latency, columns }, response(401))).toEqual({
+      status: 'invalid',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'lens.response.too-large',
+          path: ['response', 'values'],
+        }),
+      ],
+    });
+  });
+
   it.each([
     ['an unknown key', { ...requests, extra: true }],
     [

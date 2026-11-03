@@ -8,6 +8,7 @@
 import { singleLayerInput, twoLayerInput } from './native_esql.fixtures';
 import { plan } from './plan';
 import type { LensPlanResult } from './schema';
+import { layerPlanSchema } from './schema';
 
 const LAYERS = [
   'savedObject',
@@ -107,9 +108,37 @@ describe('plan', () => {
     );
   });
 
-  it('plans with no data view metadata and invents none', () => {
-    const { savedObject } = singleLayerInput();
-    expect(planned(plan({ savedObject })).dataViews).toEqual([
+  it('plans a parameter name at the identifier limit into a layer readResponse accepts', () => {
+    const name = 'p'.repeat(4096);
+    const [layer] = planned(
+      plan(
+        withLayer((entry) =>
+          Object.assign(entry, {
+            query: { esql: `FROM logs | WHERE x == ?${name}` },
+          })
+        )
+      )
+    ).layers;
+    expect(layer?.host.params).toEqual([name]);
+    expect(layerPlanSchema.safeParse(layer).success).toBe(true);
+  });
+
+  it.each([
+    [
+      'omitted',
+      ({ savedObject }: ReturnType<typeof singleLayerInput>) => ({
+        savedObject,
+      }),
+    ],
+    [
+      'undefined',
+      ({ savedObject }: ReturnType<typeof singleLayerInput>) => ({
+        savedObject,
+        dataViews: undefined,
+      }),
+    ],
+  ])('plans with data view metadata %s and invents none', (_name, input) => {
+    expect(planned(plan(input(singleLayerInput()))).dataViews).toEqual([
       {
         reference: {
           id: 'logs-view',
@@ -232,6 +261,16 @@ describe('plan', () => {
         Object.assign(layer, { query: { esql: 'FROM logs | WHERE x == ?' } }),
       'unsupported',
       'lens.unsupported-anonymous-param',
+      [...LAYERS, 'layer1', 'query', 'esql'],
+    ],
+    [
+      'a parameter name past the identifier limit',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, {
+          query: { esql: `FROM logs | WHERE x == ?${'p'.repeat(4097)}` },
+        }),
+      'unsupported',
+      'lens.unsupported-param-name',
       [...LAYERS, 'layer1', 'query', 'esql'],
     ],
   ])('refuses a layer with %s', (_name, edit, status, code, path) => {

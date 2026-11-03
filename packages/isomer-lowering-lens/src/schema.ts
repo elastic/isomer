@@ -19,7 +19,9 @@ export interface LensDiagnostic {
 /** Arguments are copied by `copyJson` first, so anything here is already plain JSON. */
 const json = z.custom<JsonValue>(() => true);
 const jsonObject = z.record(z.string(), json);
-const id = z.string().min(1).max(4096);
+export const MAX_ID_LENGTH = 4096;
+
+const id = z.string().min(1).max(MAX_ID_LENGTH);
 const text = z.string().max(4096);
 const esql = z
   .string()
@@ -142,7 +144,7 @@ export interface LensPlan {
     readonly reference: LensSavedObject['references'][number];
     readonly metadata?: DataViewMetadata;
   }[];
-  /** Saved filters, verbatim, for the layers whose `host.applyFilters` is true. */
+  /** Saved Kibana filters, verbatim and not Query DSL, for the layers whose `host.applyFilters` is true. */
   readonly filters: readonly JsonObject[];
   readonly layers: readonly LensLayerPlan[];
 }

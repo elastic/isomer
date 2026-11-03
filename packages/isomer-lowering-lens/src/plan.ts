@@ -20,6 +20,7 @@ import {
   esqlDatasourceSchema,
   issueDiagnostics,
   LAYER_KEYS,
+  MAX_ID_LENGTH,
   savedObjectSchema,
 } from './schema';
 
@@ -204,6 +205,15 @@ export const plan = (input: unknown): LensPlanResult => {
         'unsupported',
         'lens.unsupported-anonymous-param',
         'An anonymous `?` parameter can only be bound by position.',
+        [...path, 'query', 'esql']
+      );
+    }
+    const long = params.find((name) => name.length > MAX_ID_LENGTH);
+    if (long !== undefined) {
+      return refuse(
+        'unsupported',
+        'lens.unsupported-param-name',
+        `A parameter name is longer than ${MAX_ID_LENGTH} characters.`,
         [...path, 'query', 'esql']
       );
     }

@@ -109,6 +109,12 @@ const exercise = async (page: Page, url: string) => {
     'lens.response.incomplete at response.is_partial'
   );
 
+  await response.fill(responseText(Array.from({ length: 120 }, () => [1])));
+  await read.click();
+  const diagnostics = page.getByRole('alert', { name: 'Diagnostics' });
+  await expect(diagnostics.getByRole('listitem')).toHaveCount(51);
+  await expect(diagnostics).toContainText('and 70 more');
+
   const long = 'x'.repeat(5000);
   await response.fill(
     responseText(Array.from({ length: 60 }, (_, index) => [index, long]))

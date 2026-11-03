@@ -16,6 +16,7 @@ import { plan, readResponse } from '@elastic/isomer-lowering-lens';
 import { requestsResponse, twoLayerInput } from '../src/native_esql.fixtures';
 
 const ROWS_SHOWN = 50;
+const DIAGNOSTICS_SHOWN = 50;
 const CELL_CHARACTERS = 200;
 const TEXT_CHARACTERS = 100_000;
 
@@ -63,12 +64,18 @@ const parse = (text: string): { value: unknown } | { error: string } => {
 
 const Diagnostics = ({ items }: { items: readonly LensDiagnostic[] }) => (
   <ul role="alert" aria-label="Diagnostics">
-    {items.map(({ code, message, path }, index) => (
+    {items.slice(0, DIAGNOSTICS_SHOWN).map(({ code, message, path }, index) => (
       <li key={index}>
         <code>{code}</code> at{' '}
-        <code>{path.length ? path.join('.') : '(root)'}</code>: {message}
+        <code>
+          {clip(path.length ? path.join('.') : '(root)', CELL_CHARACTERS)}
+        </code>
+        : {clip(message, CELL_CHARACTERS)}
       </li>
     ))}
+    {items.length > DIAGNOSTICS_SHOWN ? (
+      <li>and {items.length - DIAGNOSTICS_SHOWN} more</li>
+    ) : null}
   </ul>
 );
 

@@ -42,8 +42,8 @@ describe('copyJson', () => {
     ['NaN', Number.NaN, 'Input holds a number that is not finite.'],
     ['Infinity', [Infinity], 'Input holds a number that is not finite.'],
     [
-      'undefined',
-      { a: undefined },
+      'undefined in an array',
+      [undefined],
       'Input holds a value of type undefined, which is not JSON.',
     ],
     ['a bigint', 1n, 'Input holds a value of type bigint, which is not JSON.'],
@@ -114,6 +114,25 @@ describe('copyJson', () => {
     expect(copyJson(new Array(JSON_LIMITS.values - 1).fill(0)).ok).toBe(true);
     expect(refusal(new Array(JSON_LIMITS.values).fill(0))).toBe(
       `Input holds more than ${JSON_LIMITS.values} values.`
+    );
+  });
+
+  it('drops object properties set to undefined, as JSON.stringify does', () => {
+    expect(copyJson({ a: undefined, b: 1 })).toEqual({
+      ok: true,
+      value: { b: 1 },
+    });
+    const result = copyJson({ a: undefined });
+    expect(result.ok && Object.keys(result.value as object)).toEqual([]);
+  });
+
+  it('counts object keys but not array indexes as characters', () => {
+    // 3,600,000 characters of strings; their indexes alone would add about 490,000 more.
+    expect(copyJson(new Array(100_000).fill('x'.repeat(36))).ok).toBe(true);
+    const key = 'k'.repeat(JSON_LIMITS.characters - 9);
+    expect(copyJson({ [key]: 'v'.repeat(9) }).ok).toBe(true);
+    expect(refusal({ [key]: 'v'.repeat(10) })).toBe(
+      `Input holds more than ${JSON_LIMITS.characters} characters.`
     );
   });
 

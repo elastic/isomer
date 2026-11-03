@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { copyJson } from './json';
+import { copyJson, JSON_LIMITS } from './json';
 import type { LensDiagnostic, LensResponseResult } from './schema';
 import {
   esqlResponseSchema,
@@ -107,6 +107,14 @@ export const readResponse = (
       });
     }
   });
+  // Several Lens columns may read one field, so the table can outgrow the response.
+  if (values.length * lensColumns.length > JSON_LIMITS.values) {
+    diagnostics.push({
+      code: 'lens.response.too-large',
+      message: `The table would hold more than ${JSON_LIMITS.values} cells.`,
+      path: ['response', 'values'],
+    });
+  }
   if (diagnostics.length) {
     return invalid(diagnostics);
   }
