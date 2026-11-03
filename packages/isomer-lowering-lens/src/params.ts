@@ -11,7 +11,15 @@ const WORD = /[A-Za-z0-9_]/;
 const skip = (esql: string, start: number): number => {
   if (esql.startsWith('"""', start)) {
     const end = esql.indexOf('"""', start + 3);
-    return end === -1 ? esql.length : end + 3;
+    if (end === -1) {
+      return esql.length;
+    }
+    // The lexer takes up to two more quotes as part of a raw string's closing run.
+    let close = end + 3;
+    while (close < end + 5 && esql[close] === '"') {
+      close += 1;
+    }
+    return close;
   }
   const open = esql[start];
   if (open === '"' || open === '`') {
@@ -22,12 +30,31 @@ const skip = (esql: string, start: number): number => {
     return index + 1;
   }
   if (esql.startsWith('//', start)) {
-    const end = esql.indexOf('\n', start);
-    return end === -1 ? esql.length : end;
+    let index = start + 2;
+    while (
+      index < esql.length &&
+      esql[index] !== '\n' &&
+      esql[index] !== '\r'
+    ) {
+      index += 1;
+    }
+    return index;
   }
   if (esql.startsWith('/*', start)) {
-    const end = esql.indexOf('*/', start + 2);
-    return end === -1 ? esql.length : end + 2;
+    let depth = 1;
+    let index = start + 2;
+    while (index < esql.length && depth > 0) {
+      if (esql.startsWith('/*', index)) {
+        depth += 1;
+        index += 2;
+      } else if (esql.startsWith('*/', index)) {
+        depth -= 1;
+        index += 2;
+      } else {
+        index += 1;
+      }
+    }
+    return index;
   }
   return start;
 };
@@ -35,7 +62,7 @@ const skip = (esql: string, start: number): number => {
 /**
  * The named and numbered parameters (`?name`, `??name`, `?1`) an ES|QL query references, in first-use order,
  * or `undefined` when it has an anonymous `?`, which a host could only bind by position.
- * A lexical scan: strings, quoted identifiers and comments are skipped, nothing is parsed.
+ * A lexical scan: strings, quoted identifiers and comments (which nest) are skipped, nothing is parsed.
  */
 export const queryParams = (esql: string): string[] | undefined => {
   const names = new Set<string>();

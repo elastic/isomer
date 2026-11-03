@@ -150,6 +150,39 @@ describe('plan', () => {
     ]);
   });
 
+  it("accepts the first layer's query mirrored as the global query of several layers", () => {
+    const input = twoLayerInput();
+    const { layers } =
+      input.savedObject.attributes.state.datasourceStates.textBased;
+    Object.assign(input.savedObject.attributes.state, {
+      query: { esql: layers.layer1.query.esql },
+    });
+    expect(planned(plan(input)).layers).toHaveLength(2);
+  });
+
+  it("refuses a layer whose planned form exceeds the reader's input budget", () => {
+    const params = Array.from({ length: 6000 }, (_, index) => `?p${index}`);
+    const result = plan(
+      withLayer((layer) => {
+        Object.assign(layer, {
+          query: { esql: `FROM logs | WHERE x IN (${params.join(', ')})` },
+        });
+        (layer.columns as { meta?: unknown }[])[0]!.meta = {
+          values: new Array<number>(195_000).fill(1),
+        };
+      })
+    );
+    expect(result).toEqual({
+      status: 'invalid',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'lens.layer-too-large',
+          path: [...LAYERS, 'layer1'],
+        }),
+      ],
+    });
+  });
+
   it.each([
     ['empty KQL', { query: '', language: 'kuery' }],
     ['empty Lucene', { query: '', language: 'lucene' }],
