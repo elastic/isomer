@@ -78,9 +78,6 @@ describe('metric schema', () => {
       ],
     ]);
     expect(
-      issues(tile({ visual: { kind: 'progress', min: 5, max: 5 } }))
-    ).toEqual([['tiles.0.visual.max', '`max` must exceed `min`']]);
-    expect(
       issues(tile({ value: 'up', secondary: { kind: 'change', previous: 1 } }))
     ).toEqual([['tiles.0.secondary', 'a `change` needs a numeric `value`']]);
   });
@@ -170,6 +167,21 @@ describe('resolveMetric', () => {
         color: '#61A2FF',
       },
     });
+  });
+
+  // Expected ratios are d3 `scaleLinear` output, clamped, as Elastic Charts' progress bar computes them.
+  it.each([
+    [5, 5, 5, 0.5],
+    [3, 0, 0, 0.5],
+    [-5, 0, -10, 0.5],
+    [5, 0, -10, 0],
+    [150, 0, 100, 1],
+  ])('fills %d on [%d, %d] to %d', (value, min, max, ratio) => {
+    const [only] = resolveMetric({
+      type: 'metric',
+      tiles: [{ key: 'a', value, visual: { kind: 'progress', min, max } }],
+    }).tiles;
+    expect(only!.visual).toMatchObject({ kind: 'progress', ratio });
   });
 
   it('paints the value instead of the tile, and reads a missing value as N/A', () => {

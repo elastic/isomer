@@ -94,7 +94,12 @@ const visualSchema = z
     z
       .object({
         kind: z.literal('progress'),
-        max: z.number().finite(),
+        max: z
+          .number()
+          .finite()
+          .describe(
+            'Equal to `min`, the bar fills halfway; below `min`, it fills from the far end, as Elastic Charts draws them.'
+          ),
         min: z.number().finite().optional().describe('Defaults to 0.'),
         direction: z
           .enum(['horizontal', 'vertical'])
@@ -136,21 +141,13 @@ const metricTileSchema = z
   })
   .strict()
   .check((ctx) => {
-    const { value, secondary, visual } = ctx.value;
+    const { value, secondary } = ctx.value;
     if (secondary?.kind === 'change' && typeof value !== 'number') {
       ctx.issues.push({
         code: 'custom',
         message: 'a `change` needs a numeric `value`',
         path: ['secondary'],
         input: secondary,
-      });
-    }
-    if (visual?.kind === 'progress' && visual.max <= (visual.min ?? 0)) {
-      ctx.issues.push({
-        code: 'custom',
-        message: '`max` must exceed `min`',
-        path: ['visual', 'max'],
-        input: visual.max,
       });
     }
   });

@@ -79,7 +79,7 @@ These follow Elastic Charts' `Metric` chart:
 
 - A tile with no visual fills with its color.
 - A trend tile also fills with its color and draws the sparkline in a shade of it, as Elastic Charts' `getSparkLineColor` computes.
-- A progress tile keeps the chart background and fills the bar with its color, defaulting to Lens's progress blue.
+- A progress tile keeps the chart background and fills the bar with its color, defaulting to Lens's progress blue. Its ratio is d3's `scaleLinear` over `[min, max]`, clamped: an empty range fills halfway and a `max` below `min` fills from the far end.
 - `colorTarget: 'value'` paints the value text instead, on tiles without a visual.
 
 Text colors are picked for contrast with the fill.
@@ -96,7 +96,7 @@ Text colors are picked for contrast with the fill.
 | secondary, badge        | `extra` (`SecondaryMetricProps`)                                             | text in a rounded fill                                            |
 | labelPosition `tooltip` | `labelTooltip`                                                               | a tooltip where the platform has one, else an accessibility label |
 | trend                   | `trend`, `trendShape`                                                        | an area or step path over the tile's lower half, broken at `null` |
-| progress                | `domainMin`, `domainMax`, `progressBarDirection`                             | a filled bar                                                      |
+| progress                | `domainMax`, `domainMin` when not 0, `progressBarDirection`                  | a filled bar                                                      |
 | layout                  | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement                                      |
 | columns                 | the `data` grid                                                              | rows of tiles                                                     |
 | action                  | `onElementClick`                                                             | a press handler                                                   |

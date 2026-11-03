@@ -106,11 +106,20 @@ describe('toDatum', () => {
     expect(datums(progress, 'dark')[0]).toMatchObject({
       color: '#61A2FF',
       value: 412_316_860_416,
-      domainMin: 0,
       domainMax: 549_755_813_888,
       progressBarDirection: LayoutDirection.Horizontal,
       extra: { value: '512GB', badgeColor: '#2B394F' },
     });
+    expect(datums(progress)[0]).not.toHaveProperty('domainMin');
+  });
+
+  it('passes a nonzero min, which Elastic Charts labels as value and target', () => {
+    const [tile] = progress.tiles;
+    const [datum] = datums({
+      ...progress,
+      tiles: [{ ...tile!, visual: { kind: 'progress', min: 10, max: 10 } }],
+    });
+    expect(datum).toMatchObject({ domainMin: 10, domainMax: 10 });
   });
 
   it('keeps a missing progress reading as an empty bar', () => {
@@ -119,7 +128,6 @@ describe('toDatum', () => {
     expect(datum).toMatchObject({
       color: '#61A2FF',
       value: 0,
-      domainMin: 0,
       domainMax: 549_755_813_888,
     });
     expect(datum && 'valueFormatter' in datum && datum.valueFormatter(0)).toBe(

@@ -212,8 +212,13 @@ const resolveTile = (
     };
   } else if (visual?.kind === 'progress') {
     const min = visual.min ?? 0;
+    // d3's `scaleLinear`, which Elastic Charts uses: an empty domain maps to the middle.
     const ratio =
-      number === undefined ? 0 : (number - min) / (visual.max - min);
+      number === undefined
+        ? 0
+        : visual.max === min
+          ? 0.5
+          : (number - min) / (visual.max - min);
     resolved.visual = {
       kind: 'progress',
       min,
