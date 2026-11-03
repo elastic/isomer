@@ -8,6 +8,8 @@
 name: lens-recapture
 
 on:
+  push:
+    branches: [clintandrewhall-isomer-lens-recapture]
   schedule:
     - cron: '23 5 * * 1'
   workflow_dispatch:
