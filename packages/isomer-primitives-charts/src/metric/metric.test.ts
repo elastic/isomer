@@ -87,6 +87,14 @@ describe('metric schema', () => {
     ).toEqual(['tiles.0.visual']);
   });
 
+  it('rejects a progress bar on a text value, and keeps one on a missing value', () => {
+    const progress = { kind: 'progress', max: 10 };
+    expect(issues(tile({ value: 'up', visual: progress }))).toEqual([
+      ['tiles.0.visual', 'a progress bar needs a numeric or missing `value`'],
+    ]);
+    expect(issues(tile({ value: null, visual: progress }))).toEqual([]);
+  });
+
   it('rejects an unknown color and a non-finite value', () => {
     const paths = (node: object) => issues(node).map(([path]) => path);
     expect(paths(tile({ color: 'teal' }))).toEqual(['tiles.0.color']);
@@ -213,6 +221,21 @@ describe('resolveMetric', () => {
       runtime.validate(compose(tile({ visual: { kind: 'trend', points } })))
         .errors
     ).toEqual([]);
+  });
+
+  it('reads how full a progress bar is, and labels its ends in the tile format', () => {
+    const [disk] = resolveMetric(progressExample).tiles;
+    expect(disk!.visual).toMatchObject({
+      minReading: '0.0B',
+      maxReading: '512.0GB',
+      description: '75% of 512.0GB',
+    });
+    expect(disk!.reading).toBe(
+      'Disk used, 384.0GB, Quota 512GB, 75% of 512.0GB'
+    );
+    expect(
+      runtime.surfaces.markdown.renderNode(progressExample as PrimitiveNode)
+    ).toBe('**Disk used**: 384.0GB, Quota 512GB, 75% of 512.0GB');
   });
 
   it('paints the value instead of the tile, and reads a missing value as N/A', () => {

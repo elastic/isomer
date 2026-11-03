@@ -19,6 +19,9 @@ import { serveStatic } from './serve_static';
 
 const root = resolve(__dirname, '../../..');
 /** The text example's index in the Studio, which its painted-value tile keeps on the chart background. */
+const progressExample = examples.findIndex(
+  ({ tiles }) => tiles[0]?.key === 'disk'
+);
 const textExample = examples.findIndex(
   ({ tiles }) => tiles[0]?.key === 'top-country'
 );
@@ -90,6 +93,12 @@ for (const mode of ['dev', 'static']) {
       await expect(tiles.first()).toContainText('182,340');
       await expect(tiles.first()).toContainText('+11.10%');
       await expect(page.locator('.echMetric svg path').first()).toBeVisible();
+
+      // Elastic Charts draws the progress example's bar three-quarters full.
+      await page.goto(`${url}#/dev/metric/${progressExample}`);
+      await expect(
+        page.getByRole('meter', { name: 'Percentage of Disk used' })
+      ).toHaveAttribute('aria-valuenow', '75');
 
       // The chart follows the Studio's color mode across the shadow root.
       await page.goto(`${url}#/dev/metric/${textExample}`);

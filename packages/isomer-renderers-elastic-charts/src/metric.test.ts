@@ -160,6 +160,24 @@ describe('toDatum', () => {
     expect(datum).toMatchObject({ domainMin: 10, domainMax: 10 });
   });
 
+  it('labels a value/target bar with the domain ends in the tile format', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 15,
+          format: { kind: 'number', decimals: 1 },
+          visual: { kind: 'progress', min: 10, max: 20 },
+        },
+      ],
+    });
+    const { valueFormatter } = datum as {
+      valueFormatter: (v: number) => string;
+    };
+    expect([15, 10, 20].map(valueFormatter)).toEqual(['15.0', '10.0', '20.0']);
+  });
+
   it('keeps a missing progress reading as an empty bar', () => {
     const [tile] = progress.tiles;
     const [datum] = datums({ ...progress, tiles: [{ ...tile!, value: null }] });
@@ -168,9 +186,9 @@ describe('toDatum', () => {
       value: Number.NaN,
       domainMax: 549_755_813_888,
     });
-    expect(datum && 'valueFormatter' in datum && datum.valueFormatter(0)).toBe(
-      'N/A'
-    );
+    expect(
+      datum && 'valueFormatter' in datum && datum.valueFormatter(Number.NaN)
+    ).toBe('N/A');
   });
 
   it('keeps a missing reading empty on an empty progress range too', () => {

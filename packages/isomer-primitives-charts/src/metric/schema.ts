@@ -141,7 +141,15 @@ const metricTileSchema = z
   })
   .strict()
   .check((ctx) => {
-    const { value, secondary } = ctx.value;
+    const { value, secondary, visual } = ctx.value;
+    if (visual?.kind === 'progress' && typeof value === 'string') {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'a progress bar needs a numeric or missing `value`',
+        path: ['visual'],
+        input: visual,
+      });
+    }
     if (secondary?.kind === 'change' && typeof value !== 'number') {
       ctx.issues.push({
         code: 'custom',
