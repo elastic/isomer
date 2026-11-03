@@ -5,7 +5,7 @@
 | Entry | What it holds |
 | --- | --- |
 | `@elastic/isomer-primitives-charts` | `createChartsPack(renderers)` and the `ChartRenderers` contract. |
-| `@elastic/isomer-primitives-charts/model` | Each chart's schema, node type, resolver and examples, plus `chartTokens`, the value palettes (`VALUE_PALETTES`, `valuePaletteColors`, `MAX_PALETTE_BANDS`, `ValuePalette`), the metric's tile icons (`TILE_ICONS`, `tileIconGlyphs`, `TileIcon`, `TileIconGlyph`) and `formatValue`, which formats a number the way the resolver does. No React, DOM, Node built-ins, SDK or chart engine, so it loads anywhere JavaScript runs. |
+| `@elastic/isomer-primitives-charts/model` | Each chart's schema, node type, resolver and examples, plus `chartTokens`, the value palettes (`VALUE_PALETTES`, `valuePaletteColors`, `MAX_PALETTE_BANDS`, `ValuePalette`), the metric's tile icons (`TILE_ICONS`, `tileIconGlyphs`, `TileIcon`, `TileIconGlyph`) and `formatValue`, which formats a number the way the resolver does, with `valueFormatSchema`, which checks a format before it is used. No React, DOM, Node built-ins, SDK or chart engine, so it loads anywhere JavaScript runs. |
 
 ## Building a pack
 
