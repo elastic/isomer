@@ -25,3 +25,29 @@ export const readCases = (): ComparisonCase[] =>
         JSON.parse(readFileSync(join(FIXTURES, name, 'case.json'), 'utf8'))
       )
     );
+
+/** What draws Isomer's side now; a field left out is not checked. */
+export interface Drawers {
+  elasticCharts?: string | undefined;
+  playwright?: string | undefined;
+  chromium?: string | undefined;
+}
+
+/** Each case captured with something other than what draws Isomer's side now, and what differs. */
+export const staleCaptures = (
+  cases: readonly Pick<ComparisonCase, 'id' | 'provenance'>[],
+  current: Drawers
+): string[] =>
+  cases.flatMap(({ id, provenance: { elasticCharts, browser } }) =>
+    (
+      [
+        ['elasticCharts', elasticCharts],
+        ['playwright', browser.playwright],
+        ['chromium', browser.chromium],
+      ] as const
+    )
+      .filter(
+        ([key, value]) => current[key] !== undefined && current[key] !== value
+      )
+      .map(([key, value]) => `${id}: ${key} ${value}, now ${current[key]}`)
+  );

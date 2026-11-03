@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { readCases } from './fixtures';
+import { readCases, staleCaptures } from './fixtures';
 
 const ROOT = join(__dirname, '../../..');
 
@@ -21,28 +21,15 @@ const manifest = (path: string) =>
 describe('captured fixtures', () => {
   const cases = readCases();
 
-  it('were drawn by the Elastic Charts release the renderer pins', () => {
-    const pinned = manifest(
+  it('were captured with the Elastic Charts and Playwright the repository draws with', () => {
+    const elasticCharts = manifest(
       'packages/isomer-renderers-elastic-charts/package.json'
     ).dependencies?.['@elastic/charts'];
-    const stale = cases
-      .filter(({ provenance }) => provenance.elasticCharts !== pinned)
-      .map(({ id, provenance }) => `${id} (${provenance.elasticCharts})`);
-    expect(
-      stale,
-      `The renderer pins @elastic/charts ${pinned}; recapture with \`pnpm comparison:capture\` against a Kibana that ships it.`
-    ).toEqual([]);
-  });
-
-  it('were captured with the Playwright release the repository tests with', () => {
     const playwright =
       manifest('package.json').devDependencies?.['@playwright/test'];
-    const stale = cases
-      .filter(({ provenance }) => provenance.browser.playwright !== playwright)
-      .map(({ id, provenance }) => `${id} (${provenance.browser.playwright})`);
     expect(
-      stale,
-      `The repository tests with @playwright/test ${playwright}; recapture with \`pnpm comparison:capture\`.`
+      staleCaptures(cases, { elasticCharts, playwright }),
+      'Recapture with `pnpm comparison:capture` against a Kibana that ships the pinned @elastic/charts.'
     ).toEqual([]);
   });
 
@@ -60,4 +47,26 @@ describe('captured fixtures', () => {
       'Update `PLAYWRIGHT_VERSION` in `capture/compose.yml` with @playwright/test, then recapture.'
     ).toEqual([playwright, playwright]);
   });
+});
+
+describe('staleCaptures', () => {
+  const [sample] = readCases();
+  const current = {
+    elasticCharts: sample!.provenance.elasticCharts,
+    playwright: sample!.provenance.browser.playwright,
+    chromium: sample!.provenance.browser.chromium,
+  };
+
+  it('passes a case captured with what draws now', () => {
+    expect(staleCaptures([sample!], current)).toEqual([]);
+  });
+
+  it.each(['elasticCharts', 'playwright', 'chromium'] as const)(
+    'rejects a case captured with another %s',
+    (key) => {
+      expect(staleCaptures([sample!], { ...current, [key]: '0.0.0' })).toEqual([
+        `${sample!.id}: ${key} ${current[key]}, now 0.0.0`,
+      ]);
+    }
+  );
 });

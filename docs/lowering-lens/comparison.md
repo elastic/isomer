@@ -38,7 +38,7 @@ Sample data rebases its timestamps when it is installed, so each capture uses a 
 The cases are a baseline: they record what one Kibana drew, and they go stale when what Isomer compares against moves. Recapture when:
 
 - the renderer's `@elastic/charts` pin changes. `comparison/fixtures.test.ts` fails until every case was drawn by the pinned release, so capture against a Kibana that ships it;
-- `@playwright/test` changes. Each case records the Playwright release and Chromium build it was captured with, and the same test fails until they match; it also checks that `PLAYWRIGHT_VERSION` in `capture/compose.yml` does, since the capture's browser must be the one CI draws with;
+- `@playwright/test` changes. Each case records the Playwright release and Chromium build it was captured with: the same test fails until the Playwright release matches, and the browser test until the Chromium replaying the cases is the build that captured them; it also checks that `PLAYWRIGHT_VERSION` in `capture/compose.yml` does, since the capture's browser must be the one CI draws with;
 - the fingerprint, the scenarios or the capture change;
 - a new Kibana changes how Lens saves or draws a metric, which the cases record in their provenance.
 

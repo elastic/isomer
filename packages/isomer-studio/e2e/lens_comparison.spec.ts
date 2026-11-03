@@ -31,6 +31,10 @@ import {
   type Fingerprint,
   NUMERIC_GLYPHS,
 } from '../../isomer-lowering-lens/comparison/fingerprint';
+import {
+  readCases,
+  staleCaptures,
+} from '../../isomer-lowering-lens/comparison/fixtures';
 
 import { serveStatic } from './serve_static';
 
@@ -185,6 +189,15 @@ test.describe('Lens comparison', () => {
       );
     });
   }
+
+  test('replays in the Chromium build the cases were captured in', ({
+    browser,
+  }) => {
+    expect(
+      staleCaptures(readCases(), { chromium: browser.version() }),
+      'Recapture with `pnpm comparison:capture`: this Chromium did not draw the references.'
+    ).toEqual([]);
+  });
 
   test('fails a drawing made in another color scheme than the reference', async ({
     page,
