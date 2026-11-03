@@ -179,6 +179,10 @@
       "build": "115413"
     },
     "elasticCharts": "73.3.2",
+    "browser": {
+      "playwright": "1.64.0",
+      "chromium": "156.0.8078.4"
+    },
     "fonts": {
       "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
       "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
@@ -186,7 +190,7 @@
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
     },
-    "capturedAt": "2026-11-03T18:40:46.813Z"
+    "capturedAt": "2026-11-03T19:15:42.786Z"
   },
   "reference": {
     "fingerprint": {

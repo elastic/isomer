@@ -27,7 +27,7 @@ docker compose -f packages/isomer-lowering-lens/comparison/capture/compose.yml u
 pnpm comparison:capture
 ```
 
-`STACK_VERSION` picks the stack's image tag (default `9.7.0-SNAPSHOT`) and `PLAYWRIGHT_VERSION` the browser's, which must match the repository's `@playwright/test`. `KIBANA_URL` is Kibana as the capture's API calls reach it, `KIBANA_BROWSER_URL` as the browser reaches it, and `CAPTURE_BROWSER` the browser's endpoint. The capture installs the Flights, Logs and eCommerce sample data if they are missing, imports the dashboards in `comparison/capture/scenarios.ts`, and captures every supported panel of every dashboard in light and dark, each scheme in its own browser that Kibana follows. It replaces `comparison/__fixtures__/` entirely, so review its diff like any baseline update.
+`STACK_VERSION` picks the stack's image tag (default `9.7.0-SNAPSHOT`) and `PLAYWRIGHT_VERSION` the browser's, which must match the repository's `@playwright/test`. `ES_PORT`, `KIBANA_PORT` and `BROWSER_PORT` move the stack's host ports and `COMPOSE_PROJECT_NAME` its containers, so two stacks can run side by side. `KIBANA_URL` is Kibana as the capture's API calls reach it, `KIBANA_BROWSER_URL` as the browser reaches it, and `CAPTURE_BROWSER` the browser's endpoint. The capture installs the Flights, Logs and eCommerce sample data if they are missing, imports the dashboards in `comparison/capture/scenarios.ts`, and captures every supported panel of every dashboard in light and dark, each scheme in its own browser that Kibana follows. It replaces `comparison/__fixtures__/` entirely, so review its diff like any baseline update.
 
 The sample dashboards cover what Kibana ships. The authored dashboards cover what they do not: formats with decimals and suffixes, secondary metrics and comparisons, breakdowns with Other and empty grid cells, progress bars past their maximum, static and palette colors, icons, alignment and density, empty, null, negative, huge, tiny, multivalue and date readings, long titles, and trendlines. Add a panel there to cover a new case.
 
@@ -38,11 +38,11 @@ Sample data rebases its timestamps when it is installed, so each capture uses a 
 The cases are a baseline: they record what one Kibana drew, and they go stale when what Isomer compares against moves. Recapture when:
 
 - the renderer's `@elastic/charts` pin changes. `comparison/fixtures.test.ts` fails until every case was drawn by the pinned release, so capture against a Kibana that ships it;
-- `@playwright/test` changes. The same test fails until `PLAYWRIGHT_VERSION` in `capture/compose.yml` matches, since the capture's browser must be the one CI draws with;
+- `@playwright/test` changes. Each case records the Playwright release and Chromium build it was captured with, and the same test fails until they match; it also checks that `PLAYWRIGHT_VERSION` in `capture/compose.yml` does, since the capture's browser must be the one CI draws with;
 - the fingerprint, the scenarios or the capture change;
 - a new Kibana changes how Lens saves or draws a metric, which the cases record in their provenance.
 
-Recapturing replaces `comparison/__fixtures__/` entirely. Review the `case.json` diffs before committing: a reference that moved is either a Kibana change to follow or a capture problem to fix, and never a reason to loosen a tolerance.
+Recapturing writes to `comparison/__fixtures__.next/` and replaces `comparison/__fixtures__/` with it only when every panel was captured, so a failed capture leaves the committed cases alone. Review the `case.json` diffs before committing: a reference that moved is either a Kibana change to follow or a capture problem to fix, and never a reason to loosen a tolerance.
 
 ## The fingerprint
 
