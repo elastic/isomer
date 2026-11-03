@@ -120,7 +120,7 @@ describe('plan', () => {
         )
       )
     ).layers;
-    expect(layer?.host.params).toEqual([name]);
+    expect(layer?.kind === 'esql' && layer.host.params).toEqual([name]);
     expect(layerPlanSchema.safeParse(layer).success).toBe(true);
   });
 
@@ -212,8 +212,14 @@ describe('plan', () => {
 
   it.each([
     [
-      'a form-based datasource',
+      'a form-based datasource with no layers',
       { formBased: { layers: {} } },
+      'lens.no-layers',
+      ['savedObject', 'attributes', 'state', 'datasourceStates', 'formBased'],
+    ],
+    [
+      'a legacy `indexpattern` datasource',
+      { indexpattern: { layers: {} } },
       'lens.unsupported-datasource',
       ['savedObject', 'attributes', 'state', 'datasourceStates'],
     ],

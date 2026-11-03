@@ -5,9 +5,10 @@
  * 2.0.
  */
 
-import type { JsonValue } from './json';
-import { copyPlain, isJsonObject, JSON_LIMITS } from './json';
-import type { QueryParamsRefusal } from './params';
+import { z } from 'zod';
+
+import { planForm } from './form/plan';
+import { copyJson, JSON_LIMITS } from './json';
 import { queryParams } from './params';
 import type {
   EsqlLayer,
@@ -173,17 +174,15 @@ export const plan = (input: unknown): LensPlanResult => {
   }
   const { savedObject, dataViews } = parsed.value;
   const { state } = savedObject.attributes;
-
-  const named = Object.keys(state.datasourceStates);
-  const datasources =
-    named.length > 1
-      ? named.filter((key) => !isEmptyDatasource(state.datasourceStates[key]))
-      : named;
-  if (datasources.join() !== 'textBased') {
+  const datasources = Object.keys(state.datasourceStates).join();
+  if (datasources === 'formBased') {
+    return planForm(savedObject, dataViews);
+  }
+  if (datasources !== 'textBased') {
     return refuse(
       'unsupported',
       'lens.unsupported-datasource',
-      'Only native ES|QL (`textBased`) saved objects are planned; form-based and mixed datasources are not.',
+      'Only one native ES|QL (`textBased`) or form-based (`formBased`) datasource is planned; mixed and other datasources are not.',
       [...STATE, 'datasourceStates']
     );
   }

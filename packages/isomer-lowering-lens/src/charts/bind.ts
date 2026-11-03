@@ -12,11 +12,10 @@ import {
 import { z } from 'zod';
 
 import {
+  anyLayerPlanSchema,
   columnSchema,
   id,
   issueDiagnostics,
-  json,
-  layerPlanSchema,
   type LensDiagnostic,
   type LensTable,
   parseArgument,
@@ -43,8 +42,19 @@ const planSchema = z
     version: z.literal(1),
     source: savedObjectSchema,
     dataViews: z.array(z.unknown()),
-    filters: z.array(z.record(z.string(), json)),
-    layers: z.array(layerPlanSchema).min(1),
+    filters: z.array(
+      z.record(
+        z.string(),
+        z.custom<JsonValue>(() => true)
+      )
+    ),
+    query: z
+      .record(
+        z.string(),
+        z.custom<JsonValue>(() => true)
+      )
+      .optional(),
+    layers: z.array(anyLayerPlanSchema).min(1),
   })
   .strict();
 
@@ -164,6 +174,7 @@ export const bind = (
   const bound = bindMetric({
     state: normalizeMetricState(parsedState.data),
     tables: read,
+    layers,
     filterAction,
   });
   if (!bound.ok) {

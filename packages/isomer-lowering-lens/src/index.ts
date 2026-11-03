@@ -9,9 +9,12 @@ export type { JsonObject, JsonValue } from './json';
 export { JSON_LIMITS } from './json';
 export { plan } from './plan';
 export { readResponse } from './read_response';
+export { readTable } from './read_table';
 export type {
   DataViewMetadata,
   EsqlResponse,
+  FormLayerPlan,
+  HostNeed,
   LensColumn,
   LensDiagnostic,
   LensLayerPlan,

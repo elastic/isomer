@@ -243,9 +243,45 @@ export type DataViewMetadata = z.infer<typeof dataViewSchema>;
 export type EsqlLayer = z.infer<typeof esqlLayerSchema>;
 /** One Lens column, as saved; `fieldName` names the ES|QL response column it reads. */
 export type LensColumn = z.infer<typeof columnSchema>;
-/** One planned ES|QL layer: the query to run unchanged, its Lens columns, and what the host must supply. */
+/** An ES|QL layer's plan. */
 export type LensLayerPlan = z.infer<typeof layerPlanSchema>;
-/** A complete ES|QL response, `{ columns, values }`. */
+
+export const HOST_NEEDS = [
+  'dataView',
+  'timeRange',
+  'now',
+  'barTarget',
+] as const;
+
+/** Context a host must supply to run a form-based layer. */
+export type HostNeed = (typeof HOST_NEEDS)[number];
+
+export const formLayerPlanSchema = z
+  .object({
+    kind: z.literal('form'),
+    layerId: id,
+    dataView: id,
+    columns: z
+      .array(z.object({ columnId: id, operationType: id }).catchall(json))
+      .max(512),
+    host: z
+      .object({
+        timeField: id.nullable(),
+        applyFilters: z.boolean(),
+        sampling: z.number().positive().max(1),
+        needs: z.array(z.enum(HOST_NEEDS)),
+      })
+      .strict(),
+  })
+  .strict();
+
+/** A form-based layer's plan: its validated Lens columns, in Lens order, and what the host supplies. */
+export type FormLayerPlan = z.infer<typeof formLayerPlanSchema>;
+
+export const anyLayerPlanSchema = z.discriminatedUnion('kind', [
+  layerPlanSchema,
+  formLayerPlanSchema,
+]);
 export type EsqlResponse = z.infer<typeof esqlResponseSchema>;
 
 /** What `plan` returns for a saved object it accepts. */
@@ -258,9 +294,11 @@ export interface LensPlan {
     readonly reference: LensSavedObject['references'][number];
     readonly metadata?: DataViewMetadata;
   }[];
+  /** The saved KQL or Lucene query of a form-based plan, verbatim; ES|QL plans have none. */
+  readonly query?: JsonObject;
   /** Saved Kibana filters, verbatim and not Query DSL, for the layers whose `host.applyFilters` is true. */
   readonly filters: readonly JsonObject[];
-  readonly layers: readonly LensLayerPlan[];
+  readonly layers: readonly (LensLayerPlan | FormLayerPlan)[];
 }
 
 /**
