@@ -33,7 +33,7 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | `color`, `applyColorTo`            | `color` and `colorTarget`. A text tile always paints its background, as Lens does.                                                                                                                                                                               |
 | Custom `palette`                   | A concrete `#rrggbb` per tile: stops from `params.stops`, bounds from the data as `getDataBoundsForPalette` gives them, and `workoutColorForValue`'s range and continuity rules.                                                                                 |
 | Layout                             | `titlesTextAlign`, `primaryAlign`, `secondaryAlign`, `primaryPosition`, `valueFontMode` and `density` map to `layout`.                                                                                                                                           |
-| `showBar` with `maxAccessor`       | A progress bar to the row's max, `vertical` unless `progressDirection` is `horizontal`.                                                                                                                                                                          |
+| `showBar` with `maxAccessor`       | A progress bar to the row's max, `vertical` unless `progressDirection` is `horizontal`. A null max is 0, as d3 reads it, so the bar fills halfway as Lens's does.                                                                                                |
 | Trend layer                        | A sparkline from the trend layer's time and metric columns, matched to tiles by raw breakdown value, sorted by time, with null readings kept as gaps. With `collapseFn`, rows collapse by time. Trend wins over progress.                                        |
 | Breakdown tile with `filterAction` | `{ name: filterAction, filters: [{ field, value }] }` with the breakdown's field and raw value.                                                                                                                                                                  |
 
@@ -63,7 +63,7 @@ A missing secondary reading reads `(null)`, as Kibana's formats print it.
 | `lens.metric.unsupported-multivalue`                     | A multivalue or object reading.                                                             |
 | `lens.metric.unsupported-date`                           | A date metric, secondary or breakdown, which needs the host's date format and time zone.    |
 | `lens.metric.unsupported-short-trend`                    | A trend with fewer than two points.                                                         |
-| `lens.metric.unsupported-progress-domain`                | A progress max that is missing or not above 0.                                              |
+| `lens.metric.unsupported-progress-domain`                | A progress max that is not a number or null.                                                |
 | `lens.metric.unsupported-empty-breakdown`                | A breakdown with no rows.                                                                   |
 | `lens.metric.unrepresentable`                            | The bound node fails the metric schema, for example more than 100 tiles.                    |
 | `lens.metric.missing-table`, `missing-column`            | A table or accessor column is missing (`invalid`).                                          |

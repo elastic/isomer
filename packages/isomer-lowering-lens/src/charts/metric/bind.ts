@@ -509,20 +509,21 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         }
       } else if (showingBar && max) {
         const domainMax = cell(row, max);
-        if (typeof domainMax !== 'number' || domainMax <= 0) {
-          problems.add(
-            'unsupported',
-            'unsupported-progress-domain',
-            'A progress bar whose max is missing or not above 0 is not supported yet.'
-          );
-        } else {
+        if (typeof domainMax === 'number' || domainMax === null) {
           tile.visual = {
             kind: 'progress',
-            max: domainMax,
+            // d3 reads a null domain bound as 0.
+            max: domainMax ?? 0,
             ...(state.progressDirection === 'horizontal'
               ? { direction: 'horizontal' }
               : {}),
           };
+        } else {
+          problems.add(
+            'unsupported',
+            'unsupported-progress-domain',
+            'A progress max that is not a number is not supported.'
+          );
         }
       } else if (state.applyColorTo === 'value' && tile.color) {
         tile.colorTarget = 'value';

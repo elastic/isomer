@@ -524,6 +524,24 @@ describe('bind: progress and trend', () => {
     });
   });
 
+  it('keeps a progress bar whose max is null, which Lens draws half full', () => {
+    const { tiles } = node(
+      run(vis({ maxAccessor: 'max', showBar: true }), {
+        layer: {
+          columns: [num('visits'), num('max')],
+          response: {
+            columns: [
+              { name: 'visits', type: 'long' },
+              { name: 'max', type: 'long' },
+            ],
+            values: [[50, null]],
+          },
+        },
+      })
+    );
+    expect(tiles[0]!.visual).toEqual({ kind: 'progress', max: 0 });
+  });
+
   const trend = (values: unknown[][]) => ({
     layer: {
       columns: [num('visits')],
