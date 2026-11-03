@@ -22,11 +22,14 @@ describe('captured fixtures', () => {
   const cases = readCases();
 
   it('were captured with the Elastic Charts and Playwright the repository draws with', () => {
+    // The renderer peers on a range and pins the exact release it develops against.
     const elasticCharts = manifest(
       'packages/isomer-renderers-elastic-charts/package.json'
-    ).dependencies?.['@elastic/charts'];
+    ).devDependencies?.['@elastic/charts'];
     const playwright =
       manifest('package.json').devDependencies?.['@playwright/test'];
+    expect(elasticCharts).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(playwright).toMatch(/^\d+\.\d+\.\d+$/);
     expect(
       staleCaptures(cases, { elasticCharts, playwright }),
       'Recapture with `pnpm comparison:capture` against a Kibana that ships the pinned @elastic/charts.'

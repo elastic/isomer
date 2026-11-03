@@ -66,6 +66,29 @@ const api = async <T = Json>(
   init: RequestInit = {}
 ): Promise<T> => JSON.parse(await request(path, init)) as T;
 
+/** `docker compose up -d` returns once Kibana's container starts, well before Kibana answers. */
+const waitForKibana = async (timeout = 5 * 60_000) => {
+  const deadline = Date.now() + timeout;
+  for (;;) {
+    try {
+      const { status } = await api<{ status: { overall: { level: string } } }>(
+        '/api/status'
+      );
+      if (status.overall.level === 'available') {
+        return;
+      }
+    } catch {
+      // Not answering yet.
+    }
+    if (Date.now() > deadline) {
+      throw new Error(
+        `Kibana at ${KIBANA} was not available after ${timeout / 1000}s.`
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+};
+
 const day = (offset: number) => {
   const date = new Date();
   date.setUTCHours(0, 0, 0, 0);
@@ -437,6 +460,7 @@ const waitForRender = async (page: Page) => {
 };
 
 test('capture comparison cases', async ({ browser }) => {
+  await waitForKibana();
   const samples =
     await api<{ id: string; status: string }[]>('/api/sample_data');
   for (const id of SAMPLE_DATA) {
