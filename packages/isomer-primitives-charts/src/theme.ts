@@ -86,7 +86,7 @@ const shared = {
   rowHeight: 150,
 };
 
-/** {@link ChartTokens} per scheme, matching Elastic Charts' `LIGHT_THEME` and `DARK_THEME`. */
+/** {@link ChartTokens} per scheme, matching Elastic Charts' `LIGHT_THEME` and `DARK_THEME` as Kibana's metric vis overrides them. */
 export const chartTokens: Record<Scheme, ChartTokens> = {
   light: {
     ...shared,
@@ -136,7 +136,7 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     ...shared,
     background: '#111C2C',
     border: '#2B394F',
-    barBackground: '#1D2A3E',
+    barBackground: '#172336',
     valueText: '#16C5C0',
     tones: {
       default: {

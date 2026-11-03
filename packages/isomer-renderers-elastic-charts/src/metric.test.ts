@@ -160,12 +160,13 @@ describe('value palettes', () => {
 
 describe('chart tokens', () => {
   it.each([
-    ['light', LIGHT_THEME],
-    ['dark', DARK_THEME],
+    ['light', LIGHT_THEME, 'LIGHT'],
+    ['dark', DARK_THEME, 'DARK'],
   ] as const)(
     'match Elastic Charts’ %s metric theme, as Kibana overrides it',
-    (scheme, theme) => {
+    (scheme, theme, mode) => {
       const tokens = chartTokens[scheme];
+      const { colors } = getComputed(EuiThemeBorealis, {}, mode);
       expect({
         fontFamily: tokens.fontFamily,
         textDarkColor: tokens.onLight.title,
@@ -190,11 +191,12 @@ describe('chart tokens', () => {
         textSubtitleLightColor: theme.metric.textSubtitleLightColor,
         textExtraLightColor: theme.metric.textExtraLightColor,
         border: theme.metric.border,
-        barBackground: theme.metric.barBackground,
+        // Kibana's metric vis sets the track and tile to EUI shades.
+        barBackground: colors.lightestShade,
         nonFiniteText: theme.metric.nonFiniteText,
         titleWeight: theme.metric.titleWeight,
         minHeight: theme.metric.minHeight,
-        background: theme.background.color,
+        background: colors.emptyShade,
       });
     }
   );
