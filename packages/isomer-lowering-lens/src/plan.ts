@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-import { copyJson } from './json';
+import { copyJson, JSON_LIMITS } from './json';
 import { queryParams } from './params';
 import type {
   LensDiagnostic,
@@ -41,7 +41,7 @@ const refuse = (
   path: readonly (string | number)[]
 ): LensPlanResult => ({ status, diagnostics: [{ code, message, path }] });
 
-/** A global query native ES|QL Lens leaves behind: empty KQL/Lucene, or every layer's query again. */
+/** A global query native ES|QL Lens leaves behind: empty KQL/Lucene, or a layer's query again (Kibana mirrors the first). */
 const isInertGlobalQuery = (
   query: LensSavedObject['attributes']['state']['query'],
   layers: readonly { query?: { esql: string } | undefined }[]
@@ -57,7 +57,7 @@ const isInertGlobalQuery = (
     );
   }
   return (
-    keys === 'esql' && layers.every((layer) => layer.query?.esql === query.esql)
+    keys === 'esql' && layers.some((layer) => layer.query?.esql === query.esql)
   );
 };
 
@@ -217,7 +217,7 @@ export const plan = (input: unknown): LensPlanResult => {
         [...path, 'query', 'esql']
       );
     }
-    planned.push({
+    const layerPlan: LensLayerPlan = {
       kind: 'esql',
       layerId,
       query: { language: 'esql', esql: layer.query.esql },
@@ -227,7 +227,16 @@ export const plan = (input: unknown): LensPlanResult => {
         params,
         applyFilters: layer.ignoreGlobalFilters !== true,
       },
-    });
+    };
+    if (!copyJson(layerPlan).ok) {
+      return refuse(
+        'invalid',
+        'lens.layer-too-large',
+        `The planned layer exceeds the ${JSON_LIMITS.values} value, ${JSON_LIMITS.characters} character or ${JSON_LIMITS.depth} level limit \`readResponse\` reads.`,
+        path
+      );
+    }
+    planned.push(layerPlan);
   }
 
   return {

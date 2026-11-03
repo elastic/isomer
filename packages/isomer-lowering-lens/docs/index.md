@@ -39,10 +39,10 @@ Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a p
 
 | Refused as | When |
 | --- | --- |
-| `unsupported` | A form-based or mixed datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or a global query other than empty KQL/Lucene or a copy of every layer's ES\|QL. |
-| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, or metadata for a data view that is repeated or not referenced. |
+| `unsupported` | A form-based or mixed datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or a global query other than empty KQL/Lucene or a copy of one layer's ES\|QL. |
+| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, metadata for a data view that is repeated or not referenced, or a layer whose plan would exceed the `JSON_LIMITS` `readResponse` applies to it (its columns plus one value per parameter name). |
 
-Kibana saves native ES|QL Lens with the layer's ES|QL repeated as the global `state.query`; that copy is accepted only when every layer has exactly the same text.
+Kibana saves native ES|QL Lens with a layer's ES|QL repeated as the global `state.query`; with several layers it mirrors the first. The copy is accepted when its text is exactly one layer's.
 
 ## What a host runs
 

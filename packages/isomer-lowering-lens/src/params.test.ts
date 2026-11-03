@@ -22,6 +22,11 @@ describe('queryParams', () => {
     ['FROM logs | KEEP `?no` | WHERE x == ?yes', ['yes']],
     ['FROM logs // ?no\n| WHERE x == ?yes /* ?no */', ['yes']],
     ['FROM logs | WHERE msg == "unterminated ?no', []],
+    ['FROM logs // ?no\r| WHERE x == ?yes', ['yes']],
+    ['FROM logs | WHERE msg == """a"""" | KEEP ?yes', ['yes']],
+    ['FROM logs | WHERE msg == """a""""" | KEEP ?yes', ['yes']],
+    ['FROM logs /* outer /* inner */ ?no */ | KEEP ?yes', ['yes']],
+    ['FROM logs /* ?no /* ?no */ ?no */ | KEEP ?yes /* ?no', ['yes']],
   ])('finds the parameters in %j', (esql, names) => {
     expect(queryParams(esql)).toEqual(names);
   });
