@@ -104,9 +104,34 @@ const codes = (result: ReturnType<typeof bind>) =>
 
 describe('bind: native ES|QL metric', () => {
   it('binds the "[Logs] Web Traffic" sample Visits panel, which renders compact', () => {
-    expect(node(run(vis(), single(14_074)))).toEqual({
+    // The panel's saved visualization and layer, from the sample dashboard's export.
+    const layerId = '64a4cc71-0a4e-4540-84e2-0d36c8f15b46';
+    expect(
+      node(
+        run(
+          { layerId, layerType: 'data', metricAccessor: 'Visits' },
+          {
+            [layerId]: {
+              esql: 'FROM kibana_sample_data_logs | STATS COUNT(*) | RENAME `COUNT(*)` as `Visits`',
+              columns: [
+                {
+                  columnId: 'Visits',
+                  fieldName: 'Visits',
+                  meta: { type: 'number', esType: 'long' },
+                  inMetricDimension: true,
+                },
+              ],
+              response: {
+                columns: [{ name: 'Visits', type: 'long' }],
+                values: [[14_074]],
+              },
+            },
+          }
+        )
+      )
+    ).toEqual({
       type: 'metric',
-      tiles: [{ key: 'metric', title: 'visits', value: 14_074 }],
+      tiles: [{ key: 'metric', title: 'Visits', value: 14_074 }],
       layout: { density: 'compact' },
     });
   });
@@ -254,6 +279,127 @@ describe('bind: native ES|QL metric', () => {
     ).tiles[0]!;
     expect(tile).toMatchObject({ value: 'up', color: '#E7664C' });
     expect(tile.colorTarget).toBeUndefined();
+  });
+});
+
+describe('bind: named palettes', () => {
+  // Lens's default color-by-value palette (`defaultNumberPaletteParams`), as saved.
+  const status = (rangeType: 'number' | 'percent') => ({
+    type: 'palette',
+    name: 'status',
+    params: {
+      name: 'status',
+      rangeType,
+      rangeMin: null,
+      rangeMax: null,
+      steps: 3,
+      continuity: 'all',
+      stops: [],
+    },
+  });
+
+  it.each(['number', 'percent'] as const)(
+    'puts a lone %s-range tile in the middle band, as its doubled data bounds do',
+    (rangeType) => {
+      expect(
+        node(run(vis({ palette: status(rangeType) }), single(40))).tiles[0]!
+          .color
+      ).toEqual({
+        palette: 'status',
+        step: 1,
+        of: 3,
+      });
+    }
+  );
+
+  it('spreads a breakdown across the bands by its own range', () => {
+    const { tiles } = node(
+      run(vis({ breakdownByAccessor: 'host', palette: status('number') }), {
+        layer: {
+          columns: [num('visits'), str('host')],
+          response: {
+            columns: [
+              { name: 'visits', type: 'long' },
+              { name: 'host', type: 'keyword' },
+            ],
+            values: [
+              [10, 'a'],
+              [20, 'b'],
+              [30, 'c'],
+            ],
+          },
+        },
+      })
+    );
+    expect(tiles.map(({ color }) => color)).toEqual(
+      [0, 1, 2].map((step) => ({ palette: 'status', step, of: 3 }))
+    );
+  });
+
+  it("takes colors by the palette's name and stop positions by `params.name`, as Lens does", () => {
+    const stops = [
+      { color: '#AAAAAA', stop: 10 },
+      { color: '#BBBBBB', stop: 12 },
+      { color: '#CCCCCC', stop: 30 },
+    ];
+    // Custom colors without positions spread evenly over [0, 80].
+    expect(
+      node(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'custom',
+              params: {
+                name: 'status',
+                rangeType: 'number',
+                continuity: 'none',
+                stops,
+              },
+            },
+          }),
+          single(40)
+        )
+      ).tiles[0]!.color
+    ).toBe('#BBBBBB');
+    // Named bands with custom positions: 20 falls below the third stop.
+    expect(
+      node(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'status',
+              params: {
+                name: 'custom',
+                rangeType: 'number',
+                continuity: 'above',
+                steps: 3,
+                stops,
+              },
+            },
+          }),
+          single(20)
+        )
+      ).tiles[0]!.color
+    ).toEqual({ palette: 'status', step: 2, of: 3 });
+  });
+
+  it('refuses a palette that is not a value palette', () => {
+    expect(
+      codes(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'kibana_palette',
+              params: { steps: 3 },
+            },
+          }),
+          single(5)
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-palette']);
   });
 });
 
@@ -616,13 +762,6 @@ describe('bind: progress and trend', () => {
 
 describe('bind: refusals', () => {
   it.each([
-    [
-      'a named palette',
-      vis({
-        palette: { type: 'palette', name: 'status', params: { steps: 3 } },
-      }),
-      'lens.metric.unsupported-palette',
-    ],
     ['an icon', vis({ icon: 'bell' }), 'lens.metric.unsupported-icon'],
     [
       'the default value color',
