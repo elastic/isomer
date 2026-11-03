@@ -155,6 +155,10 @@ export const describeCaptureChanges = (
       changed.push({
         id,
         sections,
+        provenance: leafChanges(
+          withoutBuild(previous).provenance,
+          withoutBuild(next).provenance
+        ).map(({ path }) => path),
         fingerprint: leafChanges(
           previous.reference.fingerprint,
           next.reference.fingerprint
@@ -208,10 +212,23 @@ export const describeCaptureChanges = (
       ''
     );
   }
-  if (changed.length) {
+  const provenance = [
+    ...new Set(changed.flatMap(({ provenance: paths }) => paths)),
+  ].sort();
+  if (provenance.length) {
+    const count = changed.filter(
+      ({ provenance: paths }) => paths.length
+    ).length;
+    lines.push(
+      `Provenance moved in ${count} ${count === 1 ? 'case' : 'cases'}: ${provenance.map((path) => `\`${path}\``).join(', ')}.`,
+      ''
+    );
+  }
+  const drawn = changed.filter(({ sections }) => sections.length);
+  if (drawn.length) {
     lines.push('| Case | Changed |', '| --- | --- |');
-    for (const { id, sections } of changed) {
-      lines.push(`| \`${id}\` | ${sections.join(', ') || 'provenance'} |`);
+    for (const { id, sections } of drawn) {
+      lines.push(`| \`${id}\` | ${sections.join(', ')} |`);
     }
     lines.push('');
   }

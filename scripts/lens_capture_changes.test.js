@@ -113,7 +113,8 @@ describe('describeCaptureChanges', () => {
     expect(material).toBe(true);
     expect(body).toContain('| Elastic Charts | 73.3.2 | 74.0.0 |');
     expect(body).toContain('but the renderer pins 73.3.2');
-    expect(body).toContain('| `a` | provenance |');
+    expect(body).toContain('Provenance moved in 1 case: `elasticCharts`.');
+    expect(body).not.toContain('| `a` |');
   });
 });
 
