@@ -120,7 +120,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |
 | `@ungap/structured-clone` | 1.4.0 | ISC | `node_modules/.pnpm/@ungap+structured-clone@1.4.0/node_modules/@ungap/structured-clone` |  |
-| `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
+| `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
 | `aria-hidden` | 1.2.6 | MIT | `node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden` |  |
 | `attr-accept` | 2.2.5 | MIT | `node_modules/.pnpm/attr-accept@2.2.5/node_modules/attr-accept` |  |
@@ -393,7 +393,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `vfile-location` | 3.2.0 | MIT | `node_modules/.pnpm/vfile-location@3.2.0/node_modules/vfile-location` |  |
 | `vfile-message` | 2.0.4 | MIT | `node_modules/.pnpm/vfile-message@2.0.4/node_modules/vfile-message` |  |
 | `vfile-message` | 4.0.3 | MIT | `node_modules/.pnpm/vfile-message@4.0.3/node_modules/vfile-message` |  |
-| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
+| `vite` | 8.3.3 | MIT | `node_modules/.pnpm/vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
 | `web-namespaces` | 1.1.4 | MIT | `node_modules/.pnpm/web-namespaces@1.1.4/node_modules/web-namespaces` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `yaml` | 1.10.3 | ISC | `node_modules/.pnpm/yaml@1.10.3/node_modules/yaml` |  |
@@ -538,6 +538,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/to-lines` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+to-lines@19.8.1/node_modules/@commitlint/to-lines` |  |
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
+| `@dual-bundle/import-meta-resolve` | 4.2.1 | MIT | `node_modules/.pnpm/@dual-bundle+import-meta-resolve@4.2.1/node_modules/@dual-bundle/import-meta-resolve` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
@@ -725,7 +726,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@typescript-eslint/visitor-keys` | 8.70.0 | MIT | `node_modules/.pnpm/@typescript-eslint+visitor-keys@8.70.0/node_modules/@typescript-eslint/visitor-keys` |  |
 | `@vitest/coverage-v8` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+coverage-v8@4.1.11_vitest@4.1.11/node_modules/@vitest/coverage-v8` |  |
 | `@vitest/expect` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+expect@4.1.11/node_modules/@vitest/expect` |  |
-| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
+| `@vitest/mocker` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+mocker@4.1.11_vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitest/mocker` |  |
 | `@vitest/pretty-format` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+pretty-format@4.1.11/node_modules/@vitest/pretty-format` |  |
 | `@vitest/runner` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+runner@4.1.11/node_modules/@vitest/runner` |  |
 | `@vitest/snapshot` | 4.1.11 | MIT | `node_modules/.pnpm/@vitest+snapshot@4.1.11/node_modules/@vitest/snapshot` |  |
@@ -904,7 +905,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `eslint-config-prettier` | 10.1.8 | MIT | `node_modules/.pnpm/eslint-config-prettier@10.1.8_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-config-prettier` |  |
 | `eslint-plugin-license-header` | 0.9.0 | MIT | `node_modules/.pnpm/eslint-plugin-license-header@0.9.0_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-plugin-license-header` |  |
 | `eslint-plugin-perfectionist` | 5.11.0 | MIT | `node_modules/.pnpm/eslint-plugin-perfectionist@5.11.0_eslint@9.39.5_jiti@2.6.1__typescript@5.9.3/node_modules/eslint-plugin-perfectionist` |  |
-| `eslint-plugin-prettier` | 5.5.6 | MIT | `node_modules/.pnpm/eslint-plugin-prettier@5.5.6_eslint-config-prettier@10.1.8_eslint@9.39.5_jiti@2.6.1___e_a4316a196562703b4e2d4e910c29afbb/node_modules/eslint-plugin-prettier` |  |
+| `eslint-plugin-prettier` | 5.5.7 | MIT | `node_modules/.pnpm/eslint-plugin-prettier@5.5.7_eslint-config-prettier@10.1.8_eslint@9.39.5_jiti@2.6.1___e_e7742ac8bce04c284d544daf8f693a8a/node_modules/eslint-plugin-prettier` |  |
 | `eslint-plugin-react-hooks` | 7.1.1 | MIT | `node_modules/.pnpm/eslint-plugin-react-hooks@7.1.1_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-plugin-react-hooks` |  |
 | `eslint-plugin-simple-import-sort` | 14.0.0 | MIT | `node_modules/.pnpm/eslint-plugin-simple-import-sort@14.0.0_eslint@9.39.5_jiti@2.6.1_/node_modules/eslint-plugin-simple-import-sort` |  |
 | `eslint-scope` | 8.4.0 | BSD-2-Clause | `node_modules/.pnpm/eslint-scope@8.4.0/node_modules/eslint-scope` |  |
@@ -1480,7 +1481,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `supports-hyperlinks` | 3.2.0 | MIT | `node_modules/.pnpm/supports-hyperlinks@3.2.0/node_modules/supports-hyperlinks` |  |
 | `supports-preserve-symlinks-flag` | 1.0.0 | MIT | `node_modules/.pnpm/supports-preserve-symlinks-flag@1.0.0/node_modules/supports-preserve-symlinks-flag` |  |
 | `symbol-tree` | 3.2.4 | MIT | `node_modules/.pnpm/symbol-tree@3.2.4/node_modules/symbol-tree` |  |
-| `synckit` | 0.11.13 | MIT | `node_modules/.pnpm/synckit@0.11.13/node_modules/synckit` |  |
+| `synckit` | 0.12.3 | MIT | `node_modules/.pnpm/synckit@0.12.3/node_modules/synckit` |  |
 | `tabbable` | 5.3.3 | MIT | `node_modules/.pnpm/tabbable@5.3.3/node_modules/tabbable` |  |
 | `tagged-tag` | 1.0.0 | MIT | `node_modules/.pnpm/tagged-tag@1.0.0/node_modules/tagged-tag` |  |
 | `tar` | 7.5.22 | BlueOak-1.0.0 | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/tar` |  |
@@ -1571,8 +1572,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `vfile` | 4.2.1 | MIT | `node_modules/.pnpm/vfile@4.2.1/node_modules/vfile` |  |
 | `vfile-location` | 3.2.0 | MIT | `node_modules/.pnpm/vfile-location@3.2.0/node_modules/vfile-location` |  |
 | `vfile-message` | 2.0.4 | MIT | `node_modules/.pnpm/vfile-message@2.0.4/node_modules/vfile-message` |  |
-| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
-| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_jsdom@20.0.1_vite@8.3.0_@t_31029b0824be3f577fe22cab75f4fd96/node_modules/vitest` |  |
+| `vite` | 8.3.3 | MIT | `node_modules/.pnpm/vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
+| `vitest` | 4.1.11 | MIT | `node_modules/.pnpm/vitest@4.1.11_@types+node@22.20.2_@vitest+coverage-v8@4.1.11_jsdom@20.0.1_vite@8.3.3_@t_879b44e8f034e61eb61ed250d866ad6f/node_modules/vitest` |  |
 | `w3c-xmlserializer` | 3.0.0 | MIT | `node_modules/.pnpm/w3c-xmlserializer@3.0.0/node_modules/w3c-xmlserializer` |  |
 | `walk-up-path` | 4.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/walk-up-path` |  |
 | `web-namespaces` | 1.1.4 | MIT | `node_modules/.pnpm/web-namespaces@1.1.4/node_modules/web-namespaces` |  |
