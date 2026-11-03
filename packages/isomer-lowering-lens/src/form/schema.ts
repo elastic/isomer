@@ -7,14 +7,12 @@
 
 import { z } from 'zod';
 
-import type { JsonValue } from '../json';
+import { id, json } from '../schema';
 
 // Lens's persisted form-based state, read as a format specification:
 // `@kbn/lens-common/datasources/{types,operations}.ts`. These schemas check the
 // fields planning reads; a plan carries each saved column verbatim.
 
-const json = z.custom<JsonValue>(() => true);
-const id = z.string().min(1).max(4096);
 const params = <T extends z.ZodRawShape>(shape: T) => z.object(shape);
 
 export const querySchema = z

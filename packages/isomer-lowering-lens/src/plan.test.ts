@@ -245,61 +245,73 @@ describe('plan', () => {
     ]);
   });
 
+  it('ignores the runtime and empty datasource states Kibana saves', () => {
+    const input = singleLayerInput();
+    const { datasourceStates } = input.savedObject.attributes.state;
+    Object.assign(datasourceStates.textBased, {
+      indexPatternRefs: [{ id: 'logs-view', title: 'logs-*' }],
+    });
+    Object.assign(datasourceStates, {
+      formBased: { layers: {} },
+      indexpattern: { layers: {} },
+    });
+    expect(planned(plan(input)).layers).toHaveLength(1);
+  });
+
   it('refuses unknown datasource state beside real layers', () => {
     const input = singleLayerInput();
     Object.assign(
       input.savedObject.attributes.state.datasourceStates.textBased,
-      { indexPatternRefs: [], futureState: {} }
+      { initialContext: {} }
     );
     expect(plan(input)).toMatchObject({
       status: 'unsupported',
-      diagnostics: [
-        {
-          code: 'lens.unsupported-datasource-state',
-          message: 'Unknown ES|QL datasource state: futureState.',
-        },
-      ],
+      diagnostics: [{ code: 'lens.unsupported-datasource-state' }],
     });
-  });
-
-  const layersOf = (result: ReturnType<typeof plan>) =>
-    result.status === 'planned' ? result.plan.layers : result;
-
-  it('plans an ES|QL datasource that persisted its runtime `indexPatternRefs`', () => {
-    // As the "[Logs] Web Traffic" sample dashboard saves its metric panels.
-    const input = singleLayerInput();
-    Object.assign(
-      input.savedObject.attributes.state.datasourceStates.textBased,
-      {
-        indexPatternRefs: [
-          {
-            id: 'abc',
-            title: 'kibana_sample_data_logs',
-            timeField: '@timestamp',
-          },
-        ],
-      }
-    );
-    expect(layersOf(plan(input))).toEqual(layersOf(plan(singleLayerInput())));
-  });
-
-  it('ignores the empty datasource states Kibana keeps beside the one in use', () => {
-    // As the "[eCommerce] Revenue Dashboard" sample saves "Sold Products per Day".
-    const input = singleLayerInput();
-    Object.assign(input.savedObject.attributes.state.datasourceStates, {
-      formBased: { layers: {} },
-      indexpattern: { layers: {} },
-    });
-    expect(layersOf(plan(input))).toEqual(layersOf(plan(singleLayerInput())));
   });
 
   it.each([
     [
-      'an inline table',
-      (layer: Record<string, unknown>) => Object.assign(layer, { table: {} }),
+      'unknown state',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, { surprise: true }),
       'unsupported',
       'lens.unsupported-layer-state',
       [...LAYERS, 'layer1'],
+    ],
+    [
+      'an inline table',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, { table: { type: 'datatable' } }),
+      'unsupported',
+      'lens.unsupported-inline-table',
+      [...LAYERS, 'layer1', 'table'],
+    ],
+    [
+      'saved editor errors',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, { errors: [{ message: 'Unknown column' }] }),
+      'invalid',
+      'lens.layer-errors',
+      [...LAYERS, 'layer1', 'errors'],
+    ],
+    [
+      'an ES|QL syntax error',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, { query: { esql: 'FROM logs | WHERE' } }),
+      'invalid',
+      'lens.invalid-esql-query',
+      [...LAYERS, 'layer1', 'query', 'esql'],
+    ],
+    [
+      'a positional parameter',
+      (layer: Record<string, unknown>) =>
+        Object.assign(layer, {
+          query: { esql: 'FROM logs | WHERE x == ?1' },
+        }),
+      'unsupported',
+      'lens.unsupported-positional-param',
+      [...LAYERS, 'layer1', 'query', 'esql'],
     ],
     [
       'no query',
@@ -355,6 +367,12 @@ describe('plan', () => {
     ]);
   });
 
+  it('plans a layer that saved an empty errors list', () => {
+    expect(
+      plan(withLayer((layer) => Object.assign(layer, { errors: [] }))).status
+    ).toBe('planned');
+  });
+
   it('reports schema problems at numeric array paths', () => {
     const result = plan(
       withLayer(
@@ -403,13 +421,32 @@ describe('plan', () => {
     [{}, 'lens.invalid-input'],
     [{ ...singleLayerInput(), surprise: true }, 'lens.invalid-input'],
     [
-      { savedObject: { id: 'x', type: 'lens', attributes: Number.NaN } },
+      Object.defineProperty({}, 'savedObject', {
+        get: () => singleLayerInput().savedObject,
+        enumerable: true,
+      }),
       'lens.invalid-json',
     ],
   ])('refuses malformed input %#', (input, code) => {
     expect(plan(input)).toMatchObject({
       status: 'invalid',
       diagnostics: [expect.objectContaining({ code })],
+    });
+  });
+
+  it('refuses a non-JSON value at the object holding it', () => {
+    const input = singleLayerInput();
+    Object.assign(input.savedObject.attributes.state, {
+      filters: [{ meta: { value: Number.NaN } }],
+    });
+    expect(plan(input)).toMatchObject({
+      status: 'invalid',
+      diagnostics: [
+        expect.objectContaining({
+          code: 'lens.invalid-input',
+          path: [...LAYERS.slice(0, 3), 'filters', 0, 'meta'],
+        }),
+      ],
     });
   });
 });

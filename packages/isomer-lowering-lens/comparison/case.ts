@@ -7,11 +7,11 @@
 
 import { z } from 'zod';
 
-import type { JsonObject, JsonValue } from '../src/json';
+import type { JsonObject } from '../src/json';
+import { json } from '../src/schema';
 
 import type { Fingerprint } from './fingerprint';
 
-const json = z.custom<JsonValue>(() => true);
 const jsonObject = z.record(z.string(), json);
 const id = z.string().min(1).max(512);
 
