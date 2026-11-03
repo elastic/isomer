@@ -16,6 +16,7 @@ import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { connectorModule, layoutModule } from '../../theme/modules';
 import { countKey, type SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 
 import { graphStep } from './fit';
 import {
@@ -168,7 +169,7 @@ export const react = (
   const { type, caption } = node;
   const layout = graphLayout(node);
   const { main, above, below } = layout;
-  const step = graphStep(node, context);
+  const step = graphStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

@@ -16,7 +16,6 @@ export {
   type AuthoredMarkdownSegment,
   type MarkdownEnvelopeDispatcher,
   type MarkdownEnvelopeOptions,
-  type SplitAuthoredMarkdownOptions,
   exceedsParseBudget,
   md,
   renderMarkdownEnvelope,

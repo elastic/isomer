@@ -19,6 +19,7 @@ import {
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideFonts } from '../../examples/fonts';
 import { previewSlide } from '../../examples/preview_slide';
 import { slideDeckFrame, slidesPack } from '../../pack';
@@ -36,7 +37,7 @@ import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { COPY_BUTTON_ATTRIBUTE, SLIDE_COPY } from './copy';
 import { example, examples, highlightExample, longExample } from './examples';
-import { commandSize, commandWidth } from './fit';
+import { commandStep, commandWidth } from './fit';
 import { markdown as markdownContent, slack, text } from './index';
 import type { SlideCommandNode } from './schema';
 
@@ -105,7 +106,7 @@ describe('slideCommand schema', () => {
     const longest = 'x'.repeat(commandMaxColumns);
     expect(errorPaths(commandOf(longest))).toEqual([]);
     expect(errorPaths(commandOf(`${longest}x`))).toHaveLength(1);
-    expect(commandSize(longest)).toBe('s');
+    expect(commandStep({ command: longest })).toBe('s');
     expect(commandWidth(longest, 's')).toBeLessThanOrEqual(commandLineWidth());
   });
 
@@ -149,7 +150,7 @@ describe('slideCommand sizing', () => {
   };
 
   it('takes the largest step a short command fits', () => {
-    expect(commandSize(example.command)).toBe('l');
+    expect(commandStep({ command: example.command })).toBe('l');
   });
 
   it('measures every space, as the line keeps them', () => {
@@ -167,8 +168,9 @@ describe('slideCommand sizing', () => {
       for (const [index, size] of slideSizes.slice(0, -1).entries()) {
         const next = slideSizes[index + 1];
         const fits = 'x'.repeat(most(size, width));
-        expect(commandSize(fits, width)).toBe(size);
-        expect(commandSize(`${fits}x`, width)).toBe(next);
+        const layout = width === undefined ? undefined : { width };
+        expect(commandStep({ command: fits }, layout)).toBe(size);
+        expect(commandStep({ command: `${fits}x` }, layout)).toBe(next);
         expect(renderedStep('command-textSize', place(commandOf(fits)))).toBe(
           size
         );
@@ -271,7 +273,7 @@ describe('slideCommand in the DOM', () => {
 
   it('keeps the label apart from the command in the text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
+    expect(renderedHtmlText(html)).toContain(
       `${example.label} $ ${example.command}`
     );
   });

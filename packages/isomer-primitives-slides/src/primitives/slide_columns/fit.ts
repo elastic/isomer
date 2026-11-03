@@ -8,18 +8,17 @@
 import type { SlideLayout } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { columns, columnsFit } from '../../theme/components/columns';
-import { frameContentWidth } from '../../theme/components/frame';
 import { scalePx } from '../../theme/scale';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { SlideSize } from '../../theme/variants';
+import { slideLayout, type StepLayout } from '../layout';
 import {
   lineBox,
   lineFill,
   measureText,
-  narrowing,
   rowLoad,
-  sizeForLoad,
+  sizeForWidthLoad,
   smallerStep,
+  stepWhere,
   textColumns,
   widestWord,
 } from '../size';
@@ -28,36 +27,38 @@ import type { SlideColumnsNode } from './schema';
 
 /** Budgets hold across the frame body; a narrower layout scales the load up, and no step breaks a title word. */
 export const columnsStep = (
-  { items, footnote, size }: SlideColumnsNode,
-  { width, crowding } = slideLayout(undefined)
+  {
+    items,
+    footnote,
+    size,
+  }: Pick<SlideColumnsNode, 'items' | 'footnote' | 'size'>,
+  layout: Pick<StepLayout, 'width' | 'crowding'> = slideLayout(undefined)
 ): SlideSize => {
   if (size) {
     return size;
   }
-  const inner = columnInnerWidth(items.length, width);
-  const unbroken =
-    slideSizes.find((step) =>
-      items.every(
-        ({ title }) =>
-          widestWord(title, columns.title.tracking) *
-            scalePx(columns.titleSizes[step]) <=
-          inner
-      )
-    ) ?? 's';
+  const inner = columnInnerWidth(items.length, layout.width);
+  const unbroken = stepWhere((step) =>
+    items.every(
+      ({ title }) =>
+        widestWord(title, columns.title.tracking) *
+          scalePx(columns.titleSizes[step]) <=
+        inner
+    )
+  );
   const load =
-    (rowLoad(
+    rowLoad(
       items.map(({ title, tags = [], body }) => [
         title,
         ...tags,
         stripMarks(body),
       ])
     ) +
-      (footnote
-        ? textColumns(footnote.code) + textColumns(stripMarks(footnote.text))
-        : 0)) *
-    narrowing(frameContentWidth, width);
+    (footnote
+      ? textColumns(footnote.code) + textColumns(stripMarks(footnote.text))
+      : 0);
   return smallerStep(
-    sizeForLoad(undefined, load, columnsFit, crowding),
+    sizeForWidthLoad(undefined, load, columnsFit, layout),
     unbroken
   );
 };

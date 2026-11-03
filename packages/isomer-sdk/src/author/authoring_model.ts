@@ -9,6 +9,7 @@ import type { ZodType } from 'zod';
 
 import { IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
+import { isZodSchema } from '../define/zod_introspect';
 
 import {
   type AuthoredChildField,
@@ -86,7 +87,7 @@ export const createAuthoringModel = (
     }
   };
   for (const { type, schema } of primitives) {
-    if (!isZodType(schema)) {
+    if (!isZodSchema(schema)) {
       continue;
     }
     const spec = readAuthoredSpec(schema);
@@ -148,9 +149,6 @@ const isSameChild = (a: AuthoredChildField, b: AuthoredChildField): boolean =>
   a.propsSchema === b.propsSchema &&
   a.toItem === b.toItem &&
   a.textField === b.textField;
-
-const isZodType = (schema: unknown): schema is ZodType =>
-  typeof schema === 'object' && schema !== null && '_zod' in schema;
 
 /**
  * Reads {@link PrimitiveDefinition.children} against a probe node so JSX can

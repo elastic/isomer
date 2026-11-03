@@ -1,0 +1,35 @@
+```json
+{
+  "type": "view",
+  "title": "Self-managed vs. Serverless",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "brand": "Platform team",
+        "section": "Where to run search",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Serverless hands upgrades and scaling to **Elastic**",
+          "lede": "Self-managed keeps every knob in your hands; Serverless trades that control for less to operate and a bill that follows usage."
+        },
+        {
+          "type": "slideTable",
+          "columns": ["Concern", "Self-managed Elasticsearch", "Elastic Cloud Serverless"],
+          "rowHeaders": true,
+          "rows": [
+            ["Upgrades", "Your team plans, tests, and rolls them", "Elastic applies them continuously"],
+            ["Scaling", "You size nodes and add capacity ahead of load", "Scales automatically with ingest and query load"],
+            ["Cost model", "Pay for the infrastructure you provision", "Pay for what you ingest, store, and query"]
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

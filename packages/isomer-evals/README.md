@@ -39,7 +39,7 @@ console.log(formatReport(report));
 
 `prompt` contains shared authoring instructions. The callback adds the case request and any errors from the first attempt.
 
-Stateless: no corpus, no goldens, no credentials, no model client, no environment reads, no writes. Three of the four scoring axes need no model at all, so a pack can run them in CI with a replayed `generate` and nothing configured.
+Stateless: no corpus, no goldens, no credentials, no model client, no environment reads, no writes. A recorded slides corpus under `corpus/` replays in the package's tests. Three of the four scoring axes need no model at all, so a pack can run them in CI with a replayed `generate` and nothing configured.
 
 ## Docs
 

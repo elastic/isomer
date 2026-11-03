@@ -14,6 +14,7 @@ import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import { roadmapStep } from './fit';
 import type { SlideRoadmapNode } from './schema';
@@ -29,7 +30,7 @@ export const react = (
   const { type, columns } = node;
   const { handles: roadmap } = roadmapModule;
   const { handles: label } = labelModule;
-  const step = roadmapStep(node, context);
+  const step = roadmapStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

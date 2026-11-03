@@ -48,7 +48,7 @@ import {
   example as tableExample,
   fullExample as tableFullExample,
 } from '../primitives/slide_table/examples';
-import { tableSize } from '../primitives/slide_table/fit';
+import { tableStep } from '../primitives/slide_table/fit';
 import type { SlideTableNode } from '../primitives/slide_table/schema';
 import { fullExample as treeExample } from '../primitives/slide_tree/examples';
 import { slideDeckPrimitives } from '../registry';
@@ -202,7 +202,7 @@ describe('the largest steps a slide with no heading takes still fit', () => {
           ...Array.from(
             { length: tableFullExample.rows?.length ?? 0 },
             (_, index) => index + 1
-          ).filter((count) => tableSize(tableRows(count)) === step)
+          ).filter((count) => tableStep(tableRows(count)) === step)
         )
       ),
     },

@@ -13,16 +13,9 @@ import { extname, join, normalize } from 'node:path';
 
 import type { Composition } from '@elastic/isomer-sdk';
 import { transform } from 'esbuild';
-import {
-  createServer as createViteServer,
-  createServerModuleRunner,
-} from 'vite';
 
 import type { StudioConfig } from '../config';
-import {
-  describeTransformError,
-  JSX_TRANSFORM_OPTIONS,
-} from '../model/jsx_transform';
+import { JSX_TRANSFORM_OPTIONS } from '../model/jsx_transform';
 
 import { APP_DIR, renderIndexHtml } from './app_bundle';
 import type { ConfigChangeHandler } from './dev_bundle';
@@ -36,6 +29,7 @@ import {
 } from './load_config';
 import type { NodeRenderers } from './rasterize';
 import { createRenderers, imageFontsOf } from './rasterize';
+import { loadVite } from './vite';
 
 const HOST = '127.0.0.1';
 const MAX_BODY_BYTES = 256 * 1024;
@@ -119,6 +113,18 @@ const isPdfRequest = (
 const describeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+const reportRequestError = (
+  response: ServerResponse,
+  route: string,
+  status: number,
+  publicMessage: string,
+  error: unknown,
+  log: (line: string) => void
+) => {
+  log(`${route} failed: ${describeError(error)}`);
+  sendText(response, status, publicMessage);
+};
+
 export interface DevServerOptions {
   configPath: string;
   port: number;
@@ -159,18 +165,22 @@ export const startDevServer = async ({
 
   const server: Server = createServer();
   const fontFiles = new Set<string>();
-  const vite = await createViteServer(
+  const modules = await loadVite();
+  const vite = await modules.vite.createServer(
     devViteConfig({
       configPath,
       server,
       onConfigChange: (stale) => reloadConfig(stale),
       reloadsWith: () => fontFiles,
+      modules,
     })
   );
   const runner =
     loader === 'none'
       ? undefined
-      : createServerModuleRunner(vite.environments.ssr, { hmr: false });
+      : modules.vite.createServerModuleRunner(vite.environments.ssr, {
+          hmr: false,
+        });
 
   const importModule = createStudioImporter(configPath, { loader });
   const importConfig = async (): Promise<LoadedConfig> => {
@@ -244,7 +254,14 @@ export const startDevServer = async ({
       });
       response.end(image);
     } catch (error) {
-      sendText(response, 400, describeError(error));
+      reportRequestError(
+        response,
+        'PNG render',
+        400,
+        'Could not render PNG.',
+        error,
+        log
+      );
     }
   };
 
@@ -270,7 +287,14 @@ export const startDevServer = async ({
       });
       response.end(document);
     } catch (error) {
-      sendText(response, 400, describeError(error));
+      reportRequestError(
+        response,
+        'PDF render',
+        400,
+        'Could not render PDF.',
+        error,
+        log
+      );
     }
   };
 
@@ -288,7 +312,14 @@ export const startDevServer = async ({
       });
       response.end(code);
     } catch (error) {
-      sendText(response, 400, describeTransformError(error));
+      reportRequestError(
+        response,
+        'JSX transform',
+        400,
+        'Could not transform JSX.',
+        error,
+        log
+      );
     }
   };
 
@@ -323,7 +354,14 @@ export const startDevServer = async ({
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end(html);
     } catch (error) {
-      sendText(response, 500, describeError(error));
+      reportRequestError(
+        response,
+        'Studio page render',
+        500,
+        'Could not render Studio page.',
+        error,
+        log
+      );
     }
   };
 

@@ -7,11 +7,12 @@
 
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
-import { dirname, join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import type { BuildOptions, Metafile, Plugin } from 'esbuild';
 
+import { moduleUrl } from './node_module.cjs';
 import {
   isStudioSpecifier,
   projectDirectory,
@@ -20,20 +21,25 @@ import {
 
 export type AppMode = 'build' | 'dev';
 
-const here = dirname(fileURLToPath(import.meta.url));
+const here = dirname(fileURLToPath(moduleUrl));
 
-/** The package root, whether this module runs from `dist/node` or `src/node`. */
-export const PACKAGE_DIR = resolve(here, '../..');
+/** Whether the CLI runs from its TypeScript source, as `pnpm studio:dev` does, rather than from `lib/cjs`. */
+export const RUNS_FROM_SOURCE = basename(dirname(here)) === 'src';
 
-/** Whether the CLI runs from its TypeScript source, as `pnpm studio:dev` does, rather than from `dist`. */
-export const RUNS_FROM_SOURCE = import.meta.url.endsWith('.ts');
+/** The package root, whether this module runs from `lib/cjs/node` or `src/node`. */
+export const PACKAGE_DIR = resolve(
+  here,
+  RUNS_FROM_SOURCE ? '../..' : '../../..'
+);
 
-/** The package's prebuilt, pack-independent assets: `dist/app/`. */
-export const APP_DIR = join(PACKAGE_DIR, 'dist/app');
+/** The package's prebuilt, pack-independent assets: `lib/app/`. */
+export const APP_DIR = join(PACKAGE_DIR, 'lib/app');
 
-/** Without an extension, so the bundle takes `dist/browser/*.js`, or the `.ts(x)` beside it when the CLI runs from source. */
+/** Without an extension, so the bundle takes the ESM build's `lib/esm/browser/*.js`, or the `.ts(x)` source when the CLI runs from it. */
 export const browserModule = (name: string): string =>
-  resolve(here, '../browser', name);
+  RUNS_FROM_SOURCE
+    ? resolve(here, '../browser', name)
+    : join(PACKAGE_DIR, 'lib/esm/browser', name);
 
 const HOSTS: Readonly<Record<AppMode, { module: string; name: string }>> = {
   dev: { module: 'dev_host', name: 'devHost' },
@@ -258,7 +264,7 @@ const HTML_ESCAPES: Readonly<Record<string, string>> = {
 const escapeHtml = (value: string): string =>
   value.replace(/[&<>"]/g, (char) => HTML_ESCAPES[char] ?? char);
 
-/** `dist/app/index.html` with the deployment's `<base href>`, the config's title, and the entry script. */
+/** `lib/app/index.html` with the deployment's `<base href>`, the config's title, and the entry script. */
 export const renderIndexHtml = ({
   base,
   title = 'Isomer Studio',

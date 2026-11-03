@@ -1,0 +1,59 @@
+```json
+{
+  "type": "view",
+  "title": "Search roadmap",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "brand": "Search team",
+        "section": "Roadmap",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "This year search gets smarter, then cheaper to run",
+          "lede": "Relevance work lands in the first three quarters; autoscaling on cost closes the year."
+        },
+        {
+          "type": "slideRoadmap",
+          "columns": [
+            {
+              "title": "Q1",
+              "status": "GA",
+              "current": true,
+              "items": [
+                { "title": "Semantic reranking", "body": "Generally available to every customer" }
+              ]
+            },
+            {
+              "title": "Q2",
+              "status": "Next",
+              "items": [
+                { "title": "Multilingual models", "body": "Relevance beyond English" }
+              ]
+            },
+            {
+              "title": "Q3",
+              "status": "Beta",
+              "items": [
+                { "title": "Query rewriting", "body": "Rewrites queries before they run" }
+              ]
+            },
+            {
+              "title": "Q4",
+              "status": "Later",
+              "items": [
+                { "title": "Cost-based autoscaling", "body": "Scales on cost as well as load" }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

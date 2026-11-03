@@ -5,44 +5,11 @@
  * 2.0.
  */
 
+import { useMemo } from 'react';
+import type { UseEuiTheme } from '@elastic/eui';
+import { euiFontSize, transparentize, useEuiTheme } from '@elastic/eui';
+import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
-
-import { ISOMER_MARK } from '../chrome/isomer_mark';
-
-/** Home's own palette: one dark look on the plum shell, whatever the color mode. */
-export const HOME = {
-  shell: '#3E3748',
-  fg: '#FFFFFF',
-  fg2: 'rgba(255, 255, 255, 0.72)',
-  fg3: 'rgba(255, 255, 255, 0.55)',
-  surface1: 'rgba(255, 255, 255, 0.05)',
-  surface2: 'rgba(255, 255, 255, 0.07)',
-  surface3: 'rgba(255, 255, 255, 0.11)',
-  field: 'rgba(22, 12, 30, 0.5)',
-  line1: 'rgba(255, 255, 255, 0.12)',
-  line2: 'rgba(255, 255, 255, 0.14)',
-  line3: 'rgba(255, 255, 255, 0.18)',
-  accent: '#F78BBB',
-  accentBorder: '#F04E98',
-  docs: ISOMER_MARK.blue,
-  dev: ISOMER_MARK.teal,
-  app: ISOMER_MARK.yellow,
-  actionSurface: '#302938',
-  actionSurfaceHover: '#382F40',
-} as const;
-
-/** The glows behind the shell: the same stops as Workbench and Reference, in the logo's palette. */
-export const homeBackground = css`
-  background-color: ${HOME.shell};
-  background-image:
-    radial-gradient(circle at 0% 0%, rgba(0, 191, 179, 0.3), transparent 24%),
-    radial-gradient(
-      circle at 4% 100%,
-      rgba(254, 197, 20, 0.2),
-      transparent 22%
-    ),
-    radial-gradient(circle at 40% 0%, rgba(240, 78, 152, 0.14), transparent 18%);
-`;
 
 export const CONTENT_WIDTH = 620;
 export const HOME_NARROW = `@container isomer-home (max-width: ${CONTENT_WIDTH - 1}px)`;
@@ -56,134 +23,195 @@ export const WIDE = `@media (min-width: ${WIDE_CONTENT_WIDTH + 2 * GUTTER + PANE
 /** Tiles per row, set on the main column and read by every tile grid inside it. */
 export const TILE_COLUMNS = '--isomer-studio-tile-columns';
 
-export const sectionLabel = css`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: ${HOME.fg2};
-`;
+/** How opaque each translucent layer over the shell's glows is. */
+const VEIL = {
+  surface: 0.06,
+  surfaceHover: 0.11,
+  line: 0.14,
+  dashed: 0.25,
+} as const;
 
-export const sectionHeading = css`
-  margin: 0;
-  font: inherit;
-`;
+/**
+ * Home's colors from the dark EUI theme it is rendered in: text in the theme's text roles, the
+ * Reference, Workbench and app actions in its primary, accent-secondary and warning text colors,
+ * and translucent layers of the theme's plain light color over the shell.
+ */
+export const homeColors = ({ colors }: UseEuiTheme['euiTheme']) => {
+  const veil = (alpha: number) => transparentize(colors.plainLight, alpha);
+  return {
+    heading: colors.textHeading,
+    paragraph: colors.textParagraph,
+    subdued: colors.textSubdued,
+    accent: colors.textAccent,
+    accentBorder: colors.borderStrongAccent,
+    docs: colors.textPrimary,
+    dev: colors.textAccentSecondary,
+    app: colors.textWarning,
+    surface: veil(VEIL.surface),
+    surfaceHover: veil(VEIL.surfaceHover),
+    line: veil(VEIL.line),
+    dashed: veil(VEIL.dashed),
+    /** Opaque, so the actions' colored text keeps its contrast over the glows. */
+    action: colors.backgroundBaseAssistance,
+    actionHover: colors.backgroundBaseInteractiveHoverAssistance,
+  };
+};
 
-export const quietLabel = css`
-  ${sectionLabel};
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: ${HOME.fg3};
-`;
+export type HomeColors = ReturnType<typeof homeColors>;
 
-/** A tile's chrome. Rows line up across a grid through subgrid, so a wrapped title shifts its neighbours too. */
-export const tile = (rows: number) => css`
-  display: grid;
-  grid-template-rows: subgrid;
-  grid-row: span ${rows};
-  row-gap: 5px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  box-sizing: border-box;
-  min-height: 120px;
-  background: ${HOME.surface2};
-  border: 1px solid ${HOME.line2};
-  color: ${HOME.fg2};
-  text-decoration: none;
-  transition:
-    background 0.12s,
-    border-color 0.12s;
-  &:hover,
-  &:focus-within {
-    background: ${HOME.surface3};
-    text-decoration: none;
-  }
-`;
+type FontScale = Parameters<typeof euiFontSize>[1];
 
-/** Opaque plum keeps the logo-colored actions readable over the shell's glows. */
-export const actionCard = css`
-  background: ${HOME.actionSurface};
-  &:hover,
-  &:focus-within {
-    background: ${HOME.actionSurfaceHover};
-  }
-`;
+export interface Home {
+  euiTheme: UseEuiTheme['euiTheme'];
+  color: HomeColors;
+  /** The theme's font size at `scale`. */
+  fontSize: (scale: FontScale) => string;
+  sectionLabel: SerializedStyles;
+  sectionHeading: SerializedStyles;
+  quietLabel: SerializedStyles;
+  /** A tile's chrome. Rows line up across a grid through subgrid, so a wrapped title shifts its neighbours too. */
+  tile: (rows: number) => SerializedStyles;
+  actionCard: SerializedStyles;
+  tileTop: SerializedStyles;
+  tileName: SerializedStyles;
+  tileDescription: SerializedStyles;
+  tileActions: SerializedStyles;
+  helpTile: (rows: number, hover: string) => SerializedStyles;
+  tilesGrid: SerializedStyles;
+}
 
-export const tileTop = css`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 8px;
-`;
+/** Home's colors, font sizes and the blocks its sections share, all from the current EUI theme. */
+export const useHome = (): Home => {
+  const context = useEuiTheme();
+  return useMemo(() => {
+    const { euiTheme } = context;
+    const { size, border, font } = euiTheme;
+    const color = homeColors(euiTheme);
+    const fontSize = (scale: FontScale) =>
+      String(euiFontSize(context, scale).fontSize);
+    const transition = `${euiTheme.animation.fast} ${euiTheme.animation.resistance}`;
 
-export const tileName = css`
-  font-size: 14px;
-  font-weight: 600;
-  color: ${HOME.accent};
-`;
+    const sectionLabel = css`
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: ${fontSize('xs')};
+      font-weight: ${font.weight.bold};
+      color: ${color.paragraph};
+    `;
 
-export const tileDescription = css`
-  font-size: 12px;
-  color: ${HOME.fg2};
-  text-wrap: pretty;
-`;
+    const tile = (rows: number) => css`
+      display: grid;
+      grid-template-rows: subgrid;
+      grid-row: span ${rows};
+      row-gap: ${size.xs};
+      padding: ${size.m} ${size.base};
+      border-radius: ${border.radius.panel};
+      box-sizing: border-box;
+      min-height: 120px;
+      background: ${color.surface};
+      border: ${border.width.thin} solid ${color.line};
+      color: ${color.paragraph};
+      text-decoration: none;
+      transition:
+        background ${transition},
+        border-color ${transition};
+      &:hover,
+      &:focus-within {
+        background: ${color.surfaceHover};
+        text-decoration: none;
+      }
+    `;
 
-/** The bottom row of links, shown on hover or focus; always shown where there is no hover. */
-export const tileActions = css`
-  margin-top: auto;
-  padding-top: 6px;
-  display: flex;
-  gap: 14px;
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.12s;
-  a {
-    text-decoration: none;
-  }
-  a:hover {
-    text-decoration: underline;
-  }
-  *:hover > &,
-  *:focus-within > & {
-    opacity: 1;
-  }
-  @media (hover: none) {
-    opacity: 1;
-  }
-`;
-
-/** A dashed tile that points somewhere else: the gallery, or the docs on adding an app. */
-export const helpTile = (rows: number, color: string) => css`
-  ${tile(rows)};
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  border-style: dashed;
-  border-color: rgba(255, 255, 255, 0.25);
-  background: ${HOME.surface1};
-  &:hover,
-  &:focus-within {
-    border-color: ${color};
-  }
-`;
-
-export const tilesGrid = css`
-  display: grid;
-  grid-template-columns: repeat(var(${TILE_COLUMNS}, 3), minmax(0, 1fr));
-  gap: 12px;
-  ${HOME_NARROW} {
-    grid-template-columns: minmax(0, 1fr);
-  }
-`;
-
-export const monoFont = (familyCode: string) => css`
-  font-family: ${familyCode};
-`;
+    return {
+      euiTheme,
+      color,
+      fontSize,
+      sectionLabel,
+      sectionHeading: css`
+        margin: 0;
+        font: inherit;
+      `,
+      quietLabel: css`
+        ${sectionLabel};
+        font-size: ${fontSize('xxs')};
+        font-weight: ${font.weight.regular};
+        text-transform: uppercase;
+        color: ${color.subdued};
+      `,
+      tile,
+      /** Opaque behind the logo-colored actions, so they stay readable over the shell's glows. */
+      actionCard: css`
+        background: ${color.action};
+        &:hover,
+        &:focus-within {
+          background: ${color.actionHover};
+        }
+      `,
+      tileTop: css`
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: ${size.s};
+      `,
+      tileName: css`
+        font-size: ${fontSize('s')};
+        font-weight: ${font.weight.bold};
+        color: ${color.accent};
+      `,
+      tileDescription: css`
+        font-size: ${fontSize('xs')};
+        color: ${color.paragraph};
+        text-wrap: pretty;
+      `,
+      /** The bottom row of links, shown on hover or focus; always shown where there is no hover. */
+      tileActions: css`
+        margin-top: auto;
+        padding-top: ${size.xs};
+        display: flex;
+        gap: ${size.m};
+        font-size: ${fontSize('xs')};
+        font-weight: ${font.weight.bold};
+        opacity: 0;
+        transition: opacity ${transition};
+        a {
+          text-decoration: none;
+        }
+        a:hover {
+          text-decoration: underline;
+        }
+        *:hover > &,
+        *:focus-within > & {
+          opacity: 1;
+        }
+        @media (hover: none) {
+          opacity: 1;
+        }
+      `,
+      /** A dashed tile that points somewhere else: the gallery, or the docs on adding an app. */
+      helpTile: (rows: number, hover: string) => css`
+        ${tile(rows)};
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        gap: ${size.s};
+        border-style: dashed;
+        border-color: ${color.dashed};
+        &:hover,
+        &:focus-within {
+          border-color: ${hover};
+        }
+      `,
+      tilesGrid: css`
+        display: grid;
+        grid-template-columns: repeat(var(${TILE_COLUMNS}, 3), minmax(0, 1fr));
+        gap: ${size.m};
+        ${HOME_NARROW} {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      `,
+    };
+  }, [context]);
+};

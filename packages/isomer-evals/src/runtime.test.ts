@@ -7,6 +7,7 @@
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  type Composition,
   definePrimitive,
   definePrimitivePack,
   unresolvedBodyNodeSchema,
@@ -16,7 +17,12 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it, vi } from 'vitest';
 
 import { runEvals } from './run';
-import { checkAttempt, parseGenerated, scorePayload } from './score';
+import {
+  checkAttempt,
+  parseGenerated,
+  scorePayload,
+  scorePrimitiveSelection,
+} from './score';
 import type { EvalCase } from './types';
 
 const note = definePrimitive({
@@ -168,6 +174,44 @@ describe('runEvals with a real runtime', () => {
       answerability: { yes: 1, partial: 0, no: 0 },
     });
     expect(report.results[0]?.validity.composition).toEqual(golden);
+  });
+});
+
+describe('scorePrimitiveSelection over a tree', () => {
+  const wrapped = (...items: unknown[]) =>
+    ({
+      type: 'view',
+      body: [{ type: 'group', items }],
+    }) as unknown as Composition;
+
+  it('scores the nodes inside a shared wrapper, not only the wrapper', () => {
+    const score = scorePrimitiveSelection(
+      runtime,
+      wrapped({ type: 'note', text: 'a' }),
+      wrapped(
+        { type: 'note', text: 'a' },
+        { type: 'group', items: [{ type: 'note', text: 'b' }] }
+      )
+    );
+    expect(score.precision).toBe(1);
+    expect(score.recall).toBe(2 / 4);
+    expect(score.missing).toEqual(['group', 'note']);
+    expect(score.extra).toEqual([]);
+  });
+
+  it('does not count a data field named type as a node', () => {
+    const golden = wrapped({ type: 'note', text: 'a' });
+    expect(scorePrimitiveSelection(runtime, golden, golden).f1).toBe(1);
+    expect(
+      scorePrimitiveSelection(
+        runtime,
+        {
+          type: 'view',
+          body: [{ type: 'note', text: 'a', meta: { type: 'group' } }],
+        } as unknown as Composition,
+        golden
+      )
+    ).toMatchObject({ precision: 1, recall: 0.5, missing: ['group'] });
   });
 });
 

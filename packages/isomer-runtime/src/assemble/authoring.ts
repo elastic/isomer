@@ -94,25 +94,19 @@ export interface PrimitiveDescriptions {
  * Merges every composed pack's {@link PrimitivePack.authoring} into one
  * options object, with the runtime-level `authoring` option applied last so
  * it wins on conflict. Spares a host from hand-merging each pack's
- * `describe` / `omitProperties` before passing `authoring` itself.
+ * `describe` before passing `authoring` itself.
  */
 const mergePackAuthoring = (
   packs: readonly AnyPrimitivePack[],
   runtimeAuthoring: AuthoringJsonSchemaOptions
 ): AuthoringJsonSchemaOptions => {
   const describe: Record<string, string> = {};
-  const omitProperties: string[] = [];
   for (const pack of packs) {
     Object.assign(describe, pack.authoring?.describe);
-    omitProperties.push(...(pack.authoring?.omitProperties ?? []));
   }
   return {
     ...runtimeAuthoring,
     describe: { ...describe, ...runtimeAuthoring.describe },
-    omitProperties: [
-      ...omitProperties,
-      ...(runtimeAuthoring.omitProperties ?? []),
-    ],
   };
 };
 

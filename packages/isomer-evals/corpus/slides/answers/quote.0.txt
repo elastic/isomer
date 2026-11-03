@@ -1,0 +1,25 @@
+```json
+{
+  "type": "view",
+  "title": "Northwind on triage time",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Customers",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "quoteSlide",
+          "text": "We cut our triage time **in half** the first week.",
+          "source": "Priya Raman",
+          "context": "SRE lead, Northwind"
+        }
+      ]
+    }
+  ]
+}
+```

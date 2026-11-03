@@ -65,8 +65,7 @@ export const headHeight = (
       const nameLine = lineBox(renderGrid.name);
       const captionLine = lineBox(renderGrid.caption);
       if (!captionBeside(surface, cell)) {
-        // takumi draws a text block at its line boxes' height rounded up to a whole pixel.
-        return nameLine + Math.ceil(captionLines(caption, cell) * captionLine);
+        return nameLine + captionLines(caption, cell) * captionLine;
       }
       const lines = captionLines(caption, besideName(surface, cell));
       return Math.max(

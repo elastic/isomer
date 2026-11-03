@@ -59,12 +59,18 @@ const stubRuntime: EvalRuntime = {
       },
     ],
   }),
+  parse: (value) => ({
+    valid: true,
+    errors: [],
+    composition: value as Composition,
+  }),
   validate: (value) => {
     const { body } = value as { body?: Array<{ type: string }> };
     if (!Array.isArray(body)) {
       return {
         valid: false,
         errors: [{ path: 'body', message: 'is required' }],
+        composition: value,
       };
     }
     const bad = body.filter(({ type }) => !KNOWN.has(type));
@@ -74,13 +80,8 @@ const stubRuntime: EvalRuntime = {
         path: 'body',
         message: `unknown node type "${type}"`,
       })),
+      composition: value,
     };
-  },
-  parse(value) {
-    const result = this.validate(value as Composition);
-    return result.valid
-      ? { valid: true, errors: [], composition: value as Composition }
-      : { valid: false, errors: result.errors };
   },
   surfaces: {
     text: {
@@ -127,6 +128,51 @@ describe('runEvals', () => {
     expect(report.totals.parsed).toBe(2);
     expect(report.totals.valid).toBe(1);
     expect(report.totals.answerability).toBeUndefined();
+  });
+
+  it("scores an answer the frame's body rule refuses as invalid", async () => {
+    const report = await runEvals({
+      runtime: stubRuntime,
+      corpus: [corpus[0]!],
+      retryOnInvalid: false,
+      frame: {
+        validateBody: (body) =>
+          body.length === 1 ? [] : [`one node, got ${body.length}`],
+      },
+      generate: replaying({
+        good: [JSON.stringify(composition(['stat', 'stat']))],
+      }),
+    });
+    expect(report.results[0]?.validity).toMatchObject({
+      valid: false,
+      errors: ['one node, got 2'],
+    });
+    expect(report.results[0]?.payload.sanitizedBytes).toBe(0);
+  });
+
+  it('counts expected-primitive hits over validated answers, an invalid one a miss', async () => {
+    const report = await runEvals({
+      runtime: stubRuntime,
+      corpus: [
+        { ...corpus[0]!, expected: ['stat'] },
+        { ...corpus[1]!, expected: ['stat'] },
+        { id: 'none', prompt: 'Anything' },
+      ],
+      retryOnInvalid: false,
+      generate: replaying({
+        good: [JSON.stringify(composition(['callout', 'stat']))],
+        invented: [JSON.stringify(composition(['sparkline', 'stat']))],
+        none: [JSON.stringify(composition(['stat']))],
+      }),
+    });
+
+    expect(report.results.map(({ expected }) => expected)).toEqual([
+      { hit: true, used: ['callout', 'stat'] },
+      { hit: false, used: [] },
+      undefined,
+    ]);
+    expect(report.totals).toMatchObject({ expectedHits: 1, expectedCases: 2 });
+    expect(formatReport(report)).toContain('expected primitive 1 of 2 (50%)');
   });
 
   it('credits a retry that fixes its own validation errors', async () => {
@@ -302,6 +348,7 @@ describe('runEvals', () => {
 describe('scorePrimitiveSelection', () => {
   it('scores an exact match as 1', () => {
     const score = scorePrimitiveSelection(
+      stubRuntime,
       composition(['stat', 'callout']),
       composition(['stat', 'callout'])
     );
@@ -312,6 +359,7 @@ describe('scorePrimitiveSelection', () => {
   // were asked for and one was given.
   it('counts repeats rather than deduplicating', () => {
     const score = scorePrimitiveSelection(
+      stubRuntime,
       composition(['stat']),
       composition(['stat', 'stat', 'stat'])
     );
@@ -319,8 +367,48 @@ describe('scorePrimitiveSelection', () => {
     expect(score.missing).toEqual(['stat', 'stat']);
   });
 
+  it('counts a node a golden reaches twice as two, as its JSON would', () => {
+    const stat = { type: 'stat' };
+    const golden = {
+      type: 'view',
+      title: 'Fixture',
+      body: [stat, stat],
+    } as unknown as Composition;
+    const answer = JSON.parse(JSON.stringify(golden)) as Composition;
+    const score = scorePrimitiveSelection(stubRuntime, answer, golden);
+    expect(score.f1).toBe(1);
+  });
+
+  it('walks a node that contains itself once', () => {
+    const group = { type: 'group', items: [] as unknown[] };
+    group.items.push(group, { type: 'stat' });
+    const runtime = {
+      primitives: [
+        ...stubPrimitives,
+        {
+          type: 'group',
+          children: (node: { items: unknown[] }) =>
+            node.items.map((child, index) => ({
+              node: child,
+              path: `items[${index}]`,
+            })),
+        },
+      ] as unknown as readonly AnyPrimitiveDefinition[],
+    };
+    const looped = {
+      type: 'view',
+      title: 'Fixture',
+      body: [group],
+    } as unknown as Composition;
+    expect(
+      scorePrimitiveSelection(runtime, looped, composition(['group', 'stat']))
+        .f1
+    ).toBe(1);
+  });
+
   it('names what was used and what was wanted', () => {
     const score = scorePrimitiveSelection(
+      stubRuntime,
       composition(['callout']),
       composition(['stat'])
     );
@@ -335,12 +423,12 @@ describe('scorePayload', () => {
     checkAttempt(runtime, parseGenerated(JSON.stringify(value)));
 
   it('scores sanitized size against the golden, not raw size', () => {
-    // The stub's `parse` drops unknown properties, the way a real schema
-    // parse would, so raw and sanitized sizes genuinely differ here.
+    // The stub's `validate` returns a copy without unknown properties, so raw
+    // and sanitized sizes genuinely differ here.
     const golden = composition(['stat']);
     const sanitizingRuntime: EvalRuntime = {
       ...stubRuntime,
-      parse: (value) => ({
+      validate: (value) => ({
         valid: true,
         errors: [],
         composition: {
@@ -441,6 +529,15 @@ describe('parsing model output', () => {
 
   it('unwraps a fenced block with no trailing newline before the fence', () => {
     expect(stripCodeFence('```json\n{"a":1}```')).toBe('{"a":1}');
+  });
+
+  it('unwraps the last valid fence when an earlier marker is malformed', () => {
+    expect(stripCodeFence('```not-json ```\n{"a":1}\n```')).toBe('{"a":1}');
+  });
+
+  it('does not backtrack across a long unterminated code-fence body', () => {
+    const raw = `\`\`\`\n${' '.repeat(100_000)}{"a":1}`;
+    expect(stripCodeFence(raw)).toBe(raw.trim());
   });
 
   it('leaves bare JSON alone', () => {

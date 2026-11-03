@@ -11,10 +11,8 @@ export { scorePayload } from './payload';
 export { scorePrimitiveSelection } from './primitive_selection';
 export {
   type CheckedAttempt,
-  type CheckedComposition,
   type ParsedAttempt,
   checkAttempt,
-  checkComposition,
   parseGenerated,
   scoreValidity,
   stripCodeFence,

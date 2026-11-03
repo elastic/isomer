@@ -8,17 +8,17 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
-| `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
-| `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-arm64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-arm64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-x64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-x64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
-| `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
+| `@takumi-rs/core` | 2.18.1 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.18.1_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
+| `@takumi-rs/core-darwin-arm64` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-darwin-x64` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-gnu` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-musl` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-gnu` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-musl` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-arm64-msvc` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-x64-msvc` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/helpers` | 2.18.1 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.18.1_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
+| `takumi-pdf` | 0.18.3 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.18.3_react@18.3.1/node_modules/takumi-pdf` |  |
 
 ## Optional dependencies
 

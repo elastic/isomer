@@ -48,7 +48,7 @@ The merge rebuilds each pack rather than mutating it, and applies **before** the
 
 An override is for a rendering that differs, not a vocabulary that differs. If you need a new node type, write a pack; the runtime composes any number of them. If you need a different frame or palette for images, supply a [frame](frame.md). If you need different CSS or class names for HTML, supply a `styleAdapter` — the runtime's other seam, and the only one for CSS.
 
-Packs ship their own adapters and the runtime combines them, so `styleAdapter` on the runtime replaces all of them at once. A CSS-bearing pack with no adapter from either side throws at construction; see [Surfaces](surfaces.md).
+A runtime runs one adapter, a pack's by default, and `styleAdapter` on the runtime replaces it. A CSS-bearing pack with no adapter from either side throws at construction; see [Surfaces](surfaces.md).
 
 ## Next
 

@@ -5,13 +5,12 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { roadmap, roadmapFit } from '../../theme/components/roadmap';
 import { label } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { StepLayout } from '../layout';
 import {
   rowLoad,
   sizeForMarkedWords,
@@ -68,20 +67,12 @@ export const roadmapWordStep = (
 
 export const roadmapStep = (
   node: SlideRoadmapNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const layout = slideLayout(context);
-  return (
-    node.size ??
-    smallerStep(
-      sizeForWidthLoad(
-        undefined,
-        roadmapLoad(node),
-        roadmapFit,
-        layout,
-        gutters(node)
-      ),
-      roadmapWordStep(node, layout.width)
-    )
+  layout: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  node.size ??
+  smallerStep(
+    sizeForWidthLoad(undefined, roadmapLoad(node), roadmapFit, layout, {
+      gutters: gutters(node),
+    }),
+    roadmapWordStep(node, layout.width)
   );
-};

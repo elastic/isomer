@@ -14,6 +14,7 @@ import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule, tonesModule } from '../../theme/modules';
+import { slideLayout } from '../layout';
 
 import { lanesStep } from './fit';
 import type { SlideLanesNode } from './schema';
@@ -29,7 +30,7 @@ export const react = (
 ): ReactNode => {
   const { type, lanes, join, notes = [] } = node;
   const { handles: style } = lanesModule;
-  const size = lanesStep(node, context);
+  const size = lanesStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

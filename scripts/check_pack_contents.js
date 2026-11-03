@@ -93,6 +93,7 @@ for (const pkg of workspacePackages()) {
   const entrySet = new Set(entries);
   const missing = filesField.filter(
     (declared) =>
+      !declared.startsWith('!') &&
       !entries.some(
         (entry) => entry === declared || entry.startsWith(declared + '/')
       )
@@ -109,7 +110,9 @@ for (const pkg of workspacePackages()) {
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
-        ? ['types', 'import', 'require'].map((key) => conditions[key])
+        ? ['types', 'import', 'require', 'default'].map(
+            (key) => conditions[key]
+          )
         : []
     )
     .filter((target) => typeof target === 'string')

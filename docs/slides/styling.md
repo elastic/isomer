@@ -16,11 +16,11 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-A runtime loading this pack alongside another styled pack emits both stylesheets. The adapter declares `ownsHandle`, so its rules are routed to its own collector rather than merged into a neighbour's.
+A runtime styles with one adapter. Loading this pack alongside another pack that declares a `styleAdapter` throws `AMBIGUOUS_STYLE_ADAPTER` unless the host passes its own `styleAdapter`; a pack with no adapter of its own is styled by this one.
 
-This pack declares no `styleCollector`, and should not: every handle reaches the collector through `resolveClassName`, so no primitive here declares a `collectStyles` hook and there is no collector shape to protect. A pack that does write such hooks declares the tag, and a runtime then refuses an adapter that builds a different collector.
+The adapter declares `styleCollector: 'distillate'`, and the pack takes that tag from it. No primitive here declares a `collectStyles` hook — every handle reaches the collector through `resolveClassName` — so the tag never refuses this pack. It names the collector the adapter builds, so a runtime refuses to let it serve another pack whose `collectStyles` hooks declare a different tag.
 
-Pass `styleAdapter` on the runtime to replace every pack's adapter at once — including this one — which is how a host renders HTML with no CSS at all.
+Pass `styleAdapter` on the runtime to replace the one pack adapter, this one included, which is how a host renders HTML with no CSS at all.
 
 ## The React surface
 

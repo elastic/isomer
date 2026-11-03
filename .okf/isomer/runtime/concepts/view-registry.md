@@ -17,10 +17,8 @@ sources:
 
 # Definition
 
-Every `IsomerRuntime` owns one view registry, built by `createIsomerRuntime` and exposed as `runtime.viewRegistry`; a host never constructs a registry itself. `defineView({ id, title, answers, input?, build })` publishes one, registered via the `views` option or `runtime.viewRegistry.register`. A host requests a view by id; input refused before parsing or the view's schema rejects throws `RegisteredViewInputError` before the view builds, which is identified like other Isomer errors, by `name` and `code`. A view receives the budget's plain copy of its input, parsed through its schema when it declares one, and the response's `composition` is the copy its `validation` checked. `register` throws `DUPLICATE_VIEW` for a repeated id and `request` throws `UNKNOWN_VIEW` for an unregistered one, both `IsomerError`. `list` and `get` return summaries whose `inputSchema` is projected from the Zod `input` once, at `register`.[^registry][^docs]
+Every runtime owns one view registry of product-owned views, registered by id and requested by answers. See the package doc on the view registry.[^docs]
 
 Related: [runtime](/runtime/concepts/runtime.md), [authoring context](/runtime/concepts/authoring-context.md).
-
-[^registry]: View registry
 
 [^docs]: View registry docs

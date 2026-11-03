@@ -8,6 +8,7 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
+import { withBuild } from '../../builds/types';
 import {
   marksMarkdown,
   marksRichText,
@@ -20,6 +21,7 @@ import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 import { styledText } from '../size';
 
+import { timelineBuild } from './build';
 import { catalog } from './catalog';
 import { examples } from './examples';
 import { icon } from './icon';
@@ -86,16 +88,19 @@ export const slack = ({ items }: SlideTimelineNode): SlackBlock[] => [
 ];
 
 /** Catalog, schema, and renderers for {@link SlideTimelineNode}. */
-export const slideTimelinePrimitive = definePrimitive({
-  type: 'slideTimeline',
-  catalog,
-  icon,
-  examples,
-  schema,
-  renderers: {
-    react,
-    text,
-    markdown,
-    slack,
-  },
-});
+export const slideTimelinePrimitive = withBuild(
+  definePrimitive({
+    type: 'slideTimeline',
+    catalog,
+    icon,
+    examples,
+    schema,
+    renderers: {
+      react,
+      text,
+      markdown,
+      slack,
+    },
+  }),
+  timelineBuild
+);

@@ -88,16 +88,16 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@rolldown/binding-win32-x64-msvc` | 1.2.13 | MIT | `declared optional dependency` |  |
 | `@rolldown/pluginutils` | 1.0.1 | MIT | `node_modules/.pnpm/@rolldown+pluginutils@1.0.1/node_modules/@rolldown/pluginutils` |  |
 | `@sindresorhus/is` | 4.6.0 | MIT | `node_modules/.pnpm/@sindresorhus+is@4.6.0/node_modules/@sindresorhus/is` |  |
-| `@takumi-rs/core` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.14.0_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
-| `@takumi-rs/core-darwin-arm64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-darwin-x64` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-arm64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-arm64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-x64-gnu` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-linux-x64-musl` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-win32-arm64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/core-win32-x64-msvc` | 2.14.0 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
-| `@takumi-rs/helpers` | 2.14.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.14.0_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
+| `@takumi-rs/core` | 2.18.1 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+core@2.18.1_csstype@3.2.3_react@18.3.1/node_modules/@takumi-rs/core` | `@takumi-rs/core-darwin-arm64`, `@takumi-rs/core-darwin-x64`, `@takumi-rs/core-linux-arm64-gnu`, `@takumi-rs/core-linux-arm64-musl`, `@takumi-rs/core-linux-x64-gnu`, `@takumi-rs/core-linux-x64-musl`, `@takumi-rs/core-win32-arm64-msvc`, `@takumi-rs/core-win32-x64-msvc` |
+| `@takumi-rs/core-darwin-arm64` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-darwin-x64` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-gnu` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-arm64-musl` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-gnu` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-linux-x64-musl` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-arm64-msvc` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/core-win32-x64-msvc` | 2.18.1 | (MIT OR Apache-2.0) | `declared optional dependency` |  |
+| `@takumi-rs/helpers` | 2.18.1 | (MIT OR Apache-2.0) | `node_modules/.pnpm/@takumi-rs+helpers@2.18.1_react@18.3.1/node_modules/@takumi-rs/helpers` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
 | `@types/estree-jsx` | 1.0.5 | MIT | `node_modules/.pnpm/@types+estree-jsx@1.0.5/node_modules/@types/estree-jsx` |  |
@@ -352,7 +352,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `stylis` | 4.2.0 | MIT | `node_modules/.pnpm/stylis@4.2.0/node_modules/stylis` |  |
 | `supports-preserve-symlinks-flag` | 1.0.0 | MIT | `node_modules/.pnpm/supports-preserve-symlinks-flag@1.0.0/node_modules/supports-preserve-symlinks-flag` |  |
 | `tabbable` | 5.3.3 | MIT | `node_modules/.pnpm/tabbable@5.3.3/node_modules/tabbable` |  |
-| `takumi-pdf` | 0.15.0 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.15.0_react@18.3.1/node_modules/takumi-pdf` |  |
+| `takumi-pdf` | 0.18.3 | (MIT OR Apache-2.0) | `node_modules/.pnpm/takumi-pdf@0.18.3_react@18.3.1/node_modules/takumi-pdf` |  |
 | `tiny-invariant` | 1.3.3 | MIT | `node_modules/.pnpm/tiny-invariant@1.3.3/node_modules/tiny-invariant` |  |
 | `tinyglobby` | 0.2.17 | MIT | `node_modules/.pnpm/tinyglobby@0.2.17/node_modules/tinyglobby` |  |
 | `trim-lines` | 3.0.1 | MIT | `node_modules/.pnpm/trim-lines@3.0.1/node_modules/trim-lines` |  |

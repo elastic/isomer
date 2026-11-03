@@ -5,10 +5,14 @@
  * 2.0.
  */
 
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import type { ZodType } from 'zod';
 
-import type { EvalCase, EvalRuntime } from './types';
+import type {
+  EvalCase,
+  EvalFrame,
+  EvalRuntime,
+  ExpectedPrimitivesScore,
+} from './types';
 
 /** A tool the agent may call, declared structurally so an `IsomerTool` from `@elastic/isomer-agent-tools` fits. */
 export interface AgentEvalTool {
@@ -62,7 +66,7 @@ export interface AgentUsage {
 }
 
 export interface AgentStepRequest {
-  evalCase: AgentEvalCase;
+  evalCase: EvalCase;
   system: string;
   tools: readonly AgentToolSpec[];
   messages: readonly AgentMessage[];
@@ -83,24 +87,13 @@ export interface AgentStepResult {
  */
 export type AgentStep = (request: AgentStepRequest) => Promise<AgentStepResult>;
 
-/** An {@link EvalCase} with the node types a good answer uses somewhere in its tree. */
-export interface AgentEvalCase extends EvalCase {
-  /** Any one of these counts as a hit. */
-  expected?: readonly string[] | undefined;
-}
-
-/** A frame's body rule, as `isomer_validate` applies it; an SDK `Frame` fits. */
-export interface AgentEvalFrame {
-  validateBody?(body: readonly PrimitiveNode[]): readonly string[];
-}
-
 export interface RunAgentEvalsOptions {
   runtime: EvalRuntime;
   tools: readonly AgentEvalTool[];
   step: AgentStep;
-  corpus: readonly AgentEvalCase[];
+  corpus: readonly EvalCase[];
   /** Applied to the final answer after validation, so an answer the tools would refuse scores invalid. */
-  frame?: AgentEvalFrame | undefined;
+  frame?: EvalFrame | undefined;
   /** Defaults to asking for one composition, built with the tools, sent back as JSON alone. */
   system?: string | undefined;
   /** Model turns before a run counts as unfinished. Defaults to 12. */
@@ -137,7 +130,7 @@ export interface AgentEvalCaseResult {
   /** The answer's parse error, or its validation and frame errors. */
   errors: readonly string[];
   /** Absent when the case has no `expected` or the answer did not parse. */
-  expected?: { hit: boolean; used: readonly string[] } | undefined;
+  expected?: ExpectedPrimitivesScore | undefined;
 }
 
 export interface AgentEvalReport {

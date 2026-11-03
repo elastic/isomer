@@ -55,7 +55,6 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
     <EuiProvider>
       <StudioContextProvider {...{ value }}>
         <StudioNav
-          mode="dev"
           page="callout"
           isOpen
           {...{ onToggle, onCompose }}
@@ -178,25 +177,27 @@ describe('StudioNav app pages', () => {
 
 describe('StudioNav gallery link', () => {
   it.each([
-    ['dev', false],
-    ['docs', true],
-  ] as const)('is listed in %s mode and opens the gallery', (mode, current) => {
-    const onSelect = vi.fn();
-    const { nav } = renderNav({
-      mode,
-      page: current ? 'gallery' : 'callout',
-      onSelect,
-    });
-    const gallery = within(nav).getByRole('button', { name: 'Gallery' });
+    ['primitive', false],
+    ['gallery', true],
+  ] as const)(
+    'is listed on a %s page and opens the gallery',
+    (_page, current) => {
+      const onSelect = vi.fn();
+      const { nav } = renderNav({
+        page: current ? 'gallery' : 'callout',
+        onSelect,
+      });
+      const gallery = within(nav).getByRole('button', { name: 'Gallery' });
 
-    if (current) {
-      expect(gallery).toHaveAttribute('aria-current', 'page');
-    } else {
-      expect(gallery).not.toHaveAttribute('aria-current');
+      if (current) {
+        expect(gallery).toHaveAttribute('aria-current', 'page');
+      } else {
+        expect(gallery).not.toHaveAttribute('aria-current');
+      }
+      fireEvent.click(gallery);
+      expect(onSelect).toHaveBeenLastCalledWith('gallery');
     }
-    fireEvent.click(gallery);
-    expect(onSelect).toHaveBeenLastCalledWith('gallery');
-  });
+  );
 
   it('sits between the apps and the first primitive group', () => {
     const { nav } = renderNav();

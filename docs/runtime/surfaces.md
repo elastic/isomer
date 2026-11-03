@@ -15,7 +15,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | `html` | `HTMLRenderResult` | yes | `theme`, `scheme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
-| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `assetPrefix`, `baseUrl`, `onValidationError` |
+| `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `baseUrl`, `onValidationError` |
 | `snapshot` | `SnapshotRenderResult` | yes | `frame`, `width`, `height`, `theme`, `anchors`, `onValidationError` |
 
 `HTMLRenderResult` is `{ html, css, js, body, measurement, validationErrors }`. `scheme` resolves the stylesheet's `light-dark(…)` values to one scheme; a browser resolves them itself, so an `html` host rarely sets it, and the `snapshot` surface sets it for its own render. [Embedding](embedding.md) covers getting that markup, stylesheet, and script onto a page a host already controls, including when to render with `scripts: 'host'`. The `snapshot` entry is `undefined` unless the runtime was given [frames](frame.md), and the factory's return type tracks which.
@@ -121,7 +121,7 @@ const { warnings } = runtime.surfaces.snapshot.render(composition, { frame: 'car
 
 ## CSS: one adapter, or a deliberate no-op
 
-HTML rendering emits one `<style>` per document. A pack ships its own `styleAdapter` and the runtime combines them, routing each style handle to its owner, so a host loading styled packs supplies nothing. A pack is also CSS-bearing when any primitive declares `collectStyles`. Construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
+HTML rendering emits one `<style>` per document, from one adapter. A pack ships its own `styleAdapter`, so a host loading one styled pack supplies nothing. A pack is also CSS-bearing when any primitive declares `collectStyles`. Construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
 A host composing a CSS-bearing pack to render only text or Slack still has to answer for that CSS. The escape hatch is a no-op adapter — explicit rather than accidental:
 
@@ -136,21 +136,21 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-A host adapter replaces every pack's, so the no-op above silences all of them rather than one.
+A host adapter replaces the pack's.
 
-## Combining two packs' adapters
+## Two styled packs
 
-Two packs that each declare a `styleAdapter` need `ownsHandle(handle)` on both, so the runtime can route each style handle to the adapter that made it rather than guessing:
+A runtime styles with one adapter. Two packs that each declare a `styleAdapter` throw `AMBIGUOUS_STYLE_ADAPTER`, naming both:
 
 ```ts
-const runtime = createIsomerRuntime({
-  packs: [chartsPack, calloutsPack], // both declare styleAdapter
+createIsomerRuntime({
+  packs: [chartsPack, calloutsPack], // both declare styleAdapter: throws
 });
 ```
 
-If `calloutsPack`'s adapter omits `ownsHandle`, construction throws `AMBIGUOUS_STYLE_ADAPTER`: with two adapters and no way to ask one of them "is this handle yours?", a handle it did not create could be routed to it by elimination and rendered against the wrong theme. The fix is either adapter-side — `calloutsPack` adds `ownsHandle` — or host-side: pass a `styleAdapter` on `createIsomerRuntime` to replace both packs' own, which is also how the no-op above silences a single CSS-bearing pack.
+Pass `styleAdapter` on `createIsomerRuntime` to choose the one adapter, and it serves every pack. A pack that declares no adapter is styled by whichever one the runtime runs.
 
-`styleCollector` is a second, independent check: if `calloutsPack` declares one (naming the collector shape its `collectStyles` hooks expect) and the adapter actually serving it — its own, or `chartsPack`'s when `calloutsPack` declares none — creates a differently-tagged collector, construction throws `INCOMPATIBLE_STYLE_COLLECTOR` instead of corrupting the collector silently at render time. The fix is a `styleAdapter` both packs were written against — a host adapter, or one pack adopting the other's.
+`styleCollector` is a second, independent check: if a pack declares one (naming the collector shape its `collectStyles` hooks expect) and the adapter the runtime runs creates a differently-tagged collector, construction throws `INCOMPATIBLE_STYLE_COLLECTOR` instead of corrupting the collector silently at render time. The fix is a `styleAdapter` every pack was written against.
 
 ## Choosing one
 

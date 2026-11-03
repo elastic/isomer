@@ -11,8 +11,8 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { slideDeckFrame, slidesPack } from '../pack';
 import { frameContentWidth } from '../theme/components/frame';
 
-import { slideLayout, withLayout } from './layout';
-import { headingRoom, referenceRoom } from './slide_heading/fit';
+import { referenceRoom, slideLayout, withLayout } from './layout';
+import { headingRoom } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
 
 const runtime = createIsomerRuntime({

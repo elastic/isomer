@@ -20,7 +20,6 @@ import {
   italic,
   link,
   slackLinkUrl,
-  strike,
 } from './format';
 
 describe('mrkdwn helpers', () => {
@@ -31,7 +30,6 @@ describe('mrkdwn helpers', () => {
   it('wraps emphasis around escaped text', () => {
     expect(bold('a<b')).toBe('*a&lt;b*');
     expect(italic('x')).toBe('_x_');
-    expect(strike('x')).toBe('~x~');
   });
 
   it('keeps code contents literal and demotes backticks', () => {

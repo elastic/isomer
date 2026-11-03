@@ -7,10 +7,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { slideModules, slideStylesheet } from '../stylesheet';
+import { frameModule } from '../primitives/slide_frame/styles';
+import { sequenceModule } from '../primitives/slide_sequence/styles';
+import { slideStylesheet } from '../stylesheet';
 
 import { color } from './base';
 import { themeVarName } from './distillery';
+import { marksModule, tonesModule } from './modules';
 import { SLIDE_THEME } from './theme';
 import { slideTones } from './variants';
 
@@ -25,10 +28,7 @@ describe('slide theme', () => {
     const css = slideStylesheet();
     // The declarations, not the rule: distinct selectors would make any two rules differ.
     const bodies = slideTones.map((tone) => {
-      const rule = ruleFor(
-        css,
-        slideModules.tones.handles.tone[tone].readableName
-      );
+      const rule = ruleFor(css, tonesModule.handles.tone[tone].readableName);
       return rule.slice(rule.indexOf('{'));
     });
     expect(bodies.every((body) => /--[\w-]+:\s*\S/.test(body))).toBe(true);
@@ -39,10 +39,10 @@ describe('slide theme', () => {
     const css = slideStylesheet();
     const { glyph, label } = SLIDE_THEME.tone;
     const shapes = slideTones.map((tone) =>
-      ruleFor(
-        css,
-        slideModules.tones.handles.cueShape[tone].readableName
-      ).replace(/^[^{]*/, '')
+      ruleFor(css, tonesModule.handles.cueShape[tone].readableName).replace(
+        /^[^{]*/,
+        ''
+      )
     );
     for (const cues of [
       shapes,
@@ -57,7 +57,7 @@ describe('slide theme', () => {
   it('marks strong in display text with more than color', () => {
     const rule = ruleFor(
       slideStylesheet(),
-      slideModules.marks.handles.strongPrimary.readableName
+      marksModule.handles.strongPrimary.readableName
     );
     expect(rule).toMatch(/text-decoration:\s*underline/);
   });
@@ -87,7 +87,7 @@ describe('slide theme', () => {
     const both = [...slideStylesheet().matchAll(/([^{}]+)\{([^{}]*)\}/g)]
       .map(([, selector = '', body = '']) => ({ selector, body }))
       .filter(({ body }) => sized.test(body) && boxed.test(body));
-    const { readableName } = slideModules.sequence.handles.actor;
+    const { readableName } = sequenceModule.handles.actor;
     expect(both.map(({ selector }) => selector)).toContain(`.${readableName}`);
     expect(
       both
@@ -98,12 +98,12 @@ describe('slide theme', () => {
 
   it('a tone cue never shrinks in a flex row', () => {
     expect(
-      ruleFor(slideStylesheet(), slideModules.tones.handles.cue.readableName)
+      ruleFor(slideStylesheet(), tonesModule.handles.cue.readableName)
     ).toMatch(/flex:\s*0 0 auto/);
   });
 
   it('an inverse frame redeclares the page palette', () => {
-    const inverse = slideModules.frame.handles.tone.inverse;
+    const inverse = frameModule.handles.tone.inverse;
     expect(inverse).toBeDefined();
     const rule = ruleFor(slideStylesheet(), inverse!.readableName);
     for (const key of Object.keys(color)) {

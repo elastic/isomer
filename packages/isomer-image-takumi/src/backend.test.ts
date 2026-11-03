@@ -5,8 +5,13 @@
  * 2.0.
  */
 
-import { readFile } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
 import { inflateSync } from 'node:zlib';
 
 import { createElement, type ReactElement } from 'react';
@@ -21,8 +26,10 @@ import {
   type TakumiPdfOptions,
   type TakumiRenderOptions,
 } from './backend';
+import { PDF_ENGINE_CLOSED } from './index';
 
 const require = createRequire(import.meta.url);
+const execFileAsync = promisify(execFile);
 
 const input = (css: string): ImageInput => ({
   html: '<div class="box">Ag</div>',
@@ -44,31 +51,51 @@ const paeth = (left: number, up: number, upLeft: number) => {
   return toUp <= toUpLeft ? up : upLeft;
 };
 
-/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB or RGBA. */
+const PNG_CHANNELS: Record<number, number> = { 2: 3, 3: 1, 6: 4 };
+
+/** Decodes the PNGs takumi writes: 8-bit, non-interlaced, RGB, RGBA, or indexed. */
 const decodePng = (png: Buffer) => {
   const width = png.readUInt32BE(16);
   const height = png.readUInt32BE(20);
-  const channels = png.readUInt8(25) === 6 ? 4 : 3;
+  const bitDepth = png.readUInt8(24);
+  const colorType = png.readUInt8(25);
+  const channels = PNG_CHANNELS[colorType];
+  if (bitDepth !== 8 || channels === undefined) {
+    throw new Error(
+      `unsupported PNG: bit depth ${bitDepth}, color type ${colorType}`
+    );
+  }
   const data: Buffer[] = [];
+  let palette: Buffer = Buffer.alloc(0);
+  let transparency: Buffer = Buffer.alloc(0);
   for (let offset = 8; offset < png.length;) {
     const length = png.readUInt32BE(offset);
-    if (png.toString('latin1', offset + 4, offset + 8) === 'IDAT') {
-      data.push(png.subarray(offset + 8, offset + 8 + length));
+    const type = png.toString('latin1', offset + 4, offset + 8);
+    const chunk = png.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IDAT') {
+      data.push(chunk);
+    } else if (type === 'PLTE') {
+      palette = chunk;
+    } else if (type === 'tRNS') {
+      transparency = chunk;
     }
     offset += length + 12;
   }
+  if (colorType === 2 && transparency.length > 0) {
+    throw new Error('unsupported PNG: an RGB image with a transparent color');
+  }
   const filtered = inflateSync(Buffer.concat(data));
   const stride = width * channels;
-  const pixels = Buffer.alloc(height * stride);
+  const samples = Buffer.alloc(height * stride);
   for (let y = 0; y < height; y++) {
     const filter = filtered.readUInt8(y * (stride + 1));
     for (let x = 0; x < stride; x++) {
       const left =
-        x >= channels ? pixels.readUInt8(y * stride + x - channels) : 0;
-      const up = y > 0 ? pixels.readUInt8((y - 1) * stride + x) : 0;
+        x >= channels ? samples.readUInt8(y * stride + x - channels) : 0;
+      const up = y > 0 ? samples.readUInt8((y - 1) * stride + x) : 0;
       const upLeft =
         x >= channels && y > 0
-          ? pixels.readUInt8((y - 1) * stride + x - channels)
+          ? samples.readUInt8((y - 1) * stride + x - channels)
           : 0;
       const predicted = [
         0,
@@ -77,19 +104,42 @@ const decodePng = (png: Buffer) => {
         (left + up) >> 1,
         paeth(left, up, upLeft),
       ][filter];
-      pixels.writeUInt8(
+      samples.writeUInt8(
         (filtered.readUInt8(y * (stride + 1) + 1 + x) + (predicted ?? 0)) &
           0xff,
         y * stride + x
       );
     }
   }
+  /** Every pixel as RGBA, so two images compare equal exactly when they draw the same, whatever their color type or palette order. */
+  const toRgba = (): Buffer => {
+    if (colorType === 6) {
+      return samples;
+    }
+    const rgba = Buffer.alloc(width * height * 4);
+    for (let index = 0; index < width * height; index++) {
+      if (colorType === 3) {
+        const entry = samples.readUInt8(index);
+        palette.copy(rgba, index * 4, entry * 3, entry * 3 + 3);
+        rgba.writeUInt8(
+          entry < transparency.length ? transparency.readUInt8(entry) : 0xff,
+          index * 4 + 3
+        );
+      } else {
+        samples.copy(rgba, index * 4, index * 3, index * 3 + 3);
+        rgba.writeUInt8(0xff, index * 4 + 3);
+      }
+    }
+    return rgba;
+  };
+  const pixels = toRgba();
   const pixel = (x: number, y: number) => {
-    const at = (y * width + x) * channels;
+    const at = (y * width + x) * 4;
     return {
       r: pixels.readUInt8(at),
       g: pixels.readUInt8(at + 1),
       b: pixels.readUInt8(at + 2),
+      a: pixels.readUInt8(at + 3),
     };
   };
   return { width, height, pixels, pixel };
@@ -126,6 +176,29 @@ describe('createTakumiImageBackend', () => {
     const blue = await backend.png(input('.box { background: #0000ff; }'));
 
     expect(red.equals(blue)).toBe(false);
+  });
+
+  it('decodes an indexed PNG’s transparency, so images differing only in alpha differ', async () => {
+    const backend = createTakumiImageBackend();
+    const halfRed = (shade: string): ImageInput => ({
+      html: '<div class="shade"><div class="box"></div></div>',
+      css: `.shade { width: 100%; height: 100%; background: ${shade} } .box { width: 50%; height: 100%; background: #ff0000 }`,
+      width: 64,
+      height: 32,
+    });
+    const [clear, shaded] = await Promise.all([
+      backend.png(halfRed('transparent')),
+      backend.png(halfRed('rgba(0, 0, 0, 0.5)')),
+    ]);
+
+    // Color type 3: both are indexed, with their alpha in `tRNS`.
+    expect([clear.readUInt8(25), shaded.readUInt8(25)]).toEqual([3, 3]);
+    const [clearPng, shadedPng] = [decodePng(clear), decodePng(shaded)];
+    expect(clearPng.pixel(0, 0)).toEqual({ r: 0xff, g: 0, b: 0, a: 0xff });
+    expect(clearPng.pixel(63, 0).a).toBe(0);
+    expect(shadedPng.pixel(63, 0).a).toBeGreaterThan(0);
+    expect(shadedPng.pixel(63, 0).a).toBeLessThan(0xff);
+    expect(clearPng.pixels).not.toEqual(shadedPng.pixels);
   });
 
   it('preserves style end tags inside CSS', async () => {
@@ -526,6 +599,38 @@ describe('createTakumiImageBackend', () => {
       );
     });
 
+    it('adds no page for content clipped inside a page', async () => {
+      const rows = Array.from(
+        { length: 200 },
+        (_, row) => `<tr><td>row ${row}</td></tr>`
+      ).join('');
+      const backend = createTakumiImageBackend();
+
+      for (const clip of [
+        'height:1px;overflow:hidden',
+        // A visually hidden table, as screen-reader-only styles hide it.
+        'position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden',
+      ]) {
+        const html = `<div>Visible<div style="${clip}"><table>${rows}</table></div></div>`;
+        for (const count of [1, 3]) {
+          const deck: PdfInput = {
+            pages: Array.from({ length: count }, () => ({ html })),
+            css: '',
+            width: 400,
+            height: 300,
+          };
+          const fixed = await backend.pdf(deck);
+          const content = await backend.pdf({
+            ...deck,
+            heightMode: 'content',
+          });
+
+          expect(pageCount(fixed)).toBe(count);
+          expect(pageCount(content)).toBe(count);
+        }
+      }
+    });
+
     it('renders the same pages twice to identical bytes at a fixed creation date', async () => {
       const backend = createTakumiImageBackend();
       const first = await backend.pdf(pages(['a']), stable);
@@ -657,6 +762,291 @@ describe('createTakumiImageBackend', () => {
       expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
       expect(reads).toBe(2);
     });
+
+    describe('worker', () => {
+      /** Event loop turns taken while `render` is pending, after a warm-up render. */
+      const turnsDuring = async (
+        backend: ReturnType<typeof createTakumiImageBackend>
+      ) => {
+        const deck = pages(Array.from({ length: 40 }, (_, i) => `page ${i}`));
+        await backend.pdf(deck);
+        let turns = 0;
+        let done = false;
+        const spin = () => {
+          if (!done) {
+            turns += 1;
+            setImmediate(spin);
+          }
+        };
+        setImmediate(spin);
+        await backend.pdf(deck);
+        done = true;
+        await backend.close();
+        return turns;
+      };
+
+      it('renders off the calling thread, leaving the event loop free', async () => {
+        expect(await turnsDuring(createTakumiImageBackend())).toBeGreaterThan(
+          0
+        );
+      });
+
+      it('writes the same bytes whether a font is lazy or eager', async () => {
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const bytes = await readFile(file);
+        const deck = pages(['Ag', 'b'], '.box { font-family: Inter; }');
+        const lazy = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', weight: 400, data: () => readFile(file) }],
+        });
+        const eager = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', weight: 400, data: bytes }],
+        });
+        const [fromLazy, fromEager] = await Promise.all([
+          lazy.pdf(deck, stable),
+          eager.pdf(deck, stable),
+        ]);
+        await Promise.all([lazy.close(), eager.close()]);
+
+        expect(fromLazy.equals(fromEager)).toBe(true);
+      });
+
+      it('reads lazy image bytes before posting them', async () => {
+        const src = 'https://example.invalid/logo.png';
+        const withImage: PdfInput = {
+          ...pages(['']),
+          pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+        };
+        const backend = createTakumiImageBackend();
+        const eager = await backend.pdf(withImage, {
+          ...stable,
+          images: [{ src, data: PIXEL }],
+        });
+        const lazy = await backend.pdf(withImage, {
+          ...stable,
+          images: { sources: [{ src, data: () => Promise.resolve(PIXEL) }] },
+        });
+        await backend.close();
+
+        expect(lazy.equals(eager)).toBe(true);
+      });
+
+      it('restarts after a font the worker cannot register', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: async () => {
+                reads += 1;
+                return reads === 1 ? Buffer.from('not a font') : readFile(file);
+              },
+            },
+          ],
+        });
+
+        await expect(backend.pdf(pages(['a']))).rejects.toThrow();
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('rejects a render in flight on close with a coded IsomerError, and starts afresh after', async () => {
+        expect(PDF_ENGINE_CLOSED).toBe('PDF_ENGINE_CLOSED');
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = expect(
+          backend.pdf(pages(['a']))
+        ).rejects.toMatchObject({
+          name: 'IsomerError',
+          code: PDF_ENGINE_CLOSED,
+          message: 'pdf: the backend was closed',
+        });
+        await backend.close();
+
+        await inFlight;
+        const pdf = await backend.pdf(pages(['a']));
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('starts no second worker when closed during a content-height render', async () => {
+        let reads = 0;
+        const file =
+          require.resolve('@fontsource/inter/files/inter-latin-400-normal.woff2');
+        const backend = createTakumiImageBackend({
+          fonts: [
+            {
+              name: 'Inter',
+              weight: 400,
+              data: () => {
+                reads += 1;
+                return readFile(file);
+              },
+            },
+          ],
+        });
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf({
+          ...pages(['a']),
+          heightMode: 'content',
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await backend.close();
+
+        await rejected;
+        expect(reads).toBe(1);
+      });
+
+      it('closes without waiting on a font that never loads', async () => {
+        const backend = createTakumiImageBackend({
+          fonts: [{ name: 'Inter', data: () => new Promise<never>(() => {}) }],
+        });
+        const inFlight = backend.pdf(pages(['a']));
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('handles a font load that rejects after closing the backend', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend({
+            fonts: [
+              {
+                name: 'Inter',
+                data: () => {
+                  void backend.close();
+                  return Promise.reject(new Error('load failed'));
+                },
+              },
+            ],
+          });
+
+          await expect(backend.pdf(pages(['a']))).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
+      it('rejects a call loading an image on close, and ignores the image when it loads', async () => {
+        const unhandled: unknown[] = [];
+        const onUnhandled = (reason: unknown) => unhandled.push(reason);
+        process.on('unhandledRejection', onUnhandled);
+        try {
+          const backend = createTakumiImageBackend();
+          await backend.pdf(pages(['a']));
+          let load = (_bytes: Buffer) => {};
+          const src = 'https://example.invalid/a.png';
+          const inFlight = backend.pdf(
+            {
+              ...pages(['']),
+              pages: [{ html: `<img src="${src}" width="16" height="16"/>` }],
+            },
+            {
+              images: {
+                sources: [
+                  {
+                    src,
+                    data: () =>
+                      new Promise<Buffer>((resolve) => {
+                        load = resolve;
+                      }),
+                  },
+                ],
+              },
+            }
+          );
+          const rejected = expect(inFlight).rejects.toThrow(/closed/);
+          await new Promise((resolve) => setImmediate(resolve));
+
+          await backend.close();
+          await rejected;
+          load(PIXEL);
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          expect(unhandled).toEqual([]);
+          const pdf = await backend.pdf(pages(['a']));
+          await backend.close();
+          expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+        } finally {
+          process.off('unhandledRejection', onUnhandled);
+        }
+      });
+
+      it('closes without waiting on an image that never loads', async () => {
+        const backend = createTakumiImageBackend();
+        await backend.pdf(pages(['a']));
+        const inFlight = backend.pdf(pages(['a']), {
+          images: {
+            sources: [
+              {
+                src: 'https://example.invalid/a.png',
+                data: () => new Promise<never>(() => {}),
+              },
+            ],
+          },
+        });
+        const rejected = expect(inFlight).rejects.toThrow(/closed/);
+        await new Promise((resolve) => setImmediate(resolve));
+
+        await backend.close();
+        await rejected;
+      });
+
+      it('rejects options it cannot post to the worker, and keeps rendering', async () => {
+        const backend = createTakumiImageBackend();
+        const metadata = {
+          ...stable.metadata,
+          toJSON: () => stable.metadata,
+        } as TakumiPdfMetadata;
+
+        await expect(backend.pdf(pages(['a']), { metadata })).rejects.toThrow(
+          /clone/i
+        );
+        const pdf = await backend.pdf(pages(['a']), stable);
+        await backend.close();
+        expect(pdf.subarray(0, 5).toString('latin1')).toBe('%PDF-');
+      });
+
+      it('keeps a standalone process alive until the PDF is written, then lets it exit', async () => {
+        const dir = await mkdtemp(join(tmpdir(), 'isomer-takumi-'));
+        const script = join(dir, 'render.mts');
+        await writeFile(
+          script,
+          `import { createTakumiImageBackend } from ${JSON.stringify(
+            fileURLToPath(new URL('./backend.ts', import.meta.url))
+          )};
+const pdf = await createTakumiImageBackend().pdf(${JSON.stringify(
+            pages(['a'])
+          )});
+process.stdout.write(pdf.subarray(0, 5).toString('latin1'));
+`
+        );
+        try {
+          const { stdout } = await execFileAsync(
+            process.execPath,
+            ['--import', 'tsx', script],
+            {
+              cwd: fileURLToPath(new URL('..', import.meta.url)),
+              timeout: 20_000,
+            }
+          );
+          expect(stdout).toBe('%PDF-');
+        } finally {
+          await rm(dir, { recursive: true, force: true });
+        }
+      }, 30_000);
+    });
   });
 
   describe('heightMode content', () => {
@@ -688,8 +1078,13 @@ describe('createTakumiImageBackend', () => {
       expect(doubled.readUInt32BE(20)).toBe(2 * contentHeight(rows));
       // The last row reaches the bottom padding, and nothing is drawn past it.
       const { height, pixel } = decodePng(png);
-      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0 });
-      expect(pixel(60, height - 1)).toEqual({ r: 0xee, g: 0xee, b: 0xee });
+      expect(pixel(60, height - 11)).toEqual({ r: 0xcc, g: 0, b: 0, a: 0xff });
+      expect(pixel(60, height - 1)).toEqual({
+        r: 0xee,
+        g: 0xee,
+        b: 0xee,
+        a: 0xff,
+      });
     });
 
     it('leaves a fixed input at its height', async () => {

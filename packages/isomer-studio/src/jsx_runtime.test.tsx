@@ -6,6 +6,7 @@
  */
 
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,10 +14,16 @@ import { css } from '@emotion/react';
 import { render, screen } from '@testing-library/react';
 import ts from 'typescript';
 
-const buildConfig = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  '../tsconfig.build.json'
-);
+const packageDir = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const buildConfig = resolve(packageDir, 'tsconfig.esm.json');
+
+/** `@babel/core`, which publishes no types of its own. */
+const { transformSync } = createRequire(import.meta.url)('@babel/core') as {
+  transformSync: (
+    code: string,
+    options: { cwd: string; filename: string }
+  ) => { code?: string | null } | null;
+};
 
 const parseBuildConfig = () => {
   const parsed = ts.getParsedCommandLineOfConfigFile(
@@ -36,7 +43,7 @@ const parseBuildConfig = () => {
 };
 
 describe('Emotion JSX', () => {
-  it('compiles every app module against `@emotion/react/jsx-runtime`', () => {
+  it('compiles every app module against `@emotion/react/jsx-runtime` in both builds', () => {
     const { fileNames, options } = parseBuildConfig();
     const modules = fileNames.filter((name) => name.endsWith('.tsx'));
     expect(modules.length).toBeGreaterThan(0);
@@ -49,6 +56,17 @@ describe('Emotion JSX', () => {
       expect(outputText).not.toMatch(/from ["']react\/jsx-runtime["']/);
       if (/jsxs?\(/.test(outputText)) {
         expect(outputText).toMatch(/from ["']@emotion\/react\/jsx-runtime["']/);
+      }
+
+      // The CommonJS build is Babel's.
+      const cjs =
+        transformSync(readFileSync(fileName, 'utf8'), {
+          cwd: packageDir,
+          filename: fileName,
+        })?.code ?? '';
+      expect(cjs).not.toMatch(/require\(["']react\/jsx-runtime["']\)/);
+      if (/jsxs?\)?\(/.test(cjs)) {
+        expect(cjs).toMatch(/require\(["']@emotion\/react\/jsx-runtime["']\)/);
       }
     });
   });

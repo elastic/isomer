@@ -7,10 +7,9 @@
 
 import type { Composition } from '@elastic/isomer-sdk';
 
-import type { PrimitiveSelectionScore } from '../types';
+import type { EvalRuntime, PrimitiveSelectionScore } from '../types';
 
-const topLevelTypes = (composition: Composition): string[] =>
-  composition.body.map(({ type }) => type);
+import { walkNodeTypes } from './node_types';
 
 const counted = (types: readonly string[]): Map<string, number> => {
   const counts = new Map<string, number>();
@@ -21,19 +20,22 @@ const counted = (types: readonly string[]): Map<string, number> => {
 };
 
 /**
- * Multiset precision/recall/F1 of the generated body's node types against the
- * golden's.
+ * Multiset precision/recall/F1 of every node type in the generated body's tree
+ * against the golden's, walked as `scoreExpectedPrimitives` walks them.
  *
+ * Every node, not only the top level: under a pack whose frame wraps each
+ * answer in one container, the top level is that container and nothing else.
  * A multiset rather than a set, so answering a three-stat question with one
  * `statGroup` scores differently from answering it with three. Catalog
  * `useWhen` / `avoidWhen` copy is the tunable this measures.
  */
 export const scorePrimitiveSelection = (
+  runtime: Pick<EvalRuntime, 'primitives'>,
   generated: Composition,
   golden: Composition
 ): PrimitiveSelectionScore => {
-  const got = counted(topLevelTypes(generated));
-  const want = counted(topLevelTypes(golden));
+  const got = counted(walkNodeTypes(runtime, generated));
+  const want = counted(walkNodeTypes(runtime, golden));
 
   let overlap = 0;
   const extra: string[] = [];

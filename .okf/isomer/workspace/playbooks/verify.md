@@ -28,19 +28,15 @@ sources:
 
 # Steps
 
-1. `corepack enable`, `pnpm install`, and once, `pnpm exec playwright install chromium` (`--with-deps` on Linux).
-2. Run `pnpm verify`.[^package]
-3. If a check fails in a way that looks unrelated to the change, say so rather than papering over it.
+Install with Corepack and Playwright's Chromium, then run `pnpm verify`, the complete local gate, as [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md) and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) describe; `pnpm verify:fast` is the inner loop.
 
-`pnpm verify` is `pnpm verify:fast`, then the dual ESM/CJS build, export parity, export and declaration smokes, pack contents, the module-graph walk, the packed root-import check, the Studio's browser test, and the Studio consumer check.[^package]
-
-`pnpm verify:fast` emits the ESM build first, because type-aware lint resolves workspace packages through their declarations, then runs typecheck, lint, and the license report's `--check` side by side through `scripts/run_parallel.js`, which prints each command's output whole and fails if any failed, then the tests alone, since Vitest already uses every core. It is the inner loop, not a substitute for `pnpm verify`. ESLint caches results by file content in `node_modules/.cache/eslint/`, so a type-aware rule can miss an error caused by a change in another file until the cache is cleared; CI starts without one.[^package]
+`pnpm verify:fast` emits the ESM build first, because type-aware lint resolves workspace packages through their declarations, then runs typecheck, lint, and the license report's `--check` side by side through `scripts/run_parallel.js`, which prints each command's output whole and fails if any failed, then the tests alone, since Vitest already uses every core.[^package]
 
 Pack contents checks required legal and docs files, declared `files` entries, export targets, fixture leakage, and relative documentation links inside the tarball. The packed-consumer check imports every published package from its packed tarball, ESM and CJS, with required peers installed, and fails on any process warning, such as the `ExperimentalWarning` Node 22.12 prints when `require()` loads an ES module. The module-graph walk fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`.[^pack-contents][^pack-consumer][^module-graph]
 
 `pnpm test:browser` drives the Studio's `dev` server and a static build of the slides config in Chromium, and fails with the install command when Chromium is missing. The Studio consumer check packs the Studio, SDK, runtime, and takumi, installs them with npm in a temporary directory without `NODE_PATH`, typechecks a consumer's own pack and config with `skipLibCheck` off, requires `check --png` to pass and a broken example to exit 1, then runs the same browser test against that install's `build --base /sub/` and `dev`.[^studio-consumer]
 
-CI runs `pnpm verify` on Node 22.13.0, the `engines` floor of the SDK, runtime, and evals, and on the latest 22 and 24, then docs-builder in a second job.[^ci]
+CI splits the scripts `pnpm verify` runs across parallel jobs on Node 24, except the Studio consumer check, which runs on Node 22.13.0, the `engines` floor. Peer-target jobs cover the other Node versions: `floor` on 22.13.0, `kibana` on the Node in Kibana's `.nvmrc`, and `latest` on 26. An aggregate `verify` job requires the split jobs but not the peer targets, and docs-builder runs in its own job. Studio's browser tests bind `localStorage` and `sessionStorage` to jsdom and restore the host globals after each test file, so they need no Web Storage flags.[^ci]
 
 Related: [workspace](/workspace/concepts/workspace.md), [docs-builder](/workspace/playbooks/docs-builder.md).
 

@@ -17,7 +17,7 @@ sources:
 
 # Definition
 
-The default export map. Composition types and errors, `definePrimitive`, `definePrimitivePack`, frames, validation, `buildCompositionJsonSchema`, `buildAuthoringJsonSchema`, `authoringSchemaSubset`, dispatch, and `scopeScript` live here; the browser-side `runEnhancementScript`, `findNodeElementPairs`, and `measureDom` are on [`./react`](/sdk/entry-points/react.md). Root consumers load `react`, because the dispatcher owns the React renderer, and the GFM parser and serializer, for authored Markdown and the `md` builder. `react-dom` and `react-dom/server` stay off this entry; [`./html`](/sdk/entry-points/html.md) is what loads the server renderer.[^barrel][^package]
+The default export map: composition types and errors, define helpers, frames, validation, both JSON Schema projections, and dispatch; it loads `react` and the GFM parser but not `react-dom`.[^barrel][^package] See the [API reference](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#root-entry--contracts).
 
 Related: [pipeline](/sdk/concepts/pipeline.md), [html](/sdk/entry-points/html.md), [author](/sdk/entry-points/author.md), [testing](/sdk/entry-points/testing.md).
 

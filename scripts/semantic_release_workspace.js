@@ -5,23 +5,20 @@
  * 2.0.
  */
 
-import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { join, posix } from 'node:path';
+/**
+ * The semantic-release plugin for the workspace: commit analysis and notes over only the commits that change a
+ * published package, one version for every package, and `pnpm publish` so `workspace:` ranges resolve.
+ * The commit analyzer and notes generator load lazily, so the snapshot gate in `release.yml` runs without an install.
+ */
 
-import { analyzeCommits as analyzeAll } from '@semantic-release/commit-analyzer';
-import { generateNotes as generateAllNotes } from '@semantic-release/release-notes-generator';
+import { execFileSync } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+import { join, posix } from 'node:path';
 
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 /** Root files that shape every published package's build output. */
-export const BUILD_INPUTS = [
-  'scripts/build_cjs.js',
-  'scripts/rewrite_specifiers.js',
-  'scripts/workspace_packages.js',
-  'scripts/write_cjs_manifest.js',
-  'tsconfig.base.json',
-];
+export const BUILD_INPUTS = ['tsconfig.base.json'];
 
 const inPublishedFolder = (path, folders) =>
   folders.some((folder) =>
@@ -33,11 +30,6 @@ export const BUILD_SLICES = {
   'package.json': ({ scripts = {} }) =>
     Object.entries(scripts)
       .filter(([name]) => name === 'build' || name.startsWith('build:'))
-      .sort(),
-  'tsconfig.workspace.json': ({ references = [] }, folders) =>
-    references
-      .map(({ path }) => posix.normalize(path))
-      .filter((path) => inPublishedFolder(path, folders))
       .sort(),
 };
 
@@ -52,8 +44,8 @@ export const publishedFolders = (...packageSets) => [
 ];
 
 /**
- * Whether a commit changing `files` alters a package published from `folders`.
- * `read(file, side)` returns a root file's text `'before'` or `'after'` the commit, or `undefined` when absent.
+ * Whether a change to `files` alters a package published from `folders`.
+ * `read(file, side)` returns a root file's text `'before'` or `'after'` the change, or `undefined` when absent.
  * `THIRD_PARTY_LICENSES.md` never counts: it lists the whole repo's build closure, so any dependency change rewrites every package's copy.
  */
 export const shipsChange = (files, folders, read) =>
@@ -70,16 +62,6 @@ export const shipsChange = (files, folders, read) =>
       (inPublishedFolder(file, folders) || BUILD_INPUTS.includes(file))
     );
   });
-
-/** Splits commits by `releases(commit)`. */
-export const partitionCommits = (commits, releases) => {
-  const kept = [];
-  const dropped = [];
-  for (const commit of commits) {
-    (releases(commit) ? kept : dropped).push(commit);
-  }
-  return { dropped, kept };
-};
 
 const git = (cwd, args) =>
   execFileSync('git', args, {
@@ -108,109 +90,109 @@ const packagesAt = (cwd, rev) =>
         : [{ folder, manifest: JSON.parse(manifest) }];
     });
 
-/** Packages published now or at the last release both count, so removing or privatizing one still releases. */
-const releasableCommits = ({ commits, cwd, lastRelease: { gitHead } = {} }) => {
-  const folders = publishedFolders(
-    workspacePackages(),
-    gitHead ? packagesAt(cwd, gitHead) : []
+/** Folders published now or at `rev`, so removing or privatizing a package still counts. */
+const foldersSince = (cwd, rev) =>
+  publishedFolders(
+    workspacePackages(cwd),
+    rev === undefined ? [] : packagesAt(cwd, rev)
   );
-  return partitionCommits(commits, ({ hash }) =>
-    shipsChange(
-      git(cwd, [
-        'diff-tree',
-        '--root',
-        '-r',
-        '--no-commit-id',
-        '--name-only',
-        '-m',
-        '--first-parent',
-        hash,
-      ])
-        .split('\n')
-        .filter(Boolean),
-      folders,
-      (file, side) => readAt(cwd, side === 'before' ? `${hash}^` : hash, file)
-    )
+
+const shipsBetween = (cwd, from, to, folders) =>
+  shipsChange(
+    // Without renames, a moved file lists its old path as well as its new one.
+    git(cwd, ['diff', '--no-renames', '--name-only', from, to])
+      .split('\n')
+      .filter(Boolean),
+    folders,
+    (file, side) => readAt(cwd, side === 'before' ? from : to, file)
   );
+
+/** Whether `HEAD` changes a published package since `rev`; true when `rev` is empty or unknown, as on a first push. */
+export const shipsSince = (rev, cwd = repoRoot) => {
+  try {
+    git(cwd, ['cat-file', '-e', `${rev}^{commit}`]);
+  } catch {
+    return true;
+  }
+  return shipsBetween(cwd, rev, 'HEAD', foldersSince(cwd, rev));
 };
 
-const writeJson = (path, value) => {
-  writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
+/** The tree with no files, which a root commit's diff starts from. */
+const emptyTree = (cwd) =>
+  execFileSync('git', ['hash-object', '-t', 'tree', '--stdin'], {
+    cwd,
+    encoding: 'utf-8',
+    input: '',
+  }).trim();
+
+/** A commit's first parent, or the empty tree for a root commit. */
+const firstParentOf = (cwd, hash) =>
+  git(cwd, ['log', '-1', '--format=%P', hash]).trim().split(' ')[0] ||
+  emptyTree(cwd);
+
+/** Commits since the last release that change a published package, judged on each one's first-parent diff. */
+const releasableCommits = ({ commits, cwd, lastRelease }) => {
+  const folders = foldersSince(cwd, lastRelease?.gitHead);
+  return commits.filter(({ hash }) =>
+    shipsBetween(cwd, firstParentOf(cwd, hash), hash, folders)
+  );
 };
 
 /** `@semantic-release/commit-analyzer`, over only the commits that change a published package. */
-export const analyzeCommits = (pluginConfig, context) => {
-  const { logger } = context;
-  const { dropped, kept } = releasableCommits(context);
-  logger.log(
-    'Analyzing %d of %d commits; %d change no published package',
-    kept.length,
-    kept.length + dropped.length,
-    dropped.length
+export const analyzeCommits = async (pluginConfig, context) => {
+  const { analyzeCommits: analyze } =
+    await import('@semantic-release/commit-analyzer');
+  const commits = releasableCommits(context);
+  context.logger.log(
+    'Analyzing %d of %d commits; the rest change no published package',
+    commits.length,
+    context.commits.length
   );
-  for (const { hash, subject } of dropped) {
-    logger.log('Skipping %s %s', hash.slice(0, 8), subject);
-  }
-  return analyzeAll(pluginConfig, { ...context, commits: kept });
+  return analyze(pluginConfig, { ...context, commits });
 };
 
 /** `@semantic-release/release-notes-generator`, over the same commits as {@link analyzeCommits}. */
-export const generateNotes = (pluginConfig, context) =>
-  generateAllNotes(pluginConfig, {
+export const generateNotes = async (pluginConfig, context) => {
+  const { generateNotes: generate } =
+    await import('@semantic-release/release-notes-generator');
+  return generate(pluginConfig, {
     ...context,
-    commits: releasableCommits(context).kept,
+    commits: releasableCommits(context),
   });
+};
 
-/** Keep every workspace package on the same version as the release. */
-export const prepare = (_pluginConfig, context) => {
-  const { nextRelease, logger } = context;
-  const { version } = nextRelease;
-
-  const rootPath = join(repoRoot, 'package.json');
-  const rootManifest = JSON.parse(readFileSync(rootPath, 'utf-8'));
-  rootManifest.version = version;
-  writeJson(rootPath, rootManifest);
-
-  for (const pkg of workspacePackages()) {
-    pkg.manifest.version = version;
-    writeJson(join(pkg.dir, 'package.json'), pkg.manifest);
-    logger.log('Set %s to %s', pkg.manifest.name, version);
+/** Writes `version` into every workspace manifest, so `pnpm publish` resolves each `workspace:` range to it. */
+export const setVersion = (version, packages = workspacePackages()) => {
+  for (const { dir, manifest } of packages) {
+    writeFileSync(
+      join(dir, 'package.json'),
+      `${JSON.stringify({ ...manifest, version }, null, 2)}\n`
+    );
   }
 };
 
-/** The npm dist-tag for release channel `channel`; `main` releases on the default channel. */
-export const npmTag = (channel) => {
-  const name = channel ?? 'latest';
-  // npm rejects maintenance branch names such as `1.x` as semver ranges.
-  return /^\d+(?:\.(?:\d+|x))?\.x$/.test(name) ? `release-${name}` : name;
-};
-
-/** Runs `pnpm publish` in the workspace at `cwd` for the packages `names` under npm dist-tag `tag`. */
-export const publishPackages = (names, tag, extraArgs = [], cwd = repoRoot) => {
+/**
+ * Publishes every workspace package under npm dist-tag `tag`.
+ * `pnpm -r publish` skips private packages and any already on the registry at its version, so a rerun publishes the rest.
+ */
+export const publishPackages = (tag, dryRun = false) => {
   execFileSync(
     'pnpm',
     [
       '-r',
-      ...names.flatMap((name) => ['--filter', name]),
       'publish',
       '--access',
       'public',
       '--tag',
       tag,
       '--no-git-checks',
-      ...extraArgs,
+      ...(dryRun ? ['--dry-run'] : []),
     ],
-    { stdio: 'inherit', cwd }
+    { stdio: 'inherit', cwd: repoRoot }
   );
 };
 
-/** Publishes every workspace package that is not `private`. */
-export const publish = (_pluginConfig, context) => {
-  const { logger, nextRelease } = context;
-  const tag = npmTag(nextRelease.channel);
-  const names = workspacePackages()
-    .filter(({ manifest }) => manifest.private !== true)
-    .map(({ manifest }) => manifest.name);
-  logger.log('Publishing %s at %s', names.join(', '), nextRelease.version);
-  publishPackages(names, tag);
-};
+export const prepare = (_pluginConfig, { nextRelease }) =>
+  setVersion(nextRelease.version);
+
+export const publish = () => publishPackages('latest');

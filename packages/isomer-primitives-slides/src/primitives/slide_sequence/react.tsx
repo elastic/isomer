@@ -19,6 +19,7 @@ import {
   tonesModule,
 } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
+import { slideLayout } from '../layout';
 
 import { sequenceStep } from './fit';
 import type { SlideSequenceNode } from './schema';
@@ -38,7 +39,7 @@ export const react = (
   { context }: SlideReactEnv
 ): ReactNode => {
   const { type, actors, messages } = node;
-  const step = sequenceStep(node, context);
+  const step = sequenceStep(node, slideLayout(context));
   const indexOf = new Map(actors.map(({ id }, index) => [id, index]));
   const byId = new Map(actors.map((actor) => [actor.id, actor]));
   const span = (index: number) => [

@@ -36,4 +36,17 @@ describe('docs/api.md', () => {
     );
     expect(missing).toEqual([]);
   });
+
+  it('names no type or constant in ./author that no entry exports', () => {
+    const exported = new Set(entries.flatMap(exportedNames));
+    const section = apiReference
+      .split(/^## /m)
+      .find((part) => part.startsWith('`./author`'));
+    expect(section).toBeDefined();
+    const named = [...section!.matchAll(/`([A-Z][A-Za-z0-9_]*)`/g)].map(
+      (match) => match[1]!
+    );
+    expect(named.length).toBeGreaterThan(0);
+    expect(named.filter((name) => !exported.has(name))).toEqual([]);
+  });
 });

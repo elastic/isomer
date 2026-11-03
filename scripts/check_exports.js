@@ -5,11 +5,15 @@
  * 2.0.
  */
 
-import { execFileSync } from 'node:child_process';
-import { dirname, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+// Node loads the CommonJS build, so every export and `main` must `require`.
+// The ESM build is for bundlers; `check_pack_consumer.js` bundles it.
 
-import { isEsmOnly, workspacePackages } from './workspace_packages.js';
+import { createRequire } from 'node:module';
+import { join } from 'node:path';
+
+import { repoRoot, workspacePackages } from './workspace_packages.js';
+
+const require = createRequire(join(repoRoot, 'package.json'));
 
 const exportSpecifier = (packageName, key) =>
   key === '.' ? packageName : `${packageName}/${key.slice(2)}`;
@@ -17,31 +21,23 @@ const exportSpecifier = (packageName, key) =>
 let loaded = 0;
 
 for (const pkg of workspacePackages()) {
-  const { name, exports: exportMap } = pkg.manifest;
+  const { name, exports: exportMap, main } = pkg.manifest;
   if (exportMap === undefined || typeof exportMap !== 'object') {
     throw new Error(`${name}: missing exports map`);
   }
 
+  // A package requires itself by name, whether or not the root depends on it.
+  const requireFromPackage = createRequire(join(pkg.dir, 'package.json'));
   for (const key of Object.keys(exportMap)) {
-    const specifier = exportSpecifier(name, key);
-    await import(specifier);
+    requireFromPackage(exportSpecifier(name, key));
     loaded += 1;
+  }
+
+  if (require(join(pkg.dir, main)) === undefined) {
+    throw new Error(`${name}: "main" (${main}) resolved to undefined`);
   }
 }
 
-console.log(`Package export check passed: ${loaded} ESM entry point(s).`);
-
-const cjsCheck = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  'check_exports_cjs.cjs'
-);
-execFileSync(
-  process.execPath,
-  [
-    cjsCheck,
-    JSON.stringify(
-      workspacePackages().filter(({ manifest }) => !isEsmOnly(manifest))
-    ),
-  ],
-  { stdio: 'inherit' }
+console.log(
+  `Package export check passed: ${loaded} entry point(s) and every "main" load through require.`
 );

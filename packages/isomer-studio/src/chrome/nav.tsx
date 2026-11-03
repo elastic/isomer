@@ -5,32 +5,35 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import React, { useMemo, useState } from 'react';
+import type { EuiListGroupItemProps, IconType } from '@elastic/eui';
 import {
+  EuiButtonEmpty,
   EuiButtonIcon,
   EuiFieldSearch,
-  EuiIcon,
-  transparentize,
+  EuiHorizontalRule,
+  EuiListGroup,
+  EuiListGroupItem,
+  EuiTitle,
+  EuiToolTip,
   useEuiScrollBar,
+  useEuiShadow,
   useEuiTheme,
+  useGeneratedHtmlId,
 } from '@elastic/eui';
-import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
 import type { StudioApp, StudioAppPage } from '../config';
 import { searchPrimitives } from '../model/search';
 import { useStudio } from '../studio_context';
 
-import type { Accent } from './accent';
-import { useAccent } from './accent';
 import { activeAppPage, appPageSections, filterAppPages } from './app_pages';
 import { ComposeIcon } from './compose_icon';
 import { useClosedNavGroups } from './nav_groups';
 import { navPacks } from './nav_sections';
 import { Glyph, PrimitiveGlyph } from './primitive_glyph';
 import { PrimitivePeek } from './primitive_peek';
-import type { StudioMode } from './route';
 import { GALLERY } from './route';
 
 export const NAV_WIDTH = {
@@ -39,51 +42,10 @@ export const NAV_WIDTH = {
   compactAt: 1120,
 } as const;
 
-const NAV_GLYPH_SIZE = 17;
-const ROW_HEIGHT = 32;
-const ROW_GAP = 4;
-const HOVER_ROW = 'rgba(255, 255, 255, 0.08)';
-const ACTIVE_LABEL = '#FFFFFF';
-const LABEL = 'rgba(255, 255, 255, 0.86)';
-const GROUP_LABEL = 'rgba(255, 255, 255, 0.6)';
-const GLYPH_OPACITY = 0.6;
-
-/** Clears the group header's inset, chevron, and gap, then indents a further `s`. */
-const itemInset = ({ xs, m }: { xs: string; m: string }) =>
-  `calc(${xs} + ${m} + ${xs})`;
-
-/** Lines an app's pages up with its label, past its glyph and gap. */
-const pageInset = ({ m, s }: { m: string; s: string }) =>
-  `calc(${m} + ${NAV_GLYPH_SIZE}px + ${s})`;
-
-/** An accent tint behind the active entry, with a bar on its leading edge. */
-const activeMark = ({ bright }: Accent): SerializedStyles => css`
-  background: ${transparentize(bright, 0.18)};
-  box-shadow: inset 2px 0 0 ${bright};
-  color: ${ACTIVE_LABEL};
-`;
-
-const NavIcon = ({
-  isActive,
-  isRail = false,
-  children,
-}: {
-  isActive: boolean;
-  isRail?: boolean;
-  children: ReactNode;
-}) => (
-  <span
-    css={css`
-      display: inline-flex;
-      flex: none;
-      opacity: ${isActive || isRail ? 1 : GLYPH_OPACITY};
-    `}>
-    {children}
-  </span>
-);
+/** The edge of a glyph, matching `EuiIcon` at size `m`. */
+const GLYPH_SIZE = 16;
 
 export interface StudioNavProps {
-  mode: StudioMode;
   page: string;
   /** The open app's id; while one is open, no primitive is active. */
   app?: string | undefined;
@@ -102,178 +64,139 @@ export interface StudioNavProps {
 interface NavItem {
   id: string;
   label: string;
-  icon?: React.ReactElement | undefined;
+  /** An EUI icon, or a component drawing the entry's glyph. */
+  iconType?: IconType | undefined;
   isPrimitive: boolean;
 }
 
 const GALLERY_ITEM: NavItem = {
   id: GALLERY,
   label: 'Gallery',
-  icon: (
-    <EuiIcon
-      type="grid"
-      css={css`
-        inline-size: ${NAV_GLYPH_SIZE}px;
-        block-size: ${NAV_GLYPH_SIZE}px;
-      `}
-      aria-hidden
-    />
-  ),
+  iconType: 'grid',
   isPrimitive: false,
 };
 
 const COMPOSE_ITEM: NavItem = {
   id: 'compose',
   label: 'Composition',
-  icon: (
-    <EuiIcon
-      type={ComposeIcon}
-      css={css`
-        inline-size: ${NAV_GLYPH_SIZE}px;
-        block-size: ${NAV_GLYPH_SIZE}px;
-      `}
-      aria-hidden
-    />
-  ),
+  iconType: ComposeIcon,
   isPrimitive: false,
 };
 
-const withPeek = ({ id, isPrimitive }: NavItem, element: React.ReactElement) =>
-  isPrimitive ? <PrimitivePeek type={id}>{element}</PrimitivePeek> : element;
+const appItem = ({ id, title, icon }: StudioApp): NavItem => ({
+  id,
+  label: title,
+  iconType: () => <Glyph svg={icon?.svg} label={title} size={GLYPH_SIZE} />,
+  isPrimitive: false,
+});
 
-const RailEntry = ({
+const primitiveItem = (type: string, label: string): NavItem => ({
+  id: type,
+  label,
+  iconType: () => <PrimitiveGlyph {...{ type }} size={GLYPH_SIZE} />,
+  isPrimitive: true,
+});
+
+/** A primitive's tooltip previews it; an icon-only entry's names it. */
+const toolTipOf = ({ id, label, isPrimitive }: NavItem) =>
+  isPrimitive
+    ? { title: label, content: <PrimitivePeek type={id} /> }
+    : { content: label, disableScreenReaderOutput: true };
+
+const Entry = ({
   item,
   isActive,
-  accent,
   onSelect,
 }: {
   item: NavItem;
   isActive: boolean;
-  accent: Accent;
-  onSelect: (page: string) => void;
+  onSelect: (id: string) => void;
 }) => {
-  const { id, label, icon } = item;
-  return withPeek(
-    item,
-    <EuiButtonIcon
-      display="empty"
-      size="s"
-      color="text"
-      iconType={() => (
-        <NavIcon {...{ isActive }} isRail>
-          {icon}
-        </NavIcon>
-      )}
-      css={css`
-        flex: none;
-        inline-size: ${ROW_HEIGHT}px;
-        block-size: ${ROW_HEIGHT}px;
-        color: ${ACTIVE_LABEL};
-        ${isActive ? activeMark(accent) : ''}
-      `}
-      aria-label={label}
+  const { id, label, iconType, isPrimitive } = item;
+  const peek: Partial<EuiListGroupItemProps> = isPrimitive
+    ? {
+        showToolTip: true,
+        toolTipProps: { position: 'right', ...toolTipOf(item) },
+      }
+    : {};
+  return (
+    <EuiListGroupItem
+      {...{ label, isActive, ...peek }}
+      {...(iconType ? { iconType } : {})}
       aria-current={isActive ? 'page' : undefined}
       onClick={() => onSelect(id)}
     />
   );
 };
 
-const Row = ({
+const RailEntry = ({
   item,
   isActive,
-  accent,
   onSelect,
-  inset,
-  children,
 }: {
   item: NavItem;
   isActive: boolean;
-  accent: Accent;
-  onSelect: (page: string) => void;
-  /** Defaults to {@link itemInset}. */
-  inset?: string | undefined;
-  /** Rendered after the row's button, inside its list item. */
-  children?: ReactNode;
+  onSelect: (id: string) => void;
+}) => (
+  <EuiToolTip position="right" {...toolTipOf(item)}>
+    <EuiButtonIcon
+      display={isActive ? 'base' : 'empty'}
+      color={isActive ? 'primary' : 'text'}
+      size="s"
+      iconType={item.iconType ?? 'empty'}
+      aria-label={item.label}
+      aria-current={isActive ? 'page' : undefined}
+      onClick={() => onSelect(item.id)}
+    />
+  </EuiToolTip>
+);
+
+/** Lists entries with the theme's gap between rows, inset by `indent` from the nav's edge. */
+const NavList = ({
+  indent,
+  children,
+  ...rest
+}: {
+  indent?: string | undefined;
+  'aria-label'?: string;
+  children: ReactNode;
 }) => {
   const { euiTheme } = useEuiTheme();
-  const { id, label, icon } = item;
-
   return (
-    <li
+    <EuiListGroup
+      maxWidth={false}
       css={css`
-        flex: none;
-      `}>
-      {withPeek(
-        item,
-        <button
-          type="button"
-          aria-current={isActive ? 'page' : undefined}
-          onClick={() => onSelect(id)}
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: ${euiTheme.size.s};
-            inline-size: 100%;
-            block-size: ${ROW_HEIGHT}px;
-            padding-inline: ${inset ?? itemInset(euiTheme.size)}
-              ${euiTheme.size.s};
-            border-radius: ${euiTheme.border.radius.small};
-            color: ${LABEL};
-            font-size: 14px;
-            font-weight: ${euiTheme.font.weight.regular};
-            text-align: start;
-
-            &:hover {
-              background: ${HOVER_ROW};
-              color: ${ACTIVE_LABEL};
-            }
-
-            ${isActive ? activeMark(accent) : ''}
-
-            &:focus-visible {
-              outline: ${euiTheme.focus.width} solid ${accent.bright};
-              outline-offset: -${euiTheme.focus.width};
-            }
-          `}>
-          {icon ? <NavIcon {...{ isActive }}>{icon}</NavIcon> : null}
-          <span
-            css={css`
-              overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-            `}>
-            {label}
-          </span>
-        </button>
-      )}
+        gap: ${euiTheme.size.xs};
+        padding-inline-start: ${indent ?? 0};
+      `}
+      {...rest}>
       {children}
-    </li>
+    </EuiListGroup>
   );
 };
 
-const subList = (gap: number) => css`
-  display: flex;
-  flex-direction: column;
-  gap: ${gap}px;
-  margin: ${gap}px 0 0;
-  padding: 0;
-  list-style: none;
-`;
+/** A titled run of an app's pages, as one item of its page list. */
+const PageSection = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) => (
+  <li>
+    <EuiTitle size="xxxs" textTransform="uppercase">
+      <h4>{title}</h4>
+    </EuiTitle>
+    <NavList aria-label={title}>{children}</NavList>
+  </li>
+);
 
-const appItem = ({ id, title, icon }: StudioApp): NavItem => ({
-  id,
-  label: title,
-  icon: <Glyph svg={icon?.svg} label={title} size={NAV_GLYPH_SIZE} />,
-  isPrimitive: false,
-});
-
-/** An app's row, with its pages under it in their sections. */
-const AppRow = ({
+/** An app's entry, then its pages in their sections. */
+const AppEntry = ({
   app,
   openApp,
   appPath,
   filter,
-  accent,
   onSelectApp,
 }: {
   app: StudioApp;
@@ -281,7 +204,6 @@ const AppRow = ({
   openApp: string | undefined;
   appPath: string;
   filter: string;
-  accent: Accent;
   onSelectApp: (id: string, path?: string) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
@@ -290,58 +212,45 @@ const AppRow = ({
   const isOpen = openApp === id;
   const active = isOpen ? activeAppPage(pages, appPath) : undefined;
   const sections = appPageSections(filterAppPages(pages, filter));
-  const inset = pageInset(euiTheme.size);
-  const pageRows = (listed: readonly StudioAppPage[]) =>
+  const entries = (listed: readonly StudioAppPage[]): ReactElement[] =>
     listed.map(({ path, title: label }) => (
-      <Row
+      <Entry
         key={path}
         item={{ id: path, label, isPrimitive: false }}
         isActive={active?.path === path}
         onSelect={(next) => onSelectApp(id, next)}
-        {...{ accent, inset }}
       />
     ));
 
   return (
-    <Row
-      {...{ item, accent }}
-      inset={euiTheme.size.m}
-      isActive={isOpen && active === undefined}
-      onSelect={() => onSelectApp(id)}>
+    <>
+      <NavList>
+        <Entry
+          {...{ item }}
+          isActive={isOpen && active === undefined}
+          onSelect={() => onSelectApp(id)}
+        />
+      </NavList>
       {sections.length ? (
-        <ul css={subList(ROW_GAP)} aria-label={`${title} pages`}>
-          {sections.map(({ title: section, pages: listed }) =>
-            section === undefined ? (
-              <React.Fragment key="unsectioned">
-                {pageRows(listed)}
-              </React.Fragment>
-            ) : (
-              <li key={`section:${section}`}>
-                <h4
-                  css={css`
-                    margin: ${euiTheme.size.xs} 0 0;
-                    padding-inline: ${inset} ${euiTheme.size.s};
-                    color: ${GROUP_LABEL};
-                    font-size: 11px;
-                    font-weight: ${euiTheme.font.weight.semiBold};
-                    letter-spacing: 0.08em;
-                    line-height: ${ROW_HEIGHT}px;
-                    text-transform: uppercase;
-                  `}>
-                  {section}
-                </h4>
-                <ul css={subList(ROW_GAP)} aria-label={section}>
-                  {pageRows(listed)}
-                </ul>
-              </li>
-            )
+        <NavList
+          aria-label={`${title} pages`}
+          indent={`calc(${GLYPH_SIZE}px + ${euiTheme.size.s})`}>
+          {sections.flatMap(({ title: section, pages: listed }) =>
+            section === undefined
+              ? entries(listed)
+              : [
+                  <PageSection key={`section:${section}`} title={section}>
+                    {entries(listed)}
+                  </PageSection>,
+                ]
           )}
-        </ul>
+        </NavList>
       ) : null}
-    </Row>
+    </>
   );
 };
 
+/** A heading whose button shows and hides the group's entries, per the WAI-ARIA disclosure pattern. */
 const Group = ({
   title,
   isOpen,
@@ -353,67 +262,24 @@ const Group = ({
   onToggle: () => void;
   children: ReactNode;
 }) => {
-  const { euiTheme } = useEuiTheme();
-
+  const id = useGeneratedHtmlId({ prefix: 'navGroup' });
   return (
-    <div
-      css={css`
-        display: flex;
-        flex-direction: column;
-        flex: none;
-      `}>
-      <h3
-        css={css`
-          margin: 0;
-        `}>
-        <button
-          type="button"
-          aria-expanded={isOpen}
-          onClick={onToggle}
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: ${euiTheme.size.xs};
-            inline-size: 100%;
-            block-size: ${ROW_HEIGHT}px;
-            padding-inline: ${euiTheme.size.xs};
-            color: ${GROUP_LABEL};
-            font-size: 11px;
-            font-weight: ${euiTheme.font.weight.semiBold};
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            text-align: start;
-
-            &:hover {
-              color: ${ACTIVE_LABEL};
-            }
-
-            &:focus-visible {
-              outline: ${euiTheme.focus.width} solid ${ACTIVE_LABEL};
-              outline-offset: -${euiTheme.focus.width};
-            }
-          `}>
-          <EuiIcon
-            type={isOpen ? 'chevronSingleDown' : 'chevronSingleRight'}
-            size="s"
-            aria-hidden={true}
-          />
-          {title}
-        </button>
-      </h3>
-      {isOpen ? (
-        <ul
-          css={css`
-            display: flex;
-            flex-direction: column;
-            gap: ${ROW_GAP}px;
-            margin: 0;
-            padding: 0;
-            list-style: none;
-          `}>
-          {children}
-        </ul>
-      ) : null}
+    <div>
+      <EuiTitle size="xxxs">
+        <h3>
+          <EuiButtonEmpty
+            size="xs"
+            color="text"
+            flush="left"
+            iconType={isOpen ? 'chevronSingleDown' : 'chevronSingleRight'}
+            aria-expanded={isOpen}
+            {...(isOpen ? { 'aria-controls': id } : {})}
+            onClick={onToggle}>
+            {title}
+          </EuiButtonEmpty>
+        </h3>
+      </EuiTitle>
+      {isOpen ? <div {...{ id }}>{children}</div> : null}
     </div>
   );
 };
@@ -423,7 +289,6 @@ const Group = ({
  * under collapsible groups, narrowed by a filter.
  */
 export const StudioNav = ({
-  mode,
   page,
   app,
   appPath = '',
@@ -436,8 +301,8 @@ export const StudioNav = ({
   onSelectApp,
 }: StudioNavProps) => {
   const { euiTheme } = useEuiTheme();
-  const accent = useAccent(app === undefined ? mode : 'docs');
   const scrollbar = useEuiScrollBar();
+  const overlayShadow = useEuiShadow('l');
   const {
     runtime,
     apps,
@@ -473,16 +338,7 @@ export const StudioNav = ({
         ...group,
         items: group.types.flatMap((type): NavItem[] => {
           const doc = byType.get(type);
-          return doc
-            ? [
-                {
-                  id: type,
-                  label: doc.label,
-                  icon: <PrimitiveGlyph {...{ type }} size={NAV_GLYPH_SIZE} />,
-                  isPrimitive: true,
-                },
-              ]
-            : [];
+          return doc ? [primitiveItem(type, doc.label)] : [];
         }),
       })),
     }));
@@ -514,22 +370,21 @@ export const StudioNav = ({
               isOpen ? euiTheme.colors.backgroundBasePlain : 'transparent'
             };
             border-inline-end: ${isOpen ? euiTheme.border.thin : 'none'};
-            box-shadow: ${isOpen ? '0 8px 24px rgba(0, 0, 0, 0.28)' : 'none'};
+            ${isOpen ? overlayShadow : ''};
             transition: inline-size ${euiTheme.animation.normal}
               ${euiTheme.animation.resistance};
           `
         : ''
     }
   `;
-  const fieldInset = css`
+  const toolbar = css`
     display: flex;
-    flex-wrap: nowrap;
     align-items: center;
     gap: ${euiTheme.size.xs};
     flex: none;
     margin-inline: ${euiTheme.size.s};
     margin-block-end: ${euiTheme.size.s};
-    min-block-size: ${ROW_HEIGHT}px;
+    min-block-size: ${euiTheme.size.xl};
     justify-content: ${isOpen ? 'flex-start' : 'center'};
   `;
   const scroller = css`
@@ -548,51 +403,18 @@ export const StudioNav = ({
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: ${ROW_GAP}px;
-  `;
-  const packHeading = css`
-    flex: none;
-    margin: ${euiTheme.size.s} ${euiTheme.size.xs} 0;
-    color: ${euiTheme.colors.textSubdued};
-    font-size: 11px;
-    font-weight: ${euiTheme.font.weight.semiBold};
-    text-transform: uppercase;
-  `;
-  const plainList = css`
-    display: flex;
-    flex-direction: column;
-    gap: ${ROW_GAP}px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    gap: ${euiTheme.size.xs};
   `;
   const activePage = app === undefined && !isComposing ? page : undefined;
-  const rows = (items: readonly NavItem[]) =>
-    items.map((item) => (
-      <Row
-        key={item.id}
-        {...{ item, accent, onSelect }}
-        isActive={item.id === activePage}
-      />
-    ));
-  const appRows = apps.map((entry) => (
-    <AppRow
-      key={entry.id}
-      app={entry}
-      openApp={app}
-      {...{ appPath, filter, accent, onSelectApp }}
-    />
-  ));
-
   const toggleLabel = `${isOpen ? 'Collapse' : 'Expand'} primitive navigation`;
 
   return (
     <nav css={column} aria-label="Primitives">
-      <div css={fieldInset}>
+      <div css={toolbar}>
         {isOpen ? (
           <div
             css={css`
-              flex: 1 1 auto;
+              flex: 1;
               min-inline-size: 0;
             `}>
             <EuiFieldSearch
@@ -611,9 +433,6 @@ export const StudioNav = ({
           color="text"
           css={css`
             flex: none;
-            inline-size: ${ROW_HEIGHT}px;
-            block-size: ${ROW_HEIGHT}px;
-            color: ${ACTIVE_LABEL};
           `}
           iconType={isOpen ? 'transitionRightIn' : 'transitionLeftIn'}
           aria-label={toggleLabel}
@@ -625,32 +444,48 @@ export const StudioNav = ({
       <div css={scroller}>
         {isOpen ? (
           <>
-            <ul css={plainList}>
-              {appRows}
-              <Row
+            {apps.map((entry) => (
+              <AppEntry
+                key={entry.id}
+                app={entry}
+                openApp={app}
+                {...{ appPath, filter, onSelectApp }}
+              />
+            ))}
+            <NavList>
+              <Entry
                 item={COMPOSE_ITEM}
                 isActive={isComposing}
-                inset={euiTheme.size.m}
                 onSelect={onCompose}
-                {...{ accent }}
               />
-              <Row
+              <Entry
                 item={GALLERY_ITEM}
                 isActive={GALLERY === activePage}
-                inset={euiTheme.size.m}
-                {...{ accent, onSelect }}
+                {...{ onSelect }}
               />
-            </ul>
+            </NavList>
             {listed.map((pack) => (
               <React.Fragment key={pack.id}>
-                {separatePacks ? <h2 css={packHeading}>{pack.label}</h2> : null}
+                {separatePacks ? (
+                  <EuiTitle size="xxxs" textTransform="uppercase">
+                    <h2>{pack.label}</h2>
+                  </EuiTitle>
+                ) : null}
                 {pack.groups.map((group) => (
                   <Group
                     key={group.key}
                     title={group.title}
                     isOpen={isGroupOpen(group.key)}
                     onToggle={() => toggleGroup(group.key)}>
-                    {rows(group.items)}
+                    <NavList indent={euiTheme.size.s}>
+                      {group.items.map((item) => (
+                        <Entry
+                          key={item.id}
+                          {...{ item, onSelect }}
+                          isActive={item.id === activePage}
+                        />
+                      ))}
+                    </NavList>
                   </Group>
                 ))}
               </React.Fragment>
@@ -662,7 +497,7 @@ export const StudioNav = ({
               {appItems.map((item) => (
                 <RailEntry
                   key={item.id}
-                  {...{ item, accent }}
+                  {...{ item }}
                   onSelect={(id) => onSelectApp(id)}
                   isActive={item.id === app}
                 />
@@ -671,30 +506,22 @@ export const StudioNav = ({
                 item={COMPOSE_ITEM}
                 isActive={isComposing}
                 onSelect={onCompose}
-                {...{ accent }}
               />
               <RailEntry
                 item={GALLERY_ITEM}
                 isActive={GALLERY === activePage}
-                {...{ accent, onSelect }}
+                {...{ onSelect }}
               />
             </div>
             {listed
               .flatMap((pack) => pack.groups)
               .map((group) => (
                 <div key={group.key} css={rail}>
-                  <div
-                    role="separator"
-                    css={css`
-                      width: ${NAV_GLYPH_SIZE}px;
-                      margin-block: ${euiTheme.size.xs};
-                      border-top: 1px solid ${euiTheme.colors.textSubdued};
-                    `}
-                  />
+                  <EuiHorizontalRule margin="xs" size="quarter" />
                   {group.items.map((item) => (
                     <RailEntry
                       key={item.id}
-                      {...{ item, accent, onSelect }}
+                      {...{ item, onSelect }}
                       isActive={item.id === activePage}
                     />
                   ))}

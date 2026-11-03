@@ -215,7 +215,7 @@ describe('projectResolution', () => {
       "import '@elastic/isomer-runtime';",
       join(root, 'consumer')
     );
-    expect(runtime).toMatch(/isomer-runtime\/(dist|src)\/index\.(js|ts)$/);
+    expect(runtime).toMatch(/isomer-runtime\/(lib\/esm|src)\/index\.(js|ts)$/);
   });
 });
 

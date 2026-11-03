@@ -17,10 +17,10 @@ sources:
 
 # Definition
 
-One value, `createRuntimeConformanceHarness(runtime, overrides?)`, returning the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`. It derives every member the runtime can answer: validation, the `react`, `html`, `text`, `markdown`, and `slack` surfaces with per-node renders collecting validation errors, `anchorWalk` over the runtime's primitives, and a `wrapComposition` titled `CONFORMANCE_FIXTURE_TITLE`. `renderSnapshot` and `renderSnapshotComposition` exist only when the runtime has a frame. `renderHTML` forwards `css` and `anchors` but not `names`. `overrides` replaces derived members and supplies what a runtime cannot know: `nestForeignChild`, `sizesFromNodeHeights`, `estimateSnapshotHeight`, `assertVarRefsHaveDeclarations`, or a frame-wrapping `wrapComposition`. It lives in the runtime because the SDK cannot depend on it, and it reaches Node built-ins through the SDK's `./testing` entry.[^barrel][^harness]
+One value, `createRuntimeConformanceHarness(runtime, overrides?)`, returning the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`. See the [API reference](https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/docs/api.md#testing).
+
+It lives in the runtime because the SDK cannot depend on it, and it reaches Node built-ins through the SDK's `./testing` entry.[^harness]
 
 Related: [root](/runtime/entry-points/root.md), [SDK testing](/sdk/entry-points/testing.md).
-
-[^barrel]: Testing barrel
 
 [^harness]: Conformance harness factory

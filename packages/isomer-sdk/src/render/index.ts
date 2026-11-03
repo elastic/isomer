@@ -13,21 +13,13 @@ export {
   withNodeAnchors,
   withoutAnchors,
 } from './anchors';
-export {
-  type FormatDisplayValueOptions,
-  formatDisplayValue,
-  isStructuredValue,
-  rawDisplayValue,
-} from './format_display_value';
+export { formatDisplayValue } from './format_display_value';
 export {
   type LayoutBox,
   type LayoutFinding,
-  type LayoutRect,
   checkLayout,
 } from './layout_check';
-export { type PayloadMeasurement } from './payload';
 export {
   type PrimitiveDispatcher,
-  type PrimitiveDispatcherOptions,
   createPrimitiveDispatcher,
 } from './primitive_dispatch';

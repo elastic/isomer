@@ -10,14 +10,12 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { marksReact, stripMarks } from '../../render/marks';
-import { quote as theme, quoteFit } from '../../theme/components/quote';
+import { marksReact } from '../../render/marks';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
-import { scalePx } from '../../theme/scale';
 import { slideLayout } from '../layout';
-import { narrowing, sizeForLoad, textColumns } from '../size';
 
+import { quoteStep } from './fit';
 import type { QuoteSlideNode } from './schema';
 import { quoteModule } from './styles';
 
@@ -25,17 +23,12 @@ const { quoteOpen, quoteClose, contextJoiner } = slideDistillery.tokens.quote;
 
 /** React renderer for {@link QuoteSlideNode}. */
 export const react = (
-  { type, text, source, context: where, size }: QuoteSlideNode,
+  node: QuoteSlideNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: quote } = quoteModule;
-  const { width, crowding } = slideLayout(context);
-  const step = sizeForLoad(
-    size,
-    textColumns(stripMarks(text)) * narrowing(scalePx(theme.maxWidth), width),
-    quoteFit,
-    crowding
-  );
+  const { type, text, source, context: where } = node;
+  const step = quoteStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

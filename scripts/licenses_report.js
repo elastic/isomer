@@ -112,13 +112,13 @@ const LIGHTNINGCSS_PLATFORM_PACKAGE_NAMES = [
 const CURATED_LICENSES = [
   {
     names: TAKUMI_PACKAGE_NAMES,
-    version: '2.14.0',
-    text: curatedLicense('takumi-2.14.0-MIT.txt'),
+    version: '2.18.1',
+    text: curatedLicense('takumi-2.18.1-MIT.txt'),
   },
   {
     names: ['takumi-pdf'],
-    version: '0.15.0',
-    text: curatedLicense('takumi-pdf-0.15.0-MIT.txt'),
+    version: '0.18.3',
+    text: curatedLicense('takumi-pdf-0.18.3-MIT.txt'),
   },
   {
     names: ESBUILD_PLATFORM_PACKAGE_NAMES,

@@ -77,7 +77,7 @@ describe('createRuntimeConformanceHarness', () => {
   it('derives every member a runtime without a frame can answer', () => {
     const harness = createRuntimeConformanceHarness(plain);
 
-    expect(harness).not.toHaveProperty('renderSnapshot');
+    expect(harness).not.toHaveProperty('renderSnapshotNode');
     expect(harness).not.toHaveProperty('renderSnapshotComposition');
     expect(harness).toHaveProperty('renderHTML');
     expect(harness).toHaveProperty('anchorWalk');
@@ -86,7 +86,7 @@ describe('createRuntimeConformanceHarness', () => {
   it('derives the snapshot members when the runtime has a frame', () => {
     const harness = createRuntimeConformanceHarness(framed);
 
-    expect(harness).toHaveProperty('renderSnapshot');
+    expect(harness).toHaveProperty('renderSnapshotNode');
     expect(harness).toHaveProperty('renderSnapshotComposition');
   });
 

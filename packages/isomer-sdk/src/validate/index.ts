@@ -12,7 +12,6 @@ export {
   buildAuthoringJsonSchema,
 } from './authoring_schema';
 export {
-  type CompositionSchemaOptions,
   buildBodyNodeSchemaFromDefinitions,
   buildCompositionSchema,
   buildCompositionSchemaFromDefinitions,
@@ -28,13 +27,8 @@ export {
   checkInputBudget,
   isInputRefusal,
 } from './input_budget';
-export {
-  type CompositionJsonSchemaOptions,
-  buildCompositionJsonSchema,
-} from './json_schema';
 export { type IssueRoot, createNodeIssueFormatter } from './node_issues';
 export {
-  type UrlSchemaOptions,
   ASSET_URL_MESSAGE,
   ASSET_URL_RULE,
   BLOCKED_HREF,
@@ -50,7 +44,6 @@ export {
 export {
   type CheckedComposition,
   type CheckedValidationResult,
-  type CompositionValidatorOptions,
   type ParsedComposition,
   type ValidationErrorMode,
   type ValidationResult,
@@ -61,9 +54,4 @@ export {
   createCompositionValidator,
   warningsForSurface,
 } from './validation';
-export {
-  displayValueSchema,
-  namedColorSchema,
-  renderThemeSchema,
-  structuredValueSchema,
-} from './value_schemas';
+export { displayValueSchema, namedColorSchema } from './value_schemas';

@@ -16,13 +16,11 @@ const bytes = (value: unknown): number =>
   Buffer.byteLength(JSON.stringify(value) ?? '', 'utf8');
 
 /**
- * How much of what the model sent survives parsing.
+ * How much of what the model sent survives validation.
  *
  * `rawBytes` measures the text as the model sent it; `sanitizedBytes` measures
- * the composition the schema kept. The gap is the model inventing properties
- * the schema drops — wasted tokens that also signal the catalog under-describes
- * the shape it wanted. Reads the first attempt only; a retry does not change
- * this score.
+ * the copy `validate` checked, or `0` when it found errors. Reads the first
+ * attempt only; a retry does not change this score.
  */
 export const scorePayload = (
   runtime: EvalRuntime,
@@ -40,7 +38,10 @@ export const scorePayload = (
     .sort();
 
   const rawBytes = Buffer.byteLength(attempt.raw, 'utf8');
-  const composition = attempt.parsed ? attempt.check.composition : undefined;
+  const composition =
+    attempt.parsed && attempt.check.valid
+      ? attempt.check.composition
+      : undefined;
   const sanitizedBytes = composition ? bytes(composition) : 0;
   const goldenBytes = golden ? bytes(golden) : undefined;
 

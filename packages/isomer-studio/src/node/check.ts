@@ -12,6 +12,7 @@ import type {
   PrimitivePack,
 } from '@elastic/isomer-sdk';
 import { formatValidationError } from '@elastic/isomer-sdk';
+import { slackLimitProblems } from '@elastic/isomer-sdk/slack';
 import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 
 import type { StudioConfig, StudioRuntime, StudioTheme } from '../config';
@@ -19,7 +20,6 @@ import { composeExample, composeOf } from '../model/compose_example';
 import type { StudioSurface } from '../model/describe_runtime';
 import { runtimeSurfaces } from '../model/describe_runtime';
 import { readExamples } from '../model/read_examples';
-import { slackLimitProblems } from '../model/slack_limits';
 
 export type CheckStatus = 'passed' | 'failed' | 'skipped';
 

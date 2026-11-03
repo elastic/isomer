@@ -15,6 +15,7 @@ import { ToneCue } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 import { countKey } from '../../theme/variants';
+import { slideLayout } from '../layout';
 
 import { timelineHeadingLineCount, timelineStep } from './fit';
 import type { SlideTimelineNode } from './schema';
@@ -34,7 +35,7 @@ export const react = (
   const { type, items } = node;
   const { handles: timeline } = timelineModule;
   const { handles: label } = labelModule;
-  const step = timelineStep(node, context);
+  const step = timelineStep(node, slideLayout(context));
   const headingLines = countKey(
     timelineHeadingLineCount(
       items.map(({ heading }) => heading),

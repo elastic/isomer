@@ -11,15 +11,15 @@ Each primitive lives in its own directory under `src/primitives/<type>/`. Folder
 | `catalog.ts`    | Agent-facing copy: `purpose`, `useWhen`, `avoidWhen`, one `example`; and the host-facing `name`, which the prompt does not print.                                              |
 | `icon.ts`       | The host-facing glyph, exported as `icon` and built with `slideIcon` ([Icons](#icons)).                                                                                        |
 | `examples.ts`   | `example` plus `examples`, used by the conformance harness and the authoring prompt.                                                                                           |
-| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `src/stylesheet.ts` collects every module.                                                           |
+| `styles.ts`     | The primitive's Distillate module, reading only `slideDistillery.tokens`. `slideStyleModules` in `src/stylesheet.ts` lists it for `slideStylesheet()`.                         |
 | `react.tsx`     | The React renderer, exported as `react`. It serves the `snapshot` surface too.                                                                                                 |
 | `index.tsx`     | `definePrimitive`, renderer wiring, and the `text`, `markdown`, and `slack` renderers.                                                                                         |
 | `index.test.ts` | Schema rejections and every surface's output for the primitive.                                                                                                                |
-| `fit.ts`        | Only for a length-sensitive primitive: the estimate that picks its size step ([Size steps](theme.md#size-steps)).                                                              |
+| `fit.ts`        | Only for a primitive that picks a size step: its one step function, `<name>Step(node, layout)`, and the estimates it reads ([Size steps](theme.md#size-steps)).                |
 
 A primitive holds no values of its own. Everything it renders lives in its group under `SLIDE_THEME` (`src/theme/components/<group>.ts`, assembled by `src/theme/theme.ts`), which its `styles.ts` reads.
 
-Each primitive's `catalog.ts` and `examples.ts` ship in `dist` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What `tsconfig.build.json` excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
+Each primitive's `catalog.ts` and `examples.ts` ship in `lib` beside its renderers, because the authoring prompt and the conformance harness read them from the built package. What the build excludes is `src/examples/**`: the worked deck and its snapshot output, which are type-checked but never published.
 
 ## Before you add a value: one source per rendered value
 
@@ -115,7 +115,7 @@ Slack clamps `header`, `section`, field, and `context` text well below `authored
 
 Spread `nodeAnchor(context, { type })` from `@elastic/isomer-sdk` on the renderer's root element. It renders nothing unless a host asks for anchors, and it is what `checkLayout` pairs measured boxes to nodes by. `slideFrame` also spreads `layoutRoom(context)` on its body, and `slideSplitLayout` on each pane's column, which its grid shrinks to the height the footnote leaves, so `checkLayout` measures the nodes inside against that room rather than the whole canvas.
 
-A primitive that picks its own size reads the room it has with `slideLayout(context)` from `src/primitives/layout.ts`: `width` and `height` in pixels, and `crowding`. A container gives its children theirs with `withLayout(context, { width, height })`, after taking out what it draws around them; [Size steps](theme.md#size-steps) lists who sets and reads it.
+A primitive that picks its own size reads the room it has with `slideLayout(context)` from `src/primitives/layout.ts`, a `StepLayout`: `width` and `height` in pixels, and `crowding`. Its renderer hands that to the step function in its `fit.ts` and does no sizing of its own. A container gives its children theirs with `withLayout(context, { width, height })`, after taking out what it draws around them; [Size steps](theme.md#size-steps) lists who sets and reads it.
 
 ## Measuring text as it is styled
 
@@ -211,7 +211,7 @@ A container that also draws chrome of its own sets two more. `hasOwnContent: () 
 Each primitive's `index.test.ts` covers its schema rejections and every surface's output. These pack-level tests run over the whole registry, so a new primitive is covered by registering it:
 
 - `src/content_parity.test.ts` checks that text, Markdown, Slack, and HTML carry every authored string of every example, reading Markdown back through `mdast-util-from-markdown` with GFM and Slack mrkdwn back to its text; that entity-like text such as `&lt;` and unpaired `` ` `` or `*` print as authored, one field at a time; and that a line break in a one-line field reads as a space on each surface.
-- `src/slack_limits.test.ts` renders each Slack slot whose limit is below its schema cap at the limit and one past it, and expects the authored text whole both times.
+- `src/slack_limits.test.ts` renders each Slack slot whose limit is below its schema cap at the limit and one past it, and expects the authored text whole both times and no `slackLimitProblems`.
 - `src/examples/fit.test.ts` renders every example on a slide (a frame as it is; a title, section, or closing slide alone on an inverse frame; a statement or quote alone on a page frame; anything else under a heading and lede on a page frame), measures it with takumi, and expects no finding from `checkLayout`, which measures the body's nodes against the frame's body and a split pane's nodes against the pane; the fullest `agendaSlide` and `slideDefinitions` examples are measured again below a two-line heading and lede, the room their load budgets are set against. Give each primitive an example at the most items, lines, or panels its schema takes, in representative copy. That proves the most structure fits, not every schema-valid string: a string may hold far more than a slide draws, which `checkLayout` reports. The same file measures statement, quote, agenda, and definitions at the most each holds at `l` and `m` on a slide with no heading, and keeps a fanout, a list, an agenda, the fullest roadmap, and the eight-entry tree that run past the body below the tallest heading, so a regression in that report fails. Each `slideGraph`, `slideRoadmap`, and `slideTimeline` example is also measured alone, under the tallest heading, as a title aside, and in a labelled split pane with and without a heading above it, where the step it picks must fit wherever `s` does.
 - `src/conformance.test.ts` runs the SDK's conformance harness.
 - `src/primitives/authored_text.test.ts` checks that `lineText()` and `wrappedText()` take exactly `authoredTextMaxLength` and refuse one more, and that every string in every example refuses one more.
@@ -222,14 +222,16 @@ The tests that rasterize need `@elastic/isomer-image-takumi` and `@fontsource/*`
 
 ## Registering the primitive
 
-A new primitive has six stops, all hand-maintained:
+Beside its own folder, a new primitive has five hand-maintained stops:
 
-1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description.
+1. Its folder, `src/primitives/<type>/`. On the catalog, set `description` when a cross-field rule needs restating; it is the authoring `$def` description. A primitive that sizes itself exports its step from `fit.ts` ([Size steps](theme.md#size-steps)), and one that builds wraps its definition in `withBuild` ([Builds](builds.md#making-a-primitive-build)).
 2. `src/registry.ts`: the import and its place in `slideDeckPrimitives`, alphabetically.
 3. `src/body_node.ts`: its node type in the `BodyNode` union, in the same order.
 4. `src/pack_authoring.ts`: its group in `slidePrimitiveGroups`.
-5. `src/stylesheet.ts`: its Distillate module in `slideModules`.
-6. `src/theme/theme.ts`: its theme group from `src/theme/components/<group>.ts` in `SLIDE_THEME`.
+5. `src/theme/components/<group>.ts`, its theme group, and its place in `SLIDE_THEME` in `src/theme/theme.ts`.
+6. `src/stylesheet.ts`: the import of its style module and its place in `slideStyleModules`.
+
+The builds follow from the registry: `slideBuilds` reads `build`. The stylesheet does not, so a bundle that imports only `slideStylesheet` keeps the style modules without every renderer; `slideStyleModules` references each module by value, which keeps it in that bundle while the package declares no side effects. The theme cannot follow from the registry: `SLIDE_THEME` is what creates `slideDistillery`, which every `styles.ts` reads, so a theme taken from the registry would need the modules it creates.
 
 ```ts
 import { myNewPrimitive } from './primitives/my_new_type';
@@ -240,7 +242,7 @@ export const slideDeckPrimitives = [
 ] as const;
 ```
 
-The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add.
+The registry and the union cannot be collapsed into one — the container `types.ts` files import `SlideContentNode`, so deriving the union from the registry closes that cycle at the value level (`TS7022`). `src/registry.test.ts` guards the first four stops: a type-level assertion that the two lists agree in both directions, `assertPackRegistrationComplete`, which reads `src/primitives/` and fails when a directory is in neither list, a check that every registered type is in exactly one group, and a check that every primitive has a `slack` renderer. Forgetting one fails the build with the lines to add. `src/stylesheet.test.ts` guards the sixth: with the registry loaded, CSS from `slideStyleModules` alone must match `slideStylesheet()`, and a rolldown bundle of the stylesheet alone must keep every style file. After a build, `pnpm check:module-graph` bundles `slideStylesheet` alone from the built ESM entry and requires the same CSS the CommonJS build emits.
 
 ## Authoring with JSX
 
@@ -255,7 +257,11 @@ const composition = toComposition(
   <Composition title="Refunds settle in two days">
     <SlideFrame>
       <SlideHeading>Refunds settle in two days, not five</SlideHeading>
-      <SlideFrame.Footer brand="Ledger" sectionNumber="02" section="Settlement" />
+      <SlideFrame.Footer
+        brand="Ledger"
+        sectionNumber="02"
+        section="Settlement"
+      />
     </SlideFrame>
   </Composition>
 );

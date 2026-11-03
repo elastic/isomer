@@ -8,9 +8,11 @@
 import { Script } from 'node:vm';
 
 import { createElement } from 'react';
+import { type DefaultTreeAdapterMap, parseFragment } from 'parse5';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 
+import { createChildNodeWalker } from '../../composition/body_node_base';
 import type { Composition } from '../../composition/composition';
 import {
   definePrimitive,
@@ -24,6 +26,7 @@ import { byteLength } from '../payload';
 import { createPrimitiveDispatcher } from '../primitive_dispatch';
 
 import {
+  collectHTMLStyles,
   type HTMLRenderOptions,
   type HTMLStyleAdapter,
   renderHTMLWithDispatcher,
@@ -91,8 +94,34 @@ const adapter: HTMLStyleAdapter<RawNode, Collector, PrimitiveRenderContext> = {
   getScriptText: () => 'adapter()',
 };
 
-const embeddedScriptOf = (html: string): string =>
-  /<script[^>]*>([\s\S]*)<\/script>/.exec(html)?.[1] ?? '';
+const embeddedScriptOf = (html: string): string => {
+  const textContent = (node: DefaultTreeAdapterMap['childNode']): string =>
+    'value' in node
+      ? node.value
+      : 'childNodes' in node
+        ? node.childNodes.map(textContent).join('')
+        : '';
+  const findScript = (
+    node: DefaultTreeAdapterMap['childNode']
+  ): DefaultTreeAdapterMap['element'] | undefined => {
+    if ('tagName' in node && node.tagName === 'script') {
+      return node;
+    }
+    if ('childNodes' in node) {
+      for (const child of node.childNodes) {
+        const found = findScript(child);
+        if (found) {
+          return found;
+        }
+      }
+    }
+    return undefined;
+  };
+  const script = parseFragment(html)
+    .childNodes.map(findScript)
+    .find((node) => node !== undefined);
+  return script?.childNodes.map(textContent).join('') ?? '';
+};
 
 const render = (
   composition: Composition<RawNode>,
@@ -220,15 +249,15 @@ describe('renderHTMLWithDispatcher', () => {
     });
   });
 
-  it('embeds one script that binds root to the section, scoping each part', () => {
+  it('embeds one script that binds root to the section, scoping the adapter’s', () => {
     const { html, js } = render(
       view('<p>x</p>'),
       {},
-      { styleAdapter: adapter, scriptText: 'host()' }
+      { styleAdapter: adapter }
     );
     expect(html.match(/<script/g)).toHaveLength(1);
     expect(html).toMatch(/<\/div><script data-isomer-script="">/);
-    expect(js).toBe('(() => {\nhost()\n})();\n(() => {\nadapter()\n})();');
+    expect(js).toBe('(() => {\nadapter()\n})();');
 
     const script = embeddedScriptOf(html);
     expect(script.match(/document\.currentScript/g)).toHaveLength(2);
@@ -241,7 +270,7 @@ describe('renderHTMLWithDispatcher', () => {
     const { html } = render(
       view('<p>x</p>'),
       {},
-      { scriptText: 'root.ran = true;' }
+      { styleAdapter: { ...adapter, getScriptText: () => 'root.ran = true;' } }
     );
     // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the emitted script as a browser would.
     const run = new Function('document', embeddedScriptOf(html)) as (
@@ -443,6 +472,7 @@ describe('renderHTMLWithDispatcher', () => {
       'for (let i = 0; i < 2; i++) receiver.tag`</script><!--${String.raw`</SCRIPT><!--`}`;',
       'globalThis.out.push(String.raw`\\<!--`);',
       '--> legacy closing comment',
+      '//--!> legacy closing comment',
     ].join('\n');
     const { html } = render(
       view('<p>x</p>'),
@@ -535,5 +565,99 @@ describe('renderHTMLWithDispatcher', () => {
     const { html } = render(view(`<p>a</p>\n${'<textarea '.repeat(20_000)}`));
     expect(performance.now() - started).toBeLessThan(1_000);
     expect(html).toContain('<p>a</p><textarea');
+  });
+});
+
+describe('collectHTMLStyles', () => {
+  const scope = {
+    walk: createChildNodeWalker(dispatcher.definitions),
+    definitions: [],
+  };
+
+  it('runs every hook in order across every composition, then resolves the context', () => {
+    type Traced = PrimitiveRenderContext & { pass?: number };
+    const calls: string[] = [];
+    const tracing: HTMLStyleAdapter<RawNode, Collector, Traced> = {
+      createCollector: () => {
+        calls.push('createCollector');
+        return { rules: [] };
+      },
+      collectWrapperStyles: (collector) => {
+        calls.push('collectWrapperStyles');
+        collector.rules.push('.isomer{}');
+      },
+      collectViewStyles: (composition, _dispatcher, collector) => {
+        calls.push(`collectViewStyles ${composition.title}`);
+        collector.rules.push(`.view-${composition.title}{}`);
+      },
+      collectAfterRender: (composition, collector) => {
+        calls.push(`collectAfterRender ${composition.title}`);
+        collector.rules.push(`.after-${composition.title}{}`);
+      },
+      createRenderContext: (collector) => {
+        calls.push('createRenderContext');
+        return { pass: collector.rules.length };
+      },
+      renderStyles: (collector) => collector.rules.join(''),
+    };
+    const { context, css } = collectHTMLStyles<RawNode, Collector, Traced>({
+      dispatcher,
+      styleAdapter: tracing,
+      options: {},
+      compositions: [view('a', { title: 'a' }), view('b', { title: 'b' })],
+      scope,
+      render: ({ pass }) => {
+        calls.push(`render ${pass}`);
+        return null;
+      },
+    });
+    expect(calls).toEqual([
+      'createCollector',
+      'collectWrapperStyles',
+      'collectViewStyles a',
+      'collectViewStyles b',
+      'createRenderContext',
+      'render 3',
+      'collectAfterRender a',
+      'collectAfterRender b',
+      'createRenderContext',
+    ]);
+    expect(context).toEqual({ pass: 5 });
+    expect(css).toBe('.isomer{}.view-a{}.view-b{}.after-a{}.after-b{}');
+  });
+
+  it('hands collectViewStyles the scope it is given', () => {
+    const seen = vi.fn();
+    const definitions = [{ id: 'sort', appliesTo: () => true, script: '' }];
+    collectHTMLStyles({
+      dispatcher,
+      styleAdapter: { ...adapter, collectViewStyles: seen },
+      options: { fluid: true },
+      compositions: [view('<p>x</p>')],
+      scope: { ...scope, definitions },
+      render: () => null,
+    });
+    expect(seen).toHaveBeenCalledWith(
+      expect.anything(),
+      dispatcher,
+      expect.anything(),
+      { fluid: true },
+      { fluid: true },
+      { walk: scope.walk, definitions }
+    );
+  });
+
+  it('collects nothing and renders nothing without an adapter', () => {
+    const render = vi.fn(() => null);
+    expect(
+      collectHTMLStyles({
+        dispatcher,
+        options: {},
+        compositions: [view('<p>x</p>')],
+        scope,
+        render,
+      })
+    ).toEqual({ context: {}, css: '' });
+    expect(render).not.toHaveBeenCalled();
   });
 });

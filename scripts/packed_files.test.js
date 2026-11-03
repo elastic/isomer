@@ -19,45 +19,45 @@ describe('missingPackedFiles', () => {
   it('matches `*` within one path segment only', () => {
     expect(
       missingPackedFiles(
-        ['dist/app/assets/codicon-ABC123.ttf'],
-        ['dist/app/assets/codicon-*.ttf']
+        ['lib/app/assets/codicon-ABC123.ttf'],
+        ['lib/app/assets/codicon-*.ttf']
       )
     ).toEqual([]);
     expect(
       missingPackedFiles(
-        ['dist/app/assets/nested/codicon-ABC123.ttf'],
-        ['dist/app/assets/codicon-*.ttf']
+        ['lib/app/assets/nested/codicon-ABC123.ttf'],
+        ['lib/app/assets/codicon-*.ttf']
       )
-    ).toEqual(['dist/app/assets/codicon-*.ttf']);
+    ).toEqual(['lib/app/assets/codicon-*.ttf']);
   });
 
   it('treats other pattern characters literally', () => {
     expect(
-      missingPackedFiles(['dist/app/indexXhtml'], ['dist/app/index.html'])
-    ).toEqual(['dist/app/index.html']);
+      missingPackedFiles(['lib/app/indexXhtml'], ['lib/app/index.html'])
+    ).toEqual(['lib/app/index.html']);
   });
 
   it('declares the Studio asset contract', () => {
     expect(studioPackedFiles).toEqual(
       expect.arrayContaining([
-        'dist/app/index.html',
-        'dist/app/assets/studio.css',
-        'dist/app/assets/codicon-*.ttf',
-        'dist/app/assets/editor.worker.js',
-        'dist/app/assets/ts.worker.js',
-        'dist/app/assets/json.worker.js',
-        'dist/app/assets/slack.css',
-        'dist/app/assets/esbuild.wasm',
+        'lib/app/index.html',
+        'lib/app/assets/studio.css',
+        'lib/app/assets/codicon-*.ttf',
+        'lib/app/assets/editor.worker.js',
+        'lib/app/assets/ts.worker.js',
+        'lib/app/assets/json.worker.js',
+        'lib/app/assets/slack.css',
+        'lib/app/assets/esbuild.wasm',
       ])
     );
   });
 
-  it('fails a Studio tarball without `dist/app/`', () => {
+  it('fails a Studio tarball without `lib/app/`', () => {
     const entries = [
       'package.json',
       'README.md',
-      'dist/index.js',
-      'dist/cli.js',
+      'lib/cjs/index.js',
+      'lib/cjs/cli.js',
     ];
     expect(missingPackedFiles(entries, studioPackedFiles)).toEqual(
       studioPackedFiles

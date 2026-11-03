@@ -9,37 +9,52 @@
     "url": "git+https://github.com/elastic/isomer.git",
     "directory": "packages/isomer-image-takumi"
   },
-  "type": "module",
   "sideEffects": false,
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/cjs/index.js"
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
     }
   },
   "files": [
-    "dist",
+    "lib",
+    "!**/*.tsbuildinfo",
     "NOTICE.txt",
     "THIRD_PARTY_LICENSES.md",
     "LICENSE.txt"
   ],
+  "isomer": {
+    "packedFiles": [
+      "lib/esm/pdf_worker_file.cjs",
+      "lib/cjs/pdf_worker.js",
+      "lib/cjs/pdf_worker_file.cjs"
+    ]
+  },
   "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types && pnpm copy-files",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "copy-files": "cp src/pdf_worker_file.cjs lib/cjs/pdf_worker_file.cjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@takumi-rs/core": "2.14.0",
-    "@takumi-rs/helpers": "2.14.0",
-    "takumi-pdf": "0.15.0"
+    "@takumi-rs/core": "2.18.1",
+    "@takumi-rs/helpers": "2.18.1",
+    "takumi-pdf": "0.18.3"
   },
   "devDependencies": {
     "@fontsource/inter": "^5.3.0",
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "tsx": "4.23.15"
   }
 }

@@ -12,6 +12,7 @@ import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import {
   SLACK_LIMITS,
   type SlackBlock,
+  slackLimitProblems,
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
 } from '@elastic/isomer-sdk/slack';
@@ -644,22 +645,16 @@ const elementText = (element: SlackRichTextBlockElement): string =>
     ? element.elements.map(elementText).join('')
     : element.elements.map(inlineText).join('');
 
-const richTextElements = (blocks: SlackBlock[]): SlackRichTextBlockElement[] =>
-  blocks.flatMap((block) => (block.type === 'rich_text' ? block.elements : []));
-
 const richText = (blocks: SlackBlock[]): string =>
-  richTextElements(blocks).map(elementText).join('');
+  blocks
+    .flatMap((block) => (block.type === 'rich_text' ? block.elements : []))
+    .map(elementText)
+    .join('');
 
-/** Every rich-text element but a list, which Slack cannot split without adding an item, fits a section. */
-const expectSectionSized = (blocks: SlackBlock[]) => {
-  for (const element of richTextElements(blocks)) {
-    if (element.type !== 'rich_text_list') {
-      expect(elementText(element).length).toBeLessThanOrEqual(
-        SLACK_LIMITS.sectionTextChars
-      );
-    }
-  }
-};
+const expectPostable = (node: PrimitiveNode) =>
+  expect(slackLimitProblems(runtime.surfaces.slack.renderNode(node))).toEqual(
+    []
+  );
 
 describe('Slack slots below their schema cap', () => {
   it.each(cases)(
@@ -689,7 +684,7 @@ describe('Slack slots below their schema cap', () => {
       );
       expect(fitting(row, low + 1)).toBeUndefined();
       expect(richText(render(over))).toContain(long(low + 1, row.filler));
-      expectSectionSized(render(over));
+      expectPostable(over);
     }
   );
 
@@ -728,6 +723,6 @@ describe('Slack slots below their schema cap', () => {
     const primitive = node as PrimitiveNode;
     expect(schemas.get(primitive.type)?.safeParse(node).success).toBe(true);
     expect(richText(render(primitive))).toContain(past);
-    expectSectionSized(render(primitive));
+    expectPostable(primitive);
   });
 });

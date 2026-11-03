@@ -17,8 +17,8 @@ import { renderedStep } from '../size.fixtures';
 import { paneWidths } from '../slide_split_layout/pane_layout';
 
 import { example, pendingExample } from './examples';
+import { statsStep } from './fit';
 import { markdown as markdownContent, text } from './index';
-import { statsValueSize } from './react';
 import type { SlideStatsNode } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -160,20 +160,20 @@ describe('slideStats', () => {
       [4, '0000', undefined, 'm'],
       [4, '00000', undefined, 's'],
     ] as const)('%i values of %s %s take %s', (count, value, unit, step) => {
-      expect(statsValueSize(row(count, value, unit), openBody.width)).toBe(
-        step
-      );
+      expect(
+        statsStep(row(count, value, unit), { width: openBody.width })
+      ).toBe(step);
     });
 
     it('takes the widest value’s step for the whole row', () => {
       const node = row(3, '0');
       node.items[1] = { ...node.items[1]!, value: '000000' };
-      expect(statsValueSize(node, openBody.width)).toBe('s');
+      expect(statsStep(node, { width: openBody.width })).toBe('s');
     });
 
     it('keeps an authored size', () => {
       expect(
-        statsValueSize({ ...row(4, '00000'), size: 'l' }, openBody.width)
+        statsStep({ ...row(4, '00000'), size: 'l' }, { width: openBody.width })
       ).toBe('l');
     });
 
@@ -186,13 +186,13 @@ describe('slideStats', () => {
       const [pane] = paneWidths(openBody.width, 'even', 'gap');
       const bullets = { type: 'slideBulletList', items: ['One'] };
       expect(renderedStep('stats-valueSize', node)).toBe('l');
-      expect(statsValueSize(node, pane)).not.toBe('l');
+      expect(statsStep(node, { width: pane })).not.toBe('l');
       expect(
         renderedStep('stats-valueSize', {
           type: 'slideSplitLayout',
           panes: [{ items: [node] }, { items: [bullets] }],
         })
-      ).toBe(statsValueSize(node, pane));
+      ).toBe(statsStep(node, { width: pane }));
       expect(
         renderedStep('stats-valueSize', {
           type: 'titleSlide',
@@ -203,7 +203,7 @@ describe('slideStats', () => {
     });
 
     it('sizes a missing value as the largest step', () => {
-      expect(statsValueSize(pendingExample, openBody.width)).toBe('l');
+      expect(statsStep(pendingExample, { width: openBody.width })).toBe('l');
     });
   });
   it('keeps the pending caption in the rich text past the field limit', () => {

@@ -10,6 +10,16 @@ import type { ZodType } from 'zod';
 
 import { ISOMER_ERROR_CODES, IsomerError } from '../composition/error';
 import type { PrimitiveNode } from '../define/primitive_module';
+import {
+  unwrapZod,
+  unwrapZodOnce,
+  zodArrayElement,
+  zodDefType,
+  type ZodInputOf,
+  zodObjectShape,
+  type ZodOutputOf,
+  type ZodWrapperOf,
+} from '../define/zod_introspect';
 
 /**
  * Member name of the child component a schema field is filled from.
@@ -70,35 +80,18 @@ export interface AuthorChildContext {
 }
 
 type ArrayItem<TSchema extends ZodType> =
-  NonNullable<zOutput<TSchema>> extends readonly (infer Item)[]
+  NonNullable<ZodOutputOf<TSchema>> extends readonly (infer Item)[]
     ? Item
-    : NonNullable<zOutput<TSchema>>;
-
-type zInput<TSchema> = TSchema extends { _zod: { input: infer Input } }
-  ? Input
-  : never;
-
-type zOutput<TSchema> = TSchema extends { _zod: { output: infer Output } }
-  ? Output
-  : never;
-
-type WrapperOf<TInner> = {
-  _zod: {
-    def: {
-      type: 'optional' | 'nullable' | 'default' | 'readonly';
-      innerType: TInner;
-    };
-  };
-};
+    : NonNullable<ZodOutputOf<TSchema>>;
 
 type Unwrapped<TSchema> =
-  TSchema extends WrapperOf<infer Inner> ? Unwrapped<Inner> : TSchema;
+  TSchema extends ZodWrapperOf<infer Inner> ? Unwrapped<Inner> : TSchema;
 
 /** Whether `F`, or a wrapper layer of it, carries a {@link fromChildren} brand. */
 type IsChildBranded<F> =
   F extends AuthoredChildBrand<string, unknown>
     ? true
-    : F extends WrapperOf<infer Inner>
+    : F extends ZodWrapperOf<infer Inner>
       ? IsChildBranded<Inner>
       : false;
 
@@ -216,12 +209,15 @@ export function fromChildren<
     text?: string;
     propsSchema: TPropsSchema;
     toItem(
-      props: zInput<TPropsSchema> & { children?: ReactNode },
+      props: ZodInputOf<TPropsSchema> & { children?: ReactNode },
       context: AuthorChildContext
     ): unknown;
   }
 ): TSchema &
-  AuthoredChildBrand<TName, zInput<TPropsSchema> & { children?: ReactNode }> &
+  AuthoredChildBrand<
+    TName,
+    ZodInputOf<TPropsSchema> & { children?: ReactNode }
+  > &
   AuthoredToItemBrand;
 export function fromChildren<
   const TName extends string,
@@ -332,28 +328,11 @@ export interface AuthoredSpec {
   nodes?: AuthoredNodesField[];
 }
 
-const zodDefType = (schema: object): string | undefined =>
-  (schema as { _zod?: { def?: { type?: string } } })._zod?.def?.type;
-
-const WRAPPER_TYPES = new Set(['optional', 'nullable', 'default', 'readonly']);
-
-interface WrapperDef {
-  type?: string;
-  innerType?: ZodType;
-}
-
-const innerSchema = (schema: ZodType): ZodType | undefined => {
-  const def: WrapperDef | undefined = (
-    schema as { _zod?: { def?: WrapperDef } }
-  )._zod?.def;
-  return def?.type && WRAPPER_TYPES.has(def.type) ? def.innerType : undefined;
-};
-
 // The schema holding `brand`: `schema` or one it wraps.
 const brandHolder = (schema: ZodType, key: symbol): ZodType | undefined => {
   let current: ZodType | undefined = schema;
   while (current && !Object.hasOwn(current, key)) {
-    current = innerSchema(current);
+    current = unwrapZodOnce(current);
   }
   return current;
 };
@@ -363,7 +342,7 @@ const optionalThrough = (schema: ZodType): boolean => {
   for (
     let current: ZodType | undefined = schema;
     current;
-    current = innerSchema(current)
+    current = unwrapZodOnce(current)
   ) {
     if (isOptionalSchema(current)) {
       return true;
@@ -372,26 +351,14 @@ const optionalThrough = (schema: ZodType): boolean => {
   return false;
 };
 
-const unwrapAll = (schema: ZodType): ZodType => {
-  let current = schema;
-  for (let inner = innerSchema(current); inner; inner = innerSchema(current)) {
-    current = inner;
-  }
-  return current;
-};
-
 /** `undefined` is a valid value, so children may be omitted. */
 const isOptionalSchema = (schema: ZodType): boolean => {
   const type = zodDefType(schema);
   return type === 'optional' || type === 'default';
 };
 
-const arrayElement = (schema: ZodType): ZodType | undefined => {
-  const inner = unwrapAll(schema);
-  return zodDefType(inner) === 'array' && 'element' in inner
-    ? (inner as { element: ZodType }).element
-    : undefined;
-};
+const arrayElement = (schema: ZodType): ZodType | undefined =>
+  zodArrayElement(unwrapZod(schema));
 
 const readChild = (
   field: string,
@@ -412,7 +379,7 @@ const readChild = (
     authoredPropsSchema
   ];
   const element = arrayElement(holder);
-  const itemSchema = element ?? unwrapAll(holder);
+  const itemSchema = element ?? unwrapZod(holder);
   const child: AuthoredChildField = {
     field,
     name,
@@ -460,15 +427,14 @@ const readText = (
  * brands from its {@link AuthoredChildField.itemSchema}.
  */
 export const readAuthoredSpec = (schema: ZodType): AuthoredSpec => {
-  if (zodDefType(schema) !== 'object' || !('shape' in schema)) {
+  const shape = zodObjectShape(schema);
+  if (!shape) {
     return { children: [], text: [], nodes: [] };
   }
   const children: AuthoredChildField[] = [];
   const text: AuthoredTextField[] = [];
   const nodes: AuthoredNodesField[] = [];
-  for (const [field, fieldSchema] of Object.entries(
-    schema.shape as Record<string, ZodType>
-  )) {
+  for (const [field, fieldSchema] of Object.entries(shape)) {
     const child = readChild(field, fieldSchema);
     if (child) {
       children.push(child);

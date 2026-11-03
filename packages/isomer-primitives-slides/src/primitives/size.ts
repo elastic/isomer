@@ -10,7 +10,7 @@
 import type { ScaleToken } from '@elastic/distillate';
 import { z } from '@elastic/isomer-sdk';
 
-import { parseMarks } from '../render/marks';
+import { parseMarks, stripMarks } from '../render/marks';
 import { displayColumns, isWide } from '../render/mono';
 import {
   extraboldAdvance,
@@ -23,6 +23,8 @@ import { marks } from '../theme/components/marks';
 import { px, scalePx } from '../theme/scale';
 import type { TypeRole } from '../theme/type_role';
 import { type SlideSize, slideSizes } from '../theme/variants';
+
+import type { StepLayout } from './layout';
 
 /** The largest load each step holds; anything heavier takes `s`. */
 export interface LoadBudget {
@@ -40,17 +42,23 @@ const sizeSchema = z
 
 export const sizeField = () => sizeSchema;
 
+/** The largest step at which `fits` holds, trying `l`, then `m`; `s` when neither does. */
+export const stepWhere = (fits: (step: SlideSize) => boolean): SlideSize =>
+  slideSizes.find(fits) ?? 's';
+
 /** The node's own `size`, else the largest step whose budget holds `load` at that step, scaled by `crowding`. */
 export const sizeForLoad = (
   size: SlideSize | undefined,
   load: number | ((step: SlideSize) => number),
   budget: LoadBudget,
   crowding = 1
-): SlideSize => {
-  const at = (step: 'l' | 'm') =>
-    (typeof load === 'number' ? load : load(step)) * crowding <= budget[step];
-  return size ?? (at('l') ? 'l' : at('m') ? 'm' : 's');
-};
+): SlideSize =>
+  size ??
+  stepWhere(
+    (step) =>
+      step === 's' ||
+      (typeof load === 'number' ? load : load(step)) * crowding <= budget[step]
+  );
 
 /** The smaller of two steps. */
 export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
@@ -60,19 +68,38 @@ export const smallerStep = (a: SlideSize, b: SlideSize): SlideSize =>
 export const narrowing = (measure: number, width = Infinity): number =>
   Math.max(1, measure / Math.max(1, width));
 
-/** {@link sizeForLoad} for columns set across a layout from `slideLayout`, `gutters` px between them in all, so a narrower layout weighs the load heavier. */
+/** {@link sizeForLoad} for text set across `layout`, `gutters` px between its columns in all, so a layout narrower than `measure` (the frame body unless given) weighs the load heavier. */
 export const sizeForWidthLoad = (
   size: SlideSize | undefined,
   load: number,
   budget: LoadBudget,
-  { width, crowding }: { readonly width: number; readonly crowding: number },
-  gutters = 0
+  { width, crowding }: Pick<StepLayout, 'width' | 'crowding'>,
+  {
+    gutters = 0,
+    measure = frameContentWidth,
+  }: { readonly gutters?: number; readonly measure?: number } = {}
 ): SlideSize =>
   sizeForLoad(
     size,
-    load * narrowing(frameContentWidth - gutters, width - gutters),
+    load * narrowing(measure - gutters, width - gutters),
     budget,
     crowding
+  );
+
+/** {@link sizeForWidthLoad} of one marked passage, its load the columns it fills, set no wider than `measure`. */
+export const sizeForProse = (
+  size: SlideSize | undefined,
+  text: string,
+  budget: LoadBudget,
+  layout: Pick<StepLayout, 'width' | 'crowding'>,
+  measure?: number
+): SlideSize =>
+  sizeForWidthLoad(
+    size,
+    textColumns(stripMarks(text)),
+    budget,
+    layout,
+    measure === undefined ? {} : { measure }
   );
 
 /** Width of track `index` when `total` pixels split into `shares` fr tracks with `gap` between; 0 when the gaps leave none. */
@@ -425,10 +452,9 @@ export const sizeForWidth = (
   steps: Readonly<Record<SlideSize, ScaleToken>>
 ): SlideSize =>
   size ??
-  slideSizes.find(
+  stepWhere(
     (step) => measureText(text, { ...role, size: steps[step] }).widest <= width
-  ) ??
-  's';
+  );
 
 /** Glyph estimates run a few percent short over a line, so lines pack into this share of the column. */
 export const lineFill = 0.92;
@@ -443,7 +469,7 @@ export const sizeForLines = (
   maxLines = 2
 ): SlideSize =>
   size ??
-  slideSizes.find((step) => {
+  stepWhere((step) => {
     const fontPx = scalePx(steps[step]);
     return (
       widestWord(text, tracking) * fontPx <= width &&
@@ -453,8 +479,7 @@ export const sizeForLines = (
         width * lineFill
       ) <= maxLines
     );
-  }) ??
-  's';
+  });
 
 const sizeForRuns = (
   runs: (role: TypeRole) => readonly StyledRun[],
@@ -462,7 +487,7 @@ const sizeForRuns = (
   sizes: Readonly<Record<SlideSize, ScaleToken>>,
   width: number
 ): SlideSize =>
-  slideSizes.find((step) => {
+  stepWhere((step) => {
     const at = { ...role, size: sizes[step] };
     const widest =
       at.whiteSpace?.value === 'nowrap'
@@ -474,7 +499,7 @@ const sizeForRuns = (
             )
           );
     return widest <= width;
-  }) ?? 's';
+  });
 
 /** The largest step at which `role`, sized from `sizes`, sets no word of `text` wider than `width`; under `nowrap`, the whole text. */
 export const sizeForWords = (

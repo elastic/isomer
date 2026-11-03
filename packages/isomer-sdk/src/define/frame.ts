@@ -49,7 +49,7 @@ export interface FrameViewport<TTheme> {
  */
 export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Draws one node on the `snapshot` surface. `key` must be unique among its siblings. */
-  renderSnapshot(node: TNode, key: string): ReactNode;
+  renderSnapshotNode(node: TNode, key: string): ReactNode;
   /** The node's height in pixels; `0` when it is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
   estimateSnapshotHeight(node: TNode): number;
 }
@@ -224,12 +224,12 @@ export const bindFrame = <TTheme>(frame: Frame<TTheme>): BoundFrame => {
       return frame.wrap(
         { title, subtitle, theme: mode },
         composition.body.map((node, index) =>
-          dispatcher.renderSnapshot(node, `body-${index}`)
+          dispatcher.renderSnapshotNode(node, `body-${index}`)
         ),
         { ...viewport, theme }
       );
     },
     renderNode: (node, dispatcher) =>
-      dispatcher.renderSnapshot(node, node.type),
+      dispatcher.renderSnapshotNode(node, node.type),
   };
 };

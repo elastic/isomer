@@ -6,8 +6,6 @@
  */
 
 export {
-  type PrimitiveConformanceCase,
-  type PrimitiveConformanceExample,
   type PrimitiveConformanceHarness,
   type PrimitiveConformanceHtmlOptions,
   type PrimitiveConformanceSlackResult,
@@ -17,8 +15,6 @@ export {
   primitiveConformanceRows,
   runPrimitiveInventoryConformance,
 } from './conformance';
+export { type CustomChecksOptions, customChecksOf } from './custom_checks';
 export { assertPackIconsValid } from './icon';
-export {
-  type PackRegistrationOptions,
-  assertPackRegistrationComplete,
-} from './registration';
+export { assertPackRegistrationComplete } from './registration';

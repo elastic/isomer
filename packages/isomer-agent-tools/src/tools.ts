@@ -13,10 +13,11 @@ import {
   IsomerError,
   type RenderTheme,
   type ValidationError,
+  type ValidationWarning,
 } from '@elastic/isomer-sdk';
+import { checkComposition } from '@elastic/isomer-sdk/author';
 import { z, type ZodObject } from 'zod';
 
-import { checkComposition } from './check';
 import { buildIsomerAuthoringGuide, buildPrimitiveDescriptions } from './guide';
 import { ISOMER_TOOL_NAMES } from './names';
 import { errorMessage, formatResult, jsonResult, textResult } from './result';
@@ -26,6 +27,11 @@ import type {
   IsomerToolsOptions,
   IsomerToolsRuntimeFormat,
 } from './types';
+
+// Printed for a model: its surface, then its path once, since a warning's
+// message may already open with its path.
+const formatWarning = ({ surface, path = '', message }: ValidationWarning) =>
+  `${surface}: ${message.startsWith(path) ? message : formatValidationError({ path, message })}`;
 
 const RUNTIME_FORMATS = [
   'text',
@@ -119,7 +125,7 @@ export const createIsomerTools = <THostContext = unknown>(
     ...string[],
   ];
 
-  const check = (value: unknown) => checkComposition(runtime, frame, value);
+  const check = (value: unknown) => checkComposition(runtime, value, frame);
 
   const render = async (
     composition: Composition,
@@ -206,7 +212,13 @@ export const createIsomerTools = <THostContext = unknown>(
     inputSchema: z.object({ composition: compositionInput }),
     handler: ({ composition }) => {
       const { valid, errors, warnings } = check(composition);
-      return Promise.resolve(jsonResult({ valid, errors, warnings }));
+      return Promise.resolve(
+        jsonResult({
+          valid,
+          errors: errors.map(formatValidationError),
+          warnings: warnings.map(formatWarning),
+        })
+      );
     },
   });
 
@@ -224,9 +236,15 @@ export const createIsomerTools = <THostContext = unknown>(
     }),
     handler: ({ composition, format, theme }) => {
       const checked = check(composition);
-      if (!checked.valid || checked.composition === undefined) {
+      if (!checked.valid) {
         return Promise.resolve(
-          jsonResult({ valid: false, errors: checked.errors }, true)
+          jsonResult(
+            {
+              valid: false,
+              errors: checked.errors.map(formatValidationError),
+            },
+            true
+          )
         );
       }
       return render(checked.composition, format, theme);
@@ -265,19 +283,13 @@ export const createIsomerTools = <THostContext = unknown>(
           hostContext as THostContext,
           input
         );
-        const {
-          valid,
-          errors,
-          warnings,
-          findings,
-          composition = built,
-        } = check(built);
-        const refused = findings.some(isInputRefusal);
+        const { valid, errors, warnings, composition = built } = check(built);
+        const refused = errors.some(isInputRefusal);
         return jsonResult({
           ...(refused ? {} : { composition }),
           valid,
-          errors,
-          warnings,
+          errors: errors.map(formatValidationError),
+          warnings: warnings.map(formatWarning),
         });
       } catch (error) {
         return viewErrorResult(error);

@@ -30,8 +30,8 @@ import { paneLayouts } from '../slide_split_layout/pane_layout';
 import type { SlideSplitLayoutNode } from '../slide_split_layout/types';
 
 import { example, fullExample, menuExample } from './examples';
+import { quadrantStep } from './fit';
 import { markdown as markdownContent, text } from './index';
-import { quadrantSize } from './react';
 import type { SlideQuadrantNode } from './schema';
 
 const runtime = createIsomerRuntime({
@@ -215,7 +215,7 @@ describe('slideQuadrant', () => {
       '%i top and %i bottom items under crowding %d take %s',
       (top, bottom, crowding, step) => {
         expect(
-          quadrantSize(cells(top, bottom), {
+          quadrantStep(cells(top, bottom), {
             width: frameContentWidth,
             crowding,
           })
@@ -226,17 +226,17 @@ describe('slideQuadrant', () => {
     it('scales its count by how much narrower than the frame body its layout is', () => {
       const node = cells(2, 1);
       expect(
-        quadrantSize(node, { width: frameContentWidth, crowding: 1 })
+        quadrantStep(node, { width: frameContentWidth, crowding: 1 })
       ).toBe('l');
       expect(
-        quadrantSize(node, { width: frameContentWidth / 2, crowding: 1 })
+        quadrantStep(node, { width: frameContentWidth / 2, crowding: 1 })
       ).toBe('m');
-      expect(quadrantSize(node, { width: 0, crowding: 1 })).toBe('s');
+      expect(quadrantStep(node, { width: 0, crowding: 1 })).toBe('s');
     });
 
     it('keeps an authored size', () => {
       expect(
-        quadrantSize(
+        quadrantStep(
           { ...cells(4, 4), size: 'l' },
           { width: frameContentWidth, crowding: 1 }
         )
@@ -259,9 +259,9 @@ describe('slideQuadrant', () => {
     ] as const)(
       'draws the step it counts %s',
       (_name, node, heading, layout) => {
-        const step = quadrantSize(node, layout);
+        const step = quadrantStep(node, layout);
         expect(step).not.toBe(
-          quadrantSize(node, { width: frameContentWidth, crowding: 1 })
+          quadrantStep(node, { width: frameContentWidth, crowding: 1 })
         );
         expect(renderedStep('quadrant-cellSize', node, heading)).toBe(step);
       }
@@ -280,7 +280,7 @@ describe('slideQuadrant', () => {
         { width: frameContentWidth, height: headingRoom(referenceHeading) },
         split
       );
-      const step = quadrantSize(node, slideLayout({ layout: pane }));
+      const step = quadrantStep(node, slideLayout({ layout: pane }));
       expect(step).not.toBe('l');
       expect(renderedStep('quadrant-cellSize', split, referenceHeading)).toBe(
         step
@@ -289,7 +289,7 @@ describe('slideQuadrant', () => {
 
     it('draws the step it counts as a title aside', () => {
       const node = cells(2, 1);
-      const step = quadrantSize(
+      const step = quadrantStep(
         node,
         slideLayout({
           layout: {
@@ -318,7 +318,7 @@ describe('slideQuadrant', () => {
         fullExample.quadrants.every(({ items = [] }) => items.length === 4)
       ).toBe(true);
       expect(
-        quadrantSize(fullExample, { width: frameContentWidth, crowding: 1 })
+        quadrantStep(fullExample, { width: frameContentWidth, crowding: 1 })
       ).toBe('s');
     });
   });

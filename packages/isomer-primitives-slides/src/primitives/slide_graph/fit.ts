@@ -5,13 +5,12 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { graph, graphFit } from '../../theme/components/graph';
 import { tone } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { StepLayout } from '../layout';
 import {
   sizeForMarkedWords,
   sizeForWidthLoad,
@@ -93,20 +92,12 @@ export const graphWordStep = (
 
 export const graphStep = (
   node: SlideGraphNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const layout = slideLayout(context);
-  return (
-    node.size ??
-    smallerStep(
-      sizeForWidthLoad(
-        undefined,
-        graphLoad(node),
-        graphFit,
-        layout,
-        scalePx(graph.track) * (graphLayout(node).main.length - 1)
-      ),
-      graphWordStep(node, layout.width)
-    )
+  layout: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  node.size ??
+  smallerStep(
+    sizeForWidthLoad(undefined, graphLoad(node), graphFit, layout, {
+      gutters: scalePx(graph.track) * (graphLayout(node).main.length - 1),
+    }),
+    graphWordStep(node, layout.width)
   );
-};

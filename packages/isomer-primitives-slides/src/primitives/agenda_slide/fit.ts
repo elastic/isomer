@@ -5,13 +5,14 @@
  * 2.0.
  */
 
-import { agenda } from '../../theme/components/agenda';
+import { agenda, agendaFit } from '../../theme/components/agenda';
 import { label } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { lineFill, measureText } from '../size';
+import type { StepLayout } from '../layout';
+import { lineFill, measureText, sizeForLoad } from '../size';
 
-import type { AgendaSection } from './schema';
+import type { AgendaSection, AgendaSlideNode } from './schema';
 
 const trailingWidth = ({ count, current }: AgendaSection): number =>
   current
@@ -20,7 +21,7 @@ const trailingWidth = ({ count, current }: AgendaSection): number =>
       ? measureText(count, agenda.count).widest
       : 0;
 
-/** Title lines the sections take at `step` across `width`, for {@link agendaFit}. */
+/** Title lines the sections take at `step` across `width`, for `agendaFit`. */
 export const agendaLines = (
   sections: readonly AgendaSection[],
   step: SlideSize,
@@ -44,3 +45,15 @@ export const agendaLines = (
       )
     );
   }, 0);
+
+/** The node's own `size`, else the largest step whose title lines `agendaFit` holds. */
+export const agendaStep = (
+  { sections, size }: Pick<AgendaSlideNode, 'sections' | 'size'>,
+  { width, crowding }: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  sizeForLoad(
+    size,
+    (step) => agendaLines(sections, step, width),
+    agendaFit,
+    crowding
+  );

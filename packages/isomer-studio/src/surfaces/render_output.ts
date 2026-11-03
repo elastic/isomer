@@ -13,10 +13,10 @@ import type {
 } from '@elastic/isomer-sdk';
 import { warningsForSurface } from '@elastic/isomer-sdk';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
+import { unmodeledSlackBlockTypes } from '@elastic/isomer-sdk/slack';
 
 import type { StudioRuntime } from '../config';
 import type { StudioSurface } from '../model/describe_runtime';
-import { unmodeledSlackNotes } from '../model/slack_limits';
 
 export interface SurfaceOutput {
   /** What the surface produced, as text. */
@@ -105,8 +105,8 @@ const render = (
         source: JSON.stringify({ text, blocks }, null, 2),
         language: 'json',
         slack: { text, blocks },
-        renderWarnings: unmodeledSlackNotes(blocks).map((message) => ({
-          message,
+        renderWarnings: unmodeledSlackBlockTypes(blocks).map((type) => ({
+          message: `Isomer doesn't model \`${type}\` blocks, so their Slack limits aren't checked and this preview may not draw them. Check the message in Block Kit Builder.`,
         })),
       };
     }

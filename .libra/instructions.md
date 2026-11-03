@@ -3,7 +3,7 @@
 ## Coverage
 
 - Read every changed file, including small ones. Skip only generated files: `pnpm-lock.yaml`, `THIRD_PARTY_LICENSES.md`, `NOTICE.txt`, and `.okf/**/index.md`.
-- Specialists apply the package and workflow checklists to their assigned files. Still raise a problem those checklists do not cover.
+- Check each changed file against the review checklist for its area: packages or workflows. Still raise a problem those checklists do not cover.
 - When one flaw appears in several places, raise it once and list every location.
 - Before suggesting a fix, check the fix against the same rules.
 - Prioritize wrong output, data loss, security, and broken public contracts, then edge-case bugs, missing tests for new behavior, and out-of-sync docs. Skip nits.
@@ -16,7 +16,7 @@
 
 ## Stacked pull requests
 
-Many PRs are one layer of a stack, and the description says so. Each layer must build, pass tests, and document its own API: a new or changed public API carries its `docs/` and `.okf/isomer` updates in the same PR. Something the description says a later layer adds is not a finding unless this layer is broken without it.
+Many PRs are one layer of a stack, and the description says so. Each layer must build, pass tests, and document its own API: a new or changed public API carries its `docs/` updates, and any `.okf/isomer` concept that keeps detail about it, in the same PR. Something the description says a later layer adds is not a finding unless this layer is broken without it.
 
 ## Out of scope
 

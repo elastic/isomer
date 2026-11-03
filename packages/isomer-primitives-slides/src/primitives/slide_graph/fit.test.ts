@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   findings,
+  lineCount,
   measured,
   nodeBox,
   slideOf,
@@ -18,7 +19,7 @@ import { graph } from '../../theme/components/graph';
 import { marks } from '../../theme/components/marks';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { openBody, withLayout } from '../layout';
+import { openBody, slideLayout, withLayout } from '../layout';
 import { measureMarks, measureText } from '../size';
 
 import { graphCaptionWidth, graphStep, graphWordStep } from './fit';
@@ -61,23 +62,21 @@ const drawnBody = async (node: SlideGraphNode, size: SlideSize) => {
 
 describe('graphStep with code marks', () => {
   it('takes m where a code chip is wider than its node at l, and a plain word keeps l', async () => {
-    expect(graphStep(plain, inBody)).toBe('l');
-    expect(graphStep(coded, inBody)).toBe('m');
+    expect(graphStep(plain, slideLayout(inBody))).toBe('l');
+    expect(graphStep(coded, slideLayout(inBody))).toBe('m');
     expect(await findings(slideOf(coded))).toEqual([]);
   });
 
   it('draws the chip on one line inside its node at m, where at l it takes a second line', async () => {
-    const [atM, plainAtM, atL, plainAtL] = await Promise.all([
+    const [atM, atL] = await Promise.all([
       drawnBody(coded, 'm'),
-      drawnBody(plain, 'm'),
       drawnBody(coded, 'l'),
-      drawnBody(plain, 'l'),
     ]);
-    expect(atM.box.height).toBe(plainAtM.box.height);
+    expect(lineCount(atM.box)).toBe(1);
     expect(atM.run.x + atM.run.width + inset).toBeLessThanOrEqual(
       atM.box.x + atM.box.width
     );
-    expect(atL.box.height).toBeGreaterThan(plainAtL.box.height);
+    expect(lineCount(atL.box)).toBeGreaterThan(1);
   });
 
   it('takes m where a code chip in the caption is wider than its span at l', () => {

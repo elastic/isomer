@@ -20,15 +20,9 @@ sources:
 
 # Definition
 
-Isomer is a pnpm workspace. Packages live under `packages/` and resolve each other with `workspace:*` plus TypeScript project references. There is no cross-package `paths` mapping between them.[^package][^agents]
-
-Every package under `packages/` without `private: true` publishes at one version: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, `@elastic/isomer-image-takumi` rasterizes the `snapshot` surface, and `@elastic/isomer-studio` is the CLI a pack installs to browse, check, and publish its primitives. `@elastic/isomer-primitives-slides`, the reference pack, `@elastic/isomer-evals`, which scores agent output against a pack's authoring context, and `@elastic/isomer-agent-tools`, which hands a runtime to an agent as tools, are private.[^readme]
-
-Hosts own data, authorization, routing, and side effects. Isomer owns the view contract, primitive catalog, validation, and rendering.
+Isomer is a pnpm workspace whose packages under `packages/` resolve each other with `workspace:*` and, unless private, publish at one version; the README describes each package and the agent instructions its release posture and boundaries.[^readme][^agents]
 
 Related: [verify](/workspace/playbooks/verify.md), [publish](/workspace/playbooks/publish.md), [docs-builder](/workspace/playbooks/docs-builder.md), [conventions](/workspace/reference/conventions.md), [scoring](/evals/concepts/scoring.md), [agent tools](/agent-tools/concepts/agent-tools.md).
-
-[^package]: Workspace package.json
 
 [^agents]: Agent instructions
 

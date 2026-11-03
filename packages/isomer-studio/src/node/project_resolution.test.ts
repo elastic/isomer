@@ -15,7 +15,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import {
@@ -26,7 +26,13 @@ import {
   projectDirectory,
   sharedResolveDir,
 } from './project_resolution';
-import { initialize, parentsFor, resolve, resolveSync } from './resolve_hooks';
+import {
+  initialize,
+  parentsFor,
+  requireBuildFor,
+  resolve,
+  resolveSync,
+} from './resolve_hooks';
 
 const PROJECT = '/work/pack';
 
@@ -149,7 +155,7 @@ describe('resolve hooks', () => {
 
   describe.each(['sync', 'async'] as const)('%s', (hook) => {
     it('resolves a shared package imported from the Studio as the project does', async () => {
-      const importer = pathToFileURL(`${STUDIO}/dist/node/check.js`).href;
+      const importer = pathToFileURL(`${STUDIO}/lib/cjs/node/check.js`).href;
       expect(await asked(hook, 'react', importer, () => true)).toEqual([
         parent(PROJECT),
       ]);
@@ -185,12 +191,16 @@ describe('resolve hooks', () => {
         root,
         'cache/node_modules/@elastic/isomer-runtime'
       );
-      mkdirSync(join(studioDir, 'dist'), { recursive: true });
+      mkdirSync(join(studioDir, 'lib/cjs'), { recursive: true });
       mkdirSync(runtimeDir, { recursive: true });
       writeFileSync(
         join(studioDir, 'package.json'),
-        JSON.stringify({ exports: { '.': { import: './dist/index.js' } } })
+        JSON.stringify({
+          name: '@elastic/isomer-studio',
+          exports: { '.': { require: './lib/cjs/index.js' } },
+        })
       );
+      writeFileSync(join(studioDir, 'lib/cjs/index.js'), '');
       writeFileSync(
         join(runtimeDir, 'package.json'),
         JSON.stringify({ name: '@elastic/isomer-runtime', main: 'index.js' })
@@ -211,23 +221,117 @@ describe('resolve hooks', () => {
         url: pathToFileURL(join(runtimeDir, 'index.js')).href,
         shortCircuit: true,
       });
-      const installed = vi.fn(() => ({
-        url: 'file:///pack/node_modules/x.js',
-      }));
-      for (const next of [missing, installed]) {
-        expect(hook('@elastic/isomer-studio', context, next)).toEqual({
-          url: pathToFileURL(join(studioDir, 'dist/index.js')).href,
-          shortCircuit: true,
-        });
+      expect(hook('@elastic/isomer-studio', context, missing)).toEqual({
+        url: pathToFileURL(join(studioDir, 'lib/cjs/index.js')).href,
+        shortCircuit: true,
+      });
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('takes the CommonJS build for an import that lands on ESM built for bundlers, and leaves CommonJS, ESM Node runs, and single-entry ESM alone', () => {
+    const root = realpathSync(
+      mkdtempSync(join(tmpdir(), 'isomer-studio-esm-'))
+    );
+    try {
+      const write = (path: string, text: string) => {
+        mkdirSync(dirname(join(root, path)), { recursive: true });
+        writeFileSync(join(root, path), text);
+      };
+      const exportsMap = {
+        '.': {
+          import: './lib/esm/index.js',
+          require: './lib/cjs/index.js',
+        },
+      };
+      write(
+        'node_modules/bundled/package.json',
+        JSON.stringify({ name: 'bundled', exports: exportsMap })
+      );
+      write(
+        'node_modules/native/package.json',
+        JSON.stringify({ name: 'native', type: 'module', exports: exportsMap })
+      );
+      for (const name of ['dual', 'multiline', 'runnable']) {
+        write(
+          `node_modules/${name}/package.json`,
+          JSON.stringify({ name, exports: exportsMap })
+        );
       }
-      expect(installed).not.toHaveBeenCalled();
+      write(
+        'node_modules/multiline/lib/esm/index.js',
+        "import './setup.js';\nexport {\n  value,\n} from '../shared';\n"
+      );
+      write(
+        'node_modules/runnable/lib/esm/index.js',
+        "import './setup.js';\nexport { value } from './value.js';\n"
+      );
+      for (const name of ['multiline', 'runnable']) {
+        write(`node_modules/${name}/lib/cjs/index.js`, '');
+      }
+      for (const name of ['bundled', 'native']) {
+        write(
+          `node_modules/${name}/lib/esm/index.js`,
+          "export { value } from './value';\n"
+        );
+        write(`node_modules/${name}/lib/cjs/index.js`, '');
+      }
+      write(
+        'node_modules/single/package.json',
+        JSON.stringify({ name: 'single', exports: { '.': './index.js' } })
+      );
+      write(
+        'node_modules/single/index.js',
+        "export { value } from './value.js';\n"
+      );
+      write(
+        'node_modules/dual/lib/esm/index.js',
+        "module.exports = { flavor: 'import', load: () => import('./x') };\n"
+      );
+      write(
+        'node_modules/dual/lib/cjs/index.js',
+        "module.exports = { flavor: 'require' };\n"
+      );
+      const landed = (name: string) => ({
+        url: pathToFileURL(join(root, 'node_modules', name, 'lib/esm/index.js'))
+          .href,
+      });
+
+      expect(requireBuildFor('bundled', landed('bundled'))).toEqual({
+        url: pathToFileURL(join(root, 'node_modules/bundled/lib/cjs/index.js'))
+          .href,
+        format: 'commonjs',
+        shortCircuit: true,
+      });
+      expect(requireBuildFor('multiline', landed('multiline'))).toEqual({
+        url: pathToFileURL(
+          join(root, 'node_modules/multiline/lib/cjs/index.js')
+        ).href,
+        format: 'commonjs',
+        shortCircuit: true,
+      });
+      expect(requireBuildFor('native', landed('native'))).toEqual(
+        landed('native')
+      );
+      expect(requireBuildFor('runnable', landed('runnable'))).toEqual(
+        landed('runnable')
+      );
+      expect(requireBuildFor('./index.js', landed('bundled'))).toEqual(
+        landed('bundled')
+      );
+      expect(requireBuildFor('dual', landed('dual'))).toEqual(landed('dual'));
+      const single = {
+        url: pathToFileURL(join(root, 'node_modules/single/index.js')).href,
+      };
+      expect(requireBuildFor('single', single)).toEqual(single);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('lists the parents to try in order', () => {
-    const importer = pathToFileURL(`${STUDIO}/dist/index.js`).href;
+    const importer = pathToFileURL(`${STUDIO}/lib/cjs/index.js`).href;
     expect(parentsFor('zod', importer, data)).toEqual([
       parent(PROJECT),
       importer,

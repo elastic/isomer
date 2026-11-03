@@ -5,12 +5,11 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { sequence, sequenceFit } from '../../theme/components/sequence';
 import { connector, tone as toneCue } from '../../theme/components/shared';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { StepLayout } from '../layout';
 import {
   lineBox,
   lineFill,
@@ -83,16 +82,14 @@ export const sequenceLoad = (
 ): number =>
   node.messages.length + wrapHeight(node, step, width) / rowHeight(step);
 
-/** The step a sequence draws at in `context`. */
+/** The step a sequence draws at in `layout`. */
 export const sequenceStep = (
   node: SlideSequenceNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const { width, crowding } = slideLayout(context);
-  return sizeForLoad(
+  { width, crowding }: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  sizeForLoad(
     node.size,
     (step) => sequenceLoad(node, step, width),
     sequenceFit,
     crowding
   );
-};

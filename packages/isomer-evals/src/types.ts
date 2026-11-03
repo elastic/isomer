@@ -9,6 +9,7 @@ import type {
   AnyPrimitiveDefinition,
   Composition,
   PrimitiveCatalogEntry,
+  PrimitiveNode,
   ValidationError,
 } from '@elastic/isomer-sdk';
 import type {
@@ -19,8 +20,9 @@ import type {
 /**
  * One prompt to author a view from, and optionally the answer it should reach.
  *
- * `golden` is what primitive-selection scoring compares against; a case without
- * one still scores validity, payload, and answerability.
+ * `golden` is what primitive-selection scoring compares against, and
+ * `expected` what the expected-primitive hit reads; a case without either
+ * still scores validity, payload, and answerability.
  */
 export interface EvalCase {
   /** Stable identifier, used to address a single case and to key recordings. */
@@ -29,6 +31,19 @@ export interface EvalCase {
   prompt: string;
   /** The composition a good answer resembles. */
   golden?: Composition | undefined;
+  /** Node types a good answer uses somewhere in its tree; any one of them counts as a hit. */
+  expected?: readonly string[] | undefined;
+}
+
+/** A frame's body rule, applied to a composition that validated; an SDK `Frame` fits. */
+export interface EvalFrame {
+  validateBody?(body: readonly PrimitiveNode[]): readonly string[];
+}
+
+/** Whether an answer used one of its case's `expected` types, and every known type it did use. */
+export interface ExpectedPrimitivesScore {
+  hit: boolean;
+  used: readonly string[];
 }
 
 /** One attempt at a case. `attempt` is 0 for the first try, 1 for the retry after validation errors. */
@@ -80,7 +95,7 @@ export interface ValidityScore {
   composition?: Composition | undefined;
 }
 
-/** Multiset precision, recall, and F1 of the generated body's top-level node types against the golden's. */
+/** Multiset precision, recall, and F1 of every node type in the generated body's tree against the golden's. */
 export interface PrimitiveSelectionScore {
   precision: number;
   recall: number;
@@ -95,7 +110,7 @@ export interface PrimitiveSelectionScore {
 export interface PayloadScore {
   /** UTF-8 bytes of the model output as sent, before any code fence is stripped. */
   rawBytes: number;
-  /** Bytes after parsing, which drops unknown properties; `0` when the first attempt did not parse. */
+  /** Bytes of the copy `validate` checked; `0` when the first attempt did not validate. */
   sanitizedBytes: number;
   /** Sanitized size relative to the golden's; absent without a golden. */
   sizeVsGolden?: number | undefined;
@@ -115,6 +130,8 @@ export interface EvalCaseResult {
   /** Absent without a golden, or without a validated composition. */
   selection?: PrimitiveSelectionScore | undefined;
   payload: PayloadScore;
+  /** Absent without `expected`; a miss when no attempt validated. */
+  expected?: ExpectedPrimitivesScore | undefined;
   /** Absent without a judge, or without a validated composition. */
   answerability?: AnswerabilityScore | undefined;
 }
@@ -132,6 +149,10 @@ export interface EvalReport {
     validAfterRetry: number;
     /** Mean F1 across validated cases that had a golden. */
     meanSelectionF1?: number | undefined;
+    /** Cases whose validated composition used an expected type, over {@link expectedCases}. */
+    expectedHits: number;
+    /** Cases with `expected`. */
+    expectedCases: number;
     /** Count by verdict, when a judge was supplied. */
     answerability?: Record<AnswerabilityVerdict, number> | undefined;
   };
@@ -155,6 +176,8 @@ export interface RunEvalsOptions {
   guide?: string | undefined;
   /** Rules section of the authoring prompt. */
   rules?: string | undefined;
+  /** Applied to each attempt that validates, so an answer the host's frame would refuse scores invalid. */
+  frame?: EvalFrame | undefined;
   /** Cases run at once. Defaults to 1 (sequential); `generate`/`judge` still decide their own rate limits. */
   concurrency?: number | undefined;
 }
@@ -171,14 +194,17 @@ export interface EvalRuntime {
     primitives: readonly PrimitiveCatalogEntry[];
     views?: readonly AuthoringViewSummary[] | undefined;
   };
-  validate(composition: Composition): {
-    valid: boolean;
-    errors: ValidationError[];
-  };
+  /** `composition` is the schema's output, present only when `valid`. */
   parse(value: unknown): {
     valid: boolean;
     errors: ValidationError[];
     composition?: Composition | undefined;
+  };
+  /** `composition` is the copy the result describes, and `undefined` only when the input budget refused it. */
+  validate(composition: Composition): {
+    valid: boolean;
+    errors: ValidationError[];
+    composition: Composition | undefined;
   };
   surfaces: {
     text: { render(composition: Composition): string };

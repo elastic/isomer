@@ -10,11 +10,13 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { timeline, timelineFit } from '../../theme/components/timeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
+import { slideLayout } from '../layout';
 import { measureText } from '../size';
 import { layoutContext, renderedStep, shortWords } from '../size.fixtures';
 
@@ -102,9 +104,7 @@ describe('slideTimeline', () => {
   it('keeps a space between a label and its channel in the HTML text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     const [item] = example.items;
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
-      `${item?.label} ${item?.channel}`
-    );
+    expect(renderedHtmlText(html)).toContain(`${item?.label} ${item?.channel}`);
   });
 
   it('marks the current item for assistive technology and with a cue', () => {
@@ -293,11 +293,13 @@ describe('slideTimeline', () => {
     expect(timelineWordStep(node, at('l', 1))).toBe('l');
     expect(timelineWordStep(node, at('l', -1))).toBe('m');
     expect(timelineWordStep(node, at('m', -1))).toBe('s');
-    expect(timelineStep(node, layoutContext({ width: at('m', -1) }))).toBe('s');
+    expect(
+      timelineStep(node, slideLayout(layoutContext({ width: at('m', -1) })))
+    ).toBe('s');
     expect(
       timelineStep(
         { ...node, size: 'l' },
-        layoutContext({ width: at('s', -1) })
+        slideLayout(layoutContext({ width: at('s', -1) }))
       )
     ).toBe('l');
   });
@@ -314,31 +316,34 @@ describe('slideTimeline', () => {
 
   it('takes the whole body on a slide with no heading', () => {
     const node = fourItems(timelineFit.l + 4);
-    expect(timelineStep(node, layoutContext())).toBe('m');
-    expect(timelineStep(node, undefined)).toBe('l');
+    expect(timelineStep(node, slideLayout(layoutContext()))).toBe('m');
+    expect(timelineStep(node, slideLayout(undefined))).toBe('l');
     expect(renderedStep('timeline-headingSize', node)).toBe('l');
   });
 
   it('steps down at each budget, under crowding, and in a narrower box, unless sized', () => {
     const edge = (load: number) =>
-      timelineStep(fourItems(load), layoutContext());
+      timelineStep(fourItems(load), slideLayout(layoutContext()));
     expect(edge(timelineFit.l)).toBe('l');
     expect(edge(timelineFit.l + 4)).toBe('m');
     expect(edge(timelineFit.m)).toBe('m');
     expect(edge(timelineFit.m + 4)).toBe('s');
     expect(
-      timelineStep(fourItems(timelineFit.l), layoutContext({ crowding: 1.1 }))
+      timelineStep(
+        fourItems(timelineFit.l),
+        slideLayout(layoutContext({ crowding: 1.1 }))
+      )
     ).toBe('m');
     expect(
       timelineStep(
         fourItems(timelineFit.l),
-        layoutContext({ width: frameContentWidth * 0.95 })
+        slideLayout(layoutContext({ width: frameContentWidth * 0.95 }))
       )
     ).toBe('m');
     expect(
       timelineStep(
         { ...fourItems(timelineFit.m + 4), size: 'l' },
-        layoutContext({ crowding: 3 })
+        slideLayout(layoutContext({ crowding: 3 }))
       )
     ).toBe('l');
   });

@@ -13,22 +13,11 @@ import {
   unresolvedBodyNodeSchema,
   z,
 } from '@elastic/isomer-sdk';
+import { customChecksOf } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { crossSuperRefine, rulesOf } from './primitives/cross_field';
 import { slideDeckPrimitives } from './registry';
-
-interface ZodInternals {
-  _zod: {
-    def: Record<string, unknown> & {
-      checks?: unknown[];
-      getter?: () => unknown;
-    };
-  };
-}
-
-const isZod = (value: unknown): value is ZodInternals =>
-  typeof value === 'object' && value !== null && '_zod' in value;
 
 /** Each primitive's schema with its child slots unresolved, so the walk stops at nested primitives. */
 const members = new Map(
@@ -40,41 +29,8 @@ const members = new Map(
 const memberSchemas = new Set<unknown>(members.values());
 
 /** Every custom check reachable from `root`, stopping at other primitives, which are checked on their own. */
-const customChecks = (root: ZodInternals): object[] => {
-  const found: object[] = [];
-  const seen = new Set<unknown>();
-  const queue: unknown[] = [root];
-  while (queue.length > 0) {
-    const schema = queue.pop();
-    if (
-      !isZod(schema) ||
-      seen.has(schema) ||
-      (schema !== root && memberSchemas.has(schema))
-    ) {
-      continue;
-    }
-    seen.add(schema);
-    const { def } = schema._zod;
-    for (const check of def.checks ?? []) {
-      if (isZod(check) && check._zod.def.check === 'custom') {
-        found.push(check);
-      }
-    }
-    if (typeof def.getter === 'function') {
-      queue.push(def.getter());
-    }
-    for (const value of Object.values(def)) {
-      if (Array.isArray(value)) {
-        queue.push(...(value as unknown[]));
-      } else if (isZod(value)) {
-        queue.push(value);
-      } else if (typeof value === 'object' && value !== null) {
-        queue.push(...(Object.values(value) as unknown[]));
-      }
-    }
-  }
-  return found;
-};
+const customChecks = (root: z.ZodType): object[] =>
+  customChecksOf(root, { skip: (schema) => memberSchemas.has(schema) });
 
 const descriptions = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -94,7 +50,7 @@ const authoring = buildAuthoringJsonSchema(slideDeckPrimitives);
 
 const rows = [...members].map(([type, schema]) => ({
   type,
-  checks: customChecks(schema as unknown as ZodInternals),
+  checks: customChecks(schema),
 }));
 
 describe('stated rules', () => {
@@ -139,16 +95,14 @@ describe('crossSuperRefine', () => {
         ['`a` is never x']
       )
     );
-    const [check] = customChecks(schema as unknown as ZodInternals);
+    const [check] = customChecks(schema);
     expect(check && rulesOf(check)).toEqual(['`a` is never x']);
     const { error } = schema.safeParse({ a: 'x', b: 'one' });
     expect(error?.issues.map(({ message }) => message)).toContain('no x');
   });
 
   it('leaves a bare `superRefine` for the walk to refuse', () => {
-    const [check] = customChecks(
-      fields.superRefine(() => undefined) as unknown as ZodInternals
-    );
+    const [check] = customChecks(fields.superRefine(() => undefined));
     expect(check).toBeDefined();
     expect(check && rulesOf(check)).toBeUndefined();
   });

@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-Plain-text rendering.[^barrel]
+Plain-text rendering.[^barrel] See [`./text`](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#text-markdown-slack) in the API reference.
 
 Related: [rendering](/sdk/concepts/rendering.md).
 

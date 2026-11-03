@@ -24,10 +24,6 @@ export const isStructuredValue = (
 ): value is StructuredValue =>
   typeof value === 'object' && value !== null && 'raw' in value;
 
-/** The unformatted value behind a {@link DisplayValue}. */
-export const rawDisplayValue = (value: DisplayValue): number | string =>
-  isStructuredValue(value) ? value.raw : value;
-
 /**
  * Renders a {@link DisplayValue} for display. A bare string passes through; a
  * {@link StructuredValue} is formatted per its `format`.

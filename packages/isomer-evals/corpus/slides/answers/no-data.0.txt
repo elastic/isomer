@@ -1,0 +1,41 @@
+```json
+{
+  "type": "view",
+  "title": "Revenue by region",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Quarterly review",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Revenue by region, last quarter",
+          "lede": "Figures to be filled in from finance’s quarter-close report."
+        },
+        {
+          "type": "slideStats",
+          "items": [
+            {
+              "label": "Americas",
+              "body": "Revenue for the quarter."
+            },
+            {
+              "label": "EMEA",
+              "body": "Revenue for the quarter."
+            },
+            {
+              "label": "APAC",
+              "body": "Revenue for the quarter."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

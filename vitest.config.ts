@@ -26,8 +26,6 @@ export default defineConfig({
           include: [
             'packages/*/src/**/*.test.ts',
             'packages/isomer-primitives-slides/studio/**/*.test.ts',
-            'examples/*/src/**/*.test.ts',
-            'examples/*/server/**/*.test.ts',
             'scripts/**/*.test.js',
           ],
           exclude: [

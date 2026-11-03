@@ -7,7 +7,7 @@
 
 import type { ReactNode } from 'react';
 import React from 'react';
-import { EuiIcon, useEuiTheme } from '@elastic/eui';
+import { EuiIcon } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { Glyph } from '../chrome/primitive_glyph';
@@ -16,7 +16,8 @@ import type { PreviewSurface } from '../surfaces/surface_select';
 import { PREVIEW_ICONS } from '../surfaces/surface_select';
 
 import { APPS_DOCS_URL, STUDIO_CONFIG_DOCS_URL, VIEWS_DOCS_URL } from './links';
-import { HOME } from './tokens';
+import type { Home } from './tokens';
+import { useHome } from './tokens';
 
 const Section = ({
   title,
@@ -28,31 +29,31 @@ const Section = ({
   children: ReactNode;
 }) => {
   const {
-    euiTheme: { font },
-  } = useEuiTheme();
+    euiTheme: { font, size },
+    color,
+    fontSize,
+  } = useHome();
   return (
     <section
       aria-label={title}
       css={css`
         display: flex;
         flex-direction: column;
-        gap: 7px;
+        gap: ${size.s};
       `}>
       <div
         css={css`
           display: flex;
           align-items: baseline;
           justify-content: space-between;
-          font-size: 11px;
-          letter-spacing: 0.06em;
+          font-size: ${fontSize('xxs')};
           text-transform: uppercase;
-          color: ${HOME.fg3};
+          color: ${color.subdued};
         `}>
         <span>{title}</span>
         <span
           css={css`
             font-family: ${font.familyCode};
-            letter-spacing: 0;
             text-transform: none;
           `}>
           {count}
@@ -63,30 +64,32 @@ const Section = ({
   );
 };
 
-const row = css`
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  font-size: 12px;
-`;
-const code = (familyCode: string | undefined) => css`
-  font-family: ${familyCode};
-  color: ${HOME.fg};
-  overflow-wrap: anywhere;
-`;
-const meta = css`
-  color: ${HOME.fg3};
-  text-wrap: pretty;
-`;
-const link = css`
-  font-weight: 600;
-  color: ${HOME.accent};
-  text-decoration: none;
-  &:hover {
-    text-decoration: underline;
-  }
-`;
+const panelStyles = ({ euiTheme: { font, size }, color, fontSize }: Home) => ({
+  row: css`
+    display: flex;
+    flex-direction: column;
+    gap: ${size.xxs};
+    min-width: 0;
+    font-size: ${fontSize('xs')};
+  `,
+  mono: css`
+    font-family: ${font.familyCode};
+    color: ${color.heading};
+    overflow-wrap: anywhere;
+  `,
+  meta: css`
+    color: ${color.subdued};
+    text-wrap: pretty;
+  `,
+  link: css`
+    font-weight: ${font.weight.bold};
+    color: ${color.accent};
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  `,
+});
 
 /** A dashed box saying what is missing, how to add it, and where that is documented. */
 const Empty = ({
@@ -97,25 +100,37 @@ const Empty = ({
   children: ReactNode;
   href: string;
   action: string;
-}) => (
-  <div
-    css={css`
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 12px;
-      color: ${HOME.fg3};
-      padding: 8px 10px;
-      border: 1px dashed rgba(255, 255, 255, 0.25);
-      border-radius: 6px;
-      text-wrap: pretty;
-    `}>
-    <span>{children}</span>
-    <a href={href} target="_blank" rel="noopener" css={link}>
-      {action} ↗
-    </a>
-  </div>
-);
+}) => {
+  const home = useHome();
+  const {
+    euiTheme: { size, border },
+    color,
+    fontSize,
+  } = home;
+  return (
+    <div
+      css={css`
+        display: flex;
+        flex-direction: column;
+        gap: ${size.s};
+        font-size: ${fontSize('xs')};
+        color: ${color.subdued};
+        padding: ${size.s} ${size.m};
+        border: ${border.width.thin} dashed ${color.dashed};
+        border-radius: ${border.radius.control};
+        text-wrap: pretty;
+      `}>
+      <span>{children}</span>
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener"
+        css={panelStyles(home).link}>
+        {action} ↗
+      </a>
+    </div>
+  );
+};
 
 /** What the runtime loaded: packs, views, apps and surfaces, then where that is configured. */
 export const LoadedPanel = ({
@@ -123,24 +138,27 @@ export const LoadedPanel = ({
 }: {
   surfaces: readonly PreviewSurface[];
 }) => {
+  const home = useHome();
   const {
-    euiTheme: { font },
-  } = useEuiTheme();
+    euiTheme: { font, size, border },
+    color,
+    fontSize,
+  } = home;
+  const { row, mono, meta, link } = panelStyles(home);
   const {
     runtime,
     apps,
     docs: { primitives, views },
   } = useStudio();
-  const mono = code(font.familyCode);
 
   return (
     <>
       <h2
         css={css`
           margin: 0;
-          font-size: 13px;
-          font-weight: 600;
-          color: ${HOME.fg};
+          font-size: ${fontSize('s')};
+          font-weight: ${font.weight.bold};
+          color: ${color.heading};
         `}>
         Loaded in this Studio
       </h2>
@@ -189,21 +207,20 @@ export const LoadedPanel = ({
               css={css`
                 display: flex;
                 align-items: flex-start;
-                gap: 10px;
+                gap: ${size.s};
                 min-width: 0;
               `}>
               <span
                 css={css`
-                  color: ${HOME.app};
-                  margin-top: 2px;
+                  color: ${color.app};
                 `}>
                 <Glyph svg={icon?.svg} label={title} size={18} />
               </span>
               <div css={row}>
                 <span
                   css={css`
-                    font-weight: 600;
-                    color: ${HOME.fg};
+                    font-weight: ${font.weight.bold};
+                    color: ${color.heading};
                   `}>
                   {title}
                 </span>
@@ -225,7 +242,7 @@ export const LoadedPanel = ({
           css={css`
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 6px 12px;
+            gap: ${size.s} ${size.m};
           `}>
           {surfaces.map((surface) => (
             <span
@@ -233,10 +250,10 @@ export const LoadedPanel = ({
               css={css`
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: ${size.s};
                 font-family: ${font.familyCode};
-                font-size: 12px;
-                color: ${HOME.fg};
+                font-size: ${fontSize('xs')};
+                color: ${color.heading};
               `}>
               <EuiIcon type={PREVIEW_ICONS[surface]} size="m" />
               {surface}
@@ -249,11 +266,11 @@ export const LoadedPanel = ({
         css={css`
           display: flex;
           flex-direction: column;
-          gap: 6px;
-          border-top: 1px solid ${HOME.line1};
-          padding-top: 16px;
-          font-size: 12px;
-          color: ${HOME.fg3};
+          gap: ${size.s};
+          border-top: ${border.width.thin} solid ${color.line};
+          padding-top: ${size.base};
+          font-size: ${fontSize('xs')};
+          color: ${color.subdued};
           text-wrap: pretty;
         `}>
         <p

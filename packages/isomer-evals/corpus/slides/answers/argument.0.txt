@@ -1,0 +1,32 @@
+```json
+{
+  "type": "view",
+  "title": "Deprecate the v1 API",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "API strategy",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "It’s time to **deprecate the v1 API**",
+          "lede": "It serves almost no one, carries risk, and doubles our work."
+        },
+        {
+          "type": "slideList",
+          "items": [
+            { "term": "Traffic", "body": "v1 carries only **2%** of API traffic." },
+            { "term": "Security", "body": "It has unpatched security debt." },
+            { "term": "Maintenance", "body": "Keeping it alive duplicates work on v2." }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

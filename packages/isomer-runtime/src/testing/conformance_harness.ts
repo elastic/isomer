@@ -69,7 +69,8 @@ export const createRuntimeConformanceHarness = (
     ...(snapshot === undefined
       ? {}
       : {
-          renderSnapshot: (node) => snapshot.renderNode(node, collect).element,
+          renderSnapshotNode: (node) =>
+            snapshot.renderNode(node, collect).element,
           renderSnapshotComposition: (composition: Composition) => {
             const { errors } = runtime.validate(composition);
             const { html: markup, css } = snapshot.render(composition, collect);

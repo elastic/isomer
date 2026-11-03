@@ -5,13 +5,12 @@
  * 2.0.
  */
 
-import type { SlideRenderContext } from '../../render/context';
 import { stripMarks } from '../../render/marks';
 import { frameContentWidth } from '../../theme/components/frame';
 import { pipeline, pipelineFit } from '../../theme/components/pipeline';
 import { scalePx } from '../../theme/scale';
 import type { SlideSize } from '../../theme/variants';
-import { slideLayout } from '../layout';
+import type { StepLayout } from '../layout';
 import {
   lineFill,
   measureText,
@@ -68,16 +67,14 @@ export const pipelineLoad = (
   );
 };
 
-/** The step a steps-mode pipeline draws at in `context`. */
+/** The step a steps-mode pipeline draws at in `layout`. */
 export const pipelineStep = (
   node: SlidePipelineNode,
-  context: SlideRenderContext | undefined
-): SlideSize => {
-  const { width, crowding } = slideLayout(context);
-  return sizeForLoad(
+  { width, crowding }: Pick<StepLayout, 'width' | 'crowding'>
+): SlideSize =>
+  sizeForLoad(
     node.size,
     (step) => pipelineLoad(node, step, width),
     pipelineFit,
     crowding
   );
-};

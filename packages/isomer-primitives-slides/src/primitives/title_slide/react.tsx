@@ -12,22 +12,20 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
 import { LogoMark } from '../../render/logo';
 import { marksReact } from '../../render/marks';
-import { title as theme, titleShares } from '../../theme/components/title';
 import { slideLayout, withLayout } from '../layout';
-import { sizeForLines, trackWidth } from '../size';
 
+import { titleColumn, titleStep } from './fit';
 import { titleModule } from './styles';
 import type { TitleSlideNode } from './types';
 
 /** React renderer for {@link TitleSlideNode}. */
 export const react = (
-  { type, eyebrow, title, tagline, definition, aside, size }: TitleSlideNode,
+  node: TitleSlideNode,
   { context, scope }: SlideReactEnv
 ): ReactNode => {
+  const { type, eyebrow, title, tagline, definition, aside } = node;
   const { handles: styles } = titleModule;
-  const { width, height } = slideLayout(context);
-  const column = (index: 0 | 1) =>
-    trackWidth(width, titleShares, theme.columnGap, index);
+  const layout = slideLayout(context);
   return (
     <div
       {...nodeAnchor(context, { type })}
@@ -43,15 +41,7 @@ export const react = (
           className={cls(
             context,
             styles.title,
-            styles.titleSize[
-              sizeForLines(
-                size,
-                title,
-                theme.display.tracking,
-                aside ? column(0) : width,
-                theme.displaySizes
-              )
-            ]
+            styles.titleSize[titleStep(node, layout)]
           )}>
           {title}
         </h1>
@@ -73,7 +63,10 @@ export const react = (
         <div className={cls(context, styles.aside)}>
           {scope.renderReact(
             aside,
-            withLayout(context, { width: column(1), height })
+            withLayout(context, {
+              width: titleColumn(layout.width, 1),
+              height: layout.height,
+            })
           )}
         </div>
       ) : null}

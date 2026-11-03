@@ -6,17 +6,15 @@
  */
 
 export {
-  type CapabilitySources,
   type HostCapabilities,
   type SurfaceSupport,
   describeCapabilities,
 } from './capabilities';
-export { type ComposedPacks, composePacks } from './compose';
+export { composePacks } from './compose';
 export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
   type AnyPrimitivePack,
   type PackAuthoringOptions,
-  type PackStyleAdapter,
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,

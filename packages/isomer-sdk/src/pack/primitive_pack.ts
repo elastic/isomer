@@ -14,7 +14,6 @@ import type { PrimitiveIcon } from '../define/primitive_icon';
 import type {
   AnyPrimitiveDefinition,
   OptionalSurface,
-  StyleHandle,
 } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
@@ -30,8 +29,6 @@ import type { EnhancementDefinition } from './enhancements';
 export interface PackAuthoringOptions {
   /** `$def` id to `description`, for this pack's own primitives. */
   describe?: Readonly<Record<string, string>>;
-  /** `$defId.property` paths to drop, from this pack's own primitives. */
-  omitProperties?: readonly string[];
   /** Headings an index catalog sorts this pack's primitives under, in order. A type in none is listed under {@link UNCATEGORIZED_GROUP_TITLE}. */
   groups?: readonly PrimitiveGroup[];
 }
@@ -55,10 +52,6 @@ export type PackStyleAdapter = {
   createCollector: (...args: never[]) => object;
   createRenderContext: (...args: never[]) => unknown;
   renderStyles: (...args: never[]) => string;
-  /**
-   * Whether `handle` belongs to this adapter's stylesheet. Required for a runtime to combine several packs' CSS: without it their handles cannot be routed and the host must pick one adapter.
-   */
-  ownsHandle?: (handle: StyleHandle) => boolean;
 };
 
 /** What a pack author passes to {@link definePrimitivePack}. */
@@ -98,9 +91,8 @@ export interface PrimitivePackInput {
   slackAssetTypes?: readonly string[];
   /**
    * Default HTML style adapter for this pack. A runtime that omits
-   * `styleAdapter` runs the packs' own adapters, combined when more than one
-   * pack declares one and each answers `ownsHandle`. Pass `styleAdapter` on
-   * the runtime to replace them all.
+   * `styleAdapter` runs the one composed pack's adapter, and refuses packs
+   * that declare two. Pass `styleAdapter` on the runtime to replace it.
    */
   styleAdapter?: PackStyleAdapter;
   /**
@@ -114,7 +106,7 @@ export interface PrimitivePackInput {
    * This pack's own contribution to the runtime's authoring JSON Schema.
    *
    * Merged across every composed pack, so a host does not hand-merge each
-   * pack's `describe`/`omitProperties` into one options object itself. The
+   * pack's `describe` into one options object itself. The
    * runtime-level `authoring` option is merged in last and wins on conflict.
    */
   authoring?: PackAuthoringOptions;

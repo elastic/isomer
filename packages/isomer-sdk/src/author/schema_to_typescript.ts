@@ -5,9 +5,14 @@
  * 2.0.
  */
 
-export type JsonObject = Record<string, unknown>;
+import {
+  isJsonObject,
+  type JsonObject,
+  ownDef,
+  parseDefRef,
+} from '../validate/json_helpers';
 
-export const DEF_PREFIX = '#/$defs/';
+export type { JsonObject };
 
 /** Ids `z.toJSONSchema` gives a def no one named. */
 export const ANONYMOUS_DEF = /^__schema\d+$/;
@@ -30,17 +35,6 @@ const STRUCTURAL_KEYS = [
 const INDENT = '  ';
 
 export const IDENTIFIER = /^[A-Za-z_$][\w$]*$/;
-
-export const isJsonObject = (value: unknown): value is JsonObject =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-export const parseDefRef = (ref: unknown): string | undefined =>
-  typeof ref === 'string' && ref.startsWith(DEF_PREFIX)
-    ? ref.slice(DEF_PREFIX.length)
-    : undefined;
-
-export const ownDef = (defs: JsonObject, id: string): unknown =>
-  Object.hasOwn(defs, id) ? defs[id] : undefined;
 
 /** `slideStats` becomes `SlideStats`; anything but letters and digits splits words. */
 export const pascalCase = (value: string): string => {

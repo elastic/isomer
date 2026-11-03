@@ -8,12 +8,12 @@
 import type { EuiThemeModifications } from '@elastic/eui';
 import { EuiThemeBorealis } from '@elastic/eui-theme-borealis';
 
-import { SHELL } from './accent';
 import { hexToOklch, oklchToHex } from './oklch';
 
 const HEX = /^#([0-9a-f]{6})$/i;
+/** Role colors, and the selection, which reads as primary in every mode. */
 const ROLE =
-  /primary|accent|success|warning|danger|risk|neutral|assistance|highlight|link/i;
+  /primary|accent|success|warning|danger|risk|neutral|assistance|highlight|link|select/i;
 const SURFACE = /^(background|border)|^body$/;
 
 /** Strength of the tint relative to Borealis's own blue: `1` is as green as Borealis is blue, `0` is gray. */
@@ -25,12 +25,19 @@ export const tintNeutral = (hex: string, hue: number): string => {
   return oklchToHex({ l, c: c * CHROMA, h: hue });
 };
 
-const { h: DEV_HUE } = hexToOklch(SHELL.dev);
+const { DARK } = EuiThemeBorealis.root.colors;
+
+/** The dev shell's color: Borealis dark's light success background. */
+const devShell = DARK.backgroundLightSuccess;
+if (typeof devShell !== 'string') {
+  throw new Error('Borealis dark has no backgroundLightSuccess color');
+}
+const { h: DEV_HUE } = hexToOklch(devShell);
 
 /** Borealis dark's blue-gray backgrounds and borders moved onto the dev shell's green. Text and role colors are untouched. */
 export const DEV_DARK_COLORS: Readonly<Record<string, string>> =
   Object.fromEntries(
-    Object.entries(EuiThemeBorealis.root.colors.DARK).flatMap(([key, value]) =>
+    Object.entries(DARK).flatMap(([key, value]) =>
       typeof value === 'string' &&
       HEX.test(value) &&
       SURFACE.test(key) &&

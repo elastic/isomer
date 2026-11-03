@@ -1,0 +1,35 @@
+```json
+{
+  "type": "view",
+  "title": "Isomer",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "inverse",
+      "footer": {
+        "brand": "Isomer",
+        "url": "https://www.elastic.co/elasticon"
+      },
+      "body": [
+        {
+          "type": "titleSlide",
+          "eyebrow": "ElasticON 2026 · Clint Hall",
+          "title": "Isomer",
+          "tagline": "One composition, **every surface**.",
+          "aside": {
+            "type": "slideFanout",
+            "source": "Composition",
+            "targets": [
+              { "name": "react", "body": "Interactive views in the app" },
+              { "name": "snapshot", "body": "PNG and PDF images" },
+              { "name": "slack", "body": "Block Kit messages" },
+              { "name": "markdown", "body": "Docs and chat replies" },
+              { "name": "text", "body": "Terminals and SMS" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+```

@@ -18,10 +18,9 @@ import { columns } from '../../theme/components/columns';
 import { frameContentWidth } from '../../theme/components/frame';
 import { slideDistillery } from '../../theme/distillery';
 import { scalePx } from '../../theme/scale';
-import { slideLayout } from '../layout';
+import { referenceRoom, slideLayout } from '../layout';
 import { widestWord } from '../size';
 import { referenceHeading, renderedStep } from '../size.fixtures';
-import { referenceRoom } from '../slide_heading/fit';
 
 import { example, plainExample, wideExample } from './examples';
 import { columnInnerWidth, columnsHeadHeight, columnsStep } from './fit';

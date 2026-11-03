@@ -234,4 +234,37 @@ describe('useStudioRoute', () => {
     rerender({ ids: ['deck', 'other'] });
     expect(result.current.location).toBe(before);
   });
+
+  it('keeps the last dev route while docs, an app or Home shows', () => {
+    window.location.hash = '#/dev/divider/0';
+    const { result } = renderHook(() => useStudioRoute(docs, ['deck']));
+    const dev = result.current.location;
+    expect(result.current.devRoute).toBe(dev);
+
+    act(() => result.current.navigate({ mode: 'docs', page: 'callout' }));
+    act(() => result.current.openApp('deck'));
+    act(() => result.current.goHome());
+    expect(result.current.devRoute).toBe(dev);
+  });
+
+  it('keeps what the composer wrote, and takes a link only when it names something else', () => {
+    const { result } = renderHook(() => useStudioRoute(docs, []));
+    expect(result.current.composeParams).toBeUndefined();
+
+    act(() => result.current.openComposer({ code: 'a' }));
+    const opened = result.current.composeParams;
+    expect(opened).toEqual({ code: 'a' });
+    act(() => result.current.openComposer({ code: 'a' }));
+    expect(result.current.composeParams).toBe(opened);
+
+    act(() => result.current.replaceComposer({ code: 'b', lang: 'json' }));
+    expect(window.location.hash).toBe('#/compose?code=b&lang=json');
+    act(() => result.current.goHome());
+    act(() => result.current.replaceComposer({}));
+    expect(result.current.composeParams).toEqual({});
+    expect(window.location.hash).toBe('#/home');
+
+    act(() => result.current.openComposer({ code: 'a' }));
+    expect(result.current.composeParams).toEqual({ code: 'a' });
+  });
 });

@@ -5,14 +5,56 @@
  * 2.0.
  */
 
-import { type Composition, formatValidationError } from '@elastic/isomer-sdk';
+import { formatValidationError } from '@elastic/isomer-sdk';
+import {
+  checkComposition,
+  type CompositionCheck,
+} from '@elastic/isomer-sdk/author';
 
-import type { EvalRuntime, ValidityScore } from '../types';
+import type { EvalFrame, EvalRuntime, ValidityScore } from '../types';
 
 /** Model output with the code fence some models wrap JSON in removed. */
 export const stripCodeFence = (raw: string): string => {
-  const fenced = raw.match(/```(?:json)?\s*\n([\s\S]*?)\s*```/);
-  return (fenced?.[1] ?? raw).trim();
+  const isValidHeader = (opening: number, headerEnd: number): boolean => {
+    let start = opening + 3;
+    if (raw.startsWith('json', start)) {
+      start += 4;
+    }
+    for (let index = start; index < headerEnd; index += 1) {
+      const character = raw[index]!;
+      if (character.trim() !== '') {
+        return false;
+      }
+    }
+    return true;
+  };
+  let searchFrom = 0;
+  while (searchFrom < raw.length) {
+    const opening = raw.indexOf('```', searchFrom);
+    if (opening === -1) {
+      break;
+    }
+
+    const headerEnd = raw.indexOf('\n', opening + 3);
+    if (headerEnd === -1) {
+      break;
+    }
+    let candidate = opening;
+    if (!isValidHeader(candidate, headerEnd)) {
+      candidate = raw.lastIndexOf('```', headerEnd - 1);
+      if (candidate <= opening || !isValidHeader(candidate, headerEnd)) {
+        searchFrom = headerEnd + 1;
+        continue;
+      }
+    }
+
+    const closing = raw.indexOf('```', headerEnd + 1);
+    if (closing === -1) {
+      return raw.trim();
+    }
+    return raw.slice(headerEnd + 1, closing).trim();
+  }
+  return raw.trim();
 };
 
 /** One `generate` call's output, parsed from JSON exactly once. `raw` is the text as the model sent it. */
@@ -33,49 +75,19 @@ export const parseGenerated = (raw: string): ParsedAttempt => {
   }
 };
 
-/** What {@link checkComposition} returns: the parse-then-validate verdict, and the parsed composition when there was one. */
-export interface CheckedComposition {
-  valid: boolean;
-  /** Formatted parse errors, or validation errors; empty when valid. */
-  errors: readonly string[];
-  /** Present whenever the value parsed, even when validation then failed. */
-  composition?: Composition | undefined;
-}
-
-/**
- * Parses `value` against the runtime's schema, then validates the result —
- * the one place both happen together, so a value that parses but fails
- * validation (duplicate ids, for instance) is never mistaken for a good
- * composition by only half of this check.
- */
-export const checkComposition = (
-  runtime: EvalRuntime,
-  value: unknown
-): CheckedComposition => {
-  const parsed = runtime.parse(value);
-  if (!parsed.valid || !parsed.composition) {
-    return { valid: false, errors: parsed.errors.map(formatValidationError) };
-  }
-  const result = runtime.validate(parsed.composition);
-  return {
-    valid: result.valid,
-    errors: result.valid ? [] : result.errors.map(formatValidationError),
-    composition: parsed.composition,
-  };
-};
-
 /** A {@link ParsedAttempt} with its value checked exactly once; output that did not parse has nothing to check. */
 export type CheckedAttempt =
-  | { parsed: true; raw: string; value: unknown; check: CheckedComposition }
+  | { parsed: true; raw: string; value: unknown; check: CompositionCheck }
   | { parsed: false; raw: string; error: string };
 
-/** Runs {@link checkComposition} over an attempt's value, once. */
+/** Runs the SDK's `checkComposition` over an attempt's value, once. */
 export const checkAttempt = (
   runtime: EvalRuntime,
-  attempt: ParsedAttempt
+  attempt: ParsedAttempt,
+  frame?: EvalFrame
 ): CheckedAttempt =>
   attempt.parsed
-    ? { ...attempt, check: checkComposition(runtime, attempt.value) }
+    ? { ...attempt, check: checkComposition(runtime, attempt.value, frame) }
     : attempt;
 
 /**
@@ -113,7 +125,7 @@ export const scoreValidity = (
     parsed: true,
     valid: false,
     validAfterRetry: retried?.valid ?? false,
-    errors: first.errors,
+    errors: first.errors.map(formatValidationError),
     composition: retried?.valid ? retried.composition : undefined,
   };
 };

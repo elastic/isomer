@@ -61,10 +61,17 @@ export const nodeBox = (layout: LayoutBox, type: string): LayoutBox => {
   return found;
 };
 
-/** The first box in `layout` with a text run holding `text`. */
+/** How many lines `box`'s own text runs sit on. */
+export const lineCount = ({ runs }: LayoutBox): number =>
+  new Set(runs.map(({ y }) => Math.round(y))).size;
+
+/** The first box in `layout` whose text runs, joined, hold `text`; a word broken across lines spans several runs. */
 export const textBox = (layout: LayoutBox, text: string): LayoutBox => {
   const holding = (box: LayoutBox): LayoutBox | undefined =>
-    box.runs.some((run) => run.text.includes(text))
+    box.runs
+      .map((run) => run.text)
+      .join('')
+      .includes(text)
       ? box
       : box.children.reduce<LayoutBox | undefined>(
           (found, child) => found ?? holding(child),

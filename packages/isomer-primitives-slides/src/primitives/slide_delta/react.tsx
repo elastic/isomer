@@ -11,59 +11,20 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact } from '../../render/marks';
-import { delta as theme } from '../../theme/components/delta';
 import { slideDistillery } from '../../theme/distillery';
 import {
   connectorModule,
   layoutModule,
   placeholderModule,
 } from '../../theme/modules';
-import { scalePx } from '../../theme/scale';
-import { type SlideSize, slideSizes } from '../../theme/variants';
+import type { SlideSize } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { measureMarks, measureText } from '../size';
 
+import { deltaStep } from './fit';
 import type { SlideDeltaNode, SlideDeltaPoint } from './schema';
 import { deltaModule } from './styles';
 
 const { connector, placeholder: pending } = slideDistillery.tokens;
-
-/** A side's width at `step`: its value, or its placeholder, and never less than its label. */
-const sideWidth = ({ label, value }: SlideDeltaPoint, step: SlideSize) =>
-  Math.max(
-    measureMarks(label, theme.label, Infinity, 'primary').widest,
-    value
-      ? measureText(value, { ...theme.value, size: theme.valueSizes[step] })
-          .widest
-      : scalePx(theme.placeholderWidth)
-  );
-
-/** The largest step at which both sides fit `room` between them. */
-const largestWithin = (
-  points: readonly SlideDeltaPoint[],
-  room: number
-): SlideSize | undefined =>
-  slideSizes.find(
-    (step) =>
-      points.reduce((sum, point) => sum + sideWidth(point, step), 0) <= room
-  );
-
-/** What the note takes of the row at its narrowest: its gap, measure, padding, and rule. */
-const noteFloor = scalePx(theme.columnGap) + scalePx(theme.noteMinWidth);
-
-/** The largest step at which the row holds both sides beside the note's floor across `width`, else the largest at which it holds them with the note wrapped under. */
-export const deltaValueSize = (
-  { before, after, size }: SlideDeltaNode,
-  width: number
-): SlideSize => {
-  const pair = width - scalePx(theme.arrowWidth) - 2 * scalePx(theme.columnGap);
-  return (
-    size ??
-    largestWithin([before, after], pair - noteFloor) ??
-    largestWithin([before, after], pair) ??
-    's'
-  );
-};
 
 const Side = ({
   point: { label, value },
@@ -123,7 +84,7 @@ export const react = (
   const { type, before, after, change, body } = node;
   const { handles: delta } = deltaModule;
   const { handles: arrow } = connectorModule;
-  const step = deltaValueSize(node, slideLayout(context).width);
+  const step = deltaStep(node, slideLayout(context));
   return (
     <div
       {...nodeAnchor(context, { type })}

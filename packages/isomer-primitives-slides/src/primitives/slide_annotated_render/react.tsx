@@ -18,7 +18,7 @@ import { headline } from '../slide_render/output';
 import { RenderPanel } from '../slide_render/panel';
 import { renderModule } from '../slide_render/styles';
 
-import { annotatedScale, legendOffset, legendStep } from './fit';
+import { annotatedRenderStep, annotatedScale, legendOffset } from './fit';
 import { annotatedRenderModule } from './styles';
 import type { SlideAnnotatedRenderNode } from './types';
 
@@ -33,7 +33,7 @@ export const react = (
   const layout = slideLayout(context);
   const scale = annotatedScale(node, layout);
   const shown = isVisibleOnSurface(node, 'react');
-  const legend = legendStep(pins, layout);
+  const legend = annotatedRenderStep({ pins }, layout);
   const offset = shown ? legendOffset(node, pins, legend, layout) : 0;
   return (
     <div

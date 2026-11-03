@@ -10,13 +10,11 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { cls } from '../../render/cls';
 import type { SlideReactEnv } from '../../render/context';
-import { agendaFit } from '../../theme/components/agenda';
 import { slideDistillery } from '../../theme/distillery';
 import { labelModule, layoutModule, tonesModule } from '../../theme/modules';
 import { slideLayout } from '../layout';
-import { sizeForLoad } from '../size';
 
-import { agendaLines } from './fit';
+import { agendaStep } from './fit';
 import type { AgendaSlideNode } from './schema';
 import { agendaModule } from './styles';
 
@@ -24,18 +22,13 @@ const { here } = slideDistillery.tokens.agenda;
 
 /** React renderer for {@link AgendaSlideNode}. */
 export const react = (
-  { type, sections, size }: AgendaSlideNode,
+  node: AgendaSlideNode,
   { context }: SlideReactEnv
 ): ReactNode => {
   const { handles: agenda } = agendaModule;
   const { handles: label } = labelModule;
-  const { width, crowding } = slideLayout(context);
-  const step = sizeForLoad(
-    size,
-    (at) => agendaLines(sections, at, width),
-    agendaFit,
-    crowding
-  );
+  const { type, sections } = node;
+  const step = agendaStep(node, slideLayout(context));
   const currentIndex = sections.findIndex(({ current }) => current);
   return (
     <div

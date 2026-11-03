@@ -12,7 +12,6 @@ import {
   type SurfaceName,
 } from '../composition/body_node_base';
 import { IsomerError } from '../composition/error';
-import type { ValidationError } from '../composition/validation_error';
 import type { MarkdownContent } from '../define/markdown_content';
 import {
   type AnyPrimitiveDefinition,
@@ -20,7 +19,6 @@ import {
   type PackTypes,
   type PrimitiveNode,
   type PrimitiveStyleCollectionContext,
-  type ReactContextArg,
   type Renderer,
   type RenderScope,
   type SurfaceMap,
@@ -44,28 +42,7 @@ import { markdownContentToSlackBlocks } from './slack/markdown_content';
 export interface PrimitiveDispatcher<
   TNode extends PrimitiveNode,
   T extends PackTypes = DefaultPackTypes,
-> {
-  /** Every primitive this dispatcher can reach, across all composed packs. */
-  readonly definitions: readonly AnyPrimitiveDefinition[];
-  /** Throws for an unknown node type; a missing primitive is a bug, not a degradation. */
-  getDefinition(node: TNode): AnyPrimitiveDefinition;
-  /** `undefined` when the node is hidden from `surface`, `sanitize` drops it, or the primitive declares no renderer for `surface`. */
-  renderOn<S extends SurfaceName>(
-    surface: S,
-    node: TNode,
-    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
-  ): SurfaceMap<T>[S]['output'] | undefined;
-  /** The node's `react` renderer, or `undefined` when it is hidden or has none. `context` may be omitted only when `{}` is a complete context for the pack. */
-  renderReact(
-    node: TNode,
-    ...context: ReactContextArg<T['context']>
-  ): ReactNode;
-  /** Mutates `styles` with this node's contribution. */
-  collectStyles(
-    node: TNode,
-    styles: T['collector'],
-    context: PrimitiveStyleCollectionContext
-  ): void;
+> extends RenderScope<T, TNode> {
   /**
    * The node's `react` renderer, gated on `snapshot` visibility and keyed for a
    * frame's sibling list. `key` must be unique among those siblings.
@@ -78,31 +55,17 @@ export interface PrimitiveDispatcher<
     theme: T['theme'] | undefined,
     key: string
   ): ReactNode;
-  /** `''` when the node is hidden from `text` or its primitive declares no `text` renderer. */
-  renderText(node: TNode): string;
-  /** The node's content serialized as GFM. */
-  renderMarkdown(node: TNode): string;
-  /** Empty when the node is hidden from `markdown`. */
-  renderMarkdownContent(node: TNode): MarkdownContent;
   /**
-   * Empty when the node is hidden from `slack`, `sanitize` drops it, or its
-   * renderer returns nothing. A node with no `slack` renderer degrades through
-   * its markdown; one `isSlackAssetType` names becomes an `image` block when
-   * `collector` can allocate. `options.baseUrl` reaches the renderer's env and
-   * every child it renders through `scope`.
+   * {@link RenderScope.renderSlack}, plus: a node `isSlackAssetType` names
+   * becomes an `image` block when `collector` can allocate, and
+   * `options.baseUrl` reaches the renderer's env and every child it renders
+   * through `scope`.
    */
   renderSlack(
     node: TNode,
     collector?: T['slackCollector'],
     options?: SlackLinkOptions
   ): readonly T['slackBlock'][];
-  /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
-  estimateSnapshotHeight(node: TNode): number;
-  /**
-   * Appends schema failures under `path` to `errors`, each naming `node`'s
-   * type, and an unknown key on `node` listing the fields it declares.
-   */
-  validate(node: TNode, path: string, errors: ValidationError[]): void;
 }
 
 /**
@@ -226,19 +189,21 @@ export const createPrimitiveDispatcher = <
     };
   };
 
+  // `definition` skips the lookup when the caller already holds it.
   const renderOn = <S extends SurfaceName>(
     surface: S,
     node: TNode,
-    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>
+    extras: Omit<SurfaceMap<T>[S]['env'], 'scope'>,
+    definition?: AnyPrimitiveDefinition
   ): SurfaceMap<T>[S]['output'] | undefined => {
     if (!isVisibleOnSurface(node, surface)) {
       return undefined;
     }
-    const definition = getDefinition(node);
-    const safeNode = sanitizeNode(definition, node);
+    const resolved = definition ?? getDefinition(node);
+    const safeNode = sanitizeNode(resolved, node);
     return safeNode === null
       ? undefined
-      : renderSanitized(surface, definition, safeNode, extras);
+      : renderSanitized(surface, resolved, safeNode, extras);
   };
 
   // `renderOn` for a node its sanitizer has already run on.
@@ -259,13 +224,35 @@ export const createPrimitiveDispatcher = <
   const renderMarkdownContent = (node: TNode): MarkdownContent =>
     renderOn('markdown', node, {}) ?? [];
 
+  const renderSlackAsset = (
+    definition: AnyPrimitiveDefinition,
+    node: TNode,
+    assets: SlackAssetCollector
+  ): readonly T['slackBlock'][] => {
+    const safeNode = sanitizeNode(definition, node);
+    if (safeNode === null) {
+      return [];
+    }
+    const altText =
+      (isVisibleOnSurface(safeNode, 'text') &&
+        renderSanitized('text', definition, safeNode, {})) ||
+      node.type;
+    const ref = assets.allocate(safeNode, altText);
+    const block = {
+      type: 'image',
+      alt_text: altText,
+      slack_file: { ref },
+    } satisfies SlackImageBlock;
+    return asSlackPayload<T['slackBlock']>([block]);
+  };
+
   const renderMarkdown = (node: TNode): string =>
     serializeMarkdown(renderMarkdownContent(node));
 
   self = {
     definitions,
     getDefinition,
-    renderOn,
+    renderOn: (surface, node, extras) => renderOn(surface, node, extras),
     // `{}` only ever runs when the argument was optional, which
     // `ReactContextArg` allows exactly when `{}` is a complete context.
     renderReact: (node, ...context) =>
@@ -301,48 +288,29 @@ export const createPrimitiveDispatcher = <
       if (!isVisibleOnSurface(node, 'slack')) {
         return [];
       }
-      const assets = isSlackAssetCollector(collector) ? collector : undefined;
-      if (assets && isSlackAssetType?.(node.type)) {
-        const definition = getDefinition(node);
-        const safeNode = sanitizeNode(definition, node);
-        if (safeNode === null) {
-          return [];
-        }
-        const altText =
-          (isVisibleOnSurface(safeNode, 'text') &&
-            renderSanitized('text', definition, safeNode, {})) ||
-          node.type;
-        const ref = assets.allocate(safeNode, altText);
-        const block = {
-          type: 'image',
-          alt_text: altText,
-          slack_file: { ref },
-        } satisfies SlackImageBlock;
-        return asSlackPayload<T['slackBlock']>([block]);
-      }
       const definition = getDefinition(node);
-      const slackRenderer = definition.renderers.slack as
-        Renderer<TNode, 'slack', T> | undefined;
-      if (!slackRenderer) {
+      if (isSlackAssetCollector(collector) && isSlackAssetType?.(node.type)) {
+        return renderSlackAsset(definition, node, collector);
+      }
+      if (!definition.renderers.slack) {
         // Degrading here rather than in the envelope is what reaches nested
         // children: a container's `slack` renderer recurses through this
         // method, and the envelope only ever sees the container's own output.
         return asSlackPayload<T['slackBlock']>(
-          markdownContentToSlackBlocks(renderMarkdownContent(node), options)
+          markdownContentToSlackBlocks(
+            renderOn('markdown', node, {}, definition) ?? [],
+            options
+          )
         );
-      }
-      const safeNode = sanitizeNode(definition, node);
-      if (safeNode === null) {
-        return [];
       }
       const extras = {
         ...(collector === undefined ? {} : { collector }),
         ...(options.baseUrl === undefined ? {} : { baseUrl: options.baseUrl }),
       };
-      const rendered = slackRenderer(safeNode, {
-        ...extras,
-        scope: scopeFor('slack', extras),
-      });
+      const rendered = renderOn('slack', node, extras, definition);
+      if (rendered === undefined) {
+        return [];
+      }
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },
     estimateSnapshotHeight: (node) => {

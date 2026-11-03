@@ -1,0 +1,60 @@
+```json
+{
+  "type": "view",
+  "title": "March 4 incident timeline",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Incident review",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "An expired certificate took 66 minutes to clear",
+          "lede": "From the first alert at 02:14 to all clear at 03:20 on March 4."
+        },
+        {
+          "type": "slideTimeline",
+          "items": [
+            {
+              "label": "02:14",
+              "channel": "Alert",
+              "heading": "Alert fired",
+              "body": "Monitoring raised the first alert."
+            },
+            {
+              "label": "02:16",
+              "channel": "Page",
+              "heading": "On-call paged",
+              "body": "The on-call engineer was paged two minutes later."
+            },
+            {
+              "label": "02:51",
+              "channel": "Diagnosis",
+              "heading": "Root cause found",
+              "body": "An expired TLS certificate."
+            },
+            {
+              "label": "03:05",
+              "channel": "Fix",
+              "heading": "Fix deployed",
+              "body": "The certificate fix went out."
+            },
+            {
+              "label": "03:20",
+              "channel": "Resolved",
+              "heading": "All clear",
+              "body": "Service confirmed healthy.",
+              "current": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

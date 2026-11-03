@@ -195,7 +195,7 @@ Each primitive then names only `TNode`, and `createPrimitiveDispatcher<TNode, Sl
 
 **The body-node union is supplied per composition**, not held in a module-global. `z.lazy` resolves its getter once and memoizes, so whichever composition parsed first would freeze the union for every later one. [Composition and validation](composition.md) covers the per-composition instances that use that memoization instead of fighting it.
 
-**`slack` is declared method-style** because method parameters are checked bivariantly, and that is what lets a pack narrow the collector's node type.
+**`Renderers` is mapped from `SurfaceMap` as method signatures**, so each `env` bag is written once and method parameters stay bivariant, which is what lets a pack narrow the collector's node type.
 
 **`snapshot` stays a separate surface** even though it shares a renderer, for two reasons: a node can be hidden from snapshots alone with `surfaces: ['react']`, and a [Frame](frame.md) needs a document to draw the body inside.
 

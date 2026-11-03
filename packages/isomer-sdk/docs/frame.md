@@ -25,7 +25,7 @@ A vocabulary (which primitives exist — additive, any number) and a document (w
 
 ## The two halves of drawing
 
-`Frame.wrap` draws only the surround. `BoundFrame.render` walks the composition's body through the runtime-wide dispatcher first — keyed on node type, never needing to know which pack a node came from — and hands `Frame.wrap` the already-rendered result.
+`Frame.wrap` draws only the surround. `BoundFrame.render` walks the composition's body through the runtime-wide dispatcher first, one `FrameDispatcher.renderSnapshotNode(node, key)` per node — keyed on node type, never needing to know which pack a node came from — and hands `Frame.wrap` the already-rendered result.
 
 What the frame is told is deliberately narrow:
 

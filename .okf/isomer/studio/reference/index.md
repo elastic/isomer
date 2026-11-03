@@ -6,5 +6,5 @@ Directory: `studio/reference/`
 
 | Title | Type | Description |
 |-------|------|-------------|
-| [Public contract](public-contract.md) | Reference | Published, ESM only, a bin plus defineStudioConfig and adoptStylesheet, React... |
+| [Public contract](public-contract.md) | Reference | Published, a CommonJS bin plus defineStudioConfig and adoptStylesheet, React ... |
 

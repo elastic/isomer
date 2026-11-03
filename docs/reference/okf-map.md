@@ -8,7 +8,7 @@ description: Generated map of the Isomer OKF concept graph.
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
 - Concepts: 68
-- Links: 163
+- Links: 158
 - Isolated concepts: 0
 
 ## Graph
@@ -124,7 +124,6 @@ flowchart LR
     runtime_concepts_authoring_context --> evals_concepts_scoring
     runtime_concepts_authoring_context --> runtime_concepts_view_registry
     runtime_concepts_authoring_context --> sdk_concepts_authoring
-    runtime_concepts_authoring_context --> sdk_concepts_composition
     runtime_concepts_frame --> runtime_concepts_runtime
     runtime_concepts_frame --> runtime_concepts_surfaces
     runtime_concepts_frame --> slides_concepts_document
@@ -135,7 +134,6 @@ flowchart LR
     runtime_concepts_runtime --> runtime_playbooks_create_a_runtime
     runtime_concepts_style_adapters --> runtime_concepts_packs
     runtime_concepts_style_adapters --> sdk_concepts_rendering
-    runtime_concepts_surfaces --> image_takumi_concepts_raster
     runtime_concepts_surfaces --> runtime_concepts_frame
     runtime_concepts_surfaces --> runtime_concepts_runtime
     runtime_concepts_view_registry --> runtime_concepts_authoring_context
@@ -159,7 +157,6 @@ flowchart LR
     sdk_concepts_dispatch --> sdk_concepts_rendering
     sdk_concepts_packs --> runtime_concepts_packs
     sdk_concepts_packs --> sdk_concepts_primitives
-    sdk_concepts_packs --> sdk_concepts_rendering
     sdk_concepts_packs --> sdk_playbooks_define_a_pack
     sdk_concepts_pipeline --> sdk_entry_points_root
     sdk_concepts_pipeline --> sdk_reference_public_contract
@@ -183,7 +180,6 @@ flowchart LR
     sdk_entry_points_root --> sdk_concepts_pipeline
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
-    sdk_entry_points_root --> sdk_entry_points_react
     sdk_entry_points_root --> sdk_entry_points_testing
     sdk_entry_points_slack --> sdk_concepts_packs
     sdk_entry_points_slack --> sdk_concepts_rendering
@@ -225,7 +221,6 @@ flowchart LR
     studio_concepts_init --> studio_entry_points_root
     studio_concepts_static_png --> studio_concepts_config_contract
     studio_entry_points_root --> studio_concepts_config_contract
-    studio_entry_points_root --> studio_concepts_init
     studio_entry_points_root --> studio_reference_public_contract
     studio_playbooks_run_in_ci --> studio_entry_points_root
     studio_reference_public_contract --> studio_concepts_init

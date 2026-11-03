@@ -29,14 +29,20 @@ import { scalePx } from '../theme/scale';
 
 import { example as agendaExample } from './agenda_slide/examples';
 import { example as closingExample } from './closing_slide/examples';
-import { frameBodyLayout, openBody, slideLayout, withLayout } from './layout';
+import {
+  frameBodyLayout,
+  openBody,
+  referenceRoom,
+  slideLayout,
+  withLayout,
+} from './layout';
 import { example as sectionExample } from './section_slide/examples';
 import { lineBox, trackWidth } from './size';
 import { referenceHeading } from './size.fixtures';
 import { react as frameReact } from './slide_frame/react';
 import type { SlideFrameNode } from './slide_frame/types';
 import { tallestExample } from './slide_heading/examples';
-import { headingRoom, referenceRoom } from './slide_heading/fit';
+import { headingRoom } from './slide_heading/fit';
 import type { SlideHeadingNode } from './slide_heading/schema';
 import { paneWidths } from './slide_split_layout/pane_layout';
 import { react as splitReact } from './slide_split_layout/react';

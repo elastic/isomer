@@ -9,35 +9,43 @@ import { createChildNodeWalker } from '@elastic/isomer-sdk';
 
 import type { EvalRuntime } from '../types';
 
+/** A node to walk, or the end of one whose children have all been walked. */
+type Step = { enter: unknown } | { leave: object };
+
 /**
- * The node types under a value's `body`, reached through pack child hooks; data fields named `type` are not nodes.
+ * The type of every node under a value's `body`, once per occurrence, reached through pack child hooks; data fields named `type` are not nodes.
  *
- * Iterative, so an arbitrarily deep answer cannot overflow the stack.
+ * A node reachable twice counts twice, as its JSON would; one that contains itself is walked once. Iterative, so an arbitrarily deep answer cannot overflow the stack.
  */
-export const collectNodeTypes = (
+export const walkNodeTypes = (
   runtime: Pick<EvalRuntime, 'primitives'>,
   value: unknown
-): Set<string> => {
-  const found = new Set<string>();
+): string[] => {
+  const found: string[] = [];
   const body = (value as { body?: unknown } | null | undefined)?.body;
   const walk = createChildNodeWalker(runtime.primitives);
-  const pending: unknown[] = Array.isArray(body)
-    ? [...(body as unknown[])]
+  const steps: Step[] = Array.isArray(body)
+    ? (body as unknown[]).map((node) => ({ enter: node })).reverse()
     : [];
-  const seen = new WeakSet<object>();
-  while (pending.length > 0) {
-    const node = pending.pop();
-    if (!node || typeof node !== 'object' || seen.has(node)) {
+  const path = new Set<object>();
+  for (let step = steps.pop(); step !== undefined; step = steps.pop()) {
+    if ('leave' in step) {
+      path.delete(step.leave);
       continue;
     }
-    seen.add(node);
+    const { enter: node } = step;
+    if (!node || typeof node !== 'object' || path.has(node)) {
+      continue;
+    }
     const { type } = node as { type?: unknown };
     if (typeof type === 'string') {
-      found.add(type);
+      found.push(type);
     }
+    path.add(node);
+    steps.push({ leave: node });
     try {
       for (const { node: child } of walk(node)) {
-        pending.push(child);
+        steps.push({ enter: child });
       }
     } catch {
       // Child hooks require schema-valid nodes; malformed branches have no known child positions.
@@ -46,3 +54,9 @@ export const collectNodeTypes = (
   }
   return found;
 };
+
+/** The distinct node types {@link walkNodeTypes} finds. */
+export const collectNodeTypes = (
+  runtime: Pick<EvalRuntime, 'primitives'>,
+  value: unknown
+): Set<string> => new Set(walkNodeTypes(runtime, value));

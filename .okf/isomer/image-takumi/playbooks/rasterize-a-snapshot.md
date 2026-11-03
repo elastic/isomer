@@ -16,10 +16,7 @@ sources:
 
 # Steps
 
-1. Install `@elastic/isomer-image-takumi`; it has no React peers, since it reads the snapshot's `html`.
-2. Render with `runtime.surfaces.snapshot.render(composition)`.
-3. Construct `createTakumiImageBackend({ fonts })` with the faces the pack's theme names, and pass its `formats` to `createIsomerRuntime({ formats })` so `getCapabilities()` reports them.
-4. Call `.png(...)`, with `scale: 2` for a 2x raster of the same layout, or `.svg(...)`; or `renderPng(runtime, composition, backend)` for the bytes beside the validation findings.[^docs][^backend]
+Render with the `snapshot` surface, build the backend with the theme's fonts, pass its `formats` to the runtime, and call `png`, `svg`, or `renderPng`. See the package docs and the backend source.[^docs][^backend]
 
 Related: [raster](/image-takumi/concepts/raster.md), [fonts](/image-takumi/concepts/fonts.md).
 

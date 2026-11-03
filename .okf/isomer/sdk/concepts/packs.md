@@ -23,19 +23,13 @@ sources:
 
 # Definition
 
-A pack is a vocabulary as a value: `id`, `primitives`, optional `surfaces`, `enhancements`, `slackAssetTypes`, `styleAdapter`, and `styleCollector`. `definePrimitivePack` builds one and checks it; its type argument is the palette the pack's frames must supply. Node types must be unique within a pack; `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE` on a repeat, and `composePacks` reports the cross-pack case. `definePrimitivePack` also throws `UNKNOWN_PRIMITIVE_TYPE` for a `slackAssetTypes` entry the pack does not register, and `composePacks` throws `DUPLICATE_PACK_ID` for two packs sharing an `id`.[^docs][^pack]
+A pack is a vocabulary as a value, built and checked by `definePrimitivePack`, with its `styleCollector` derived from its style adapter unless overridden. See the package doc on the pack contract.[^docs]
 
-`authoring.groups` is the pack's only source of index headings; a primitive's catalog names none. `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a group naming an unregistered type, `DUPLICATE_PRIMITIVE_TYPE` for a type in two groups, and `INVALID_PACK_GROUPS` for a title used twice or titled `UNCATEGORIZED_GROUP_TITLE` (`'Uncategorized'`), the heading the index lists ungrouped types under.[^pack]
+`definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a group naming an unregistered type, `DUPLICATE_PRIMITIVE_TYPE` for a type in two groups, and `INVALID_PACK_GROUPS` for a title used twice or titled `UNCATEGORIZED_GROUP_TITLE` (`'Uncategorized'`), the heading the index lists ungrouped types under.[^pack]
 
-An enhancement may declare optional `name` and `description` for host UI; ids stay the keys for render options. Its optional `script` is a function body with `root`, the render's `.isomer` section, in scope. It addresses markup through `data-*` attributes, never uses `document.currentScript`, and dispatches host events with `bubbles: true` and `composed: true`. An enhancement the host drives has no `script`, and one that finds nodes declares `anchors: true`. See [rendering](/sdk/concepts/rendering.md) for who runs it.[^docs][^enhancements]
-
-`styleCollector` names the collector shape `collectStyles` hooks mutate. `definePrimitivePack` derives it from `styleAdapter.styleCollector` unless the pack sets it. The SDK ships no adapter for any CSS engine and does not depend on `@elastic/distillate`.
+The SDK ships no adapter for any CSS engine and does not depend on `@elastic/distillate`.
 
 A pack exposes `icons`, each primitive's `icon` by type for the primitives that declare one, and `composePacks` merges them across packs. Both are frozen null-prototype dictionaries, so a type named `__proto__` is an ordinary key and an absent type such as `constructor` reads `undefined`.[^pack]
-
-`definePrimitivePack<T>(input)` returns `PrimitivePack<T>`, whose phantom `__theme` carries the palette its frames must supply. Bare `PrimitivePack` is `PrimitivePack<unknown>`, which asks nothing of a frame; `AnyPrimitivePack` (`PrimitivePack<never>`) is the runtime's storage form.
-
-The registry array and the body-node union are both hand-written. `assertPackRegistrationComplete` fails when a primitives subdirectory is absent from the registry. A directory missing from both lists leaves them agreeing, so it compiles and every other test passes. Deriving the union from the registry does not compile (`TS7022` through the container primitives). `buildJsxShim` already derives the JSX front from the registry value.[^registration]
 
 Composing packs into a runtime is the runtime's job. See [runtime packs](/runtime/concepts/packs.md).
 
@@ -44,7 +38,3 @@ Related: [primitives](/sdk/concepts/primitives.md), [define a pack](/sdk/playboo
 [^docs]: Pack contract
 
 [^pack]: definePrimitivePack
-
-[^registration]: Pack registration check
-
-[^enhancements]: EnhancementDefinition

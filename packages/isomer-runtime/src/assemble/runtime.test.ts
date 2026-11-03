@@ -28,7 +28,6 @@ import {
 } from '@elastic/isomer-sdk';
 import type { HTMLRenderOptions } from '@elastic/isomer-sdk/html';
 import { md } from '@elastic/isomer-sdk/markdown';
-import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { z } from 'zod';
@@ -431,12 +430,11 @@ describe('createIsomerRuntime', () => {
 
     const uploaded = runtime.surfaces.slack.renderNode(node, {
       collectAssets: true,
-      assetPrefix: 'chart',
       text: 'A chart',
     });
     expect(uploaded.text).toBe('A chart');
     expect(uploaded.assets).toEqual([
-      expect.objectContaining({ ref: 'chart-0', node }),
+      expect.objectContaining({ ref: 'asset-0', node }),
     ]);
     expect(uploaded.blocks).toEqual([
       expect.objectContaining({ type: 'image' }),
@@ -1176,382 +1174,111 @@ describe('createIsomerRuntime', () => {
     );
   });
 
-  // A host loading two styled packs should not have to know how either one
-  // produces CSS. Each adapter owns its own handles, so the runtime routes
-  // rather than asking the host to pick.
-  describe('two packs each declaring a styleAdapter', () => {
-    /** Stands in for one Distillate distillery: collects only the handles it owns. */
-    const scopedAdapter = (prefix: string) => ({
-      ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
-      createCollector: () => ({ keys: [] as string[] }),
-      createRenderContext: (collector: { keys: string[] }) => ({
-        resolveClassName: (...handles: StyleHandle[]) => {
-          collector.keys.push(...handles.map(({ key }) => key));
-          return handles.map(({ key }) => key).join(' ');
-        },
-      }),
-      renderStyles: (collector: { keys: string[] }) =>
-        collector.keys.map((key) => `.${key}{}`).join(''),
+  describe('one styling pack per runtime', () => {
+    const adapter = (css: string) => ({
+      createCollector: () => ({ css }),
+      createRenderContext: () => ({}),
+      renderStyles: (collector: { css: string }) => collector.css,
     });
 
-    const styledPacks = (
-      firstAdapter: unknown = scopedAdapter('one.'),
-      secondAdapter: unknown = scopedAdapter('two.')
-    ) => [
+    const styledPacks = () => [
       definePrimitivePack({
         id: 'test.one',
         surfaces: [],
         primitives: [notePrimitive],
-        styleAdapter: firstAdapter as never,
+        styleAdapter: adapter('.one {}'),
       }),
       definePrimitivePack({
         id: 'test.two',
         surfaces: [],
         primitives: [boldPrimitive],
-        styleAdapter: secondAdapter as never,
+        styleAdapter: adapter('.two {}'),
       }),
     ];
 
-    it('constructs without a host styleAdapter', () => {
-      const runtime = createIsomerRuntime({ packs: styledPacks() });
-
-      expect(runtime.surfaces.html.render(view('ok')).css).toBe('');
-    });
-
-    it('emits both stylesheets, routing each handle to its owner', () => {
-      const first = scopedAdapter('one.');
-      const second = scopedAdapter('two.');
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(first, second),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) => {
-              const { resolveClassName } = context as {
-                resolveClassName?: (...handles: StyleHandle[]) => string;
-              };
-              return createElement(
-                'span',
-                {
-                  className: resolveClassName?.(
-                    { key: 'one.root', readableName: 'one-root' },
-                    { key: 'two.root', readableName: 'two-root' }
-                  ),
-                },
-                (node as NoteNode).text
-              );
-            },
-          },
-        },
-      });
-
-      const result = runtime.surfaces.html.render(view('ok'));
-      expect(result.body).toContain('class="one.root two.root"');
-      expect(result.css).toBe('.one.root{}.two.root{}');
-    });
-
-    it('reads a key a part owns before one a later part only inherits, as a spread did', () => {
-      class Inherits {
-        label(): string {
-          return 'method';
-        }
-      }
-      const adapterWith = (prefix: string, context: () => object) => ({
-        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
-        createCollector: () => ({}),
-        createRenderContext: context,
-        renderStyles: () => '',
-      });
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(
-          adapterWith('one.', () => ({ label: 'first' })),
-          adapterWith('two.', () => new Inherits())
-        ),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) =>
-              createElement(
-                'span',
-                { 'data-label': String((context as { label: unknown }).label) },
-                (node as NoteNode).text
-              ),
-          },
-        },
-      });
-
-      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
-        'data-label="first"'
-      );
-    });
-
-    it('keeps a callable part context’s members and class names', () => {
-      const callable = (prefix: string) =>
-        Object.assign(() => prefix, {
-          brand: `${prefix}brand`,
-          resolveClassName: (...handles: StyleHandle[]) =>
-            handles.map(({ key }) => key).join(' '),
-        });
-      const adapterWith = (prefix: string) => ({
-        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
-        createCollector: () => ({}),
-        createRenderContext: () => callable(prefix),
-        renderStyles: () => '',
-      });
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(adapterWith('one.'), adapterWith('two.')),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) => {
-              const part = context as ReturnType<typeof callable>;
-              return createElement(
-                'span',
-                {
-                  className: part.resolveClassName(
-                    { key: 'one.root' } as StyleHandle,
-                    { key: 'two.root' } as StyleHandle
-                  ),
-                  'data-brand': part.brand,
-                },
-                (node as NoteNode).text
-              );
-            },
-          },
-        },
-      });
-
-      const { body } = runtime.surfaces.html.render(view('ok'));
-      expect(body).toContain('class="one.root two.root"');
-      expect(body).toContain('data-brand="two.brand"');
-    });
-
-    it('reads a key a part holds enumerably before one another part hides, as a spread did', () => {
-      const adapterWith = (prefix: string, context: () => object) => ({
-        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
-        createCollector: () => ({}),
-        createRenderContext: context,
-        renderStyles: () => '',
-      });
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(
-          adapterWith('one.', () => ({ label: 'first' })),
-          adapterWith('two.', () =>
-            Object.defineProperty({}, 'label', {
-              value: 'hidden',
-              enumerable: false,
-            })
-          )
-        ),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) =>
-              createElement(
-                'span',
-                { 'data-label': String((context as { label: unknown }).label) },
-                (node as NoteNode).text
-              ),
-          },
-        },
-      });
-
-      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
-        'data-label="first"'
-      );
-    });
-
-    it('reads each part’s resolveClassName once per call', () => {
-      const counts = { reads: 0, calls: 0 };
-      const counted = {
-        get resolveClassName() {
-          counts.reads += 1;
-          return (...handles: StyleHandle[]) => {
-            counts.calls += 1;
-            return handles.map(({ key }) => key).join(' ');
-          };
-        },
-      };
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(
-          {
-            ownsHandle: (handle: StyleHandle) => handle.key.startsWith('one.'),
-            createCollector: () => ({}),
-            createRenderContext: () => counted,
-            renderStyles: () => '',
-          },
-          scopedAdapter('two.')
-        ),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) =>
-              createElement(
-                'span',
-                {
-                  className: (
-                    context as {
-                      resolveClassName: (...handles: StyleHandle[]) => string;
-                    }
-                  ).resolveClassName({ key: 'one.root' } as StyleHandle),
-                },
-                (node as NoteNode).text
-              ),
-          },
-        },
-      });
-
-      expect(runtime.surfaces.html.render(view('ok')).body).toContain(
-        'class="one.root"'
-      );
-      expect(counts.calls).toBeGreaterThan(0);
-      expect(counts.reads).toBe(counts.calls);
-    });
-
-    it('keeps each part’s class-instance context working: methods, private state and own fields', () => {
-      class PartContext {
-        readonly #keys: string[];
-        readonly #label: string;
-        readonly brand: string;
-
-        constructor(keys: string[], label: string) {
-          this.#keys = keys;
-          this.#label = label;
-          this.brand = `${label}-brand`;
-        }
-
-        resolveClassName(...handles: StyleHandle[]): string {
-          this.#keys.push(...handles.map(({ key }) => key));
-          return handles.map(({ key }) => key).join(' ');
-        }
-
-        label(): string {
-          return this.#label;
-        }
-      }
-      const instanceAdapter = (prefix: string) => ({
-        ownsHandle: (handle: StyleHandle) => handle.key.startsWith(prefix),
-        createCollector: () => ({ keys: [] as string[] }),
-        createRenderContext: (collector: { keys: string[] }) =>
-          new PartContext(collector.keys, prefix),
-        renderStyles: (collector: { keys: string[] }) =>
-          collector.keys.map((key) => `.${key}{}`).join(''),
-      });
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(instanceAdapter('one.'), instanceAdapter('two.')),
-        rendererOverrides: {
-          note: {
-            react: (node, { context }) => {
-              const part = context as PartContext;
-              return createElement(
-                'span',
-                {
-                  className: part.resolveClassName(
-                    { key: 'one.root', readableName: 'one-root' },
-                    { key: 'two.root', readableName: 'two-root' }
-                  ),
-                  'data-label': part.label(),
-                  'data-brand': part.brand,
-                },
-                (node as NoteNode).text
-              );
-            },
-          },
-        },
-      });
-
-      const result = runtime.surfaces.html.render(view('ok'));
-      expect(result.body).toContain('class="one.root two.root"');
-      expect(result.body).toContain('data-label="two."');
-      expect(result.body).toContain('data-brand="two.-brand"');
-      expect(result.css).toBe('.one.root{}.two.root{}');
-    });
-
-    it('scopes each pack adapter script, so two can declare the same const', () => {
-      const scripted = (prefix: string) => ({
-        ...scopedAdapter(`${prefix}.`),
-        getScriptText: () =>
-          `const seen = root.seen; seen.push('${prefix}'); return;`,
-      });
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(scripted('one'), scripted('two')),
-      });
-      const root = { seen: [] as string[], querySelector: () => null };
-
-      runEnhancementScript(
-        runtime.surfaces.html.render(view('ok'), { scripts: 'host' }).js,
-        root as unknown as Element
-      );
-
-      expect(root.seen).toEqual(['one', 'two']);
-    });
-
-    it('throws when a pack adapter cannot say which handles it owns', () => {
-      const opaque = {
-        createCollector: () => ({}),
-        createRenderContext: () => ({}),
-        renderStyles: () => '',
-      };
-
+    it('throws when two packs each declare a styleAdapter', () => {
       try {
-        createIsomerRuntime({
-          packs: styledPacks(scopedAdapter('one.'), opaque),
-        });
+        createIsomerRuntime({ packs: styledPacks() });
         expect.unreachable();
       } catch (error) {
         expect(error).toMatchObject({
           name: 'IsomerError',
           code: 'AMBIGUOUS_STYLE_ADAPTER',
         });
-        expect((error as Error).message).toContain('"test.two"');
+        expect((error as Error).message).toContain('"test.one", "test.two"');
       }
     });
 
-    // Each pack answers only to its own adapter here, because the composite
-    // routes a pack's types to the part its adapter declared. Different
-    // collectors are therefore fine — the packs never share one.
-    it('accepts two packs collecting into different collectors', () => {
-      const styledNote = definePrimitive<NoteNode>({
-        type: 'note',
-        catalog: notePrimitive.catalog,
-        examples: notePrimitive.examples,
-        schema: notePrimitive.schema,
-        renderers: notePrimitive.renderers,
-        collectStyles: () => undefined,
+    it('lets one host adapter replace both pack adapters', () => {
+      const runtime = createIsomerRuntime({
+        packs: styledPacks(),
+        styleAdapter: adapter('.chosen {}'),
       });
 
+      expect(runtime.surfaces.html.render(view('ok')).css).toBe('.chosen {}');
+    });
+
+    it('serves an adapterless pack with the one pack adapter', () => {
+      const keys: string[] = [];
       const runtime = createIsomerRuntime({
         packs: [
           definePrimitivePack({
             id: 'test.one',
             surfaces: [],
-            primitives: [styledNote],
+            primitives: [notePrimitive],
             styleAdapter: {
-              ...scopedAdapter('one.'),
-              styleCollector: 'distillate',
+              createCollector: () => ({}),
+              createRenderContext: () => ({
+                resolveClassName: (...handles: StyleHandle[]) => {
+                  keys.push(...handles.map(({ key }) => key));
+                  return 'styled';
+                },
+              }),
+              renderStyles: () => '.styled {}',
             },
-            styleCollector: 'distillate',
           }),
           definePrimitivePack({
             id: 'test.two',
             surfaces: [],
-            primitives: [boldPrimitive],
-            styleAdapter: {
-              ...scopedAdapter('two.'),
-              styleCollector: 'emotion',
-            },
-            styleCollector: 'emotion',
+            primitives: [
+              definePrimitive<BoldNode>({
+                ...boldPrimitive,
+                renderers: {
+                  ...boldPrimitive.renderers,
+                  react: (node, { context }) => {
+                    const { resolveClassName } = context as {
+                      resolveClassName: (...handles: StyleHandle[]) => string;
+                    };
+                    return createElement(
+                      'b',
+                      {
+                        className: resolveClassName({
+                          key: 'bold',
+                          readableName: 'bold',
+                        }),
+                      },
+                      node.text
+                    );
+                  },
+                },
+              }),
+            ],
           }),
         ],
       });
 
-      expect(runtime.surfaces.html.render(view('ok')).css).toBe('');
+      const result = runtime.surfaces.html.render({
+        type: 'view',
+        body: [{ type: 'bold', text: 'b' } as BoldNode],
+      });
+      expect(result.body).toContain('class="styled"');
+      expect(result.css).toBe('.styled {}');
+      expect(new Set(keys)).toEqual(new Set(['bold']));
     });
 
-    // A pack with no adapter of its own has no part to be routed to, so every
-    // adapter in the composite can reach its hooks — and each must agree.
-    it('throws when an adapterless pack disagrees with a pack adapter', () => {
+    it('throws when an adapterless pack disagrees with the pack adapter', () => {
       const styledBold = definePrimitive<BoldNode>({
-        type: 'bold',
-        catalog: boldPrimitive.catalog,
-        examples: boldPrimitive.examples,
-        schema: boldPrimitive.schema,
-        renderers: boldPrimitive.renderers,
+        ...boldPrimitive,
         collectStyles: () => undefined,
       });
 
@@ -1562,10 +1289,7 @@ describe('createIsomerRuntime', () => {
               id: 'test.one',
               surfaces: [],
               primitives: [notePrimitive],
-              styleAdapter: {
-                ...scopedAdapter('one.'),
-                styleCollector: 'distillate',
-              },
+              styleAdapter: { ...adapter(''), styleCollector: 'distillate' },
             }),
             definePrimitivePack({
               id: 'test.two',
@@ -1585,144 +1309,6 @@ describe('createIsomerRuntime', () => {
           '"test.one"\'s styleAdapter'
         );
       }
-    });
-
-    // Regression: each part's adapter walks the whole body, so an unfiltered
-    // dispatcher ran pack B's hook against pack A's collector — B's rules
-    // landed in A's stylesheet and `renderStyles` emitted them under both.
-    it('collects each pack into its own part only', () => {
-      const collectingAdapter = (prefix: string) => ({
-        ...scopedAdapter(prefix),
-        collectViewStyles: (
-          composition: { body: readonly PrimitiveNode[] },
-          dispatcher: {
-            collectStyles: (
-              node: PrimitiveNode,
-              collector: { keys: string[] },
-              context: Record<string, never>
-            ) => void;
-          },
-          collector: { keys: string[] }
-        ) => {
-          for (const node of composition.body) {
-            dispatcher.collectStyles(node, collector, {});
-          }
-        },
-      });
-      const collectingNote = definePrimitive<NoteNode>({
-        type: 'note',
-        catalog: notePrimitive.catalog,
-        examples: notePrimitive.examples,
-        schema: notePrimitive.schema,
-        renderers: notePrimitive.renderers,
-        collectStyles: (_node, { styles }) => {
-          (styles as { keys: string[] }).keys.push('note');
-        },
-      });
-      const collectingBold = definePrimitive<BoldNode>({
-        type: 'bold',
-        catalog: boldPrimitive.catalog,
-        examples: boldPrimitive.examples,
-        schema: boldPrimitive.schema,
-        renderers: boldPrimitive.renderers,
-        collectStyles: (_node, { styles }) => {
-          (styles as { keys: string[] }).keys.push('bold');
-        },
-      });
-
-      const runtime = createIsomerRuntime({
-        packs: [
-          definePrimitivePack({
-            id: 'test.one',
-            surfaces: [],
-            primitives: [collectingNote],
-            styleAdapter: collectingAdapter('one.'),
-          }),
-          definePrimitivePack({
-            id: 'test.two',
-            surfaces: [],
-            primitives: [collectingBold],
-            styleAdapter: collectingAdapter('two.'),
-          }),
-        ],
-      });
-
-      // One `note` and one `bold`: each type is collected once, by its own
-      // pack's adapter, so neither key appears in both stylesheets.
-      const result = runtime.surfaces.html.render({
-        type: 'view' as const,
-        body: [
-          { type: 'note', text: 'n' } as NoteNode,
-          { type: 'bold', text: 'b' } as BoldNode,
-        ],
-      });
-      expect(result.css).toBe('.note{}.bold{}');
-    });
-
-    it('lets one host adapter replace both pack adapters', () => {
-      const runtime = createIsomerRuntime({
-        packs: styledPacks(),
-        styleAdapter: {
-          createCollector: () => ({ css: '.chosen {}' }),
-          createRenderContext: () => ({}),
-          renderStyles: (collector: { css: string }) => collector.css,
-        },
-      });
-
-      expect(runtime.surfaces.html.render(view('ok')).css).toBe('.chosen {}');
-    });
-
-    it('resolves a handle no pack adapter owns through every part', () => {
-      const taggingAdapter = (prefix: string) => ({
-        ...scopedAdapter(prefix),
-        createRenderContext: (collector: { keys: string[] }) => ({
-          resolveClassName: (...handles: StyleHandle[]) => {
-            collector.keys.push(...handles.map(({ key }) => key));
-            return handles.map(({ key }) => `${prefix}${key}`).join(' ');
-          },
-        }),
-      });
-      const classedPlain = definePrimitive<PlainNode>({
-        type: 'plain',
-        catalog: plainPrimitive.catalog,
-        examples: plainPrimitive.examples,
-        schema: plainPrimitive.schema,
-        renderers: {
-          ...plainPrimitive.renderers,
-          react: (node, { context }) => {
-            const { resolveClassName } = context as {
-              resolveClassName?: (...handles: StyleHandle[]) => string;
-            };
-            return createElement(
-              'span',
-              {
-                className: resolveClassName?.({
-                  key: 'shared',
-                  readableName: 'shared',
-                }),
-              },
-              node.text
-            );
-          },
-        },
-      });
-      const runtime = createIsomerRuntime({
-        packs: [
-          ...styledPacks(taggingAdapter('one.'), taggingAdapter('two.')),
-          definePrimitivePack({
-            id: 'test.three',
-            surfaces: [],
-            primitives: [classedPlain],
-          }),
-        ],
-      });
-
-      const result = runtime.surfaces.html.render({
-        type: 'view',
-        body: [{ type: 'plain', text: 'p' } as PlainNode],
-      });
-      expect(result.body).toContain('class="one.shared two.shared"');
-      expect(result.css).toBe('.shared{}.shared{}');
     });
   });
 

@@ -5,13 +5,8 @@
  * 2.0.
  */
 
+import { alignRows, percent, rounded } from './format';
 import type { EvalReport } from './types';
-
-const percent = (part: number, whole: number): string =>
-  whole === 0 ? '—' : `${Math.round((part / whole) * 100)}%`;
-
-const round2 = (value: number | undefined): string =>
-  value === undefined ? '—' : value.toFixed(2);
 
 /**
  * The report as text.
@@ -28,14 +23,17 @@ export const formatReport = ({ results, totals }: EvalReport): string => {
       'valid after retry',
       `${totals.validAfterRetry} (${percent(totals.validAfterRetry, totals.cases)})`,
     ],
-    ['mean selection F1', round2(totals.meanSelectionF1)],
+    ['mean selection F1', rounded(totals.meanSelectionF1, 2)],
+    [
+      'expected primitive',
+      `${totals.expectedHits} of ${totals.expectedCases} (${percent(totals.expectedHits, totals.expectedCases)})`,
+    ],
   ];
   if (totals.answerability) {
     const { yes, partial, no } = totals.answerability;
     rows.push(['answerability', `yes ${yes} / partial ${partial} / no ${no}`]);
   }
-  const width = Math.max(...rows.map(([label]) => label.length)) + 1;
-  const lines = rows.map(([label, value]) => `${label.padEnd(width)}${value}`);
+  const lines = alignRows(rows);
 
   const failures = results.filter(({ validity }) => !validity.valid);
   if (failures.length > 0) {

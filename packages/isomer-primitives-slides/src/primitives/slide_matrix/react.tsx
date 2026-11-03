@@ -12,18 +12,16 @@ import { cls } from '../../render/cls';
 import type { SlideReactEnv, SlideRenderContext } from '../../render/context';
 import { marksReact } from '../../render/marks';
 import { ToneCue } from '../../render/tone_cue';
-import { matrixFit } from '../../theme/components/matrix';
 import { slideDistillery } from '../../theme/distillery';
 import { layoutModule } from '../../theme/modules';
 import {
   countKey,
   type SlideMatrixMark,
   slideMatrixMarks,
-  type SlideSize,
 } from '../../theme/variants';
 import { slideLayout } from '../layout';
-import { sizeForLoad } from '../size';
 
+import { matrixStep } from './fit';
 import type { SlideMatrixNode } from './schema';
 import { matrixModule } from './styles';
 
@@ -56,22 +54,15 @@ const Mark = ({
   );
 };
 
-export const matrixSize = (
-  { rows, size }: Pick<SlideMatrixNode, 'rows' | 'size'>,
-  crowding?: number
-): SlideSize => sizeForLoad(size, rows.length, matrixFit, crowding);
-
 /** React renderer for {@link SlideMatrixNode}. */
 export const react = (
-  { type, columns, rows, highlight, legend = true, size }: SlideMatrixNode,
+  node: SlideMatrixNode,
   { context }: SlideReactEnv
 ): ReactNode => {
+  const { type, columns, rows, highlight, legend = true } = node;
   const { handles: matrix } = matrixModule;
   const tracks = matrix.columns[countKey(columns.length)];
-  const padding =
-    matrix.cellPadding[
-      matrixSize({ rows, size }, slideLayout(context).crowding)
-    ];
+  const padding = matrix.cellPadding[matrixStep(node, slideLayout(context))];
   const used = slideMatrixMarks.filter((kind) =>
     rows.some(({ marks }) => marks.includes(kind))
   );

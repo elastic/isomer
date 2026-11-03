@@ -1,0 +1,46 @@
+```json
+{
+  "type": "view",
+  "title": "Quarter at a glance",
+  "body": [
+    {
+      "type": "slideFrame",
+      "tone": "page",
+      "logo": false,
+      "footer": {
+        "section": "Quarterly review",
+        "sectionNumber": "01"
+      },
+      "body": [
+        {
+          "type": "slideHeading",
+          "title": "Search got **twice as fast** while staying up",
+          "lede": "The quarter’s headline numbers."
+        },
+        {
+          "type": "slideStats",
+          "items": [
+            {
+              "value": "99.95",
+              "unit": "%",
+              "label": "Uptime",
+              "body": "Availability across the quarter."
+            },
+            {
+              "value": "180",
+              "unit": "ms",
+              "label": "p95 search latency",
+              "body": "Down from **420 ms** last quarter."
+            },
+            {
+              "value": "1.2M",
+              "label": "Daily active users",
+              "body": "People searching every day."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```

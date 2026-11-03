@@ -14,21 +14,25 @@ import {
 } from '../../theme/components/annotated_render';
 import { scalePx } from '../../theme/scale';
 import type { TypeRole } from '../../theme/type_role';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { lineBox, marksHeight, measureText, trackWidth } from '../size';
+import type { SlideSize } from '../../theme/variants';
+import {
+  lineBox,
+  marksHeight,
+  measureText,
+  stepWhere,
+  trackWidth,
+} from '../size';
 import { captionHeight, embeddedScale } from '../slide_render/fit';
 import { headline } from '../slide_render/output';
 import type { SlideRenderNode } from '../slide_render/types';
 
 import type { SlideAnnotatedRenderPin } from './schema';
+import type { SlideAnnotatedRenderNode } from './types';
 
 const column = (width: number, index: 0 | 1) =>
   trackWidth(width, annotatedRenderShares, annotatedRender.gap, index);
 
 const { legend, pin } = annotatedRender;
-
-// takumi draws a text block at its line boxes' height rounded up to a whole pixel.
-const drawn = Math.ceil;
 
 const innerWidth = (width: number) =>
   column(width, 0) - 2 * scalePx(pin.overhang);
@@ -38,8 +42,7 @@ export const panelOffset = (
   render: SlideRenderNode,
   { width }: Pick<SlideLayout, 'width'>
 ): number =>
-  drawn(captionHeight(headline(render), innerWidth(width))) +
-  scalePx(pin.overhang);
+  captionHeight(headline(render), innerWidth(width)) + scalePx(pin.overhang);
 
 /** The scale `render` draws its slide at in the first column of `layout`, inset on every side by a pin's overhang. */
 export const annotatedScale = (
@@ -65,27 +68,24 @@ export const legendHeight = (
   const title = { ...legend.title, size: sizes.title };
   const body = { ...legend.body, size: sizes.body };
   const lines = (text: string, role: TypeRole & { lineHeight: ScaleToken }) =>
-    drawn(
-      Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role)
-    );
+    Math.max(1, measureText(text, role, textWidth).lines) * lineBox(role);
   return pins.reduce(
     (height, { title: name, body: text }) =>
       height +
       2 * scalePx(padding) +
       lines(name, title) +
       scalePx(legend.textGap) +
-      drawn(marksHeight(text, body, textWidth)) +
+      marksHeight(text, body, textWidth) +
       scalePx(legend.rule),
     scalePx(legend.rule)
   );
 };
 
-/** The largest legend step whose {@link legendHeight} fits the height of `layout`. */
-export const legendStep = (
-  pins: readonly SlideAnnotatedRenderPin[],
+/** The largest step whose legend, by {@link legendHeight}, fits the height of `layout`. */
+export const annotatedRenderStep = (
+  { pins }: Pick<SlideAnnotatedRenderNode, 'pins'>,
   { width, height }: SlideLayout
-): SlideSize =>
-  slideSizes.find((step) => legendHeight(pins, step, width) <= height) ?? 's';
+): SlideSize => stepWhere((step) => legendHeight(pins, step, width) <= height);
 
 /** How far the legend drops to meet the panel's top edge, as far as the room below it allows. */
 export const legendOffset = (

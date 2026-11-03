@@ -23,9 +23,9 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
-| `styleAdapter`    | Optional. This pack's HTML CSS, combined with the other packs'.                |
+| `styleAdapter`    | Optional. This pack's HTML CSS; a runtime runs one pack's adapter.             |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
-| `authoring`       | Optional. `describe`, `omitProperties`, and index `groups` for agents.         |
+| `authoring`       | Optional. `describe` and index `groups` for agents.                            |
 
 `surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
 
@@ -74,7 +74,7 @@ An enhancement the host drives, rather than one that runs in the page, omits `sc
 
 ## `authoring`
 
-A pack's own contribution to the runtime's authoring JSON Schema. A primitive's `catalog.description` — or the root schema's `.describe()`, which `definePrimitive` copies onto the catalog when `description` is omitted — is the `$def` description. `describe` ($def id to description) still names shared defs such as `tone`, and overrides a catalog description on conflict. `omitProperties` lists `$defId.property` paths to drop, scoped to this pack's own primitives:
+A pack's own contribution to the runtime's authoring JSON Schema. A primitive's `catalog.description` — or the root schema's `.describe()`, which `definePrimitive` copies onto the catalog when `description` is omitted — is the `$def` description. `describe` ($def id to description) still names shared defs such as `tone`, and overrides a catalog description on conflict:
 
 ```ts
 definePrimitive({
@@ -94,9 +94,34 @@ definePrimitivePack({
 });
 ```
 
-A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe`/`omitProperties` itself. The runtime's own `authoring` option is applied last and wins on conflict.
+A runtime composing several packs merges every pack's `authoring` into one options object before building the schema, so no host hand-merges each pack's `describe` itself. The runtime's own `authoring` option is applied last and wins on conflict.
 
 `groups` titles sets of this pack's primitive types for an [index catalog](authoring.md#an-index-then-lookups), in the order they are listed. A group naming a type the pack does not register, or a type in two groups, throws at `definePrimitivePack`; a type in no group is listed under "Uncategorized" (`UNCATEGORIZED_GROUP_TITLE`). That title is reserved, and a title used twice in one pack throws `INVALID_PACK_GROUPS`. Groups belong to the pack, not the primitive, so a primitive reused in another pack brings no heading with it.
+
+### Stating what a refinement checks
+
+JSON Schema cannot express a Zod refinement, so the authoring schema drops every `.refine`, `.superRefine`, `.check(z.refine(…))`, and `z.custom`, and an agent learns the rule only from a description it reads. `customChecksOf` from `@elastic/isomer-sdk/testing` returns each custom check reachable from a schema, as the object Zod holds, so a test can hold every one to a stated rule. Record the rule when you make the check:
+
+```ts
+import { authoringSchemaSubset, buildAuthoringJsonSchema } from '@elastic/isomer-sdk';
+import { customChecksOf } from '@elastic/isomer-sdk/testing';
+
+// Filled by the helpers the pack makes its checks with.
+declare const ruleOf: WeakMap<object, string>;
+
+const authoring = buildAuthoringJsonSchema(myPackPrimitives);
+const schemas = new Set(myPackPrimitives.map(({ schema }) => schema));
+
+it.each(myPackPrimitives)('$type states its checks', ({ type, schema }) => {
+  const stated = JSON.stringify(authoringSchemaSubset(authoring, [type]));
+  const checks = customChecksOf(schema, { skip: (nested) => schemas.has(nested) });
+  for (const check of checks) {
+    expect(stated).toContain(ruleOf.get(check));
+  }
+});
+```
+
+`skip` stops the walk at another primitive's schema, which is checked on its own. The slides pack's `src/stated_rules.test.ts` is a complete version.
 
 ## The theme a pack requires
 

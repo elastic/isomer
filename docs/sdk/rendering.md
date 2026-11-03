@@ -9,7 +9,7 @@ Three of the four are small, and each takes a narrow dispatcher interface rather
 ```ts
 renderTextEnvelope(composition, dispatcher, { heading }); // title uppercased, subtitle, nodes, blank-line joined
 renderMarkdownEnvelope(composition, dispatcher, { heading }); // # title, _subtitle_, nodes
-renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, assetPrefix, baseUrl });
+renderSlackEnvelope(composition, dispatcher, { heading, text, collectAssets, baseUrl });
 ```
 
 `heading: false` leaves out the title and subtitle, and nothing else; the Slack envelope also leaves them out of its default fallback `text`. It defaults to `true`.
@@ -28,7 +28,7 @@ interface HTMLRenderResult {
   css: string;
   js: string;
   body: string;
-  measurement: PayloadMeasurement;
+  measurement: { html: number; css: number; js: number; total: number };
   validationErrors: ValidationError[];
 }
 ```
@@ -59,8 +59,6 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 `createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it and hands renderers a view of it rather than a copy, so a frozen or class-instance context keeps its methods and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
 A pack puts its adapter on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK ships no adapter for any CSS engine; the slides pack's `src/theme/style_adapter.ts` is a [Distillate](https://elastic.github.io/distillate/) one to copy.
-
-`ownsHandle` is what lets a runtime combine several packs' adapters instead of making the host choose one: each handle goes to the adapter that owns it, so no pack's CSS is emitted twice or rendered against another pack's theme. Declare it on any adapter meant to coexist with others.
 
 A primitive contributes CSS through `collectStyles(node, { styles, context })`. The adapter's `collectViewStyles` still walks the body via the dispatcher's positional `collectStyles(node, styles, context)`.
 
@@ -100,7 +98,7 @@ The baseline — empty or absent — has to answer the question on its own. An e
 
 ### Who runs the script
 
-Every script, whether an enhancement's, the adapter's `getScriptText`, or the caller's `scriptText`, is a function body with `root`, the render's `.isomer` section, in scope. The `scripts` option decides who binds `root` and runs it:
+Every script, whether an enhancement's or the adapter's `getScriptText`, is a function body with `root`, the render's `.isomer` section, in scope. The `scripts` option decides who binds `root` and runs it:
 
 | `scripts`              | `html` carries                                                               | The host                                                                |
 | ---------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
@@ -167,6 +165,10 @@ A `container` goes through every step with its children:
 
 A container nested in another is unwrapped into its parent, since Slack rejects one. A container any step leaves with no children, or more than `containerChildBlocks`, is unwrapped too: its title becomes a `header` (or its `rich_text_title` a `rich_text` block), its subtitle a `context` block, followed by its children.
 
+### Checking a Slack payload
+
+`slackLimitProblems({ text, blocks })` lists where a payload breaks `SLACK_LIMITS`, one message per problem naming the block path, and is empty when Slack would accept it. It also reports a block wrapped in `unmodeledSlackBlock` whose type Isomer models. It cannot check a block of a type Isomer does not model; `unmodeledSlackBlockTypes(blocks)` names those types, a container's children included. The SDK's envelope tests hold every payload they render to it, and `isomer-studio check` runs it on each example's Slack output.
+
 ## Titled sections on Slack
 
 A primitive that groups its body under a title, such as an "Impact" or "Hypotheses" section, renders on Slack through `slackContainer`, which builds a Block Kit `container`:
@@ -232,7 +234,7 @@ Every `unmodeledSlackBlock` call has an issue asking Isomer to model its block, 
 ### Modeling a block in Isomer
 
 1. Add the block's interface to `define/slack_blocks.ts` and to the `SlackBlock` union. The type list in `render/slack/unmodeled.ts` does not compile until the type is added there too.
-2. Add a `SLACK_LIMITS` entry for each limit Slack documents, fit it in the envelope, and check it in Studio's `slackLimitProblems`.
+2. Add a `SLACK_LIMITS` entry for each limit Slack documents, fit it in the envelope, and check it in `slackLimitProblems` (`render/slack/limit_problems.ts`).
 3. Export the new types from the `./slack` barrels, and say in the release notes that packs wrapping the type drop the wrapper.
 
 ## Formatting helpers

@@ -16,7 +16,8 @@ import {
   type SlackTableBlock,
 } from './blocks';
 import { slackContainer } from './container';
-import { renderSlackEnvelope, type SlackEnvelopeDispatcher } from './envelope';
+import type { SlackEnvelopeDispatcher } from './envelope';
+import { renderPostable } from './postable.fixtures';
 import { unmodeledSlackBlock } from './unmodeled';
 
 const mrkdwn = (text: string) => ({ type: 'mrkdwn' as const, text });
@@ -49,7 +50,7 @@ const table = (cellChars: number): SlackTableBlock => ({
 });
 
 const render = (blocks: readonly SlackBlock[]) =>
-  renderSlackEnvelope({ type: 'view', body: [{ type: 'n' }] }, {
+  renderPostable({ type: 'view', body: [{ type: 'n' }] }, {
     renderText: ({ type }) => type,
     renderMarkdown: ({ type }) => type,
     renderSlack: () => blocks,
@@ -289,7 +290,7 @@ describe('the Slack envelope and containers', () => {
   });
 
   it('keeps the upload of an image inside a container', () => {
-    const { assets } = renderSlackEnvelope(
+    const { assets } = renderPostable(
       { type: 'view', body: [{ type: 'chart' }] },
       {
         renderText: ({ type }) => type,

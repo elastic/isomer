@@ -48,7 +48,7 @@ text: (node, { scope }) =>
   node.items.map((item) => scope.renderText(item)).join('\n');
 ```
 
-The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)`, …) stay positional. On both the dispatcher and the scope, `renderReact`'s `context` is typed by `ReactContextArg`: it may be omitted only when `{}` is a complete context for the pack. A pack whose context has a required field makes its containers pass one, `scope.renderReact(child, context)`; a child does not inherit its parent's context. A React container that defers children into a component passes that component `scope`, since React invokes it after the parent renderer has returned.
+`PrimitiveDispatcher` extends `RenderScope`, adding `renderSnapshot` and `renderSlack`'s `options`. The dispatcher's own methods (`renderText(node)`, `renderSlack(node, collector?)`, …) stay positional. On both the dispatcher and the scope, `renderReact`'s `context` is typed by `ReactContextArg`: it may be omitted only when `{}` is a complete context for the pack. A pack whose context has a required field makes its containers pass one, `scope.renderReact(child, context)`; a child does not inherit its parent's context. A React container that defers children into a component passes that component `scope`, since React invokes it after the parent renderer has returned.
 
 ## Slack: three behaviours the other surfaces do not have
 

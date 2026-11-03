@@ -117,7 +117,7 @@ export interface PrimitiveConformanceHarness {
   /** Must return at least one block, each an object with a string `type`. */
   renderSlack(node: PrimitiveNode): readonly SlackBlock[];
   /** `key` is unique per example and only has to survive into the React tree. Must not throw. Omit for a pack with no `snapshot` path. */
-  renderSnapshot?(node: PrimitiveNode, key: string): unknown;
+  renderSnapshotNode?(node: PrimitiveNode, key: string): unknown;
   /** Must be finite and greater than zero, so a frame can lay the node out unrendered. Omit for a pack with no `snapshot` path. */
   estimateSnapshotHeight?(node: PrimitiveNode): number;
   /**
@@ -392,11 +392,14 @@ export const primitiveConformanceCases: readonly PrimitiveConformanceCase[] = [
   {
     name: 'renders through snapshot primitive dispatch without throwing',
     run: ({ type, exampleIndex, node }, harness) => {
-      if (!harness.renderSnapshot) {
+      if (!harness.renderSnapshotNode) {
         return;
       }
       assert.doesNotThrow(() =>
-        harness.renderSnapshot?.(node, `conformance-${type}-${exampleIndex}`)
+        harness.renderSnapshotNode?.(
+          node,
+          `conformance-${type}-${exampleIndex}`
+        )
       );
     },
   },

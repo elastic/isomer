@@ -7,10 +7,12 @@
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
-import { EuiSelectableTemplateSitewide } from '@elastic/eui';
+import {
+  EuiSelectableTemplateSitewide,
+  useIsWithinBreakpoints,
+} from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import { HOME } from '../home/tokens';
 import { useStudio } from '../studio_context';
 
 export interface PrimitiveSearchProps {
@@ -61,6 +63,8 @@ export const PrimitiveSearch = ({
   );
 
   const large = size === 'large';
+  // The shortcut hint gives way to the query on the narrowest screens.
+  const showShortcut = !useIsWithinBreakpoints(['xs']);
 
   return (
     <EuiSelectableTemplateSitewide
@@ -73,7 +77,7 @@ export const PrimitiveSearch = ({
       }}
       searchProps={{
         placeholder,
-        append: '⌘K',
+        ...(showShortcut ? { append: '⌘K' } : {}),
         compressed: !large,
         fullWidth: large,
         inputRef: (element: HTMLInputElement | null) => {
@@ -86,43 +90,11 @@ export const PrimitiveSearch = ({
         large
           ? css`
               width: 100%;
-              .euiFormControlLayout,
-              .euiFieldSearch {
-                block-size: 52px;
-              }
-              .euiFormControlLayout {
-                background-color: ${HOME.field};
-              }
-              .euiFormControlLayout:not(:focus-within)::after {
-                border-color: ${HOME.line3};
-              }
-              .euiFieldSearch {
-                background-color: transparent;
-                color: ${HOME.fg};
-              }
-              .euiFieldSearch::placeholder {
-                color: ${HOME.fg3};
-              }
-              .euiFormControlLayoutIcons,
-              .euiFormControlLayout__append {
-                color: ${HOME.fg2};
-              }
-              .euiFormControlLayoutIcons {
-                max-block-size: none;
-              }
-              .euiFieldSearch {
-                font-size: 15px;
-              }
             `
           : css`
               flex: 0 1 280px;
               width: 280px;
               min-width: 72px;
-              @media (max-width: 480px) {
-                .euiFormControlLayout__append {
-                  display: none;
-                }
-              }
             `
       }
     />

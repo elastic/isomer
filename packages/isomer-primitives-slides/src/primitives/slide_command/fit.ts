@@ -6,8 +6,11 @@
  */
 
 import { command, commandLineWidth } from '../../theme/components/command';
-import { type SlideSize, slideSizes } from '../../theme/variants';
-import { measureText } from '../size';
+import type { SlideSize } from '../../theme/variants';
+import { openBody, type StepLayout } from '../layout';
+import { measureText, stepWhere } from '../size';
+
+import type { SlideCommandNode } from './schema';
 
 const { prompt, text: role, textSizes } = command;
 
@@ -19,8 +22,9 @@ export const commandWidth = (text: string, size: SlideSize): number =>
     size: textSizes[size],
   }).widest;
 
-/** The largest step at which `text` fits a layout `width` wide. */
-export const commandSize = (text: string, width?: number): SlideSize =>
-  slideSizes.find(
-    (size) => commandWidth(text, size) <= commandLineWidth(width)
-  ) ?? 's';
+/** The largest step at which the command fits its layout's width on one line. */
+export const commandStep = (
+  { command }: Pick<SlideCommandNode, 'command'>,
+  { width }: Pick<StepLayout, 'width'> = openBody
+): SlideSize =>
+  stepWhere((step) => commandWidth(command, step) <= commandLineWidth(width));

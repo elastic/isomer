@@ -1,0 +1,308 @@
+{
+  "promptSha256": "5c076dfe9ac74628b5e62253a55c4cbe80c86abcdb93fbb38e758ad1add9b243",
+  "missingRecordings": [],
+  "staleJudgments": [],
+  "totals": {
+    "cases": 13,
+    "parsed": 13,
+    "valid": 12,
+    "validAfterRetry": 13,
+    "meanSelectionF1": 0.952,
+    "expectedHits": 11,
+    "expectedCases": 11,
+    "answerability": {
+      "yes": 9,
+      "partial": 2,
+      "no": 2
+    }
+  },
+  "cases": [
+    {
+      "id": "comparison",
+      "valid": false,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [
+        "body[0].body[1].columns[0] (in slideTable) must not be empty"
+      ],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideTable"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 0,
+      "answerability": "yes"
+    },
+    {
+      "id": "timeline",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 0.667,
+        "recall": 0.667,
+        "f1": 0.667,
+        "extra": [
+          "slideTimeline"
+        ],
+        "missing": [
+          "slideList"
+        ]
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideTimeline"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.678,
+      "answerability": "yes"
+    },
+    {
+      "id": "metrics",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideStats"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.19,
+      "answerability": "yes"
+    },
+    {
+      "id": "process",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slidePipeline"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.372,
+      "answerability": "yes"
+    },
+    {
+      "id": "quote",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "quoteSlide",
+          "slideFrame"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.066,
+      "answerability": "yes"
+    },
+    {
+      "id": "table",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideTable"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.23,
+      "answerability": "yes"
+    },
+    {
+      "id": "roadmap",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideRoadmap"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.266,
+      "answerability": "yes"
+    },
+    {
+      "id": "code",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideCode",
+          "slideFrame",
+          "slideHeading"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.286,
+      "answerability": "partial"
+    },
+    {
+      "id": "ambiguous",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "unknownTypes": [],
+      "answerability": "partial"
+    },
+    {
+      "id": "no-data",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideStats"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.164,
+      "answerability": "no"
+    },
+    {
+      "id": "unsupported",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "unknownTypes": [],
+      "answerability": "no"
+    },
+    {
+      "id": "title",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 0.667,
+        "recall": 1,
+        "f1": 0.8,
+        "extra": [
+          "slideFanout"
+        ],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFanout",
+          "slideFrame",
+          "titleSlide"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 2.386,
+      "answerability": "yes"
+    },
+    {
+      "id": "argument",
+      "valid": true,
+      "validAfterRetry": true,
+      "firstAttemptErrors": [],
+      "selection": {
+        "precision": 1,
+        "recall": 1,
+        "f1": 1,
+        "extra": [],
+        "missing": []
+      },
+      "expected": {
+        "hit": true,
+        "used": [
+          "slideFrame",
+          "slideHeading",
+          "slideList"
+        ]
+      },
+      "unknownTypes": [],
+      "sizeVsGolden": 1.256,
+      "answerability": "yes"
+    }
+  ]
+}
