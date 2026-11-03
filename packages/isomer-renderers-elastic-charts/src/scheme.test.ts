@@ -7,11 +7,19 @@
 
 // @vitest-environment jsdom
 
-import { act, createElement, useRef } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { ancestors, useScheme } from './scheme';
+
+/** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
+const {
+  act = testUtilsAct,
+  createElement,
+  useRef,
+} = React as typeof React & { act?: typeof testUtilsAct };
 
 const shadowTree = () => {
   const host = document.createElement('div');
