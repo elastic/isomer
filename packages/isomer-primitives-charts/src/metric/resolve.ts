@@ -23,6 +23,7 @@ import {
 } from '../theme';
 
 import type { MetricNode, MetricTile } from './schema';
+import { type TileIconGlyph, tileIconGlyphs } from './tile_icons';
 
 type Direction = 'up' | 'down' | 'flat';
 
@@ -44,10 +45,14 @@ export interface ResolvedMetricTile {
   key: string;
   title?: string | undefined;
   subtitle?: string | undefined;
-  /** Formatted value, or the missing text. */
+  /** Formatted value, or the missing text; a multivalue reading joins its values. */
   value: string;
+  /** Each formatted value of a multivalue reading. */
+  values?: string[] | undefined;
   /** The value when it is a number, for engines that format or scale it. */
   number?: number | undefined;
+  /** The tile's icon glyph, drawn in `text.title`. */
+  icon?: TileIconGlyph | undefined;
   /** Tile background. */
   fill: string;
   /** Value text color when the tile paints its value. */
@@ -91,6 +96,7 @@ interface MetricLayout {
   valuePosition: 'top' | 'middle' | 'bottom';
   valueSize: 'default' | 'fit';
   density: 'compact' | 'default';
+  iconAlign: 'left' | 'right';
 }
 
 /** What {@link resolveMetric} returns: the grid, layout, tiles and tokens a renderer draws. */
@@ -110,6 +116,7 @@ const DEFAULT_LAYOUT: MetricLayout = {
   valuePosition: 'bottom',
   valueSize: 'default',
   density: 'default',
+  iconAlign: 'right',
 };
 
 /** A `+` on a rise, unless the format already signs it. */
@@ -182,18 +189,26 @@ const resolveTile = (
     subtitle,
     value,
     format,
+    icon,
     color,
     colorTarget,
     visual,
     action,
   } = tile;
   const number = typeof value === 'number' ? value : undefined;
+  const values = Array.isArray(value)
+    ? value.map((each) =>
+        typeof each === 'number' ? formatValue(each, format) : each
+      )
+    : undefined;
   const shown =
     value === null
       ? tokens.missing
-      : number === undefined
-        ? (value as string)
-        : formatValue(number, format);
+      : values
+        ? values.join(', ')
+        : number === undefined
+          ? (value as string)
+          : formatValue(number, format);
   const paint = color && resolveFill(color, tokens);
   const paintsValue = colorTarget === 'value' && visual === undefined;
   const fill =
@@ -206,7 +221,9 @@ const resolveTile = (
     title,
     subtitle,
     value: shown,
+    values,
     number,
+    icon: icon && tileIconGlyphs[icon],
     fill,
     valueColor: paintsValue ? paint : undefined,
     text: textOn(fill, tokens),

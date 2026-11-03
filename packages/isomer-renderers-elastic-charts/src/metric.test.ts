@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { createElement } from 'react';
+import { type ComponentType, createElement } from 'react';
 import { renderToString } from 'react-dom/server';
 import {
   DARK_THEME,
@@ -13,12 +13,26 @@ import {
   LIGHT_THEME,
   MetricTrendShape,
 } from '@elastic/charts';
-import { getComputed } from '@elastic/eui';
+import {
+  euiPaletteComplementary,
+  euiPaletteCool,
+  euiPaletteForStatus,
+  euiPaletteForTemperature,
+  euiPaletteGray,
+  euiPaletteGreen,
+  euiPaletteRed,
+  euiPaletteWarm,
+  getComputed,
+} from '@elastic/eui';
 import { EuiThemeBorealis } from '@elastic/eui-theme-borealis';
 import {
   chartTokens,
   metricExamples,
   resolveMetric,
+  TILE_ICONS,
+  type TileIcon,
+  tileIconGlyphs,
+  valuePaletteColors,
 } from '@elastic/isomer-primitives-charts/model';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { NODE_ANCHOR_ATTRIBUTE } from '@elastic/isomer-sdk';
@@ -41,6 +55,71 @@ const datums = (node: typeof example, scheme: 'light' | 'dark' = 'light') => {
   return resolved.tiles.map((tile) => toDatum(tile, resolved.tokens));
 };
 
+// The palette registry maps each Lens palette to these EUI generators.
+const EUI_PALETTES = {
+  status: euiPaletteForStatus,
+  temperature: euiPaletteForTemperature,
+  complementary: euiPaletteComplementary,
+  negative: euiPaletteRed,
+  positive: euiPaletteGreen,
+  cool: euiPaletteCool,
+  warm: euiPaletteWarm,
+  gray: euiPaletteGray,
+};
+
+// `resolveVisIcon`'s EUI icon for each Lens metric icon.
+const EUI_ICON_FILES: Record<TileIcon, string> = {
+  sortUp: 'sort_up',
+  sortDown: 'sort_down',
+  compute: 'processor',
+  asterisk: 'asterisk',
+  alert: 'warning',
+  bell: 'bell',
+  bolt: 'bolt',
+  bug: 'bug',
+  editorComment: 'comment',
+  flag: 'flag',
+  heart: 'heart',
+  mapMarker: 'waypoint',
+  pin: 'pin',
+  starEmpty: 'star',
+  tag: 'tag',
+  globe: 'globe',
+  temperature: 'thermometer',
+};
+
+describe('tile icons', () => {
+  it.each(TILE_ICONS)('draws %s with EUI’s own paths', async (id) => {
+    const { icon } = (await import(
+      `@elastic/eui/lib/components/icon/assets/${EUI_ICON_FILES[id]}.js`
+    )) as { icon: ComponentType };
+    const markup = renderToString(createElement(icon));
+    const paths = [...markup.matchAll(/<path([^>]*)>/g)].map(([, attrs]) => ({
+      d: /\bd="([^"]+)"/.exec(attrs!)![1],
+      ...(attrs!.includes('fill-rule="evenodd"') ? { evenOdd: true } : {}),
+    }));
+    expect(tileIconGlyphs[id].paths).toEqual(paths);
+  });
+
+  it('passes the icon and a multivalue reading to Elastic Charts', () => {
+    const [datum] = datums({
+      type: 'metric',
+      tiles: [{ key: 'a', value: ['x', 'y'], icon: 'bolt' }],
+    });
+    expect(datum).toMatchObject({ value: ['x', 'y'] });
+    const Icon = (
+      datum as {
+        icon: ComponentType<{ width: number; height: number; color: string }>;
+      }
+    ).icon;
+    expect(
+      renderToString(
+        createElement(Icon, { width: 16, height: 16, color: '#123456' })
+      )
+    ).toContain('fill="#123456"');
+  });
+});
+
 describe('default colors', () => {
   it.each([
     ['light', 'LIGHT'],
@@ -49,6 +128,34 @@ describe('default colors', () => {
     const { euiColorVis2 } = getComputed(EuiThemeBorealis, {}, mode).colors.vis;
     expect(chartTokens[scheme].progress).toBe(euiColorVis2);
   });
+
+  it.each([
+    ['light', 'LIGHT'],
+    ['dark', 'DARK'],
+  ] as const)("match Lens's euiColorVisText0 in %s", (scheme, mode) => {
+    const { euiColorVisText0 } = getComputed(EuiThemeBorealis, {}, mode).colors
+      .vis;
+    expect(chartTokens[scheme].valueText).toBe(euiColorVisText0);
+  });
+});
+
+describe('value palettes', () => {
+  it.each(['LIGHT', 'DARK'] as const)(
+    'match EUI Borealis’ palette generators in %s mode',
+    (mode) => {
+      const colors = getComputed(EuiThemeBorealis, {}, mode).colors.vis;
+      expect(
+        Object.fromEntries(
+          Object.entries(EUI_PALETTES).map(([id, generate]) => [
+            id,
+            [1, 2, 3, 4, 5].map((bands) =>
+              generate(bands, { colors }).map((color) => color.toUpperCase())
+            ),
+          ])
+        )
+      ).toEqual(valuePaletteColors);
+    }
+  );
 });
 
 describe('chart tokens', () => {

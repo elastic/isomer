@@ -15,6 +15,7 @@ type MetricNode = {
     valuePosition?: 'top' | 'middle' | 'bottom'; // default 'bottom'
     valueSize?: 'default' | 'fit';
     density?: 'compact' | 'default';
+    iconAlign?: 'left' | 'right'; // default 'right'
   };
 };
 
@@ -22,9 +23,10 @@ type MetricTile = {
   key: string;
   title?: string;
   subtitle?: string;
-  value: number | string | null; // null reads N/A
+  value: number | string | null | (number | string)[]; // null reads N/A; an array lists a multivalue reading
   format?: ValueFormat; // number | percent | bytes | bits | pattern | duration
-  color?: ColorRef; // a tone or #rrggbb
+  icon?: TileIcon; // one of Lens's 17 metric icons
+  color?: ColorRef; // a tone, #rrggbb, { palette, step, of } or { token }
   colorTarget?: 'background' | 'value'; // default 'background'
   secondary?:
     | {
@@ -89,7 +91,7 @@ For example, `{ kind: 'duration', from: 'milliseconds', to: 'asSeconds' }` reads
 
 ## Colors
 
-A `ColorRef` is a theme tone or a `#rrggbb` color.
+A `ColorRef` is a theme tone, a `#rrggbb` color, or a band of one of Lens's named value palettes: `{ palette, step, of }`, where `palette` is `status`, `temperature`, `complementary`, `negative`, `positive`, `cool`, `warm` or `gray`, `of` is the number of bands from 1 to 5, and `step` counts from 0. The bands are EUI Borealis' palette generators' output, which is the same in both schemes. A lowering picks the band with Lens's color-by-value rules and leaves the color to the theme. `{ token: 'progress' }` and `{ token: 'valueText' }` are the defaults Lens paints when nothing else colors a tile: `euiColorVis2`, and the scheme's `euiColorVisText0`.
 
 ## Secondary readings
 
@@ -128,4 +130,6 @@ Text colors are picked for contrast with the fill.
 | progress | `domainMax`, `domainMin` when not 0, `progressBarDirection`; `minReading` and `maxReading` label the ends | a filled bar |
 | layout | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement |
 | columns, placeholders | the `data` grid, padded with `undefined` cells | rows of tiles, then empty cells |
+| icon, `iconAlign` | `icon`, a 16 × 16 SVG of the glyph's paths in the given color; `iconAlign` | the glyph beside the title |
+| values | a `string[]` value; a multivalue tile has no visual, as in Lens | the readings as a list |
 | action | `onElementClick` | a press handler |
