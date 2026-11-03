@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-import { copyJson, type JsonValue } from './json';
+import { copyJson, JSON_LIMITS, type JsonValue } from './json';
 import { own } from './own';
 import {
   formLayerPlanSchema,
@@ -123,11 +123,19 @@ export const readTable = (
       });
     }
   }
+  const present = planned.filter(({ columnId }) => byId.has(columnId));
+  // Sparse rows expand to one cell per planned column, so bound the projection, not the input.
+  if (rows.length * present.length > JSON_LIMITS.values) {
+    diagnostics.push({
+      code: 'lens.table.too-large',
+      message: `The table would hold more than ${JSON_LIMITS.values} cells.`,
+      path: ['datatable', 'rows'],
+    });
+  }
   if (diagnostics.length) {
     return invalid(diagnostics);
   }
 
-  const present = planned.filter(({ columnId }) => byId.has(columnId));
   return {
     status: 'ready',
     table: {

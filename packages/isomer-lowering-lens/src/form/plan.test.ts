@@ -196,6 +196,16 @@ describe('plan: form-based refusals', () => {
       'lens.form.reference-cycle',
     ],
     [
+      'a reference operation without its input',
+      (layer) =>
+        Object.assign(layer.columns[MATH]!, {
+          operationType: 'cumulative_sum',
+          references: [],
+          params: {},
+        }),
+      'lens.form.invalid-column',
+    ],
+    [
       'a column missing from columnOrder',
       (layer) => layer.columnOrder.pop(),
       'lens.form.column-order',
