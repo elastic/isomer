@@ -7,19 +7,21 @@
 
 import { z } from 'zod';
 
-import { copyJson, JSON_LIMITS, type JsonValue } from './json';
+import { isJsonObject, JSON_LIMITS } from './json';
 import { own } from './own';
 import {
+  addCoded,
   formLayerPlanSchema,
-  issueDiagnostics,
+  id,
+  json,
   type LensColumn,
   type LensDiagnostic,
   type LensResponseResult,
+  parseArgument,
+  repeats,
 } from './schema';
 
-const json = z.custom<JsonValue>(() => true);
-const id = z.string().min(1).max(4096);
-
+/** The Kibana `Datatable` Lens's expression produces; column IDs are unique. */
 const datatableSchema = z
   .object({
     type: z.literal('datatable'),
@@ -41,15 +43,22 @@ const datatableSchema = z
       .max(512),
     rows: z.array(z.record(z.string(), json)),
   })
-  .catchall(json);
+  .catchall(json)
+  .superRefine(({ columns }, context) => {
+    for (const { index, value } of repeats(columns, (column) => column.id)) {
+      addCoded(
+        context,
+        'lens.table.duplicate-column',
+        `More than one table column has ID "${value}".`,
+        ['columns', index]
+      );
+    }
+  });
 
 const invalid = (diagnostics: LensDiagnostic[]): LensResponseResult => ({
   status: 'invalid',
   diagnostics,
 });
-
-const isRecord = (value: unknown): value is Record<string, JsonValue> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * Projects a Lens-resolved Kibana `Datatable` onto a planned form-based layer
@@ -60,53 +69,28 @@ export const readTable = (
   layer: unknown,
   datatable: unknown
 ): LensResponseResult => {
-  const copiedLayer = copyJson(layer);
-  if (!copiedLayer.ok) {
-    return invalid([
-      {
-        code: 'lens.table.invalid-json',
-        message: copiedLayer.message,
-        path: ['layer'],
-      },
-    ]);
+  const parsedLayer = parseArgument(
+    layer,
+    formLayerPlanSchema,
+    { json: 'lens.table.invalid-json', shape: 'lens.table.invalid-layer' },
+    ['layer']
+  );
+  if (!parsedLayer.ok) {
+    return invalid(parsedLayer.diagnostics);
   }
-  const copiedTable = copyJson(datatable);
-  if (!copiedTable.ok) {
-    return invalid([
-      {
-        code: 'lens.table.invalid-json',
-        message: copiedTable.message,
-        path: ['datatable'],
-      },
-    ]);
+  const parsed = parseArgument(
+    datatable,
+    datatableSchema,
+    { json: 'lens.table.invalid-json', shape: 'lens.table.invalid-shape' },
+    ['datatable']
+  );
+  if (!parsed.ok) {
+    return invalid(parsed.diagnostics);
   }
-  const parsedLayer = formLayerPlanSchema.safeParse(copiedLayer.value);
-  if (!parsedLayer.success) {
-    return invalid(
-      issueDiagnostics('lens.table.invalid-layer', parsedLayer.error, ['layer'])
-    );
-  }
-  const parsed = datatableSchema.safeParse(copiedTable.value);
-  if (!parsed.success) {
-    return invalid(
-      issueDiagnostics('lens.table.invalid-shape', parsed.error, ['datatable'])
-    );
-  }
-  const { layerId, columns: planned } = parsedLayer.data;
-  const { columns, rows } = parsed.data;
+  const { layerId, columns: planned } = parsedLayer.value;
+  const { columns, rows } = parsed.value;
 
-  const diagnostics: LensDiagnostic[] = [];
-  const byId = new Map<string, (typeof columns)[number]>();
-  columns.forEach((column, index) => {
-    if (byId.has(column.id)) {
-      diagnostics.push({
-        code: 'lens.table.duplicate-column',
-        message: `More than one table column has ID "${column.id}".`,
-        path: ['datatable', 'columns', index],
-      });
-    }
-    byId.set(column.id, column);
-  });
+  const byId = new Map(columns.map((column) => [column.id, column]));
   const referenced = new Set(
     planned.flatMap(({ references }) =>
       Array.isArray(references)
@@ -114,15 +98,13 @@ export const readTable = (
         : []
     )
   );
-  for (const { columnId } of planned) {
-    if (!referenced.has(columnId) && !byId.has(columnId)) {
-      diagnostics.push({
-        code: 'lens.table.missing-column',
-        message: `The table has no column "${columnId}".`,
-        path: ['datatable', 'columns'],
-      });
-    }
-  }
+  const diagnostics: LensDiagnostic[] = planned
+    .filter(({ columnId }) => !referenced.has(columnId) && !byId.has(columnId))
+    .map(({ columnId }) => ({
+      code: 'lens.table.missing-column',
+      message: `The table has no column "${columnId}".`,
+      path: ['datatable', 'columns'],
+    }));
   const present = planned.filter(({ columnId }) => byId.has(columnId));
   // Sparse rows expand to one cell per planned column, so bound the projection, not the input.
   if (rows.length * present.length > JSON_LIMITS.values) {
@@ -142,7 +124,7 @@ export const readTable = (
       layerId,
       columns: present.map((column) => {
         const { id: columnId, name, meta } = byId.get(column.columnId)!;
-        const format = isRecord(column.params)
+        const format = isJsonObject(column.params)
           ? column.params.format
           : undefined;
         const lens: LensColumn = {
@@ -158,13 +140,14 @@ export const readTable = (
             type: meta.type,
             ...(meta.params ? { params: meta.params } : {}),
           },
-          ...(isRecord(format) ? { params: { format } } : {}),
+          ...(isJsonObject(format) ? { params: { format } } : {}),
         };
         return { lens, type: meta.type };
       }),
       rows: rows.map((row) =>
         present.map(({ columnId }) => own(row, columnId) ?? null)
       ),
+      partial: false,
     },
   };
 };

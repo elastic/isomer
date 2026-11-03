@@ -5,9 +5,16 @@
  * 2.0.
  */
 
+/** A value `JSON.parse` can return. */
 export type JsonValue =
   null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
+
+/** A JSON object, such as a saved filter or a column's `params`. */
 export type JsonObject = { [key: string]: JsonValue };
+
+/** Whether a value read from validated JSON is an object, not an array or a leaf. */
+export const isJsonObject = (value: unknown): value is JsonObject =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** Limits on one `plan` or `readResponse` argument, counted across the whole value. */
 export const JSON_LIMITS = {
@@ -16,108 +23,131 @@ export const JSON_LIMITS = {
   characters: 4_000_000,
 } as const;
 
-type Copied = { ok: true; value: JsonValue } | { ok: false; message: string };
+/** Limits {@link copyPlain} enforces; {@link JSON_LIMITS} unless a caller narrows them. */
+export type JsonLimits = { readonly [Key in keyof typeof JSON_LIMITS]: number };
+
+type Copied = { ok: true; value: unknown } | { ok: false; message: string };
+
+type Container = unknown[] | Record<string, unknown>;
+
+interface Entry {
+  source: object;
+  copy: Container;
+  depth: number;
+  leave?: true;
+}
 
 class Refusal extends Error {}
 
+/** Reads `key` once, through its descriptor, so an accessor or proxy trap never runs. */
+const plainProperty = (source: object, key: string | number): unknown => {
+  const descriptor = Reflect.getOwnPropertyDescriptor(source, key);
+  if (descriptor === undefined) {
+    throw new Refusal('holds an array with holes');
+  }
+  if (!('value' in descriptor)) {
+    throw new Refusal('holds an accessor property');
+  }
+  if (!descriptor.enumerable) {
+    throw new Refusal('holds a non-enumerable property');
+  }
+  return descriptor.value;
+};
+
 /**
- * Copies `input` if it is finite, acyclic plain JSON within {@link JSON_LIMITS}, dropping object properties set to `undefined`.
- * Reads own data properties only, so accessors and proxies' traps never run twice.
+ * A copy of `input` that shares nothing with it, or why there is none: it is over `limits`, cyclic, or not plain data.
+ * Plain data is arrays without holes or extra keys, objects whose prototype is `Object.prototype` or `null`, and enumerable own data properties with string keys.
+ * Leaves are copied as they are, so callers check JSON-ness with the schemas' `json`; an object property set to `undefined` is dropped, as `JSON.stringify` drops it.
+ * Iterative, like the SDK's `checkInputBudget`, so nesting cannot exhaust the stack.
  */
-export const copyJson = (input: unknown): Copied => {
+export const copyPlain = (
+  input: unknown,
+  limits: JsonLimits = JSON_LIMITS
+): Copied => {
+  const ancestors = new Set<object>();
+  const stack: Entry[] = [];
   let values = 0;
   let characters = 0;
-  const count = (length: number) => {
-    values += 1;
-    characters += length;
-    if (values > JSON_LIMITS.values) {
-      throw new Refusal(`holds more than ${JSON_LIMITS.values} values`);
-    }
-    if (characters > JSON_LIMITS.characters) {
-      throw new Refusal(`holds more than ${JSON_LIMITS.characters} characters`);
+  const countCharacters = (count: number) => {
+    characters += count;
+    if (characters > limits.characters) {
+      throw new Refusal(`holds more than ${limits.characters} characters`);
     }
   };
-  const ancestors = new Set<object>();
-  const copy = (value: unknown, depth: number): JsonValue => {
-    if (value === null || typeof value === 'boolean') {
-      count(0);
-      return value;
+  const enqueue = (child: unknown, depth: number): unknown => {
+    values += 1;
+    if (values > limits.values) {
+      throw new Refusal(`holds more than ${limits.values} values`);
     }
-    if (typeof value === 'string') {
-      count(value.length);
-      return value;
+    if (typeof child === 'string') {
+      countCharacters(child.length);
     }
-    if (typeof value === 'number') {
-      if (!Number.isFinite(value)) {
-        throw new Refusal('holds a number that is not finite');
+    if (typeof child !== 'object' || child === null) {
+      return child;
+    }
+    let copy: Container = [];
+    if (Array.isArray(child)) {
+      if (Reflect.getPrototypeOf(child) !== Array.prototype) {
+        throw new Refusal('holds an array that is not a plain array');
       }
-      count(0);
-      return value;
-    }
-    if (typeof value !== 'object') {
-      throw new Refusal(
-        `holds a value of type ${typeof value}, which is not JSON`
-      );
-    }
-    if (depth > JSON_LIMITS.depth) {
-      throw new Refusal(`nests deeper than ${JSON_LIMITS.depth} levels`);
-    }
-    if (ancestors.has(value)) {
-      throw new Refusal('contains itself');
-    }
-    const isArray = Array.isArray(value);
-    const prototype: unknown = Reflect.getPrototypeOf(value);
-    if (
-      isArray
-        ? prototype !== Array.prototype
-        : prototype !== Object.prototype && prototype !== null
-    ) {
-      throw new Refusal('holds an object that is not a plain object or array');
-    }
-    count(0);
-    ancestors.add(value);
-    const keys = Reflect.ownKeys(value).filter(
-      (key) => !(isArray && key === 'length')
-    );
-    const result: JsonValue[] | JsonObject = isArray ? [] : {};
-    for (const key of keys) {
-      const descriptor = Reflect.getOwnPropertyDescriptor(value, key);
-      if (typeof key === 'symbol' || !descriptor?.enumerable) {
-        throw new Refusal('holds a symbol or non-enumerable key');
+    } else {
+      const prototype = Reflect.getPrototypeOf(child);
+      if (prototype !== Object.prototype && prototype !== null) {
+        throw new Refusal(
+          'holds an object that is not a plain object or array'
+        );
       }
-      if (isArray && key !== String((result as JsonValue[]).length)) {
+      copy = {};
+    }
+    stack.push({ source: child, copy, depth });
+    return copy;
+  };
+  const copyChildren = ({ source, copy, depth }: Entry) => {
+    if (Array.isArray(copy)) {
+      const { length } = source as unknown[];
+      if (Reflect.ownKeys(source).length !== length + 1) {
         throw new Refusal('holds an array with holes or extra keys');
       }
-      if (!('value' in descriptor)) {
-        throw new Refusal('holds an accessor property');
+      for (let index = 0; index < length; index += 1) {
+        copy.push(enqueue(plainProperty(source, index), depth));
       }
-      // As in `JSON.stringify`, an object property set to `undefined` is absent.
-      if (!isArray && descriptor.value === undefined) {
+      return;
+    }
+    for (const key of Reflect.ownKeys(source)) {
+      if (typeof key === 'symbol') {
+        throw new Refusal('holds a symbol key');
+      }
+      const value = plainProperty(source, key);
+      if (value === undefined) {
         continue;
       }
-      if (!isArray) {
-        characters += key.length;
-      }
-      const child = copy(descriptor.value, depth + 1);
-      if (isArray) {
-        (result as JsonValue[]).push(child);
-      } else {
-        Object.defineProperty(result, key, {
-          value: child,
-          writable: true,
-          enumerable: true,
-          configurable: true,
-        });
-      }
+      countCharacters(key.length);
+      Object.defineProperty(copy, key, {
+        value: enqueue(value, depth),
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
     }
-    if (isArray && result.length !== (value as unknown[]).length) {
-      throw new Refusal('holds an array with holes or extra keys');
-    }
-    ancestors.delete(value);
-    return result;
   };
   try {
-    return { ok: true, value: copy(input, 1) };
+    const root = enqueue(input, 1);
+    while (stack.length > 0) {
+      const entry = stack.pop()!;
+      const { source, depth, leave } = entry;
+      if (leave) {
+        ancestors.delete(source);
+      } else if (ancestors.has(source)) {
+        throw new Refusal('contains itself');
+      } else if (depth > limits.depth) {
+        throw new Refusal(`nests deeper than ${limits.depth} levels`);
+      } else {
+        ancestors.add(source);
+        stack.push({ ...entry, leave: true });
+        copyChildren({ ...entry, depth: depth + 1 });
+      }
+    }
+    return { ok: true, value: root };
   } catch (error) {
     if (error instanceof Refusal) {
       return { ok: false, message: `Input ${error.message}.` };

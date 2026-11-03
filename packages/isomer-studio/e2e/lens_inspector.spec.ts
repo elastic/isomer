@@ -99,16 +99,21 @@ const exercise = async (page: Page, url: string) => {
   await read.click();
   await expect(table.getByRole('row')).toHaveText([
     /Requests/,
-    /"checkout"\s*42/,
-    /"search"\s*null/,
+    /"checkout".*42/,
+    /"search".*null/,
   ]);
 
   const response = page.getByLabel(/Recorded ES\|QL response/);
   await response.fill(responseText([[1, 'a']], { is_partial: true }));
   await expect(table).toHaveCount(0);
   await read.click();
+  await expect(page.getByText(/^Partial response/)).toBeVisible();
+  await expect(table.getByRole('row')).toHaveText([/Requests/, /"a".*1/]);
+
+  await response.fill(responseText([[1, 'a']], { is_running: true }));
+  await read.click();
   await expect(page.getByRole('alert', { name: 'Diagnostics' })).toContainText(
-    'lens.response.incomplete at response.is_partial'
+    'lens.response.incomplete at response.is_running'
   );
 
   await response.fill(responseText(Array.from({ length: 120 }, () => [1])));
