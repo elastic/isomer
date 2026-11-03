@@ -18,6 +18,7 @@ import {
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlElementTexts } from '../../content_parity.fixtures';
 import { slideFonts } from '../../examples/fonts';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import {
@@ -306,32 +307,23 @@ describe('slideCode output', () => {
 });
 
 describe('slideCode in the DOM', () => {
-  const entities: Record<string, string> = {
-    '&amp;': '&',
-    '&lt;': '<',
-    '&gt;': '>',
-    '&quot;': '"',
-    '&#x27;': "'",
-  };
   const panelsOf = (node: SlideCodeNode) =>
     [
       ...runtime.surfaces.html
         .render(compose(node))
         .html.matchAll(/<pre[^>]*>([\s\S]*?)<\/pre>/g),
     ].map(([, inner = '']) => inner);
-  const textOf = (html: string) =>
-    html
-      .replace(/<span aria-hidden[^>]*>[^<]*<\/span>/g, '')
-      .replace(/<[^>]+>/g, '')
-      .replace(
-        /&(?:amp|lt|gt|quot|#x27);/g,
-        (entity) => entities[entity] ?? entity
-      );
+  const panelTextsOf = (node: SlideCodeNode) =>
+    renderedHtmlElementTexts(
+      runtime.surfaces.html.render(compose(node)).html,
+      'pre',
+      true
+    );
 
   it.each(examples.map((node, index) => [index, node] as const))(
     'example %i keeps each line, blank ones too, in its text',
     (_index, node) => {
-      expect(panelsOf(node).map(textOf)).toEqual([node.text]);
+      expect(panelTextsOf(node)).toEqual([node.text]);
     }
   );
 

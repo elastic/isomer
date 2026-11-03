@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { roadmap, roadmapFit } from '../../theme/components/roadmap';
@@ -95,9 +96,7 @@ describe('slideRoadmap', () => {
   it('keeps a space between an item title and its body in the HTML text', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
     const [item] = example.columns[0]?.items ?? [];
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
-      `${item?.title} ${item?.body}`
-    );
+    expect(renderedHtmlText(html)).toContain(`${item?.title} ${item?.body}`);
   });
 
   it('marks the current column for assistive technology and with a cue', () => {

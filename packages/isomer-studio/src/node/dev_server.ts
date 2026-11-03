@@ -15,10 +15,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import { transform } from 'esbuild';
 
 import type { StudioConfig } from '../config';
-import {
-  describeTransformError,
-  JSX_TRANSFORM_OPTIONS,
-} from '../model/jsx_transform';
+import { JSX_TRANSFORM_OPTIONS } from '../model/jsx_transform';
 
 import { APP_DIR, renderIndexHtml } from './app_bundle';
 import type { ConfigChangeHandler } from './dev_bundle';
@@ -115,6 +112,18 @@ const isPdfRequest = (
 
 const describeError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+const reportRequestError = (
+  response: ServerResponse,
+  route: string,
+  status: number,
+  publicMessage: string,
+  error: unknown,
+  log: (line: string) => void
+) => {
+  log(`${route} failed: ${describeError(error)}`);
+  sendText(response, status, publicMessage);
+};
 
 export interface DevServerOptions {
   configPath: string;
@@ -245,7 +254,14 @@ export const startDevServer = async ({
       });
       response.end(image);
     } catch (error) {
-      sendText(response, 400, describeError(error));
+      reportRequestError(
+        response,
+        'PNG render',
+        400,
+        'Could not render PNG.',
+        error,
+        log
+      );
     }
   };
 
@@ -271,7 +287,14 @@ export const startDevServer = async ({
       });
       response.end(document);
     } catch (error) {
-      sendText(response, 400, describeError(error));
+      reportRequestError(
+        response,
+        'PDF render',
+        400,
+        'Could not render PDF.',
+        error,
+        log
+      );
     }
   };
 
@@ -289,7 +312,14 @@ export const startDevServer = async ({
       });
       response.end(code);
     } catch (error) {
-      sendText(response, 400, describeTransformError(error));
+      reportRequestError(
+        response,
+        'JSX transform',
+        400,
+        'Could not transform JSX.',
+        error,
+        log
+      );
     }
   };
 
@@ -324,7 +354,14 @@ export const startDevServer = async ({
       response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       response.end(html);
     } catch (error) {
-      sendText(response, 500, describeError(error));
+      reportRequestError(
+        response,
+        'Studio page render',
+        500,
+        'Could not render Studio page.',
+        error,
+        log
+      );
     }
   };
 

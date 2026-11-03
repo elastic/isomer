@@ -11,6 +11,7 @@ import type { Nodes } from 'mdast';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
+import { type DefaultTreeAdapterMap, parseFragment } from 'parse5';
 
 import { slideDeckFrame, slidesPack } from './pack';
 import { slideDeckPrimitives } from './registry';
@@ -214,11 +215,48 @@ export const surfaces = {
     ),
 };
 
-const htmlEntities: Record<string, string> = {
-  ...entities,
-  '&quot;': '"',
-  '&#x27;': "'",
-  '&#39;': "'",
+const textContentOfHtml = (
+  node: DefaultTreeAdapterMap['childNode'],
+  skipAriaHidden: boolean
+): string => {
+  if (
+    'tagName' in node &&
+    (node.tagName === 'script' ||
+      node.tagName === 'style' ||
+      (skipAriaHidden && node.attrs.some(({ name }) => name === 'aria-hidden')))
+  ) {
+    return '';
+  }
+  if ('value' in node) {
+    return node.value;
+  }
+  return 'childNodes' in node
+    ? node.childNodes
+        .map((child) => textContentOfHtml(child, skipAriaHidden))
+        .join('')
+    : '';
+};
+
+export const renderedHtmlText = (html: string): string =>
+  parseFragment(html)
+    .childNodes.map((node) => textContentOfHtml(node, false))
+    .join('');
+
+export const renderedHtmlElementTexts = (
+  html: string,
+  tagName: string,
+  skipAriaHidden = false
+): string[] => {
+  const collect = (node: DefaultTreeAdapterMap['childNode']): string[] => {
+    const text =
+      'tagName' in node && node.tagName === tagName
+        ? [textContentOfHtml(node, skipAriaHidden)]
+        : [];
+    return 'childNodes' in node
+      ? [...text, ...node.childNodes.flatMap(collect)]
+      : text;
+  };
+  return parseFragment(html).childNodes.flatMap(collect);
 };
 
 export const htmlText = (node: PrimitiveNode): string => {
@@ -227,14 +265,9 @@ export const htmlText = (node: PrimitiveNode): string => {
       ? node
       : ({ type: 'slideFrame', body: [node] } as PrimitiveNode),
   ];
-  return runtime.surfaces.html
-    .render({ type: 'view', body })
-    .html.replace(/<style[\s\S]*?<\/style>/g, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(
-      /&(?:lt|gt|amp|quot|#x27|#39);/g,
-      (entity) => htmlEntities[entity] ?? entity
-    );
+  return renderedHtmlText(
+    runtime.surfaces.html.render({ type: 'view', body }).html
+  );
 };
 
 export const missingFrom = (output: string, node: unknown): string[] => {

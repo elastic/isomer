@@ -10,6 +10,10 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import {
+  renderedHtmlElementTexts,
+  renderedHtmlText,
+} from '../../content_parity.fixtures';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { frameContentWidth } from '../../theme/components/frame';
 import { section, sectionShares } from '../../theme/components/section';
@@ -176,9 +180,7 @@ describe('sectionSlide', () => {
 
   it('reads its number and title apart in the heading', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
-    expect(
-      /<h1[^>]*>(.*?)<\/h1>/.exec(html)?.[1]?.replace(/<[^>]+>/g, '')
-    ).toBe('02 Settlement');
+    expect(renderedHtmlElementTexts(html, 'h1')[0]).toBe('02 Settlement');
   });
 
   describe('title size', () => {
@@ -232,9 +234,7 @@ describe('sectionSlide counts', () => {
 
   it('numbers its lines in HTML as text, Markdown, and Slack do', () => {
     const { html } = runtime.surfaces.html.render(compose(example));
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
-      '1.Refunds settle in two days'
-    );
+    expect(renderedHtmlText(html)).toContain('1.Refunds settle in two days');
     expect(text(example)).toContain('1. Refunds settle in two days');
   });
 });

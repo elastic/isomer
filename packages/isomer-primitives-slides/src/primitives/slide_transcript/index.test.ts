@@ -12,6 +12,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlElementTexts } from '../../content_parity.fixtures';
 import { slideJsx } from '../../jsx';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { slideDistillery } from '../../theme/distillery';
@@ -168,12 +169,9 @@ describe('slideTranscript output', () => {
 
 describe('slideTranscript in the DOM', () => {
   const turnsOf = (node: SlideTranscriptNode) =>
-    [
-      ...runtime.surfaces.html
-        .render(compose(node))
-        .html.matchAll(/<li[^>]*>([\s\S]*?)<\/li>/g),
-    ].map(([, inner = '']) =>
-      inner.replace(/<[^>]+>/g, '').replace(/&quot;/g, '"')
+    renderedHtmlElementTexts(
+      runtime.surfaces.html.render(compose(node)).html,
+      'li'
     );
 
   it.each(examples.map((node, index) => [index, node] as const))(
