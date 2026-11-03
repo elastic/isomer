@@ -95,7 +95,7 @@ A form-based layer reads back through `readTable(layer, datatable)`, which takes
 
 ## Binding a chart
 
-`bind(plan, tables, { filterAction? })` takes a plan and one `readResponse` or `readTable` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with its breakdown field and raw value as the filter.
+`bind(plan, tables, { filterAction?, dates? })` takes a plan and one `readResponse` or `readTable` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with the filter Lens builds for its bucket. `dates` is the host's `dateFormat` and `dateFormat:tz` (`{ format, timeZone }`), which date readings need; nothing defaults it.
 
 The metric is the first chart bound. [Metric](metric.md) lists what it supports and refuses.
 

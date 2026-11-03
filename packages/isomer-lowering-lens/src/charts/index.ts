@@ -6,3 +6,4 @@
  */
 
 export { type BindOptions, type LensBindResult, bind } from './bind';
+export type { DateContext } from './metric/bind';
