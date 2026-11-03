@@ -541,6 +541,45 @@ describe('bind: default colors', () => {
   });
 });
 
+describe('bind: dates', () => {
+  const lastSeen = (type = 'date') => ({
+    layer: {
+      columns: [
+        { columnId: 'visits', fieldName: 'visits', meta: { type: 'date' } },
+      ],
+      response: {
+        columns: [{ name: 'visits', type }],
+        values: [['2026-11-02T13:45:00.000Z']],
+      },
+    },
+  });
+  const format = 'MMM D, YYYY @ HH:mm:ss.SSS';
+
+  it.each([
+    ['Europe/Lisbon', 'Nov 2, 2026 @ 13:45:00.000'],
+    ['America/New_York', 'Nov 2, 2026 @ 08:45:00.000'],
+  ])(
+    "reads a date in the host's format and time zone, %s",
+    (timeZone, expected) => {
+      const planned = run(vis(), lastSeen(), { dates: { format, timeZone } });
+      expect(node(planned).tiles[0]!.value).toBe(expected);
+    }
+  );
+
+  it('refuses a date without the host’s date context, and nanosecond dates', () => {
+    expect(codes(run(vis(), lastSeen()))).toEqual([
+      'lens.metric.unsupported-date',
+    ]);
+    expect(
+      codes(
+        run(vis(), lastSeen('date_nanos'), {
+          dates: { format, timeZone: 'UTC' },
+        })
+      )
+    ).toEqual(['lens.metric.unsupported-date']);
+  });
+});
+
 describe('bind: breakdown', () => {
   const layer = (values: unknown[][]) => ({
     layer: {
