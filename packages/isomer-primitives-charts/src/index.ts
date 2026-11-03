@@ -5,5 +5,4 @@
  * 2.0.
  */
 
-export { metricText } from './metric';
 export { type ChartRenderers, createChartsPack } from './pack';

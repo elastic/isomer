@@ -9,39 +9,13 @@
 
 export { examples as metricExamples } from './metric/examples';
 export {
-  type MetricLayout,
   type ResolvedMetric,
   type ResolvedMetricTile,
-  type ResolvedSecondary,
   resolveMetric,
 } from './metric/resolve';
 export {
   type MetricNode,
   type MetricTile,
   metricSchema,
-  metricTileSchema,
 } from './metric/schema';
-export { type ChartAction, actionSchema, toActionEvent } from './shared/action';
-export {
-  type ColorRef,
-  colorSchema,
-  resolveBadge,
-  resolveFill,
-  sparkShade,
-  textOn,
-} from './shared/color';
-export {
-  type ValueFormat,
-  formatValue,
-  valueFormatSchema,
-} from './shared/format';
-export { type Point, pointSchema } from './shared/series';
-export {
-  type ChartTokens,
-  type Scheme,
-  type TextTokens,
-  type Tone,
-  type ToneTokens,
-  TONES,
-  chartTokens,
-} from './theme';
+export { type Scheme, chartTokens } from './theme';

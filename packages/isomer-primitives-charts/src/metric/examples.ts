@@ -114,6 +114,7 @@ export const textExample: MetricNode = {
   ],
 };
 
+/** Every example, for galleries and tests. */
 export const examples: MetricNode[] = [
   example,
   breakdownExample,

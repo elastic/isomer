@@ -106,7 +106,7 @@ const visualSchema = z
   ])
   .describe('A trend or a progress bar; a tile shows at most one.');
 
-export const metricTileSchema = z
+const metricTileSchema = z
   .object({
     key: text.describe(
       'Unique within the metric; identifies the tile to actions and tests.'
@@ -155,6 +155,7 @@ export const metricTileSchema = z
     }
   });
 
+/** Schema of a `metric` node. */
 export const metricSchema = z
   .object({
     type: z.literal('metric'),
@@ -206,5 +207,7 @@ export const metricSchema = z
     });
   });
 
+/** A `metric` node: headline readings as a grid of tiles. */
 export type MetricNode = z.infer<typeof metricSchema>;
+/** One tile of a {@link MetricNode}. */
 export type MetricTile = z.infer<typeof metricTileSchema>;

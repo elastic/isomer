@@ -33,7 +33,7 @@ const catalog = {
 } satisfies PrimitiveCatalogEntry;
 
 /** One line per tile. */
-export const metricText = (node: MetricNode): string =>
+const metricText = (node: MetricNode): string =>
   resolveMetric(node)
     .tiles.map(({ reading }) => reading)
     .join('\n');

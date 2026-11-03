@@ -28,7 +28,7 @@ type Direction = 'up' | 'down' | 'flat';
 
 const GLYPHS: Record<Direction, string> = { up: '↑', down: '↓', flat: '=' };
 
-export interface ResolvedSecondary {
+interface ResolvedSecondary {
   label?: string | undefined;
   labelPosition: 'before' | 'after' | 'tooltip';
   value?: string | undefined;
@@ -39,6 +39,7 @@ export interface ResolvedSecondary {
   description: string;
 }
 
+/** A tile with its text formatted and its colors concrete, ready to draw. */
 export interface ResolvedMetricTile {
   key: string;
   title?: string | undefined;
@@ -78,7 +79,7 @@ export interface ResolvedMetricTile {
 
 type Align = 'left' | 'center' | 'right';
 
-export interface MetricLayout {
+interface MetricLayout {
   titleAlign: Align;
   valueAlign: Align;
   secondaryAlign: Align;
@@ -87,6 +88,7 @@ export interface MetricLayout {
   density: 'compact' | 'default';
 }
 
+/** What {@link resolveMetric} returns: the grid, layout, tiles and tokens a renderer draws. */
 export interface ResolvedMetric {
   columns: number;
   layout: MetricLayout;

@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-export const filterSchema = z
+const filterSchema = z
   .object({
     field: z.string().min(1).describe('The source field the mark represents.'),
     value: z
@@ -16,6 +16,7 @@ export const filterSchema = z
   })
   .strict();
 
+/** Schema of the action a mark raises when selected. */
 export const actionSchema = z
   .object({
     name: z
@@ -36,7 +37,7 @@ export const actionSchema = z
     'What activating the mark raises for the host. Omit it and the mark is inert.'
   );
 
-export type ChartAction = z.infer<typeof actionSchema>;
+type ChartAction = z.infer<typeof actionSchema>;
 
 /** The SDK action event a mark raises: `context` plus its `key` and `filters`. */
 export const toActionEvent = (

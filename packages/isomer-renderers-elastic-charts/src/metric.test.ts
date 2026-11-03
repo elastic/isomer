@@ -195,4 +195,14 @@ describe('elasticChartsPack', () => {
       )
     ).toContain('<li>web-02, CPU, 81.0%</li>');
   });
+
+  it('keeps every server reading in flow, unclipped', () => {
+    const html = renderToString(
+      createElement(MetricChart, {
+        node: { ...breakdown, columns: breakdown.tiles.length },
+      })
+    );
+    expect(html).not.toMatch(/overflow|absolute|height:\d+px/);
+    expect(html.match(/<li>/g)).toHaveLength(breakdown.tiles.length);
+  });
 });

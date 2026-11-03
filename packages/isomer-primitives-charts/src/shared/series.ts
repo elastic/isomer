@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 
-export const pointSchema = z
+const pointSchema = z
   .object({
     x: z.number().int().describe('Epoch milliseconds.'),
     y: z
@@ -18,6 +18,7 @@ export const pointSchema = z
   })
   .strict();
 
+/** One series point: epoch milliseconds and a reading, `null` for a gap. */
 export type Point = z.infer<typeof pointSchema>;
 
 /** Points in strictly increasing `x`, so no instant appears twice. */

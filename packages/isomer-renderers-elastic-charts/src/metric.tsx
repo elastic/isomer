@@ -30,6 +30,7 @@ const rows = <T,>(items: T[], columns: number): T[][] =>
     items.slice(row * columns, (row + 1) * columns)
   );
 
+/** Props of {@link MetricChart}. */
 export interface MetricChartProps {
   node: MetricNode;
   /** Receives a tile's action; absent renders the chart inert. */
@@ -60,44 +61,53 @@ const MetricView = ({
   const grid = rows(tiles, columns);
   const interactive =
     onEvent !== undefined && tiles.some(({ action }) => action);
-  // The spacer sizes the chart only when the host's height is indefinite.
   return (
     <div
       {...attributes}
       ref={ref}
-      style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div style={{ height: grid.length * tokens.rowHeight }} />
-      <div style={{ position: 'absolute', inset: 0 }}>
-        {scheme === undefined ? (
-          <Readings resolved={resolved} />
-        ) : (
-          <Chart>
-            <Settings
-              baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
-              theme={toTheme(resolved)}
-              {...(interactive
-                ? {
-                    onElementClick: ([event]) => {
-                      const action =
-                        event &&
-                        'type' in event &&
-                        event.type === 'metricElementEvent' &&
-                        tiles[event.rowIndex * columns + event.columnIndex]
-                          ?.action;
-                      if (action) {
-                        onEvent(action);
-                      }
-                    },
-                  }
-                : {})}
-            />
-            <Metric
-              id="metric"
-              data={grid.map((row) => row.map((tile) => toDatum(tile, tokens)))}
-            />
-          </Chart>
-        )}
-      </div>
+      style={{ position: 'relative', height: '100%' }}>
+      {scheme === undefined ? (
+        <Readings resolved={resolved} />
+      ) : (
+        <>
+          {/* Sizes the chart only when the host's height is indefinite. */}
+          <div
+            style={{
+              height: grid.length * tokens.rowHeight,
+              maxHeight: '100%',
+            }}
+          />
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <Chart>
+              <Settings
+                baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
+                theme={toTheme(resolved)}
+                {...(interactive
+                  ? {
+                      onElementClick: ([event]) => {
+                        const action =
+                          event &&
+                          'type' in event &&
+                          event.type === 'metricElementEvent' &&
+                          tiles[event.rowIndex * columns + event.columnIndex]
+                            ?.action;
+                        if (action) {
+                          onEvent(action);
+                        }
+                      },
+                    }
+                  : {})}
+              />
+              <Metric
+                id="metric"
+                data={grid.map((row) =>
+                  row.map((tile) => toDatum(tile, tokens))
+                )}
+              />
+            </Chart>
+          </div>
+        </>
+      )}
     </div>
   );
 };

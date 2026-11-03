@@ -24,6 +24,7 @@ const compact = z
   .boolean()
   .describe('Abbreviate thousands as `k`, `m`, `b` and `t`.');
 
+/** Schema of how a number reads: number, percent, bytes or bits. */
 export const valueFormatSchema = z
   .discriminatedUnion('kind', [
     z
@@ -64,6 +65,7 @@ export const valueFormatSchema = z
     'How a number reads. Omitted, a number shows up to three decimals, as Kibana’s default number format does.'
   );
 
+/** How a number reads, as {@link formatValue} formats it. */
 export type ValueFormat = z.infer<typeof valueFormatSchema>;
 
 const ABBREVIATIONS: ReadonlyArray<readonly [number, string]> = [

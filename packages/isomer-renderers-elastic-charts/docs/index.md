@@ -2,11 +2,10 @@
 
 `@elastic/isomer-renderers-elastic-charts` draws the [chart primitives](../../isomer-primitives-charts/docs/index.md) with Elastic Charts in the browser.
 
-| Export                   | What it is                                                                |
-| ------------------------ | ------------------------------------------------------------------------- |
-| `elasticChartsPack`      | The charts pack, drawn with Elastic Charts.                               |
-| `elasticChartsRenderers` | The `react` renderers, for `createChartsPack`.                            |
-| `MetricChart`            | The metric as a component: `node`, optional `onEvent`, optional `scheme`. |
+| Export              | What it is                                                                |
+| ------------------- | ------------------------------------------------------------------------- |
+| `elasticChartsPack` | The charts pack, drawn with Elastic Charts.                               |
+| `MetricChart`       | The metric as a component: `node`, optional `onEvent`, optional `scheme`. |
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';

@@ -9,14 +9,16 @@ import { z } from 'zod';
 
 import { type ChartTokens, type TextTokens, type Tone, TONES } from '../theme';
 
-export const toneSchema = z.enum(TONES);
+const toneSchema = z.enum(TONES);
 
+/** Schema of a mark color: a theme tone or `#rrggbb`. */
 export const colorSchema = z
   .union([toneSchema, z.string().regex(/^#[0-9a-fA-F]{6}$/)])
   .describe(
     'A theme tone (`default`, `primary`, `neutral`, `success`, `warning`, `risk`, `danger`) or a `#rrggbb` color.'
   );
 
+/** A theme tone or a `#rrggbb` color. */
 export type ColorRef = z.infer<typeof colorSchema>;
 
 const isTone = (color: ColorRef): color is Tone =>

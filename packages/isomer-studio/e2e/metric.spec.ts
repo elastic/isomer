@@ -110,6 +110,30 @@ for (const mode of ['dev', 'static']) {
         'rgb(17, 28, 44)'
       );
 
+      // One row is `rowHeight` tall in an indefinite host and fits a shorter one.
+      const root = page
+        .locator('.echChart')
+        .locator(
+          'xpath=ancestor::div[contains(@style, "position: relative")][1]'
+        );
+      await expect
+        .poll(() => root.evaluate((element) => element.clientHeight))
+        .toBe(150);
+      await root.evaluate((element) => {
+        element.parentElement!.style.height = '100px';
+      });
+      await expect
+        .poll(() =>
+          root.evaluate(({ clientHeight, scrollHeight }) => [
+            clientHeight,
+            scrollHeight,
+          ])
+        )
+        .toEqual([100, 100]);
+      await root.evaluate((element) => {
+        element.parentElement!.style.height = '';
+      });
+
       await page.getByLabel('Example').selectOption({ index: 1 });
       await expect(tiles).toHaveCount(3);
       await tiles.filter({ hasText: 'web-02' }).click();

@@ -8,6 +8,7 @@
 // Values mirror Elastic Charts' `LIGHT_THEME`/`DARK_THEME` metric section and
 // EUI Borealis colors, so every renderer reproduces the Elastic Charts look.
 
+/** Theme tones a mark can take instead of a literal color. */
 export const TONES = [
   'default',
   'primary',
@@ -18,8 +19,10 @@ export const TONES = [
   'danger',
 ] as const;
 
+/** One of {@link TONES}. */
 export type Tone = (typeof TONES)[number];
 
+/** The color scheme a chart paints in. */
 export type Scheme = 'light' | 'dark';
 
 /** Text colors for marks drawn on a light or a dark fill. */
@@ -29,7 +32,7 @@ export interface TextTokens {
   extra: string;
 }
 
-export interface ToneTokens {
+interface ToneTokens {
   /** Tile fill: EUI Borealis severity colors, `primary` for `primary`. */
   solid: string;
   /** Badge fill: EUI `euiColorBackgroundLight*`. */
@@ -38,6 +41,7 @@ export interface ToneTokens {
   softText: string;
 }
 
+/** Colors and sizes every renderer draws a chart with. */
 export interface ChartTokens {
   fontFamily: string;
   /** Tile fill when no color is set. */
@@ -78,6 +82,7 @@ const shared = {
   rowHeight: 150,
 };
 
+/** {@link ChartTokens} per scheme, matching Elastic Charts' `LIGHT_THEME` and `DARK_THEME`. */
 export const chartTokens: Record<Scheme, ChartTokens> = {
   light: {
     ...shared,
