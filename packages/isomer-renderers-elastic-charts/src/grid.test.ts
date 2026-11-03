@@ -19,18 +19,22 @@ const { act = testUtilsAct, createElement } = React as typeof React & {
 };
 
 const grids: unknown[][][] = [];
+const settings: { onElementClick?: (events: unknown[]) => void }[] = [];
 
 vi.mock('@elastic/charts', async (actual) => ({
   ...(await actual<typeof import('@elastic/charts')>()),
   Chart: ({ children }: { children: React.ReactNode }) => children,
-  Settings: () => null,
+  Settings: (props: (typeof settings)[number]) => {
+    settings.push(props);
+    return null;
+  },
   Metric: ({ data }: { data: unknown[][] }) => {
     grids.push(data);
     return null;
   },
 }));
 
-const { MetricChart } = await import('./metric');
+const { elasticChartsRenderers, MetricChart } = await import('./metric');
 
 const drawn = (node: MetricNode) => {
   grids.length = 0;
@@ -88,5 +92,53 @@ describe('MetricChart grid', () => {
 
   it('draws an empty grid for no tiles', () => {
     expect(drawn({ type: 'metric', tiles: [] })).toEqual([]);
+  });
+});
+
+describe('MetricChart actions', () => {
+  it('calls onEvent on the render context, which may be a class instance', () => {
+    class Host {
+      received: unknown[] = [];
+      onEvent(event: unknown) {
+        this.received.push(event);
+      }
+    }
+    const context = new Host();
+    // jsdom has no `matchMedia`; the chart reads the scheme from it.
+    vi.stubGlobal(
+      'matchMedia',
+      (query: string) =>
+        ({
+          matches: false,
+          media: query,
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
+        }) as unknown as MediaQueryList
+    );
+    const node: MetricNode = {
+      type: 'metric',
+      tiles: [{ key: 'a', value: 1, action: { name: 'filter' } }],
+    };
+    settings.length = 0;
+    const host = document.createElement('div');
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() => {
+      root.render(
+        elasticChartsRenderers.metric(node, {
+          context,
+        } as unknown as Parameters<typeof elasticChartsRenderers.metric>[1])
+      );
+    });
+    act(() => {
+      settings.at(-1)!.onElementClick!([
+        { type: 'metricElementEvent', rowIndex: 0, columnIndex: 0 },
+      ]);
+    });
+    act(() => root.unmount());
+    vi.unstubAllGlobals();
+    expect(context.received).toEqual([
+      { name: 'filter', context: { key: 'a' } },
+    ]);
   });
 });

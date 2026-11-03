@@ -63,9 +63,9 @@ type MetricTile = {
       | { field: string; values: Raw[]; negate?: boolean } // any, or none, of the values
       | { field: string; exists: boolean } // a missing bucket: exists: false
       | { field: string; range: { gte?: number; lt?: number } } // a range bucket
-      | { query: string | Json; language: 'kuery' | 'lucene' } // a filters bucket
+      | { query: string | Record<string, Json>; language: 'kuery' | 'lucene' } // a filters bucket
     )[];
-    context?: Json;
+    context?: Record<string, Json>;
   };
 };
 ```
