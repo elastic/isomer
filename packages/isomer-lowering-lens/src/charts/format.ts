@@ -10,14 +10,11 @@ import {
   valueFormatSchema,
 } from '@elastic/isomer-primitives-charts/model';
 
-import type { JsonValue } from '../json';
+import { isJsonObject as isRecord } from '../json';
 
 type Mapped =
   | { ok: true; format: ValueFormat | undefined }
   | { ok: false; id: string; outOfRange?: true };
-
-const isRecord = (value: unknown): value is Record<string, JsonValue> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 const mapFormat = (params: unknown): Mapped => {
   const format = isRecord(params) ? params.format : undefined;

@@ -155,6 +155,11 @@ const CURATED_LICENSES = [
     version: '5.0.3',
     text: curatedLicense('elastic-datemath-5.0.3-Apache-2.0.txt'),
   },
+  {
+    names: ['antlr4'],
+    version: '4.13.2',
+    text: curatedLicense('antlr4-4.13.2-BSD-3-Clause.txt'),
+  },
 ];
 
 const readPackage = (dir) =>

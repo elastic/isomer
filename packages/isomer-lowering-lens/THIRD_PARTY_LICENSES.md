@@ -8,12 +8,22 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
+| `@elastic/esql` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql@4.36.0/node_modules/@elastic/esql` |  |
+| `@elastic/esql-ast` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-ast@4.36.0/node_modules/@elastic/esql-ast` |  |
+| `@elastic/esql-definitions` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.36.0/node_modules/@elastic/esql-definitions` |  |
+| `@elastic/esql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-grammar@4.36.0/node_modules/@elastic/esql-grammar` |  |
+| `@elastic/esql-parser` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-parser@4.36.0/node_modules/@elastic/esql-parser` |  |
+| `@elastic/esql-promql-grammar` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-promql-grammar@4.36.0/node_modules/@elastic/esql-promql-grammar` |  |
+| `@elastic/esql-traversal` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-traversal@4.36.0/node_modules/@elastic/esql-traversal` |  |
+| `@elastic/esql-types` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-types@4.36.0/node_modules/@elastic/esql-types` |  |
 | `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
+| `@elastic/pretty-printer` | 4.36.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+pretty-printer@4.36.0/node_modules/@elastic/pretty-printer` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
 | `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
+| `antlr4` | 4.13.2 | BSD-3-Clause | `node_modules/.pnpm/antlr4@4.13.2/node_modules/antlr4` |  |
 | `ccount` | 2.0.1 | MIT | `node_modules/.pnpm/ccount@2.0.1/node_modules/ccount` |  |
 | `character-entities` | 2.0.2 | MIT | `node_modules/.pnpm/character-entities@2.0.2/node_modules/character-entities` |  |
 | `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
@@ -64,6 +74,8 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
+| `tree-dump` | 1.1.0 | Apache-2.0 | `node_modules/.pnpm/tree-dump@1.1.0_tslib@2.8.1/node_modules/tree-dump` |  |
+| `tslib` | 2.8.1 | 0BSD | `node_modules/.pnpm/tslib@2.8.1/node_modules/tslib` |  |
 | `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
 | `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |
 | `unist-util-visit` | 5.1.0 | MIT | `node_modules/.pnpm/unist-util-visit@5.1.0/node_modules/unist-util-visit` |  |

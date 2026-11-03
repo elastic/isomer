@@ -5,17 +5,20 @@
  * 2.0.
  */
 
-import { copyJson, JSON_LIMITS } from './json';
+import type { JsonLimits } from './json';
+import { copyPlain, JSON_LIMITS } from './json';
 
-const refusal = (input: unknown) => {
-  const result = copyJson(input);
+const refusal = (input: unknown, limits: JsonLimits = JSON_LIMITS) => {
+  const result = copyPlain(input, limits);
   return result.ok ? undefined : result.message;
 };
 
-describe('copyJson', () => {
-  it('copies plain JSON without sharing objects', () => {
+const small = { depth: 3, values: 5, characters: 10 };
+
+describe('copyPlain', () => {
+  it('copies plain data without sharing objects', () => {
     const input = { a: [1, 'two', null, true, { b: [] }], c: {} };
-    const result = copyJson(input);
+    const result = copyPlain(input);
     expect(result).toEqual({ ok: true, value: input });
     if (result.ok) {
       expect(result.value).not.toBe(input);
@@ -29,7 +32,7 @@ describe('copyJson', () => {
       value: 1,
       enumerable: true,
     });
-    const result = copyJson(input);
+    const result = copyPlain(input);
     expect(result.ok && Object.getPrototypeOf(result.value)).toBe(
       Object.prototype
     );
@@ -38,20 +41,14 @@ describe('copyJson', () => {
     ]);
   });
 
+  it('leaves non-JSON leaves to the schemas', () => {
+    expect(copyPlain([Number.NaN, Infinity, undefined, 1n])).toEqual({
+      ok: true,
+      value: [Number.NaN, Infinity, undefined, 1n],
+    });
+  });
+
   it.each([
-    ['NaN', Number.NaN, 'Input holds a number that is not finite.'],
-    ['Infinity', [Infinity], 'Input holds a number that is not finite.'],
-    [
-      'undefined in an array',
-      [undefined],
-      'Input holds a value of type undefined, which is not JSON.',
-    ],
-    ['a bigint', 1n, 'Input holds a value of type bigint, which is not JSON.'],
-    [
-      'a function',
-      { f: () => 1 },
-      'Input holds a value of type function, which is not JSON.',
-    ],
     [
       'a Date',
       new Date(0),
@@ -69,19 +66,18 @@ describe('copyJson', () => {
       'Input holds an array with holes or extra keys.',
     ],
     [
-      'a symbol key',
-      { [Symbol('s')]: 1 },
-      'Input holds a symbol or non-enumerable key.',
+      'an array with an extra key',
+      Object.assign([1], { extra: 2 }),
+      'Input holds an array with holes or extra keys.',
+    ],
+    ['a symbol key', { [Symbol('s')]: 1 }, 'Input holds a symbol key.'],
+    [
+      'a non-enumerable property',
+      Object.defineProperty({}, 'a', { value: 1 }),
+      'Input holds a non-enumerable property.',
     ],
   ])('refuses %s', (_name, input, message) => {
     expect(refusal(input)).toBe(message);
-  });
-
-  it('refuses an array with an extra key', () => {
-    const input = Object.assign([1], { extra: 2 });
-    expect(refusal(input)).toBe(
-      'Input holds an array with holes or extra keys.'
-    );
   });
 
   it('refuses accessors without calling them', () => {
@@ -94,52 +90,69 @@ describe('copyJson', () => {
 
   it('refuses cycles but not a shared, acyclic child', () => {
     const shared = { x: 1 };
-    expect(copyJson({ a: shared, b: shared }).ok).toBe(true);
+    expect(copyPlain({ a: shared, b: shared }).ok).toBe(true);
     const cycle: Record<string, unknown> = {};
     cycle.self = cycle;
     expect(refusal(cycle)).toBe('Input contains itself.');
   });
 
-  it('accepts the depth limit and refuses one past it', () => {
-    const nest = (depth: number): unknown =>
-      depth === 0 ? 0 : [nest(depth - 1)];
-    expect(copyJson(nest(JSON_LIMITS.depth)).ok).toBe(true);
-    expect(refusal(nest(JSON_LIMITS.depth + 1))).toBe(
-      `Input nests deeper than ${JSON_LIMITS.depth} levels.`
-    );
-  });
-
-  it('accepts the value limit and refuses one past it', () => {
-    // The array itself is one value.
-    expect(copyJson(new Array(JSON_LIMITS.values - 1).fill(0)).ok).toBe(true);
-    expect(refusal(new Array(JSON_LIMITS.values).fill(0))).toBe(
-      `Input holds more than ${JSON_LIMITS.values} values.`
-    );
-  });
-
   it('drops object properties set to undefined, as JSON.stringify does', () => {
-    expect(copyJson({ a: undefined, b: 1 })).toEqual({
+    expect(copyPlain({ a: undefined, b: 1 })).toEqual({
       ok: true,
       value: { b: 1 },
     });
-    const result = copyJson({ a: undefined });
+    const result = copyPlain({ a: undefined });
     expect(result.ok && Object.keys(result.value as object)).toEqual([]);
   });
 
-  it('counts object keys but not array indexes as characters', () => {
-    // 3,600,000 characters of strings; their indexes alone would add about 490,000 more.
-    expect(copyJson(new Array(100_000).fill('x'.repeat(36))).ok).toBe(true);
-    const key = 'k'.repeat(JSON_LIMITS.characters - 9);
-    expect(copyJson({ [key]: 'v'.repeat(9) }).ok).toBe(true);
-    expect(refusal({ [key]: 'v'.repeat(10) })).toBe(
-      `Input holds more than ${JSON_LIMITS.characters} characters.`
-    );
+  it('copies nesting far past the call stack when the limits allow it', () => {
+    let nested: unknown = 0;
+    for (let index = 0; index < 100_000; index += 1) {
+      nested = [nested];
+    }
+    expect(
+      copyPlain(nested, { depth: 100_000, values: 100_001, characters: 0 }).ok
+    ).toBe(true);
   });
 
-  it('accepts the character limit and refuses one past it', () => {
-    expect(copyJson('x'.repeat(JSON_LIMITS.characters)).ok).toBe(true);
-    expect(refusal('x'.repeat(JSON_LIMITS.characters + 1))).toBe(
-      `Input holds more than ${JSON_LIMITS.characters} characters.`
-    );
+  describe('limits', () => {
+    const nest = (depth: number): unknown =>
+      depth === 0 ? 0 : [nest(depth - 1)];
+
+    it('accepts the depth limit and refuses one past it', () => {
+      expect(refusal(nest(small.depth), { ...small, values: 10 })).toBe(
+        undefined
+      );
+      expect(refusal(nest(small.depth + 1), { ...small, values: 10 })).toBe(
+        'Input nests deeper than 3 levels.'
+      );
+    });
+
+    it('accepts the value limit and refuses one past it', () => {
+      // The array itself is one value.
+      expect(refusal([1, 2, 3, 4], small)).toBe(undefined);
+      expect(refusal([1, 2, 3, 4, 5], small)).toBe(
+        'Input holds more than 5 values.'
+      );
+    });
+
+    it('counts object keys and strings, but not array indexes, as characters', () => {
+      expect(refusal(['aaaa', 'bbbbbb'], small)).toBe(undefined);
+      expect(refusal({ key: 'abcdefg' }, small)).toBe(undefined);
+      expect(refusal({ key: 'abcdefgh' }, small)).toBe(
+        'Input holds more than 10 characters.'
+      );
+    });
+
+    it('defaults to JSON_LIMITS', () => {
+      expect(copyPlain('x'.repeat(JSON_LIMITS.characters)).ok).toBe(true);
+      expect(refusal('x'.repeat(JSON_LIMITS.characters + 1))).toBe(
+        `Input holds more than ${JSON_LIMITS.characters} characters.`
+      );
+      expect(copyPlain(nest(JSON_LIMITS.depth)).ok).toBe(true);
+      expect(refusal(nest(JSON_LIMITS.depth + 1))).toBe(
+        `Input nests deeper than ${JSON_LIMITS.depth} levels.`
+      );
+    });
   });
 });
