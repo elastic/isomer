@@ -18,6 +18,7 @@ import { useStudio } from '../studio_context';
 
 import { HtmlSurface } from './html_surface';
 import { ShadowRootHost } from './shadow_root';
+import { withEvents } from './with_events';
 
 interface BoundaryState {
   error?: Error | undefined;
@@ -80,7 +81,7 @@ const ReactContent = ({
 }) => {
   const { runtime } = useStudio();
   const context = useMemo(
-    () => ({ ...createReactContext(root), ...(onEvent ? { onEvent } : {}) }),
+    () => withEvents(createReactContext(root), onEvent),
     [createReactContext, root, onEvent]
   );
   useLayoutEffect(() => {
