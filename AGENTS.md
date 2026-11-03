@@ -49,7 +49,7 @@ Docs define behavior; instructions guide changes. Investigate discrepancies rath
 
 The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, and `surfaces/`. Stage barrels there are hand-maintained the same way as the SDK's.
 
-`packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
+`packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Kibana-specific packs iterate in that repo; the renderer-neutral chart primitives below are owned here.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
@@ -60,6 +60,10 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 `packages/isomer-lowering-lens` plans native ES|QL Lens saved objects into versioned JSON plans and projects ES|QL responses onto their Lens columns, exporting `plan` and `readResponse`. It depends on `zod` alone and must never reach React, the SDK, the runtime, Studio or `@kbn/*`, which `scripts/check_module_graph.js` enforces. Its Studio app lives in its unpublished `studio/` folder. Hosts own retrieval, metadata and running queries.
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
+
+`packages/isomer-primitives-charts` defines renderer-neutral chart primitives: schemas, resolvers, theme tokens mirroring Elastic Charts, and text and Markdown adaptations. Its `/model` entry must stay free of React, DOM, Node built-ins, the SDK and chart engines, which `scripts/check_module_graph.js` enforces. Renderers map a chart's resolved model; they never re-derive formatting or color. Read its [contract](packages/isomer-primitives-charts/docs/index.md).
+
+`packages/isomer-renderers-elastic-charts` supplies the charts pack's `react` renderers with Elastic Charts. Its tests check the chart tokens against the installed Elastic Charts themes, and its `isomer-studio.config.ts` is a Studio of the charts pack alone. Read its [contract](packages/isomer-renderers-elastic-charts/docs/index.md).
 
 ## Release posture
 

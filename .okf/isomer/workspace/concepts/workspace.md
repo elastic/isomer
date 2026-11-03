@@ -22,6 +22,8 @@ sources:
 
 Isomer is a pnpm workspace whose packages under `packages/` resolve each other with `workspace:*` and, unless private, publish at one version; the README describes each package and the agent instructions its release posture and boundaries.[^readme][^agents]
 
+Chart primitives live in `packages/isomer-primitives-charts`, whose `/model` entry any engine can draw from, and `packages/isomer-renderers-elastic-charts` draws them with Elastic Charts; their package docs define the contract.[^agents]
+
 Related: [verify](/workspace/playbooks/verify.md), [publish](/workspace/playbooks/publish.md), [docs-builder](/workspace/playbooks/docs-builder.md), [conventions](/workspace/reference/conventions.md), [scoring](/evals/concepts/scoring.md), [agent tools](/agent-tools/concepts/agent-tools.md).
 
 [^agents]: Agent instructions

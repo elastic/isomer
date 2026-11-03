@@ -106,7 +106,7 @@ The config, the pack and React load from the pack's own `node_modules`. The Stud
 
 This repository's reference pack has a config at `packages/isomer-primitives-slides/isomer-studio.config.ts`. Its Studio is deployed with these docs at [elastic.github.io/isomer/studio-app/](https://elastic.github.io/isomer/studio-app/), PNGs included.
 
-The root `isomer-studio.config.ts` gathers every in-repo pack with `images: false`, with Decks and the [Lens inspector](../lowering-lens/index.md#lens-inspector) as apps. `pnpm studio:dev` runs it, and each PR's CI uploads a build of it; see [Review a pull request](ci.md#review-a-pull-request).
+The root `isomer-studio.config.ts` gathers every in-repo pack, the slides and charts packs, with `images: false`, with Decks and the [Lens inspector](../lowering-lens/index.md#lens-inspector) as apps. `pnpm studio:dev` runs it, and each PR's CI uploads a build of it; see [Review a pull request](ci.md#review-a-pull-request).
 
 These docs build in two places, and the app only in one:
 

@@ -314,7 +314,14 @@ export const SurfaceBoard = ({
             `}>
             {activeSurface ? (
               <SurfaceCard
-                surface={activeSurface}
+                // A styled Studio draws the Web card with React, which can draw what server markup cannot.
+                surface={
+                  activeSurface === 'html' &&
+                  view === 'render' &&
+                  createReactContext
+                    ? 'react'
+                    : activeSurface
+                }
                 title={outputLabel(activeSurface)}
                 note={
                   activeSurface === 'html'

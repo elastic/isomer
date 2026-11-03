@@ -56,7 +56,9 @@ never unloads the draft. PNG stays separate; Slack, Markdown and
 Text appear below. The **Outputs** menu lists these displayed outputs rather than
 separate React and Snapshot entries when HTML is available. Workbench starts with every
 output selected; pick one to inspect it at full size, or add others to compare.
-Runtimes without HTML retain their React or Snapshot output.
+Runtimes without HTML retain their React or Snapshot output. When the config sets
+`stylesheet` or `createReactContext`, the Web panel draws its rendered view with React,
+so renderers that draw only in the browser appear; **Output source** still shows HTML.
 
 **Enhancements**, aligned at the right of the Web header, is off by default.
 The menu tests each registered enhancement's `appliesTo` predicate against the

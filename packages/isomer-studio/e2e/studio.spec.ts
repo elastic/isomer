@@ -211,7 +211,10 @@ const editFirstString = async (page: Page) => {
   await page.keyboard.insertText(edited);
 };
 
-const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
+// The Web card draws with React when the config is styled, and with HTML otherwise.
+const WEB_PREVIEW = '[title="React preview"], [title="HTML preview"]';
+
+const reactPreview = (page: Page) => page.locator(WEB_PREVIEW);
 
 const navigateApp = async (page: Page, url: string) => {
   await page.goto(url);
@@ -435,7 +438,7 @@ test.describe('static build', () => {
         name: 'Composition workbench',
       });
       return {
-        preview: workbench.locator('[title="HTML preview"]'),
+        preview: workbench.locator(WEB_PREVIEW),
         valid: workbench.getByText('Valid', { exact: true }),
       };
     };
@@ -527,7 +530,7 @@ test.describe('static build', () => {
     await expect(
       preview.getByRole('combobox', { name: 'Visual preview surface' })
     ).toHaveCount(0);
-    await expect(preview.getByTitle('HTML preview')).toBeAttached();
+    await expect(preview.locator(WEB_PREVIEW)).toBeAttached();
     await expect(editor.locator('[data-keybinding-context]')).toHaveCSS(
       'border-bottom-width',
       '0px'
@@ -758,7 +761,7 @@ test.describe('static build', () => {
       await expect(
         panel.getByRole('combobox', { name: 'Visual preview surface' })
       ).toHaveCount(0);
-      await expect(panel.getByTitle('HTML preview')).toBeAttached();
+      await expect(panel.locator(WEB_PREVIEW)).toBeAttached();
     }
     await page.goto(`${site.url}#/dev/slideQuadrant/0`);
     await expectMonacoReady(page);
