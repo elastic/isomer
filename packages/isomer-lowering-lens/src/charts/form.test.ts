@@ -173,7 +173,9 @@ const breakdown = (collapseFn?: string) => ({
   },
 });
 
-const carriers = (rows: Row[]) => ({
+const carriers = (
+  rows: Row[]
+): { layer: { columns: Column[]; rows: Row[] } } => ({
   layer: {
     columns: [
       {
@@ -225,6 +227,120 @@ describe('bind: form-based breakdowns', () => {
         ? []
         : result.diagnostics.map(({ code }) => code)
     ).toEqual(['lens.metric.unsupported-filter-value']);
+  });
+
+  const codes = (result: ReturnType<typeof bind>) =>
+    result.status === 'bound' ? [] : result.diagnostics.map(({ code }) => code);
+  /** The carriers table with the carrier column's serialized format replaced. */
+  const formatted = (rows: Row[], params: Record<string, unknown>) => {
+    const table = carriers(rows);
+    table.layer.columns[0] = {
+      ...table.layer.columns[0]!,
+      meta: { type: 'string', params },
+    };
+    return table;
+  };
+  /** The breakdown fixture with the carrier column as a `filters` bucket. */
+  const filtersBreakdown = () => {
+    const input = breakdown();
+    const layer = (
+      input.savedObject.attributes.state.datasourceStates.formBased
+        .layers as Record<string, { columns: Record<string, unknown> }>
+    ).layer!;
+    layer.columns.carrier = {
+      operationType: 'filters',
+      label: 'Filters',
+      dataType: 'string',
+      isBucketed: true,
+      params: {
+        filters: [
+          { input: { query: 'Carrier : "A"', language: 'kuery' }, label: 'A' },
+          { input: { query: 'Carrier : "B"', language: 'kuery' }, label: 'B' },
+          { input: { query: 'Carrier : "C"', language: 'kuery' }, label: 'C' },
+        ],
+      },
+    };
+    return input;
+  };
+
+  it("labels a missing bucket as the table's terms format does, else (null)", () => {
+    const missing = [{ carrier: '__missing__', count: 4, max: 1000 }];
+    expect(
+      node(
+        run(
+          breakdown(),
+          formatted(missing, {
+            id: 'terms',
+            params: { id: 'string', missingBucketLabel: 'Missing' },
+          })
+        )
+      ).tiles[0]!.title
+    ).toBe('Missing');
+    expect(node(run(breakdown(), carriers(missing))).tiles[0]!.title).toBe(
+      '(null)'
+    );
+  });
+
+  it('pads a filters breakdown to its number of filters', () => {
+    const result = node(
+      run(filtersBreakdown(), carriers([{ carrier: 'A', count: 4, max: 1000 }]))
+    );
+    expect(result.placeholders).toBe(2);
+  });
+
+  it('refuses a filter for a missing bucket and a filters bucket', () => {
+    expect(
+      codes(
+        run(
+          breakdown(),
+          carriers([{ carrier: '__missing__', count: 4, max: 1000 }]),
+          'filter'
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-filter-value']);
+    expect(
+      codes(
+        run(
+          filtersBreakdown(),
+          carriers([{ carrier: 'A', count: 4, max: 1000 }]),
+          'filter'
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-filter-value']);
+  });
+
+  it('refuses an object bucket, such as a multi-field terms key', () => {
+    expect(
+      codes(
+        run(
+          breakdown(),
+          carriers([{ carrier: { keys: ['A', 'B'] }, count: 4, max: 1000 }])
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-breakdown-value']);
+  });
+
+  it('refuses a data view format that changes text or numbers', () => {
+    const one = [{ carrier: 'JetBeats', count: 4, max: 1000 }];
+    expect(
+      codes(
+        run(
+          breakdown(),
+          formatted(one, {
+            id: 'terms',
+            params: { id: 'static_lookup', params: { lookupEntries: [] } },
+          })
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-format']);
+    const bytes = carriers(one);
+    bytes.layer.columns[1] = {
+      ...bytes.layer.columns[1]!,
+      meta: { type: 'number', params: { id: 'color' } },
+    };
+    expect(codes(run(breakdown(), bytes))).toEqual([
+      'lens.metric.unsupported-format',
+    ]);
   });
 
   it('collapses a static max with `max`, keeping the value its author set', () => {
@@ -418,6 +534,24 @@ describe('readTable', () => {
         rows: [{}],
       })
     ).toMatchObject({ status: 'ready', table: { rows: [[null]] } });
+  });
+
+  it('refuses a table past the cell limit, counting the cells its sparse rows expand to', () => {
+    const [count] = layer.columns;
+    const wide = {
+      ...layer,
+      columns: ['a', 'b', 'c'].map((columnId) => ({ ...count!, columnId })),
+    };
+    expect(
+      readTable(wide, {
+        type: 'datatable',
+        columns: ['a', 'b', 'c'].map((id) => number(id, id)),
+        rows: Array.from({ length: 70_000 }, () => ({})),
+      })
+    ).toMatchObject({
+      status: 'invalid',
+      diagnostics: [{ code: 'lens.table.too-large' }],
+    });
   });
 
   it('refuses an ES|QL layer', () => {

@@ -49,7 +49,8 @@ A form-based metric binds from the same state, with Lens's form-based rules on t
 - A `terms` breakdown pads the grid to its `size`, plus one for the Other bucket, with `placeholders`; a `filters` breakdown pads to its number of filters.
 - The `__other__` and `__missing__` buckets read as the table's terms format labels them; without one, Other reads `Other` and a missing bucket `(null)`.
 - `filterAction` raises a field = value filter only for a single-field `terms` bucket. Other and missing buckets, multi-field terms, `filters` and `range` buckets are refused for now.
-- A number column with no Lens format and a data view format of its own is refused for now.
+- A number column with no Lens format and a data view format of its own is refused for now, and so is a text column whose data view format changes its text, such as a static lookup.
+- A breakdown bucket that is an object, such as a multi-field terms or range bucket, is refused for now.
 
 ## Secondary metric
 
@@ -73,6 +74,7 @@ A missing secondary reading reads `(null)`, as Kibana's formats print it.
 | `lens.metric.unsupported-format` | A `duration`, `custom` or other format, or `decimals` outside 0 to 20. |
 | `lens.metric.unsupported-palette` | A palette that is not one of Lens's value palettes, or one with more than 5 bands. |
 | `lens.metric.unsupported-icon` | A tile icon. |
+| `lens.metric.unsupported-breakdown-value` | A breakdown bucket is an object, such as a multi-field terms or range bucket. |
 | `lens.metric.unsupported-filter-value` | `filterAction` is set and a breakdown bucket needs more than a field = value filter. |
 | `lens.metric.unsupported-multivalue` | A multivalue or object reading. |
 | `lens.metric.unsupported-date` | A date metric, secondary or breakdown, which needs the host's date format and time zone. |

@@ -168,6 +168,29 @@ const formatCell = (
           ? JSON.stringify(value)
           : String(value);
 
+/** Text formats that read a cell as it is: Kibana's `string` without a transform, and `boolean`. */
+const isPlainTextFormat = (serialized: JsonValue | undefined): boolean => {
+  const inner =
+    isRecord(serialized) &&
+    serialized.id === 'terms' &&
+    isRecord(serialized.params)
+      ? serialized.params
+      : serialized;
+  if (inner === undefined || inner === null) {
+    return true;
+  }
+  if (!isRecord(inner)) {
+    return false;
+  }
+  const params = isRecord(inner.params) ? inner.params : {};
+  return (
+    inner.id === undefined ||
+    inner.id === 'boolean' ||
+    (inner.id === 'string' &&
+      (params.transform === undefined || params.transform === false))
+  );
+};
+
 const columnFormat = (
   bound: BoundColumn | undefined,
   problems: Problems
@@ -186,8 +209,17 @@ const columnFormat = (
     );
     return undefined;
   }
+  // `lens_format_column` formats number columns only; others keep their data view format.
   if (!bound.numeric) {
-    // `lens_format_column` formats number columns only.
+    const saved = bound.lens.meta?.params;
+    if (!isDate(bound) && !isPlainTextFormat(saved)) {
+      const id = isRecord(saved) ? saved.id : undefined;
+      problems.add(
+        'unsupported',
+        'unsupported-format',
+        `The "${typeof id === 'string' ? id : 'unknown'}" format of column "${bound.lens.columnId}" is not supported yet.`
+      );
+    }
     return undefined;
   }
   // A table's own format, from the data view, applies when Lens sets none;
@@ -594,6 +626,18 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
           ? String(raw)
           : null;
     const breakdownValue = cell(row, breakdown);
+    if (
+      typeof breakdownValue === 'object' &&
+      breakdownValue !== null &&
+      !Array.isArray(breakdownValue)
+    ) {
+      problems.add(
+        'unsupported',
+        'unsupported-breakdown-value',
+        'A breakdown bucket that is an object, such as a multi-field terms or range bucket, is not supported yet.',
+        ['tables', state.layerId, 'rows', rowIndex]
+      );
+    }
     const title = breakdown
       ? breakdownValue === '__other__' && labels.other
         ? labels.other

@@ -56,7 +56,7 @@ Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a p
 | Refused as | When |
 | --- | --- |
 | `unsupported` | A mixed or other datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or an ES\|QL global query other than empty KQL/Lucene or a copy of one layer's ES\|QL. In a form-based layer: an operation Lens does not define or an incomplete column. |
-| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, metadata for a data view that is repeated or not referenced, or a layer whose plan would exceed the `JSON_LIMITS` `readResponse` applies to it (its columns plus one value per parameter name). In a form-based layer: a missing data view reference, a link to a layer the datasource lacks, a `columnOrder` that does not match `columns`, a malformed column, a missing or circular reference, a broken formula, or a formula without a valid saved AST. |
+| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, metadata for a data view that is repeated or not referenced, or a layer whose plan would exceed the `JSON_LIMITS` `readResponse` applies to it (its columns plus one value per parameter name). In a form-based layer: a missing data view reference, a link to a layer the datasource lacks, a `columnOrder` that does not match `columns`, a malformed column, a reference operation without its one input, a missing or circular reference, a broken formula, or a formula without a valid saved AST. |
 
 Kibana saves native ES|QL Lens with a layer's ES|QL repeated as the global `state.query`; with several layers it mirrors the first. The copy is accepted when its text is exactly one layer's.
 
@@ -91,7 +91,7 @@ For a form-based layer, the host runs Lens's columns as Lens does, with the plan
 
 Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, `is_partial` / `is_running`, or a table of more than 200,000 cells (rows times Lens columns, since several columns can read one field) is `invalid`, with no table.
 
-A form-based layer reads back through `readTable(layer, datatable)`, which takes the Kibana `Datatable` Lens's expression produces (`{ type: 'datatable', columns: [{ id, name, meta }], rows: [{ [id]: value }] }`) and returns the same `table`. Columns match by Lens column ID. Every column no other column references must be present; a formula's parts may be. Each column keeps the table's `name` as its label and its `meta`, and takes the planned column's Lens format. A missing or repeated column is `invalid`.
+A form-based layer reads back through `readTable(layer, datatable)`, which takes the Kibana `Datatable` Lens's expression produces (`{ type: 'datatable', columns: [{ id, name, meta }], rows: [{ [id]: value }] }`) and returns the same `table`. Columns match by Lens column ID. Every column no other column references must be present; a formula's parts may be. Each column keeps the table's `name` as its label and its `meta`, and takes the planned column's Lens format. A missing or repeated column, or a table of more than 200,000 cells (rows times the planned columns present), is `invalid`.
 
 ## Binding a chart
 

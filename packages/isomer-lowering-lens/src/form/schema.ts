@@ -40,6 +40,8 @@ const base = {
 };
 const field = { ...base, sourceField: id };
 const referenced = { ...base, references: z.array(id) };
+/** Lens's reference-based operations each read exactly one column. */
+const operand = { ...base, references: z.array(id).length(1) };
 const formatted = params({ format: format.optional() }).optional();
 
 const column = <T extends string, S extends z.ZodRawShape>(
@@ -57,7 +59,7 @@ const metric = <T extends string>(operationType: T) =>
   });
 
 const reference = <T extends string>(operationType: T) =>
-  column(operationType, { ...referenced, params: formatted });
+  column(operationType, { ...operand, params: formatted });
 
 export const formColumnSchema = z.discriminatedUnion('operationType', [
   metric('count'),
@@ -108,14 +110,14 @@ export const formColumnSchema = z.discriminatedUnion('operationType', [
   reference('differences'),
   reference('counter_rate'),
   column('moving_average', {
-    ...referenced,
+    ...operand,
     params: params({
       window: z.number().int().positive(),
       format: format.optional(),
     }),
   }),
   column('normalize_by_unit', {
-    ...referenced,
+    ...operand,
     params: params({ unit: z.string().optional(), format: format.optional() }),
   }),
   column('time_range', referenced),
