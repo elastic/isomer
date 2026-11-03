@@ -62,7 +62,6 @@ A missing secondary reading reads `(null)`, as Kibana's formats print it.
 | `lens.metric.unsupported-default-color`                  | Lens would paint a tile with `euiColorVis2` or `euiColorVisText0` because no color applies. |
 | `lens.metric.unsupported-multivalue`                     | A multivalue or object reading.                                                             |
 | `lens.metric.unsupported-date`                           | A date metric, secondary or breakdown, which needs the host's date format and time zone.    |
-| `lens.metric.unsupported-short-trend`                    | A trend with fewer than two points.                                                         |
 | `lens.metric.unsupported-progress-domain`                | A progress max that is not a number or null.                                                |
 | `lens.metric.unsupported-empty-breakdown`                | A breakdown with no rows.                                                                   |
 | `lens.metric.unrepresentable`                            | The bound node fails the metric schema, for example more than 100 tiles.                    |

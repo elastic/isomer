@@ -589,6 +589,16 @@ describe('bind: progress and trend', () => {
     });
   });
 
+  it('keeps a one-point trend, which Lens draws without a line', () => {
+    const { tiles } = node(
+      run(trendState, trend([['2026-11-02T00:00:00.000Z', 3]]))
+    );
+    expect(tiles[0]!.visual).toEqual({
+      kind: 'trend',
+      points: [{ x: Date.UTC(2026, 10, 2), y: 3 }],
+    });
+  });
+
   it('refuses two trend points at one instant', () => {
     expect(
       codes(

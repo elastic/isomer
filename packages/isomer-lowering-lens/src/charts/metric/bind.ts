@@ -498,15 +498,7 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     }
     if (typeof value === 'number') {
       if (points) {
-        if (points.length < 2) {
-          problems.add(
-            'unsupported',
-            'unsupported-short-trend',
-            'A trend with fewer than two points is not supported yet.'
-          );
-        } else {
-          tile.visual = { kind: 'trend', points };
-        }
+        tile.visual = { kind: 'trend', points };
       } else if (showingBar && max) {
         const domainMax = cell(row, max);
         if (typeof domainMax === 'number' || domainMax === null) {
