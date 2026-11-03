@@ -11,16 +11,24 @@
 
 import {
   formatValue,
+  MAX_PALETTE_BANDS,
   type MetricNode,
   type MetricTile,
+  VALUE_PALETTES,
   type ValueFormat,
+  type ValuePalette,
 } from '@elastic/isomer-primitives-charts/model';
 
 import type { JsonValue } from '../../json';
 import type { LensDiagnostic, LensTable } from '../../schema';
 import { collapseRows } from '../collapse';
 import { toValueFormat } from '../format';
-import { colorForValue, customPalette, paletteBounds } from '../palette';
+import {
+  colorForValue,
+  customPalette,
+  namedPalette,
+  paletteBounds,
+} from '../palette';
 import { type BoundColumn, cell, column } from '../table';
 
 import type { MetricState } from './state';
@@ -296,26 +304,68 @@ const bindSecondary = (
   };
 };
 
+type TileColor = NonNullable<MetricTile['color']>;
+
+const isValuePalette = (name: string): name is ValuePalette =>
+  (VALUE_PALETTES as readonly string[]).includes(name);
+
+/** The saved color, or the band color by value picks; `undefined` paints nothing. */
 const tileColor = (
   state: MetricState,
   value: number | string | null,
   bounds: () => ReturnType<typeof paletteBounds>,
   problems: Problems
-): string | undefined => {
+): TileColor | undefined => {
   const { palette, color } = state;
   if (palette?.params && typeof value === 'number' && Number.isFinite(value)) {
-    if (palette.name !== 'custom') {
+    if (palette.name === 'custom') {
+      const picked = colorForValue(
+        value,
+        customPalette(palette.params),
+        bounds()
+      );
+      return picked === undefined
+        ? undefined
+        : hexColor(picked, problems, [...VIS, 'palette']);
+    }
+    const named = namedPalette(palette.params);
+    if (
+      !isValuePalette(palette.name) ||
+      named.colors.length > MAX_PALETTE_BANDS
+    ) {
       problems.add(
         'unsupported',
         'unsupported-palette',
-        `The named "${palette.name}" palette is not supported yet.`,
+        `The "${palette.name}" palette with ${named.colors.length} bands is not a value palette.`,
         [...VIS, 'palette']
       );
       return undefined;
     }
-    return colorForValue(value, customPalette(palette.params), bounds());
+    const step = colorForValue(value, named, bounds());
+    return step === undefined
+      ? undefined
+      : { palette: palette.name, step, of: named.colors.length };
   }
-  return color;
+  return color === undefined
+    ? undefined
+    : hexColor(color, problems, [...VIS, 'color']);
+};
+
+const hexColor = (
+  color: string,
+  problems: Problems,
+  path: readonly (string | number)[]
+): `#${string}` | undefined => {
+  if (HEX.test(color)) {
+    return color as `#${string}`;
+  }
+  problems.add(
+    'unsupported',
+    'unsupported-color',
+    `The color "${color}" is not a #rrggbb color.`,
+    path
+  );
+  return undefined;
 };
 
 export const bindMetric = (context: MetricBindContext): MetricBound => {
@@ -442,21 +492,13 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         ),
       problems
     );
-    if (color !== undefined && !HEX.test(color)) {
-      problems.add(
-        'unsupported',
-        'unsupported-color',
-        `The color "${color}" is not a #rrggbb color.`,
-        [...VIS, 'color']
-      );
-    }
     const tile: MetricTile = {
       key,
       ...(title?.trim() ? { title } : {}),
       ...(subtitle?.trim() ? { subtitle } : {}),
       value,
       ...(format && typeof value === 'number' ? { format } : {}),
-      ...(color && HEX.test(color) ? { color: color } : {}),
+      ...(color ? { color } : {}),
     };
     if (secondary) {
       tile.secondary = bindSecondary(

@@ -257,6 +257,78 @@ describe('bind: native ES|QL metric', () => {
   });
 });
 
+describe('bind: named palettes', () => {
+  // Lens's default color-by-value palette (`defaultNumberPaletteParams`), as saved.
+  const status = (rangeType: 'number' | 'percent') => ({
+    type: 'palette',
+    name: 'status',
+    params: {
+      name: 'status',
+      rangeType,
+      rangeMin: null,
+      rangeMax: null,
+      steps: 3,
+      continuity: 'all',
+      stops: [],
+    },
+  });
+
+  it.each(['number', 'percent'] as const)(
+    'puts a lone %s-range tile in the middle band, as its doubled data bounds do',
+    (rangeType) => {
+      expect(
+        node(run(vis({ palette: status(rangeType) }), single(40))).tiles[0]!
+          .color
+      ).toEqual({
+        palette: 'status',
+        step: 1,
+        of: 3,
+      });
+    }
+  );
+
+  it('spreads a breakdown across the bands by its own range', () => {
+    const { tiles } = node(
+      run(vis({ breakdownByAccessor: 'host', palette: status('number') }), {
+        layer: {
+          columns: [num('visits'), str('host')],
+          response: {
+            columns: [
+              { name: 'visits', type: 'long' },
+              { name: 'host', type: 'keyword' },
+            ],
+            values: [
+              [10, 'a'],
+              [20, 'b'],
+              [30, 'c'],
+            ],
+          },
+        },
+      })
+    );
+    expect(tiles.map(({ color }) => color)).toEqual(
+      [0, 1, 2].map((step) => ({ palette: 'status', step, of: 3 }))
+    );
+  });
+
+  it('refuses a palette that is not a value palette', () => {
+    expect(
+      codes(
+        run(
+          vis({
+            palette: {
+              type: 'palette',
+              name: 'kibana_palette',
+              params: { steps: 3 },
+            },
+          }),
+          single(5)
+        )
+      )
+    ).toEqual(['lens.metric.unsupported-palette']);
+  });
+});
+
 describe('bind: breakdown', () => {
   const layer = (values: unknown[][]) => ({
     layer: {
@@ -616,13 +688,6 @@ describe('bind: progress and trend', () => {
 
 describe('bind: refusals', () => {
   it.each([
-    [
-      'a named palette',
-      vis({
-        palette: { type: 'palette', name: 'status', params: { steps: 3 } },
-      }),
-      'lens.metric.unsupported-palette',
-    ],
     ['an icon', vis({ icon: 'bell' }), 'lens.metric.unsupported-icon'],
     [
       'the default value color',
