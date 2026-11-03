@@ -62,6 +62,7 @@ const RULES = {
       '@elastic/isomer-sdk',
       '@elastic/isomer-runtime',
       '@kbn',
+      'node:',
     ],
   },
   '@elastic/isomer-sdk': {
