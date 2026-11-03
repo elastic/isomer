@@ -249,6 +249,58 @@ describe('bind: form-based breakdowns', () => {
   });
 });
 
+describe('bind: data view formats', () => {
+  const id = '81124c45-6ab6-42f4-8859-495d55eb8065';
+  const withFormat = (params: Record<string, unknown>) =>
+    run(totalFlights(), {
+      '8fa993db-c147-4954-adf7-4ff264d42576': {
+        columns: [
+          { id, name: 'Total flights', meta: { type: 'number', params } },
+        ],
+        rows: [{ [id]: 1500 }],
+      },
+    });
+
+  it('reads a duration precisely, as the metric defaults a data view duration', () => {
+    expect(
+      node(
+        withFormat({ id: 'duration', params: { inputFormat: 'milliseconds' } })
+      ).tiles[0]!.format
+    ).toEqual({
+      kind: 'duration',
+      from: 'milliseconds',
+      to: 'humanizePrecise',
+      decimals: 1,
+      short: true,
+      showSuffix: false,
+      spaceBeforeSuffix: true,
+    });
+  });
+
+  it("takes a bytes field's pattern, or Kibana's default bytes pattern", () => {
+    expect(
+      node(withFormat({ id: 'bytes', params: { pattern: '0.0b' } })).tiles[0]!
+        .format
+    ).toEqual({
+      kind: 'pattern',
+      pattern: '0.0b',
+    });
+    expect(node(withFormat({ id: 'bytes' })).tiles[0]!.format).toEqual({
+      kind: 'pattern',
+      pattern: '0,0.[0]b',
+    });
+  });
+
+  it('refuses a data view format it cannot read', () => {
+    const result = withFormat({ id: 'color' });
+    expect(
+      result.status === 'bound'
+        ? []
+        : result.diagnostics.map(({ code }) => code)
+    ).toEqual(['lens.metric.unsupported-format']);
+  });
+});
+
 describe('readTable', () => {
   const layer = planned(totalFlights()).layers[0]!;
 
