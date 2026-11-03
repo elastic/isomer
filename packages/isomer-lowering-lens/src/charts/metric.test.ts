@@ -184,6 +184,47 @@ describe('bind: native ES|QL metric', () => {
     });
   });
 
+  it.each([
+    [
+      'duration',
+      {
+        id: 'duration',
+        params: { fromUnit: 'milliseconds', toUnit: 'asSeconds', decimals: 1 },
+      },
+      {
+        kind: 'duration',
+        from: 'milliseconds',
+        to: 'asSeconds',
+        decimals: 1,
+        short: false,
+        showSuffix: true,
+        spaceBeforeSuffix: true,
+      },
+    ],
+    [
+      'humanized duration',
+      { id: 'duration', params: {} },
+      {
+        kind: 'duration',
+        from: 'seconds',
+        to: 'humanize',
+        decimals: 2,
+        short: false,
+        showSuffix: true,
+        spaceBeforeSuffix: true,
+      },
+    ],
+    [
+      'custom',
+      { id: 'custom', params: { pattern: '0.0a' } },
+      { kind: 'pattern', pattern: '0.0a' },
+    ],
+  ])("maps Lens's %s format", (_, format, expected) => {
+    expect(
+      node(run(vis(), single(1500, { params: { format } }))).tiles[0]!.format
+    ).toEqual(expected);
+  });
+
   it('carries the subtitle and layout', () => {
     expect(
       node(
@@ -911,8 +952,8 @@ describe('bind: refusals', () => {
     }
   );
 
-  it('reports an unsupported format', () => {
-    const params = { format: { id: 'duration', params: {} } };
+  it('reports a format Lens does not build', () => {
+    const params = { format: { id: 'currency', params: {} } };
     expect(codes(run(vis(), single(5, { params })))).toEqual([
       'lens.metric.unsupported-format',
     ]);
