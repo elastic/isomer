@@ -109,22 +109,184 @@ const findCycle = (
   return undefined;
 };
 
+type SavedFormLayer = {
+  columnOrder: string[];
+  columns: Record<string, Record<string, unknown>>;
+  incompleteColumns?: Record<string, unknown> | undefined;
+  linkToLayers?: string[] | undefined;
+  sampling?: number | undefined;
+  ignoreGlobalFilters?: boolean | undefined;
+};
+
+type Refusal = { ok: false; result: LensPlanResult };
+type Path = readonly (string | number)[];
+
+/** Each saved column in `columnOrder`, parsed; an operation Lens does not define is unsupported, a malformed column invalid. */
+const parseColumns = (
+  layer: SavedFormLayer,
+  path: Path
+): { ok: true; columns: Map<string, FormColumn> } | Refusal => {
+  const columns = new Map<string, FormColumn>();
+  const diagnostics: LensDiagnostic[] = [];
+  for (const columnId of layer.columnOrder) {
+    const saved = layer.columns[columnId];
+    if (!FORM_OPERATIONS.has(String(saved?.operationType))) {
+      diagnostics.push({
+        code: 'lens.form.unsupported-operation',
+        message: `Operation "${String(saved?.operationType)}" is not planned.`,
+        path: [...path, 'columns', columnId, 'operationType'],
+      });
+      continue;
+    }
+    const parsed = formColumnSchema.safeParse(saved);
+    if (!parsed.success) {
+      diagnostics.push(
+        ...issueDiagnostics('lens.form.invalid-column', parsed.error, [
+          ...path,
+          'columns',
+          columnId,
+        ])
+      );
+      continue;
+    }
+    columns.set(columnId, parsed.data);
+  }
+  if (diagnostics.length === 0) {
+    return { ok: true, columns };
+  }
+  const isInvalid = diagnostics.some(
+    ({ code }) => code === 'lens.form.invalid-column'
+  );
+  return {
+    ok: false,
+    result: { status: isInvalid ? 'invalid' : 'unsupported', diagnostics },
+  };
+};
+
+/** Checks a formula's single math reference and a math column's saved AST against its references. */
+const checkFormulaParts = (
+  column: FormColumn,
+  columns: ReadonlyMap<string, FormColumn>,
+  path: Path
+): Refusal | undefined => {
+  const references = referencesOf(column);
+  if (column.operationType === 'formula') {
+    if (column.params.isFormulaBroken) {
+      return refuse(
+        'invalid',
+        'lens.form.broken-formula',
+        `Formula "${column.params.formula ?? ''}" is saved broken.`,
+        [...path, 'params', 'isFormulaBroken']
+      );
+    }
+    const [math] = references;
+    if (
+      references.length !== 1 ||
+      columns.get(math ?? '')?.operationType !== 'math'
+    ) {
+      return refuse(
+        'invalid',
+        'lens.form.formula-without-math',
+        'A formula column must reference exactly one math column.',
+        [...path, 'references']
+      );
+    }
+  }
+  if (column.operationType !== 'math') {
+    return undefined;
+  }
+  const astPath = [...path, 'params', 'tinymathAst'];
+  const ast = mathNodeSchema.safeParse(column.params.tinymathAst);
+  if (!ast.success) {
+    return refuse(
+      'invalid',
+      'lens.form.invalid-math',
+      'A math column needs its persisted `tinymathAst`; formulas are never reparsed from text.',
+      astPath
+    );
+  }
+  const checked = checkMath(ast.data);
+  if (!checked.ok) {
+    return refuse(
+      'invalid',
+      'lens.form.invalid-math',
+      checked.message,
+      astPath
+    );
+  }
+  const unknown = [...checked.variables].find(
+    (variable) => !references.includes(variable)
+  );
+  return unknown
+    ? refuse(
+        'invalid',
+        'lens.form.invalid-math',
+        `The math reads "${unknown}", which it does not reference.`,
+        astPath
+      )
+    : undefined;
+};
+
+/** Every reference names a column in the layer, formulas and math are well formed, and nothing references itself. */
+const checkColumnGraph = (
+  columns: ReadonlyMap<string, FormColumn>,
+  path: Path
+): Refusal | undefined => {
+  for (const [columnId, column] of columns) {
+    const columnPath = [...path, 'columns', columnId];
+    const missing = referencesOf(column).find((ref) => !columns.has(ref));
+    if (missing) {
+      return refuse(
+        'invalid',
+        'lens.form.missing-reference',
+        `Column "${columnId}" references "${missing}", which the layer lacks.`,
+        [...columnPath, 'references']
+      );
+    }
+    const refusal = checkFormulaParts(column, columns, columnPath);
+    if (refusal) {
+      return refusal;
+    }
+  }
+  const cycle = findCycle(columns);
+  return cycle
+    ? refuse(
+        'invalid',
+        'lens.form.reference-cycle',
+        `Column "${cycle}" references itself.`,
+        [...path, 'columns', cycle]
+      )
+    : undefined;
+};
+
+/** What the host supplies for a layer, given its data view's metadata when the host described it. */
+const hostOf = (
+  layer: SavedFormLayer,
+  columns: ReadonlyMap<string, FormColumn>,
+  metadata: DataViewMetadata | undefined
+): FormLayerPlan['host'] => {
+  const needs = needsOf([...columns.values()]);
+  const timeField = metadata ? (metadata.timeFieldName ?? null) : null;
+  if (!metadata) {
+    needs.unshift('dataView');
+  } else if (timeField !== null && !needs.includes('timeRange')) {
+    needs.unshift('timeRange');
+  }
+  return {
+    timeField,
+    applyFilters: layer.ignoreGlobalFilters !== true,
+    sampling: layer.sampling ?? 1,
+    needs,
+  };
+};
+
 const planLayer = (
   layerId: string,
-  layer: {
-    columnOrder: string[];
-    columns: Record<string, Record<string, unknown>>;
-    incompleteColumns?: Record<string, unknown> | undefined;
-    linkToLayers?: string[] | undefined;
-    sampling?: number | undefined;
-    ignoreGlobalFilters?: boolean | undefined;
-  },
+  layer: SavedFormLayer,
   savedObject: LensSavedObject,
   dataViews: readonly DataViewMetadata[],
   layerIds: readonly string[]
-):
-  | { ok: true; layer: FormLayerPlan }
-  | { ok: false; result: LensPlanResult } => {
+): { ok: true; layer: FormLayerPlan } | Refusal => {
   const path = [...DATASOURCE, 'layers', layerId];
   const reference = savedObject.references.find(
     ({ name, type }) =>
@@ -175,126 +337,14 @@ const planLayer = (
       [...path, 'columnOrder']
     );
   }
-  const columns = new Map<string, FormColumn>();
-  const diagnostics: LensDiagnostic[] = [];
-  for (const columnId of layer.columnOrder) {
-    const saved = layer.columns[columnId];
-    if (!FORM_OPERATIONS.has(String(saved?.operationType))) {
-      diagnostics.push({
-        code: 'lens.form.unsupported-operation',
-        message: `Operation "${String(saved?.operationType)}" is not planned.`,
-        path: [...path, 'columns', columnId, 'operationType'],
-      });
-      continue;
-    }
-    const parsed = formColumnSchema.safeParse(saved);
-    if (!parsed.success) {
-      diagnostics.push(
-        ...issueDiagnostics('lens.form.invalid-column', parsed.error, [
-          ...path,
-          'columns',
-          columnId,
-        ])
-      );
-      continue;
-    }
-    columns.set(columnId, parsed.data);
+  const parsed = parseColumns(layer, path);
+  if (!parsed.ok) {
+    return parsed;
   }
-  if (diagnostics.length) {
-    return {
-      ok: false,
-      result: {
-        status: diagnostics.some(
-          ({ code }) => code === 'lens.form.invalid-column'
-        )
-          ? 'invalid'
-          : 'unsupported',
-        diagnostics,
-      },
-    };
-  }
-  for (const [columnId, column] of columns) {
-    const columnPath = [...path, 'columns', columnId];
-    const references = referencesOf(column);
-    const missing = references.find((ref) => !columns.has(ref));
-    if (missing) {
-      return refuse(
-        'invalid',
-        'lens.form.missing-reference',
-        `Column "${columnId}" references "${missing}", which the layer lacks.`,
-        [...columnPath, 'references']
-      );
-    }
-    if (column.operationType === 'formula') {
-      if (column.params.isFormulaBroken) {
-        return refuse(
-          'invalid',
-          'lens.form.broken-formula',
-          `Formula "${column.params.formula ?? ''}" is saved broken.`,
-          [...columnPath, 'params', 'isFormulaBroken']
-        );
-      }
-      const [math] = references;
-      if (
-        references.length !== 1 ||
-        columns.get(math ?? '')?.operationType !== 'math'
-      ) {
-        return refuse(
-          'invalid',
-          'lens.form.formula-without-math',
-          'A formula column must reference exactly one math column.',
-          [...columnPath, 'references']
-        );
-      }
-    }
-    if (column.operationType === 'math') {
-      const { tinymathAst } = column.params;
-      const ast = mathNodeSchema.safeParse(tinymathAst);
-      if (!ast.success) {
-        return refuse(
-          'invalid',
-          'lens.form.invalid-math',
-          'A math column needs its persisted `tinymathAst`; formulas are never reparsed from text.',
-          [...columnPath, 'params', 'tinymathAst']
-        );
-      }
-      const checked = checkMath(ast.data);
-      if (!checked.ok) {
-        return refuse('invalid', 'lens.form.invalid-math', checked.message, [
-          ...columnPath,
-          'params',
-          'tinymathAst',
-        ]);
-      }
-      const unknown = [...checked.variables].find(
-        (variable) => !references.includes(variable)
-      );
-      if (unknown) {
-        return refuse(
-          'invalid',
-          'lens.form.invalid-math',
-          `The math reads "${unknown}", which it does not reference.`,
-          [...columnPath, 'params', 'tinymathAst']
-        );
-      }
-    }
-  }
-  const cycle = findCycle(columns);
-  if (cycle) {
-    return refuse(
-      'invalid',
-      'lens.form.reference-cycle',
-      `Column "${cycle}" references itself.`,
-      [...path, 'columns', cycle]
-    );
-  }
-  const metadata = dataViews.find(({ id }) => id === reference.id);
-  const needs = needsOf([...columns.values()]);
-  const timeField = metadata ? (metadata.timeFieldName ?? null) : null;
-  if (!metadata) {
-    needs.unshift('dataView');
-  } else if (timeField !== null && !needs.includes('timeRange')) {
-    needs.unshift('timeRange');
+  const { columns } = parsed;
+  const refusal = checkColumnGraph(columns, path);
+  if (refusal) {
+    return refusal;
   }
   return {
     ok: true,
@@ -308,12 +358,11 @@ const planLayer = (
         columnId,
         operationType: columns.get(columnId)!.operationType,
       })),
-      host: {
-        timeField,
-        applyFilters: layer.ignoreGlobalFilters !== true,
-        sampling: layer.sampling ?? 1,
-        needs,
-      },
+      host: hostOf(
+        layer,
+        columns,
+        dataViews.find(({ id }) => id === reference.id)
+      ),
     },
   };
 };
