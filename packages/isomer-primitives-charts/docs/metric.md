@@ -104,6 +104,23 @@ A `ColorRef` is a theme tone, a `#rrggbb` color, or a band of one of Lens's name
 
 With `increase: 'good'` a rise is green and a fall red. `'bad'` swaps them, and `'neutral'` keeps every direction grey, as Lens's default comparison palette does.
 
+## Icons
+
+`icon` is one of Lens's metric icon IDs, `TILE_ICONS` on `/model`. Several draw an EUI icon of another name:
+
+| ID | EUI icon |
+| --- | --- |
+| `sortUp`, `sortDown` | `sortUp`, `sortDown` |
+| `compute` | `processor` |
+| `asterisk`, `bell`, `bolt`, `bug`, `flag`, `heart`, `pin`, `tag`, `globe` | the same name |
+| `alert` | `warning` |
+| `editorComment` | `comment` |
+| `mapMarker` | `waypoint` |
+| `starEmpty` | `star` |
+| `temperature` | `thermometer` |
+
+`tileIconGlyphs` holds each icon's EUI paths, which a renderer draws in the tile's text color; `layout.iconAlign` puts it left or right of the title.
+
 ## Painting
 
 These follow Elastic Charts' `Metric` chart:
