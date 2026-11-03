@@ -225,6 +225,30 @@ describe('bind: native ES|QL metric', () => {
     ).toEqual(expected);
   });
 
+  it('draws the icon on every tile, aligned left on legacy state', () => {
+    const result = node(run(vis({ icon: 'bell' }), single(1)));
+    expect(result.tiles[0]!.icon).toBe('bell');
+    expect(result.layout).toMatchObject({ iconAlign: 'left' });
+    expect(
+      node(run(vis({ icon: 'bell', iconAlign: 'right' }), single(1))).layout
+    ).toMatchObject({
+      iconAlign: 'right',
+    });
+    expect(
+      node(run(vis({ icon: 'empty' }), single(1))).tiles[0]!.icon
+    ).toBeUndefined();
+  });
+
+  it('lists a multivalue reading, formatting each value', () => {
+    const params = { format: { id: 'number', params: { decimals: 0 } } };
+    expect(node(run(vis(), single([3, 4], { params }))).tiles[0]).toMatchObject(
+      {
+        value: [3, 4],
+        format: { kind: 'number', decimals: 0 },
+      }
+    );
+  });
+
   it('carries the subtitle and layout', () => {
     expect(
       node(
@@ -589,7 +613,7 @@ describe('bind: breakdown', () => {
         title: '(null)',
         subtitle: 'Visits',
         value: 4,
-        action: { name: 'filter', filters: [{ field: 'host', value: null }] },
+        action: { name: 'filter', filters: [{ field: 'host', exists: false }] },
       },
       {
         key: '""',
@@ -931,7 +955,11 @@ describe('bind: progress and trend', () => {
 
 describe('bind: refusals', () => {
   it.each([
-    ['an icon', vis({ icon: 'bell' }), 'lens.metric.unsupported-icon'],
+    [
+      'an icon the metric does not offer',
+      vis({ icon: 'circle' }),
+      'lens.metric.unsupported-icon',
+    ],
     [
       'unknown state',
       vis({ futureOption: true }),

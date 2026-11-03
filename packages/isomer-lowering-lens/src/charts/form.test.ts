@@ -213,20 +213,100 @@ describe('bind: form-based breakdowns', () => {
     ]);
   });
 
-  it('raises a term filter, and refuses one for the Other bucket', () => {
-    const one = carriers([
-      { carrier: 'Logstash Airways', count: 400, max: 1000 },
-    ]);
-    expect(node(run(breakdown(), one, 'filter')).tiles[0]!.action).toEqual({
-      name: 'filter',
-      filters: [{ field: 'Carrier', value: 'Logstash Airways' }],
-    });
-    const result = run(breakdown(), twoCarriers, 'filter');
+  it("raises a term's filter, and negates the shown terms for Other", () => {
     expect(
-      result.status === 'bound'
-        ? []
-        : result.diagnostics.map(({ code }) => code)
-    ).toEqual(['lens.metric.unsupported-filter-value']);
+      node(run(breakdown(), twoCarriers, 'filter')).tiles.map(
+        ({ action }) => action?.filters
+      )
+    ).toEqual([
+      [{ field: 'Carrier', value: 'Logstash Airways' }],
+      [{ field: 'Carrier', values: ['Logstash Airways'], negate: true }],
+    ]);
+  });
+
+  it('raises a missing bucket as a negated existence filter', () => {
+    const missing = carriers([{ carrier: '__missing__', count: 4, max: 1000 }]);
+    expect(
+      node(run(breakdown(), missing, 'filter')).tiles[0]!.action?.filters
+    ).toEqual([{ field: 'Carrier', exists: false }]);
+  });
+
+  /** The breakdown with its terms column swapped for another bucket column. */
+  const bucketed = (column: Record<string, unknown>) => {
+    const input = breakdown();
+    const layer = (
+      input.savedObject.attributes.state.datasourceStates.formBased
+        .layers as Record<string, { columns: Record<string, unknown> }>
+    ).layer!;
+    layer.columns.carrier = column;
+    return input;
+  };
+  const cells = (carrier: unknown, type = 'string') => ({
+    layer: {
+      columns: [
+        { id: 'carrier', name: 'Bucket', meta: { type } },
+        number('count', 'Flights'),
+        number('max', 'Static value: 1000'),
+      ],
+      rows: [{ carrier, count: 4, max: 1000 }],
+    },
+  });
+
+  it("raises a filters bucket's own query", () => {
+    const filters = bucketed({
+      operationType: 'filters',
+      label: 'Filters',
+      dataType: 'string',
+      isBucketed: true,
+      params: {
+        filters: [
+          {
+            input: { query: 'Carrier : "Kibana Airlines"', language: 'kuery' },
+            label: 'Kibana',
+          },
+          {
+            input: { query: 'Cancelled : true', language: 'kuery' },
+            label: '',
+          },
+        ],
+      },
+    });
+    expect(
+      node(run(filters, cells('Kibana'), 'filter')).tiles[0]!.action?.filters
+    ).toEqual([{ query: 'Carrier : "Kibana Airlines"', language: 'kuery' }]);
+    expect(
+      node(run(filters, cells('Cancelled : true'), 'filter')).tiles[0]!.action
+        ?.filters
+    ).toEqual([{ query: 'Cancelled : true', language: 'kuery' }]);
+  });
+
+  it("raises a range bucket's range and titles it as Lens's range format does", () => {
+    const range = bucketed({
+      operationType: 'range',
+      label: 'Distance',
+      dataType: 'number',
+      isBucketed: true,
+      sourceField: 'DistanceKilometers',
+      params: {
+        type: 'range',
+        maxBars: 'auto',
+        ranges: [{ from: 1000, to: null, label: '' }],
+        parentFormat: {
+          id: 'range',
+          params: { template: 'arrow_right', replaceInfinity: true },
+        },
+      },
+    });
+    // An open bound, Infinity in Kibana, arrives as `null` in JSON.
+    const { tiles } = node(
+      run(range, cells({ gte: 1000, lt: null }, 'number'), 'filter')
+    );
+    expect(tiles[0]).toMatchObject({
+      title: '1,000 \u2192 +\u221E',
+      action: {
+        filters: [{ field: 'DistanceKilometers', range: { gte: 1000 } }],
+      },
+    });
   });
 
   const codes = (result: ReturnType<typeof bind>) =>
