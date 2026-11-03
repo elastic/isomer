@@ -344,6 +344,13 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.6.5
+    devDependencies:
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@elastic/isomer-studio':
+        specifier: workspace:*
+        version: link:../isomer-studio
 
   packages/isomer-runtime:
     dependencies:

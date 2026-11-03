@@ -12,6 +12,7 @@
     "packages/isomer-primitives-slides/studio",
     "packages/isomer-primitives-slides/decks",
     "packages/isomer-lowering-lens/studio",
+    "packages/isomer-renderers-elastic-charts/isomer-studio.config.ts",
     "packages/isomer-renderers-elastic-charts/studio"
   ]
 }

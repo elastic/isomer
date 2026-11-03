@@ -63,7 +63,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-charts` defines renderer-neutral chart primitives: schemas, resolvers, theme tokens mirroring Elastic Charts, and text and Markdown adaptations. Its `/model` entry must stay free of React, DOM, Node built-ins, the SDK and chart engines, which `scripts/check_module_graph.js` enforces. Renderers map a chart's resolved model; they never re-derive formatting or color. Read its [contract](packages/isomer-primitives-charts/docs/index.md).
 
-`packages/isomer-renderers-elastic-charts` supplies the charts pack's `react` renderers with Elastic Charts. Its tests check the chart tokens against the installed Elastic Charts themes. Read its [contract](packages/isomer-renderers-elastic-charts/docs/index.md).
+`packages/isomer-renderers-elastic-charts` supplies the charts pack's `react` renderers with Elastic Charts. Its tests check the chart tokens against the installed Elastic Charts themes, and its `isomer-studio.config.ts` is a Studio of the charts pack alone. Read its [contract](packages/isomer-renderers-elastic-charts/docs/index.md).
 
 ## Release posture
 

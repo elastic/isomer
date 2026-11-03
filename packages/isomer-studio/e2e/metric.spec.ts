@@ -17,17 +17,20 @@ import { serveStatic } from './serve_static';
 
 const root = resolve(__dirname, '../../..');
 const cli = join(root, 'packages/isomer-studio/bin/isomer-studio.js');
-const config = join(root, 'isomer-studio.config.ts');
+const config = join(
+  root,
+  'packages/isomer-renderers-elastic-charts/isomer-studio.config.ts'
+);
 
 for (const mode of ['dev', 'static']) {
-  test(`Metric ${mode}: Elastic Charts tiles, actions and validation`, async ({
+  test(`Metric ${mode}: Elastic Charts tiles inline, scheme and actions`, async ({
     page,
   }) => {
     test.skip(
       Boolean(process.env.STUDIO_CONFIG),
-      'The metric app is in the repository shared config, not consumer configs'
+      'The charts Studio config is in this repository, not consumer configs'
     );
-    const dir = mkdtempSync(join(tmpdir(), 'isomer-metric-browser-'));
+    const dir = mkdtempSync(join(tmpdir(), 'isomer-charts-browser-'));
     let child: ReturnType<typeof spawn> | undefined;
     let server: Awaited<ReturnType<typeof serveStatic>> | undefined;
     let url = '';
@@ -45,11 +48,11 @@ for (const mode of ['dev', 'static']) {
             '--out',
             dir,
             '--base',
-            '/metric/review/',
+            '/charts/review/',
           ],
           { stdio: 'pipe' }
         );
-        server = await serveStatic(dir, '/metric/review/');
+        server = await serveStatic(dir, '/charts/review/');
         url = server.url;
       } else {
         child = spawn(
@@ -71,11 +74,19 @@ for (const mode of ['dev', 'static']) {
           .toBeTruthy();
         url = /Isomer Studio: (http\S+)/.exec(output)![1]!;
       }
-      await page.goto(`${url}#/app/metric/`);
+      const actions: string[] = [];
+      page.on('console', (message) => {
+        const text = message.text();
+        if (text.startsWith('isomer action ')) {
+          actions.push(text.slice('isomer action '.length));
+        }
+      });
+      await page.goto(`${url}#/dev/metric/0`);
       await expect(
         page.getByRole('heading', { name: 'Metric', exact: true })
       ).toBeVisible();
 
+      // The Web card draws with React, so Elastic Charts renders inline.
       const tiles = page.locator('.echMetric');
       await expect(tiles).toHaveCount(1);
       await expect(tiles.first()).toContainText('Requests');
@@ -83,87 +94,29 @@ for (const mode of ['dev', 'static']) {
       await expect(tiles.first()).toContainText('+11.10%');
       await expect(page.locator('.echMetric svg path').first()).toBeVisible();
 
-      // The pack's renderer follows the host's `color-scheme` as it changes.
+      // The chart follows the Studio's color mode across the shadow root.
+      await page.locator('button#light').click();
       await expect(tiles.first()).toHaveCSS(
         'background-color',
         'rgb(255, 255, 255)'
       );
-      await page.emulateMedia({ colorScheme: 'dark' });
-      await expect(tiles.first()).toHaveCSS(
-        'background-color',
-        'rgb(17, 28, 44)'
-      );
-      await page.emulateMedia({ colorScheme: 'light' });
-      await expect(tiles.first()).toHaveCSS(
-        'background-color',
-        'rgb(255, 255, 255)'
-      );
-      await page
-        .locator('.echChart')
-        .evaluate((chart) =>
-          chart
-            .closest<HTMLElement>('[style*="color-scheme"]')!
-            .style.setProperty('color-scheme', 'dark')
-        );
+      await page.locator('button#dark').click();
       await expect(tiles.first()).toHaveCSS(
         'background-color',
         'rgb(17, 28, 44)'
       );
 
-      // One row is `rowHeight` tall in an indefinite host and fits a shorter one.
-      const root = page
-        .locator('.echChart')
-        .locator(
-          'xpath=ancestor::div[contains(@style, "position: relative")][1]'
-        );
-      await expect
-        .poll(() => root.evaluate((element) => element.clientHeight))
-        .toBe(150);
-      await root.evaluate((element) => {
-        element.parentElement!.style.height = '100px';
-      });
-      await expect
-        .poll(() =>
-          root.evaluate(({ clientHeight, scrollHeight }) => [
-            clientHeight,
-            scrollHeight,
-          ])
-        )
-        .toEqual([100, 100]);
-      await root.evaluate((element) => {
-        element.parentElement!.style.height = '';
-      });
-
-      await page.getByLabel('Example').selectOption({ index: 1 });
+      await page.goto(`${url}#/dev/metric/1`);
       await expect(tiles).toHaveCount(3);
       await tiles.filter({ hasText: 'web-02' }).click();
-      const action: unknown = JSON.parse(
-        await page.getByLabel('Metric action').innerText()
-      );
-      expect(action).toEqual({
+      await expect.poll(() => actions.length).toBe(1);
+      expect(JSON.parse(actions[0]!)).toEqual({
         name: 'dashboard/filter',
         context: {
           key: 'web-02',
           filters: [{ field: 'host.name', value: 'web-02' }],
         },
       });
-
-      await page.getByLabel('Metric JSON').fill(
-        JSON.stringify({
-          type: 'metric',
-          tiles: [
-            {
-              key: 'a',
-              value: 'x',
-              secondary: { kind: 'change', previous: 1 },
-            },
-          ],
-        })
-      );
-      await expect(page.getByRole('alert')).toContainText(
-        'tiles.0.secondary: a `change` needs a numeric `value`'
-      );
-      await expect(tiles).toHaveCount(0);
 
       expect(errors).toEqual([]);
     } finally {

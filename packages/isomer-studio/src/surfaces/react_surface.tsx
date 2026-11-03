@@ -118,7 +118,7 @@ export const ReactSurface = ({
   return (
     <RenderBoundary resetKey={composition}>
       {createReactContext ? (
-        <ShadowRootHost>
+        <ShadowRootHost title="React preview">
           {(root) => (
             <ReactContent
               {...{

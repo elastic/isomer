@@ -13,6 +13,7 @@ import {
 import { md } from '@elastic/isomer-sdk/markdown';
 
 import { example, examples } from './examples';
+import { icon } from './icon';
 import { resolveMetric } from './resolve';
 import { type MetricNode, metricSchema } from './schema';
 
@@ -58,6 +59,7 @@ export const defineMetricPrimitive = (react: Renderer<MetricNode, 'react'>) =>
     type: 'metric',
     catalog,
     examples,
+    icon,
     schema: metricSchema,
     renderers: { react, text: metricText, markdown: metricMarkdown },
   });

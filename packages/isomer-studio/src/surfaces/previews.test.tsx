@@ -770,6 +770,39 @@ describe('SurfaceBoard', () => {
     expect(screen.queryByText('Other outputs')).not.toBeInTheDocument();
   });
 
+  it('draws the combined Web card with React when the Studio is styled, keeping HTML for its source', () => {
+    const reactRender = vi.fn(() => <p>react</p>);
+    const styled = {
+      ...studio(),
+      runtime: {
+        ...studio().runtime,
+        surfaces: {
+          html: { render: htmlRender },
+          react: { render: reactRender },
+        },
+      },
+      createReactContext: () => ({}),
+    } as unknown as StudioContextValue;
+    const props = {
+      surfaces: ['react', 'html', 'snapshot'] as const,
+      composition: composition('first'),
+      validation: noWarnings,
+      zoom: 'fit' as const,
+    };
+    const { rerender } = render(<SurfaceBoard {...props} view="render" />, {
+      wrapper: withStudio(styled),
+    });
+    expect(
+      screen.getByRole('region', { name: 'Web preview' })
+    ).toBeInTheDocument();
+    expect(screen.queryByTitle('HTML preview')).toBeNull();
+    expect(reactRender).toHaveBeenCalled();
+
+    reactRender.mockClear();
+    rerender(<SurfaceBoard {...props} view="source" />);
+    expect(reactRender).not.toHaveBeenCalled();
+  });
+
   it('uses HTML for combined browser outputs without a dropdown and keeps PNG separate', () => {
     vi.useFakeTimers();
     const props = {

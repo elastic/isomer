@@ -7,6 +7,7 @@
 
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from '../pack';
@@ -238,5 +239,13 @@ describe('metric text and markdown', () => {
     ).toMatchInlineSnapshot(
       `"**Requests**: Last 24 hours, 182,340, vs previous day up +11.10%"`
     );
+  });
+});
+
+describe('charts pack', () => {
+  it('has a valid icon for every primitive', () => {
+    expect(() =>
+      assertPackIconsValid(createChartsPack({ metric: () => null }))
+    ).not.toThrow();
   });
 });

@@ -75,6 +75,13 @@ jobs:
           base: /studio/
           report: .artifacts/studio-report.xml
           artifact-name: studio-${{ env.HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - uses: ./.github/actions/isomer-studio
+        with:
+          config: packages/isomer-renderers-elastic-charts/isomer-studio.config.ts
+          out: .artifacts/studio-charts
+          base: /studio-charts/
+          report: .artifacts/studio-charts-report.xml
+          artifact-name: studio-charts-${{ env.HEAD_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
       - name: Test the built Studio
         env:
           STUDIO_BROWSER_ONLY_SITE: .artifacts/studio
