@@ -78,7 +78,15 @@ export const toDatum = (
       ...base,
       // As Lens does, a missing reading is NaN, which Elastic Charts' meter leaves empty.
       value: number ?? Number.NaN,
-      valueFormatter: () => value,
+      // Elastic Charts formats the domain's ends with this too, as value/target labels.
+      valueFormatter: (reading: number) =>
+        reading === number
+          ? value
+          : reading === visual.max
+            ? visual.maxReading
+            : reading === visual.min
+              ? visual.minReading
+              : value,
       // An explicit `domainMin` switches Elastic Charts to value/target labels, which Lens never sets.
       ...(visual.min === 0 ? {} : { domainMin: visual.min }),
       domainMax: visual.max,

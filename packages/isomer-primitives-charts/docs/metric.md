@@ -95,7 +95,7 @@ These follow Elastic Charts' `Metric` chart:
 
 - A tile with no visual fills with its color.
 - A trend tile also fills with its color and draws the sparkline in a shade of it, as Elastic Charts' `getSparkLineColor` computes. With fewer than two points, or no reading above 0, Elastic Charts draws no line but still paints the tile as a trend tile.
-- A progress tile keeps the chart background and fills the bar with its color, defaulting to Lens's progress blue. Its ratio is d3's `scaleLinear` over `[min, max]`, clamped: an empty range fills halfway and a `max` below `min` fills from the far end.
+- A progress tile keeps the chart background and fills the bar with its color, defaulting to Lens's progress blue. Its ratio is d3's `scaleLinear` over `[min, max]`, clamped: an empty range fills halfway and a `max` below `min` fills from the far end. It needs a numeric or missing `value`, and text, Markdown and server readings add how full it is, such as `75% of 512.0GB`.
 - `colorTarget: 'value'` paints the value text instead, on tiles without a visual.
 
 Text colors are picked for contrast with the fill.
@@ -112,6 +112,6 @@ Text colors are picked for contrast with the fill.
 | secondary, badge | `extra` (`SecondaryMetricProps`) | text in a rounded fill |
 | labelPosition `tooltip` | `labelTooltip` | a tooltip where the platform has one, else an accessibility label |
 | trend | `trend`, `trendShape` | an area or step path over the tile's lower half, broken at `null` |
-| progress | `domainMax`, `domainMin` when not 0, `progressBarDirection` | a filled bar |
+| progress | `domainMax`, `domainMin` when not 0, `progressBarDirection`; `minReading` and `maxReading` label the ends | a filled bar |
 | layout | the theme's `metric` alignments, `valuePosition`, `valueFontSize`, `spacing` | text alignment and placement |
 | columns | the `data` grid | rows of tiles |

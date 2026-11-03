@@ -14,7 +14,7 @@ import { md } from '@elastic/isomer-sdk/markdown';
 
 import { example, examples } from './examples';
 import { icon } from './icon';
-import { resolveMetric } from './resolve';
+import { progressDescription, resolveMetric } from './resolve';
 import { type MetricNode, metricSchema } from './schema';
 
 const catalog = {
@@ -40,14 +40,18 @@ const metricText = (node: MetricNode): string =>
     .join('\n');
 
 const metricMarkdown = (node: MetricNode) => {
-  const lines = resolveMetric(node).tiles.map(
-    ({ title, subtitle, value, secondary }) => {
-      const rest = [subtitle, value, secondary?.description]
-        .filter(Boolean)
-        .join(', ');
-      return title ? [md.strong(title), md.text(`: ${rest}`)] : [md.text(rest)];
-    }
-  );
+  const lines = resolveMetric(node).tiles.map((tile) => {
+    const { title, subtitle, value, secondary } = tile;
+    const rest = [
+      subtitle,
+      value,
+      secondary?.description,
+      progressDescription(tile),
+    ]
+      .filter(Boolean)
+      .join(', ');
+    return title ? [md.strong(title), md.text(`: ${rest}`)] : [md.text(rest)];
+  });
   return lines.length === 1
     ? md.paragraph(...lines[0]!)
     : md.list(lines.map((line) => md.paragraph(...line)));

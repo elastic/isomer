@@ -66,10 +66,15 @@ export interface ResolvedMetricTile {
         kind: 'progress';
         min: number;
         max: number;
+        /** `min` and `max` in the tile's format, for an engine that labels the bar's ends. */
+        minReading: string;
+        maxReading: string;
         /** 0–1, clamped. */
         ratio: number;
         direction: 'horizontal' | 'vertical';
         color: string;
+        /** How full the bar is, e.g. `75% of 512GB`; absent for a missing reading. */
+        description?: string | undefined;
       };
   /** One line naming everything the tile shows. */
   reading: string;
@@ -159,6 +164,10 @@ const resolveSecondary = (
   };
 };
 
+/** A progress bar's reading, which text surfaces carry because they draw no bar. */
+export const progressDescription = ({ visual }: ResolvedMetricTile) =>
+  visual?.kind === 'progress' ? visual.description : undefined;
+
 const resolveTile = (
   tile: MetricTile,
   tokens: ChartTokens
@@ -189,9 +198,7 @@ const resolveTile = (
     valueColor: paintsValue ? paint : undefined,
     text: textOn(fill, tokens),
     secondary,
-    reading: [title, subtitle, shown, secondary?.description]
-      .filter(Boolean)
-      .join(', '),
+    reading: '',
   };
   if (visual?.kind === 'trend') {
     resolved.visual = {
@@ -209,15 +216,32 @@ const resolveTile = (
         : visual.max === min
           ? 0.5
           : (number - min) / (visual.max - min);
+    const clamped = Math.min(1, Math.max(0, ratio));
+    const maxReading = formatValue(visual.max, format);
     resolved.visual = {
       kind: 'progress',
       min,
       max: visual.max,
-      ratio: Math.min(1, Math.max(0, ratio)),
+      minReading: formatValue(min, format),
+      maxReading,
+      ratio: clamped,
       direction: visual.direction ?? 'vertical',
       color: paint ?? tokens.progress,
+      description:
+        number === undefined
+          ? undefined
+          : `${formatValue(clamped, { kind: 'percent', decimals: 0 })} of ${maxReading}`,
     };
   }
+  resolved.reading = [
+    title,
+    subtitle,
+    shown,
+    secondary?.description,
+    progressDescription(resolved),
+  ]
+    .filter(Boolean)
+    .join(', ');
   return resolved;
 };
 
