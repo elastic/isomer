@@ -45,14 +45,26 @@ const paletteBandSchema = z
     "A band of one of Lens's named value palettes: `status`, `temperature`, `complementary`, `negative`, `positive`, `cool`, `warm` or `gray`."
   );
 
-/** Schema of a mark color: a theme tone, a value palette band or `#rrggbb`. */
-export const colorSchema = z
-  .union([toneSchema, z.string().regex(/^#[0-9a-fA-F]{6}$/), paletteBandSchema])
+const tokenSchema = z
+  .object({ token: z.enum(['progress', 'valueText']) })
+  .strict()
   .describe(
-    'A theme tone (`default`, `primary`, `neutral`, `success`, `warning`, `risk`, `danger`), a `#rrggbb` color, or a value palette band.'
+    "One of Lens's default colors: `progress` for a progress bar, `valueText` for a painted value."
   );
 
-/** A theme tone, a value palette band or a `#rrggbb` color. */
+/** Schema of a mark color: a theme tone, a value palette band, a default color or `#rrggbb`. */
+export const colorSchema = z
+  .union([
+    toneSchema,
+    z.string().regex(/^#[0-9a-fA-F]{6}$/),
+    paletteBandSchema,
+    tokenSchema,
+  ])
+  .describe(
+    "A theme tone (`default`, `primary`, `neutral`, `success`, `warning`, `risk`, `danger`), a `#rrggbb` color, a value palette band, or one of Lens's default colors."
+  );
+
+/** A theme tone, a value palette band, a default color or a `#rrggbb` color. */
 export type ColorRef = z.infer<typeof colorSchema>;
 
 const isTone = (color: ColorRef): color is Tone =>
@@ -61,7 +73,9 @@ const isTone = (color: ColorRef): color is Tone =>
 /** The `#rrggbb` a tone's solid, a palette band or a hex color reads. */
 const solid = (color: ColorRef, tokens: ChartTokens): string =>
   typeof color === 'object'
-    ? valuePaletteColors[color.palette][color.of - 1]![color.step]!
+    ? 'token' in color
+      ? tokens[color.token]
+      : valuePaletteColors[color.palette][color.of - 1]![color.step]!
     : isTone(color)
       ? tokens.tones[color].solid
       : color;

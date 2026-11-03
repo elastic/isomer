@@ -261,6 +261,31 @@ describe('value palette colors', () => {
     });
   });
 
+  it("paints Lens's default colors from the theme", () => {
+    const [plain, trend] = resolveMetric(
+      {
+        type: 'metric',
+        tiles: [
+          {
+            key: 'a',
+            value: 1,
+            color: { token: 'valueText' },
+            colorTarget: 'value',
+          },
+          {
+            key: 'b',
+            value: 1,
+            color: { token: 'progress' },
+            visual: { kind: 'trend', points: [] },
+          },
+        ],
+      },
+      'dark'
+    ).tiles;
+    expect(plain).toMatchObject({ fill: '#111C2C', valueColor: '#16C5C0' });
+    expect(trend).toMatchObject({ fill: '#61A2FF' });
+  });
+
   it('rejects a band past the palette', () => {
     const paths = (node: object) => issues(node).map(([path]) => path);
     expect(

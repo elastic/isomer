@@ -62,6 +62,26 @@ const EUI_PALETTES = {
   gray: euiPaletteGray,
 };
 
+describe('default colors', () => {
+  it.each([
+    ['light', 'LIGHT'],
+    ['dark', 'DARK'],
+  ] as const)(
+    "match Lens's euiColorVis2 and euiColorVisText0 in %s",
+    (scheme, mode) => {
+      const { euiColorVis2, euiColorVisText0 } = getComputed(
+        EuiThemeBorealis,
+        {},
+        mode
+      ).colors.vis;
+      expect({
+        progress: chartTokens[scheme].progress,
+        valueText: chartTokens[scheme].valueText,
+      }).toEqual({ progress: euiColorVis2, valueText: euiColorVisText0 });
+    }
+  );
+});
+
 describe('value palettes', () => {
   it.each(['LIGHT', 'DARK'] as const)(
     'match EUI Borealis’ palette generators in %s mode',

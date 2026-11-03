@@ -51,6 +51,8 @@ export interface ChartTokens {
   barBackground: string;
   /** Progress fill when a tile sets no color (Lens `euiColorVis2`). */
   progress: string;
+  /** Value text when a tile paints its value and sets no color (Lens `euiColorVisText0`). */
+  valueText: string;
   onLight: TextTokens;
   onDark: TextTokens;
   missing: string;
@@ -89,6 +91,7 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     background: '#FFFFFF',
     border: '#E3E8F2',
     barBackground: '#ECF1F9',
+    valueText: '#065B58',
     tones: {
       default: {
         solid: '#E3E8F2',
@@ -132,6 +135,7 @@ export const chartTokens: Record<Scheme, ChartTokens> = {
     background: '#111C2C',
     border: '#2B394F',
     barBackground: '#1D2A3E',
+    valueText: '#16C5C0',
     tones: {
       default: {
         solid: '#E3E8F2',

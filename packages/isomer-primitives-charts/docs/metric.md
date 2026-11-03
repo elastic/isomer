@@ -24,7 +24,7 @@ type MetricTile = {
   subtitle?: string;
   value: number | string | null; // null is missing and reads N/A
   format?: ValueFormat; // number | percent | bytes | bits
-  color?: ColorRef; // a tone, #rrggbb, or { palette, step, of }
+  color?: ColorRef; // a tone, #rrggbb, { palette, step, of } or { token }
   colorTarget?: 'background' | 'value'; // default 'background'
   secondary?:
     | {
@@ -67,7 +67,7 @@ Tile counts, columns, placeholders and text share one cap of 10,000; renderers t
 
 ## Colors
 
-A `ColorRef` is a theme tone, a `#rrggbb` color, or a band of one of Lens's named value palettes: `{ palette, step, of }`, where `palette` is `status`, `temperature`, `complementary`, `negative`, `positive`, `cool`, `warm` or `gray`, `of` is the number of bands from 1 to 5, and `step` counts from 0. The bands are EUI Borealis' palette generators' output, which is the same in both schemes. A lowering picks the band with Lens's color-by-value rules and leaves the color to the theme.
+A `ColorRef` is a theme tone, a `#rrggbb` color, or a band of one of Lens's named value palettes: `{ palette, step, of }`, where `palette` is `status`, `temperature`, `complementary`, `negative`, `positive`, `cool`, `warm` or `gray`, `of` is the number of bands from 1 to 5, and `step` counts from 0. The bands are EUI Borealis' palette generators' output, which is the same in both schemes. A lowering picks the band with Lens's color-by-value rules and leaves the color to the theme. `{ token: 'progress' }` and `{ token: 'valueText' }` are the defaults Lens paints when nothing else colors a tile: `euiColorVis2`, and the scheme's `euiColorVisText0`.
 
 ## Secondary readings
 
