@@ -11,8 +11,9 @@ import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from '../pack';
+import { sparkShade } from '../shared/color';
 
-import { example, examples, textExample } from './examples';
+import { example, examples, progressExample, textExample } from './examples';
 import { resolveMetric } from './resolve';
 import { type MetricNode, metricSchema } from './schema';
 
@@ -58,6 +59,32 @@ describe('metric schema', () => {
     expect(
       issues(tile({ value: 'up', secondary: { kind: 'change', previous: 1 } }))
     ).toEqual([['tiles.0.secondary', 'a `change` needs a numeric `value`']]);
+  });
+
+  it('rejects unordered trend points and a trend with a progress bar', () => {
+    expect(
+      issues(
+        tile({
+          visual: {
+            kind: 'trend',
+            points: [
+              { x: 2, y: 1 },
+              { x: 2, y: 3 },
+            ],
+          },
+        })
+      )
+    ).toEqual([
+      [
+        'tiles.0.visual.points.1.x',
+        'points must be in strictly increasing `x`',
+      ],
+    ]);
+    expect(
+      issues(tile({ visual: { kind: 'progress', max: 2, points: [] } })).map(
+        ([path]) => path
+      )
+    ).toEqual(['tiles.0.visual']);
   });
 
   it('rejects an unknown color and a non-finite value', () => {
@@ -142,6 +169,52 @@ describe('resolveMetric', () => {
     expect(only!.secondary?.value).toBe('+10');
   });
 
+  it('keeps a progress tile on the background and fills the bar', () => {
+    const [disk] = resolveMetric(progressExample, 'dark').tiles;
+    expect(disk).toMatchObject({
+      value: '384.0GB',
+      fill: '#111C2C',
+      secondary: {
+        value: '512GB',
+        badge: { background: '#2B394F', text: '#B4C1D5' },
+      },
+      visual: {
+        kind: 'progress',
+        min: 0,
+        ratio: 0.75,
+        direction: 'horizontal',
+        color: '#61A2FF',
+      },
+    });
+  });
+
+  // Expected ratios are d3 `scaleLinear` output, clamped, as Elastic Charts' progress bar computes them.
+  it.each([
+    [5, 5, 5, 0.5],
+    [3, 0, 0, 0.5],
+    [-5, 0, -10, 0.5],
+    [5, 0, -10, 0],
+    [150, 0, 100, 1],
+  ])('accepts and fills %d on [%d, %d] to %d', (value, min, max, ratio) => {
+    const node = {
+      type: 'metric' as const,
+      tiles: [
+        { key: 'a', value, visual: { kind: 'progress' as const, min, max } },
+      ],
+    };
+    expect(runtime.validate(compose(node)).errors).toEqual([]);
+    const [only] = resolveMetric(node).tiles;
+    expect(only!.visual).toMatchObject({ kind: 'progress', ratio });
+  });
+
+  it.each([0, 1])('accepts a trend of %d points', (count) => {
+    const points = Array.from({ length: count }, (_, x) => ({ x, y: 1 }));
+    expect(
+      runtime.validate(compose(tile({ visual: { kind: 'trend', points } })))
+        .errors
+    ).toEqual([]);
+  });
+
   it('paints the value instead of the tile, and reads a missing value as N/A', () => {
     const [country, latency] = resolveMetric(textExample).tiles;
     expect(country).toMatchObject({
@@ -153,6 +226,22 @@ describe('resolveMetric', () => {
       value: 'N/A',
       fill: '#FFFFFF',
       valueColor: '#EE4C48',
+    });
+  });
+
+  // Expected shades are Elastic Charts 73.3.2 `getSparkLineColor` output.
+  it.each([
+    ['#0B64DD', '#277EF4'],
+    ['#FFFFFF', '#E6E6E6'],
+    ['#24C292', '#3EDBAB'],
+    ['#111C2C', '#1F3351'],
+  ])('shades a trend on %s as Elastic Charts does', (fill, shade) => {
+    expect(sparkShade(fill)).toBe(shade);
+  });
+
+  it('draws the trend in the tile fill’s shade', () => {
+    expect(resolveMetric(example).tiles[0]!.visual).toMatchObject({
+      color: '#277EF4',
     });
   });
 

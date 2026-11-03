@@ -9,9 +9,11 @@ import {
   type ColorRef,
   resolveBadge,
   resolveFill,
+  sparkShade,
   textOn,
 } from '../shared/color';
 import { formatValue } from '../shared/format';
+import type { Point } from '../shared/series';
 import {
   type ChartTokens,
   chartTokens,
@@ -52,6 +54,23 @@ export interface ResolvedMetricTile {
   /** Text colors that read on `fill`. */
   text: TextTokens;
   secondary?: ResolvedSecondary | undefined;
+  visual?:
+    | {
+        kind: 'trend';
+        points: Point[];
+        shape: 'area' | 'bars';
+        /** The sparkline's shade of `fill`, drawn over the tile's lower half. */
+        color: string;
+      }
+    | {
+        kind: 'progress';
+        min: number;
+        max: number;
+        /** 0–1, clamped. */
+        ratio: number;
+        direction: 'horizontal' | 'vertical';
+        color: string;
+      };
   /** One line naming everything the tile shows. */
   reading: string;
 }
@@ -144,7 +163,8 @@ const resolveTile = (
   tile: MetricTile,
   tokens: ChartTokens
 ): ResolvedMetricTile => {
-  const { key, title, subtitle, value, format, color, colorTarget } = tile;
+  const { key, title, subtitle, value, format, color, colorTarget, visual } =
+    tile;
   const number = typeof value === 'number' ? value : undefined;
   const shown =
     value === null
@@ -153,8 +173,11 @@ const resolveTile = (
         ? (value as string)
         : formatValue(number, format);
   const paint = color && resolveFill(color, tokens);
-  const paintsValue = colorTarget === 'value';
-  const fill = paintsValue || !paint ? tokens.background : paint;
+  const paintsValue = colorTarget === 'value' && visual === undefined;
+  const fill =
+    visual?.kind === 'progress' || paintsValue || !paint
+      ? tokens.background
+      : paint;
   const secondary = resolveSecondary(tile, tokens);
   const resolved: ResolvedMetricTile = {
     key,
@@ -170,6 +193,31 @@ const resolveTile = (
       .filter(Boolean)
       .join(', '),
   };
+  if (visual?.kind === 'trend') {
+    resolved.visual = {
+      kind: 'trend',
+      points: visual.points,
+      shape: visual.shape ?? 'area',
+      color: sparkShade(fill),
+    };
+  } else if (visual?.kind === 'progress') {
+    const min = visual.min ?? 0;
+    // d3's `scaleLinear`, which Elastic Charts uses: an empty domain maps to the middle.
+    const ratio =
+      number === undefined
+        ? 0
+        : visual.max === min
+          ? 0.5
+          : (number - min) / (visual.max - min);
+    resolved.visual = {
+      kind: 'progress',
+      min,
+      max: visual.max,
+      ratio: Math.min(1, Math.max(0, ratio)),
+      direction: visual.direction ?? 'vertical',
+      color: paint ?? tokens.progress,
+    };
+  }
   return resolved;
 };
 

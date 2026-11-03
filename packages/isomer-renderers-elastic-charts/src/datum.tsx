@@ -9,10 +9,12 @@
 // `skipLibCheck: false` consumers.
 
 import type { ReactNode } from 'react';
-import type {
-  MetricDatum,
-  PartialTheme,
-  SecondaryMetricProps,
+import {
+  LayoutDirection,
+  type MetricDatum,
+  MetricTrendShape,
+  type PartialTheme,
+  type SecondaryMetricProps,
 } from '@elastic/charts';
 import type {
   ResolvedMetric,
@@ -52,9 +54,18 @@ export const toDatum = (
   tile: ResolvedMetricTile,
   tokens: ResolvedMetric['tokens']
 ): MetricDatum => {
-  const { title, subtitle, value, number, fill, valueColor, secondary } = tile;
+  const {
+    title,
+    subtitle,
+    value,
+    number,
+    fill,
+    valueColor,
+    secondary,
+    visual,
+  } = tile;
   const base = {
-    color: fill,
+    color: visual?.kind === 'progress' ? visual.color : fill,
     ...(title === undefined ? {} : { title }),
     ...(subtitle === undefined ? {} : { subtitle }),
     ...(valueColor === undefined
@@ -62,10 +73,40 @@ export const toDatum = (
       : { valueColor, background: tokens.background }),
     ...(secondary ? { extra: toExtra(secondary) } : {}),
   };
-  return number === undefined
-    ? { ...base, value }
-    : { ...base, value: number, valueFormatter: () => value };
+  if (visual?.kind === 'progress') {
+    return {
+      ...base,
+      // As Lens does, a missing reading is NaN, which Elastic Charts' meter leaves empty.
+      value: number ?? Number.NaN,
+      valueFormatter: () => value,
+      // An explicit `domainMin` switches Elastic Charts to value/target labels, which Lens never sets.
+      ...(visual.min === 0 ? {} : { domainMin: visual.min }),
+      domainMax: visual.max,
+      progressBarDirection:
+        visual.direction === 'horizontal'
+          ? LayoutDirection.Horizontal
+          : LayoutDirection.Vertical,
+    };
+  }
+  if (number === undefined) {
+    return visual?.kind === 'trend'
+      ? { ...base, value, ...trend(visual, title) }
+      : { ...base, value };
+  }
+  const numeric = { ...base, value: number, valueFormatter: () => value };
+  return visual?.kind === 'trend'
+    ? { ...numeric, ...trend(visual, title) }
+    : numeric;
 };
+
+const trend = (
+  { points, shape }: Extract<ResolvedMetricTile['visual'], { kind: 'trend' }>,
+  title: string | undefined
+) => ({
+  trend: points.map(({ x, y }) => ({ x, y: y ?? NaN })),
+  trendShape: shape === 'bars' ? MetricTrendShape.Bars : MetricTrendShape.Area,
+  ...(title === undefined ? {} : { trendA11yTitle: title }),
+});
 
 const WEIGHTS = { 400: 'normal', 500: 500, 700: 'bold' } as const;
 
