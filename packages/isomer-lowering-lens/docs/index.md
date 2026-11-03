@@ -5,19 +5,31 @@ description: Plan native ES|QL Lens saved objects and project their responses, w
 
 # Lens lowering
 
-`@elastic/isomer-lowering-lens` turns one native ES|QL Lens saved object into a versioned, plain-JSON plan a host can execute, and projects a recorded ES|QL response onto a planned layer's Lens columns. It draws nothing and chooses no primitive: chart binding arrives with each chart, and form-based Lens is refused rather than approximated.
+`@elastic/isomer-lowering-lens` turns one native ES|QL Lens saved object into a versioned, plain-JSON plan a host can execute, projects a recorded ES|QL response onto a planned layer's Lens columns, and binds the projected tables to an Isomer chart node. It draws nothing; form-based Lens is refused rather than approximated.
 
 ```ts
 import { plan, readResponse } from '@elastic/isomer-lowering-lens';
+import { bind } from '@elastic/isomer-lowering-lens/charts';
 
 const planned = plan({ savedObject, dataViews });
 if (planned.status === 'planned') {
-  const [layer] = planned.plan.layers;
-  const read = readResponse(layer, esqlResponse);
+  const tables = planned.plan.layers.map((layer) =>
+    readResponse(layer, responses[layer.layerId])
+  );
+  // After checking every read is `ready`:
+  const bound = bind(
+    planned.plan,
+    tables.map(({ table }) => table)
+  );
 }
 ```
 
-The package has one entry and `zod` as its only peer. It imports no React, DOM, Node built-in, SDK, runtime or Studio, so a browser, a server or a native app can load it. Hosts own retrieving saved objects and metadata, authorization, credentials and running queries.
+| Entry                                  | What it holds                                                                     |
+| -------------------------------------- | --------------------------------------------------------------------------------- |
+| `@elastic/isomer-lowering-lens`        | `plan` and `readResponse`. `zod` is its only peer.                                |
+| `@elastic/isomer-lowering-lens/charts` | `bind`, which reads chart schemas from `@elastic/isomer-primitives-charts/model`. |
+
+Neither entry imports React, the DOM, a Node built-in, the SDK, the runtime, Studio or a chart engine, so a browser, a server or a native app can load them, and planning never loads binding. Hosts own retrieving saved objects and metadata, authorization, credentials and running queries.
 
 ## Planning
 
@@ -27,20 +39,20 @@ The only datasource planned is `textBased`, native ES|QL. Each layer needs `quer
 
 A planned result is `{ status: 'planned', plan }`, where `plan` has:
 
-| Field | What it holds |
-| --- | --- |
-| `version` | `1`. |
-| `source` | The saved object, as validated. |
-| `dataViews` | Each `index-pattern` reference, with its metadata when supplied. |
-| `filters` | The saved filters, verbatim. |
-| `layers` | Per layer: `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
+| Field       | What it holds                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `version`   | `1`.                                                                                                                               |
+| `source`    | The saved object, as validated.                                                                                                    |
+| `dataViews` | Each `index-pattern` reference, with its metadata when supplied.                                                                   |
+| `filters`   | The saved filters, verbatim.                                                                                                       |
+| `layers`    | Per layer: `layerId`, `query: { language: 'esql', esql }` with the exact query text, the Lens `columns` in Lens order, and `host`. |
 
 Anything else is `{ status: 'invalid' | 'unsupported', diagnostics }`, never a partial plan. Each diagnostic has a stable `code`, a `message`, and a `path` into the input with numeric array indexes.
 
-| Refused as | When |
-| --- | --- |
+| Refused as    | When                                                                                                                                                                                                                      |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `unsupported` | A form-based or mixed datasource, unknown datasource or layer state such as an inline table, `dropPartials`, an anonymous `?` parameter, or a global query other than empty KQL/Lucene or a copy of every layer's ES\|QL. |
-| `invalid` | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, or metadata for a data view that is repeated or not referenced. |
+| `invalid`     | Malformed or non-JSON input, no layers, a layer without a query, a duplicate column ID, a duplicate reference name, or metadata for a data view that is repeated or not referenced.                                       |
 
 Kibana saves native ES|QL Lens with the layer's ES|QL repeated as the global `state.query`; that copy is accepted only when every layer has exactly the same text.
 
@@ -48,11 +60,11 @@ Kibana saves native ES|QL Lens with the layer's ES|QL repeated as the global `st
 
 Each layer's `host` says what the host must supply. Nothing in it is defaulted.
 
-| Field | Meaning |
-| --- | --- |
-| `timeField` | The field the host's time range filters, or `null` when the layer names none. |
-| `params` | The named and numbered parameters the query references (`?_tstart`, `??field`, `?1`), which the host must bind. |
-| `applyFilters` | Whether the plan's `filters` and the host's own global filters apply to this layer. |
+| Field          | Meaning                                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------------------------- |
+| `timeField`    | The field the host's time range filters, or `null` when the layer names none.                                   |
+| `params`       | The named and numbered parameters the query references (`?_tstart`, `??field`, `?1`), which the host must bind. |
+| `applyFilters` | Whether the plan's `filters` and the host's own global filters apply to this layer.                             |
 
 Run the query text as it is. Apply filters and the time range as the ES|QL request's Query DSL `filter`, and bind `params` through the request's `params`; don't append to or rewrite the ES|QL. A layer with `applyFilters: false` gets neither the saved nor the host's filters. Parameters are found by a lexical scan that skips strings, quoted identifiers and comments; the query is not parsed or validated.
 
@@ -62,9 +74,15 @@ Run the query text as it is. Apply filters and the time range as the ES|QL reque
 
 Columns match by response field name, never by position or label, and extra response columns are ignored. Cells are kept as they are: nulls, multivalue arrays and types are not coerced or formatted. A missing or repeated response column, a row of the wrong width, or `is_partial` / `is_running` is `invalid`, with no table.
 
+## Binding a chart
+
+`bind(plan, tables, { filterAction? })` takes a plan and one `readResponse` table per layer the chart reads, and returns `{ status: 'bound', node }` or `{ status: 'invalid' | 'unsupported', diagnostics }`. It reproduces what Lens draws from the same saved state and data, so a bound node is complete or refused, never approximated. A node is checked against its chart's schema before it is returned. `filterAction` names the action a breakdown tile raises, with its breakdown field and raw value as the filter.
+
+The metric is the first chart bound. [Metric](metric.md) lists what it supports and refuses.
+
 ## Limits
 
-Both functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be finite, acyclic plain JSON: no accessors, symbols, holes, custom prototypes or non-JSON values. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and keys. Identifiers are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
+All three functions copy their arguments before reading them, so results share nothing with the caller. Each argument must be finite, acyclic plain JSON: no accessors, symbols, holes, custom prototypes or non-JSON values. Across a whole argument, `JSON_LIMITS` allows 32 levels of nesting, 200,000 values and 4,000,000 characters of strings and keys. Identifiers are capped at 4096 characters, queries at 100,000, and references, data views and columns at 512. Nothing is truncated: over a limit, the result is `invalid`.
 
 ## Lens inspector
 
