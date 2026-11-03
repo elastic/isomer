@@ -42,6 +42,7 @@ describe('readResponse', () => {
           ['checkout', 42],
           ['search', null],
         ],
+        partial: false,
       },
     });
   });
@@ -60,6 +61,14 @@ describe('readResponse', () => {
       values: [],
     });
     expect(result.status === 'ready' && result.table.rows).toEqual([]);
+  });
+
+  it('marks a partial response, which Kibana draws with a warning', () => {
+    const result = readResponse(requests, {
+      ...requestsResponse(),
+      is_partial: true,
+    });
+    expect(result.status === 'ready' && result.table.partial).toBe(true);
   });
 
   it('reads back a layer that went through JSON', () => {
@@ -101,11 +110,6 @@ describe('readResponse', () => {
       [{ code: 'lens.response.row-width', path: ['response', 'values', 1] }],
     ],
     [
-      'a partial response',
-      { ...requestsResponse(), is_partial: true },
-      [{ code: 'lens.response.incomplete', path: ['response', 'is_partial'] }],
-    ],
-    [
       'a running response',
       { ...requestsResponse(), is_running: true },
       [{ code: 'lens.response.incomplete', path: ['response', 'is_running'] }],
@@ -118,7 +122,12 @@ describe('readResponse', () => {
     [
       'a non-finite cell',
       { ...requestsResponse(), values: [[Infinity, 'a']] },
-      [{ code: 'lens.response.invalid-json', path: ['response'] }],
+      [
+        {
+          code: 'lens.response.invalid-shape',
+          path: ['response', 'values', 0, 0],
+        },
+      ],
     ],
   ])('refuses %s', (_name, response, diagnostics) => {
     expect(readResponse(requests, response)).toEqual({
@@ -156,10 +165,6 @@ describe('readResponse', () => {
   it.each([
     ['an unknown key', { ...requests, extra: true }],
     [
-      'duplicate Lens IDs',
-      { ...requests, columns: [requests!.columns[0], requests!.columns[0]] },
-    ],
-    [
       'a form-based query',
       { ...requests, query: { language: 'kuery', esql: 'x' } },
     ],
@@ -168,6 +173,19 @@ describe('readResponse', () => {
     expect(readResponse(layer, requestsResponse())).toMatchObject({
       status: 'invalid',
       diagnostics: [{ code: 'lens.response.invalid-layer' }],
+    });
+  });
+
+  it('refuses a layer with duplicate Lens IDs', () => {
+    const layer = {
+      ...requests,
+      columns: [requests!.columns[0], requests!.columns[0]],
+    };
+    expect(readResponse(layer, requestsResponse())).toMatchObject({
+      status: 'invalid',
+      diagnostics: [
+        { code: 'lens.duplicate-column', path: ['layer', 'columns', 1] },
+      ],
     });
   });
 });

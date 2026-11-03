@@ -5,11 +5,29 @@
  * 2.0.
  */
 
-import React, { type CSSProperties, useId, useState } from 'react';
+import React, { useState } from 'react';
+import {
+  EuiBasicTable,
+  type EuiBasicTableColumn,
+  EuiButton,
+  EuiCallOut,
+  EuiCodeBlock,
+  EuiFlexGroup,
+  EuiFormRow,
+  EuiSelect,
+  EuiText,
+  EuiTextArea,
+  EuiTitle,
+} from '@elastic/eui';
 import type {
+  FormLayerPlan,
+  JsonObject,
+  JsonValue,
   LensDiagnostic,
+  LensLayerPlan,
   LensPlanResult,
   LensResponseResult,
+  LensTable,
 } from '@elastic/isomer-lowering-lens';
 import { plan, readResponse, readTable } from '@elastic/isomer-lowering-lens';
 
@@ -20,28 +38,9 @@ const DIAGNOSTICS_SHOWN = 50;
 const CELL_CHARACTERS = 200;
 const TEXT_CHARACTERS = 100_000;
 
-const box: CSSProperties = {
-  boxSizing: 'border-box',
-  width: '100%',
-  padding: 12,
-  border: '1px solid currentColor',
-  borderRadius: 6,
-  background: 'transparent',
-  color: 'inherit',
-  font: '13px/1.5 monospace',
-};
-const pre: CSSProperties = {
-  ...box,
-  whiteSpace: 'pre-wrap',
-  overflowWrap: 'anywhere',
-  maxHeight: 320,
-  overflow: 'auto',
-};
-const cell: CSSProperties = {
-  padding: '4px 8px',
-  borderBottom: '1px solid currentColor',
-  textAlign: 'left',
-};
+/** What a button produced: text that did not parse, or the package's result. */
+type Outcome<T> =
+  { kind: 'unparsed'; message: string } | { kind: 'result'; result: T };
 
 const pretty = (value: unknown) => JSON.stringify(value, null, 2);
 
@@ -50,216 +49,333 @@ const clip = (text: string, limit: number) =>
     ? `${text.slice(0, limit)}… (${text.length - limit} more characters)`
     : text;
 
-/** Parses editor text, refusing text longer than the inspector shows. */
-const parse = (text: string): { value: unknown } | { error: string } => {
+/** Parses editor text into `run`'s argument, refusing text longer than the inspector shows. */
+const runOn = <T,>(text: string, run: (value: unknown) => T): Outcome<T> => {
   if (text.length > 4_000_000) {
-    return { error: 'The text is longer than 4,000,000 characters.' };
+    return {
+      kind: 'unparsed',
+      message: 'The text is longer than 4,000,000 characters.',
+    };
   }
+  let value: unknown;
   try {
-    return { value: JSON.parse(text) as unknown };
+    value = JSON.parse(text);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : String(error) };
+    return {
+      kind: 'unparsed',
+      message: error instanceof Error ? error.message : String(error),
+    };
   }
+  return { kind: 'result', result: run(value) };
 };
 
-const Diagnostics = ({ items }: { items: readonly LensDiagnostic[] }) => (
-  <ul role="alert" aria-label="Diagnostics">
-    {items.slice(0, DIAGNOSTICS_SHOWN).map(({ code, message, path }, index) => (
-      <li key={index}>
-        <code>{code}</code> at{' '}
-        <code>
-          {clip(path.length ? path.join('.') : '(root)', CELL_CHARACTERS)}
-        </code>
-        : {clip(message, CELL_CHARACTERS)}
-      </li>
-    ))}
-    {items.length > DIAGNOSTICS_SHOWN ? (
-      <li>and {items.length - DIAGNOSTICS_SHOWN} more</li>
-    ) : null}
-  </ul>
+const Unparsed = ({ message }: { message: string }) => (
+  <EuiCallOut role="alert" color="danger" title={message} size="s" />
 );
 
-export default function LensInspectorApp() {
-  const id = useId();
+const Diagnostics = ({ items }: { items: readonly LensDiagnostic[] }) => (
+  <EuiText size="s">
+    <ul role="alert" aria-label="Diagnostics">
+      {items
+        .slice(0, DIAGNOSTICS_SHOWN)
+        .map(({ code, message, path }, index) => (
+          <li key={index}>
+            <code>{code}</code> at{' '}
+            <code>
+              {clip(path.length ? path.join('.') : '(root)', CELL_CHARACTERS)}
+            </code>
+            : {clip(message, CELL_CHARACTERS)}
+          </li>
+        ))}
+      {items.length > DIAGNOSTICS_SHOWN ? (
+        <li>and {items.length - DIAGNOSTICS_SHOWN} more</li>
+      ) : null}
+    </ul>
+  </EuiText>
+);
+
+const JsonInput = ({
+  label,
+  rows,
+  value,
+  onChange,
+}: {
+  label: string;
+  rows: number;
+  value: string;
+  onChange: (value: string) => void;
+}) => (
+  <EuiFormRow label={label} fullWidth>
+    <EuiTextArea
+      fullWidth
+      rows={rows}
+      value={value}
+      style={{ fontFamily: 'monospace' }}
+      onChange={({ target }) => onChange(target.value)}
+    />
+  </EuiFormRow>
+);
+
+const Code = ({ label, text }: { label: string; text: string }) => (
+  <div aria-label={label} role="region">
+    <EuiCodeBlock
+      language={label === 'Query' ? 'text' : 'json'}
+      overflowHeight={320}
+      paddingSize="s"
+      fontSize="s"
+      isCopyable>
+      {clip(text, TEXT_CHARACTERS)}
+    </EuiCodeBlock>
+  </div>
+);
+
+type LayerPlan = LensLayerPlan | FormLayerPlan;
+
+/** What a layer's plan shows besides its query. */
+const layerDetails = (layer: LayerPlan) =>
+  layer.kind === 'esql'
+    ? { columns: layer.columns, host: layer.host }
+    : {
+        dataView: layer.dataView,
+        linkedTo: layer.linkedTo,
+        columns: layer.columns,
+        host: layer.host,
+      };
+
+const LayerView = ({
+  layers,
+  layer,
+  query,
+  onSelect,
+}: {
+  layers: readonly LayerPlan[];
+  layer: LayerPlan | undefined;
+  /** A form-based plan's saved KQL or Lucene query. */
+  query: JsonObject | undefined;
+  onSelect: (layerId: string) => void;
+}) => (
+  <>
+    <EuiText size="s">
+      <p>
+        Status: planned, {layers.length}{' '}
+        {layers.length === 1 ? 'layer' : 'layers'}
+      </p>
+    </EuiText>
+    <EuiFormRow label="Layer">
+      <EuiSelect
+        value={layer?.layerId ?? ''}
+        options={layers.map(({ layerId }) => ({
+          value: layerId,
+          text: layerId,
+        }))}
+        onChange={({ target }) => onSelect(target.value)}
+      />
+    </EuiFormRow>
+    {layer ? (
+      <>
+        <Code
+          label="Query"
+          text={
+            layer.kind === 'esql' ? layer.query.esql : pretty(query ?? null)
+          }
+        />
+        <Code label="Layer plan" text={pretty(layerDetails(layer))} />
+      </>
+    ) : null}
+  </>
+);
+
+type Row = { id: number; cells: readonly JsonValue[] };
+
+const ProjectedTable = ({ table }: { table: LensTable }) => {
+  const { rows, columns, partial } = table;
+  const items: Row[] = rows
+    .slice(0, ROWS_SHOWN)
+    .map((cells, id) => ({ id, cells }));
+  const tableColumns: EuiBasicTableColumn<Row>[] = columns.map(
+    ({ lens: { columnId, label, fieldName }, type }, index) => ({
+      name: (
+        <span key={columnId}>
+          {label ?? columnId}{' '}
+          <small>
+            ({fieldName}: {type})
+          </small>
+        </span>
+      ),
+      render: ({ cells }: Row) =>
+        clip(JSON.stringify(cells[index]), CELL_CHARACTERS),
+    })
+  );
+  return (
+    <>
+      <EuiText size="s">
+        <p>
+          {rows.length > ROWS_SHOWN
+            ? `Showing ${ROWS_SHOWN} of ${rows.length} rows.`
+            : `${rows.length} rows.`}
+        </p>
+      </EuiText>
+      {partial ? (
+        <EuiCallOut
+          color="warning"
+          size="s"
+          title="Partial response: Elasticsearch marked it is_partial, and Kibana draws it with a warning."
+        />
+      ) : null}
+      <EuiBasicTable
+        tableCaption="Projected table"
+        items={items}
+        itemId="id"
+        columns={tableColumns}
+        responsiveBreakpoint={false}
+      />
+    </>
+  );
+};
+
+const PlanOutcome = ({
+  outcome,
+}: {
+  outcome: Outcome<LensPlanResult> | undefined;
+}) => {
+  if (outcome?.kind === 'unparsed') {
+    return <Unparsed message={outcome.message} />;
+  }
+  if (
+    outcome?.result.status === 'invalid' ||
+    outcome?.result.status === 'unsupported'
+  ) {
+    return (
+      <>
+        <EuiText size="s">
+          <p>Status: {outcome.result.status}</p>
+        </EuiText>
+        <Diagnostics items={outcome.result.diagnostics} />
+      </>
+    );
+  }
+  return null;
+};
+
+const ResponseOutcome = ({
+  outcome,
+}: {
+  outcome: Outcome<LensResponseResult> | undefined;
+}) => {
+  if (outcome?.kind === 'unparsed') {
+    return <Unparsed message={outcome.message} />;
+  }
+  if (outcome?.result.status === 'invalid') {
+    return <Diagnostics items={outcome.result.diagnostics} />;
+  }
+  if (outcome?.result.status === 'ready') {
+    return <ProjectedTable table={outcome.result.table} />;
+  }
+  return null;
+};
+
+const LensInspectorApp = () => {
   const [input, setInput] = useState(() => pretty(twoLayerInput()));
   const [response, setResponse] = useState(() => pretty(requestsResponse()));
-  const [planned, setPlanned] = useState<LensPlanResult | { error: string }>();
-  const [read, setRead] = useState<LensResponseResult | { error: string }>();
+  const [planned, setPlanned] = useState<Outcome<LensPlanResult>>();
+  const [read, setRead] = useState<Outcome<LensResponseResult>>();
   const [layerId, setLayerId] = useState('');
-  const layers =
-    planned && 'status' in planned && planned.status === 'planned'
-      ? planned.plan.layers
-      : [];
+  const plannedPlan =
+    planned?.kind === 'result' && planned.result.status === 'planned'
+      ? planned.result.plan
+      : undefined;
+  const layers = plannedPlan?.layers ?? [];
   const layer = layers.find((entry) => entry.layerId === layerId);
 
   const runPlan = () => {
-    const parsed = parse(input);
-    const result = 'error' in parsed ? parsed : plan(parsed.value);
-    setPlanned(result);
+    const outcome = runOn(input, plan);
+    setPlanned(outcome);
     setRead(undefined);
     setLayerId(
-      'status' in result && result.status === 'planned'
-        ? (result.plan.layers[0]?.layerId ?? '')
+      outcome.kind === 'result' && outcome.result.status === 'planned'
+        ? (outcome.result.plan.layers[0]?.layerId ?? '')
         : ''
-    );
-  };
-  const runRead = () => {
-    const parsed = parse(response);
-    setRead(
-      'error' in parsed
-        ? parsed
-        : layer?.kind === 'form'
-          ? readTable(layer, parsed.value)
-          : readResponse(layer, parsed.value)
     );
   };
 
   return (
-    <section
+    <EuiFlexGroup
+      direction="column"
+      gutterSize="m"
       aria-label="Lens inspector"
-      style={{ padding: 24, display: 'grid', gap: 12 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600 }}>Lens inspector</h1>
-      <p>
-        Plans a native ES|QL or form-based Lens saved object and replays a
-        recorded ES|QL response or Lens <code>Datatable</code> through{' '}
-        <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
-        executed, and nothing is drawn: this shows the plan a host would run,
-        not a chart.
-      </p>
-      <label htmlFor={`${id}-input`}>
-        {'Planning input: { savedObject, dataViews? }'}
-      </label>
-      <textarea
-        id={`${id}-input`}
+      role="region"
+      style={{ padding: 24 }}>
+      <EuiTitle size="m">
+        <h1>Lens inspector</h1>
+      </EuiTitle>
+      <EuiText size="s">
+        <p>
+          Plans a native ES|QL or form-based Lens saved object and replays a
+          recorded ES|QL response or Lens <code>Datatable</code> through{' '}
+          <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
+          executed, and nothing is drawn: this shows the plan a host would run,
+          not a chart.
+        </p>
+      </EuiText>
+      <JsonInput
+        label="Planning input: { savedObject, dataViews? }"
         rows={14}
-        style={box}
         value={input}
-        onChange={(event) => {
-          setInput(event.target.value);
+        onChange={(value) => {
+          setInput(value);
           setPlanned(undefined);
           setRead(undefined);
         }}
       />
-      <button type="button" style={{ justifySelf: 'start' }} onClick={runPlan}>
-        Plan
-      </button>
-      {planned && 'error' in planned ? (
-        <p role="alert">{planned.error}</p>
-      ) : null}
-      {planned && 'status' in planned && planned.status !== 'planned' ? (
-        <>
-          <p>Status: {planned.status}</p>
-          <Diagnostics items={planned.diagnostics} />
-        </>
-      ) : null}
+      <div>
+        <EuiButton size="s" onClick={runPlan}>
+          Plan
+        </EuiButton>
+      </div>
+      <PlanOutcome outcome={planned} />
       {layers.length ? (
         <>
-          <p>
-            Status: planned, {layers.length}{' '}
-            {layers.length === 1 ? 'layer' : 'layers'}
-          </p>
-          <label htmlFor={`${id}-layer`}>Layer</label>
-          <select
-            id={`${id}-layer`}
-            value={layerId}
-            style={{ ...box, width: 'auto', justifySelf: 'start' }}
-            onChange={(event) => {
-              setLayerId(event.target.value);
-              setRead(undefined);
-            }}>
-            {layers.map((entry) => (
-              <option key={entry.layerId} value={entry.layerId}>
-                {entry.layerId}
-              </option>
-            ))}
-          </select>
-          <pre aria-label="Query" style={pre}>
-            {layer?.kind === 'esql'
-              ? clip(layer.query.esql, TEXT_CHARACTERS)
-              : planned && 'status' in planned && planned.status === 'planned'
-                ? clip(pretty(planned.plan.query ?? null), TEXT_CHARACTERS)
-                : ''}
-          </pre>
-          <pre aria-label="Layer plan" style={pre}>
-            {layer
-              ? clip(
-                  pretty(
-                    layer.kind === 'esql'
-                      ? { columns: layer.columns, host: layer.host }
-                      : {
-                          dataView: layer.dataView,
-                          linkedTo: layer.linkedTo,
-                          columns: layer.columns,
-                          host: layer.host,
-                        }
-                  ),
-                  TEXT_CHARACTERS
-                )
-              : ''}
-          </pre>
-          <label htmlFor={`${id}-response`}>
-            {layer?.kind === 'form'
-              ? "Lens Datatable: { type: 'datatable', columns, rows }"
-              : 'Recorded ES|QL response: { columns, values }'}
-          </label>
-          <textarea
-            id={`${id}-response`}
-            rows={10}
-            style={box}
-            value={response}
-            onChange={(event) => {
-              setResponse(event.target.value);
+          <LayerView
+            {...{ layers, layer }}
+            query={plannedPlan?.query}
+            onSelect={(selected) => {
+              setLayerId(selected);
               setRead(undefined);
             }}
           />
-          <button
-            type="button"
-            style={{ justifySelf: 'start' }}
-            onClick={runRead}>
-            Read response
-          </button>
+          <JsonInput
+            label={
+              layer?.kind === 'form'
+                ? "Lens Datatable: { type: 'datatable', columns, rows }"
+                : 'Recorded ES|QL response: { columns, values }'
+            }
+            rows={10}
+            value={response}
+            onChange={(value) => {
+              setResponse(value);
+              setRead(undefined);
+            }}
+          />
+          <div>
+            <EuiButton
+              size="s"
+              onClick={() =>
+                setRead(
+                  runOn(response, (value) =>
+                    layer?.kind === 'form'
+                      ? readTable(layer, value)
+                      : readResponse(layer, value)
+                  )
+                )
+              }>
+              Read response
+            </EuiButton>
+          </div>
         </>
       ) : null}
-      {read && 'error' in read ? <p role="alert">{read.error}</p> : null}
-      {read && 'status' in read && read.status === 'invalid' ? (
-        <Diagnostics items={read.diagnostics} />
-      ) : null}
-      {read && 'status' in read && read.status === 'ready' ? (
-        <>
-          <p>
-            {read.table.rows.length > ROWS_SHOWN
-              ? `Showing ${ROWS_SHOWN} of ${read.table.rows.length} rows.`
-              : `${read.table.rows.length} rows.`}
-          </p>
-          <table
-            aria-label="Projected table"
-            style={{ borderCollapse: 'collapse', font: '13px/1.5 monospace' }}>
-            <thead>
-              <tr>
-                {read.table.columns.map(({ lens, type }) => (
-                  <th key={lens.columnId} style={cell}>
-                    {lens.label ?? lens.columnId}{' '}
-                    <small>
-                      ({lens.fieldName}: {type})
-                    </small>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {read.table.rows.slice(0, ROWS_SHOWN).map((row, rowIndex) => (
-                <tr key={rowIndex}>
-                  {row.map((value, index) => (
-                    <td key={index} style={cell}>
-                      {clip(JSON.stringify(value), CELL_CHARACTERS)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      ) : null}
-    </section>
+      <ResponseOutcome outcome={read} />
+    </EuiFlexGroup>
   );
-}
+};
+
+export default LensInspectorApp;

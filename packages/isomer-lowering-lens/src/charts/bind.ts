@@ -11,13 +11,15 @@ import {
 } from '@elastic/isomer-primitives-charts/model';
 import { z } from 'zod';
 
-import { copyJson, type JsonValue } from '../json';
 import {
   anyLayerPlanSchema,
   columnSchema,
+  id,
   issueDiagnostics,
+  json,
   type LensDiagnostic,
   type LensTable,
+  parseArgument,
   savedObjectSchema,
 } from '../schema';
 
@@ -39,25 +41,13 @@ export type LensBindResult =
       readonly diagnostics: readonly LensDiagnostic[];
     };
 
-const id = z.string().min(1).max(4096);
-
 const planSchema = z
   .object({
     version: z.literal(1),
     source: savedObjectSchema,
     dataViews: z.array(z.unknown()),
-    filters: z.array(
-      z.record(
-        z.string(),
-        z.custom<JsonValue>(() => true)
-      )
-    ),
-    query: z
-      .record(
-        z.string(),
-        z.custom<JsonValue>(() => true)
-      )
-      .optional(),
+    filters: z.array(z.record(z.string(), json)),
+    query: z.record(z.string(), json).optional(),
     layers: z.array(anyLayerPlanSchema).min(1),
   })
   .strict();
@@ -69,7 +59,8 @@ const tableSchema = z
       .array(z.object({ lens: columnSchema, type: id }).strict())
       .min(1)
       .max(512),
-    rows: z.array(z.array(z.custom<JsonValue>(() => true))),
+    rows: z.array(z.array(json)),
+    partial: z.boolean(),
   })
   .strict()
   .check((ctx) => {
@@ -112,38 +103,26 @@ export const bind = (
   tables: unknown,
   { filterAction, dates }: BindOptions = {}
 ): LensBindResult => {
-  const copiedPlan = copyJson(plan);
-  if (!copiedPlan.ok) {
-    return invalid('lens.bind.invalid-json', copiedPlan.message, ['plan']);
+  const parsedPlan = parseArgument(
+    plan,
+    planSchema,
+    { json: 'lens.bind.invalid-json', shape: 'lens.bind.invalid-plan' },
+    ['plan']
+  );
+  if (!parsedPlan.ok) {
+    return { status: 'invalid', diagnostics: parsedPlan.diagnostics };
   }
-  const copiedTables = copyJson(tables);
-  if (!copiedTables.ok) {
-    return invalid('lens.bind.invalid-json', copiedTables.message, ['tables']);
+  const parsedTables = parseArgument(
+    tables,
+    z.array(tableSchema),
+    { json: 'lens.bind.invalid-json', shape: 'lens.bind.invalid-tables' },
+    ['tables']
+  );
+  if (!parsedTables.ok) {
+    return { status: 'invalid', diagnostics: parsedTables.diagnostics };
   }
-  const parsedPlan = planSchema.safeParse(copiedPlan.value);
-  if (!parsedPlan.success) {
-    return {
-      status: 'invalid',
-      diagnostics: issueDiagnostics(
-        'lens.bind.invalid-plan',
-        parsedPlan.error,
-        ['plan']
-      ),
-    };
-  }
-  const parsedTables = z.array(tableSchema).safeParse(copiedTables.value);
-  if (!parsedTables.success) {
-    return {
-      status: 'invalid',
-      diagnostics: issueDiagnostics(
-        'lens.bind.invalid-tables',
-        parsedTables.error,
-        ['tables']
-      ),
-    };
-  }
-  const { source, layers } = parsedPlan.data;
-  const read: LensTable[] = parsedTables.data;
+  const { source, layers } = parsedPlan.value;
+  const read: LensTable[] = parsedTables.value;
   const planned = new Set(layers.map(({ layerId }) => layerId));
   const seen = new Set<string>();
   for (const [index, { layerId }] of read.entries()) {
