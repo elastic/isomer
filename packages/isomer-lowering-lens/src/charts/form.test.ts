@@ -101,6 +101,125 @@ describe('bind: form-based Lens', () => {
   });
 });
 
+/** A form-based metric of one column, `m`, over the flights data view. */
+const single = (column: Record<string, unknown>) => ({
+  savedObject: {
+    id: 'single',
+    type: 'lens',
+    references: [
+      {
+        type: 'index-pattern',
+        id: 'flights',
+        name: 'indexpattern-datasource-layer-layer',
+      },
+    ],
+    attributes: {
+      title: 'Single',
+      visualizationType: 'lnsMetric',
+      state: {
+        query: { query: '', language: 'kuery' },
+        filters: [],
+        datasourceStates: {
+          formBased: {
+            layers: {
+              layer: {
+                columnOrder: ['m'],
+                columns: {
+                  m: {
+                    label: 'Metric',
+                    dataType: 'number',
+                    isBucketed: false,
+                    ...column,
+                  },
+                },
+              },
+            },
+          },
+        },
+        visualization: {
+          layerId: 'layer',
+          layerType: 'data',
+          metricAccessor: 'm',
+        },
+      },
+    },
+  },
+});
+
+describe('bind: form-based filters without a breakdown', () => {
+  const filters = (column: Record<string, unknown>, value: unknown = 628.25) =>
+    node(
+      run(
+        single(column),
+        { layer: { columns: [number('m', 'Metric')], rows: [{ m: value }] } },
+        'filter'
+      )
+    ).tiles[0]!.action?.filters;
+  const average = { operationType: 'average', sourceField: 'AvgTicketPrice' };
+
+  it('raises a metric over a field as its existence, as `createMetricFilter` does', () => {
+    expect(filters(average)).toEqual([
+      { field: 'AvgTicketPrice', exists: true },
+    ]);
+  });
+
+  it('raises a last value as its phrase, as `top_hits` does', () => {
+    const last = {
+      operationType: 'last_value',
+      dataType: 'string',
+      sourceField: 'Carrier',
+      params: { sortField: 'timestamp', showArrayValues: false },
+    };
+    expect(filters(last, 'JetBeats')).toEqual([
+      { field: 'Carrier', value: 'JetBeats' },
+    ]);
+  });
+
+  it('raises a filtered metric as its query, as `filtered_metric` does', () => {
+    const filter = { query: 'Cancelled: true', language: 'kuery' };
+    expect(
+      filters({
+        operationType: 'count',
+        sourceField: '___records___',
+        filter,
+      })
+    ).toEqual([filter]);
+  });
+
+  it.each([
+    [
+      'a count of records',
+      { operationType: 'count', sourceField: '___records___' },
+      13_059,
+    ],
+    ['a time-windowed metric', { ...average, reducedTimeRange: '1h' }, 628.25],
+    ['a metric with no value', average, null],
+  ])(
+    'raises nothing for %s, which Kibana cannot filter by',
+    (_, column, value) => {
+      expect(filters(column, value)).toBeUndefined();
+    }
+  );
+
+  it('raises nothing for a formula', () => {
+    const id = '7e8fe9b1-f45c-4f3d-9561-30febcd357ec';
+    expect(
+      node(
+        run(
+          delayed(),
+          {
+            'b4712d43-1e84-4f5b-878d-8e38ba748317': {
+              columns: [number(id, 'Delayed')],
+              rows: [{ [id]: 0.2512 }],
+            },
+          },
+          'filter'
+        )
+      ).tiles[0]!.action
+    ).toBeUndefined();
+  });
+});
+
 /** A form-based metric with a Top 3 breakdown, Other bucket and static max. */
 const breakdown = (collapseFn?: string) => ({
   savedObject: {

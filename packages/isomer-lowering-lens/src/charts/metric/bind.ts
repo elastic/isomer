@@ -610,6 +610,42 @@ const bucketFilter = (
 };
 
 /**
+ * The filter Kibana builds when a tile with no breakdown is clicked: `top_hits`' phrase for a last value,
+ * `filtered_metric`'s query for a metric Lens filters or time-windows, and `createMetricFilter`'s existence
+ * for any other metric over a field. A formula, pipeline or ES|QL column has none.
+ */
+const metricFilter = (
+  planned: PlannedColumn | undefined,
+  value: JsonValue
+): Filter | undefined => {
+  const field = planned?.sourceField;
+  if (!planned || value === null || typeof field !== 'string') {
+    return undefined;
+  }
+  if (planned.operationType === 'last_value') {
+    if (Array.isArray(value)) {
+      return value.length > 0 && value.every(isRaw)
+        ? { field, values: value }
+        : undefined;
+    }
+    return isRaw(value) ? { field, value } : undefined;
+  }
+  const filter = isRecord(planned.filter) ? planned.filter : {};
+  const { query, language } = filter;
+  if (query) {
+    return (typeof query === 'string' || isRecord(query)) &&
+      (language === 'kuery' || language === 'lucene')
+      ? { query, language }
+      : undefined;
+  }
+  // A time window wraps the metric in a `filtered_metric` with no query to filter by.
+  if (planned.reducedTimeRange || field === '___records___') {
+    return undefined;
+  }
+  return { field, exists: true };
+};
+
+/**
  * A range bucket's title, as Kibana's `range` format reads it: its label, or
  * its bounds in the column's Lens format, else the field format the table's
  * `range` wrapper carries, with Lens's `arrow_right` template and infinite
@@ -962,7 +998,15 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         tile.colorTarget = 'value';
       }
     }
-    if (filterAction && breakdown) {
+    if (filterAction && !breakdown) {
+      const filter = metricFilter(
+        plannedColumn(context, state.layerId, metric.lens.columnId),
+        raw ?? null
+      );
+      if (filter) {
+        tile.action = { name: filterAction, filters: [filter] };
+      }
+    } else if (filterAction && breakdown) {
       const filter = bucketFilter(
         breakdown,
         breakdownPlan,

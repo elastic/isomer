@@ -33,7 +33,7 @@ const filterSchema = z.union([
       exists: z
         .boolean()
         .describe(
-          '`false` matches documents without the field, as Lens filters a missing bucket.'
+          '`true` matches documents with the field, as Lens filters a metric over it; `false` matches those without, as it filters a missing bucket.'
         ),
     })
     .strict(),

@@ -42,6 +42,7 @@ A key Lens does not define is `unsupported`, so new Lens state is reported rathe
 | `showBar` with `maxAccessor` | A progress bar to the row's max, `vertical` unless `progressDirection` is `horizontal`. A null max is 0, as d3 reads it, so the bar fills halfway as Lens's does. |
 | Trend layer | A sparkline from the trend layer's time and metric columns, matched to tiles by raw breakdown value, sorted by time, with null readings kept as gaps. With `collapseFn`, rows collapse by time. Trend wins over progress. |
 | Breakdown tile with `filterAction` | `{ name: filterAction, filters: [filter] }`, with the filter Kibana's `createFilter` builds: the field and raw value; for ES\|QL, `exists: false` for a null and `values` for a multivalue cell. |
+| Form-based tile without a breakdown, with `filterAction` | The same action when Kibana can filter by its metric: `exists: true` on the field of a metric over one, a last value's `value` or `values`, or the query of a metric Lens filters. A count of records, a time-windowed metric, a formula, a pipeline metric, an ES\|QL column and a missing value raise none. |
 
 ## Form-based layers
 
