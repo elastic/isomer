@@ -9,6 +9,7 @@ import { type ReactNode, useRef } from 'react';
 import {
   Chart,
   DARK_THEME,
+  type ElementClickListener,
   LIGHT_THEME,
   type PartialTheme,
   Settings,
@@ -26,6 +27,8 @@ export interface ChartDrawing {
   theme: PartialTheme;
   /** The chart's series, inside `Chart` after its `Settings`. */
   series: ReactNode;
+  /** Absent renders the chart inert. */
+  onElementClick?: ElementClickListener | undefined;
 }
 
 /** Props of {@link ElasticChart}. */
@@ -44,7 +47,9 @@ export const ElasticChart = ({
 }: ElasticChartProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const scheme = useScheme(ref, fixed);
-  const { readings, height, theme, series } = draw(scheme ?? 'light');
+  const { readings, height, theme, series, onElementClick } = draw(
+    scheme ?? 'light'
+  );
   return (
     <div
       {...attributes}
@@ -65,6 +70,7 @@ export const ElasticChart = ({
               <Settings
                 baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
                 theme={theme}
+                {...(onElementClick ? { onElementClick } : {})}
               />
               {series}
             </Chart>

@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { toActionEvent } from '../shared/action';
 import {
   type ColorRef,
   resolveBadge,
@@ -76,6 +77,7 @@ export interface ResolvedMetricTile {
         /** How full the bar is, e.g. `75% of 512GB`; absent for a missing reading. */
         description?: string | undefined;
       };
+  action?: { name: string; context: Record<string, unknown> };
   /** One line naming everything the tile shows. */
   reading: string;
 }
@@ -94,6 +96,8 @@ interface MetricLayout {
 /** What {@link resolveMetric} returns: the grid, layout, tiles and tokens a renderer draws. */
 export interface ResolvedMetric {
   columns: number;
+  /** Empty cells drawn after the tiles. */
+  placeholders: number;
   layout: MetricLayout;
   tiles: ResolvedMetricTile[];
   tokens: ChartTokens;
@@ -172,8 +176,17 @@ const resolveTile = (
   tile: MetricTile,
   tokens: ChartTokens
 ): ResolvedMetricTile => {
-  const { key, title, subtitle, value, format, color, colorTarget, visual } =
-    tile;
+  const {
+    key,
+    title,
+    subtitle,
+    value,
+    format,
+    color,
+    colorTarget,
+    visual,
+    action,
+  } = tile;
   const number = typeof value === 'number' ? value : undefined;
   const shown =
     value === null
@@ -233,6 +246,9 @@ const resolveTile = (
           : `${formatValue(clamped, { kind: 'percent', decimals: 0 })} of ${maxReading}`,
     };
   }
+  if (action) {
+    resolved.action = toActionEvent(action, key);
+  }
   resolved.reading = [
     title,
     subtitle,
@@ -252,7 +268,11 @@ export const resolveMetric = (
 ): ResolvedMetric => {
   const tokens = chartTokens[scheme];
   return {
-    columns: Math.max(1, Math.min(node.columns ?? 3, node.tiles.length)),
+    columns: Math.max(
+      1,
+      Math.min(node.columns ?? 3, node.tiles.length + (node.placeholders ?? 0))
+    ),
+    placeholders: node.placeholders ?? 0,
     layout: {
       ...DEFAULT_LAYOUT,
       ...Object.fromEntries(
