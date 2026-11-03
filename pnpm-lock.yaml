@@ -229,6 +229,9 @@ importers:
 
   packages/isomer-lowering-lens:
     dependencies:
+      '@elastic/esql':
+        specifier: ^4.36.0
+        version: 4.36.0
       '@elastic/isomer-primitives-charts':
         specifier: workspace:*
         version: link:../isomer-primitives-charts
@@ -241,6 +244,22 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.6.5
+    devDependencies:
+      '@elastic/eui':
+        specifier: 123.1.0
+        version: 123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      '@emotion/css':
+        specifier: 11.13.5
+        version: 11.13.5
+      '@emotion/react':
+        specifier: 11.14.0
+        version: 11.14.0(@types/react@18.3.31)(react@18.3.1)
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
 
   packages/isomer-primitives-charts:
     dependencies:
@@ -353,7 +372,7 @@ importers:
     devDependencies:
       '@elastic/charts':
         specifier: 73.3.2
-        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)
+        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
       '@elastic/datemath':
         specifier: 5.0.3
         version: 5.0.3(moment@2.31.0)
@@ -1212,8 +1231,29 @@ packages:
     resolution: {integrity: sha512-MT6/KONPeYj/y+v16KjzjY8t7DozXFrEVykJrd7YOFPnJOxZCPtVMe+jtQxl0niWfHnoMn9Rbgy1t+bwh5HrnQ==}
     engines: {node: '>=20'}
 
-  '@elastic/esql-definitions@4.31.0':
-    resolution: {integrity: sha512-J6zXrPIXviW2+YwAFrvrpk9uo6bStL8yJCIIeDnJiiSZqnDB2CtTCb1Kd+hL6gynpQ5C+VjLXLRrn0OSP8jmdQ==}
+  '@elastic/esql-ast@4.36.0':
+    resolution: {integrity: sha512-DF6gfruk8imGPjQXkhPGZ8weJ67BEIXC90iajhQqGrP9bb0U31RgSUyC27oN6lYPrN5XHWS/6So+47snPOyhfQ==}
+
+  '@elastic/esql-definitions@4.36.0':
+    resolution: {integrity: sha512-Yfm/nHY4ru7LdGP0uidKLdqGUFc7DBSbRK4TZ1n2lUVOv3l2tqeC+gE58axMsHpqbWdIprwyMA8dnMACMbfOcw==}
+
+  '@elastic/esql-grammar@4.36.0':
+    resolution: {integrity: sha512-EB7rHhxl6K1av3xTc5xsRmK3xpdBWwxQWIFOMHhsruXjDA6rdD+vZq0Kvby2e0A+tVssSqYU09ZGBILPX+o56g==}
+
+  '@elastic/esql-parser@4.36.0':
+    resolution: {integrity: sha512-nedlmMnBaB99X+BmpLo6Od7BnWHCN1scHeYzBeeem2MFOJj/hWxdEE0geO8DHf6oCS2NXZlDJGiJUMaTITlsSA==}
+
+  '@elastic/esql-promql-grammar@4.36.0':
+    resolution: {integrity: sha512-VFx0EPvV4a1kNtqdepJrA5S5dMroSkiCrp2xeTWq+dQ016hocwDaJvV8ChkRL1LRYAp/Z6ysbhJFhZ6D/hZ+gw==}
+
+  '@elastic/esql-traversal@4.36.0':
+    resolution: {integrity: sha512-wEjbq53jpEfnPk+I27ixqlAFBAteFtNYLjdQoMxlFMTZEynxLlgU2Uv/8+ePYHDtS7yFtTPyPo+zf0+Yvyb15w==}
+
+  '@elastic/esql-types@4.36.0':
+    resolution: {integrity: sha512-QxU/F/X3cukG9bDArKK9avv5q6H9L7bOF1uP0MxyUhKC4m8AGuRhY3DY75MIPbyhvdnW2dKn5L3hbJgxgUspyA==}
+
+  '@elastic/esql@4.36.0':
+    resolution: {integrity: sha512-dv65a2IEA1RhL2nSF3kx/ZUBndXDXwe4XsYJregM0JgUim0/EglnefxhO1z68amOK7nsDDljINzlLMZ1m25Sdw==}
 
   '@elastic/eui-theme-borealis@8.1.0':
     resolution: {integrity: sha512-S0WDpEJo4KeZVgTBTIbFKorkZcukmiFRL+5B8Ys6+wcUDXyuPzqUvJYCGpAqbawNMhVA0eWjGoh06YXOnSfjkQ==}
@@ -1243,6 +1283,9 @@ packages:
   '@elastic/numeral@2.5.1':
     resolution: {integrity: sha512-Tby6TKjixRFY+atVNeYUdGr9m0iaOq8230KTwn8BbUhkh7LwozfgKq0U98HRX7n63ZL62szl+cDKTYzh5WPCFQ==}
     engines: {node: '>= 0.10'}
+
+  '@elastic/pretty-printer@4.36.0':
+    resolution: {integrity: sha512-cUxLIKNAi6SVbYcHaj2d6yVCVDY8NsIgtnY1EWuYnFHO2n+3+B5WDkibciqkK+XeGzSVwbzT22yFPs3AKSoqBw==}
 
   '@elastic/prismjs-esql@4.31.0':
     resolution: {integrity: sha512-2Y8abeUm4OJs5kz+nwcadxz4Xh86eOOWa2ZMIs8xFy4Xere9xgBo1ybHBFHbucq+3a2AUH8Lf/Yfu0PnBIEfRA==}
@@ -2187,6 +2230,10 @@ packages:
   ansi-styles@6.2.3:
     resolution: {integrity: sha512-4Dj6M28JB+oAH8kFkTLUo+a2jwOFkuqb3yucU0CANcRRUbxS0cP0nZYCGjcc3BNXwRIsUVmDGgzawme7zvJHvg==}
     engines: {node: '>=12'}
+
+  antlr4@4.13.2:
+    resolution: {integrity: sha512-QiVbZhyy4xAZ17UPEuG3YTOt8ZaoeOR1CvEAqrEsDBsOqINslaB147i9xqljZqoyf5S+EUlGStaj+t22LT9MOg==}
+    engines: {node: '>=16'}
 
   any-promise@1.3.0:
     resolution: {integrity: sha512-7UvmKalWRt1wgjL1RrGxoSJW/0QZFIegpeGvZG9kjp8vrRu55XTHbwnqq2GpXm9uLbcuhxm3IqX9OB4MZR1b2A==}
@@ -4959,6 +5006,12 @@ packages:
     resolution: {integrity: sha512-aXJDbk6SnumuaZSANd21XAo15ucCDE38H4fkqiGsc3MhCK+wOlZvLP9cB/TvpHT0mOyWgC4Z8EwRlzqYSUzdsA==}
     engines: {node: '>= 0.4'}
 
+  tree-dump@1.1.0:
+    resolution: {integrity: sha512-rMuvhU4MCDbcbnleZTFezWsaZXRFemSqAM+7jPnzUl1fo9w3YEKOxAeui0fz3OI4EU4hf23iyA7uQRVko+UaBA==}
+    engines: {node: '>=10.0'}
+    peerDependencies:
+      tslib: '2'
+
   trim-lines@3.0.1:
     resolution: {integrity: sha512-kRj8B+YHZCc9kQYdWfJB2/oUl9rA99qbowYYBtr4ui4mZyAQ2JpvVBd/6U2YloATfqBhBTSMhTpgBHtU0Mf3Rg==}
 
@@ -6378,10 +6431,10 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
-  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)':
+  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
     dependencies:
       '@popperjs/core': 2.11.8
-      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)
+      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)
       bezier-easing: 2.1.0
       chroma-js: 2.6.0
       classnames: 2.5.1
@@ -6399,7 +6452,7 @@ snapshots:
       re-reselect: 4.0.1(reselect@5.3.0)
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
-      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1)
       ts-debounce: 4.0.0
       utility-types: 3.11.0
       uuid: 14.0.3
@@ -6417,7 +6470,59 @@ snapshots:
     dependencies:
       stylis: 4.4.0
 
-  '@elastic/esql-definitions@4.31.0': {}
+  '@elastic/esql-ast@4.36.0':
+    dependencies:
+      '@elastic/esql-definitions': 4.36.0
+      '@elastic/esql-grammar': 4.36.0
+      '@elastic/esql-promql-grammar': 4.36.0
+      '@elastic/esql-types': 4.36.0
+      tslib: 2.8.1
+
+  '@elastic/esql-definitions@4.36.0': {}
+
+  '@elastic/esql-grammar@4.36.0':
+    dependencies:
+      antlr4: 4.13.2
+      tslib: 2.8.1
+
+  '@elastic/esql-parser@4.36.0':
+    dependencies:
+      '@elastic/esql-ast': 4.36.0
+      '@elastic/esql-definitions': 4.36.0
+      '@elastic/esql-grammar': 4.36.0
+      '@elastic/esql-promql-grammar': 4.36.0
+      '@elastic/esql-traversal': 4.36.0
+      '@elastic/esql-types': 4.36.0
+      antlr4: 4.13.2
+      tslib: 2.8.1
+
+  '@elastic/esql-promql-grammar@4.36.0':
+    dependencies:
+      antlr4: 4.13.2
+      tslib: 2.8.1
+
+  '@elastic/esql-traversal@4.36.0':
+    dependencies:
+      '@elastic/esql-ast': 4.36.0
+      '@elastic/esql-types': 4.36.0
+      tree-dump: 1.1.0(tslib@2.8.1)
+      tslib: 2.8.1
+
+  '@elastic/esql-types@4.36.0': {}
+
+  '@elastic/esql@4.36.0':
+    dependencies:
+      '@elastic/esql-ast': 4.36.0
+      '@elastic/esql-definitions': 4.36.0
+      '@elastic/esql-grammar': 4.36.0
+      '@elastic/esql-parser': 4.36.0
+      '@elastic/esql-promql-grammar': 4.36.0
+      '@elastic/esql-traversal': 4.36.0
+      '@elastic/esql-types': 4.36.0
+      '@elastic/pretty-printer': 4.36.0
+      antlr4: 4.13.2
+      tree-dump: 1.1.0(tslib@2.8.1)
+      tslib: 2.8.1
 
   '@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
@@ -6490,9 +6595,14 @@ snapshots:
 
   '@elastic/numeral@2.5.1': {}
 
+  '@elastic/pretty-printer@4.36.0':
+    dependencies:
+      tree-dump: 1.1.0(tslib@2.8.1)
+      tslib: 2.8.1
+
   '@elastic/prismjs-esql@4.31.0':
     dependencies:
-      '@elastic/esql-definitions': 4.31.0
+      '@elastic/esql-definitions': 4.36.0
 
   '@emotion/babel-plugin@11.13.5':
     dependencies:
@@ -6860,7 +6970,7 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
-  '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)':
+  '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)':
     dependencies:
       '@standard-schema/spec': 1.1.0
       '@standard-schema/utils': 0.3.0
@@ -6870,7 +6980,7 @@ snapshots:
       reselect: 5.3.0
     optionalDependencies:
       react: 18.3.1
-      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1)
 
   '@rolldown/binding-android-arm-eabi@1.2.13':
     optional: true
@@ -7398,6 +7508,8 @@ snapshots:
   ansi-styles@5.2.0: {}
 
   ansi-styles@6.2.3: {}
+
+  antlr4@4.13.2: {}
 
   any-promise@1.3.0: {}
 
@@ -9809,14 +9921,14 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       redux: 4.2.1
 
-  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1):
+  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1):
     dependencies:
       '@types/use-sync-external-store': 0.0.6
       react: 18.3.1
       use-sync-external-store: 1.7.0(react@18.3.1)
     optionalDependencies:
       '@types/react': 18.3.31
-      redux: 4.2.1
+      redux: 5.0.1
 
   react-remove-scroll-bar@2.3.8(@types/react@18.3.31)(react@18.3.1):
     dependencies:
@@ -10412,6 +10524,10 @@ snapshots:
       punycode: 2.3.1
 
   traverse@0.6.8: {}
+
+  tree-dump@1.1.0(tslib@2.8.1):
+    dependencies:
+      tslib: 2.8.1
 
   trim-lines@3.0.1: {}
 

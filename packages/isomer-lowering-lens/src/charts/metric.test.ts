@@ -1181,6 +1181,7 @@ describe('bind: refusals', () => {
             layerId: 'other',
             columns: [{ lens: num('visits'), type: 'long' }],
             rows: [],
+            partial: false,
           },
         ])
       )

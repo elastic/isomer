@@ -21,7 +21,7 @@ import {
   type ValuePalette,
 } from '@elastic/isomer-primitives-charts/model';
 
-import type { JsonValue } from '../../json';
+import { isJsonObject as isRecord, type JsonValue } from '../../json';
 import { own } from '../../own';
 import type {
   FormLayerPlan,
@@ -75,9 +75,6 @@ type PlannedColumn = FormLayerPlan['columns'][number];
 
 const isTileIcon = (icon: string): icon is TileIcon =>
   (TILE_ICONS as readonly string[]).includes(icon);
-
-const isRecord = (value: unknown): value is Record<string, JsonValue> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** A form-based column's saved state, or `undefined` for ES|QL. */
 const plannedColumn = (

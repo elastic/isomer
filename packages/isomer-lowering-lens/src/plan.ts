@@ -5,47 +5,60 @@
  * 2.0.
  */
 
-import { z } from 'zod';
-
 import { planForm } from './form/plan';
-import { copyJson, JSON_LIMITS } from './json';
+import type { JsonValue } from './json';
+import { copyPlain, isJsonObject, JSON_LIMITS } from './json';
+import type { QueryParamsRefusal } from './params';
 import { queryParams } from './params';
 import type {
-  LensDiagnostic,
+  EsqlLayer,
   LensLayerPlan,
   LensPlanResult,
   LensSavedObject,
 } from './schema';
 import {
-  dataViewSchema,
   esqlDatasourceSchema,
   issueDiagnostics,
   LAYER_KEYS,
   MAX_ID_LENGTH,
-  savedObjectSchema,
+  parseArgument,
+  planInputSchema,
 } from './schema';
 
-const inputSchema = z
-  .object({
-    savedObject: savedObjectSchema,
-    dataViews: z.array(dataViewSchema).max(512).default([]),
-  })
-  .strict();
+type Path = readonly (string | number)[];
 
 const STATE = ['savedObject', 'attributes', 'state'];
 const DATASOURCE = [...STATE, 'datasourceStates', 'textBased'];
+
+const PARAM_REFUSALS: Record<
+  QueryParamsRefusal,
+  { status: 'invalid' | 'unsupported'; code: string }
+> = {
+  syntax: { status: 'invalid', code: 'lens.invalid-esql-query' },
+  unnamed: { status: 'unsupported', code: 'lens.unsupported-anonymous-param' },
+  positional: {
+    status: 'unsupported',
+    code: 'lens.unsupported-positional-param',
+  },
+};
 
 const refuse = (
   status: 'invalid' | 'unsupported',
   code: string,
   message: string,
-  path: readonly (string | number)[]
+  path: Path
 ): LensPlanResult => ({ status, diagnostics: [{ code, message, path }] });
+
+/** The empty state Kibana keeps for a datasource the editor touched but left without layers. */
+const isEmptyDatasource = (state: JsonValue | undefined) =>
+  isJsonObject(state) &&
+  isJsonObject(state.layers) &&
+  Object.keys(state.layers).length === 0;
 
 /** A global query native ES|QL Lens leaves behind: empty KQL/Lucene, or a layer's query again (Kibana mirrors the first). */
 const isInertGlobalQuery = (
   query: LensSavedObject['attributes']['state']['query'],
-  layers: readonly { query?: { esql: string } | undefined }[]
+  layers: readonly EsqlLayer[]
 ): boolean => {
   if (query === undefined) {
     return true;
@@ -62,56 +75,112 @@ const isInertGlobalQuery = (
   );
 };
 
+/** `readResponse` copies a layer under {@link JSON_LIMITS}, so a plan it would refuse is refused here instead. */
+const fitsReadBudget = (layer: LensLayerPlan) => copyPlain(layer).ok;
+
+const planLayer = (
+  layerId: string,
+  layer: EsqlLayer
+): LensLayerPlan | LensPlanResult => {
+  const path = [...DATASOURCE, 'layers', layerId];
+  const unknown = Object.keys(layer).filter((key) => !LAYER_KEYS.includes(key));
+  if (unknown.length > 0) {
+    return refuse(
+      'unsupported',
+      'lens.unsupported-layer-state',
+      `Unknown ES|QL layer state: ${unknown.join(', ')}.`,
+      path
+    );
+  }
+  if (layer.errors?.length) {
+    return refuse(
+      'invalid',
+      'lens.layer-errors',
+      'Lens saved editor errors with the layer, and shows them instead of drawing it.',
+      [...path, 'errors']
+    );
+  }
+  if (layer.table !== undefined) {
+    return refuse(
+      'unsupported',
+      'lens.unsupported-inline-table',
+      'The layer draws the inline table Lens saved with it, not its query.',
+      [...path, 'table']
+    );
+  }
+  if (!layer.query) {
+    return refuse(
+      'invalid',
+      'lens.missing-esql-query',
+      'The layer has no ES|QL query.',
+      path
+    );
+  }
+  const partial = layer.columns.findIndex(
+    ({ params }) => params?.dropPartials === true
+  );
+  if (partial !== -1) {
+    return refuse(
+      'unsupported',
+      'lens.unsupported-drop-partials',
+      'Dropping partial buckets is not planned.',
+      [...path, 'columns', partial, 'params', 'dropPartials']
+    );
+  }
+  const queryPath = [...path, 'query', 'esql'];
+  const params = queryParams(layer.query.esql);
+  if (!params.ok) {
+    const { status, code } = PARAM_REFUSALS[params.reason];
+    return refuse(status, code, params.message, queryPath);
+  }
+  if (params.names.some((name) => name.length > MAX_ID_LENGTH)) {
+    return refuse(
+      'unsupported',
+      'lens.unsupported-param-name',
+      `A parameter name is longer than ${MAX_ID_LENGTH} characters.`,
+      queryPath
+    );
+  }
+  const planned: LensLayerPlan = {
+    kind: 'esql',
+    layerId,
+    query: { language: 'esql', esql: layer.query.esql },
+    columns: layer.columns,
+    host: {
+      timeField: layer.timeField ?? null,
+      params: params.names,
+      applyFilters: layer.ignoreGlobalFilters !== true,
+    },
+  };
+  if (!fitsReadBudget(planned)) {
+    return refuse(
+      'invalid',
+      'lens.layer-too-large',
+      `The planned layer exceeds the ${JSON_LIMITS.values} value, ${JSON_LIMITS.characters} character or ${JSON_LIMITS.depth} level limit \`readResponse\` reads.`,
+      path
+    );
+  }
+  return planned;
+};
+
 /** Plans one native ES|QL Lens saved object; `dataViews` is optional metadata for its referenced data views. */
 export const plan = (input: unknown): LensPlanResult => {
-  const copied = copyJson(input);
-  if (!copied.ok) {
-    return refuse('invalid', 'lens.invalid-json', copied.message, []);
-  }
-  const parsed = inputSchema.safeParse(copied.value);
-  if (!parsed.success) {
-    return {
-      status: 'invalid',
-      diagnostics: issueDiagnostics('lens.invalid-input', parsed.error),
-    };
-  }
-  const { savedObject, dataViews } = parsed.data;
-  const diagnostics: LensDiagnostic[] = [];
-  const names = new Set<string>();
-  savedObject.references.forEach(({ name }, index) => {
-    if (names.has(name)) {
-      diagnostics.push({
-        code: 'lens.duplicate-reference',
-        message: `More than one reference is named "${name}".`,
-        path: ['savedObject', 'references', index],
-      });
-    }
-    names.add(name);
+  const parsed = parseArgument(input, planInputSchema, {
+    json: 'lens.invalid-json',
+    shape: 'lens.invalid-input',
   });
-  const dataViewIds = new Set<string>();
-  dataViews.forEach(({ id }, index) => {
-    const isReferenced = savedObject.references.some(
-      (reference) => reference.type === 'index-pattern' && reference.id === id
-    );
-    if (dataViewIds.has(id) || !isReferenced) {
-      diagnostics.push({
-        code: isReferenced
-          ? 'lens.duplicate-data-view'
-          : 'lens.unreferenced-data-view',
-        message: isReferenced
-          ? `Data view "${id}" is described more than once.`
-          : `Data view "${id}" is not referenced by the saved object.`,
-        path: ['dataViews', index],
-      });
-    }
-    dataViewIds.add(id);
-  });
-  if (diagnostics.length) {
-    return { status: 'invalid', diagnostics };
+  if (!parsed.ok) {
+    return { status: 'invalid', diagnostics: parsed.diagnostics };
   }
-
+  const { savedObject, dataViews } = parsed.value;
   const { state } = savedObject.attributes;
-  const datasources = Object.keys(state.datasourceStates).join();
+
+  const named = Object.keys(state.datasourceStates);
+  const datasources = (
+    named.length > 1
+      ? named.filter((key) => !isEmptyDatasource(state.datasourceStates[key]))
+      : named
+  ).join();
   if (datasources === 'formBased') {
     return planForm(savedObject, dataViews);
   }
@@ -136,21 +205,31 @@ export const plan = (input: unknown): LensPlanResult => {
       ),
     };
   }
-  const { layers, ...extensions } = datasource.data;
-  const entries = Object.entries(layers);
-  if (entries.length === 0 || Object.keys(extensions).length > 0) {
+  const { layers, indexPatternRefs: _runtime, ...extensions } = datasource.data;
+  const unknown = Object.keys(extensions);
+  if (unknown.length > 0) {
     return refuse(
-      entries.length === 0 ? 'invalid' : 'unsupported',
-      entries.length === 0
-        ? 'lens.no-layers'
-        : 'lens.unsupported-datasource-state',
-      entries.length === 0
-        ? 'The ES|QL datasource has no layers.'
-        : `Unknown ES|QL datasource state: ${Object.keys(extensions).join(', ')}.`,
+      'unsupported',
+      'lens.unsupported-datasource-state',
+      `Unknown ES|QL datasource state: ${unknown.join(', ')}.`,
       DATASOURCE
     );
   }
-  if (!isInertGlobalQuery(state.query, Object.values(layers))) {
+  const entries = Object.entries(layers);
+  if (entries.length === 0) {
+    return refuse(
+      'invalid',
+      'lens.no-layers',
+      'The ES|QL datasource has no layers.',
+      DATASOURCE
+    );
+  }
+  if (
+    !isInertGlobalQuery(
+      state.query,
+      entries.map(([, layer]) => layer)
+    )
+  ) {
     return refuse(
       'unsupported',
       'lens.unsupported-global-query',
@@ -161,87 +240,11 @@ export const plan = (input: unknown): LensPlanResult => {
 
   const planned: LensLayerPlan[] = [];
   for (const [layerId, layer] of entries) {
-    const path = [...DATASOURCE, 'layers', layerId];
-    const unknown = Object.keys(layer).filter(
-      (key) => !(LAYER_KEYS as readonly string[]).includes(key)
-    );
-    if (unknown.length > 0) {
-      return refuse(
-        'unsupported',
-        'lens.unsupported-layer-state',
-        `Unknown ES|QL layer state, such as an inline table: ${unknown.join(', ')}.`,
-        path
-      );
+    const result = planLayer(layerId, layer);
+    if (!('kind' in result)) {
+      return result;
     }
-    if (!layer.query) {
-      return refuse(
-        'invalid',
-        'lens.missing-esql-query',
-        'The layer has no ES|QL query.',
-        path
-      );
-    }
-    const columnIds = layer.columns.map(({ columnId }) => columnId);
-    const duplicate = columnIds.findIndex(
-      (columnId, index) => columnIds.indexOf(columnId) !== index
-    );
-    if (duplicate !== -1) {
-      return refuse(
-        'invalid',
-        'lens.duplicate-column',
-        `Column "${columnIds[duplicate]}" appears more than once.`,
-        [...path, 'columns', duplicate]
-      );
-    }
-    const partial = layer.columns.findIndex(
-      ({ params }) => params?.dropPartials === true
-    );
-    if (partial !== -1) {
-      return refuse(
-        'unsupported',
-        'lens.unsupported-drop-partials',
-        'Dropping partial buckets is not planned.',
-        [...path, 'columns', partial, 'params', 'dropPartials']
-      );
-    }
-    const params = queryParams(layer.query.esql);
-    if (!params) {
-      return refuse(
-        'unsupported',
-        'lens.unsupported-anonymous-param',
-        'An anonymous `?` parameter can only be bound by position.',
-        [...path, 'query', 'esql']
-      );
-    }
-    const long = params.find((name) => name.length > MAX_ID_LENGTH);
-    if (long !== undefined) {
-      return refuse(
-        'unsupported',
-        'lens.unsupported-param-name',
-        `A parameter name is longer than ${MAX_ID_LENGTH} characters.`,
-        [...path, 'query', 'esql']
-      );
-    }
-    const layerPlan: LensLayerPlan = {
-      kind: 'esql',
-      layerId,
-      query: { language: 'esql', esql: layer.query.esql },
-      columns: layer.columns,
-      host: {
-        timeField: layer.timeField ?? null,
-        params,
-        applyFilters: layer.ignoreGlobalFilters !== true,
-      },
-    };
-    if (!copyJson(layerPlan).ok) {
-      return refuse(
-        'invalid',
-        'lens.layer-too-large',
-        `The planned layer exceeds the ${JSON_LIMITS.values} value, ${JSON_LIMITS.characters} character or ${JSON_LIMITS.depth} level limit \`readResponse\` reads.`,
-        path
-      );
-    }
-    planned.push(layerPlan);
+    planned.push(result);
   }
 
   return {

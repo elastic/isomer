@@ -57,11 +57,19 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@elastic/esql": "^4.36.0",
     "@elastic/isomer-primitives-charts": "workspace:*",
     "moment": "2.31.0",
     "moment-timezone": "0.6.1"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/eui": "123.1.0",
+    "@emotion/css": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }
