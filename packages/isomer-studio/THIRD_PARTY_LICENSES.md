@@ -120,7 +120,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |
 | `@ungap/structured-clone` | 1.4.0 | ISC | `node_modules/.pnpm/@ungap+structured-clone@1.4.0/node_modules/@ungap/structured-clone` |  |
-| `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
+| `@vitejs/plugin-react` | 6.1.2 | MIT | `node_modules/.pnpm/@vitejs+plugin-react@6.1.2_vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1_/node_modules/@vitejs/plugin-react` |  |
 | `acorn` | 8.18.0 | MIT | `node_modules/.pnpm/acorn@8.18.0/node_modules/acorn` |  |
 | `aria-hidden` | 1.2.6 | MIT | `node_modules/.pnpm/aria-hidden@1.2.6/node_modules/aria-hidden` |  |
 | `attr-accept` | 2.2.5 | MIT | `node_modules/.pnpm/attr-accept@2.2.5/node_modules/attr-accept` |  |
@@ -393,7 +393,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `vfile-location` | 3.2.0 | MIT | `node_modules/.pnpm/vfile-location@3.2.0/node_modules/vfile-location` |  |
 | `vfile-message` | 2.0.4 | MIT | `node_modules/.pnpm/vfile-message@2.0.4/node_modules/vfile-message` |  |
 | `vfile-message` | 4.0.3 | MIT | `node_modules/.pnpm/vfile-message@4.0.3/node_modules/vfile-message` |  |
-| `vite` | 8.3.0 | MIT | `node_modules/.pnpm/vite@8.3.0_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
+| `vite` | 8.3.3 | MIT | `node_modules/.pnpm/vite@8.3.3_@types+node@22.20.2_esbuild@0.28.2_jiti@2.6.1_tsx@4.23.15_yaml@2.9.1/node_modules/vite` | `fsevents` |
 | `web-namespaces` | 1.1.4 | MIT | `node_modules/.pnpm/web-namespaces@1.1.4/node_modules/web-namespaces` |  |
 | `xtend` | 4.0.2 | MIT | `node_modules/.pnpm/xtend@4.0.2/node_modules/xtend` |  |
 | `yaml` | 1.10.3 | ISC | `node_modules/.pnpm/yaml@1.10.3/node_modules/yaml` |  |
