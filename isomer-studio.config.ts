@@ -12,6 +12,16 @@ import { slidesStudioConfig } from './packages/isomer-primitives-slides/isomer-s
 /** The repository's Studio: every in-repo pack, drawn in the browser alone. */
 export default defineStudioConfig({
   ...slidesStudioConfig,
+  apps: [
+    ...(slidesStudioConfig.apps ?? []),
+    {
+      id: 'lens',
+      title: 'Lens inspector',
+      description:
+        'Plan a native ES|QL Lens saved object and replay a recorded response; nothing is fetched or executed.',
+      load: () => import('./packages/isomer-lowering-lens/studio/app'),
+    },
+  ],
   images: false,
   imageFonts: './packages/isomer-primitives-slides/studio/image_fonts.ts',
 });

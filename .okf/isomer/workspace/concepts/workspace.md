@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Workspace
-description: pnpm workspace that hosts the SDK, runtime, image backend, slides pack, eval harness, and agent tools.
+description: pnpm workspace that hosts the SDK, runtime, image backend, Studio, Lens lowering, slides pack, eval harness, and agent tools.
 resource: https://github.com/elastic/isomer/blob/main/package.json
 tags: [isomer, workspace]
 status: stable

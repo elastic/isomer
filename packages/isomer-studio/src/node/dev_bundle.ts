@@ -10,12 +10,7 @@ import { dirname, join } from 'node:path';
 
 import type { EnvironmentModuleNode, InlineConfig, Plugin } from 'vite';
 
-import {
-  appEntry,
-  browserModule,
-  PACKAGE_DIR,
-  RUNS_FROM_SOURCE,
-} from './app_bundle';
+import { appEntry, browserModule, PACKAGE_DIR } from './app_bundle';
 import {
   installDirectory,
   isStudioSpecifier,
@@ -162,10 +157,8 @@ export const devViteConfig = ({
       },
     },
     optimizeDeps: {
-      // The scanner ignores tsconfig, so it misses the Emotion JSX runtime the Studio's own `.tsx` compiles to.
-      include: RUNS_FROM_SOURCE
-        ? ['@elastic/isomer-studio > @emotion/react/jsx-dev-runtime']
-        : [],
+      // TSX in lazy consumer apps also introduces this runtime after the initial scan.
+      include: ['@elastic/isomer-studio > @emotion/react/jsx-dev-runtime'],
     },
     plugins: [
       projectResolutionPlugin(configPath),
