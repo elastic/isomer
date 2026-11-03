@@ -20,18 +20,18 @@ For an ES|QL layer, the data is the Elasticsearch response with the columns Lens
 
 ## Capturing
 
-Capture runs against a local, credential-free Elasticsearch and Kibana, never in CI. The compose file also starts the Linux Chromium the capture drives, so Kibana draws text as CI's Chromium draws Isomer's:
+Capture runs against a credential-free Elasticsearch and Kibana, locally or in the [recapture workflow](#keeping-the-cases-current), never in a pull request's CI. The compose file also starts the Linux Chromium the capture drives, so Kibana draws text as CI's Chromium draws Isomer's:
 
 ```sh
 docker compose -f packages/isomer-lowering-lens/comparison/capture/compose.yml up -d
 pnpm comparison:capture
 ```
 
-`STACK_VERSION` picks the stack's image tag (default `9.7.0-SNAPSHOT`) and `PLAYWRIGHT_VERSION` the browser's, which must match the repository's `@playwright/test`. `ES_PORT`, `KIBANA_PORT` and `BROWSER_PORT` move the stack's host ports and `COMPOSE_PROJECT_NAME` its containers, so two stacks can run side by side. `KIBANA_URL` is Kibana as the capture's API calls reach it, `KIBANA_BROWSER_URL` as the browser reaches it, and `CAPTURE_BROWSER` the browser's endpoint. The capture installs the Flights, Logs and eCommerce sample data if they are missing, imports the dashboards in `comparison/capture/scenarios.ts`, and captures every supported panel of every dashboard in light and dark, each scheme in its own browser that Kibana follows. It replaces `comparison/__fixtures__/` entirely, so review its diff like any baseline update.
+`STACK_VERSION` picks the stack's image tag (default `9.7.0-SNAPSHOT`) and `PLAYWRIGHT_VERSION` the browser's, which must match the repository's `@playwright/test`. `ES_PORT`, `KIBANA_PORT` and `BROWSER_PORT` move the stack's host ports and `COMPOSE_PROJECT_NAME` its containers, so two stacks can run side by side. `KIBANA_URL` is Kibana as the capture's API calls reach it, `KIBANA_BROWSER_URL` as the browser reaches it, and `CAPTURE_BROWSER` the browser's endpoint. The capture reinstalls the Flights, Logs and eCommerce sample data, imports the dashboards in `comparison/capture/scenarios.ts`, and captures every supported panel of every dashboard in light and dark, each scheme in its own browser that Kibana follows. It replaces `comparison/__fixtures__/` entirely, so review its diff like any baseline update.
 
 The sample dashboards cover what Kibana ships. The authored dashboards cover what they do not: formats with decimals and suffixes, secondary metrics and comparisons, breakdowns with Other and empty grid cells, progress bars past their maximum, static and palette colors, icons, alignment and density, empty, null, negative, huge, tiny, multivalue and date readings, long titles, and trendlines. Add a panel there to cover a new case.
 
-Sample data rebases its timestamps when it is installed, so each capture uses a fixed range around its own day and records it.
+Sample data rebases its timestamps around the day it is installed, so the capture installs it as of one fixed day, `SAMPLE_DATA_DAY` in `capture.spec.ts`, and reads every dashboard over a fixed range around it. The capture also passes that day to Kibana as `forceNow`, for panels with a relative time range of their own. Two captures from the same Kibana build write identical files; moving the day moves every date reading, trend and time range, so change it only on purpose. Chromium antialiases a panel's edge a level or two differently from run to run, so a screenshot within two levels per channel of the committed one keeps the committed file. The fingerprint, not the screenshot, is what the comparison checks.
 
 ## Keeping the cases current
 
@@ -41,6 +41,10 @@ The cases are a baseline: they record what one Kibana drew, and they go stale wh
 - `@playwright/test` changes. Each case records the Playwright release and Chromium build it was captured with: the same test fails until the Playwright release matches, and the browser test until the Chromium replaying the cases is the build that captured them; it also checks that `PLAYWRIGHT_VERSION` in `capture/compose.yml` does, since the capture's browser must be the one CI draws with;
 - the fingerprint, the scenarios or the capture change;
 - a new Kibana changes how Lens saves or draws a metric, which the cases record in their provenance.
+
+The `lens-recapture` workflow catches the last of these. Every Monday, and on demand, it starts the compose stack on `ubuntu-latest`, runs the capture and compares the result with the committed cases. A scheduled run uses compose's default `STACK_VERSION`, which has to move with Kibana's main branch; a manual run can name another. When only the Kibana build moved, it opens nothing: the new build saves and draws every case as the old one did, and the run's summary says so. When anything else moved, it runs the comparison's unit tests and browser gate against the new cases and opens a pull request from `lens-recapture/<branch>`, or updates the one already open. The pull request's description names the Kibana build and Elastic Charts release before and after, which cases changed and in what (saved state, data, context, fingerprint or screenshot), the fingerprint values that moved, and whether Isomer still matches. When Kibana draws with an Elastic Charts the renderer does not pin, it says so, since `comparison/fixtures.test.ts` fails until the pin follows. When Isomer no longer matches, the run fails after opening the pull request.
+
+A pull request the workflow opens starts no CI of its own, so close and reopen it before merging.
 
 Recapturing writes to `comparison/__fixtures__.next/` and replaces `comparison/__fixtures__/` with it only when every panel was captured, so a failed capture leaves the committed cases alone. Review the `case.json` diffs before committing: a reference that moved is either a Kibana change to follow or a capture problem to fix, and never a reason to loosen a tolerance.
 

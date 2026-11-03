@@ -309,10 +309,10 @@
           ],
           "rows": [
             {
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1037,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1052,
               "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1": 604800000,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 148.14285714285714,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 148.14285714285714,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 150.28571428571428,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 150.28571428571428,
               "ce816876-e92d-4b1a-bbb0-ed7637fc0eea": 300
             }
           ],
@@ -320,7 +320,7 @@
             "type": "esaggs",
             "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
             "statistics": {
-              "totalCount": 1037
+              "totalCount": 1052
             }
           }
         }
@@ -355,8 +355,7 @@
       "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
-    },
-    "capturedAt": "2026-11-03T23:33:13.725Z"
+    }
   },
   "reference": {
     "fingerprint": {
@@ -376,7 +375,7 @@
             "height": 156
           },
           "interactive": false,
-          "value": "148.14",
+          "value": "150.29",
           "elements": {
             "echMetric": {
               "style": {
@@ -418,7 +417,7 @@
                 "fontSize": "36px",
                 "fontWeight": "500"
               },
-              "text": "148.14",
+              "text": "150.29",
               "textRect": {
                 "x": 256.88,
                 "y": 103.81,
@@ -451,9 +450,9 @@
               },
               "box": {
                 "x": 8,
-                "y": 78.86,
+                "y": 77.86,
                 "width": 4,
-                "height": 69.14
+                "height": 70.14
               }
             },
             "echMetric>echMeter>echMeterBar>echMeterFillPaint": {
@@ -463,15 +462,15 @@
               },
               "box": {
                 "x": 8,
-                "y": 78.86,
+                "y": 77.86,
                 "width": 4,
-                "height": 69.14
+                "height": 70.14
               }
             }
           },
           "title": "Trxns / day",
           "progress": {
-            "now": 49.38,
+            "now": 50.1,
             "min": 0,
             "max": 100
           }

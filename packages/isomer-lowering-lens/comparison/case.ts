@@ -77,7 +77,6 @@ export const caseSchema = z
         browser: z.object({ playwright: id, chromium: id }).strict(),
         /** SHA-256 of each font file Kibana drew with, in `__fixtures__/fonts/`. */
         fonts: z.record(id, id),
-        capturedAt: id,
       })
       .strict(),
     reference: z

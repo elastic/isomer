@@ -493,7 +493,7 @@ const logsPanels: AuthoredPanel[] = [
     size: [12, 8],
     attributes: esql(
       'Extensions',
-      `${LOGS} | WHERE extension.keyword IN ("css", "deb", "gz") | STATS extensions = VALUES(extension.keyword)`,
+      `${LOGS} | WHERE extension.keyword IN ("css", "deb", "gz") | STATS extensions = MV_SORT(VALUES(extension.keyword))`,
       [
         {
           columnId: 'extensions',

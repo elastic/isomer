@@ -28,6 +28,7 @@ import { extractMetricFingerprint } from '../fingerprint';
 
 import { type CapturedFont, writeCaseIndex } from './case_index';
 import { AUTHORED_DASHBOARDS, dashboardSavedObject } from './scenarios';
+import { keepCommittedScreenshots } from './screenshots';
 
 type Json = Record<string, unknown>;
 
@@ -89,14 +90,12 @@ const waitForKibana = async (timeout = 5 * 60_000) => {
   }
 };
 
-const day = (offset: number) => {
-  const date = new Date();
-  date.setUTCHours(0, 0, 0, 0);
-  date.setUTCDate(date.getUTCDate() + offset);
-  return date.toISOString();
-};
+/** Kibana rebases sample data around the day it is installed, so every capture installs it as of this day. */
+const SAMPLE_DATA_DAY = '2026-11-03T00:00:00.000Z';
 
-/** Sample data rebases its timestamps around install time, so the range is fixed per capture and recorded. */
+const day = (offset: number) =>
+  new Date(Date.parse(SAMPLE_DATA_DAY) + offset * 86_400_000).toISOString();
+
 const TIME_RANGE = { from: day(-60), to: day(30) };
 
 const elasticChartsVersion = () => {
@@ -461,12 +460,12 @@ const waitForRender = async (page: Page) => {
 
 test('capture comparison cases', async ({ browser }) => {
   await waitForKibana();
-  const samples =
-    await api<{ id: string; status: string }[]>('/api/sample_data');
+  // Reinstalled even when present, since an earlier install was rebased around another day.
   for (const id of SAMPLE_DATA) {
-    if (samples.find((set) => set.id === id)?.status !== 'installed') {
-      await api(`/api/sample_data/${id}`, { method: 'POST' });
-    }
+    await request(`/api/sample_data/${id}`, { method: 'DELETE' });
+    await api(`/api/sample_data/${id}?now=${SAMPLE_DATA_DAY}`, {
+      method: 'POST',
+    });
   }
   const form = new FormData();
   form.append(
@@ -539,8 +538,10 @@ test('capture comparison cases', async ({ browser }) => {
       if (!metrics.length) {
         continue;
       }
+      // `forceNow` also fixes panels with their own relative time range. Kibana reads it from the whole URL, so `&`
+      // ends it before the hash.
       await page.goto(
-        `${KIBANA_PAGES}/app/dashboards#/view/${dashboardId}?_g=(time:(from:'${TIME_RANGE.from}',to:'${TIME_RANGE.to}'))`
+        `${KIBANA_PAGES}/app/dashboards?forceNow=${SAMPLE_DATA_DAY}&#/view/${dashboardId}?_g=(time:(from:'${TIME_RANGE.from}',to:'${TIME_RANGE.to}'))`
       );
       await waitForRender(page);
 
@@ -608,7 +609,6 @@ test('capture comparison cases', async ({ browser }) => {
             elasticCharts,
             browser: capturedWith,
             fonts: fonts.digests,
-            capturedAt: new Date().toISOString(),
           },
           reference: { fingerprint, screenshot: 'reference.png' },
         });
@@ -623,6 +623,11 @@ test('capture comparison cases', async ({ browser }) => {
   }
   await writeCaseIndex(NEXT, written, fonts.faces);
   expect(written.length).toBeGreaterThan(0);
+  keepCommittedScreenshots(
+    CASES,
+    NEXT,
+    written.map(({ id }) => id)
+  );
   rmSync(CASES, { recursive: true, force: true });
   renameSync(NEXT, CASES);
 });
