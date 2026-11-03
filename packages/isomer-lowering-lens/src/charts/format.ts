@@ -5,22 +5,21 @@
  * 2.0.
  */
 
-import type { ValueFormat } from '@elastic/isomer-primitives-charts/model';
+import {
+  type ValueFormat,
+  valueFormatSchema,
+} from '@elastic/isomer-primitives-charts/model';
 
 import type { JsonValue } from '../json';
 
 type Mapped =
-  { ok: true; format: ValueFormat | undefined } | { ok: false; id: string };
+  | { ok: true; format: ValueFormat | undefined }
+  | { ok: false; id: string; outOfRange?: true };
 
 const isRecord = (value: unknown): value is Record<string, JsonValue> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/**
- * Maps a Lens column's `params.format` to a {@link ValueFormat}, as
- * `lens_format_column` and `supportedFormats` build it. No format leaves the
- * host's default number pattern, which the resolver's default reproduces.
- */
-export const toValueFormat = (params: unknown): Mapped => {
+const mapFormat = (params: unknown): Mapped => {
   const format = isRecord(params) ? params.format : undefined;
   if (!isRecord(format)) {
     return { ok: true, format: undefined };
@@ -54,4 +53,18 @@ export const toValueFormat = (params: unknown): Mapped => {
         id: typeof id === 'string' ? id : JSON.stringify(id),
       };
   }
+};
+
+/**
+ * Maps a Lens column's `params.format` to a {@link ValueFormat}, as
+ * `lens_format_column` and `supportedFormats` build it. No format leaves the
+ * host's default number pattern, which the resolver's default reproduces.
+ */
+export const toValueFormat = (params: unknown): Mapped => {
+  const mapped = mapFormat(params);
+  return mapped.ok &&
+    mapped.format &&
+    !valueFormatSchema.safeParse(mapped.format).success
+    ? { ok: false, id: mapped.format.kind, outOfRange: true }
+    : mapped;
 };
