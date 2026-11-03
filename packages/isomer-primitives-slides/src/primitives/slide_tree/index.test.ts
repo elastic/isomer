@@ -10,6 +10,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import { renderedHtmlText } from '../../content_parity.fixtures';
 import { slideDeckFrame, slidesPack } from '../../pack';
 import { authoredTextMaxLength } from '../authored_text';
 
@@ -62,9 +63,7 @@ describe('slideTree', () => {
   it('keeps a space between a name and its note in the HTML text', () => {
     const { html } = runtime.surfaces.html.render(compose(singleExample));
     const [entry] = singleExample.entries;
-    expect(html.replace(/<[^>]+>/g, '')).toContain(
-      `${entry?.name} ${entry?.body}`
-    );
+    expect(renderedHtmlText(html)).toContain(`${entry?.name} ${entry?.body}`);
   });
 
   it('draws connectors in text and fences them in markdown', () => {

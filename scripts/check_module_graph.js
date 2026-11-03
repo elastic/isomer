@@ -10,8 +10,10 @@
 // when any one of its exports is imported, so reachability, not direct import,
 // is what matters.
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { readdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname, join, relative } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
@@ -134,6 +136,60 @@ for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {
       }
     }
   }
+}
+
+// A host may bundle `slideStylesheet` without the pack; from the built ESM entry, that bundle must emit what the CommonJS build does.
+const slides = manifests.get('@elastic/isomer-primitives-slides');
+const { import: slidesEsm, require: slidesCjs } = slides.manifest.exports['.'];
+const stylesheetBundle = join(slides.dir, '.stylesheet-check', 'index.mjs');
+const stylesheetOf = (args) =>
+  execFileSync(process.execPath, args, {
+    cwd: slides.dir,
+    encoding: 'utf-8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+try {
+  await build({
+    stdin: {
+      contents: `export { slideStylesheet } from '${slidesEsm}';\n`,
+      resolveDir: slides.dir,
+      loader: 'js',
+    },
+    outfile: stylesheetBundle,
+    bundle: true,
+    format: 'esm',
+    // Isomer packages build ESM for bundlers alone, so only third-party packages stay external.
+    external: [
+      ...Object.keys(slides.manifest.dependencies ?? {}),
+      ...Object.keys(slides.manifest.peerDependencies ?? {}),
+    ].filter((name) => !name.startsWith('@elastic/isomer-')),
+    banner: {
+      js: "import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);",
+    },
+    platform: 'node',
+    logLevel: 'silent',
+  });
+  const bundled = stylesheetOf([
+    '--input-type=module',
+    '--eval',
+    `const { slideStylesheet } = await import(${JSON.stringify(pathToFileURL(stylesheetBundle).href)}); process.stdout.write(slideStylesheet());`,
+  ]);
+  const required = stylesheetOf([
+    '--eval',
+    `process.stdout.write(require(${JSON.stringify(slidesCjs)}).slideStylesheet());`,
+  ]);
+  checked += 1;
+  if (!required.includes('.stat-root')) {
+    violations.push(
+      `${slides.manifest.name}: ${slidesCjs} emits no primitive CSS from slideStylesheet`
+    );
+  } else if (bundled !== required) {
+    violations.push(
+      `${slides.manifest.name}: a bundle of slideStylesheet alone from ${slidesEsm} emits ${bundled.length} characters of CSS; ${slidesCjs} emits ${required.length}`
+    );
+  }
+} finally {
+  rmSync(dirname(stylesheetBundle), { force: true, recursive: true });
 }
 
 if (violations.length > 0) {
