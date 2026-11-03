@@ -57,6 +57,7 @@ runs:
         if-no-files-found: ignore
 
     - name: Build the Studio
+      id: build
       if: ${{ !cancelled() && inputs.build == 'true' }}
       shell: bash
       working-directory: ${{ inputs.working-directory }}
@@ -67,8 +68,9 @@ runs:
       run: npx --no isomer-studio build --config "$CONFIG" --out "$OUT" --base "$BASE"
 
     - name: Upload the Studio
-      if: ${{ !cancelled() && inputs.build == 'true' }}
+      if: ${{ !cancelled() && steps.build.outcome == 'success' }}
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.artifact-name }}
         path: ${{ inputs.working-directory }}/${{ inputs.out }}
+        if-no-files-found: error

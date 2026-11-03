@@ -12,6 +12,7 @@ import type {} from 'monaco-editor/esm/vs/editor/editor.api';
 import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
+import { imagesProblem } from '../model/images';
 import { IsomerStudio } from '../studio';
 import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
@@ -64,6 +65,10 @@ export const mountStudio = (
     problems.push(
       ...featuredProblems(next.featured, runtimePrimitiveTypes(next.runtime))
     );
+    const images = imagesProblem(next);
+    if (images) {
+      problems.push(images);
+    }
     document.title = next.title ?? 'Isomer Studio';
     root.render(
       <IsomerStudio

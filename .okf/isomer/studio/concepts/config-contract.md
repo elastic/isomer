@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Config contract
-description: A Studio config supplies a runtime, and optionally a title, stylesheet, createReactContext, previewExample, compose, apps, featured and imageFonts; the CLI supplies JSX compilation and PNGs per mode.
+description: A Studio config supplies a runtime, and optionally a title, stylesheet, createReactContext, previewExample, compose, apps, featured, imageFonts and images; the CLI supplies JSX compilation and PNGs per mode.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-studio/src/config.ts
 tags: [isomer, studio]
 status: stable
@@ -45,7 +45,9 @@ In `dev`, the page loads a virtual entry that mounts the Studio and accepts hot 
 
 `appProblems` validates `apps` (`description`, when given, must be a non-empty string), and each page's `path`, `title` and `section` by app and page index, when the config loads and again on each browser hot update, which keeps the last valid apps. Apps render under the Studio's `EuiProvider` without a shadow root, so `assertSingleEui` stops a config with apps that resolves a different `@elastic/eui` or `@emotion/react` from the Studio; it runs in `studioConfigFrom`, after `apps` validates. A static build bundles every stylesheet the config reaches, lazy apps included, into `assets/app.css`: `.module.css` is a CSS Module, plain `.css` stays global, and Monaco's CSS imports are emptied because `assets/studio.css` carries them.[^apps]
 
-The dev server answers `POST /pdf` with `{ title?, compositions }`, up to 8 MiB, by `renderPdf` from `@elastic/isomer-image-takumi`.[^apps]
+`imagesEnabled` and `imagesProblem` in `src/model/images.ts` read `images`: an invalid value fails the Node load and, on a browser hot update, is listed as a config problem and treated as `false`. Only the hosts gate on it; the Studio hides PNG and PDF controls because the host omits `rasterizePng` and `renderPdf`.
+
+With images on, the dev server answers `POST /pdf` with `{ title?, compositions }`, up to 8 MiB, by `renderPdf` from `@elastic/isomer-image-takumi`.[^apps]
 
 Related: [static PNGs](/studio/concepts/static-png.md), [root and CLI](/studio/entry-points/root.md).
 

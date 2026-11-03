@@ -6,6 +6,7 @@
  */
 
 import type { StudioConfig } from '../config';
+import { imagesEnabled } from '../model/images';
 import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
 import type { StudioHost } from './mount';
@@ -48,7 +49,9 @@ const renderPdf: RenderPdf = async (compositions, { title, signal } = {}) => {
 };
 
 /** `isomer-studio dev`: the server compiles JSX, rasterizes PNGs and writes PDFs. */
-export const devHost = ({ runtime }: StudioConfig): StudioHost => ({
+export const devHost = (config: StudioConfig): StudioHost => ({
   transformJsx,
-  ...(runtime.surfaces.snapshot ? { rasterizePng, renderPdf } : {}),
+  ...(imagesEnabled(config) && config.runtime.surfaces.snapshot
+    ? { rasterizePng, renderPdf }
+    : {}),
 });

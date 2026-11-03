@@ -190,6 +190,18 @@ export default { title: 'Shared', runtime: { surfaces: {} }, shared };
       `${configPath} must default-export defineStudioConfig({ runtime, ... }).`
     );
   });
+
+  it('rejects an images value that is not a boolean', async () => {
+    const configPath = write(
+      'isomer-studio.config.mjs',
+      'export default { runtime: { surfaces: {} }, images: "false" };\n'
+    );
+    await expect(
+      loadStudioConfig(configPath, { loader: 'none' })
+    ).rejects.toThrow(
+      `${configPath}: images must be a boolean; PNGs and PDFs are off.`
+    );
+  });
 });
 
 describe('studio apps', () => {

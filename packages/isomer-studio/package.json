@@ -60,7 +60,7 @@
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "copy-files": "cp src/node/node_module.cjs lib/cjs/node/node_module.cjs",
     "build:assets": "node build/build_app_assets.mjs",
-    "dev": "node --import tsx src/cli.ts dev --config ../isomer-primitives-slides/isomer-studio.config.ts",
+    "dev": "node --import tsx src/cli.ts dev --config ../../isomer-studio.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

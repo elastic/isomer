@@ -7,6 +7,7 @@
 
 import type { StudioConfig } from '../config';
 import { compositionKey } from '../model/composition_key';
+import { imagesEnabled } from '../model/images';
 import {
   describeTransformError,
   JSX_TRANSFORM_OPTIONS,
@@ -67,7 +68,10 @@ const manifestRasterizer = (): RasterizePng => {
 };
 
 /** `isomer-studio build`: JSX compiles in the browser, and PNGs come from the build's manifest. */
-export const staticHost = ({ runtime }: StudioConfig): StudioHost => ({
+export const staticHost = (config: StudioConfig): StudioHost => ({
   transformJsx,
-  rasterizePng: runtime.surfaces.snapshot ? manifestRasterizer() : undefined,
+  rasterizePng:
+    imagesEnabled(config) && config.runtime.surfaces.snapshot
+      ? manifestRasterizer()
+      : undefined,
 });

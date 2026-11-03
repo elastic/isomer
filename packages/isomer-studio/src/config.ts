@@ -116,6 +116,8 @@ export interface StudioConfig {
   previewExample?: ((node: PrimitiveNode) => Composition) | undefined;
   /** Pages listed under the app in the nav. */
   apps?: readonly StudioApp[] | undefined;
+  /** `false` turns off host PNGs and PDFs, so takumi and `imageFonts` never load; the `snapshot` surface's markup stays. */
+  images?: boolean | undefined;
   /**
    * A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs are drawn with.
    * Node imports it and the browser never does, so it may read files. Without it, PNGs use takumi's built-in face and PDFs can't draw text.

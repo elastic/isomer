@@ -9,6 +9,7 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, relative } from 'node:path';
 
+import { imagesEnabled } from '../model/images';
 import { buildSite } from '../node/build_site';
 import { checkStudio } from '../node/check';
 import type { DevServer } from '../node/dev_server';
@@ -103,6 +104,9 @@ const runCommand = async (
     case 'check': {
       const importModule = createStudioImporter(configPath, { loader });
       const config = await loadStudioConfig(configPath, { importModule });
+      if (args.png && !imagesEnabled(config)) {
+        throw new Error('--png conflicts with images: false in the config.');
+      }
       const rasterizePng = args.png
         ? createRasterizer(
             config.runtime,

@@ -15,6 +15,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import { transform } from 'esbuild';
 
 import type { StudioConfig } from '../config';
+import { imagesEnabled } from '../model/images';
 import { JSX_TRANSFORM_OPTIONS } from '../model/jsx_transform';
 
 import { APP_DIR, renderIndexHtml } from './app_bundle';
@@ -132,6 +133,11 @@ export interface DevServerOptions {
   log?: ((line: string) => void) | undefined;
 }
 
+const imagesUnavailable = (config: StudioConfig) =>
+  imagesEnabled(config)
+    ? 'The runtime has no snapshot surface.'
+    : 'Image generation is off: the config sets images: false.';
+
 interface LoadedConfig {
   config: StudioConfig;
   renderers: NodeRenderers | undefined;
@@ -157,11 +163,6 @@ export const startDevServer = async ({
     );
   }
   assertSingleReact(configPath);
-  if (loader === 'none') {
-    log(
-      'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
-    );
-  }
 
   const server: Server = createServer();
   const fontFiles = new Set<string>();
@@ -187,13 +188,16 @@ export const startDevServer = async ({
     const config = runner
       ? studioConfigFrom(await runner.import(configPath), configPath)
       : await loadStudioConfig(configPath, { importModule });
+    if (!imagesEnabled(config)) {
+      return { config, renderers: undefined };
+    }
     const fonts = imageFontsOf(config, configPath, async (path) => {
       if (!runner) {
         return importModule(path);
       }
       const namespace: unknown = await runner.import(path);
       const node = await vite.environments.ssr.moduleGraph.getModuleByUrl(path);
-      fontFiles.clear();
+      // Kept across reloads, so a font module loaded earlier still invalidates after `images` toggles.
       if (node?.file) {
         fontFiles.add(node.file);
       }
@@ -229,16 +233,21 @@ export const startDevServer = async ({
   };
 
   try {
-    await loaded;
+    const { renderers } = await loaded;
+    if (loader === 'none' && renderers) {
+      log(
+        'PNGs render with the config as loaded now: Node caches a plain import(), so restart dev to pick up config or pack changes.'
+      );
+    }
   } catch (error) {
     await close();
     throw error;
   }
 
   const png = async (request: IncomingMessage, response: ServerResponse) => {
-    const { renderers } = await loaded;
+    const { config, renderers } = await loaded;
     if (!renderers) {
-      sendText(response, 404, 'The runtime has no snapshot surface.');
+      sendText(response, 404, imagesUnavailable(config));
       return;
     }
     try {
@@ -266,9 +275,9 @@ export const startDevServer = async ({
   };
 
   const pdf = async (request: IncomingMessage, response: ServerResponse) => {
-    const { renderers } = await loaded;
+    const { config, renderers } = await loaded;
     if (!renderers) {
-      sendText(response, 404, 'The runtime has no snapshot surface.');
+      sendText(response, 404, imagesUnavailable(config));
       return;
     }
     try {
