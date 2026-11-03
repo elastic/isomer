@@ -80,6 +80,19 @@ const exercise = async (page: Page, url: string) => {
     '"title": "Total flights"'
   );
 
+  // The chart follows the Studio's color mode.
+  const tileElements = page.locator('.echMetric');
+  await page.locator('button#light').click();
+  await expect(tileElements.first()).toHaveCSS(
+    'background-color',
+    'rgb(255, 255, 255)'
+  );
+  await page.locator('button#dark').click();
+  await expect(tileElements.first()).toHaveCSS(
+    'background-color',
+    'rgb(17, 28, 44)'
+  );
+
   const sample = page.getByLabel('Sample');
   await sample.selectOption('flights-delayed');
   await expect
@@ -128,6 +141,17 @@ const exercise = async (page: Page, url: string) => {
       expect.stringMatching(/^Category C Flights \d+$/),
       expect.stringMatching(/^Other Flights \d+$/),
     ]);
+
+  // A form-based trendline is a layer Lens links to the main one.
+  await sample.selectOption('flights-trend');
+  await expect
+    .poll(() => tileTexts(page))
+    .toEqual([
+      expect.stringMatching(
+        /^Average ticket price Across all carriers [\d,]+\.\d{2} USD$/
+      ),
+    ]);
+  await expect(page.locator('.echMetric svg path').first()).toBeVisible();
 
   // A saved state Lens does not define is refused with its path, never drawn.
   const input = page.getByLabel('Lens saved object');

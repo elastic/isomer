@@ -71,6 +71,7 @@ const run = (
   text: string,
   seed: string,
   dates: { format: string; timeZone: string },
+  theme: StudioAppProps['theme'],
   validate: StudioAppProps['runtime']['validate']
 ): Outcome => {
   let input: unknown;
@@ -87,10 +88,18 @@ const run = (
     return { stage: 'plan', diagnostics: [...planned.diagnostics] };
   }
   const visualization = planned.plan.source.attributes.state.visualization;
+  // Synthetic ES|QL columns are keyed by field name, form-based ones by column ID.
+  const { maxAccessor } = visualization;
   const maxColumns = new Set(
-    typeof visualization.maxAccessor === 'string'
-      ? [visualization.maxAccessor]
-      : []
+    planned.plan.layers.flatMap((layer) =>
+      layer.kind === 'esql'
+        ? layer.columns
+            .filter(({ columnId }) => columnId === maxAccessor)
+            .map(({ fieldName }) => fieldName)
+        : typeof maxAccessor === 'string'
+          ? [maxAccessor]
+          : []
+    )
   );
   const read = synthesize(planned.plan, { seed, maxColumns });
   const failed = read.flatMap(({ result }) =>
@@ -115,7 +124,7 @@ const run = (
     };
   }
   // The React surface does not validate, so the app renders the copy `validate` checked.
-  const checked = validate({ type: 'view', body: [bound.node] });
+  const checked = validate({ type: 'view', body: [bound.node], theme });
   if (!checked.valid || !checked.composition) {
     return {
       stage: 'validate',
@@ -137,7 +146,11 @@ const run = (
 };
 
 /** Paste a Lens saved object, bind it to synthetic data, and draw the chart Isomer gives it. */
-export default function LensPasteApp({ Preview, runtime }: StudioAppProps) {
+export default function LensPasteApp({
+  Preview,
+  runtime,
+  theme,
+}: StudioAppProps) {
   const id = useId();
   const [sample, setSample] = useState<string>(SAMPLES[0].id);
   const [text, setText] = useState(() => pretty(SAMPLES[0].input()));
@@ -147,10 +160,10 @@ export default function LensPasteApp({ Preview, runtime }: StudioAppProps) {
   const [submitted, setSubmitted] = useState(text);
   const outcome = useMemo(
     () =>
-      run(submitted, seed, { format, timeZone }, (composition) =>
+      run(submitted, seed, { format, timeZone }, theme, (composition) =>
         runtime.validate(composition)
       ),
-    [submitted, seed, format, timeZone, runtime]
+    [submitted, seed, format, timeZone, theme, runtime]
   );
 
   return (
@@ -236,7 +249,9 @@ export default function LensPasteApp({ Preview, runtime }: StudioAppProps) {
             <button
               type="button"
               onClick={() =>
-                void navigator.clipboard?.writeText(pretty(outcome.composition))
+                void navigator.clipboard?.writeText(
+                  `// ${SYNTHETIC_LABEL}\n${pretty(outcome.composition)}`
+                )
               }>
               Copy
             </button>

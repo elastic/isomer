@@ -236,6 +236,91 @@ const flightsByCarrier = () => ({
   },
 });
 
+/** A form-based metric with its trendline, a layer Lens links to the main one. */
+const flightsTrend = () => ({
+  savedObject: {
+    id: 'flights-trend',
+    type: 'lens',
+    references: [
+      {
+        type: 'index-pattern',
+        id: 'd3d7af60-4c81-11e8-b3d7-01146121b73d',
+        name: 'indexpattern-datasource-layer-main',
+      },
+      {
+        type: 'index-pattern',
+        id: 'd3d7af60-4c81-11e8-b3d7-01146121b73d',
+        name: 'indexpattern-datasource-layer-trend',
+      },
+    ],
+    attributes: {
+      title: 'Average ticket price',
+      visualizationType: 'lnsMetric',
+      state: {
+        query: { query: '', language: 'kuery' },
+        filters: [],
+        datasourceStates: {
+          formBased: {
+            layers: {
+              main: {
+                columnOrder: ['price'],
+                columns: {
+                  price: {
+                    operationType: 'average',
+                    label: 'Average ticket price',
+                    customLabel: true,
+                    dataType: 'number',
+                    isBucketed: false,
+                    sourceField: 'AvgTicketPrice',
+                    params: {
+                      format: {
+                        id: 'number',
+                        params: { decimals: 2, suffix: ' USD' },
+                      },
+                    },
+                  },
+                },
+              },
+              trend: {
+                linkToLayers: ['main'],
+                columnOrder: ['time', 'trendPrice'],
+                columns: {
+                  time: {
+                    operationType: 'date_histogram',
+                    label: 'timestamp',
+                    dataType: 'date',
+                    isBucketed: true,
+                    sourceField: 'timestamp',
+                    params: { interval: 'auto', includeEmptyRows: true },
+                  },
+                  trendPrice: {
+                    operationType: 'average',
+                    label: 'Average of AvgTicketPrice',
+                    dataType: 'number',
+                    isBucketed: false,
+                    sourceField: 'AvgTicketPrice',
+                  },
+                },
+              },
+            },
+          },
+        },
+        visualization: {
+          layerId: 'main',
+          layerType: 'data',
+          metricAccessor: 'price',
+          subtitle: 'Across all carriers',
+          color: '#D6E5FF',
+          trendlineLayerId: 'trend',
+          trendlineLayerType: 'metricTrendline',
+          trendlineTimeAccessor: 'time',
+          trendlineMetricAccessor: 'trendPrice',
+        },
+      },
+    },
+  },
+});
+
 export const SAMPLES = [
   {
     id: 'flights-total',
@@ -262,5 +347,10 @@ export const SAMPLES = [
     id: 'flights-by-carrier',
     title: 'Flights by carrier: terms with Other, progress, icon',
     input: flightsByCarrier,
+  },
+  {
+    id: 'flights-trend',
+    title: 'Average ticket price: form-based trendline layer',
+    input: flightsTrend,
   },
 ] as const;
