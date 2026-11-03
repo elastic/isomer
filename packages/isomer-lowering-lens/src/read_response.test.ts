@@ -20,7 +20,9 @@ const layers = (input: unknown): readonly LensLayerPlan[] => {
   if (result.status !== 'planned') {
     throw new Error(JSON.stringify(result.diagnostics));
   }
-  return result.plan.layers;
+  return result.plan.layers.filter(
+    (layer): layer is LensLayerPlan => layer.kind === 'esql'
+  );
 };
 
 const [requests] = layers(singleLayerInput());
