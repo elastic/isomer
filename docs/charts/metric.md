@@ -21,7 +21,7 @@ type MetricTile = {
   title?: string;
   subtitle?: string;
   value: number | string | null; // null reads N/A
-  format?: ValueFormat; // number | percent | bytes | bits | pattern
+  format?: ValueFormat; // number | percent | bytes | bits | pattern | duration
   color?: ColorRef; // a tone or #rrggbb
   colorTarget?: 'background' | 'value'; // default 'background'
 };
