@@ -12,6 +12,8 @@ import { colorSchema } from '../shared/color';
 import { valueFormatSchema } from '../shared/format';
 import { pointsSchema } from '../shared/series';
 
+import { TILE_ICONS } from './tile_icons';
+
 // One pack-wide sanity cap; renderers truncate long text.
 const LIMIT = 10_000;
 const text = z.string().trim().min(1).max(LIMIT);
@@ -121,11 +123,23 @@ const metricTileSchema = z
     title: text.optional(),
     subtitle: text.optional(),
     value: z
-      .union([z.number().finite(), text, z.null()])
+      .union([
+        z.number().finite(),
+        text,
+        z.null(),
+        z
+          .array(z.union([z.number().finite(), text]))
+          .min(1)
+          .max(LIMIT),
+      ])
       .describe(
-        'The headline reading. `null` is missing data and reads `N/A`, never zero.'
+        'The headline reading. `null` is missing data and reads `N/A`, never zero. An array lists a multivalue field’s readings, each formatted with `format`, and takes no `visual`.'
       ),
     format: valueFormatSchema.optional(),
+    icon: z
+      .enum(TILE_ICONS)
+      .optional()
+      .describe("One of Lens's metric icons, drawn in the tile's text color."),
     color: colorSchema
       .optional()
       .describe(
@@ -143,7 +157,15 @@ const metricTileSchema = z
   })
   .strict()
   .check((ctx) => {
-    const { value, secondary } = ctx.value;
+    const { value, secondary, visual } = ctx.value;
+    if (Array.isArray(value) && visual) {
+      ctx.issues.push({
+        code: 'custom',
+        message: 'a multivalue reading has no `visual`',
+        path: ['visual'],
+        input: visual,
+      });
+    }
     if (secondary?.kind === 'change' && typeof value !== 'number') {
       ctx.issues.push({
         code: 'custom',
@@ -196,6 +218,10 @@ export const metricSchema = z
             '`fit` grows the value to fill the tile. Defaults to `default`.'
           ),
         density: z.enum(['compact', 'default']).optional(),
+        iconAlign: z
+          .enum(['left', 'right'])
+          .optional()
+          .describe('Where a tile’s icon sits. Defaults to `right`.'),
       })
       .strict()
       .optional(),
