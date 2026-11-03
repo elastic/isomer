@@ -12,6 +12,7 @@ import { bind } from '@elastic/isomer-lowering-lens/charts';
 import type { Composition } from '@elastic/isomer-sdk';
 import type { StudioAppProps } from '@elastic/isomer-studio';
 
+import { maxColumns } from './hints';
 import { SAMPLES } from './samples';
 import { synthesize, SYNTHETIC_LABEL } from './synthetic';
 
@@ -87,21 +88,10 @@ const run = (
   if (planned.status !== 'planned') {
     return { stage: 'plan', diagnostics: [...planned.diagnostics] };
   }
-  const visualization = planned.plan.source.attributes.state.visualization;
-  // Synthetic ES|QL columns are keyed by field name, form-based ones by column ID.
-  const { maxAccessor } = visualization;
-  const maxColumns = new Set(
-    planned.plan.layers.flatMap((layer) =>
-      layer.kind === 'esql'
-        ? layer.columns
-            .filter(({ columnId }) => columnId === maxAccessor)
-            .map(({ fieldName }) => fieldName)
-        : typeof maxAccessor === 'string'
-          ? [maxAccessor]
-          : []
-    )
-  );
-  const read = synthesize(planned.plan, { seed, maxColumns });
+  const read = synthesize(planned.plan, {
+    seed,
+    maxColumns: maxColumns(planned.plan),
+  });
   const failed = read.flatMap(({ result }) =>
     result.status === 'ready' ? [] : result.diagnostics
   );
