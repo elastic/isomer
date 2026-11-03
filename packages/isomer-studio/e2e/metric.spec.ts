@@ -88,6 +88,7 @@ for (const mode of ['dev', 'static']) {
       await expect(tiles).toHaveCount(1);
       await expect(tiles.first()).toContainText('Requests');
       await expect(tiles.first()).toContainText('182,340');
+      await expect(tiles.first()).toContainText('+11.10%');
 
       // The chart follows the Studio's color mode across the shadow root.
       await page.goto(`${url}#/dev/metric/${textExample}`);

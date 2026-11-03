@@ -7,7 +7,7 @@
 
 import type { MetricNode } from './schema';
 
-/** One tile: a value. */
+/** One tile: a value and its change from the previous period. */
 export const example: MetricNode = {
   type: 'metric',
   tiles: [
@@ -18,6 +18,12 @@ export const example: MetricNode = {
       value: 182_340,
       format: { kind: 'number', decimals: 0 },
       color: 'primary',
+      secondary: {
+        kind: 'change',
+        label: 'vs previous day',
+        previous: 164_120,
+        increase: 'good',
+      },
     },
   ],
 };
