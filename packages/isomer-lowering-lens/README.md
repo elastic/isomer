@@ -1,6 +1,6 @@
 # @elastic/isomer-lowering-lens
 
-Plans native ES|QL Lens saved objects into versioned, plain-JSON plans a host can execute, projects recorded ES|QL responses onto their Lens columns, and binds them to Isomer chart nodes. No transport or renderer.
+Plans native ES|QL and form-based Lens saved objects into versioned, plain-JSON plans a host can execute, projects their responses onto Lens columns, and binds them to Isomer chart nodes. No transport, query writing or renderer.
 
 ```ts
 import { plan, readResponse } from '@elastic/isomer-lowering-lens';
