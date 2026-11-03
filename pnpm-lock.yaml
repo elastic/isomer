@@ -247,6 +247,10 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.6.5
+    devDependencies:
+      '@elastic/eui-theme-borealis':
+        specifier: 8.1.0
+        version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
 
   packages/isomer-primitives-slides:
     dependencies:

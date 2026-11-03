@@ -7,8 +7,8 @@
 
 import { definePrimitivePack, type Renderer } from '@elastic/isomer-sdk';
 
-import { defineMetricPrimitive } from './metric';
-import type { MetricNode } from './metric/schema';
+import type { MetricNode } from './metric';
+import { defineMetricPrimitive } from './metric/primitive';
 
 /** A `react` renderer for every chart primitive, supplied by a renderer package. */
 export interface ChartRenderers {

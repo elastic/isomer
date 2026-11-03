@@ -7,16 +7,14 @@
 
 // Renderer-neutral entry: no React, DOM, Node built-ins, SDK or chart engine.
 
-export { examples as metricExamples } from './metric/examples';
-export {
-  type ResolvedMetric,
-  type ResolvedMetricTile,
-  resolveMetric,
-} from './metric/resolve';
 export {
   type MetricNode,
   type MetricTile,
+  type ResolvedMetric,
+  type ResolvedMetricTile,
+  examples as metricExamples,
   metricSchema,
-} from './metric/schema';
+  resolveMetric,
+} from './metric';
 export { type ValueFormat, formatValue } from './shared/format';
 export { type Scheme, chartTokens } from './theme';
