@@ -5,10 +5,13 @@
  * 2.0.
  */
 
+import numeral from '@elastic/numeral';
+import moment from 'moment';
 import { z } from 'zod';
 
-// Reproduces Kibana's numeral patterns for Lens formats (`0,0.00`, `0,0.00a`,
-// `0,0.00%`, `0,0.00b` with binary units, `0,0.00bitd`), without Intl.
+// Numbers format as Kibana's field formats do: each kind compiles to the
+// numeral pattern Lens's `decimalsToPattern` builds, and durations follow
+// `DurationFormat`. Both read English, whatever locale the host set globally.
 
 const decimals = z
   .number()
@@ -24,7 +27,42 @@ const compact = z
   .boolean()
   .describe('Abbreviate thousands as `k`, `m`, `b` and `t`.');
 
-/** Schema of how a number reads: number, percent, bytes or bits. */
+const DURATION_INPUTS = [
+  'picoseconds',
+  'nanoseconds',
+  'microseconds',
+  'milliseconds',
+  'seconds',
+  'minutes',
+  'hours',
+  'days',
+  'weeks',
+  'months',
+  'years',
+] as const;
+
+/** Each fixed output's long and short unit, from Kibana's `DURATION_OUTPUT_FORMATS`. */
+const DURATION_UNITS = {
+  asMilliseconds: ['milliseconds', 'ms'],
+  asSeconds: ['seconds', 's'],
+  asMinutes: ['minutes', 'min'],
+  asHours: ['hours', 'h'],
+  asDays: ['days', 'd'],
+  asWeeks: ['weeks', 'w'],
+  asMonths: ['months', 'mon'],
+  asYears: ['years', 'y'],
+} as const;
+
+type DurationOutput =
+  'humanize' | 'humanizePrecise' | keyof typeof DURATION_UNITS;
+
+const DURATION_OUTPUTS = [
+  'humanize',
+  'humanizePrecise',
+  ...(Object.keys(DURATION_UNITS) as (keyof typeof DURATION_UNITS)[]),
+] as [DurationOutput, ...DurationOutput[]];
+
+/** Schema of how a number reads: number, percent, bytes, bits, a numeral pattern or a duration. */
 export const valueFormatSchema = z
   .discriminatedUnion('kind', [
     z
@@ -60,6 +98,51 @@ export const valueFormatSchema = z
       })
       .strict()
       .describe('Decimal multiples labelled `kbit`, `Mbit`.'),
+    z
+      .object({
+        kind: z.literal('pattern'),
+        pattern: z
+          .string()
+          .min(1)
+          .max(100)
+          .describe('A numeral pattern, such as `0,0.[00]a` or `0.0b`.'),
+        suffix: suffix.optional(),
+      })
+      .strict()
+      .describe(
+        "A numeral pattern, as Lens's custom format and Kibana's number, percent and bytes field formats take it."
+      ),
+    z
+      .object({
+        kind: z.literal('duration'),
+        from: z
+          .enum(DURATION_INPUTS)
+          .optional()
+          .describe('The unit the value is in. Defaults to `seconds`.'),
+        to: z
+          .enum(DURATION_OUTPUTS)
+          .optional()
+          .describe(
+            '`humanize` reads approximately (`an hour`), `humanizePrecise` in the largest whole unit (`1.50 hours`), or a fixed unit such as `asMinutes`. Defaults to `humanize`.'
+          ),
+        decimals: decimals.optional(),
+        short: z
+          .boolean()
+          .optional()
+          .describe('Short unit names, such as `min` for minutes.'),
+        showSuffix: z
+          .boolean()
+          .optional()
+          .describe(
+            'Name the unit after a fixed unit’s number. Defaults to `true`, as Lens shows it.'
+          ),
+        spaceBeforeSuffix: z
+          .boolean()
+          .optional()
+          .describe('Put a space before the unit. Defaults to `true`.'),
+      })
+      .strict()
+      .describe('A length of time, as Kibana’s duration format reads it.'),
   ])
   .describe(
     'How a number reads. Omitted, a number shows up to three decimals, as Kibana’s default number format does.'
@@ -68,95 +151,104 @@ export const valueFormatSchema = z
 /** How a number reads, as {@link formatValue} formats it. */
 export type ValueFormat = z.infer<typeof valueFormatSchema>;
 
-const ABBREVIATIONS: ReadonlyArray<readonly [number, string]> = [
-  [1e12, 't'],
-  [1e9, 'b'],
-  [1e6, 'm'],
-  [1e3, 'k'],
-];
-const BYTES = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-const BITS = [
-  'bit',
-  'kbit',
-  'Mbit',
-  'Gbit',
-  'Tbit',
-  'Pbit',
-  'Ebit',
-  'Zbit',
-  'Ybit',
-];
+type NumeralFormat = Exclude<ValueFormat, { kind: 'duration' }>;
 
-/** numeral's rounding: half up through a decimal exponent, so 1.005 reads 1.01. */
-const toFixed = (value: number, places: number): string => {
-  const shifted = String(value).includes('e')
-    ? value * 10 ** places
-    : Number(`${value}e${places}`);
-  return (Math.round(shifted) / 10 ** places).toFixed(places);
+const places = (count = 2) => (count === 0 ? '' : `.${'0'.repeat(count)}`);
+
+/** The numeral pattern Lens's `decimalsToPattern` builds for a format. */
+export const toPattern = (format: NumeralFormat | undefined): string => {
+  if (format === undefined) {
+    return '0,0.[000]';
+  }
+  switch (format.kind) {
+    case 'number':
+      return `0,0${places(format.decimals)}${format.compact ? 'a' : ''}`;
+    case 'percent':
+      return `0,0${places(format.decimals)}${format.compact ? 'a' : ''}%`;
+    case 'bytes':
+      return `0,0${places(format.decimals)}b`;
+    case 'bits':
+      return `0,0${places(format.decimals)}bitd`;
+    case 'pattern':
+      return format.pattern;
+  }
 };
 
-const group = (digits: string): string =>
-  digits.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+const withEnglish = <T>(read: () => T): T => {
+  const previous = numeral.language();
+  numeral.language('en');
+  try {
+    return read();
+  } finally {
+    numeral.language(previous);
+  }
+};
 
-const formatNumber = (
+const TO_SECONDS: Partial<Record<(typeof DURATION_INPUTS)[number], number>> = {
+  picoseconds: 1e-12,
+  nanoseconds: 1e-9,
+  microseconds: 1e-6,
+};
+
+const PRECISE: ReadonlyArray<readonly [number, keyof typeof DURATION_UNITS]> = [
+  [31_536_000, 'asYears'],
+  // Kibana's precise output counts a month as 30 days.
+  [2_592_000, 'asMonths'],
+  [604_800, 'asWeeks'],
+  [86_400, 'asDays'],
+  [3_600, 'asHours'],
+  [60, 'asMinutes'],
+  [1, 'asSeconds'],
+  [0.001, 'asMilliseconds'],
+];
+
+const formatDuration = (
   value: number,
-  places: number,
-  { optional = false, unit = '' }: { optional?: boolean; unit?: string } = {}
+  {
+    from = 'seconds',
+    to = 'humanize',
+    decimals: precision = 2,
+    short = false,
+    showSuffix = true,
+    spaceBeforeSuffix = true,
+  }: Extract<ValueFormat, { kind: 'duration' }>
 ): string => {
-  // Rounds the signed value, as numeral does: -2.5 reads -2.
-  let fixed = toFixed(value, places);
-  const negative = fixed.startsWith('-');
-  fixed = negative ? fixed.slice(1) : fixed;
-  if (optional && fixed.includes('.')) {
-    fixed = fixed.replace(/\.?0+$/, '');
+  const space = spaceBeforeSuffix ? ' ' : '';
+  const unit = (method: keyof typeof DURATION_UNITS) =>
+    DURATION_UNITS[method][short ? 1 : 0];
+  if (to === 'humanize' && value === 0) {
+    return '0 seconds';
   }
-  const [whole, fraction] = fixed.split('.');
-  const sign = negative && Number(fixed) !== 0 ? '-' : '';
-  return `${sign}${group(whole!)}${fraction ? `.${fraction}` : ''}${unit}`;
-};
-
-const abbreviate = (value: number): [number, string] => {
-  const entry = ABBREVIATIONS.find(([size]) => Math.abs(value) >= size);
-  return entry ? [value / entry[0], entry[1]] : [value, ''];
-};
-
-const scaled = (
-  value: number,
-  base: number,
-  units: string[]
-): [number, string] => {
-  let power = 0;
-  while (power < units.length - 1 && Math.abs(value) >= base ** (power + 1)) {
-    power += 1;
+  const ratio = TO_SECONDS[from];
+  const duration = moment
+    .duration(
+      value * (ratio ?? 1),
+      // Moment's constructors start at milliseconds; smaller units are scaled to seconds.
+      ratio === undefined
+        ? (from as moment.unitOfTime.DurationConstructor)
+        : 'seconds'
+    )
+    .locale('en');
+  if (to === 'humanizePrecise') {
+    const seconds = duration.as('seconds');
+    const magnitude = Math.abs(seconds);
+    const [size, method] =
+      PRECISE.find(([unitSeconds]) => magnitude / unitSeconds >= 1) ??
+      PRECISE.at(-1)!;
+    return `${seconds < 0 ? '-' : ''}${(magnitude / size).toFixed(precision)}${space}${unit(method)}`;
   }
-  return [value / base ** power, units[power]!];
+  if (to === 'humanize') {
+    return `${value < 0 ? 'minus ' : ''}${duration.humanize()}`;
+  }
+  const reading = Number(duration[to]()).toFixed(precision);
+  return showSuffix ? `${reading}${space}${unit(to)}` : reading;
 };
 
 /** Formats `value` as Kibana would for the matching Lens format. */
 export const formatValue = (value: number, format?: ValueFormat): string => {
-  if (format === undefined) {
-    return formatNumber(value, 3, { optional: true });
+  if (format?.kind === 'duration') {
+    return formatDuration(value, format);
   }
-  const places = format.decimals ?? 2;
-  const end = format.suffix ?? '';
-  switch (format.kind) {
-    case 'number': {
-      const [shown, unit] = format.compact ? abbreviate(value) : [value, ''];
-      return formatNumber(shown, places, { unit }) + end;
-    }
-    case 'percent': {
-      const [shown, unit] = format.compact
-        ? abbreviate(value * 100)
-        : [value * 100, ''];
-      return `${formatNumber(shown, places, { unit })}%${end}`;
-    }
-    case 'bytes': {
-      const [shown, unit] = scaled(value, 1024, BYTES);
-      return formatNumber(shown, places, { unit }) + end;
-    }
-    case 'bits': {
-      const [shown, unit] = scaled(value, 1000, BITS);
-      return formatNumber(shown, places, { unit }) + end;
-    }
-  }
+  const end = format?.suffix ?? '';
+  return withEnglish(() => numeral(value).format(toPattern(format))) + end;
 };

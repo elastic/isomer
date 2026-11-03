@@ -8,6 +8,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
+| `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
 | `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |
@@ -61,6 +62,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `micromark-util-subtokenize` | 2.1.0 | MIT | `node_modules/.pnpm/micromark-util-subtokenize@2.1.0/node_modules/micromark-util-subtokenize` |  |
 | `micromark-util-symbol` | 2.0.1 | MIT | `node_modules/.pnpm/micromark-util-symbol@2.0.1/node_modules/micromark-util-symbol` |  |
 | `micromark-util-types` | 2.0.2 | MIT | `node_modules/.pnpm/micromark-util-types@2.0.2/node_modules/micromark-util-types` |  |
+| `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `unist-util-is` | 6.0.1 | MIT | `node_modules/.pnpm/unist-util-is@6.0.1/node_modules/unist-util-is` |  |
 | `unist-util-stringify-position` | 4.0.0 | MIT | `node_modules/.pnpm/unist-util-stringify-position@4.0.0/node_modules/unist-util-stringify-position` |  |

@@ -238,6 +238,12 @@ importers:
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk
+      '@elastic/numeral':
+        specifier: 2.5.1
+        version: 2.5.1
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
       react:
         specifier: '>=18 <20'
         version: 18.3.1
@@ -1221,6 +1227,10 @@ packages:
       react: ^17.0 || ^18.0
       react-dom: ^17.0 || ^18.0
       typescript: ~4.5.3 || ^5
+
+  '@elastic/numeral@2.5.1':
+    resolution: {integrity: sha512-Tby6TKjixRFY+atVNeYUdGr9m0iaOq8230KTwn8BbUhkh7LwozfgKq0U98HRX7n63ZL62szl+cDKTYzh5WPCFQ==}
+    engines: {node: '>= 0.10'}
 
   '@elastic/prismjs-esql@4.31.0':
     resolution: {integrity: sha512-2Y8abeUm4OJs5kz+nwcadxz4Xh86eOOWa2ZMIs8xFy4Xere9xgBo1ybHBFHbucq+3a2AUH8Lf/Yfu0PnBIEfRA==}
@@ -6460,6 +6470,8 @@ snapshots:
       vfile: 4.2.1
     transitivePeerDependencies:
       - react-native
+
+  '@elastic/numeral@2.5.1': {}
 
   '@elastic/prismjs-esql@4.31.0':
     dependencies:

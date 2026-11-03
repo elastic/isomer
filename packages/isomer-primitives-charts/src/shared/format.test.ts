@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { formatValue, type ValueFormat } from './format';
+import { formatValue, toPattern, type ValueFormat } from './format';
 
 // Expected strings are `@elastic/numeral` output for the pattern Lens builds
 // from each format (`supported_formats.ts` `decimalsToPattern`), captured in Kibana.
@@ -49,8 +49,22 @@ const CASES: Array<[number, ValueFormat | undefined, string, string]> = [
 describe('formatValue', () => {
   it.each(CASES)(
     'formats %s like numeral `%s`',
-    (value, format, _pattern, expected) => {
+    (value, format, pattern, expected) => {
+      expect(toPattern(format)).toBe(pattern);
       expect(formatValue(value, format)).toBe(expected);
+    }
+  );
+
+  // Kibana's `field_formats` `number.test.ts` and `bytes.test.ts`.
+  it.each<[number, string, string]>([
+    [12.345678, '0,0.[000]', '12.346'],
+    [12.345678, '0,0', '12'],
+    [5150000, '0,0.[000]b', '4.911MB'],
+    [5150000, '0,0b', '5MB'],
+  ])(
+    'formats %s with the numeral pattern `%s` as %s',
+    (value, pattern, expected) => {
+      expect(formatValue(value, { kind: 'pattern', pattern })).toBe(expected);
     }
   );
 

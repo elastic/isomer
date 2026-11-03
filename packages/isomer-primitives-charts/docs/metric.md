@@ -23,7 +23,7 @@ type MetricTile = {
   title?: string;
   subtitle?: string;
   value: number | string | null; // null is missing and reads N/A
-  format?: ValueFormat; // number | percent | bytes | bits
+  format?: ValueFormat; // number | percent | bytes | bits | pattern | duration
   color?: ColorRef; // a tone, #rrggbb, { palette, step, of } or { token }
   colorTarget?: 'background' | 'value'; // default 'background'
   secondary?:

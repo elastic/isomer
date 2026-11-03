@@ -9,6 +9,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
 | `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
+| `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
 | `@popperjs/core` | 2.11.8 | MIT | `node_modules/.pnpm/@popperjs+core@2.11.8/node_modules/@popperjs/core` |  |
 | `@reduxjs/toolkit` | 2.12.0 | MIT | `node_modules/.pnpm/@reduxjs+toolkit@2.12.0_react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@5.0.1__react@18.3.1/node_modules/@reduxjs/toolkit` |  |
 | `@standard-schema/spec` | 1.1.0 | MIT | `node_modules/.pnpm/@standard-schema+spec@1.1.0/node_modules/@standard-schema/spec` |  |
