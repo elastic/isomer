@@ -20,29 +20,42 @@ const schemeAt = (element: Element): Scheme => {
   return window.matchMedia(DARK_QUERY).matches ? 'dark' : 'light';
 };
 
+const ancestors = (element: Element): Element[] =>
+  element.parentElement
+    ? [element, ...ancestors(element.parentElement)]
+    : [element];
+
 /**
  * The scheme the chart paints in: `fixed` when given, else the host's, followed
- * across OS changes. `undefined` until mounted, so server markup never guesses.
+ * across OS changes and attribute changes on the element or its ancestors.
+ * `undefined` until mounted, so server markup never guesses.
  */
 export const useScheme = (
   ref: RefObject<Element | null>,
   fixed?: Scheme
 ): Scheme | undefined => {
-  const [scheme, setScheme] = useState<Scheme | undefined>(fixed);
+  const [host, setHost] = useState<Scheme | undefined>();
   useEffect(() => {
-    if (fixed !== undefined) {
-      setScheme(fixed);
-      return;
-    }
     const element = ref.current;
     if (!element) {
       return;
     }
-    const update = () => setScheme(schemeAt(element));
+    if (fixed !== undefined) {
+      setHost(fixed);
+      return;
+    }
+    const update = () => setHost(schemeAt(element));
     update();
     const media = window.matchMedia(DARK_QUERY);
     media.addEventListener('change', update);
-    return () => media.removeEventListener('change', update);
+    const observer = new MutationObserver(update);
+    for (const node of ancestors(element)) {
+      observer.observe(node, { attributes: true });
+    }
+    return () => {
+      media.removeEventListener('change', update);
+      observer.disconnect();
+    };
   }, [ref, fixed]);
-  return scheme;
+  return host === undefined ? undefined : (fixed ?? host);
 };

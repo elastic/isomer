@@ -20,7 +20,7 @@ import {
   resolveMetric,
   type Scheme,
 } from '@elastic/isomer-primitives-charts/model';
-import type { ActionEventRef } from '@elastic/isomer-sdk';
+import { type ActionEventRef, nodeAnchor } from '@elastic/isomer-sdk';
 
 import { toDatum, toTheme } from './datum';
 import { useScheme } from './scheme';
@@ -47,12 +47,12 @@ const Readings = ({ resolved }: { resolved: ResolvedMetric }) => (
   </ul>
 );
 
-/** A `metric` node drawn with Elastic Charts' `Metric` chart. */
-export const MetricChart = ({
+const MetricView = ({
   node,
   onEvent,
   scheme: fixed,
-}: MetricChartProps) => {
+  attributes,
+}: MetricChartProps & { attributes?: Readonly<Record<string, string>> }) => {
   const ref = useRef<HTMLDivElement>(null);
   const scheme = useScheme(ref, fixed);
   const resolved = resolveMetric(node, scheme ?? 'light');
@@ -60,44 +60,60 @@ export const MetricChart = ({
   const grid = rows(tiles, columns);
   const interactive =
     onEvent !== undefined && tiles.some(({ action }) => action);
+  // The spacer sizes the chart only when the host's height is indefinite.
   return (
-    <div ref={ref} style={{ height: grid.length * tokens.rowHeight }}>
-      {scheme === undefined ? (
-        <Readings resolved={resolved} />
-      ) : (
-        <Chart>
-          <Settings
-            baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
-            theme={toTheme(resolved)}
-            {...(interactive
-              ? {
-                  onElementClick: ([event]) => {
-                    const action =
-                      event &&
-                      'type' in event &&
-                      event.type === 'metricElementEvent' &&
-                      tiles[event.rowIndex * columns + event.columnIndex]
-                        ?.action;
-                    if (action) {
-                      onEvent(action);
-                    }
-                  },
-                }
-              : {})}
-          />
-          <Metric
-            id="metric"
-            data={grid.map((row) => row.map((tile) => toDatum(tile, tokens)))}
-          />
-        </Chart>
-      )}
+    <div
+      {...attributes}
+      ref={ref}
+      style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+      <div style={{ height: grid.length * tokens.rowHeight }} />
+      <div style={{ position: 'absolute', inset: 0 }}>
+        {scheme === undefined ? (
+          <Readings resolved={resolved} />
+        ) : (
+          <Chart>
+            <Settings
+              baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
+              theme={toTheme(resolved)}
+              {...(interactive
+                ? {
+                    onElementClick: ([event]) => {
+                      const action =
+                        event &&
+                        'type' in event &&
+                        event.type === 'metricElementEvent' &&
+                        tiles[event.rowIndex * columns + event.columnIndex]
+                          ?.action;
+                      if (action) {
+                        onEvent(action);
+                      }
+                    },
+                  }
+                : {})}
+            />
+            <Metric
+              id="metric"
+              data={grid.map((row) => row.map((tile) => toDatum(tile, tokens)))}
+            />
+          </Chart>
+        )}
+      </div>
     </div>
   );
 };
 
+/** A `metric` node drawn with Elastic Charts' `Metric` chart. */
+export const MetricChart = (props: MetricChartProps) => (
+  <MetricView {...props} />
+);
+
 /** `react` renderers for the charts pack, drawn with Elastic Charts. */
 export const elasticChartsRenderers: ChartRenderers = {
   metric: (node, { context }) => (
-    <MetricChart node={node} onEvent={context.onEvent} />
+    <MetricView
+      node={node}
+      onEvent={context.onEvent}
+      attributes={nodeAnchor(context, node)}
+    />
   ),
 };

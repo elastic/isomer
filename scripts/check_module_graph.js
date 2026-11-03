@@ -17,12 +17,13 @@ import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
+import { matchesForbidden } from './forbidden_specifier.js';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
 /**
  * Specifiers that must stay unreachable from an entry, by package and export key.
- * A forbidden specifier covers the package and every subpath under it.
+ * See {@link matchesForbidden} for what each rule covers.
  *
  * `react-dom/server` is the one worth guarding: it is the heavy server renderer,
  * and pulling it onto an entry a text-only or edge host imports costs that host
@@ -71,11 +72,6 @@ const RULES = {
     './author': ['react-dom', 'react-dom/server'],
   },
 };
-
-const matchesForbidden = (specifier, forbidden) =>
-  specifier === forbidden ||
-  specifier.startsWith(`${forbidden}/`) ||
-  (forbidden.endsWith(':') && specifier.startsWith(forbidden));
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 

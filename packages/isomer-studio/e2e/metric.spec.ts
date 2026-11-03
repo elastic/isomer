@@ -83,6 +83,33 @@ for (const mode of ['dev', 'static']) {
       await expect(tiles.first()).toContainText('+11.10%');
       await expect(page.locator('.echMetric svg path').first()).toBeVisible();
 
+      // The pack's renderer follows the host's `color-scheme` as it changes.
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)'
+      );
+      await page.emulateMedia({ colorScheme: 'dark' });
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(17, 28, 44)'
+      );
+      await page.emulateMedia({ colorScheme: 'light' });
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(255, 255, 255)'
+      );
+      await page
+        .locator('.echChart')
+        .evaluate((chart) =>
+          chart
+            .closest<HTMLElement>('[style*="color-scheme"]')!
+            .style.setProperty('color-scheme', 'dark')
+        );
+      await expect(tiles.first()).toHaveCSS(
+        'background-color',
+        'rgb(17, 28, 44)'
+      );
+
       await page.getByLabel('Example').selectOption({ index: 1 });
       await expect(tiles).toHaveCount(3);
       await tiles.filter({ hasText: 'web-02' }).click();

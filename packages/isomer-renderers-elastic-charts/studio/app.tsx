@@ -12,8 +12,11 @@ import {
   metricExamples,
   metricSchema,
 } from '@elastic/isomer-primitives-charts/model';
-import { MetricChart } from '@elastic/isomer-renderers-elastic-charts';
+import { elasticChartsPack } from '@elastic/isomer-renderers-elastic-charts';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { StudioAppProps } from '@elastic/isomer-studio';
+
+const runtime = createIsomerRuntime({ packs: [elasticChartsPack] });
 
 const describeIssues = (
   source: string
@@ -57,11 +60,11 @@ export default function MetricApp({ theme }: StudioAppProps) {
         </select>
       </label>
       {typeof parsed !== 'string' && parsed.success ? (
-        <MetricChart
-          node={parsed.data}
-          scheme={theme}
-          onEvent={(event) => setAction(JSON.stringify(event))}
-        />
+        <div style={{ colorScheme: theme }}>
+          {runtime.surfaces.react.renderNode(parsed.data, {
+            context: { onEvent: (event) => setAction(JSON.stringify(event)) },
+          })}
+        </div>
       ) : null}
       {error ? <pre role="alert">{error}</pre> : null}
       {action ? <output aria-label="Metric action">{action}</output> : null}

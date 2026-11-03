@@ -2,11 +2,11 @@
 
 `@elastic/isomer-renderers-elastic-charts` draws the [chart primitives](../../isomer-primitives-charts/docs/index.md) with Elastic Charts in the browser.
 
-| Export | What it is |
-| --- | --- |
-| `elasticChartsPack` | The charts pack, drawn with Elastic Charts. |
-| `elasticChartsRenderers` | The `react` renderers, for `createChartsPack`. |
-| `MetricChart` | The metric as a component: `node`, optional `onEvent`, optional `scheme`. |
+| Export                   | What it is                                                                |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `elasticChartsPack`      | The charts pack, drawn with Elastic Charts.                               |
+| `elasticChartsRenderers` | The `react` renderers, for `createChartsPack`.                            |
+| `MetricChart`            | The metric as a component: `node`, optional `onEvent`, optional `scheme`. |
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -20,7 +20,7 @@ The host loads Elastic Charts' stylesheet once. Colors come from the chart token
 
 ## Scheme
 
-A chart follows the host's `color-scheme` where it is drawn, falling back to the operating system's preference, and repaints when that preference changes. `MetricChart`'s `scheme` fixes it instead.
+A chart follows the host's `color-scheme` where it is drawn, falling back to the operating system's preference. It repaints when that preference changes or when an attribute changes on the chart's element or an ancestor, such as a theme class or inline style. `MetricChart`'s `scheme` fixes it instead.
 
 ## Server rendering
 
@@ -32,4 +32,8 @@ A tile with an `action` raises it through the render context's `onEvent`. Withou
 
 ## Size
 
-A chart with no height from its host is `rowHeight` tall per row of tiles (`chartTokens.light.rowHeight`).
+A chart fills its host's height. When the host's height is indefinite, the chart is `rowHeight` tall per row of tiles (`chartTokens.light.rowHeight`).
+
+## Anchors
+
+The pack's renderer marks its root with `nodeAnchor`, so `findNodeElementPairs` and `checkLayout` find metric nodes.

@@ -73,18 +73,12 @@ export const toDatum = (
       : { valueColor, background: tokens.background }),
     ...(secondary ? { extra: toExtra(secondary) } : {}),
   };
-  if (number === undefined) {
-    return visual?.kind === 'trend'
-      ? { ...base, value, ...trend(visual, title) }
-      : { ...base, value };
-  }
-  const numeric = { ...base, value: number, valueFormatter: () => value };
-  if (visual?.kind === 'trend') {
-    return { ...numeric, ...trend(visual, title) };
-  }
   if (visual?.kind === 'progress') {
     return {
-      ...numeric,
+      ...base,
+      // A missing reading draws an empty bar labelled with the missing text.
+      value: number ?? visual.min,
+      valueFormatter: () => value,
       domainMin: visual.min,
       domainMax: visual.max,
       progressBarDirection:
@@ -93,7 +87,15 @@ export const toDatum = (
           : LayoutDirection.Vertical,
     };
   }
-  return numeric;
+  if (number === undefined) {
+    return visual?.kind === 'trend'
+      ? { ...base, value, ...trend(visual, title) }
+      : { ...base, value };
+  }
+  const numeric = { ...base, value: number, valueFormatter: () => value };
+  return visual?.kind === 'trend'
+    ? { ...numeric, ...trend(visual, title) }
+    : numeric;
 };
 
 const trend = (

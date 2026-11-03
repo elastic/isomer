@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
+import { renderToString } from 'react-dom/server';
 import {
   DARK_THEME,
   LayoutDirection,
@@ -17,10 +19,11 @@ import {
   resolveMetric,
 } from '@elastic/isomer-primitives-charts/model';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import { NODE_ANCHOR_ATTRIBUTE } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { toDatum, toTheme } from './datum';
-import { elasticChartsPack } from './index';
+import { elasticChartsPack, MetricChart } from './index';
 
 const [example, breakdown, progress, text] = metricExamples as [
   (typeof metricExamples)[number],
@@ -110,6 +113,20 @@ describe('toDatum', () => {
     });
   });
 
+  it('keeps a missing progress reading as an empty bar', () => {
+    const [tile] = progress.tiles;
+    const [datum] = datums({ ...progress, tiles: [{ ...tile!, value: null }] });
+    expect(datum).toMatchObject({
+      color: '#61A2FF',
+      value: 0,
+      domainMin: 0,
+      domainMax: 549_755_813_888,
+    });
+    expect(datum && 'valueFormatter' in datum && datum.valueFormatter(0)).toBe(
+      'N/A'
+    );
+  });
+
   it('maps text, missing and value-painted tiles', () => {
     const [country, latency] = datums(text);
     expect(country).toEqual({
@@ -158,5 +175,24 @@ describe('elasticChartsPack', () => {
       body: [breakdown],
     });
     expect(html).toContain('<li>web-02, CPU, 81.0%</li>');
+  });
+
+  it('anchors the node when the context asks', () => {
+    const runtime = createIsomerRuntime({ packs: [elasticChartsPack] });
+    expect(
+      renderToString(
+        runtime.surfaces.react.renderNode(breakdown, {
+          context: { anchors: true },
+        })
+      )
+    ).toContain(`${NODE_ANCHOR_ATTRIBUTE}="metric"`);
+  });
+
+  it('renders readings on the server with a fixed scheme', () => {
+    expect(
+      renderToString(
+        createElement(MetricChart, { node: breakdown, scheme: 'dark' })
+      )
+    ).toContain('<li>web-02, CPU, 81.0%</li>');
   });
 });
