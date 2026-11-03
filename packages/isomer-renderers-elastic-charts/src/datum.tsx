@@ -10,6 +10,7 @@
 
 import type { ReactNode } from 'react';
 import {
+  type ElementClickListener,
   LayoutDirection,
   type MetricDatum,
   MetricTrendShape,
@@ -115,6 +116,15 @@ const trend = (
   trendShape: shape === 'bars' ? MetricTrendShape.Bars : MetricTrendShape.Area,
   ...(title === undefined ? {} : { trendA11yTitle: title }),
 });
+
+/** The action of the tile a click landed on; `undefined` for a tile without one. */
+export const tileAction = (
+  { tiles, columns }: Pick<ResolvedMetric, 'tiles' | 'columns'>,
+  [event]: Parameters<ElementClickListener>[0]
+) =>
+  event && 'type' in event && event.type === 'metricElementEvent'
+    ? tiles[event.rowIndex * columns + event.columnIndex]?.action
+    : undefined;
 
 const WEIGHTS = { 400: 'normal', 500: 500, 700: 'bold' } as const;
 

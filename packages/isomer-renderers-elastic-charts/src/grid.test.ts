@@ -69,6 +69,23 @@ describe('MetricChart grid', () => {
     ).toEqual([['x', 'y'], ['z']]);
   });
 
+  it('pads the tiles with empty cells, row by row', () => {
+    expect(
+      drawn({
+        type: 'metric',
+        columns: 2,
+        placeholders: 2,
+        tiles: [{ key: 'a', value: 'x' }],
+      })
+    ).toEqual([['x', undefined], [undefined]]);
+  });
+
+  it('draws a grid of placeholders alone', () => {
+    expect(drawn({ type: 'metric', tiles: [], placeholders: 2 })).toEqual([
+      [undefined, undefined],
+    ]);
+  });
+
   it('draws an empty grid for no tiles', () => {
     expect(drawn({ type: 'metric', tiles: [] })).toEqual([]);
   });
