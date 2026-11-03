@@ -225,7 +225,7 @@ describe('plan', () => {
     ],
     [
       'mixed datasources',
-      { formBased: {}, textBased: { layers: {} } },
+      { formBased: { layers: { a: {} } }, textBased: { layers: { b: {} } } },
       'lens.unsupported-datasource',
       ['savedObject', 'attributes', 'state', 'datasourceStates'],
     ],
@@ -249,14 +249,48 @@ describe('plan', () => {
     const input = singleLayerInput();
     Object.assign(
       input.savedObject.attributes.state.datasourceStates.textBased,
-      {
-        indexPatternRefs: [],
-      }
+      { indexPatternRefs: [], futureState: {} }
     );
     expect(plan(input)).toMatchObject({
       status: 'unsupported',
-      diagnostics: [{ code: 'lens.unsupported-datasource-state' }],
+      diagnostics: [
+        {
+          code: 'lens.unsupported-datasource-state',
+          message: 'Unknown ES|QL datasource state: futureState.',
+        },
+      ],
     });
+  });
+
+  const layersOf = (result: ReturnType<typeof plan>) =>
+    result.status === 'planned' ? result.plan.layers : result;
+
+  it('plans an ES|QL datasource that persisted its runtime `indexPatternRefs`', () => {
+    // As the "[Logs] Web Traffic" sample dashboard saves its metric panels.
+    const input = singleLayerInput();
+    Object.assign(
+      input.savedObject.attributes.state.datasourceStates.textBased,
+      {
+        indexPatternRefs: [
+          {
+            id: 'abc',
+            title: 'kibana_sample_data_logs',
+            timeField: '@timestamp',
+          },
+        ],
+      }
+    );
+    expect(layersOf(plan(input))).toEqual(layersOf(plan(singleLayerInput())));
+  });
+
+  it('ignores the empty datasource states Kibana keeps beside the one in use', () => {
+    // As the "[eCommerce] Revenue Dashboard" sample saves "Sold Products per Day".
+    const input = singleLayerInput();
+    Object.assign(input.savedObject.attributes.state.datasourceStates, {
+      formBased: { layers: {} },
+      indexpattern: { layers: {} },
+    });
+    expect(layersOf(plan(input))).toEqual(layersOf(plan(singleLayerInput())));
   });
 
   it.each([

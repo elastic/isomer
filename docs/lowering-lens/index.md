@@ -35,7 +35,7 @@ Neither entry imports React, the DOM, a Node built-in, the SDK, the runtime, Stu
 
 `plan({ savedObject, dataViews? })` takes a Lens saved object (`id`, `type: 'lens'`, `attributes`, `references`) and, optionally, metadata for the data views it references (`id`, `title`, and optional `timeFieldName`, `fieldFormats`, `fieldLabels`). Metadata is never fetched or guessed; a data view without it is listed without it.
 
-A saved object has one datasource: `textBased`, native ES|QL, or `formBased`.
+A saved object has one datasource: `textBased`, native ES|QL, or `formBased`. The empty states Kibana keeps beside it for datasources the editor touched (`layers: {}`) are ignored, as is the `indexPatternRefs` runtime state some saved ES|QL panels carry.
 
 - **ES|QL.** Each layer needs `query: { esql }` and `columns`, each with a unique `columnId` and the response `fieldName` it reads; several columns may read one field. Labels, `meta`, `params` and any other column state are kept as they are.
 - **Form-based.** Each layer needs its `indexpattern-datasource-layer-<layerId>` data view reference, and a `columnOrder` that lists each of its `columns` once. Every column's operation must be one Lens defines, its references must name columns in the layer with no cycle, and a formula's math column must keep the `tinymathAst` Lens saved, using only Lens formula functions with their arity. Formulas are never reparsed from their text. Each column is kept verbatim, in Lens order.

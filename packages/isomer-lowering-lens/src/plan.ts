@@ -35,6 +35,19 @@ const inputSchema = z
 const STATE = ['savedObject', 'attributes', 'state'];
 const DATASOURCE = [...STATE, 'datasourceStates', 'textBased'];
 
+/** Lens's runtime ES|QL state, which Kibana sometimes persists; planning reads nothing from it. */
+const RUNTIME_ESQL_STATE = ['indexPatternRefs'];
+
+/** Kibana keeps an empty state for each datasource the editor has touched. */
+const hasLayers = (state: unknown) => {
+  const layers = (state as { layers?: unknown } | null)?.layers;
+  return (
+    typeof layers !== 'object' ||
+    layers === null ||
+    Object.keys(layers).length > 0
+  );
+};
+
 const refuse = (
   status: 'invalid' | 'unsupported',
   code: string,
@@ -111,7 +124,12 @@ export const plan = (input: unknown): LensPlanResult => {
   }
 
   const { state } = savedObject.attributes;
-  const datasources = Object.keys(state.datasourceStates).join();
+  const named = Object.entries(state.datasourceStates);
+  const datasources = (
+    named.length > 1 ? named.filter(([, value]) => hasLayers(value)) : named
+  )
+    .map(([key]) => key)
+    .join();
   if (datasources === 'formBased') {
     return planForm(savedObject, dataViews);
   }
@@ -136,9 +154,12 @@ export const plan = (input: unknown): LensPlanResult => {
       ),
     };
   }
-  const { layers, ...extensions } = datasource.data;
+  const { layers, ...persisted } = datasource.data;
+  const extensions = Object.keys(persisted).filter(
+    (key) => !RUNTIME_ESQL_STATE.includes(key)
+  );
   const entries = Object.entries(layers);
-  if (entries.length === 0 || Object.keys(extensions).length > 0) {
+  if (entries.length === 0 || extensions.length > 0) {
     return refuse(
       entries.length === 0 ? 'invalid' : 'unsupported',
       entries.length === 0
@@ -146,7 +167,7 @@ export const plan = (input: unknown): LensPlanResult => {
         : 'lens.unsupported-datasource-state',
       entries.length === 0
         ? 'The ES|QL datasource has no layers.'
-        : `Unknown ES|QL datasource state: ${Object.keys(extensions).join(', ')}.`,
+        : `Unknown ES|QL datasource state: ${extensions.join(', ')}.`,
       DATASOURCE
     );
   }
