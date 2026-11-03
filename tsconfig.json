@@ -1,7 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    "resolveJsonModule": true
   },
   "include": [
     "*.config.ts",
@@ -11,6 +12,7 @@
     "packages/isomer-primitives-slides/src",
     "packages/isomer-primitives-slides/studio",
     "packages/isomer-primitives-slides/decks",
+    "packages/isomer-lowering-lens/comparison",
     "packages/isomer-lowering-lens/studio",
     "packages/isomer-renderers-elastic-charts/src",
     "packages/isomer-renderers-elastic-charts/isomer-studio.config.ts",

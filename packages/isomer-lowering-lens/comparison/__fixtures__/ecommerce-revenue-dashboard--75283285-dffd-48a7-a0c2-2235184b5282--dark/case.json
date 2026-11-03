@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "id": "ecommerce-revenue-dashboard--75283285-dffd-48a7-a0c2-2235184b5282--dark",
+  "title": "[eCommerce] Revenue Dashboard: 75283285-dffd-48a7-a0c2-2235184b5282",
+  "source": {
+    "dashboard": {
+      "id": "722b74f0-b882-11e8-a6d9-e546fe2bba5f",
+      "title": "[eCommerce] Revenue Dashboard"
+    },
+    "panelIndex": "75283285-dffd-48a7-a0c2-2235184b5282",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "75283285-dffd-48a7-a0c2-2235184b5282",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+          "name": "indexpattern-datasource-layer-c7478794-6767-4286-9d65-1c0ecd909dd8"
+        }
+      ],
+      "attributes": {
+        "title": "",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "c7478794-6767-4286-9d65-1c0ecd909dd8",
+            "layerType": "data",
+            "metricAccessor": "041db33b-5c9c-47f3-a5d3-ef5e255d1663"
+          },
+          "query": {
+            "language": "kuery",
+            "query": ""
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "c7478794-6767-4286-9d65-1c0ecd909dd8": {
+                  "columnOrder": [
+                    "041db33b-5c9c-47f3-a5d3-ef5e255d1663"
+                  ],
+                  "columns": {
+                    "041db33b-5c9c-47f3-a5d3-ef5e255d1663": {
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "label": "Sum of revenue",
+                      "operationType": "sum",
+                      "scale": "ratio",
+                      "sourceField": "taxful_total_price",
+                      "params": {}
+                    }
+                  },
+                  "incompleteColumns": {}
+                }
+              }
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+        "title": "kibana_sample_data_ecommerce",
+        "timeFieldName": "order_date",
+        "fieldFormats": {
+          "taxful_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          },
+          "products.price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "taxless_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxless_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxful_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.min_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_unit_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "c7478794-6767-4286-9d65-1c0ecd909dd8": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "041db33b-5c9c-47f3-a5d3-ef5e255d1663",
+              "name": "Sum of revenue",
+              "meta": {
+                "type": "number",
+                "field": "taxful_total_price",
+                "index": "kibana_sample_data_ecommerce",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "$0,0.[00]"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "sum",
+                  "params": {
+                    "field": "taxful_total_price",
+                    "emptyAsNull": false
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "041db33b-5c9c-47f3-a5d3-ef5e255d1663": 350884.12890625
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+            "statistics": {
+              "totalCount": 4675
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:00.145Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 188,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 188
+          },
+          "background": "#111c2c",
+          "value": "$350,884.13",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 221,
+          "valueLetterWidth": 0,
+          "title": "Sum of revenue",
+          "titleFontSize": 16,
+          "titleWidth": 121,
+          "titleLetterWidth": 113,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

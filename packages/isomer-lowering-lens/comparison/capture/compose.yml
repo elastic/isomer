@@ -1,0 +1,47 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+# A local, credential-free Elasticsearch and Kibana for capturing comparison cases.
+# Security is off, so nothing here may be exposed beyond this machine.
+
+name: isomer-capture
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION:-9.7.0-SNAPSHOT}
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: 'false'
+      xpack.ml.enabled: 'false'
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    ports:
+      - 127.0.0.1:9200:9200
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -fs http://localhost:9200/_cluster/health || exit 1']
+      interval: 5s
+      retries: 60
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${STACK_VERSION:-9.7.0-SNAPSHOT}
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      TELEMETRY_OPTIN: 'false'
+      NEWSFEED_ENABLED: 'false'
+      I18N_LOCALE: en
+    ports:
+      - 127.0.0.1:5601:5601
+
+  # The browser the capture drives: Linux Chromium, as CI draws Isomer's side. Its version must match the
+  # repository's @playwright/test.
+  browser:
+    image: mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION:-1.64.0}-noble
+    command: npx -y playwright@${PLAYWRIGHT_VERSION:-1.64.0} run-server --port 3000 --host 0.0.0.0
+    init: true
+    ipc: host
+    ports:
+      - 127.0.0.1:3000:3000

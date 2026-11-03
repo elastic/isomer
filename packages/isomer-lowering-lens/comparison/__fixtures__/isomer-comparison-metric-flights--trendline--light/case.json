@@ -1,0 +1,875 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-flights--trendline--light",
+  "title": "Isomer comparison: metric (Flights): Average ticket price",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-flights",
+      "title": "Isomer comparison: metric (Flights)"
+    },
+    "panelIndex": "trendline",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "trendline",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-main"
+        },
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-trend"
+        }
+      ],
+      "attributes": {
+        "title": "Average ticket price",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "main": {
+                  "columnOrder": [
+                    "price"
+                  ],
+                  "columns": {
+                    "price": {
+                      "operationType": "average",
+                      "label": "Average ticket price",
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "AvgTicketPrice",
+                      "params": {
+                        "format": {
+                          "id": "number",
+                          "params": {
+                            "decimals": 2,
+                            "suffix": " USD"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "trend": {
+                  "linkToLayers": [
+                    "main"
+                  ],
+                  "columnOrder": [
+                    "time",
+                    "trendPrice"
+                  ],
+                  "columns": {
+                    "time": {
+                      "operationType": "date_histogram",
+                      "label": "timestamp",
+                      "dataType": "date",
+                      "isBucketed": true,
+                      "scale": "interval",
+                      "sourceField": "timestamp",
+                      "params": {
+                        "interval": "auto",
+                        "includeEmptyRows": true
+                      }
+                    },
+                    "trendPrice": {
+                      "operationType": "average",
+                      "label": "Average of AvgTicketPrice",
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "AvgTicketPrice"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "main",
+            "layerType": "data",
+            "metricAccessor": "price",
+            "subtitle": "Across all carriers",
+            "color": "#D6E5FF",
+            "trendlineLayerId": "trend",
+            "trendlineLayerType": "metricTrendline",
+            "trendlineTimeAccessor": "time",
+            "trendlineMetricAccessor": "trendPrice"
+          }
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "main": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "price",
+              "name": "Average ticket price",
+              "meta": {
+                "type": "number",
+                "field": "AvgTicketPrice",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "suffix",
+                  "params": {
+                    "id": "number",
+                    "params": {
+                      "pattern": "0,0.00",
+                      "formatOverride": true,
+                      "decimals": 2
+                    },
+                    "suffixString": " USD",
+                    "formatOverride": true
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "avg",
+                  "params": {
+                    "field": "AvgTicketPrice"
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "price": 623.567332965448
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      },
+      "trend": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "time",
+              "name": "timestamp per day",
+              "meta": {
+                "type": "date",
+                "field": "timestamp",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "date",
+                  "params": {
+                    "pattern": "YYYY-MM-DD"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "appliedTimeRange": {
+                    "from": "2026-09-04T00:00:00.000Z",
+                    "to": "2026-12-03T00:00:00.000Z"
+                  },
+                  "id": "0",
+                  "enabled": true,
+                  "type": "date_histogram",
+                  "params": {
+                    "field": "timestamp",
+                    "timeRange": {
+                      "from": "2026-09-04T00:00:00.000Z",
+                      "to": "2026-12-03T00:00:00.000Z"
+                    },
+                    "useNormalizedEsInterval": true,
+                    "extendToTimeRange": true,
+                    "scaleMetricValues": false,
+                    "interval": "auto",
+                    "used_interval": "1d",
+                    "drop_partials": false,
+                    "min_doc_count": 0,
+                    "extended_bounds": {}
+                  },
+                  "schema": "segment"
+                },
+                "dimensionName": "Time field"
+              }
+            },
+            {
+              "id": "trendPrice",
+              "name": "Average of AvgTicketPrice",
+              "meta": {
+                "type": "number",
+                "field": "AvgTicketPrice",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "$0,0.[00]"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "1",
+                  "enabled": true,
+                  "type": "avg",
+                  "params": {
+                    "field": "AvgTicketPrice"
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "time": 1788480000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788566400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788652800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788739200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788825600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788912000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1788998400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789084800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789171200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789257600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789344000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789430400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789516800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789603200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789689600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789776000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789862400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1789948800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790035200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790121600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790208000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790294400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790380800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790467200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790553600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790640000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790726400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790812800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790899200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1790985600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791072000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791158400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791244800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791331200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791417600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791504000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791590400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791676800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791763200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791849600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1791936000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792022400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792108800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792195200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792281600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792368000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792454400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792540800000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792627200000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792713600000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792800000000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792886400000,
+              "trendPrice": null
+            },
+            {
+              "time": 1792972800000,
+              "trendPrice": 574.6643260854536
+            },
+            {
+              "time": 1793059200000,
+              "trendPrice": 576.50135769828
+            },
+            {
+              "time": 1793145600000,
+              "trendPrice": 598.1268868920399
+            },
+            {
+              "time": 1793232000000,
+              "trendPrice": 593.6649141726286
+            },
+            {
+              "time": 1793318400000,
+              "trendPrice": 601.932338759744
+            },
+            {
+              "time": 1793404800000,
+              "trendPrice": 780.3469418733016
+            },
+            {
+              "time": 1793491200000,
+              "trendPrice": 774.567353584397
+            },
+            {
+              "time": 1793577600000,
+              "trendPrice": 556.0921647176577
+            },
+            {
+              "time": 1793664000000,
+              "trendPrice": 587.3527587245238
+            },
+            {
+              "time": 1793750400000,
+              "trendPrice": 591.4316669877168
+            },
+            {
+              "time": 1793836800000,
+              "trendPrice": 553.9493312195643
+            },
+            {
+              "time": 1793923200000,
+              "trendPrice": 589.0846182122287
+            },
+            {
+              "time": 1794009600000,
+              "trendPrice": 813.3658149533155
+            },
+            {
+              "time": 1794096000000,
+              "trendPrice": 811.1970729044039
+            },
+            {
+              "time": 1794182400000,
+              "trendPrice": 572.1594637582994
+            },
+            {
+              "time": 1794268800000,
+              "trendPrice": 568.910847965975
+            },
+            {
+              "time": 1794355200000,
+              "trendPrice": 572.9896538585139
+            },
+            {
+              "time": 1794441600000,
+              "trendPrice": 563.5976529769667
+            },
+            {
+              "time": 1794528000000,
+              "trendPrice": 572.2507675265969
+            },
+            {
+              "time": 1794614400000,
+              "trendPrice": 758.5794362894694
+            },
+            {
+              "time": 1794700800000,
+              "trendPrice": 798.153131539481
+            },
+            {
+              "time": 1794787200000,
+              "trendPrice": 574.4480411438715
+            },
+            {
+              "time": 1794873600000,
+              "trendPrice": 565.7645263921202
+            },
+            {
+              "time": 1794960000000,
+              "trendPrice": 565.3400667298515
+            },
+            {
+              "time": 1795046400000,
+              "trendPrice": 577.3757177569909
+            },
+            {
+              "time": 1795132800000,
+              "trendPrice": 573.952202948971
+            },
+            {
+              "time": 1795219200000,
+              "trendPrice": 785.227576575802
+            },
+            {
+              "time": 1795305600000,
+              "trendPrice": 782.8291011810303
+            },
+            {
+              "time": 1795392000000,
+              "trendPrice": 563.8523618121479
+            },
+            {
+              "time": 1795478400000,
+              "trendPrice": 563.3919148914849
+            },
+            {
+              "time": 1795564800000,
+              "trendPrice": 575.2247215964577
+            },
+            {
+              "time": 1795651200000,
+              "trendPrice": 567.4756970582185
+            },
+            {
+              "time": 1795737600000,
+              "trendPrice": 565.800773713364
+            },
+            {
+              "time": 1795824000000,
+              "trendPrice": 786.9558576076521
+            },
+            {
+              "time": 1795910400000,
+              "trendPrice": 801.4831041215776
+            },
+            {
+              "time": 1795996800000,
+              "trendPrice": 589.0884329927885
+            },
+            {
+              "time": 1796083200000,
+              "trendPrice": 569.9557939523759
+            },
+            {
+              "time": 1796169600000,
+              "trendPrice": 585.5199380727914
+            },
+            {
+              "time": 1796256000000,
+              "trendPrice": null
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "light",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:40:45.839Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 184,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 184
+          },
+          "background": "#ffffff",
+          "value": "623.57 USD",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 188,
+          "valueLetterWidth": 56,
+          "title": "Average ticket price",
+          "titleFontSize": 16,
+          "titleWidth": 157,
+          "titleLetterWidth": 149,
+          "subtitle": "Across all carriers",
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "trend": {
+            "color": "#a3c5ff",
+            "paths": [
+              [
+                0.5778,
+                0.2935,
+                0.5889,
+                0.2912,
+                0.6,
+                0.2646,
+                0.6111,
+                0.2701,
+                0.6222,
+                0.2599,
+                0.6333,
+                0.0406,
+                0.6444,
+                0.0477,
+                0.6556,
+                0.3163,
+                0.6667,
+                0.2779,
+                0.6778,
+                0.2729,
+                0.6889,
+                0.3189,
+                0.7,
+                0.2757,
+                0.7111,
+                0,
+                0.7222,
+                0.0027,
+                0.7333,
+                0.2966,
+                0.7444,
+                0.3005,
+                0.7556,
+                0.2955,
+                0.7667,
+                0.3071,
+                0.7778,
+                0.2964,
+                0.7889,
+                0.0674,
+                0.8,
+                0.0187,
+                0.8111,
+                0.2937,
+                0.8222,
+                0.3044,
+                0.8333,
+                0.3049,
+                0.8444,
+                0.2901,
+                0.8556,
+                0.2943,
+                0.8667,
+                0.0346,
+                0.8778,
+                0.0375,
+                0.8889,
+                0.3068,
+                0.9,
+                0.3073,
+                0.9111,
+                0.2928,
+                0.9222,
+                0.3023,
+                0.9333,
+                0.3044,
+                0.9444,
+                0.0325,
+                0.9556,
+                0.0146,
+                0.9667,
+                0.2757,
+                0.9778,
+                0.2993,
+                0.9889,
+                0.2801,
+                0.9889,
+                1,
+                0.9778,
+                1,
+                0.9667,
+                1,
+                0.9556,
+                1,
+                0.9444,
+                1,
+                0.9333,
+                1,
+                0.9222,
+                1,
+                0.9111,
+                1,
+                0.9,
+                1,
+                0.8889,
+                1,
+                0.8778,
+                1,
+                0.8667,
+                1,
+                0.8556,
+                1,
+                0.8444,
+                1,
+                0.8333,
+                1,
+                0.8222,
+                1,
+                0.8111,
+                1,
+                0.8,
+                1,
+                0.7889,
+                1,
+                0.7778,
+                1,
+                0.7667,
+                1,
+                0.7556,
+                1,
+                0.7444,
+                1,
+                0.7333,
+                1,
+                0.7222,
+                1,
+                0.7111,
+                1,
+                0.7,
+                1,
+                0.6889,
+                1,
+                0.6778,
+                1,
+                0.6667,
+                1,
+                0.6556,
+                1,
+                0.6444,
+                1,
+                0.6333,
+                1,
+                0.6222,
+                1,
+                0.6111,
+                1,
+                0.6,
+                1,
+                0.5889,
+                1,
+                0.5778,
+                1
+              ]
+            ]
+          }
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

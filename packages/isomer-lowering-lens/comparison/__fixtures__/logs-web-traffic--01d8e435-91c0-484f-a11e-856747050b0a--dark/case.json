@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "id": "logs-web-traffic--01d8e435-91c0-484f-a11e-856747050b0a--dark",
+  "title": "[Logs] Web Traffic: Metric",
+  "source": {
+    "dashboard": {
+      "id": "edf84fe0-e1a0-11e7-b6d5-4dc382ef7f5b",
+      "title": "[Logs] Web Traffic"
+    },
+    "panelIndex": "01d8e435-91c0-484f-a11e-856747050b0a",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "01d8e435-91c0-484f-a11e-856747050b0a",
+      "type": "lens",
+      "references": [],
+      "attributes": {
+        "title": "Metric",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "datasourceStates": {
+            "textBased": {
+              "layers": {
+                "bc54f0c9-40ec-4082-92f5-3d6a6fdc4463": {
+                  "index": "e3465e67bdeced2befff9f9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a",
+                  "query": {
+                    "esql": "FROM kibana_sample_data_logs\n| EVAL type = CASE(TO_INTEGER(response.keyword) >= 400 and TO_INTEGER(response.keyword) < 500, \"4xx\", \"Other\")\n| STATS count = COUNT(*) by type\n| EVAL count_4xx = CASE(type == \"4xx\", count), count_rest = CASE(type == \"Other\", count)\n| DROP count, type\n| STATS count_4xx = MAX(count_4xx), count_rest = MAX(count_rest)\n| EVAL percentage = ROUND(count_4xx / TO_DOUBLE(count_4xx + count_rest), 3)\n| RENAME percentage as `HTTP 4xx (%)`\n| DROP count_4xx, count_rest"
+                  },
+                  "columns": [
+                    {
+                      "columnId": "HTTP 4xx (%)",
+                      "fieldName": "HTTP 4xx (%)",
+                      "meta": {
+                        "type": "number",
+                        "esType": "double"
+                      },
+                      "inMetricDimension": true,
+                      "params": {
+                        "format": {
+                          "id": "percent",
+                          "params": {
+                            "decimals": 2
+                          }
+                        }
+                      }
+                    }
+                  ],
+                  "timeField": "@timestamp"
+                }
+              },
+              "indexPatternRefs": [
+                {
+                  "id": "e3465e67bdeced2befff9f9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a",
+                  "title": "kibana_sample_data_logs",
+                  "timeField": "@timestamp"
+                }
+              ]
+            }
+          },
+          "filters": [],
+          "visualization": {
+            "layerId": "bc54f0c9-40ec-4082-92f5-3d6a6fdc4463",
+            "layerType": "data",
+            "metricAccessor": "HTTP 4xx (%)"
+          },
+          "adHocDataViews": {
+            "e3465e67bdeced2befff9f9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a": {
+              "id": "e3465e67bdeced2befff9f9dca7ecf9c48504cad68a10efd881f4c7dd5ade28a",
+              "title": "kibana_sample_data_logs",
+              "timeFieldName": "@timestamp",
+              "sourceFilters": [],
+              "type": "esql",
+              "fieldFormats": {},
+              "runtimeFieldMap": {},
+              "allowNoIndex": false,
+              "name": "kibana_sample_data_logs",
+              "allowHidden": false
+            }
+          }
+        }
+      }
+    },
+    "dataViews": []
+  },
+  "data": {
+    "layers": {
+      "bc54f0c9-40ec-4082-92f5-3d6a6fdc4463": {
+        "kind": "esql",
+        "query": "FROM kibana_sample_data_logs\n| EVAL type = CASE(TO_INTEGER(response.keyword) >= 400 and TO_INTEGER(response.keyword) < 500, \"4xx\", \"Other\")\n| STATS count = COUNT(*) by type\n| EVAL count_4xx = CASE(type == \"4xx\", count), count_rest = CASE(type == \"Other\", count)\n| DROP count, type\n| STATS count_4xx = MAX(count_4xx), count_rest = MAX(count_rest)\n| EVAL percentage = ROUND(count_4xx / TO_DOUBLE(count_4xx + count_rest), 3)\n| RENAME percentage as `HTTP 4xx (%)`\n| DROP count_4xx, count_rest",
+        "response": {
+          "columns": [
+            {
+              "name": "HTTP 4xx (%)",
+              "type": "double"
+            }
+          ],
+          "values": [
+            [
+              0.052
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:14.182Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 188,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 188
+          },
+          "background": "#111c2c",
+          "value": "5.20%",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 104,
+          "valueLetterWidth": 0,
+          "title": "HTTP 4xx (%)",
+          "titleFontSize": 16,
+          "titleWidth": 107,
+          "titleLetterWidth": 61,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

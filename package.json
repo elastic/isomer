@@ -42,6 +42,7 @@
     "docs:check": "node scripts/assemble_package_docs.js --check",
     "docs:dev": "node scripts/docs_dev.js",
     "studio:dev": "pnpm --filter @elastic/isomer-studio dev",
+    "comparison:capture": "playwright test -c packages/isomer-lowering-lens/comparison/capture/playwright.config.ts",
     "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",

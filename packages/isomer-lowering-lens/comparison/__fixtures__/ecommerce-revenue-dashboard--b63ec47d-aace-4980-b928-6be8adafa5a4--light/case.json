@@ -1,0 +1,253 @@
+{
+  "version": 1,
+  "id": "ecommerce-revenue-dashboard--b63ec47d-aace-4980-b928-6be8adafa5a4--light",
+  "title": "[eCommerce] Revenue Dashboard: b63ec47d-aace-4980-b928-6be8adafa5a4",
+  "source": {
+    "dashboard": {
+      "id": "722b74f0-b882-11e8-a6d9-e546fe2bba5f",
+      "title": "[eCommerce] Revenue Dashboard"
+    },
+    "panelIndex": "b63ec47d-aace-4980-b928-6be8adafa5a4",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "b63ec47d-aace-4980-b928-6be8adafa5a4",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+          "name": "indexpattern-datasource-layer-667067a2-7cdf-4f0e-a9fe-eb4f4f1f2f17"
+        }
+      ],
+      "attributes": {
+        "title": "",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "667067a2-7cdf-4f0e-a9fe-eb4f4f1f2f17",
+            "layerType": "data",
+            "metricAccessor": "c52c2003-ae58-4604-bae7-52ba0fb38a01"
+          },
+          "query": {
+            "language": "kuery",
+            "query": ""
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "667067a2-7cdf-4f0e-a9fe-eb4f4f1f2f17": {
+                  "columnOrder": [
+                    "c52c2003-ae58-4604-bae7-52ba0fb38a01"
+                  ],
+                  "columns": {
+                    "c52c2003-ae58-4604-bae7-52ba0fb38a01": {
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "label": "Avg. items sold",
+                      "operationType": "average",
+                      "params": {
+                        "format": {
+                          "id": "number",
+                          "params": {
+                            "decimals": 1,
+                            "compact": true
+                          }
+                        }
+                      },
+                      "scale": "ratio",
+                      "sourceField": "total_quantity"
+                    }
+                  },
+                  "incompleteColumns": {}
+                }
+              }
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+        "title": "kibana_sample_data_ecommerce",
+        "timeFieldName": "order_date",
+        "fieldFormats": {
+          "taxful_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          },
+          "products.price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "taxless_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxless_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxful_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.min_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_unit_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "667067a2-7cdf-4f0e-a9fe-eb4f4f1f2f17": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "c52c2003-ae58-4604-bae7-52ba0fb38a01",
+              "name": "Avg. items sold",
+              "meta": {
+                "type": "number",
+                "field": "total_quantity",
+                "index": "kibana_sample_data_ecommerce",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "0,0.0a",
+                    "formatOverride": true,
+                    "decimals": 1
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "avg",
+                  "params": {
+                    "field": "total_quantity"
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "c52c2003-ae58-4604-bae7-52ba0fb38a01": 2.1585026737967916
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+            "statistics": {
+              "totalCount": 4675
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "light",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:40:29.794Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 188,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 188
+          },
+          "background": "#ffffff",
+          "value": "2.2",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 56,
+          "valueLetterWidth": 0,
+          "title": "Avg. items sold",
+          "titleFontSize": 16,
+          "titleWidth": 116,
+          "titleLetterWidth": 104,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}
