@@ -18,6 +18,7 @@ import {
   elasticChartsPack,
   elasticChartsReset,
 } from './packages/isomer-renderers-elastic-charts/src/index';
+import { lensChartApp } from './packages/isomer-renderers-elastic-charts/studio/lens/registration';
 import { elasticChartsStylesheet } from './packages/isomer-renderers-elastic-charts/studio/stylesheet';
 
 /** The repository's Studio: every in-repo pack, drawn in the browser alone. */
@@ -39,6 +40,7 @@ export default defineStudioConfig({
         'Plan an ES|QL or form-based Lens saved object and replay a recorded response; nothing is fetched or executed.',
       load: () => import('./packages/isomer-lowering-lens/studio/app'),
     },
+    lensChartApp,
   ],
   images: false,
   imageFonts: './packages/isomer-primitives-slides/studio/image_fonts.ts',
