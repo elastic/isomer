@@ -97,6 +97,7 @@ export const esqlDatasourceSchema = z
 /** One layer's executable contract; `readResponse` re-validates it, so a stored plan can be read back. */
 export const layerPlanSchema = z
   .object({
+    kind: z.literal('esql'),
     layerId: id,
     query: z.object({ language: z.literal('esql'), esql }).strict(),
     columns: z

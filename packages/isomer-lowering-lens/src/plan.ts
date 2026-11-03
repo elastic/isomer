@@ -218,6 +218,7 @@ export const plan = (input: unknown): LensPlanResult => {
       );
     }
     planned.push({
+      kind: 'esql',
       layerId,
       query: { language: 'esql', esql: layer.query.esql },
       columns: layer.columns,

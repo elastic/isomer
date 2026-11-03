@@ -161,6 +161,7 @@ describe('readResponse', () => {
       'a form-based query',
       { ...requests, query: { language: 'kuery', esql: 'x' } },
     ],
+    ['another kind', { ...requests, kind: 'form' }],
   ])('refuses a layer with %s', (_name, layer) => {
     expect(readResponse(layer, requestsResponse())).toMatchObject({
       status: 'invalid',

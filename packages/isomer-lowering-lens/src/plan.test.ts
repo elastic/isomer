@@ -58,6 +58,7 @@ describe('plan', () => {
     ]);
     expect(layers).toEqual([
       {
+        kind: 'esql',
         layerId: 'layer1',
         query: {
           language: 'esql',
