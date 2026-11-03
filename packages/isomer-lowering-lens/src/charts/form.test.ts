@@ -406,6 +406,20 @@ describe('readTable', () => {
     });
   });
 
+  it('reads a cell a row lacks as null, even for a column named like an inherited property', () => {
+    const inherited = {
+      ...layer,
+      columns: [{ ...layer.columns[0]!, columnId: 'toString' }],
+    };
+    expect(
+      readTable(inherited, {
+        type: 'datatable',
+        columns: [number('toString', 'Total flights')],
+        rows: [{}],
+      })
+    ).toMatchObject({ status: 'ready', table: { rows: [[null]] } });
+  });
+
   it('refuses an ES|QL layer', () => {
     expect(
       readTable(

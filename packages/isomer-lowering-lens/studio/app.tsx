@@ -27,7 +27,7 @@ import type {
   LensResponseResult,
   LensTable,
 } from '@elastic/isomer-lowering-lens';
-import { plan, readResponse } from '@elastic/isomer-lowering-lens';
+import { plan, readResponse, readTable } from '@elastic/isomer-lowering-lens';
 
 import { requestsResponse, twoLayerInput } from '../src/native_esql.fixtures';
 
@@ -276,27 +276,36 @@ const LensInspectorApp = () => {
         : ''
     );
   };
+  const runRead = () => {
+    const parsed = parse(response);
+    setRead(
+      'error' in parsed
+        ? parsed
+        : layer?.kind === 'form'
+          ? readTable(layer, parsed.value)
+          : readResponse(layer, parsed.value)
+    );
+  };
 
   return (
     <EuiFlexGroup
       direction="column"
       gutterSize="m"
       aria-label="Lens inspector"
-      role="region"
-      style={{ padding: 24 }}>
-      <EuiTitle size="m">
-        <h1>Lens inspector</h1>
-      </EuiTitle>
-      <EuiText size="s">
-        <p>
-          Plans a native ES|QL Lens saved object and replays a recorded response
-          through <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched
-          or executed, and nothing is drawn: this shows the plan a host would
-          run, not a chart.
-        </p>
-      </EuiText>
-      <JsonInput
-        label="Planning input: { savedObject, dataViews? }"
+      style={{ padding: 24, display: 'grid', gap: 12 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600 }}>Lens inspector</h1>
+      <p>
+        Plans a native ES|QL or form-based Lens saved object and replays a
+        recorded ES|QL response or Lens <code>Datatable</code> through{' '}
+        <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
+        executed, and nothing is drawn: this shows the plan a host would run,
+        not a chart.
+      </p>
+      <label htmlFor={`${id}-input`}>
+        {'Planning input: { savedObject, dataViews? }'}
+      </label>
+      <textarea
+        id={`${id}-input`}
         rows={14}
         value={input}
         onChange={(value) => {
@@ -313,10 +322,61 @@ const LensInspectorApp = () => {
       <PlanOutcome outcome={planned} />
       {layers.length ? (
         <>
-          <LayerView
-            {...{ layers, layer }}
-            onSelect={(selected) => {
-              setLayerId(selected);
+          <p>
+            Status: planned, {layers.length}{' '}
+            {layers.length === 1 ? 'layer' : 'layers'}
+          </p>
+          <label htmlFor={`${id}-layer`}>Layer</label>
+          <select
+            id={`${id}-layer`}
+            value={layerId}
+            style={{ ...box, width: 'auto', justifySelf: 'start' }}
+            onChange={(event) => {
+              setLayerId(event.target.value);
+              setRead(undefined);
+            }}>
+            {layers.map((entry) => (
+              <option key={entry.layerId} value={entry.layerId}>
+                {entry.layerId}
+              </option>
+            ))}
+          </select>
+          <pre aria-label="Query" style={pre}>
+            {layer?.kind === 'esql'
+              ? clip(layer.query.esql, TEXT_CHARACTERS)
+              : planned && 'status' in planned && planned.status === 'planned'
+                ? clip(pretty(planned.plan.query ?? null), TEXT_CHARACTERS)
+                : ''}
+          </pre>
+          <pre aria-label="Layer plan" style={pre}>
+            {layer
+              ? clip(
+                  pretty(
+                    layer.kind === 'esql'
+                      ? { columns: layer.columns, host: layer.host }
+                      : {
+                          dataView: layer.dataView,
+                          linkedTo: layer.linkedTo,
+                          columns: layer.columns,
+                          host: layer.host,
+                        }
+                  ),
+                  TEXT_CHARACTERS
+                )
+              : ''}
+          </pre>
+          <label htmlFor={`${id}-response`}>
+            {layer?.kind === 'form'
+              ? "Lens Datatable: { type: 'datatable', columns, rows }"
+              : 'Recorded ES|QL response: { columns, values }'}
+          </label>
+          <textarea
+            id={`${id}-response`}
+            rows={10}
+            style={box}
+            value={response}
+            onChange={(event) => {
+              setResponse(event.target.value);
               setRead(undefined);
             }}
           />
