@@ -29,6 +29,21 @@ type MetricTile = {
 
 Tile counts, columns and text share one cap of 10,000; renderers truncate text that does not fit.
 
+## Formats
+
+A format is `number`, `percent`, `bytes` or `bits`, each with optional `decimals` (default 2) and `suffix`, and `compact` for `number` and `percent`; a `pattern` with any numeral pattern; or a `duration`:
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `from` | The unit the value is in, from `picoseconds` to `years`. | `seconds` |
+| `to` | `humanize` (`an hour`), `humanizePrecise` (`1.50 hours`), or a fixed unit such as `asMinutes`. | `humanize` |
+| `decimals` | Decimal places of a precise or fixed-unit reading. | 2 |
+| `short` | Short unit names, such as `min`. | `false` |
+| `showSuffix` | Name the unit after a fixed unit's number, as Lens's duration format does. | `true` |
+| `spaceBeforeSuffix` | Put a space before the unit. | `true` |
+
+For example, `{ kind: 'duration', from: 'milliseconds', to: 'asSeconds' }` reads 1500 as `1.50 seconds`. Durations read English whatever locale the host set for `moment`.
+
 ## Colors
 
 A `ColorRef` is a theme tone or a `#rrggbb` color.
