@@ -31,7 +31,7 @@ pnpm comparison:capture
 
 The sample dashboards cover what Kibana ships. The authored dashboards cover what they do not: formats with decimals and suffixes, secondary metrics and comparisons, breakdowns with Other and empty grid cells, progress bars past their maximum, static and palette colors, icons, alignment and density, empty, null, negative, huge, tiny, multivalue and date readings, long titles, and trendlines. Add a panel there to cover a new case.
 
-Sample data rebases its timestamps around the day it is installed, so the capture installs it as of one fixed day, `SAMPLE_DATA_DAY` in `capture.spec.ts`, and reads every dashboard over a fixed range around it. Two captures from the same Kibana build write identical files; moving the day moves every date reading, trend and time range, so change it only on purpose.
+Sample data rebases its timestamps around the day it is installed, so the capture installs it as of one fixed day, `SAMPLE_DATA_DAY` in `capture.spec.ts`, and reads every dashboard over a fixed range around it. The capture also passes that day to Kibana as `forceNow`, for panels with a relative time range of their own. Two captures from the same Kibana build write identical files; moving the day moves every date reading, trend and time range, so change it only on purpose. Chromium antialiases a panel's edge a level or two differently from run to run, so a screenshot within two levels per channel of the committed one keeps the committed file. The fingerprint, not the screenshot, is what the comparison checks.
 
 ## Keeping the cases current
 

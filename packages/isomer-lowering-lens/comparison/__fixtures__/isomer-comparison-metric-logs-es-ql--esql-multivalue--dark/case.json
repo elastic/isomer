@@ -29,7 +29,7 @@
               "layers": {
                 "layer": {
                   "query": {
-                    "esql": "FROM kibana_sample_data_logs | WHERE extension.keyword IN (\"css\", \"deb\", \"gz\") | STATS extensions = VALUES(extension.keyword)"
+                    "esql": "FROM kibana_sample_data_logs | WHERE extension.keyword IN (\"css\", \"deb\", \"gz\") | STATS extensions = MV_SORT(VALUES(extension.keyword))"
                   },
                   "columns": [
                     {
@@ -60,7 +60,7 @@
     "layers": {
       "layer": {
         "kind": "esql",
-        "query": "FROM kibana_sample_data_logs | WHERE extension.keyword IN (\"css\", \"deb\", \"gz\") | STATS extensions = VALUES(extension.keyword)",
+        "query": "FROM kibana_sample_data_logs | WHERE extension.keyword IN (\"css\", \"deb\", \"gz\") | STATS extensions = MV_SORT(VALUES(extension.keyword))",
         "response": {
           "columns": [
             {
@@ -71,8 +71,8 @@
           "values": [
             [
               [
-                "deb",
                 "css",
+                "deb",
                 "gz"
               ]
             ]
@@ -109,8 +109,7 @@
       "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
-    },
-    "capturedAt": "2026-11-03T19:16:18.113Z"
+    }
   },
   "reference": {
     "fingerprint": {
@@ -130,7 +129,7 @@
             "height": 184
           },
           "background": "#111c2c",
-          "value": "[deb, css, gz]",
+          "value": "[css, deb, gz]",
           "valueColor": "#e3e8f2",
           "valueFontSize": 36,
           "valueWidth": 238,

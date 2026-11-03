@@ -7,14 +7,14 @@
 
 // Written by the capture; do not edit.
 
-import case2 from './ecommerce-revenue-dashboard--7--dark/case.json';
-import screenshot2 from './ecommerce-revenue-dashboard--7--dark/reference.png';
-import case3 from './ecommerce-revenue-dashboard--7--light/case.json';
-import screenshot3 from './ecommerce-revenue-dashboard--7--light/reference.png';
-import case0 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--dark/case.json';
-import screenshot0 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--dark/reference.png';
-import case1 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--light/case.json';
-import screenshot1 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--light/reference.png';
+import case0 from './ecommerce-revenue-dashboard--7--dark/case.json';
+import screenshot0 from './ecommerce-revenue-dashboard--7--dark/reference.png';
+import case1 from './ecommerce-revenue-dashboard--7--light/case.json';
+import screenshot1 from './ecommerce-revenue-dashboard--7--light/reference.png';
+import case2 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--dark/case.json';
+import screenshot2 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--dark/reference.png';
+import case3 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--light/case.json';
+import screenshot3 from './ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--light/reference.png';
 import case4 from './ecommerce-revenue-dashboard--75283285-dffd-48a7-a0c2-2235184b5282--dark/case.json';
 import screenshot4 from './ecommerce-revenue-dashboard--75283285-dffd-48a7-a0c2-2235184b5282--dark/reference.png';
 import case5 from './ecommerce-revenue-dashboard--75283285-dffd-48a7-a0c2-2235184b5282--light/case.json';
@@ -148,14 +148,14 @@ import case66 from './logs-web-traffic--01d8e435-91c0-484f-a11e-856747050b0a--da
 import screenshot66 from './logs-web-traffic--01d8e435-91c0-484f-a11e-856747050b0a--dark/reference.png';
 import case67 from './logs-web-traffic--01d8e435-91c0-484f-a11e-856747050b0a--light/case.json';
 import screenshot67 from './logs-web-traffic--01d8e435-91c0-484f-a11e-856747050b0a--light/reference.png';
-import case70 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--dark/case.json';
-import screenshot70 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--dark/reference.png';
-import case71 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--light/case.json';
-import screenshot71 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--light/reference.png';
-import case68 from './logs-web-traffic--11--dark/case.json';
-import screenshot68 from './logs-web-traffic--11--dark/reference.png';
-import case69 from './logs-web-traffic--11--light/case.json';
-import screenshot69 from './logs-web-traffic--11--light/reference.png';
+import case68 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--dark/case.json';
+import screenshot68 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--dark/reference.png';
+import case69 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--light/case.json';
+import screenshot69 from './logs-web-traffic--8c1456d4-1993-4ba2-b701-04aca02c9fef--light/reference.png';
+import case70 from './logs-web-traffic--11--dark/case.json';
+import screenshot70 from './logs-web-traffic--11--dark/reference.png';
+import case71 from './logs-web-traffic--11--light/case.json';
+import screenshot71 from './logs-web-traffic--11--light/reference.png';
 import case72 from './logs-web-traffic--bb94016e-f4a6-49ca-87a9-296a2869d570--dark/case.json';
 import screenshot72 from './logs-web-traffic--bb94016e-f4a6-49ca-87a9-296a2869d570--dark/reference.png';
 import case73 from './logs-web-traffic--bb94016e-f4a6-49ca-87a9-296a2869d570--light/case.json';

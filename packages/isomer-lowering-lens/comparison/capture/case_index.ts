@@ -30,25 +30,29 @@ const HEADER = `/*
 // Written by the capture; do not edit.
 `;
 
+/** The order `simple-import-sort` keeps, with a fixed locale so every machine writes the same index. */
+const collator = new Intl.Collator('en', {
+  sensitivity: 'base',
+  numeric: true,
+});
+const compare = (a: string, b: string) => collator.compare(a, b);
+
 /** Writes `__fixtures__/index.ts`, which bundles every case, its screenshot and Kibana's fonts for the Studio. */
 export const writeCaseIndex = async (
   directory: string,
   cases: readonly ComparisonCase[],
   fonts: readonly CapturedFont[]
 ) => {
-  // Code-unit order, since `localeCompare` orders by the machine's locale.
-  const sorted = [...cases].sort(({ id: a }, { id: b }) =>
-    a < b ? -1 : a > b ? 1 : 0
-  );
+  const sorted = [...cases].sort(({ id: a }, { id: b }) => compare(a, b));
   const imports = [
     ...sorted.flatMap(({ id }, index) => [
-      `import case${index} from './${id}/case.json';`,
-      `import screenshot${index} from './${id}/reference.png';`,
+      [`./${id}/case.json`, `case${index}`],
+      [`./${id}/reference.png`, `screenshot${index}`],
     ]),
-    ...fonts.map(
-      ({ file }, index) => `import font${index} from './fonts/${file}';`
-    ),
-  ];
+    ...fonts.map(({ file }, index) => [`./fonts/${file}`, `font${index}`]),
+  ]
+    .sort(([a], [b]) => compare(a!, b!))
+    .map(([source, name]) => `import ${name} from '${source}';`);
   const entries = sorted.map(
     (_, index) => `  { data: case${index}, screenshot: screenshot${index} },`
   );

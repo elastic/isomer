@@ -28,6 +28,7 @@ import { extractMetricFingerprint, NUMERIC_GLYPHS } from '../fingerprint';
 
 import { type CapturedFont, writeCaseIndex } from './case_index';
 import { AUTHORED_DASHBOARDS, dashboardSavedObject } from './scenarios';
+import { keepCommittedScreenshots } from './screenshots';
 
 type Json = Record<string, unknown>;
 
@@ -601,6 +602,11 @@ test('capture comparison cases', async ({ browser }) => {
   }
   await writeCaseIndex(NEXT, written, fonts.faces);
   expect(written.length).toBeGreaterThan(0);
+  keepCommittedScreenshots(
+    CASES,
+    NEXT,
+    written.map(({ id }) => id)
+  );
   rmSync(CASES, { recursive: true, force: true });
   renameSync(NEXT, CASES);
 });

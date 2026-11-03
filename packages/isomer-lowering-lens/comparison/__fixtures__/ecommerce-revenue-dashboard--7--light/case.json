@@ -309,10 +309,10 @@
           ],
           "rows": [
             {
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1043,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1052,
               "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1": 604800000,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 149,
-              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 149,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 150.28571428571428,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 150.28571428571428,
               "ce816876-e92d-4b1a-bbb0-ed7637fc0eea": 300
             }
           ],
@@ -320,7 +320,7 @@
             "type": "esaggs",
             "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
             "statistics": {
-              "totalCount": 1043
+              "totalCount": 1052
             }
           }
         }
@@ -355,8 +355,7 @@
       "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
       "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
       "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
-    },
-    "capturedAt": "2026-11-03T19:15:22.708Z"
+    }
   },
   "reference": {
     "fingerprint": {
@@ -376,7 +375,7 @@
             "height": 156
           },
           "background": "#ffffff",
-          "value": "149.00",
+          "value": "150.29",
           "valueColor": "#111c2c",
           "valueFontSize": 36,
           "valueWidth": 125,
@@ -388,13 +387,13 @@
           "titlesAlign": "left",
           "valueAlign": "right",
           "progress": {
-            "now": 49.67,
+            "now": 50.1,
             "min": 0,
             "max": 100,
             "color": "#fcd883",
             "orientation": "vertical",
             "start": 0,
-            "end": 0.4968
+            "end": 0.501
           }
         }
       ],
