@@ -38,4 +38,4 @@ Above the slide, Output switches between the slide and each of the Studio's surf
 
 A click on a link or a button, or one that ends a text selection, does not advance. Present shows the slide full screen, scaled to fill it; the same keys drive it, and its controls appear on hover. Thumbnails are inert, so their links are not tab stops.
 
-Download PDF, on the thumbnails and the stage, writes the deck as `<id>.pdf`, a page per slide with every build shown, drawn in the pack's fonts through the config's `imageFonts`. It needs `isomer-studio dev`; a static site disables it.
+Download PDF, on the thumbnails and the stage, writes the deck as `<id>.pdf`, a page per slide with every build shown, drawn in the pack's fonts through the config's `imageFonts`. It needs `isomer-studio dev` with images on; in a static build or with `images: false`, there's no PDF renderer and the action is hidden.

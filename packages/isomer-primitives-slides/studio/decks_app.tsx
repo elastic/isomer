@@ -421,7 +421,7 @@ const SlideStage = ({
     () => deck.slides.map((slide) => slideBuilds(slide)),
     [deck]
   );
-  const [view, setView] = useState<StageView>('slide');
+  const [selected, setView] = useState<StageView>('slide');
   const views = useMemo(
     () => [
       { id: 'slide', label: 'Slide' },
@@ -429,6 +429,10 @@ const SlideStage = ({
     ],
     [surfaces]
   );
+  // A surface can go away under a hot update, such as PNG when `images` turns off.
+  const view = views.some(({ id: option }) => option === selected)
+    ? selected
+    : 'slide';
   const place = clampPlace(requested, builds);
   const { slide, step } = place;
   const composition = slides[slide];

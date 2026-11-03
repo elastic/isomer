@@ -49,7 +49,7 @@ The default fits a pack whose primitives render inside a plain `view`. A pack wh
 
 `images: false` keeps the Studio in the browser. Node never loads `@elastic/isomer-image-takumi` or `imageFonts`, `build` writes no PNGs, PNG previews and PDF actions are hidden, and `dev` answers `/png` and `/pdf` with 404. The `snapshot` surface's markup still renders, and `check --png` refuses the config.
 
-Toggling it in `dev` hot-updates in place, keeping the route and the editor's draft. An app that offers PNGs or PDFs should hide those actions when `rasterizePng` or `renderPdf` is absent, as Decks does.
+Toggling it in `dev` hot-updates in place, keeping the route and the editor's draft. An app that offers PNGs or PDFs should hide those actions when `rasterizePng` or `renderPdf` is absent, and fall back when a surface it is showing leaves `surfaces`, as Decks does.
 
 ## Featured primitives
 
