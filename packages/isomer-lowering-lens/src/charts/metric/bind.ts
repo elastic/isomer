@@ -20,6 +20,7 @@ import {
   type ValueFormat,
   type ValuePalette,
 } from '@elastic/isomer-primitives-charts/model';
+import moment from 'moment-timezone';
 
 import type { JsonValue } from '../../json';
 import { own } from '../../own';
@@ -65,7 +66,18 @@ export interface MetricBindContext {
   /** The plan's layers, for the form-based column state a table lacks. */
   layers: readonly (LensLayerPlan | FormLayerPlan)[];
   filterAction?: string | undefined;
+  dates?: DateContext | undefined;
 }
+
+/** The host's `dateFormat` and `dateFormat:tz`, which Kibana reads dates with. */
+export interface DateContext {
+  /** A moment pattern, such as Kibana's default `MMM D, YYYY @ HH:mm:ss.SSS`. */
+  format: string;
+  /** An IANA time zone, such as `Europe/Lisbon`. */
+  timeZone: string;
+}
+
+type DateReader = (value: JsonValue | undefined) => string;
 
 type PlannedColumn = FormLayerPlan['columns'][number];
 
@@ -307,13 +319,14 @@ const bindTrends = (
 };
 
 const bindSecondary = (
-  { state }: MetricBindContext,
+  context: MetricBindContext,
   row: Row,
   bound: BoundColumn,
   primary: MetricTile['value'],
   primaryNumeric: boolean,
   problems: Problems
 ): Secondary => {
+  const { state } = context;
   const format = columnFormat(bound, problems);
   const visibility = state.secondaryNameVisibility ?? 'hidden';
   const label =
@@ -325,7 +338,8 @@ const bindSecondary = (
       : {}),
   };
   const raw = cell(row, bound);
-  const formatted = formatCell(raw, format);
+  const date = dateReader(context, bound, problems);
+  const formatted = date ? date(raw) : formatCell(raw, format);
   const mode =
     !state.secondaryTrend || state.secondaryTrend.type === 'none'
       ? 'none'
@@ -604,6 +618,48 @@ const rangeTitle = (
     : `\u2265 ${from} and < ${to}`;
 };
 
+/**
+ * Reads a date column as Kibana's date format does, `moment(value).format`
+ * in the host's time zone; `undefined` for any other column.
+ */
+const dateReader = (
+  { dates }: MetricBindContext,
+  bound: BoundColumn | undefined,
+  problems: Problems
+): DateReader | undefined => {
+  if (!bound || !isDate(bound)) {
+    return undefined;
+  }
+  if (bound.type === 'date_nanos' || !dates) {
+    problems.add(
+      'unsupported',
+      'unsupported-date',
+      bound.type === 'date_nanos'
+        ? `Nanosecond dates in column "${bound.lens.columnId}" are not supported yet.`
+        : `Date column "${bound.lens.columnId}" needs the host's date format and time zone in \`dates\`.`
+    );
+    return () => '';
+  }
+  const saved = bound.lens.meta?.params;
+  const pattern =
+    isRecord(saved) &&
+    saved.id === 'date' &&
+    isRecord(saved.params) &&
+    typeof saved.params.pattern === 'string'
+      ? saved.params.pattern
+      : dates.format;
+  return (value) => {
+    if (value === null || value === undefined) {
+      return '(null)';
+    }
+    if (typeof value !== 'string' && typeof value !== 'number') {
+      return formatCell(value, undefined);
+    }
+    const date = moment.tz(value, dates.timeZone);
+    return date.isValid() ? date.locale('en').format(pattern) : String(value);
+  };
+};
+
 export const bindMetric = (context: MetricBindContext): MetricBound => {
   const { state, tables, filterAction } = context;
   const problems = new Problems();
@@ -691,15 +747,8 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       ? rows.slice(0, 1)
       : [table.columns.map(() => null)];
 
-  for (const bound of [metric, secondary, breakdown]) {
-    if (bound && isDate(bound)) {
-      problems.add(
-        'unsupported',
-        'unsupported-date',
-        `Date column "${bound.lens.columnId}" needs the host's date format and time zone, which are not supported yet.`
-      );
-    }
-  }
+  const metricDate = dateReader(context, metric, problems);
+  const breakdownDate = dateReader(context, breakdown, problems);
   const format = columnFormat(metric, problems);
   const breakdownFormat = columnFormat(breakdown, problems);
   const trends = bindTrends(context, problems);
@@ -726,13 +775,15 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
         ? each
         : formatCell(each, undefined);
     const value: MetricTile['value'] =
-      typeof raw === 'number' || typeof raw === 'string'
-        ? raw
-        : typeof raw === 'boolean'
-          ? String(raw)
-          : Array.isArray(raw) && raw.length > 0
-            ? raw.map(reading)
-            : null;
+      metricDate && raw !== null && raw !== undefined && !Array.isArray(raw)
+        ? metricDate(raw)
+        : typeof raw === 'number' || typeof raw === 'string'
+          ? raw
+          : typeof raw === 'boolean'
+            ? String(raw)
+            : Array.isArray(raw) && raw.length > 0
+              ? raw.map(reading)
+              : null;
     const breakdownValue = cell(row, breakdown);
     const title = breakdown
       ? breakdownValue === '__other__' && labels.other
@@ -741,7 +792,9 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
           ? labels.missing
           : breakdownPlan?.operationType === 'range'
             ? rangeTitle(breakdownValue ?? null, breakdownPlan, problems)
-            : formatCell(breakdownValue ?? null, breakdownFormat)
+            : breakdownDate
+              ? breakdownDate(breakdownValue)
+              : formatCell(breakdownValue ?? null, breakdownFormat)
       : metric.label;
     const subtitle = breakdown ? metric.label : state.subtitle;
     const base = breakdown ? JSON.stringify(breakdownValue ?? null) : 'metric';

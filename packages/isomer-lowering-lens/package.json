@@ -57,7 +57,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-primitives-charts": "workspace:*"
+    "@elastic/isomer-primitives-charts": "workspace:*",
+    "moment": "2.31.0",
+    "moment-timezone": "0.6.1"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
