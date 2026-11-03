@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "id": "flights-global-flight-dashboard--392b4936-f753-47bc-a98d-a4e41a0a4cd4--light",
+  "title": "[Flights] Global Flight Dashboard: [Flights] Total Flights",
+  "source": {
+    "dashboard": {
+      "id": "7adfa750-4c81-11e8-b3d7-01146121b73d",
+      "title": "[Flights] Global Flight Dashboard"
+    },
+    "panelIndex": "392b4936-f753-47bc-a98d-a4e41a0a4cd4",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "392b4936-f753-47bc-a98d-a4e41a0a4cd4",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-8fa993db-c147-4954-adf7-4ff264d42576"
+        }
+      ],
+      "attributes": {
+        "title": "[Flights] Total Flights",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "8fa993db-c147-4954-adf7-4ff264d42576",
+            "layerType": "data",
+            "metricAccessor": "81124c45-6ab6-42f4-8859-495d55eb8065"
+          },
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "8fa993db-c147-4954-adf7-4ff264d42576": {
+                  "columns": {
+                    "81124c45-6ab6-42f4-8859-495d55eb8065": {
+                      "label": "Total flights",
+                      "dataType": "number",
+                      "operationType": "count",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "___records___",
+                      "customLabel": true
+                    }
+                  },
+                  "columnOrder": [
+                    "81124c45-6ab6-42f4-8859-495d55eb8065"
+                  ],
+                  "incompleteColumns": {}
+                }
+              }
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "8fa993db-c147-4954-adf7-4ff264d42576": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "81124c45-6ab6-42f4-8859-495d55eb8065",
+              "name": "Total flights",
+              "meta": {
+                "type": "number",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "number"
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "count",
+                  "params": {
+                    "emptyAsNull": false
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "81124c45-6ab6-42f4-8859-495d55eb8065": 11847
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "light",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:40:36.097Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 257.25,
+      "height": 216,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 257.25,
+            "height": 216
+          },
+          "background": "#ffffff",
+          "value": "11,847",
+          "valueColor": "#111c2c",
+          "valueFontSize": 42,
+          "valueWidth": 146,
+          "valueLetterWidth": 0,
+          "title": "Total flights",
+          "titleFontSize": 16,
+          "titleWidth": 93,
+          "titleLetterWidth": 89,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

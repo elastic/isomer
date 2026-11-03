@@ -1,0 +1,375 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-flights--breakdown-other-empty-cells--dark",
+  "title": "Isomer comparison: metric (Flights): Flights by destination",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-flights",
+      "title": "Isomer comparison: metric (Flights)"
+    },
+    "panelIndex": "breakdown-other-empty-cells",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "breakdown-other-empty-cells",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-layer"
+        }
+      ],
+      "attributes": {
+        "title": "Flights by destination",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "layer": {
+                  "columnOrder": [
+                    "country",
+                    "count"
+                  ],
+                  "columns": {
+                    "country": {
+                      "operationType": "terms",
+                      "label": "Top 4 values of DestCountry",
+                      "dataType": "string",
+                      "isBucketed": true,
+                      "scale": "ordinal",
+                      "sourceField": "DestCountry",
+                      "params": {
+                        "size": 4,
+                        "orderBy": {
+                          "type": "column",
+                          "columnId": "count"
+                        },
+                        "orderDirection": "desc",
+                        "otherBucket": true,
+                        "missingBucket": false
+                      }
+                    },
+                    "count": {
+                      "operationType": "count",
+                      "label": "Flights",
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "___records___"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "layer",
+            "layerType": "data",
+            "metricAccessor": "count",
+            "breakdownByAccessor": "country",
+            "maxCols": 3
+          }
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "layer": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "country",
+              "name": "Top 4 values of DestCountry",
+              "meta": {
+                "type": "string",
+                "field": "DestCountry",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "terms",
+                  "params": {
+                    "id": "string",
+                    "otherBucketLabel": "Other"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "terms",
+                  "params": {
+                    "field": "DestCountry",
+                    "orderBy": "1",
+                    "order": "desc",
+                    "size": 4,
+                    "otherBucket": true,
+                    "otherBucketLabel": "Other",
+                    "missingBucket": false,
+                    "includeIsRegex": false,
+                    "excludeIsRegex": false
+                  },
+                  "schema": "segment"
+                },
+                "dimensionName": "Split group"
+              }
+            },
+            {
+              "id": "count",
+              "name": "Flights",
+              "meta": {
+                "type": "number",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "number"
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "1",
+                  "enabled": true,
+                  "type": "count",
+                  "params": {
+                    "emptyAsNull": false
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "country": "IT",
+              "count": 2159
+            },
+            {
+              "country": "US",
+              "count": 1833
+            },
+            {
+              "country": "CN",
+              "count": 994
+            },
+            {
+              "country": "CA",
+              "count": 825
+            },
+            {
+              "country": "__other__",
+              "count": 6036
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:17.616Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 787.75,
+      "height": 296,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 262.58,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "2,159",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 102,
+          "valueLetterWidth": 0,
+          "title": "IT",
+          "titleFontSize": 16,
+          "titleWidth": 15,
+          "titleLetterWidth": 15,
+          "subtitle": "Flights",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            0,
+            1
+          ],
+          "box": {
+            "x": 262.58,
+            "y": 0,
+            "width": 262.58,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "1,833",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 102,
+          "valueLetterWidth": 0,
+          "title": "US",
+          "titleFontSize": 16,
+          "titleWidth": 21,
+          "titleLetterWidth": 21,
+          "subtitle": "Flights",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            0,
+            2
+          ],
+          "box": {
+            "x": 525.16,
+            "y": 0,
+            "width": 262.59,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "994",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 69,
+          "valueLetterWidth": 0,
+          "title": "CN",
+          "titleFontSize": 16,
+          "titleWidth": 23,
+          "titleLetterWidth": 23,
+          "subtitle": "Flights",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            1,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 148,
+            "width": 262.58,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "825",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 69,
+          "valueLetterWidth": 0,
+          "title": "CA",
+          "titleFontSize": 16,
+          "titleWidth": 23,
+          "titleLetterWidth": 23,
+          "subtitle": "Flights",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            1,
+            1
+          ],
+          "box": {
+            "x": 262.58,
+            "y": 148,
+            "width": 262.58,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "6,036",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 102,
+          "valueLetterWidth": 0,
+          "title": "Other",
+          "titleFontSize": 16,
+          "titleWidth": 45,
+          "titleLetterWidth": 45,
+          "subtitle": "Flights",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 1
+    },
+    "screenshot": "reference.png"
+  }
+}

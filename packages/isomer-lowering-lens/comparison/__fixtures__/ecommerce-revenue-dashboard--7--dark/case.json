@@ -1,0 +1,401 @@
+{
+  "version": 1,
+  "id": "ecommerce-revenue-dashboard--7--dark",
+  "title": "[eCommerce] Revenue Dashboard: Sold Products per Day",
+  "source": {
+    "dashboard": {
+      "id": "722b74f0-b882-11e8-a6d9-e546fe2bba5f",
+      "title": "[eCommerce] Revenue Dashboard"
+    },
+    "panelIndex": "7",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "7",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+          "name": "indexpattern-datasource-layer-037375ae-9e23-4dd5-a4f0-5f117bb7dac1"
+        }
+      ],
+      "attributes": {
+        "title": "Sold Products per Day",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "037375ae-9e23-4dd5-a4f0-5f117bb7dac1",
+            "layerType": "data",
+            "metricAccessor": "c27bd77c-68e2-4d75-8fda-41c45d22f8d4",
+            "maxAccessor": "ce816876-e92d-4b1a-bbb0-ed7637fc0eea",
+            "showBar": true,
+            "palette": {
+              "type": "palette",
+              "name": "status",
+              "params": {
+                "name": "status",
+                "reverse": true,
+                "rangeType": "percent",
+                "rangeMin": 0,
+                "rangeMax": 100,
+                "progression": "fixed",
+                "stops": [
+                  {
+                    "color": "#23be8f",
+                    "stop": 33.33
+                  },
+                  {
+                    "color": "#fcd279",
+                    "stop": 66.66
+                  },
+                  {
+                    "color": "#f66d64",
+                    "stop": 100
+                  }
+                ],
+                "steps": 3,
+                "colorStops": [],
+                "continuity": "all",
+                "maxSteps": 5
+              }
+            }
+          },
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "037375ae-9e23-4dd5-a4f0-5f117bb7dac1": {
+                  "ignoreGlobalFilters": false,
+                  "columns": {
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": {
+                      "label": "Part of count() / (time_range() / 1000 / 60 / 60 / 24)",
+                      "dataType": "number",
+                      "operationType": "count",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "___records___",
+                      "params": {
+                        "emptyAsNull": false
+                      },
+                      "customLabel": true
+                    },
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1": {
+                      "label": "Part of count() / (time_range() / 1000 / 60 / 60 / 24)",
+                      "dataType": "number",
+                      "operationType": "time_range",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "references": [],
+                      "customLabel": true
+                    },
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": {
+                      "label": "Part of count() / (time_range() / 1000 / 60 / 60 / 24)",
+                      "dataType": "number",
+                      "operationType": "math",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "params": {
+                        "tinymathAst": {
+                          "type": "function",
+                          "name": "divide",
+                          "args": [
+                            "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0",
+                            {
+                              "type": "function",
+                              "name": "divide",
+                              "args": [
+                                {
+                                  "type": "function",
+                                  "name": "divide",
+                                  "args": [
+                                    {
+                                      "type": "function",
+                                      "name": "divide",
+                                      "args": [
+                                        {
+                                          "type": "function",
+                                          "name": "divide",
+                                          "args": [
+                                            "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1",
+                                            1000
+                                          ]
+                                        },
+                                        60
+                                      ]
+                                    },
+                                    60
+                                  ]
+                                },
+                                24
+                              ],
+                              "location": {
+                                "min": 11,
+                                "max": 45
+                              },
+                              "text": "time_range() / 1000 / 60 / 60 / 24"
+                            }
+                          ],
+                          "location": {
+                            "min": 0,
+                            "max": 46
+                          },
+                          "text": "count() / (time_range() / 1000 / 60 / 60 / 24)"
+                        }
+                      },
+                      "references": [
+                        "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0",
+                        "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1"
+                      ],
+                      "customLabel": true
+                    },
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": {
+                      "label": "Trxns / day",
+                      "dataType": "number",
+                      "operationType": "formula",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "params": {
+                        "format": {
+                          "id": "number",
+                          "params": {
+                            "compact": true
+                          }
+                        },
+                        "formula": "count() / (time_range() / 1000 / 60 / 60 / 24)",
+                        "isFormulaBroken": false
+                      },
+                      "references": [
+                        "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2"
+                      ],
+                      "customLabel": true
+                    },
+                    "ce816876-e92d-4b1a-bbb0-ed7637fc0eea": {
+                      "label": "Static value: 300",
+                      "dataType": "number",
+                      "operationType": "static_value",
+                      "isStaticValue": true,
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "params": {
+                        "value": "300"
+                      },
+                      "references": []
+                    }
+                  },
+                  "columnOrder": [
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0",
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1",
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2",
+                    "c27bd77c-68e2-4d75-8fda-41c45d22f8d4",
+                    "ce816876-e92d-4b1a-bbb0-ed7637fc0eea"
+                  ],
+                  "incompleteColumns": {}
+                }
+              }
+            },
+            "indexpattern": {
+              "layers": {}
+            },
+            "textBased": {
+              "layers": {}
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+        "title": "kibana_sample_data_ecommerce",
+        "timeFieldName": "order_date",
+        "fieldFormats": {
+          "taxful_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          },
+          "products.price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "taxless_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxless_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxful_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.min_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_unit_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "037375ae-9e23-4dd5-a4f0-5f117bb7dac1": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "c27bd77c-68e2-4d75-8fda-41c45d22f8d4",
+              "name": "Trxns / day",
+              "meta": {
+                "type": "number",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "0,0.00a",
+                    "formatOverride": true
+                  }
+                },
+                "dimensionName": "Metric"
+              }
+            },
+            {
+              "id": "ce816876-e92d-4b1a-bbb0-ed7637fc0eea",
+              "name": "Static value: 300",
+              "meta": {
+                "type": "number",
+                "params": {
+                  "id": "number"
+                },
+                "dimensionName": "Maximum"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X0": 1045,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X1": 604800000,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4X2": 149.28571428571428,
+              "c27bd77c-68e2-4d75-8fda-41c45d22f8d4": 149.28571428571428,
+              "ce816876-e92d-4b1a-bbb0-ed7637fc0eea": 300
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+            "statistics": {
+              "totalCount": 1045
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:00.028Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 156,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 156
+          },
+          "background": "#111c2c",
+          "value": "149.29",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 125,
+          "valueLetterWidth": 0,
+          "title": "Trxns / day",
+          "titleFontSize": 16,
+          "titleWidth": 84,
+          "titleLetterWidth": 70,
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "progress": {
+            "now": 49.76,
+            "min": 0,
+            "max": 100,
+            "color": "#fcd883",
+            "orientation": "vertical",
+            "start": 0,
+            "end": 0.4977
+          }
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

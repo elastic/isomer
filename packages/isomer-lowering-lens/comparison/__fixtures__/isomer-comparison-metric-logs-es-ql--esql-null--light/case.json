@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-logs-es-ql--esql-null--light",
+  "title": "Isomer comparison: metric (Logs, ES|QL): Nothing",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-logs",
+      "title": "Isomer comparison: metric (Logs, ES|QL)"
+    },
+    "panelIndex": "esql-null",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "esql-null",
+      "type": "lens",
+      "references": [],
+      "attributes": {
+        "title": "Nothing",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "filters": [],
+          "datasourceStates": {
+            "textBased": {
+              "layers": {
+                "layer": {
+                  "query": {
+                    "esql": "FROM kibana_sample_data_logs | WHERE bytes < 0 | STATS avg = AVG(bytes)"
+                  },
+                  "columns": [
+                    {
+                      "columnId": "avg",
+                      "fieldName": "avg",
+                      "meta": {
+                        "type": "number"
+                      },
+                      "label": "Average bytes",
+                      "customLabel": true
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "layer",
+            "layerType": "data",
+            "metricAccessor": "avg"
+          }
+        }
+      }
+    },
+    "dataViews": []
+  },
+  "data": {
+    "layers": {
+      "layer": {
+        "kind": "esql",
+        "query": "FROM kibana_sample_data_logs | WHERE bytes < 0 | STATS avg = AVG(bytes)",
+        "response": {
+          "columns": [
+            {
+              "name": "avg",
+              "type": "double"
+            }
+          ],
+          "values": [
+            [
+              null
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "light",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:40:49.737Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 184,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 184
+          },
+          "background": "#ffffff",
+          "value": "N/A",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 64,
+          "valueLetterWidth": 52,
+          "title": "Average bytes",
+          "titleFontSize": 16,
+          "titleWidth": 112,
+          "titleLetterWidth": 108,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

@@ -1,0 +1,243 @@
+{
+  "version": 1,
+  "id": "ecommerce-revenue-dashboard--58774330-b1b3-42dd-a04c-fbce9cc4d288--dark",
+  "title": "[eCommerce] Revenue Dashboard: Median spending",
+  "source": {
+    "dashboard": {
+      "id": "722b74f0-b882-11e8-a6d9-e546fe2bba5f",
+      "title": "[eCommerce] Revenue Dashboard"
+    },
+    "panelIndex": "58774330-b1b3-42dd-a04c-fbce9cc4d288",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "58774330-b1b3-42dd-a04c-fbce9cc4d288",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+          "name": "indexpattern-datasource-layer-4fb42a8e-b133-43c8-805c-a38472053938"
+        }
+      ],
+      "attributes": {
+        "title": "Median spending",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "4fb42a8e-b133-43c8-805c-a38472053938",
+            "layerType": "data",
+            "metricAccessor": "020bbfdf-9ef8-4802-aa9e-342d2ea0bebf"
+          },
+          "query": {
+            "language": "kuery",
+            "query": ""
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "4fb42a8e-b133-43c8-805c-a38472053938": {
+                  "columnOrder": [
+                    "020bbfdf-9ef8-4802-aa9e-342d2ea0bebf"
+                  ],
+                  "columns": {
+                    "020bbfdf-9ef8-4802-aa9e-342d2ea0bebf": {
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "label": "Median spending",
+                      "operationType": "median",
+                      "scale": "ratio",
+                      "sourceField": "taxful_total_price",
+                      "params": {}
+                    }
+                  },
+                  "incompleteColumns": {}
+                }
+              }
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+        "title": "kibana_sample_data_ecommerce",
+        "timeFieldName": "order_date",
+        "fieldFormats": {
+          "taxful_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          },
+          "products.price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "taxless_total_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxless_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.taxful_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.min_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_unit_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          },
+          "products.base_price": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.00"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "4fb42a8e-b133-43c8-805c-a38472053938": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "020bbfdf-9ef8-4802-aa9e-342d2ea0bebf",
+              "name": "Median spending",
+              "meta": {
+                "type": "number",
+                "field": "taxful_total_price",
+                "index": "kibana_sample_data_ecommerce",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "$0,0.[00]"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "median",
+                  "params": {
+                    "field": "taxful_total_price"
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "020bbfdf-9ef8-4802-aa9e-342d2ea0bebf": 64.42248818486188
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "ff959d40-b880-11e8-a6d9-e546fe2bba5f",
+            "statistics": {
+              "totalCount": 4675
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:00.262Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 188,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 188
+          },
+          "background": "#111c2c",
+          "value": "$64.42",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 119,
+          "valueLetterWidth": 0,
+          "title": "Median spending",
+          "titleFontSize": 16,
+          "titleWidth": 130,
+          "titleLetterWidth": 126,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

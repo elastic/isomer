@@ -1,0 +1,348 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-flights--status-palette--light",
+  "title": "Isomer comparison: metric (Flights): Delay by carrier",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-flights",
+      "title": "Isomer comparison: metric (Flights)"
+    },
+    "panelIndex": "status-palette",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "status-palette",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-layer"
+        }
+      ],
+      "attributes": {
+        "title": "Delay by carrier",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "layer": {
+                  "columnOrder": [
+                    "carrier",
+                    "delay"
+                  ],
+                  "columns": {
+                    "carrier": {
+                      "operationType": "terms",
+                      "label": "Top 3 values of Carrier",
+                      "dataType": "string",
+                      "isBucketed": true,
+                      "scale": "ordinal",
+                      "sourceField": "Carrier",
+                      "params": {
+                        "size": 3,
+                        "orderBy": {
+                          "type": "column",
+                          "columnId": "delay"
+                        },
+                        "orderDirection": "desc",
+                        "otherBucket": false,
+                        "missingBucket": false
+                      }
+                    },
+                    "delay": {
+                      "operationType": "average",
+                      "label": "Average delay",
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "FlightDelayMin"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "layer",
+            "layerType": "data",
+            "metricAccessor": "delay",
+            "breakdownByAccessor": "carrier",
+            "maxCols": 3,
+            "palette": {
+              "type": "palette",
+              "name": "status",
+              "params": {
+                "name": "status",
+                "reverse": false,
+                "rangeType": "percent",
+                "rangeMin": 0,
+                "rangeMax": 100,
+                "progression": "fixed",
+                "stops": [
+                  {
+                    "color": "#24c292",
+                    "stop": 33.33
+                  },
+                  {
+                    "color": "#fcd883",
+                    "stop": 66.66
+                  },
+                  {
+                    "color": "#f6726a",
+                    "stop": 100
+                  }
+                ],
+                "steps": 3,
+                "colorStops": [],
+                "continuity": "all",
+                "maxSteps": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "layer": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "carrier",
+              "name": "Top 3 values of Carrier",
+              "meta": {
+                "type": "string",
+                "field": "Carrier",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "terms",
+                  "params": {
+                    "id": "string",
+                    "otherBucketLabel": "Other"
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "terms",
+                  "params": {
+                    "field": "Carrier",
+                    "orderBy": "1",
+                    "order": "desc",
+                    "size": 3,
+                    "otherBucket": false,
+                    "otherBucketLabel": "Other",
+                    "missingBucket": false,
+                    "includeIsRegex": false,
+                    "excludeIsRegex": false
+                  },
+                  "schema": "segment"
+                },
+                "dimensionName": "Split group"
+              }
+            },
+            {
+              "id": "delay",
+              "name": "Average delay",
+              "meta": {
+                "type": "number",
+                "field": "FlightDelayMin",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "number"
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "1",
+                  "enabled": true,
+                  "type": "avg",
+                  "params": {
+                    "field": "FlightDelayMin"
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "carrier": "Logstash Airways",
+              "delay": 49.265918838667105
+            },
+            {
+              "carrier": "ES-Air",
+              "delay": 47.23021582733813
+            },
+            {
+              "carrier": "Kibana Airlines",
+              "delay": 46.91105769230769
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "light",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:40:47.014Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 787.75,
+      "height": 184,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 262.58,
+            "height": 184
+          },
+          "background": "#f6726a",
+          "value": "49.266",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 125,
+          "valueLetterWidth": 0,
+          "title": "Logstash Airways",
+          "titleFontSize": 16,
+          "titleWidth": 134,
+          "titleLetterWidth": 130,
+          "subtitle": "Average delay",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            0,
+            1
+          ],
+          "box": {
+            "x": 262.58,
+            "y": 0,
+            "width": 262.58,
+            "height": 184
+          },
+          "background": "#24c292",
+          "value": "47.23",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 102,
+          "valueLetterWidth": 0,
+          "title": "ES-Air",
+          "titleFontSize": 16,
+          "titleWidth": 51,
+          "titleLetterWidth": 41,
+          "subtitle": "Average delay",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        },
+        {
+          "position": [
+            0,
+            2
+          ],
+          "box": {
+            "x": 525.16,
+            "y": 0,
+            "width": 262.59,
+            "height": 184
+          },
+          "background": "#24c292",
+          "value": "46.911",
+          "valueColor": "#111c2c",
+          "valueFontSize": 36,
+          "valueWidth": 125,
+          "valueLetterWidth": 0,
+          "title": "Kibana Airlines",
+          "titleFontSize": 16,
+          "titleWidth": 112,
+          "titleLetterWidth": 108,
+          "subtitle": "Average delay",
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

@@ -25,6 +25,7 @@ export default defineConfig({
           environment: 'node',
           include: [
             'packages/*/src/**/*.test.ts',
+            'packages/isomer-lowering-lens/comparison/**/*.test.ts',
             'packages/isomer-primitives-slides/studio/**/*.test.ts',
             'packages/isomer-renderers-elastic-charts/studio/**/*.test.ts',
             'scripts/**/*.test.js',

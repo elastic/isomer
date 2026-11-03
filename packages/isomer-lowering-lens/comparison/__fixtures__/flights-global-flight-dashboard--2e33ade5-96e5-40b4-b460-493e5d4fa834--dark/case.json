@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "id": "flights-global-flight-dashboard--2e33ade5-96e5-40b4-b460-493e5d4fa834--dark",
+  "title": "[Flights] Global Flight Dashboard: 2e33ade5-96e5-40b4-b460-493e5d4fa834",
+  "source": {
+    "dashboard": {
+      "id": "7adfa750-4c81-11e8-b3d7-01146121b73d",
+      "title": "[Flights] Global Flight Dashboard"
+    },
+    "panelIndex": "2e33ade5-96e5-40b4-b460-493e5d4fa834",
+    "authored": false
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "2e33ade5-96e5-40b4-b460-493e5d4fa834",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-b4712d43-1e84-4f5b-878d-8e38ba748317"
+        },
+        {
+          "type": "index-pattern",
+          "name": "14cea722-a629-4c69-a06d-94a4a4c9a718",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d"
+        }
+      ],
+      "attributes": {
+        "title": "",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "visualization": {
+            "layerId": "b4712d43-1e84-4f5b-878d-8e38ba748317",
+            "layerType": "data",
+            "metricAccessor": "c7851241-5526-499a-960b-357af8c2ce5b"
+          },
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [
+            {
+              "meta": {
+                "alias": null,
+                "negate": false,
+                "disabled": false,
+                "type": "phrase",
+                "key": "Cancelled",
+                "params": {
+                  "query": true
+                },
+                "index": "14cea722-a629-4c69-a06d-94a4a4c9a718"
+              },
+              "query": {
+                "match_phrase": {
+                  "Cancelled": true
+                }
+              },
+              "$state": {
+                "store": "appState"
+              }
+            }
+          ],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "b4712d43-1e84-4f5b-878d-8e38ba748317": {
+                  "columns": {
+                    "c7851241-5526-499a-960b-357af8c2ce5b": {
+                      "label": "Cancelled vs 1 week earlier",
+                      "dataType": "number",
+                      "operationType": "formula",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "params": {
+                        "formula": "count() / count(shift='1w') - 1",
+                        "isFormulaBroken": false,
+                        "format": {
+                          "id": "percent",
+                          "params": {
+                            "decimals": 1,
+                            "compact": true
+                          }
+                        }
+                      },
+                      "references": [
+                        "c7851241-5526-499a-960b-357af8c2ce5bX2"
+                      ],
+                      "customLabel": true
+                    },
+                    "c7851241-5526-499a-960b-357af8c2ce5bX2": {
+                      "label": "Part of Delayed vs 1 week earlier",
+                      "dataType": "number",
+                      "operationType": "math",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "params": {
+                        "tinymathAst": {
+                          "type": "function",
+                          "name": "subtract",
+                          "args": [
+                            {
+                              "type": "function",
+                              "name": "divide",
+                              "args": [
+                                "c7851241-5526-499a-960b-357af8c2ce5bX0",
+                                "c7851241-5526-499a-960b-357af8c2ce5bX1"
+                              ],
+                              "location": {
+                                "min": 0,
+                                "max": 28
+                              },
+                              "text": "count() / count(shift='1w') "
+                            },
+                            1
+                          ],
+                          "location": {
+                            "min": 0,
+                            "max": 31
+                          },
+                          "text": "count() / count(shift='1w') - 1"
+                        }
+                      },
+                      "references": [
+                        "c7851241-5526-499a-960b-357af8c2ce5bX0",
+                        "c7851241-5526-499a-960b-357af8c2ce5bX1"
+                      ],
+                      "customLabel": true
+                    },
+                    "c7851241-5526-499a-960b-357af8c2ce5bX0": {
+                      "label": "Part of Delayed vs 1 week earlier",
+                      "dataType": "number",
+                      "operationType": "count",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "___records___",
+                      "customLabel": true
+                    },
+                    "c7851241-5526-499a-960b-357af8c2ce5bX1": {
+                      "label": "Part of Delayed vs 1 week earlier",
+                      "dataType": "number",
+                      "operationType": "count",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "___records___",
+                      "timeShift": "1w",
+                      "customLabel": true
+                    }
+                  },
+                  "columnOrder": [
+                    "c7851241-5526-499a-960b-357af8c2ce5b",
+                    "c7851241-5526-499a-960b-357af8c2ce5bX2",
+                    "c7851241-5526-499a-960b-357af8c2ce5bX0",
+                    "c7851241-5526-499a-960b-357af8c2ce5bX1"
+                  ],
+                  "incompleteColumns": {}
+                }
+              }
+            }
+          },
+          "internalReferences": [],
+          "adHocDataViews": {}
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "b4712d43-1e84-4f5b-878d-8e38ba748317": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "c7851241-5526-499a-960b-357af8c2ce5b",
+              "name": "Cancelled vs 1 week earlier",
+              "meta": {
+                "type": "number",
+                "params": {
+                  "id": "percent",
+                  "params": {
+                    "pattern": "0,0.0a%",
+                    "formatOverride": true,
+                    "decimals": 1
+                  }
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "c7851241-5526-499a-960b-357af8c2ce5bX0": 1516,
+              "c7851241-5526-499a-960b-357af8c2ce5bX1": 1244,
+              "c7851241-5526-499a-960b-357af8c2ce5bX2": 0.2186495176848875,
+              "c7851241-5526-499a-960b-357af8c2ce5b": 0.2186495176848875
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 1516
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:07.577Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 257.25,
+      "height": 104,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 257.25,
+            "height": 104
+          },
+          "background": "#111c2c",
+          "value": "21.9%",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 104,
+          "valueLetterWidth": 0,
+          "title": "Cancelled vs 1 week earlier",
+          "titleFontSize": 16,
+          "titleWidth": 211,
+          "titleLetterWidth": 185,
+          "titlesAlign": "left",
+          "valueAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

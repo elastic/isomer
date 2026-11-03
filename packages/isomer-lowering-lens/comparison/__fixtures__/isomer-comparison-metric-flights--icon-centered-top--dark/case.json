@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-flights--icon-centered-top--dark",
+  "title": "Isomer comparison: metric (Flights): Distance",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-flights",
+      "title": "Isomer comparison: metric (Flights)"
+    },
+    "panelIndex": "icon-centered-top",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "icon-centered-top",
+      "type": "lens",
+      "references": [
+        {
+          "type": "index-pattern",
+          "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+          "name": "indexpattern-datasource-layer-layer"
+        }
+      ],
+      "attributes": {
+        "title": "Distance",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "query": {
+            "query": "",
+            "language": "kuery"
+          },
+          "filters": [],
+          "datasourceStates": {
+            "formBased": {
+              "layers": {
+                "layer": {
+                  "columnOrder": [
+                    "distance"
+                  ],
+                  "columns": {
+                    "distance": {
+                      "operationType": "sum",
+                      "label": "Total distance",
+                      "customLabel": true,
+                      "dataType": "number",
+                      "isBucketed": false,
+                      "scale": "ratio",
+                      "sourceField": "DistanceKilometers",
+                      "params": {
+                        "format": {
+                          "id": "number",
+                          "params": {
+                            "decimals": 0,
+                            "compact": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "layer",
+            "layerType": "data",
+            "metricAccessor": "distance",
+            "icon": "globe",
+            "iconAlign": "right",
+            "titlesTextAlign": "center",
+            "primaryAlign": "center",
+            "primaryPosition": "top"
+          }
+        }
+      }
+    },
+    "dataViews": [
+      {
+        "id": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+        "title": "kibana_sample_data_flights",
+        "timeFieldName": "timestamp",
+        "fieldFormats": {
+          "hour_of_day": {
+            "id": "number",
+            "params": {
+              "pattern": "00"
+            }
+          },
+          "AvgTicketPrice": {
+            "id": "number",
+            "params": {
+              "pattern": "$0,0.[00]"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "data": {
+    "layers": {
+      "layer": {
+        "kind": "form",
+        "datatable": {
+          "type": "datatable",
+          "columns": [
+            {
+              "id": "distance",
+              "name": "Total distance",
+              "meta": {
+                "type": "number",
+                "field": "DistanceKilometers",
+                "index": "kibana_sample_data_flights",
+                "params": {
+                  "id": "number",
+                  "params": {
+                    "pattern": "0,0a",
+                    "formatOverride": true,
+                    "decimals": 0
+                  }
+                },
+                "source": "esaggs",
+                "sourceParams": {
+                  "hasPrecisionError": false,
+                  "indexPatternId": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+                  "id": "0",
+                  "enabled": true,
+                  "type": "sum",
+                  "params": {
+                    "field": "DistanceKilometers",
+                    "emptyAsNull": false
+                  },
+                  "schema": "metric"
+                },
+                "dimensionName": "Metric"
+              }
+            }
+          ],
+          "rows": [
+            {
+              "distance": 84063293.04888535
+            }
+          ],
+          "meta": {
+            "type": "esaggs",
+            "source": "d3d7af60-4c81-11e8-b3d7-01146121b73d",
+            "statistics": {
+              "totalCount": 11847
+            }
+          }
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:18.176Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 389.88,
+      "height": 184,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 389.88,
+            "height": 184
+          },
+          "background": "#111c2c",
+          "value": "84m",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 71,
+          "valueLetterWidth": 25,
+          "title": "Total distance",
+          "titleFontSize": 16,
+          "titleWidth": 110,
+          "titleLetterWidth": 106,
+          "titlesAlign": "center",
+          "valueAlign": "center",
+          "iconAlign": "right"
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}

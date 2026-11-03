@@ -1,0 +1,321 @@
+{
+  "version": 1,
+  "id": "isomer-comparison-metric-logs-es-ql--esql-breakdown-compare--dark",
+  "title": "Isomer comparison: metric (Logs, ES|QL): Bytes by host",
+  "source": {
+    "dashboard": {
+      "id": "isomer-comparison-metric-logs",
+      "title": "Isomer comparison: metric (Logs, ES|QL)"
+    },
+    "panelIndex": "esql-breakdown-compare",
+    "authored": true
+  },
+  "panel": {
+    "type": "lens",
+    "visualizationType": "lnsMetric"
+  },
+  "input": {
+    "savedObject": {
+      "id": "esql-breakdown-compare",
+      "type": "lens",
+      "references": [],
+      "attributes": {
+        "title": "Bytes by host",
+        "visualizationType": "lnsMetric",
+        "state": {
+          "filters": [],
+          "datasourceStates": {
+            "textBased": {
+              "layers": {
+                "layer": {
+                  "query": {
+                    "esql": "FROM kibana_sample_data_logs | STATS bytes = SUM(bytes), median = MEDIAN(bytes) BY host.keyword"
+                  },
+                  "columns": [
+                    {
+                      "columnId": "host",
+                      "fieldName": "host.keyword",
+                      "meta": {
+                        "type": "string"
+                      }
+                    },
+                    {
+                      "columnId": "bytes",
+                      "fieldName": "bytes",
+                      "meta": {
+                        "type": "number"
+                      },
+                      "label": "Bytes",
+                      "customLabel": true,
+                      "params": {
+                        "format": {
+                          "id": "bytes",
+                          "params": {
+                            "decimals": 1
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "columnId": "median",
+                      "fieldName": "median",
+                      "meta": {
+                        "type": "number"
+                      },
+                      "label": "Median",
+                      "customLabel": true,
+                      "params": {
+                        "format": {
+                          "id": "bytes",
+                          "params": {
+                            "decimals": 1
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "visualization": {
+            "layerId": "layer",
+            "layerType": "data",
+            "metricAccessor": "bytes",
+            "secondaryMetricAccessor": "median",
+            "breakdownByAccessor": "host",
+            "maxCols": 2,
+            "secondaryTrend": {
+              "type": "dynamic",
+              "visuals": "both",
+              "paletteId": "compare_to",
+              "reversed": false,
+              "baselineValue": "primary"
+            }
+          }
+        }
+      }
+    },
+    "dataViews": []
+  },
+  "data": {
+    "layers": {
+      "layer": {
+        "kind": "esql",
+        "query": "FROM kibana_sample_data_logs | STATS bytes = SUM(bytes), median = MEDIAN(bytes) BY host.keyword",
+        "response": {
+          "columns": [
+            {
+              "name": "bytes",
+              "type": "long"
+            },
+            {
+              "name": "median",
+              "type": "double"
+            },
+            {
+              "name": "host.keyword",
+              "type": "keyword"
+            }
+          ],
+          "values": [
+            [
+              40390724,
+              5987.5,
+              "artifacts.elastic.co"
+            ],
+            [
+              12602429,
+              5575,
+              "cdn.elastic-elastic-elastic.org"
+            ],
+            [
+              2281660,
+              3407,
+              "elastic-elastic-elastic.org"
+            ],
+            [
+              24450876,
+              4825,
+              "www.elastic.co"
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "context": {
+    "scheme": "dark",
+    "timeZone": "UTC",
+    "dateFormat": "MMM D, YYYY @ HH:mm:ss.SSS",
+    "locale": "en",
+    "deviceScaleFactor": 1,
+    "platform": "linux",
+    "timeRange": {
+      "from": "2026-09-04T00:00:00.000Z",
+      "to": "2026-12-03T00:00:00.000Z"
+    }
+  },
+  "provenance": {
+    "kibana": {
+      "version": "9.7.0-SNAPSHOT",
+      "build": "115413"
+    },
+    "elasticCharts": "73.3.2",
+    "fonts": {
+      "ElasticUINumeric-Variable.woff2": "10e0691e8f06f3616973f429430bdc2bf9653968663f0e6b92cad00e13577749",
+      "Inter-Regular.woff2": "bed72259a8e25611bfdcd02ae7534bab339f607cbce3b989614fb32a5fb95738",
+      "Inter-Medium.woff2": "6be58eaba7a53c5f1e8ac57a8ae050078a6de66c792ec52d960f80218a21966a",
+      "Inter-SemiBold.woff2": "d5a91eb1b863ca7543716e4782113a07504de66ece767eda455a33c344cbfefa",
+      "Inter-Bold.woff2": "7824a9014117f15dfa90a4a1c4082b3c52eb3cb0aa9da3dcf627ff2886e039b4"
+    },
+    "capturedAt": "2026-11-03T18:41:21.067Z"
+  },
+  "reference": {
+    "fingerprint": {
+      "kind": "metric",
+      "width": 787.75,
+      "height": 296,
+      "tiles": [
+        {
+          "position": [
+            0,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 0,
+            "width": 393.88,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "38.5MB",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 120,
+          "valueLetterWidth": 41,
+          "title": "artifacts.elastic.co",
+          "titleFontSize": 16,
+          "titleWidth": 145,
+          "titleLetterWidth": 137,
+          "subtitle": "Bytes",
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "extraAlign": "right",
+          "secondary": {
+            "label": "Median",
+            "value": "+38.5MB",
+            "badge": {
+              "background": "#0d362b",
+              "color": "#24c292"
+            }
+          }
+        },
+        {
+          "position": [
+            0,
+            1
+          ],
+          "box": {
+            "x": 393.88,
+            "y": 0,
+            "width": 393.88,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "12.0MB",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 120,
+          "valueLetterWidth": 41,
+          "title": "cdn.elastic-elastic-elastic.org",
+          "titleFontSize": 16,
+          "titleWidth": 235,
+          "titleLetterWidth": 207,
+          "subtitle": "Bytes",
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "extraAlign": "right",
+          "secondary": {
+            "label": "Median",
+            "value": "+12.0MB",
+            "badge": {
+              "background": "#0d362b",
+              "color": "#24c292"
+            }
+          }
+        },
+        {
+          "position": [
+            1,
+            0
+          ],
+          "box": {
+            "x": 0,
+            "y": 148,
+            "width": 393.88,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "2.2MB",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 97,
+          "valueLetterWidth": 41,
+          "title": "elastic-elastic-elastic.org",
+          "titleFontSize": 16,
+          "titleWidth": 203,
+          "titleLetterWidth": 179,
+          "subtitle": "Bytes",
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "extraAlign": "right",
+          "secondary": {
+            "label": "Median",
+            "value": "+2.2MB",
+            "badge": {
+              "background": "#0d362b",
+              "color": "#24c292"
+            }
+          }
+        },
+        {
+          "position": [
+            1,
+            1
+          ],
+          "box": {
+            "x": 393.88,
+            "y": 148,
+            "width": 393.88,
+            "height": 148
+          },
+          "background": "#111c2c",
+          "value": "23.3MB",
+          "valueColor": "#e3e8f2",
+          "valueFontSize": 36,
+          "valueWidth": 120,
+          "valueLetterWidth": 41,
+          "title": "www.elastic.co",
+          "titleFontSize": 16,
+          "titleWidth": 117,
+          "titleLetterWidth": 109,
+          "subtitle": "Bytes",
+          "titlesAlign": "left",
+          "valueAlign": "right",
+          "extraAlign": "right",
+          "secondary": {
+            "label": "Median",
+            "value": "+23.3MB",
+            "badge": {
+              "background": "#0d362b",
+              "color": "#24c292"
+            }
+          }
+        }
+      ],
+      "empty": 0
+    },
+    "screenshot": "reference.png"
+  }
+}
