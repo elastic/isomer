@@ -8,6 +8,7 @@
 import { z } from 'zod';
 
 import { copyJson, type JsonValue } from './json';
+import { own } from './own';
 import {
   formLayerPlanSchema,
   issueDiagnostics,
@@ -154,7 +155,7 @@ export const readTable = (
         return { lens, type: meta.type };
       }),
       rows: rows.map((row) =>
-        present.map(({ columnId }) => row[columnId] ?? null)
+        present.map(({ columnId }) => own(row, columnId) ?? null)
       ),
     },
   };

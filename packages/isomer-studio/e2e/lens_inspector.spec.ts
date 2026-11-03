@@ -15,6 +15,8 @@ import { join, resolve } from 'node:path';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import { totalFlights } from '../../isomer-lowering-lens/src/form/flights.fixtures';
+
 import { serveStatic } from './serve_static';
 
 const root = resolve(__dirname, '../../..');
@@ -71,11 +73,11 @@ const exercise = async (page: Page, url: string) => {
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await expect(page.getByRole('alert')).toBeVisible();
 
-  const formBased = JSON.parse(original) as {
+  const legacy = JSON.parse(original) as {
     savedObject: { attributes: { state: { datasourceStates: object } } };
   };
-  formBased.savedObject.attributes.state.datasourceStates = { formBased: {} };
-  await input.fill(JSON.stringify(formBased));
+  legacy.savedObject.attributes.state.datasourceStates = { indexpattern: {} };
+  await input.fill(JSON.stringify(legacy));
   await page.getByRole('button', { name: 'Plan', exact: true }).click();
   await expect(page.getByText('Status: unsupported')).toBeVisible();
   await expect(page.getByRole('alert', { name: 'Diagnostics' })).toContainText(
@@ -127,6 +129,27 @@ const exercise = async (page: Page, url: string) => {
   await page.getByLabel('Layer', { exact: true }).selectOption('layer2');
   await expect(table).toHaveCount(0);
   await expect(page.getByLabel('Query')).toContainText('FROM traces-*');
+
+  // A form-based panel plans its columns and reads back Lens's Datatable.
+  await input.fill(JSON.stringify(totalFlights()));
+  await page.getByRole('button', { name: 'Plan', exact: true }).click();
+  await expect(page.getByText('Status: planned, 1 layer')).toBeVisible();
+  await expect(page.getByLabel('Query')).toContainText('"language": "kuery"');
+  await expect(page.getByLabel('Layer plan')).toContainText(
+    '"dataView": "d3d7af60-4c81-11e8-b3d7-01146121b73d"'
+  );
+  const columnId = '81124c45-6ab6-42f4-8859-495d55eb8065';
+  await page.getByLabel(/Lens Datatable/).fill(
+    JSON.stringify({
+      type: 'datatable',
+      columns: [
+        { id: columnId, name: 'Total flights', meta: { type: 'number' } },
+      ],
+      rows: [{ [columnId]: 13059 }],
+    })
+  );
+  await read.click();
+  await expect(table.getByRole('row')).toHaveText([/Total flights/, /13059/]);
 
   expect(foreign).toEqual([]);
   expect(errors).toEqual([]);
