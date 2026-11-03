@@ -14,6 +14,8 @@ import {
   MAX_PALETTE_BANDS,
   type MetricNode,
   type MetricTile,
+  TILE_ICONS,
+  type TileIcon,
   VALUE_PALETTES,
   type ValueFormat,
   type ValuePalette,
@@ -66,6 +68,9 @@ export interface MetricBindContext {
 }
 
 type PlannedColumn = FormLayerPlan['columns'][number];
+
+const isTileIcon = (icon: string): icon is TileIcon =>
+  (TILE_ICONS as readonly string[]).includes(icon);
 
 const isRecord = (value: unknown): value is Record<string, JsonValue> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -305,7 +310,7 @@ const bindSecondary = (
   { state }: MetricBindContext,
   row: Row,
   bound: BoundColumn,
-  primary: number | string | null,
+  primary: MetricTile['value'],
   primaryNumeric: boolean,
   problems: Problems
 ): Secondary => {
@@ -408,7 +413,7 @@ const isValuePalette = (name: string): name is ValuePalette =>
 /** The saved color, or the band color by value picks; `undefined` paints nothing. */
 const tileColor = (
   state: MetricState,
-  value: number | string | null,
+  value: MetricTile['value'],
   bounds: () => Bounds,
   problems: Problems
 ): TileColor | undefined => {
@@ -465,6 +470,140 @@ const hexColor = (
   return undefined;
 };
 
+type Filter = NonNullable<NonNullable<MetricTile['action']>['filters']>[number];
+
+const isRaw = (value: JsonValue): value is string | number | boolean | null =>
+  value === null || typeof value !== 'object';
+
+/**
+ * The filter Kibana's `createFilter` builds when a breakdown tile is clicked:
+ * a value, the negated shown terms for Other, a negated existence for a
+ * missing value, a range bucket's range, or a `filters` bucket's query.
+ */
+const bucketFilter = (
+  breakdown: BoundColumn,
+  planned: PlannedColumn | undefined,
+  value: JsonValue,
+  rows: readonly Row[]
+): Filter | undefined => {
+  const field = breakdown.lens.fieldName;
+  const params = isRecord(planned?.params) ? planned.params : {};
+  if (planned === undefined) {
+    // ES|QL: `buildRawColumnFilter`.
+    if (value === null) {
+      return { field, exists: false };
+    }
+    if (Array.isArray(value)) {
+      return value.length > 0 && value.every(isRaw)
+        ? { field, values: value }
+        : undefined;
+    }
+    return isRaw(value) ? { field, value } : undefined;
+  }
+  switch (planned.operationType) {
+    case 'terms': {
+      if (
+        Array.isArray(params.secondaryFields) &&
+        params.secondaryFields.length > 0
+      ) {
+        return undefined;
+      }
+      if (value === '__other__') {
+        const shown = rows
+          .map((row) => row[breakdown.index])
+          .filter(
+            (term): term is string | number | boolean =>
+              term !== '__other__' &&
+              term !== MISSING &&
+              term !== null &&
+              isRaw(term!)
+          );
+        return shown.length > 0
+          ? { field, values: [...new Set(shown)], negate: true }
+          : undefined;
+      }
+      if (value === MISSING) {
+        return { field, exists: false };
+      }
+      return isRaw(value) ? { field, value } : undefined;
+    }
+    case 'filters': {
+      const filters = Array.isArray(params.filters) ? params.filters : [];
+      const bucket = filters.find(
+        (candidate) =>
+          isRecord(candidate) &&
+          isRecord(candidate.input) &&
+          (candidate.label || candidate.input.query) === value
+      );
+      if (!isRecord(bucket) || !isRecord(bucket.input)) {
+        return undefined;
+      }
+      const { query, language } = bucket.input;
+      return (typeof query === 'string' || isRecord(query)) &&
+        (language === 'kuery' || language === 'lucene')
+        ? { query, language }
+        : undefined;
+    }
+    case 'range': {
+      if (!isRecord(value)) {
+        return undefined;
+      }
+      const { gte, lt } = value;
+      return {
+        field,
+        range: {
+          ...(typeof gte === 'number' && Number.isFinite(gte) ? { gte } : {}),
+          ...(typeof lt === 'number' && Number.isFinite(lt) ? { lt } : {}),
+        },
+      };
+    }
+    default:
+      return undefined;
+  }
+};
+
+/**
+ * A range bucket's title, as Kibana's `range` format reads it: its label, or
+ * its bounds in the column's format, with Lens's `arrow_right` template and
+ * infinite bounds as ∓∞.
+ */
+const rangeTitle = (
+  value: JsonValue,
+  planned: PlannedColumn,
+  problems: Problems
+): string => {
+  if (!isRecord(value)) {
+    return formatCell(value, undefined);
+  }
+  if (typeof value.label === 'string' && value.label) {
+    return value.label;
+  }
+  const params = isRecord(planned.params) ? planned.params : {};
+  const mapped = toValueFormat(params);
+  if (!mapped.ok) {
+    problems.add(
+      'unsupported',
+      'unsupported-format',
+      `The "${mapped.id}" format of a range breakdown is not supported yet.`
+    );
+  }
+  const parent =
+    isRecord(params.parentFormat) && isRecord(params.parentFormat.params)
+      ? params.parentFormat.params
+      : {};
+  const bound = (end: JsonValue | undefined, infinite: string) =>
+    typeof end === 'number' && Number.isFinite(end)
+      ? formatValue(end, mapped.ok ? mapped.format : undefined)
+      : parent.replaceInfinity === true
+        ? infinite
+        : formatCell(end ?? null, undefined);
+  const from = bound(value.gte, '\u2212\u221E');
+  const to = bound(value.lt, '+\u221E');
+  return parent.template === 'arrow_right'
+    ? `${from} \u2192 ${to}`
+    : `\u2265 ${from} and < ${to}`;
+};
+
 export const bindMetric = (context: MetricBindContext): MetricBound => {
   const { state, tables, filterAction } = context;
   const problems = new Problems();
@@ -477,11 +616,13 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     );
     return { ok: false, status: 'invalid', diagnostics: problems.invalid };
   }
-  if (state.icon && state.icon !== 'empty') {
+  // `hasIcon` and `resolveVisIcon`: the metric offers the icons in TILE_ICONS.
+  const icon = state.icon && state.icon !== 'empty' ? state.icon : undefined;
+  if (icon && !isTileIcon(icon)) {
     problems.add(
       'unsupported',
       'unsupported-icon',
-      `Tile icons ("${state.icon}") are not supported yet.`,
+      `"${icon}" is not one of the metric's icons.`,
       [...VIS, 'icon']
     );
   }
@@ -568,27 +709,39 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
 
   const tiles = tileRows.map((row, rowIndex): MetricTile => {
     const raw = cell(row, metric);
-    if (typeof raw === 'object' && raw !== null) {
+    if (
+      (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) ||
+      (Array.isArray(raw) && raw.length === 0)
+    ) {
       problems.add(
         'unsupported',
         'unsupported-multivalue',
-        'Multivalue and object metric readings are not supported yet.',
+        'An object or empty multivalue metric reading is not supported.',
         ['tables', state.layerId, 'rows', rowIndex]
       );
     }
-    const value =
+    // `metricVis` formats each value of a multivalue reading.
+    const reading = (each: JsonValue): number | string =>
+      typeof each === 'number' || typeof each === 'string'
+        ? each
+        : formatCell(each, undefined);
+    const value: MetricTile['value'] =
       typeof raw === 'number' || typeof raw === 'string'
         ? raw
         : typeof raw === 'boolean'
           ? String(raw)
-          : null;
+          : Array.isArray(raw) && raw.length > 0
+            ? raw.map(reading)
+            : null;
     const breakdownValue = cell(row, breakdown);
     const title = breakdown
       ? breakdownValue === '__other__' && labels.other
         ? labels.other
         : breakdownValue === MISSING && labels.missing
           ? labels.missing
-          : formatCell(breakdownValue ?? null, breakdownFormat)
+          : breakdownPlan?.operationType === 'range'
+            ? rangeTitle(breakdownValue ?? null, breakdownPlan, problems)
+            : formatCell(breakdownValue ?? null, breakdownFormat)
       : metric.label;
     const subtitle = breakdown ? metric.label : state.subtitle;
     const base = breakdown ? JSON.stringify(breakdownValue ?? null) : 'metric';
@@ -612,7 +765,10 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       ...(title?.trim() ? { title } : {}),
       ...(subtitle?.trim() ? { subtitle } : {}),
       value,
-      ...(format && typeof value === 'number' ? { format } : {}),
+      ...(format && (typeof value === 'number' || Array.isArray(value))
+        ? { format }
+        : {}),
+      ...(icon && isTileIcon(icon) ? { icon } : {}),
       ...(color ? { color } : {}),
     };
     if (secondary) {
@@ -676,27 +832,14 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
       }
     }
     if (filterAction && breakdown) {
-      const filterValue = breakdownValue ?? null;
-      // A field = value filter fits an ES|QL column and a single-field terms
-      // bucket; Lens filters Other, missing, `filters` and `range` buckets otherwise.
-      const byValue =
-        breakdownPlan === undefined ||
-        (breakdownPlan.operationType === 'terms' &&
-          !(
-            isRecord(breakdownPlan.params) &&
-            Array.isArray(breakdownPlan.params.secondaryFields) &&
-            breakdownPlan.params.secondaryFields.length > 0
-          ));
-      if (
-        byValue &&
-        filterValue !== '__other__' &&
-        filterValue !== MISSING &&
-        (filterValue === null || typeof filterValue !== 'object')
-      ) {
-        tile.action = {
-          name: filterAction,
-          filters: [{ field: breakdown.lens.fieldName, value: filterValue }],
-        };
+      const filter = bucketFilter(
+        breakdown,
+        breakdownPlan,
+        breakdownValue ?? null,
+        rows
+      );
+      if (filter) {
+        tile.action = { name: filterAction, filters: [filter] };
       } else {
         problems.add(
           'unsupported',
@@ -725,6 +868,8 @@ export const bindMetric = (context: MetricBindContext): MetricBound => {
     ...(state.primaryPosition ? { valuePosition: state.primaryPosition } : {}),
     ...(state.valueFontMode ? { valueSize: state.valueFontMode } : {}),
     ...(state.density ? { density: state.density } : {}),
+    // `getEffectiveIconAlign`: an icon defaults left on legacy state.
+    ...(icon ? { iconAlign: state.iconAlign ?? 'left' } : {}),
   };
   return {
     ok: true,
