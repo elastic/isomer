@@ -73,6 +73,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          # This job only runs `node` scripts; skip lockfile-based pnpm cache lookup.
+          package-manager-cache: false
       # A dispatch has no `before`, so it always ships.
       - id: ships
         env:
@@ -88,6 +90,7 @@ jobs:
       group: release-snapshot
       cancel-in-progress: true
     permissions:
+      actions: read
       contents: read
       id-token: write
     steps:
@@ -95,6 +98,19 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      # `ci` verifies the commit; a snapshot publishes only after that run passes.
+      - name: Wait for ci
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for _ in $(seq 30); do
+            run=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+            [ -n "$run" ] && break
+            sleep 10
+          done
+          [ -n "$run" ] || { echo "::error::No ci run for $GITHUB_SHA."; exit 1; }
+          gh run watch "$run" --interval 30 --exit-status
       - uses: pnpm/action-setup@v6.0.6
       - uses: actions/setup-node@v5
         with:
@@ -102,8 +118,8 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
       - run: pnpm install --frozen-lockfile
-      - uses: ./.github/actions/playwright-chromium
-      - run: pnpm verify
+      - run: pnpm build
+      - run: pnpm check:pack-contents
       # pnpm 10 delegates `pnpm publish` to the ambient npm CLI. Trusted publishing needs npm >= 11.5.1; Node 22 ships 10.
       - run: npm install -g npm@^11.5.1
       # A prerelease under `next`; no tag, commit, or GitHub Release. See RELEASING.md.
