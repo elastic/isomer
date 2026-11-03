@@ -15,4 +15,6 @@ toc:
   - toc: evals
   - toc: agent-tools
   - toc: lowering-lens
+  - toc: charts
+  - toc: renderers-elastic-charts
   - toc: reference

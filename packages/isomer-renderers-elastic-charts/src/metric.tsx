@@ -1,0 +1,103 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { useRef } from 'react';
+import {
+  Chart,
+  DARK_THEME,
+  LIGHT_THEME,
+  Metric,
+  Settings,
+} from '@elastic/charts';
+import type { ChartRenderers } from '@elastic/isomer-primitives-charts';
+import {
+  type MetricNode,
+  type ResolvedMetric,
+  resolveMetric,
+  type Scheme,
+} from '@elastic/isomer-primitives-charts/model';
+import { nodeAnchor } from '@elastic/isomer-sdk';
+
+import { toDatum, toTheme } from './datum';
+import { useScheme } from './scheme';
+
+const rows = <T,>(items: T[], columns: number): T[][] =>
+  Array.from({ length: Math.ceil(items.length / columns) }, (_, row) =>
+    items.slice(row * columns, (row + 1) * columns)
+  );
+
+/** Props of {@link MetricChart}. */
+export interface MetricChartProps {
+  node: MetricNode;
+  /** Paint in this scheme instead of following the host. */
+  scheme?: Scheme | undefined;
+}
+
+/** Text of every tile, for server markup and before the chart mounts. */
+const Readings = ({ resolved }: { resolved: ResolvedMetric }) => (
+  <ul>
+    {resolved.tiles.map(({ key, reading }) => (
+      <li key={key}>{reading}</li>
+    ))}
+  </ul>
+);
+
+const MetricView = ({
+  node,
+  scheme: fixed,
+  attributes,
+}: MetricChartProps & { attributes?: Readonly<Record<string, string>> }) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const scheme = useScheme(ref, fixed);
+  const resolved = resolveMetric(node, scheme ?? 'light');
+  const { tiles, columns, tokens } = resolved;
+  const grid = rows(
+    tiles.map((tile) => toDatum(tile, tokens)),
+    columns
+  );
+  return (
+    <div
+      {...attributes}
+      ref={ref}
+      style={{ position: 'relative', height: '100%' }}>
+      {scheme === undefined ? (
+        <Readings resolved={resolved} />
+      ) : (
+        <>
+          {/* Sizes the chart only when the host's height is indefinite. */}
+          <div
+            style={{
+              height: grid.length * tokens.rowHeight,
+              maxHeight: '100%',
+            }}
+          />
+          <div style={{ position: 'absolute', inset: 0 }}>
+            <Chart>
+              <Settings
+                baseTheme={scheme === 'dark' ? DARK_THEME : LIGHT_THEME}
+                theme={toTheme(resolved)}
+              />
+              <Metric id="metric" data={grid} />
+            </Chart>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+/** A `metric` node drawn with Elastic Charts' `Metric` chart. */
+export const MetricChart = (props: MetricChartProps) => (
+  <MetricView {...props} />
+);
+
+/** `react` renderers for the charts pack, drawn with Elastic Charts. */
+export const elasticChartsRenderers: ChartRenderers = {
+  metric: (node, { context }) => (
+    <MetricView node={node} attributes={nodeAnchor(context, node)} />
+  ),
+};
