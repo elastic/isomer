@@ -2,10 +2,10 @@
 
 `@elastic/isomer-primitives-charts` defines chart primitives that any engine can draw to match Elastic Charts: Elastic Charts itself in the browser, or another engine such as ECharts or a native renderer. It owns each chart's schema, the resolved model renderers draw from, the theme tokens, and the text and Markdown adaptations. It draws nothing itself.
 
-| Entry                                     | What it holds                                                                                                                                                        |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `@elastic/isomer-primitives-charts`       | `createChartsPack(renderers)` and the `ChartRenderers` contract.                                                                                                     |
-| `@elastic/isomer-primitives-charts/model` | Each chart's schema, node type, resolver and examples, plus `chartTokens`. No React, DOM, Node built-ins, SDK or chart engine, so it loads anywhere JavaScript runs. |
+| Entry                                     | What it holds                                                                                                                                                                                                                            |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@elastic/isomer-primitives-charts`       | `createChartsPack(renderers)` and the `ChartRenderers` contract.                                                                                                                                                                         |
+| `@elastic/isomer-primitives-charts/model` | Each chart's schema, node type, resolver and examples, plus `chartTokens` and `formatValue`, which formats a number the way the resolver does. No React, DOM, Node built-ins, SDK or chart engine, so it loads anywhere JavaScript runs. |
 
 ## Building a pack
 

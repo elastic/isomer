@@ -18,4 +18,5 @@ export {
   type MetricTile,
   metricSchema,
 } from './metric/schema';
+export { type ValueFormat, formatValue } from './shared/format';
 export { type Scheme, chartTokens } from './theme';
