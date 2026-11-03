@@ -36,7 +36,10 @@ export const writeCaseIndex = async (
   cases: readonly ComparisonCase[],
   fonts: readonly CapturedFont[]
 ) => {
-  const sorted = [...cases].sort(({ id: a }, { id: b }) => a.localeCompare(b));
+  // Code-unit order, since `localeCompare` orders by the machine's locale.
+  const sorted = [...cases].sort(({ id: a }, { id: b }) =>
+    a < b ? -1 : a > b ? 1 : 0
+  );
   const imports = [
     ...sorted.flatMap(({ id }, index) => [
       `import case${index} from './${id}/case.json';`,

@@ -1,0 +1,195 @@
+# Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+# or more contributor license agreements. Licensed under the Elastic License
+# 2.0; you may not use this file except in compliance with the Elastic License
+# 2.0.
+
+# Recaptures the Lens comparison cases from a fresh Kibana and opens a pull request when anything but the Kibana
+# build moved. See packages/isomer-lowering-lens/docs/comparison.md.
+name: lens-recapture
+
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      stack-version:
+        description: The Elasticsearch and Kibana image tag to capture from.
+        required: true
+        default: 9.7.0-SNAPSHOT
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lens-recapture-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  FIXTURES: packages/isomer-lowering-lens/comparison/__fixtures__
+  COMPOSE: packages/isomer-lowering-lens/comparison/capture/compose.yml
+
+jobs:
+  # Runs Kibana, the capture and the comparison gates with a read-only token; only `pull-request` can write.
+  capture:
+    name: capture
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    env:
+      STACK_VERSION: ${{ inputs.stack-version || '9.7.0-SNAPSHOT' }}
+    outputs:
+      material: ${{ steps.changes.outputs.material }}
+      gates: ${{ steps.gates.outputs.status }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # The stack's three images need about 8 GB beside the workspace.
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc
+          df -h /
+
+      - uses: ./.github/actions/setup-workspace
+        with:
+          node-version: 24
+      - uses: ./.github/actions/playwright-chromium
+
+      - name: Start Elasticsearch, Kibana and the capture browser
+        run: |
+          docker compose -f "$COMPOSE" pull --quiet
+          docker compose -f "$COMPOSE" up -d --wait --wait-timeout 900
+
+      - name: Capture
+        run: |
+          cp -R "$FIXTURES" "$RUNNER_TEMP/before"
+          # A failed capture leaves the fixtures alone, so it is retried once on the same stack.
+          if ! pnpm comparison:capture; then
+            echo "::warning::The first capture failed; retrying once."
+            pnpm comparison:capture
+          fi
+
+      - id: changes
+        name: Describe the changes
+        run: |
+          node scripts/lens_capture_changes.js "$RUNNER_TEMP/before" "$FIXTURES" "$RUNNER_TEMP/changes.md" >> "$GITHUB_OUTPUT"
+          cat "$RUNNER_TEMP/changes.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # A failing gate is what the pull request reports, so it does not stop the run here.
+      - id: gates
+        name: Compare Isomer with the new capture
+        if: ${{ steps.changes.outputs.material == 'true' }}
+        run: |
+          status=pass
+          pnpm vitest run --project node packages/isomer-lowering-lens/comparison || status=fail
+          pnpm test:browser lens_comparison || status=fail
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+
+      - name: Stage the capture
+        if: ${{ steps.changes.outputs.material == 'true' }}
+        run: |
+          mkdir "$RUNNER_TEMP/capture"
+          cp -R "$FIXTURES" "$RUNNER_TEMP/capture/fixtures"
+          cp "$RUNNER_TEMP/changes.md" "$RUNNER_TEMP/capture/"
+      - if: ${{ steps.changes.outputs.material == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lens-recapture
+          path: ${{ runner.temp }}/capture
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Collect stack logs
+        if: ${{ failure() }}
+        run: |
+          mkdir -p test-results
+          docker compose -f "$COMPOSE" logs --no-color > test-results/stack.log 2>&1
+      - if: ${{ failure() || steps.gates.outputs.status == 'fail' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lens-recapture-failure
+          path: test-results/
+          if-no-files-found: ignore
+
+  pull-request:
+    name: pull request
+    needs: capture
+    if: ${{ needs.capture.outputs.material == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      BASE: ${{ github.ref_name }}
+      BRANCH: lens-recapture/${{ github.ref_name }}
+      GATES: ${{ needs.capture.outputs.gates }}
+      GH_TOKEN: ${{ github.token }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: lens-recapture
+          path: ${{ runner.temp }}/capture
+
+      - name: Replace the fixtures
+        run: |
+          rm -rf "$FIXTURES"
+          cp -R "$RUNNER_TEMP/capture/fixtures" "$FIXTURES"
+          git add --all "$FIXTURES"
+          if git diff --cached --quiet; then
+            echo "::error::The capture artifact holds no change to $FIXTURES."
+            exit 1
+          fi
+
+      - name: Write the pull request body
+        run: |
+          {
+            echo "Recaptured by the [lens-recapture workflow]($RUN_URL) from \`$BASE\`."
+            echo
+            cat "$RUNNER_TEMP/capture/changes.md"
+            echo
+            if [ "$GATES" = pass ]; then
+              echo "Isomer still matches every recaptured case: the comparison's unit tests and browser gate pass."
+            else
+              echo "> [!CAUTION]"
+              echo "> Isomer no longer matches the recapture: the comparison's unit tests or browser gate fail. The run's \`lens-recapture-failure\` artifact has the reports."
+            fi
+            echo
+            echo "A pull request this workflow opens starts no CI of its own; close and reopen it to run CI."
+          } > "$RUNNER_TEMP/body.md"
+
+      - name: Open or update the pull request
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit --quiet -m 'test(lens): recapture the Kibana comparison fixtures'
+          if git fetch --quiet origin "refs/heads/$BRANCH" 2>/dev/null &&
+            [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')" ] &&
+            [ "$(git rev-parse 'FETCH_HEAD^')" = "$(git rev-parse 'HEAD^')" ]; then
+            echo "$BRANCH already holds this capture."
+          else
+            git push --force origin "HEAD:refs/heads/$BRANCH"
+          fi
+          number=$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh pr edit "$number" --body-file "$RUNNER_TEMP/body.md"
+            echo "Updated #$number." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh pr create --head "$BRANCH" --base "$BASE" \
+              --title 'test(lens): recapture the Kibana comparison fixtures' \
+              --body-file "$RUNNER_TEMP/body.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Report failing gates
+        if: ${{ env.GATES != 'pass' }}
+        run: |
+          echo "::error::Isomer no longer matches the recaptured Kibana cases; see the pull request."
+          exit 1
