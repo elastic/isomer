@@ -53,3 +53,18 @@ export const textOn = (fill: string, tokens: ChartTokens): TextTokens =>
 /** A fill: a tone's solid color, or the hex itself. */
 export const resolveFill = (color: ColorRef, tokens: ChartTokens): string =>
   solid(color, tokens);
+
+/** A badge: a tone's soft pair, or the color with readable text. */
+export const resolveBadge = (
+  color: ColorRef,
+  tokens: ChartTokens
+): { background: string; text: string } => {
+  if (isTone(color)) {
+    return {
+      background: tokens.tones[color].softBackground,
+      text: tokens.tones[color].softText,
+    };
+  }
+  const background = solid(color, tokens);
+  return { background, text: textOn(background, tokens).title };
+};

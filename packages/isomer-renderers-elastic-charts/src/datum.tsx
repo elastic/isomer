@@ -8,18 +8,51 @@
 // Kept out of the package's declarations: Elastic Charts' own types fail
 // `skipLibCheck: false` consumers.
 
-import type { MetricDatum, PartialTheme } from '@elastic/charts';
+import type { ReactNode } from 'react';
+import type {
+  MetricDatum,
+  PartialTheme,
+  SecondaryMetricProps,
+} from '@elastic/charts';
 import type {
   ResolvedMetric,
   ResolvedMetricTile,
 } from '@elastic/isomer-primitives-charts/model';
+
+const TooltipLabel = ({
+  children,
+  label,
+}: {
+  children: ReactNode;
+  label: string;
+}) => <span title={label}>{children}</span>;
+
+const toExtra = ({
+  label,
+  labelPosition,
+  value,
+  badge,
+  description,
+}: NonNullable<ResolvedMetricTile['secondary']>): SecondaryMetricProps => ({
+  value: value ?? '',
+  ...(label === undefined ? {} : { label, labelPosition }),
+  ...(labelPosition === 'tooltip' ? { labelTooltip: TooltipLabel } : {}),
+  ...(badge
+    ? {
+        badgeColor: badge.background,
+        badgeTextColor: badge.text,
+        ...(badge.glyph ? { icon: badge.glyph } : {}),
+      }
+    : {}),
+  ariaDescription: description,
+});
 
 /** One Elastic Charts datum per resolved tile. */
 export const toDatum = (
   tile: ResolvedMetricTile,
   tokens: ResolvedMetric['tokens']
 ): MetricDatum => {
-  const { title, subtitle, value, number, fill, valueColor } = tile;
+  const { title, subtitle, value, number, fill, valueColor, secondary } = tile;
   const base = {
     color: fill,
     ...(title === undefined ? {} : { title }),
@@ -27,6 +60,7 @@ export const toDatum = (
     ...(valueColor === undefined
       ? {}
       : { valueColor, background: tokens.background }),
+    ...(secondary ? { extra: toExtra(secondary) } : {}),
   };
   return number === undefined
     ? { ...base, value }
@@ -48,6 +82,7 @@ export const toTheme = ({ layout, tokens }: ResolvedMetric): PartialTheme => ({
     textExtraLightColor: tokens.onDark.extra,
     titlesTextAlign: layout.titleAlign,
     valueTextAlign: layout.valueAlign,
+    extraTextAlign: layout.secondaryAlign,
     valuePosition: layout.valuePosition,
     valueFontSize: layout.valueSize,
     spacing: layout.density === 'compact' ? 'small' : 'large',

@@ -85,6 +85,19 @@ describe('toDatum', () => {
     expect(valueFormatter(0)).toBe('182,340');
   });
 
+  it('maps a change onto the secondary metric', () => {
+    expect(datums(example)[0]).toMatchObject({
+      extra: {
+        value: '+11.10%',
+        label: 'vs previous day',
+        labelPosition: 'before',
+        badgeColor: '#C9F3E3',
+        badgeTextColor: '#09724D',
+        icon: '↑',
+      },
+    });
+  });
+
   it('maps text, missing and value-painted tiles', () => {
     const [country, latency] = datums(text);
     expect(country).toEqual({
@@ -110,6 +123,7 @@ describe('toTheme', () => {
         layout: {
           titleAlign: 'center',
           valueAlign: 'center',
+          secondaryAlign: 'center',
           valuePosition: 'middle',
           density: 'compact',
         },
@@ -118,6 +132,7 @@ describe('toTheme', () => {
     expect(metric).toMatchObject({
       titlesTextAlign: 'center',
       valueTextAlign: 'center',
+      extraTextAlign: 'center',
       valuePosition: 'middle',
       valueFontSize: 'default',
       spacing: 'small',

@@ -14,7 +14,7 @@ import { createChartsPack } from '../pack';
 
 import { example, examples, textExample } from './examples';
 import { resolveMetric } from './resolve';
-import { metricSchema } from './schema';
+import { type MetricNode, metricSchema } from './schema';
 
 const runtime = createIsomerRuntime({
   packs: [createChartsPack({ metric: () => null })],
@@ -54,6 +54,12 @@ describe('metric schema', () => {
     ).toEqual([['tiles.1.key', 'duplicate tile key `a`']]);
   });
 
+  it('rejects a change on a text value', () => {
+    expect(
+      issues(tile({ value: 'up', secondary: { kind: 'change', previous: 1 } }))
+    ).toEqual([['tiles.0.secondary', 'a `change` needs a numeric `value`']]);
+  });
+
   it('rejects an unknown color and a non-finite value', () => {
     const paths = (node: object) => issues(node).map(([path]) => path);
     expect(paths(tile({ color: 'teal' }))).toEqual(['tiles.0.color']);
@@ -70,6 +76,70 @@ describe('resolveMetric', () => {
       fill: '#0B64DD',
     });
     expect(requests!.text.title).toBe('#E3E8F2');
+  });
+
+  it('derives a change from the previous reading', () => {
+    expect(resolveMetric(example).tiles[0]!.secondary).toMatchObject({
+      value: '+11.10%',
+      badge: { background: '#C9F3E3', text: '#09724D', glyph: '↑' },
+      description: 'vs previous day up +11.10%',
+    });
+  });
+
+  it('colors a change by whether a rise is good', () => {
+    const fall = (increase: 'good' | 'bad' | 'neutral', show?: 'absolute') =>
+      resolveMetric({
+        type: 'metric',
+        tiles: [
+          {
+            key: 'a',
+            value: 90,
+            secondary: {
+              kind: 'change',
+              previous: 100,
+              increase,
+              ...(show && { show }),
+            },
+          },
+        ],
+      }).tiles[0]!.secondary;
+    expect(fall('good')).toMatchObject({
+      value: '-10.00%',
+      badge: { background: '#FDDDD8', glyph: '↓' },
+    });
+    expect(fall('bad')).toMatchObject({ badge: { background: '#C9F3E3' } });
+    expect(fall('neutral', 'absolute')).toMatchObject({
+      value: '-10',
+      badge: { background: '#E3E8F2' },
+    });
+  });
+
+  it('shows the absolute difference when the previous reading is zero', () => {
+    const node: MetricNode = {
+      type: 'metric',
+      tiles: [
+        { key: 'a', value: 4, secondary: { kind: 'change', previous: 0 } },
+      ],
+    };
+    expect(resolveMetric(node).tiles[0]!.secondary).toMatchObject({
+      value: '+4',
+      badge: { glyph: '↑' },
+    });
+  });
+
+  it('signs a rise once when the pattern already signs it', () => {
+    const [only] = resolveMetric({
+      type: 'metric',
+      tiles: [
+        {
+          key: 'a',
+          value: 20,
+          format: { kind: 'pattern', pattern: '+0' },
+          secondary: { kind: 'change', previous: 10, show: 'absolute' },
+        },
+      ],
+    }).tiles;
+    expect(only!.secondary?.value).toBe('+10');
   });
 
   it('paints the value instead of the tile, and reads a missing value as N/A', () => {
@@ -136,7 +206,9 @@ describe('metric text and markdown', () => {
     `);
     expect(
       runtime.surfaces.markdown.renderNode(example as PrimitiveNode)
-    ).toMatchInlineSnapshot(`"**Requests**: Last 24 hours, 182,340"`);
+    ).toMatchInlineSnapshot(
+      `"**Requests**: Last 24 hours, 182,340, vs previous day up +11.10%"`
+    );
   });
 });
 
