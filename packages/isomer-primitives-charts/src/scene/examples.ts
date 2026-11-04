@@ -42,6 +42,11 @@ export const metricSingleValueScene: MetricScene = {
     ],
     rows: [{ row: 0, cells: ['14,074'] }],
   },
+  interactions: {
+    select: [],
+    sync: { cursor: false, tooltips: false },
+    emphasis: [],
+  },
   layout: {
     columns: 1,
     rows: 1,
@@ -101,6 +106,11 @@ export const xyTimeSeriesScene: XyScene = {
       row: index,
       cells: [hourLabel(index), String(count)],
     })),
+  },
+  interactions: {
+    select: [],
+    sync: { cursor: false, tooltips: false },
+    emphasis: [],
   },
   orientation: 'vertical',
   axes: {

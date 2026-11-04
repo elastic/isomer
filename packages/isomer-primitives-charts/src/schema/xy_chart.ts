@@ -17,6 +17,12 @@ import {
   type ColumnReference,
   columnRefSchema,
 } from './references';
+import {
+  brushingInteractionsSchemaFor,
+  checkInteractions,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+} from './events';
 
 // The marker icons Kibana's Lens API format accepts.
 const XY_MARKER_ICONS = [
@@ -58,7 +64,7 @@ const XY_LEGEND_STATISTICS = [
   'current_and_last_value',
 ] as const;
 
-const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
+const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
@@ -237,6 +243,16 @@ const XY_DESCRIPTION = [
 const xyChartObjectSchema = z.object({
   type: z.literal('xyChart'),
   ...chartCoreShape,
+  ...interactionsCoreShape,
+  interactions: brushingInteractionsSchemaFor(
+    ['datum', 'series', 'category', 'legend'],
+    {
+      hiddenSeries: z
+        .array(z.string())
+        .optional()
+        .describe('Series keys hidden until the reader shows them.'),
+    }
+  ).optional(),
   orientation: z
     .enum(['vertical', 'horizontal'])
     .optional()
@@ -413,6 +429,7 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
+      checkInteractions(node, context);
     },
     [
       COLUMN_REF_RULE,
@@ -421,6 +438,8 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       XY_RULES.stack,
       XY_RULES.dataLayer,
       XY_RULES.rangeOrder,
+      INTERACTION_RULES.brushColumn,
+      INTERACTION_RULES.emphasisRows,
     ]
   )
 );

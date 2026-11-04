@@ -11,6 +11,7 @@
 // translates; it never formats, picks a color, sorts or chooses ticks.
 
 import type { Cell, ColumnRole, ColumnType } from '../schema/data';
+import type { ChartEvent, SelectTarget } from '../schema/events';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = ['metric', 'xy'] as const;
@@ -83,6 +84,22 @@ export interface SceneSize {
   readonly height: number;
 }
 
+/** What the node offers, resolved. A renderer offers nothing when the host passes no `onEvent`. */
+export interface SceneInteractions {
+  /** Empty when nothing is selectable. */
+  readonly select: readonly SelectTarget[];
+  /** The continuous column a range can be brushed along. */
+  readonly brush?: { readonly column: string };
+  readonly sync: { readonly cursor: boolean; readonly tooltips: boolean };
+  /** Drawn on every surface, including images and text. */
+  readonly link?: { readonly href: string; readonly label: string };
+  /** Static highlights, by row. */
+  readonly emphasis: readonly {
+    readonly rows: readonly number[];
+    readonly note?: string;
+  }[];
+}
+
 interface SceneBase {
   readonly kind: SceneKind;
   /** The scheme every color in the Scene is for. Always explicit: native targets have no CSS. */
@@ -97,6 +114,7 @@ interface SceneBase {
   /** One sentence that states what the chart shows, for screen readers and text surfaces. */
   readonly summary: string;
   readonly table: SceneTable;
+  readonly interactions: SceneInteractions;
 }
 
 export type MetricAlignment = 'left' | 'center' | 'right';
@@ -335,8 +353,10 @@ export type SceneEnvironment = 'browser' | 'node' | 'native';
 /** What a renderer is told about where it draws, beside the Scene itself. */
 export interface SceneRenderEnv {
   readonly environment: SceneEnvironment;
-  /** The node's `id`, which events name. */
+  /** The node's `id`, which events name. A renderer raises no event for a node without one. */
   readonly nodeId?: string;
+  /** Receives every raised event. Absent means the chart offers no interaction. */
+  readonly onEvent?: (event: ChartEvent) => void;
 }
 
 /**

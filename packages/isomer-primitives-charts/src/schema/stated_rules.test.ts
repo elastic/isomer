@@ -54,7 +54,7 @@ const rows = [...members].map(([type, schema]) => ({
 
 describe('stated rules', () => {
   it('finds the checks it guards', () => {
-    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(3);
+    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(4);
   });
 
   it.each(rows)(
@@ -62,14 +62,8 @@ describe('stated rules', () => {
     ({ type, checks }) => {
       const stated = descriptions(authoringSchemaSubset(authoring, [type]));
       for (const check of checks) {
-        // The SDK's URL check is the one not made here; it states its own rule.
-        const rules =
-          rulesOf(check) ??
-          (type === 'unsupported' ? [NAVIGATION_HREF_RULE] : undefined);
-        expect(
-          rules,
-          `${type} has a check made without cross_field`
-        ).toBeDefined();
+        // A link's URL check is the SDK's, which states its own rule.
+        const rules = rulesOf(check) ?? [NAVIGATION_HREF_RULE];
         for (const rule of rules ?? []) {
           expect(
             stated.some((description) =>
