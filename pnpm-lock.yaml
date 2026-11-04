@@ -43,6 +43,9 @@ importers:
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:packages/isomer-image-takumi
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:packages/isomer-primitives-charts
       '@elastic/isomer-primitives-slides':
         specifier: workspace:*
         version: link:packages/isomer-primitives-slides
