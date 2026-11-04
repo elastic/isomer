@@ -32,6 +32,12 @@
       "import": "./lib/esm/scene/index.js",
       "require": "./lib/cjs/scene/index.js",
       "default": "./lib/cjs/scene/index.js"
+    },
+    "./format": {
+      "types": "./lib/cjs/format/index.d.ts",
+      "import": "./lib/esm/format/index.js",
+      "require": "./lib/cjs/format/index.js",
+      "default": "./lib/cjs/format/index.js"
     }
   },
   "typesVersions": {
@@ -41,6 +47,9 @@
       ],
       "scene": [
         "./lib/cjs/scene/index.d.ts"
+      ],
+      "format": [
+        "./lib/cjs/format/index.d.ts"
       ]
     }
   },
@@ -57,15 +66,20 @@
   "scripts": {
     "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
     "build:clean": "rimraf lib/",
-    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts,**/*.d.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-sdk": "workspace:*"
+    "@elastic/isomer-sdk": "workspace:*",
+    "@elastic/numeral": "2.5.1"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "moment": "2.31.0",
+    "moment-timezone": "0.6.2"
   }
 }
