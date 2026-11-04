@@ -11,3 +11,4 @@ toc:
   - file: grid.md
   - file: unsupported.md
   - file: scene.md
+  - file: rendering.md

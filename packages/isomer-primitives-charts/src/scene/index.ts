@@ -6,6 +6,7 @@
  */
 
 export { metricSingleValueScene, xyTimeSeriesScene } from './examples';
+export { selectSceneRenderer } from './select';
 export {
   type AxisId,
   type ColorScheme,

@@ -6,6 +6,7 @@ Read the [root instructions](../../AGENTS.md) first.
 
 - Any contract: [Charts](docs/index.md) and the page for the primitive, starting with the [chart core](docs/core.md).
 - The Scene or a renderer: [Scene](docs/scene.md).
+- The pack, its render context, or renderer selection: [Rendering](docs/rendering.md).
 - A container, or anything nested in `grid`: the SDK's [Primitives](../isomer-sdk/docs/primitives.md#containers-schemafor-and-children).
 
 ## When changing this area

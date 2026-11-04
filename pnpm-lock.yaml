@@ -229,6 +229,19 @@ importers:
       zod:
         specifier: ^4.5.4
         version: 4.6.5
+    devDependencies:
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@types/react':
+        specifier: ^18.2.14
+        version: 18.3.31
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
 
   packages/isomer-primitives-slides:
     dependencies:
