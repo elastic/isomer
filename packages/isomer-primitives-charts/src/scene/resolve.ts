@@ -5,16 +5,18 @@
  * 2.0.
  */
 
+import type { DataTableNode } from '../schema/data_table';
 import type { MetricNode } from '../schema/metric';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import type { ResolveChartOptions } from './common';
 import { resolveMetric } from './resolve_metric';
+import { resolveTable } from './resolve_table';
 import { resolveXy } from './resolve_xy';
-import type { MetricScene, Scene, XyScene } from './types';
+import type { MetricScene, Scene, TableScene, XyScene } from './types';
 
 /** A chart node the resolver draws. */
-export type ChartNode = MetricNode | XyChartNode;
+export type ChartNode = MetricNode | XyChartNode | DataTableNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
@@ -31,6 +33,10 @@ export function resolveChart(
   options: ResolveChartOptions
 ): XyScene;
 export function resolveChart(
+  node: DataTableNode,
+  options: ResolveChartOptions
+): TableScene;
+export function resolveChart(
   node: ChartNode,
   options: ResolveChartOptions
 ): Scene;
@@ -38,7 +44,12 @@ export function resolveChart(
   node: ChartNode,
   options: ResolveChartOptions
 ): Scene {
-  return node.type === 'metric'
-    ? resolveMetric(node, options)
-    : resolveXy(node, options);
+  switch (node.type) {
+    case 'metric':
+      return resolveMetric(node, options);
+    case 'xyChart':
+      return resolveXy(node, options);
+    case 'dataTable':
+      return resolveTable(node, options);
+  }
 }

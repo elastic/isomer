@@ -12,7 +12,9 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
+import { resolveChart } from '../scene/resolve';
 import type { Scene, XyScene } from '../scene/types';
+import { dataTableExamples } from '../schema/examples/data_table';
 
 import { drawScene, sceneDrawSize } from './draw';
 import { toReactDom } from './react_dom';
@@ -32,6 +34,10 @@ const scenes: { name: string; scene: Scene }[] = [
   { name: 'gaps', scene: gapsScene },
   { name: 'horizontal bars', scene: horizontalBarsScene },
   { name: 'tiles', scene: tilesScene },
+  ...dataTableExamples.map(({ name, node }) => ({
+    name: `table: ${name}`,
+    scene: resolveChart(node, { scheme: 'dark' }),
+  })),
 ];
 
 const hiddenKeys = (scene: Scene) =>
@@ -41,6 +47,20 @@ const hiddenKeys = (scene: Scene) =>
 
 /** Every string the Scene says is drawn. */
 const expectedStrings = (scene: Scene): string[] => {
+  if (scene.kind === 'table') {
+    const page = scene.paging
+      ? scene.order.slice(0, scene.paging.pageSize)
+      : scene.order;
+    return [
+      ...scene.columns.map(({ label }) => label),
+      ...page.flatMap((position) =>
+        scene.rows[position]!.cells.map(({ text }) => text)
+      ),
+      ...scene.columns.flatMap(({ footer }) => (footer ? [footer] : [])),
+      ...(scene.paging ? [scene.paging.rowsPerPage] : []),
+      ...(scene.rows.length === 0 ? [scene.emptyText] : []),
+    ];
+  }
   if (scene.kind === 'metric') {
     return scene.tiles.flatMap((tile) => [
       tile.title,
@@ -114,6 +134,15 @@ describe('isomer-svg', () => {
         const hidden = hiddenKeys(scene);
         for (const s of scene.series.filter(({ key }) => !hidden.has(key))) {
           expect(used).toContain(s.color);
+        }
+      } else if (scene.kind === 'table') {
+        for (const cell of scene.rows.flatMap(({ cells }) => cells)) {
+          expect(used).toContain(cell.color);
+          for (const color of [cell.background, cell.badge, cell.bar?.color]) {
+            if (color !== undefined) {
+              expect(used).toContain(color);
+            }
+          }
         }
       } else {
         for (const tile of scene.tiles) {

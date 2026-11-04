@@ -6,3 +6,4 @@
  */
 
 export { sceneTableRows, sceneToMarkdown, sceneToText } from './scene_text';
+export { tableSceneToSlack } from './slack_table';

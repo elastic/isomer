@@ -27,13 +27,15 @@ import type {
 const sourcesOf = (scene: Scene): SceneSource[] =>
   scene.kind === 'metric'
     ? scene.tiles.map(({ source }) => source)
-    : [
-        ...scene.series.flatMap((series) => [
-          series.source,
-          ...series.marks.map(({ source }) => source),
-        ]),
-        ...scene.legend.items.map(({ source }) => source),
-      ];
+    : scene.kind === 'table'
+      ? scene.rows.flatMap(({ cells }) => cells.map(({ source }) => source))
+      : [
+          ...scene.series.flatMap((series) => [
+            series.source,
+            ...series.marks.map(({ source }) => source),
+          ]),
+          ...scene.legend.items.map(({ source }) => source),
+        ];
 
 const cases: { name: string; scene: Scene; data: ChartData }[] = [
   {
@@ -53,14 +55,18 @@ const cases: { name: string; scene: Scene; data: ChartData }[] = [
 const selectionsOf = (scene: Scene): SceneSelection[] =>
   (scene.kind === 'metric'
     ? scene.tiles.map(({ selection }) => selection)
-    : [
-        ...scene.categories.map(({ selection }) => selection),
-        ...scene.series.flatMap((series) => [
-          series.selection,
-          ...series.marks.map(({ selection }) => selection),
-        ]),
-        ...scene.legend.items.map(({ selection }) => selection),
-      ]
+    : scene.kind === 'table'
+      ? scene.rows.flatMap(({ cells }) =>
+          cells.map(({ selection }) => selection)
+        )
+      : [
+          ...scene.categories.map(({ selection }) => selection),
+          ...scene.series.flatMap((series) => [
+            series.selection,
+            ...series.marks.map(({ selection }) => selection),
+          ]),
+          ...scene.legend.items.map(({ selection }) => selection),
+        ]
   ).filter((selection) => selection !== undefined);
 
 describe('Scene examples', () => {

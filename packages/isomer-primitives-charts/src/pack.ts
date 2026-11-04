@@ -47,7 +47,7 @@ export const createChartsPack = ({
     inputBudget: CHARTS_INPUT_BUDGET,
     authoring: {
       groups: [
-        { title: 'Charts', types: ['metric', 'xyChart'] },
+        { title: 'Charts', types: ['metric', 'xyChart', 'dataTable'] },
         { title: 'Dashboards', types: ['grid', 'unsupported'] },
       ],
     },

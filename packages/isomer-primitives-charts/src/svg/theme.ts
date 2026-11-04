@@ -14,6 +14,8 @@ export const SVG_THEME = {
   defaultSize: {
     xy: { width: 480, height: 240 },
     metric: { width: 240, height: 160 },
+    /** A table's height is its rows' when the Scene carries no size. */
+    table: { width: 480 },
   },
   font: {
     family: 'Inter, "Elastic UI Numeric", sans-serif',
@@ -77,5 +79,24 @@ export const SVG_THEME = {
     /** Glyphs before a secondary value by direction. */
     badgeGlyph: { increase: '↑', decrease: '↓', neutral: '' },
     borderWidth: 1,
+  },
+  /** EUI data grid density: type size, cell padding and row height. */
+  table: {
+    density: {
+      compact: { font: 12, padding: 4, rowHeight: 24 },
+      default: { font: 14, padding: 6, rowHeight: 32 },
+      expanded: { font: 16, padding: 8, rowHeight: 40 },
+    },
+    lineWidth: 1,
+    minColumnWidth: 48,
+    /** A bar's thickness as a share of the row height. */
+    barThickness: 0.3,
+    barGap: 6,
+    /** The least width, in characters, a bar's value takes. */
+    barLabelMinChars: 3,
+    badgePadding: 4,
+    badgeRadius: 3,
+    pageGap: 12,
+    ellipsis: '…',
   },
 } as const;

@@ -95,3 +95,52 @@ export const textOn = (background: SceneColor): SceneColor => {
     ? light.text
     : dark.text;
 };
+
+/**
+ * Table colors per scheme, EUI Borealis: `darkShade` for empty values,
+ * `lightShade` for a bar's track, `lightestShade` for the header and footer,
+ * and `textInk` and `textGhost` for text on a colored cell.
+ */
+export const TABLE_CHROME: Readonly<
+  Record<
+    ColorScheme,
+    {
+      readonly emptyValue: SceneColor;
+      readonly barTrack: SceneColor;
+      readonly header: SceneColor;
+      readonly inkText: SceneColor;
+      readonly ghostText: SceneColor;
+    }
+  >
+> = {
+  light: {
+    emptyValue: '#5A6D8C',
+    barTrack: '#CAD3E2',
+    header: '#ECF1F9',
+    inkText: '#07101F',
+    ghostText: '#FFFFFF',
+  },
+  dark: {
+    emptyValue: '#7186A8',
+    barTrack: '#243147',
+    header: '#172336',
+    inkText: '#07101F',
+    ghostText: '#FFFFFF',
+  },
+};
+
+/** A table bar's fill when its column sets none: Lens's `DEFAULT_PROGRESS_BAR_COLOR`, `euiColorVis2`. */
+export const DEFAULT_TABLE_BAR_COLOR: SceneColor = CATEGORICAL_PALETTE[2]!;
+
+/**
+ * Text on a colored table cell, as Lens's `getContrastColor`: `textGhost` on a
+ * dark color (EUI `isColorDark`, relative luminance at most 0.179), else
+ * `textInk`.
+ */
+export const contrastText = (
+  background: SceneColor,
+  scheme: ColorScheme
+): SceneColor =>
+  luminance(background) <= 0.179
+    ? TABLE_CHROME[scheme].ghostText
+    : TABLE_CHROME[scheme].inkText;

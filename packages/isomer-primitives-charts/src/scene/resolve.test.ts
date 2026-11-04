@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { dataTableExamples } from '../schema/examples/data_table';
 import { chartEventExamples } from '../schema/examples/events';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples, xyInteractive } from '../schema/examples/xy_chart';
@@ -41,6 +42,10 @@ const nodes = [
   })),
   ...xyChartExamples.map(({ name, node }) => ({
     name: `xyChart: ${name}`,
+    node,
+  })),
+  ...dataTableExamples.map(({ name, node }) => ({
+    name: `dataTable: ${name}`,
     node,
   })),
 ];
@@ -99,10 +104,14 @@ describe('resolveChart on every example', () => {
       const sources =
         scene.kind === 'metric'
           ? scene.tiles.map(({ source }) => source)
-          : scene.series.flatMap((series) => [
-              series.source,
-              ...series.marks.map(({ source }) => source),
-            ]);
+          : scene.kind === 'table'
+            ? scene.rows.flatMap(({ cells }) =>
+                cells.map(({ source }) => source)
+              )
+            : scene.series.flatMap((series) => [
+                series.source,
+                ...series.marks.map(({ source }) => source),
+              ]);
       for (const { rows, columns } of sources) {
         for (const row of rows) {
           expect(row).toBeLessThan(node.data.rows.length);

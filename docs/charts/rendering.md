@@ -15,7 +15,7 @@ createIsomerRuntime({ packs: [chartsPack] });
 const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 ```
 
-`chartsPack` registers `metric`, `xyChart`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with `isomer-svg`. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
+`chartsPack` registers `metric`, `xyChart`, `dataTable`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with `isomer-svg`. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
 The pack declares `CHARTS_INPUT_BUDGET` as its [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
 
@@ -88,7 +88,7 @@ What it draws differs from Elastic Charts in layout, not content:
 | `interpolation: 'smooth'` | A Catmull–Rom curve through the marks |
 | Text width | Estimated from `SVG_THEME.font.widthRatio`, so long labels may overlap where Elastic Charts would measure and truncate |
 
-`metrics.snapshotHeight` is the default height for an `xyChart`, and the default tile height times the rows of tiles for a `metric`: one row without a breakdown, otherwise the rows at `breakdown.maxColumns` per row, or Kibana's default of 3.
+`metrics.snapshotHeight` is the default height for an `xyChart`, and the default tile height times the rows of tiles for a `metric`: one row without a breakdown, otherwise the rows at `breakdown.maxColumns` per row, or Kibana's default of 3. A `dataTable`'s is the header, its first page of rows, the footer and the pager at its density's row height.
 
 ## Text, Markdown and Slack
 
@@ -102,7 +102,7 @@ Requests over time: Count of records by @timestamp per hour, from 98 to 210.
 01:00 | 98
 ```
 
-On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
+On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ## `grid`
 

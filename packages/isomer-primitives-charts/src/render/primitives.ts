@@ -5,14 +5,22 @@
  * 2.0.
  */
 
-import type { Scene } from '../scene/types';
-import { metricCatalog, xyChartCatalog } from '../schema/catalog';
+import type { Scene, TableScene } from '../scene/types';
+import {
+  dataTableCatalog,
+  metricCatalog,
+  xyChartCatalog,
+} from '../schema/catalog';
+import { type DataTableNode, dataTableSchema } from '../schema/data_table';
+import { dataTableExamples } from '../schema/examples/data_table';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples } from '../schema/examples/xy_chart';
 import { type MetricNode, metricSchema } from '../schema/metric';
 import { xyChartSchema } from '../schema/xy_chart';
+import { tableSize } from '../svg/table';
 import { SVG_THEME } from '../svg/theme';
 import { sceneToMarkdown, sceneToText } from '../text/scene_text';
+import { tableSceneToSlack } from '../text/slack_table';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
@@ -51,6 +59,24 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       examples: metricExamples,
       metrics: { snapshotHeight: metricSnapshotHeight },
       renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'dataTable',
+      schema: dataTableSchema,
+      catalog: dataTableCatalog,
+      examples: dataTableExamples,
+      metrics: {
+        snapshotHeight: (node: DataTableNode) =>
+          tableSize(resolveForText(node, config) as TableScene).height,
+      },
+      renderers: {
+        ...chartRenderers<DataTableNode>(config),
+        slack: (node: DataTableNode, { baseUrl }: { baseUrl?: string }) =>
+          tableSceneToSlack(
+            resolveForText(node, config) as TableScene,
+            baseUrl
+          ),
+      },
     }),
     definePrimitive({
       type: 'xyChart',
