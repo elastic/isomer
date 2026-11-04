@@ -61,4 +61,6 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 
 A Kibana host rebuilds Kibana's click and range contexts from the node's `data` and the opaque column `source`, and fires its triggers; a host without Kibana's UI actions asks the Kibana server to turn the event into filters. Either way it keeps filters as its state and materializes the node again.
 
+[Rendering](rendering.md#interactions) lists the gestures `isomer-svg` answers.
+
 `chartEventExamples` lists events on the `xyChart` example "Interactive stacked bars": a bar segment, the missing bucket, a filtered-out legend item, an x category and a brushed range.

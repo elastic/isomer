@@ -76,7 +76,7 @@ toSvgMarkup(tree);             // an SVG string, for HTML or a native SvgXml
 
 A native host maps the same tree onto its own SVG components.
 
-The root `svg` is `role="img"`, labelled with the Scene's `summary`, and sized to the Scene's `size`, or `SVG_THEME.defaultSize` for its kind when the Scene has none. Groups carry `data-series`, `data-legend-key`, `data-tile`, `data-axis` and `data-row` attributes, so tests and enhancements can find marks without class names. A series whose legend item is hidden is not drawn.
+The root `svg` is `role="img"`, labelled with the Scene's `summary`, and sized to the Scene's `size`, or `SVG_THEME.defaultSize` for its kind when the Scene has none. Groups carry `data-series`, `data-legend-key`, `data-tile`, `data-axis` and `data-row` attributes, and every selectable part a `data-hit`, so tests and enhancements can find marks without class names. A series whose legend item is hidden is not drawn. Rows the node's `emphasis` names are outlined in the Scene's text color: bars and tiles with a stroke, line marks with a larger point.
 
 What it draws differs from Elastic Charts in layout, not content:
 
@@ -90,9 +90,28 @@ What it draws differs from Elastic Charts in layout, not content:
 
 `metrics.snapshotHeight` is the default height for an `xyChart`, and the default tile height times the rows of tiles for a `metric`: one row without a breakdown, otherwise the rows at `breakdown.maxColumns` per row, or Kibana's default of 3.
 
+### Interactions
+
+With the host's `onEvent` and the node's `id`, `isomer-svg` draws `InteractiveSceneSvg`; without either, it draws static SVG and nothing answers a gesture. The shim passes each event to the host's `context.onEvent` as a `chart.select` or `chart.brush` action event (`toActionEvent`), which `readChartEvent` reads back.
+
+| Gesture | Effect |
+| --- | --- |
+| Pointer over a mark or tile | The Scene's tooltip for it; other series dim |
+| Click a mark or tile | `chart.select` with its `datum` or `tile` selection |
+| Click a line | `chart.select` with its `series` selection |
+| Click an x tick | `chart.select` with that `category` |
+| Click a legend label | `chart.select` with its `legend` selection, or a visibility toggle when the node offers none |
+| Click a legend swatch | Hides or shows the series; no event |
+| Drag across the plot | `chart.brush`, when the node offers a brush; each end snaps to the nearest x position |
+| Tab, then arrow keys, Home and End | Moves focus over the marks in draw order, with a focus ring, the tooltip and the selection's description in the chart's label |
+| Enter or Space | `chart.select` for the focused mark |
+| Alt with a click, Enter or Space | The same event with `negate`, a "filter out" |
+
+Every event comes from the Scene's `selectEvent` and `brushEvent`, so it is the event any other renderer raises for the same gesture. A selection appears only where the node offers its target. A node's `interactions.link` is drawn as a link under the chart by the shim, for every renderer, and written on text and Markdown.
+
 ## Text, Markdown and Slack
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`, then its link when the node has one: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.
 
 ```text
 Requests over time: Count of records by @timestamp per hour, from 98 to 210.

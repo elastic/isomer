@@ -13,6 +13,7 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { selectSceneRenderer } from '../scene/select';
 import type { ColorScheme, Scene, SceneEnvironment } from '../scene/types';
+import { toActionEvent } from '../schema/events';
 
 import type {
   ChartNode,
@@ -75,8 +76,11 @@ export const pickSceneRenderer = (
 
 /**
  * Draws a chart node through the first renderer that runs here and supports
- * its kind. Off native, the output sits in one `div` that carries the node
- * anchor; native output is the renderer's own.
+ * its kind. With the host's `onEvent` and the node's `id`, the renderer may
+ * raise chart events, which reach the host as `chart.select` and
+ * `chart.brush` action events. Off native, the output sits in one `div` that
+ * carries the node anchor and the Scene's link; native output is the
+ * renderer's own.
  */
 export const renderSceneNode = (
   node: ChartNode,
@@ -86,13 +90,25 @@ export const renderSceneNode = (
   const scene = resolveForReact(node, env, config);
   const environment = env.context?.environment ?? detectSceneEnvironment();
   const renderer = pickSceneRenderer(scene, environment, env.context, config);
+  const hostEvent = env.context?.onEvent;
   const drawn = renderer
     ? renderer.render(scene, {
         environment,
         ...(node.id !== undefined && { nodeId: node.id }),
+        ...(hostEvent &&
+          node.id !== undefined && {
+            onEvent: (event) => hostEvent(toActionEvent(event)),
+          }),
       })
     : null;
-  return environment === 'native'
-    ? drawn
-    : createElement('div', nodeAnchor(env.context, node), drawn);
+  if (environment === 'native') {
+    return drawn;
+  }
+  const { link } = scene.interactions;
+  return createElement(
+    'div',
+    nodeAnchor(env.context, node),
+    drawn,
+    link && createElement('a', { href: link.href }, link.label)
+  );
 };

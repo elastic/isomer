@@ -35,6 +35,11 @@ export const SVG_THEME = {
     gridStrokeWidth: 1,
     lineWidth: 2,
     pointRadius: 3,
+    /** Radius of an emphasized point, and stroke width around an emphasized bar. */
+    emphasisRadius: 5,
+    emphasisStroke: 2,
+    /** Radius of the transparent target a line or area mark takes gestures with. */
+    hitRadius: 6,
     /** Share of a band left empty around its bars. */
     bandPadding: 0.2,
     /** Share of the plot a single time or linear bar takes, when there is no neighbor to measure. */
@@ -58,6 +63,16 @@ export const SVG_THEME = {
     /** Width of a legend beside the plot. */
     sideWidth: 140,
     hiddenOpacity: 0.4,
+  },
+  interaction: {
+    /** Opacity of series other than the one under the pointer. */
+    dimOpacity: 0.3,
+    /** Pixels a drag must cover before it is a brush rather than a click. */
+    brushThreshold: 4,
+    brushOpacity: 0.15,
+    focusStrokeWidth: 2,
+    focusPadding: 3,
+    tooltip: { padding: 6, gap: 8, radius: 4, swatch: 8, size: 12 },
   },
   metric: {
     padding: 12,

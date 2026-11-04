@@ -150,8 +150,13 @@ const drawTile = (
   scene: MetricScene,
   tile: MetricTile,
   cell: Omit<Box, 'inset'>,
-  bordered: boolean
+  bordered: boolean,
+  index: number
 ): SvgElement => {
+  const emphasisRows = new Set(
+    scene.interactions.emphasis.flatMap(({ rows }) => rows)
+  );
+  const emphasized = tile.source.rows.some((row) => emphasisRows.has(row));
   const box: Box = {
     ...cell,
     inset:
@@ -200,15 +205,19 @@ const drawTile = (
       textWidth(secondary?.label ?? '', theme.secondary);
   return el(
     'g',
-    { 'data-tile': tile.source.rows.join(' ') },
+    { 'data-tile': tile.source.rows.join(' '), 'data-hit': `t:${index}` },
     el('rect', {
       x: px(box.x),
       y: px(box.y),
       width: px(box.w),
       height: px(box.h),
       fill: tile.background,
-      stroke: bordered ? chrome.border : undefined,
-      'stroke-width': bordered ? theme.borderWidth : undefined,
+      stroke: emphasized ? chrome.text : bordered ? chrome.border : undefined,
+      'stroke-width': emphasized
+        ? SVG_THEME.xy.emphasisStroke
+        : bordered
+          ? theme.borderWidth
+          : undefined,
     }),
     tile.trend && drawTrend(tile.trend, box),
     tile.progress && drawProgress(tile.progress, box),
@@ -288,7 +297,8 @@ export const drawMetric = (scene: MetricScene): SvgElement => {
           w: w - (bordered ? theme.gap : 0),
           h: h - (bordered ? theme.gap : 0),
         },
-        bordered
+        bordered,
+        index
       )
     )
   );

@@ -50,6 +50,13 @@ export const el = (
   children: flatten(children),
 });
 
+/** `element` with `attrs` added; absent values are dropped. */
+export const withAttrs = (
+  element: SvgElement,
+  attrs: Readonly<Record<string, string | number | undefined>>
+): SvgElement =>
+  el(element.tag, { ...element.attrs, ...attrs }, element.children);
+
 const escapeText = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 

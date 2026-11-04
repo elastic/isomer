@@ -14,6 +14,8 @@ export interface PixelScale {
   (value: number | string): number;
   /** Width of one category on an ordinal axis; 0 otherwise. */
   readonly bandwidth: number;
+  /** The axis value at a pixel; `undefined` on an ordinal axis. */
+  readonly invert: (pixel: number) => number | undefined;
 }
 
 const transform = (scale: SceneAxis['scale']) => {
@@ -39,7 +41,7 @@ export const scaleFor = (
     const index = new Map(categories.map((category, i) => [category, i]));
     const scale = (value: number | string) =>
       from + ((index.get(String(value)) ?? 0) + 0.5) * step;
-    return Object.assign(scale, { bandwidth: step });
+    return Object.assign(scale, { bandwidth: step, invert: () => undefined });
   }
   const t = transform(axis.scale);
   const [min, max] = axis.domain as readonly [number, number];
@@ -47,7 +49,15 @@ export const scaleFor = (
   const span = t(max) - lo || 1;
   const scale = (value: number | string) =>
     from + ((t(Number(value)) - lo) / span) * (to - from);
-  return Object.assign(scale, { bandwidth: 0 });
+  const untransform =
+    axis.scale === 'log'
+      ? (value: number) => 10 ** value
+      : axis.scale === 'sqrt'
+        ? (value: number) => Math.sign(value) * value * value
+        : (value: number) => value;
+  const invert = (pixel: number) =>
+    untransform(lo + ((pixel - from) / (to - from || 1)) * span);
+  return Object.assign(scale, { bandwidth: 0, invert });
 };
 
 /** The value an axis's baseline sits at: zero when the domain holds it, else its nearer end. */

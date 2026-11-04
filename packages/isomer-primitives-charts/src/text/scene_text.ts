@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-// Text and Markdown from the Scene: its summary sentence, then its table. Every
-// string is the Scene's own; columns the Scene flags as empty are left out.
+// Text and Markdown from the Scene: its summary sentence, its table, then its
+// link. Every string is the Scene's own; columns the Scene flags as empty are
+// left out.
 
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
 
@@ -31,13 +32,16 @@ export const sceneTableRows = (table: SceneTable): string[][] => {
 /** The summary, then the table with cells separated by ` | `. */
 export const sceneToText = (scene: Scene): string => {
   const [header, ...rows] = sceneTableRows(scene.table);
+  const { link } = scene.interactions;
+  const linkLine = link ? [`${link.label}: ${link.href}`] : [];
   if (!header || header.length === 0 || rows.length === 0) {
-    return scene.summary;
+    return [scene.summary, ...linkLine].join('\n');
   }
   return [
     scene.summary,
     '',
     ...[header, ...rows].map((row) => row.join(' | ')),
+    ...(link ? ['', ...linkLine] : []),
   ].join('\n');
 };
 
@@ -48,6 +52,13 @@ export const sceneToMarkdown = (scene: Scene): MarkdownContent => {
     md.paragraph(scene.summary),
     ...(header && header.length > 0 && rows.length > 0
       ? [md.table(header, rows)]
+      : []),
+    ...(scene.interactions.link
+      ? [
+          md.paragraph(
+            md.link(scene.interactions.link.label, scene.interactions.link.href)
+          ),
+        ]
       : []),
   ];
 };

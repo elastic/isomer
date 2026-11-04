@@ -20,11 +20,11 @@ import type {
 import { centeredBaseline, root, text } from './parts';
 import { baselineOf, type PixelScale, px, scaleFor, textWidth } from './scale';
 import { SVG_THEME } from './theme';
-import { el, type SvgElement } from './tree';
+import { el, type SvgElement, withAttrs } from './tree';
 
 const { font, xy: theme, legend: legendTheme } = SVG_THEME;
 
-interface Box {
+export interface Box {
   readonly left: number;
   readonly top: number;
   readonly right: number;
@@ -147,13 +147,17 @@ const drawLegend = (
           width: legendTheme.swatch,
           height: legendTheme.swatch,
           fill: item.color,
+          'data-legend-toggle': item.key,
         }),
-        text(item.label, {
-          x: itemX + legendTheme.swatch + legendTheme.swatchGap,
-          y: centeredBaseline(y, font.legend),
-          size: font.legend,
-          color: chrome.text,
-        }),
+        withAttrs(
+          text(item.label, {
+            x: itemX + legendTheme.swatch + legendTheme.swatchGap,
+            y: centeredBaseline(y, font.legend),
+            size: font.legend,
+            color: chrome.text,
+          }),
+          { 'data-legend-select': item.key }
+        ),
         item.statistics.map((statistic, index) =>
           text(statistic.value, {
             x:
@@ -299,7 +303,19 @@ const drawAxis = (
             anchor: outward > 0 ? 'start' : 'end',
           });
         }
-        return el('g', { 'data-tick': String(tick.value) }, mark, label);
+        const category =
+          axis.id === 'x'
+            ? scene.categories.findIndex(({ x }) => x === tick.value)
+            : -1;
+        return el(
+          'g',
+          {
+            'data-tick': String(tick.value),
+            'data-category': category >= 0 ? category : undefined,
+          },
+          mark,
+          label
+        );
       })
     : [];
   const thickness = axisThickness(axis);
@@ -470,11 +486,27 @@ const runsOf = (filled: (Fitted | null)[]): Fitted[][] =>
     )
     .filter((run) => run.length > 0);
 
+/** A transparent target that takes gestures for a mark drawn without its own shape. */
+const hitTarget = (cx: number, cy: number, hit: string) =>
+  el('circle', {
+    cx: px(cx),
+    cy: px(cy),
+    r: theme.hitRadius,
+    fill: '#000000',
+    'fill-opacity': 0,
+    'data-hit': hit,
+  });
+
 const drawLineOrArea = (
   scene: XyScene,
   series: XySeries,
-  project: Projector
+  project: Projector,
+  interactive: boolean,
+  emphasized: (mark: XyMark) => boolean
 ): SvgElement => {
+  const seriesIndex = scene.series.indexOf(series);
+  const hitOf = (mark: XyMark) =>
+    `${seriesIndex}:${series.marks.indexOf(mark)}`;
   const value = project.value(series.axis);
   const at = (entry: Fitted, y: number) =>
     project.point(project.x(entry.mark.x), value(y));
@@ -511,6 +543,7 @@ const drawLineOrArea = (
             'stroke-width': theme.lineWidth,
             'stroke-dasharray': segmentFitted ? fittedDash : undefined,
             'stroke-linejoin': 'round',
+            'data-series-path': seriesIndex,
           })
         );
       }
@@ -527,18 +560,26 @@ const drawLineOrArea = (
     });
     flush();
     run.forEach((entry, index) => {
-      if (entry.fitted || !(series.showPoints || run.length === 1)) {
+      if (entry.fitted) {
         return;
       }
       const [cx, cy] = top[index]!;
+      const emphasis = emphasized(entry.mark);
+      if (!(series.showPoints || run.length === 1 || emphasis)) {
+        if (interactive) {
+          parts.push(hitTarget(cx, cy, hitOf(entry.mark)));
+        }
+        return;
+      }
       parts.push(
         el('circle', {
           cx: px(cx),
           cy: px(cy),
-          r: theme.pointRadius,
+          r: emphasis ? theme.emphasisRadius : theme.pointRadius,
           fill: scene.chrome.background,
-          stroke: series.color,
+          stroke: emphasis ? scene.chrome.text : series.color,
           'stroke-width': theme.lineWidth,
+          'data-hit': hitOf(entry.mark),
           'fill-opacity': entry.mark.partial ? theme.partialOpacity : undefined,
           'stroke-opacity': entry.mark.partial
             ? theme.partialOpacity
@@ -580,7 +621,8 @@ const drawBars = (
   scene: XyScene,
   bars: readonly XySeries[],
   project: Projector,
-  plotExtent: number
+  plotExtent: number,
+  emphasized: (mark: XyMark) => boolean
 ): Map<XySeries, SvgElement> => {
   const groups = [
     ...new Set(bars.map((series) => series.stack?.group ?? series.key)),
@@ -592,7 +634,8 @@ const drawBars = (
       const group = groups.indexOf(series.stack?.group ?? series.key);
       const offset = -slot / 2 + group * width;
       const value = project.value(series.axis);
-      const rects = series.marks.flatMap((mark) => {
+      const seriesIndex = scene.series.indexOf(series);
+      const rects = series.marks.flatMap((mark, markIndex) => {
         if (mark.y === null) {
           return [];
         }
@@ -618,7 +661,10 @@ const drawBars = (
             height: px(h),
             fill: series.color,
             'fill-opacity': mark.partial ? theme.partialOpacity : undefined,
+            stroke: emphasized(mark) ? scene.chrome.text : undefined,
+            'stroke-width': emphasized(mark) ? theme.emphasisStroke : undefined,
             'data-row': mark.source.rows.join(' '),
+            'data-hit': `${seriesIndex}:${markIndex}`,
           }),
         ];
       });
@@ -798,7 +844,24 @@ const drawAnnotation = (
 export const xySize = (scene: XyScene): SceneSize =>
   scene.size ?? SVG_THEME.defaultSize.xy;
 
-export const drawXy = (scene: XyScene): SvgElement => {
+/** Where an xy Scene's parts go: the plot box and the pixel scales. */
+export interface XyLayout {
+  readonly size: SceneSize;
+  readonly outer: Box;
+  readonly plot: Box;
+  readonly scales: Readonly<Partial<Record<'x' | 'y' | 'y2', PixelScale>>> & {
+    readonly x: PixelScale;
+  };
+  readonly xHorizontal: boolean;
+}
+
+interface FullLayout extends XyLayout {
+  readonly legendLayout: LegendLayout;
+  readonly axes: SceneAxis[];
+  readonly project: Projector;
+}
+
+const layout = (scene: XyScene): FullLayout => {
   const size = xySize(scene);
   const outer: Box = {
     left: theme.padding,
@@ -851,15 +914,55 @@ export const drawXy = (scene: XyScene): SvgElement => {
     point: (along, across) => (xHorizontal ? [along, across] : [across, along]),
     xHorizontal,
   };
+  return {
+    size,
+    outer,
+    plot,
+    scales,
+    xHorizontal,
+    legendLayout,
+    axes,
+    project,
+  };
+};
+
+/** The layout {@link drawXy} draws `scene` with. */
+export const layoutXy = (scene: XyScene): XyLayout => layout(scene);
+
+export interface DrawOptions {
+  /** Adds hit targets for gestures: one per line or area mark, and the plot. */
+  readonly interactive?: boolean;
+}
+
+export const drawXy = (
+  scene: XyScene,
+  { interactive = false }: DrawOptions = {}
+): SvgElement => {
+  const {
+    size,
+    outer,
+    plot,
+    scales,
+    xHorizontal,
+    legendLayout,
+    axes,
+    project,
+  } = layout(scene);
   const hidden = new Set(
     scene.legend.items.filter(({ hidden }) => hidden).map(({ key }) => key)
   );
   const visible = scene.series.filter(({ key }) => !hidden.has(key));
+  const emphasisRows = new Set(
+    scene.interactions.emphasis.flatMap(({ rows }) => rows)
+  );
+  const emphasized = (mark: XyMark) =>
+    mark.source.rows.some((row) => emphasisRows.has(row));
   const bars = drawBars(
     scene,
     visible.filter(({ mark }) => mark === 'bar'),
     project,
-    xHorizontal ? plot.right - plot.left : plot.bottom - plot.top
+    xHorizontal ? plot.right - plot.left : plot.bottom - plot.top,
+    emphasized
   );
   const axisById = {
     x: scene.axes.x,
@@ -879,6 +982,16 @@ export const drawXy = (scene: XyScene): SvgElement => {
         drawGrid(scene, axis, scales[axis.id as 'x'] ?? scales.x, plot)
       )
     ),
+    interactive &&
+      el('rect', {
+        x: px(plot.left),
+        y: px(plot.top),
+        width: px(plot.right - plot.left),
+        height: px(plot.bottom - plot.top),
+        fill: '#000000',
+        'fill-opacity': 0,
+        'data-plot': '',
+      }),
     scene.annotations
       .filter(({ kind }) => kind === 'range')
       .map((annotation) =>
@@ -890,7 +1003,7 @@ export const drawXy = (scene: XyScene): SvgElement => {
       visible.map((series) =>
         series.mark === 'bar'
           ? bars.get(series)!
-          : drawLineOrArea(scene, series, project)
+          : drawLineOrArea(scene, series, project, interactive, emphasized)
       )
     ),
     lines,

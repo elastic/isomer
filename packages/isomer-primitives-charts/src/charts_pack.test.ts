@@ -5,10 +5,11 @@
  * 2.0.
  */
 
-import { createElement } from 'react';
+import { createElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
+  type ActionEventRef,
   type Composition,
   type Frame,
   primitiveExamples,
@@ -25,8 +26,11 @@ import type {
 import { gridSnapshotHeight } from './render/grid';
 import { metricSingleValueScene } from './scene/examples';
 import type { Scene } from './scene/types';
+import { readChartEvent } from './schema/events';
+import { chartEventExamples } from './schema/examples/events';
 import { gridExamples } from './schema/examples/grid';
 import { unsupportedVega } from './schema/examples/unsupported';
+import { xyInteractive } from './schema/examples/xy_chart';
 import type { GridNode } from './schema/grid';
 import type { UnsupportedNode } from './schema/unsupported';
 
@@ -346,5 +350,97 @@ CLOSED`);
     expect(gridSnapshotHeight(sectioned)).toBe(
       24 + 160 + (24 + 8 + 76) + 24 + 3 * 16
     );
+  });
+});
+
+describe('interactions through the pack', () => {
+  const html = (
+    runtime: ReturnType<typeof createIsomerRuntime>,
+    context: Record<string, unknown>
+  ) =>
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        (
+          runtime.surfaces.react.render as (
+            composition: Composition,
+            options: Record<string, unknown>
+          ) => ReactNode
+        )(view(xyInteractive), { heading: false, context })
+      )
+    );
+  const runtime = createIsomerRuntime({ packs: [chartsPack] });
+
+  it('draws an interactive chart only when the host passes onEvent', () => {
+    expect(html(runtime, {})).not.toContain('tabindex');
+    expect(html(runtime, { onEvent: () => {} })).toContain('tabindex="0"');
+  });
+
+  it('draws the link on React and writes it on text and Markdown', () => {
+    const { href, label } = xyInteractive.interactions!.link!;
+    expect(html(runtime, {})).toContain(`<a href="${href}">${label}</a>`);
+    expect(runtime.surfaces.text.render(view(xyInteractive))).toContain(
+      `${label}: ${href}`
+    );
+    expect(runtime.surfaces.markdown.render(view(xyInteractive))).toContain(
+      `[${label}](${href})`
+    );
+  });
+
+  it('hands the host each chart event as a chart action event', () => {
+    const raised: ActionEventRef[] = [];
+    const [first] = chartEventExamples;
+    const pack = createChartsPack({
+      sceneRenderers: [
+        {
+          id: 'raises',
+          environments: ['node', 'browser'],
+          supports: () => true,
+          render: (_, env) => {
+            env.onEvent?.(first!.event);
+            return null;
+          },
+        },
+      ],
+    });
+    html(createIsomerRuntime({ packs: [pack] }), {
+      onEvent: (event: ActionEventRef) => raised.push(event),
+    });
+    expect(raised.map(({ name }) => name)).toEqual(['chart.select']);
+    expect(readChartEvent(raised[0]!)).toEqual(first!.event);
+  });
+
+  it('raises nothing for a node without an id', () => {
+    const raised: unknown[] = [];
+    const { id: _, ...anonymous } = xyInteractive;
+    const pack = createChartsPack({
+      sceneRenderers: [
+        {
+          id: 'raises',
+          environments: ['node', 'browser'],
+          supports: () => true,
+          render: (_scene, env) => {
+            expect(env.onEvent).toBeUndefined();
+            return null;
+          },
+        },
+      ],
+    });
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        (
+          createIsomerRuntime({ packs: [pack] }).surfaces.react.render as (
+            composition: Composition,
+            options: Record<string, unknown>
+          ) => ReactNode
+        )(view(anonymous as PrimitiveNode), {
+          context: { onEvent: (event: unknown) => raised.push(event) },
+        })
+      )
+    );
+    expect(raised).toEqual([]);
   });
 });

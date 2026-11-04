@@ -6,7 +6,11 @@
  */
 
 export { drawScene, sceneDrawSize } from './draw';
-export { toReactDom } from './react_dom';
+export {
+  type InteractiveSceneSvgProps,
+  InteractiveSceneSvg,
+} from './interactive';
+export { type ReactDomOptions, toReactDom } from './react_dom';
 export { isomerSvgRenderer } from './renderer';
 export { SVG_THEME } from './theme';
 export {
@@ -18,4 +22,6 @@ export {
   svgText,
   toSvgMarkup,
   walkSvg,
+  withAttrs,
 } from './tree';
+export { type Box, type DrawOptions, type XyLayout, layoutXy } from './xy';
