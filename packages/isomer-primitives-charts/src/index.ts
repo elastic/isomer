@@ -5,5 +5,6 @@
  * 2.0.
  */
 
+export * from './format';
 export * from './scene';
 export * from './schema';
