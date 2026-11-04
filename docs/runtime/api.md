@@ -37,6 +37,9 @@ Everything `@elastic/isomer-runtime` exports from its entry point and its `./tes
 | `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
 | `getAuthoringContext()` | `RuntimeAuthoringContext` |
 | `getCapabilities()` | `HostCapabilities` |
+| `packVersions` | `PackVersions` — each pack's version by id |
+| `stamp(composition)` | The composition with `packVersions` recorded in its `packs` |
+| `checkPackVersions(composition)` | `PackVersionMismatch[]` — empty when the stamp matches |
 | `validate(composition)` | `CheckedValidationResult` |
 | `parse(value)` | `ParsedComposition` |
 | `getCompositionSchema()` | `ZodObject` |

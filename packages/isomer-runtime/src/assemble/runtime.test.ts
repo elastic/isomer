@@ -782,6 +782,7 @@ describe('createIsomerRuntime', () => {
 
     expect(runtime.getCapabilities()).toEqual({
       primitives: ['note'],
+      packs: { test: 1 },
       surfaces: ['react', 'html', 'text', 'markdown', 'slack'],
       formats: ['react', 'html', 'text', 'markdown', 'slack'],
       support: {

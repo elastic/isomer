@@ -568,7 +568,8 @@ export const printNodeJsx = (node: PrimitiveNode, env: PrintJsxEnv): string =>
   printTree(createPrinter(env).nodeTree(node), '');
 
 /** The composition fields {@link printCompositionJsx} can print as props of `<Composition>`. */
-export type PrintCompositionRoot = Omit<Composition, 'type' | 'body'>;
+/** The root fields an author writes. `packs` is the runtime's, so it is never printed. */
+export type PrintCompositionRoot = Omit<Composition, 'type' | 'body' | 'packs'>;
 
 /** The order root props print in, which is the order `Composition` declares them. */
 const ROOT_PROPS = ['version', 'title', 'subtitle', 'theme', 'meta'] as const;

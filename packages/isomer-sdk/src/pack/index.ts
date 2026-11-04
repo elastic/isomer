@@ -20,4 +20,11 @@ export {
   type PrimitivePackInput,
   UNCATEGORIZED_GROUP_TITLE,
   definePrimitivePack,
+  packVersionOf,
 } from './primitive_pack';
+export {
+  type PackVersionMismatch,
+  comparePackVersions,
+  packVersionsOf,
+  stampPackVersions,
+} from './versions';

@@ -15,7 +15,11 @@ export {
   isVisibleOnSurface,
   someBodyNode,
 } from './body_node_base';
-export { type Composition, type CompositionMeta } from './composition';
+export {
+  type Composition,
+  type CompositionMeta,
+  type PackVersions,
+} from './composition';
 export { type IsomerErrorCode, ISOMER_ERROR_CODES, IsomerError } from './error';
 export { mapCompositionNodes } from './map_nodes';
 export { type NamedColor, type RenderTheme } from './named_color';

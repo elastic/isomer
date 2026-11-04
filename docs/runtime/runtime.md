@@ -63,7 +63,10 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
-| `getCapabilities()` | The primitive types, surfaces, formats, per-primitive surface support, and enhancements this host supports |
+| `getCapabilities()` | The primitive types, surfaces, formats, per-primitive surface support, enhancements, and pack versions this host supports |
+| `packVersions` | Each pack's [version](../sdk/packs.md#version) by id |
+| `stamp(composition)` | Records `packVersions` in the composition's `packs`, keeping entries for packs this runtime does not hold. Stamp a composition when it is written |
+| `checkPackVersions(composition)` | How the composition's stamp differs from this runtime's packs: a pack stamped `newer` or `older` than held, a stamped pack that is `unknown` here, or a held pack whose types appear `unstamped`. A host drawing compositions written elsewhere refuses any mismatch |
 | `getCompositionSchema()` | The same schema `validate` / `parse` use internally |
 
 ## What it refuses, and when
