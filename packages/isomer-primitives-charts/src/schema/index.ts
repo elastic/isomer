@@ -52,6 +52,27 @@ export {
   provenanceSchema,
   scalarCellSchema,
 } from './core';
+export {
+  type ChartBrushEvent,
+  type ChartEvent,
+  type ChartSelectEvent,
+  type Emphasis,
+  type SelectTarget,
+  CHART_EVENT_NAMES,
+  INTERACTION_RULES,
+  SELECT_TARGETS,
+  brushingInteractionsSchemaFor,
+  brushSchema,
+  chartEventSchema,
+  checkInteractions,
+  emphasisSchema,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  readChartEvent,
+  selectSchema,
+  toActionEvent,
+} from './events';
+export { chartEventExamples } from './examples/events';
 export { gridExamples } from './examples/grid';
 export { metricExamples } from './examples/metric';
 export { unsupportedExamples } from './examples/unsupported';

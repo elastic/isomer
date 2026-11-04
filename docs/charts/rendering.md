@@ -10,17 +10,12 @@ Every chart primitive's `react` renderer is a shim. It resolves the node to a [S
 ```ts
 import { chartsPack, createChartsPack } from '@elastic/isomer-primitives-charts';
 
-createIsomerRuntime({ packs: [chartsPack] }).validate(composition);
+createIsomerRuntime({ packs: [chartsPack] });
 
-const drawingPack = createChartsPack({
-  resolveScene,
-  sceneRenderers: [elasticChartsNode],
-});
+const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 ```
 
-`chartsPack` registers `metric`, `xyChart`, `grid` and `unsupported` with their defaults. It validates every node and draws `grid` and `unsupported`; drawing a chart node needs a `resolveScene`, which `createChartsPack` takes, and drawing one without it throws.
-
-`resolveScene` turns a node into its Scene: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
+`chartsPack` registers `metric`, `xyChart`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with `isomer-svg`. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
 The pack declares `CHARTS_INPUT_BUDGET` as its [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
 
@@ -58,7 +53,7 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 | `sceneRenderers` | Renderers tried before the pack's own |
 | `environment` | `browser`, `node` or `native`. Absent: detected from the global scope |
 | `scheme` | `light` or `dark`. Absent: the frame theme's `scheme` field on `snapshot`, else `light` |
-| `locale`, `timeZone` | Passed to the resolver. Absent: the resolver's defaults, and each date format's own time zone |
+| `locale`, `timeZone` | Passed to the resolver. Absent: `resolveChart`'s defaults, `en` and `UTC`, for dates whose format names no time zone |
 | `size` | The box the chart draws in. Absent: the renderer's default size |
 
 A host that loads the charts pack without a style adapter names the runtime's type parameters to pass these fields, as [Runtime](../runtime/runtime.md#typing-the-render-context) shows.
@@ -113,7 +108,7 @@ On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collect
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A panel's title is its header and its description is the header's tooltip; the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
-When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box. Without a `size` the grid passes none on: a browser lays it out fluidly.
+When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box and fits the panel's height. Without a `size` from the host, the grid lays out for `CHARTS_THEME.grid.nominalWidth` (1,200 px); a chart drawn by `isomer-svg` then scales down to its panel's real width.
 
 On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone.
 

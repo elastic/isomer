@@ -12,6 +12,7 @@ import type {
   SurfaceMap,
 } from '@elastic/isomer-sdk';
 
+import type { ChartNode } from '../scene/resolve';
 import type {
   ColorScheme,
   Scene,
@@ -19,11 +20,8 @@ import type {
   SceneRenderer,
   SceneSize,
 } from '../scene/types';
-import type { MetricNode } from '../schema/metric';
-import type { XyChartNode } from '../schema/xy_chart';
 
-/** A node that resolves to a Scene. */
-export type ChartNode = MetricNode | XyChartNode;
+export type { ChartNode };
 
 /** What a Scene is resolved for. */
 export interface ResolveSceneOptions {

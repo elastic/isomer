@@ -108,7 +108,7 @@ describe('chartsPack', () => {
     );
   });
 
-  it('draws unsupported nodes and refuses to draw a chart without a resolver', () => {
+  it('draws unsupported nodes, and charts through resolveChart', () => {
     expect(
       runtime.surfaces.text.render(view(unsupportedVega), { heading: false })
     ).toBe(
@@ -117,10 +117,34 @@ describe('chartsPack', () => {
     const [metric] = primitiveExamples(
       chartsPack.primitives.find(({ type }) => type === 'metric')!
     );
-    expect(() =>
+    // Kibana's default number pattern `0,0.[000]` writes 14074 as `14,074`.
+    expect(
       runtime.surfaces.text.render(view(metric!.node), { heading: false })
-    ).toThrow(/without a Scene resolver/);
+    ).toContain('14,074');
   });
+
+  it.each(cases.filter(({ type }) => type === 'metric' || type === 'xyChart'))(
+    '$type: $name draws on every surface with the defaults',
+    ({ node }) => {
+      const composition = view(node);
+      expect(
+        renderToStaticMarkup(
+          createElement(
+            'div',
+            null,
+            runtime.surfaces.react.render(composition, { heading: false })
+          )
+        )
+      ).toContain('<svg');
+      expect(runtime.surfaces.text.render(composition).length).toBeGreaterThan(
+        0
+      );
+      expect(
+        runtime.surfaces.slack.render(composition, { collectAssets: true })
+          .assets
+      ).toHaveLength(1);
+    }
+  );
 });
 
 describe('unsupported', () => {
@@ -246,7 +270,7 @@ CLOSED`);
     );
   });
 
-  it('gives each chart the box its panel leaves, when the grid knows its width', () => {
+  it('gives each chart the box its panel leaves', () => {
     resolved.length = 0;
     const grid: GridNode = {
       type: 'grid',
@@ -266,7 +290,8 @@ CLOSED`);
     expect(resolved[0]?.size).toEqual({ width: 480, height: 80 });
     resolved.length = 0;
     html(grid);
-    expect(resolved[0]?.size).toBeUndefined();
+    // Without a host width: the nominal 1,200 px, (1200 − 376) × 24/48 + 184.
+    expect(resolved[0]?.size).toEqual({ width: 596, height: 80 });
   });
 
   it('draws nested charts in the frame theme on snapshot', () => {

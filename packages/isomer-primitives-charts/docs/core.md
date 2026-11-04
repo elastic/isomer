@@ -53,10 +53,12 @@ Rules:
 
 | `kind` | Fields | As Kibana's field format |
 | --- | --- | --- |
-| `number`, `percent`, `bytes`, `bits` | `pattern`, `locale?`, `alwaysShowSign?`, `suffix?` | Numeral.js pattern, in Kibana's number locale (`format:number:defaultLocale`, `en` when absent) |
+| `number`, `percent`, `bytes`, `bits` | `pattern`, `locale?`, `alwaysShowSign?`, `suffix?`; `fractional?` on `percent` | Numeral.js pattern, in Kibana's number locale (`format:number:defaultLocale`, `en` when absent). `fractional: false` means percentages rather than fractions |
 | `duration` | `input`, `output`, `decimals?`, `showSuffix?`, `useShortSuffix?`, `includeSpaceWithSuffix?`, `suffix?` | `input` is the stored unit; `output` a unit, `humanize` or `humanizePrecise` |
 | `date` | `pattern`, `timeZone` | Moment.js pattern in an IANA time zone (`dateFormat:tz`, resolved) |
 | `text` | — | The value as a string |
+
+[Format](format.md) formats every kind.
 
 ## `ColorValue`
 

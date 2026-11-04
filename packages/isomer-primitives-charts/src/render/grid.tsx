@@ -61,19 +61,21 @@ const blocksOf = (node: GridNode): Block[] => {
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
-/** The box a panel's node draws in, when the grid knows its own width. */
+/**
+ * The box a panel's node draws in. Without a width from the host, the grid
+ * assumes its nominal width, so a chart still fits its panel's height and only
+ * scales down to the panel's real width.
+ */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
   oneColumn: boolean
 ): ChartsRenderContext => {
   const { size, ...rest } = context ?? {};
-  if (!size) {
-    return rest;
-  }
+  const gridWidth = size?.width ?? CHARTS_THEME.grid.nominalWidth;
   const width = oneColumn
-    ? size.width
-    : (size.width - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
+    ? gridWidth
+    : (gridWidth - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
   const height = rowsHeight(panel.h) - (panel.title ? headerHeight : 0);
   return { ...rest, size: { width, height } };

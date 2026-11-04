@@ -16,14 +16,15 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 
-Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`.
+Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`, and declares its [interactions](interactions.md).
 
 ## Entries
 
 | Entry | Holds |
 | --- | --- |
 | `@elastic/isomer-primitives-charts/schema` | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer. |
-| `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, and the `SceneRenderer` interface. |
+| `@elastic/isomer-primitives-charts/format` | The [formatter](format.md) every renderer and surface uses: Kibana's numeral, duration and date formats. |
+| `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, `resolveChart`, which builds a Scene from a node, and the `SceneRenderer` interface. |
 | `@elastic/isomer-primitives-charts` | Everything above, plus the pack itself: [`createChartsPack`](rendering.md), its render context, and the shim every chart primitive renders through. It imports React. |
 
 ```ts

@@ -11,6 +11,7 @@
 import type {
   MetricScene,
   SceneChrome,
+  SceneInteractions,
   SceneTable,
   XyMark,
   XyScene,
@@ -36,6 +37,12 @@ const lightChrome: SceneChrome = {
 };
 
 const emptyTable: SceneTable = { columns: [], rows: [] };
+
+const noInteractions: SceneInteractions = {
+  select: [],
+  sync: { cursor: false, tooltips: false },
+  emphasis: [],
+};
 
 const mark = (
   row: number,
@@ -86,6 +93,8 @@ export const stackedBarsScene: XyScene = {
   chrome: lightChrome,
   summary: 'Errors and successes by host, with latency.',
   table: emptyTable,
+  interactions: noInteractions,
+  categories: [],
   orientation: 'vertical',
   axes: {
     x: {
@@ -229,6 +238,8 @@ export const gapsScene: XyScene = {
   chrome: darkChrome,
   summary: 'Bytes over time with gaps.',
   table: emptyTable,
+  interactions: noInteractions,
+  categories: [],
   orientation: 'vertical',
   axes: {
     x: {
@@ -349,6 +360,7 @@ export const tilesScene: MetricScene = {
   chrome: lightChrome,
   summary: 'Memory used by host.',
   table: emptyTable,
+  interactions: noInteractions,
   layout: {
     columns: 3,
     rows: 2,

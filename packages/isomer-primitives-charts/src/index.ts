@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export * from './format';
 export {
   type ChartsPackOptions,
   CHARTS_INPUT_BUDGET,

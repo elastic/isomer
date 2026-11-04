@@ -52,7 +52,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
 
-`packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface. Hosts and Kibana materializers build against it.
+`packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface; `./format` is the one formatter, with Kibana's numeral, duration and date formats. Hosts and Kibana materializers build against it.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 

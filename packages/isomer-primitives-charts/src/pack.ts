@@ -7,18 +7,15 @@
 
 import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
-import type {
-  ChartNode,
-  ReactSceneRenderer,
-  SceneResolver,
-} from './render/context';
+import type { ReactSceneRenderer, SceneResolver } from './render/context';
 import { gridPrimitive } from './render/grid';
 import { defineChartPrimitives } from './render/primitives';
 import { unsupportedPrimitive } from './render/unsupported';
+import { resolveChart } from './scene/resolve';
 import { isomerSvgRenderer } from './svg/renderer';
 
 export interface ChartsPackOptions {
-  /** Turns a chart node into its Scene. */
+  /** Turns a chart node into its Scene. Absent: `resolveChart`. */
   readonly resolveScene?: SceneResolver;
   /**
    * The pack's own renderer preferences, tried after a render's
@@ -39,21 +36,21 @@ export const CHARTS_INPUT_BUDGET = {
   characters: 10_000_000,
 } as const;
 
-const noResolver: SceneResolver = (node: ChartNode) => {
-  throw new Error(
-    `charts pack: cannot draw "${node.type}" without a Scene resolver; pass \`resolveScene\` to createChartsPack`
-  );
-};
-
 /** The charts pack, drawing every chart through `SceneRenderer`s. */
 export const createChartsPack = ({
-  resolveScene = noResolver,
+  resolveScene = resolveChart,
   sceneRenderers = [],
 }: ChartsPackOptions = {}): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
     slackAssetTypes: ['metric', 'xyChart'],
     inputBudget: CHARTS_INPUT_BUDGET,
+    authoring: {
+      groups: [
+        { title: 'Charts', types: ['metric', 'xyChart'] },
+        { title: 'Dashboards', types: ['grid', 'unsupported'] },
+      ],
+    },
     primitives: [
       ...defineChartPrimitives({
         resolveScene,
@@ -64,8 +61,5 @@ export const createChartsPack = ({
     ],
   });
 
-/**
- * The charts pack with its defaults. It validates every node; drawing a chart
- * node needs a `resolveScene`, given through {@link createChartsPack}.
- */
+/** The charts pack with its defaults: `resolveChart`, then `isomer-svg`. */
 export const chartsPack: PrimitivePack = createChartsPack();

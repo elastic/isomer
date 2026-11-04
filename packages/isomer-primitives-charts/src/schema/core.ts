@@ -124,7 +124,16 @@ export const DURATION_OUTPUT_UNITS = [
 export const portableFormatSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('number'), ...numeralShape }),
-    z.strictObject({ kind: z.literal('percent'), ...numeralShape }),
+    z.strictObject({
+      kind: z.literal('percent'),
+      ...numeralShape,
+      fractional: z
+        .boolean()
+        .optional()
+        .describe(
+          'Whether values are fractions (0.35 is 35%). `false` means they are already percentages. Absent means true.'
+        ),
+    }),
     z.strictObject({ kind: z.literal('bytes'), ...numeralShape }),
     z.strictObject({ kind: z.literal('bits'), ...numeralShape }),
     z.strictObject({
