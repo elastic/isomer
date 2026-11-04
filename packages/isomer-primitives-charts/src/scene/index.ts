@@ -1,0 +1,39 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+export { metricSingleValueScene, xyTimeSeriesScene } from './examples';
+export {
+  type AxisId,
+  type ColorScheme,
+  type MetricAlignment,
+  type MetricLayout,
+  type MetricScene,
+  type MetricTile,
+  type Scene,
+  type SceneAnnotation,
+  type SceneAxis,
+  type SceneChrome,
+  type SceneColor,
+  type SceneColumn,
+  type SceneEnvironment,
+  type SceneKind,
+  type SceneLegend,
+  type SceneLegendItem,
+  type SceneReferenceLine,
+  type SceneRenderEnv,
+  type SceneRenderer,
+  type SceneSize,
+  type SceneSource,
+  type SceneTable,
+  type SceneTick,
+  type SceneTooltip,
+  type SceneTooltipEntry,
+  type XyMark,
+  type XyScene,
+  type XySeries,
+  SCENE_KINDS,
+} from './types';

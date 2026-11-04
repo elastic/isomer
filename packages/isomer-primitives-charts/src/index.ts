@@ -5,6 +5,38 @@
  * 2.0.
  */
 
+export { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
+export {
+  type AxisId,
+  type ColorScheme,
+  type MetricAlignment,
+  type MetricLayout,
+  type MetricScene,
+  type MetricTile,
+  type Scene,
+  type SceneAnnotation,
+  type SceneAxis,
+  type SceneChrome,
+  type SceneColor,
+  type SceneColumn,
+  type SceneEnvironment,
+  type SceneKind,
+  type SceneLegend,
+  type SceneLegendItem,
+  type SceneReferenceLine,
+  type SceneRenderEnv,
+  type SceneRenderer,
+  type SceneSize,
+  type SceneSource,
+  type SceneTable,
+  type SceneTick,
+  type SceneTooltip,
+  type SceneTooltipEntry,
+  type XyMark,
+  type XyScene,
+  type XySeries,
+  SCENE_KINDS,
+} from './scene/types';
 export {
   gridCatalog,
   metricCatalog,
