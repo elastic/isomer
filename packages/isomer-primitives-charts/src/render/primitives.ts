@@ -11,12 +11,14 @@ import type { Scene } from '../scene/types';
 import { metricCatalog, xyChartCatalog } from '../schema/catalog';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples } from '../schema/examples/xy_chart';
-import { metricSchema } from '../schema/metric';
+import { type MetricNode, metricSchema } from '../schema/metric';
 import { xyChartSchema } from '../schema/xy_chart';
+import { SVG_THEME } from '../svg/theme';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import { CHARTS_THEME } from './theme';
 
 // Surfaces without a render context resolve for the light scheme: their output
 // carries text, not colors.
@@ -30,6 +32,16 @@ const chartRenderers = <TNode extends ChartNode>(config: SceneShimConfig) => ({
   markdown: (node: TNode) => md.paragraph(resolveForText(node, config).summary),
 });
 
+/** Tiles in rows, at the fallback renderer's default tile height. */
+export const metricSnapshotHeight = (node: MetricNode): number => {
+  const tiles = node.breakdown ? Math.max(node.data.rows.length, 1) : 1;
+  const columns = Math.min(
+    tiles,
+    node.breakdown?.maxColumns ?? CHARTS_THEME.metric.maxColumns
+  );
+  return SVG_THEME.defaultSize.metric.height * Math.ceil(tiles / columns);
+};
+
 /** The chart primitives, each drawing through `config`. */
 export const defineChartPrimitives = (config: SceneShimConfig) =>
   [
@@ -38,6 +50,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
+      metrics: { snapshotHeight: metricSnapshotHeight },
       renderers: chartRenderers(config),
     }),
     definePrimitive({
@@ -45,6 +58,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,
+      metrics: { snapshotHeight: () => SVG_THEME.defaultSize.xy.height },
       renderers: chartRenderers(config),
     }),
   ] as const;

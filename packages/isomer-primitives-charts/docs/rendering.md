@@ -28,7 +28,7 @@ For each chart node, the shim tries renderers in this order and takes the first 
 
 1. `context.sceneRenderers`, the host's preference for this render;
 2. the pack's `sceneRenderers`, given to `createChartsPack`;
-3. the pack's fallback, which supports every kind.
+3. `isomer-svg`, the pack's fallback, which supports every kind.
 
 The `snapshot` surface takes no host context, so a host that wants a particular engine in images names it in the pack's `sceneRenderers`. A renderer is a plain value:
 
@@ -62,6 +62,36 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 A host that loads the charts pack without a style adapter names the runtime's type parameters to pass these fields, as [Runtime](../../isomer-runtime/docs/runtime.md#typing-the-render-context) shows.
 
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
+
+## `isomer-svg`
+
+`isomerSvgRenderer` is the fallback: it draws every Scene kind as inline SVG, in the browser and on Node, and is what `snapshot` images use unless the pack names another engine. It reads only the Scene. Every color is a literal `fill` or `stroke` from the Scene, since a stylesheet does not reach inside an inline `svg`; every string is the Scene's own; ticks, legend order and draw order are the Scene's. Every length, ratio and glyph it adds comes from `SVG_THEME`.
+
+The drawing is plain data before it is React, so it binds anywhere:
+
+```ts
+import { drawScene, toReactDom, toSvgMarkup } from '@elastic/isomer-primitives-charts';
+
+const tree = drawScene(scene); // { tag, attrs, children }, SVG attribute names
+toReactDom(tree);              // React DOM elements
+toSvgMarkup(tree);             // an SVG string, for HTML or a native SvgXml
+```
+
+A native host maps the same tree onto its own SVG components.
+
+The root `svg` is `role="img"`, labelled with the Scene's `summary`, and sized to the Scene's `size`, or `SVG_THEME.defaultSize` for its kind when the Scene has none. Groups carry `data-series`, `data-legend-key`, `data-tile`, `data-axis` and `data-row` attributes, so tests and enhancements can find marks without class names. A series whose legend item is hidden is not drawn.
+
+What it draws differs from Elastic Charts in layout, not content:
+
+| Scene field | `isomer-svg` |
+| --- | --- |
+| `areaFill: 'gradient'` | A solid fill at `areaOpacity` |
+| `layout.icon` on a metric | Not drawn |
+| `fitting` | Fills a gap from its neighbors by the fitting kind; with `emphasize`, the fitted segments are dashed |
+| `interpolation: 'smooth'` | A Catmull–Rom curve through the marks |
+| Text width | Estimated from `SVG_THEME.font.widthRatio`, so long labels may overlap where Elastic Charts would measure and truncate |
+
+`metrics.snapshotHeight` is the default height for an `xyChart`, and the default tile height times the rows of tiles for a `metric`: one row without a breakdown, otherwise the rows at `breakdown.maxColumns` per row, or Kibana's default of 3.
 
 ## Text and Markdown
 

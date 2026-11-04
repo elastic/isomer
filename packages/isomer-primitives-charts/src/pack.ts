@@ -14,15 +14,15 @@ import type {
 } from './render/context';
 import { gridPrimitive } from './render/grid';
 import { defineChartPrimitives } from './render/primitives';
-import { summarySceneRenderer } from './render/summary_renderer';
 import { unsupportedPrimitive } from './render/unsupported';
+import { isomerSvgRenderer } from './svg/renderer';
 
 export interface ChartsPackOptions {
   /** Turns a chart node into its Scene. */
   readonly resolveScene?: SceneResolver;
   /**
    * The pack's own renderer preferences, tried after a render's
-   * `context.sceneRenderers` and before the pack's fallback. The `snapshot`
+   * `context.sceneRenderers` and before `isomer-svg`, the pack's fallback. The `snapshot`
    * surface takes no host context, so this is where its preference goes.
    */
   readonly sceneRenderers?: readonly ReactSceneRenderer[];
@@ -44,7 +44,7 @@ export const createChartsPack = ({
     primitives: [
       ...defineChartPrimitives({
         resolveScene,
-        sceneRenderers: [...sceneRenderers, summarySceneRenderer],
+        sceneRenderers: [...sceneRenderers, isomerSvgRenderer],
       }),
       gridPrimitive,
       unsupportedPrimitive,

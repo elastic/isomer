@@ -9,3 +9,4 @@ export { type ChartsPackOptions, chartsPack, createChartsPack } from './pack';
 export * from './render';
 export * from './scene';
 export * from './schema';
+export * from './svg';
