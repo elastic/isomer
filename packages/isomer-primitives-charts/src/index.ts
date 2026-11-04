@@ -10,3 +10,4 @@ export * from './render';
 export * from './scene';
 export * from './schema';
 export * from './svg';
+export * from './text';
