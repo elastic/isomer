@@ -23,7 +23,7 @@ import type { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/sce
 | `table` | The node's data in `data` order. Formatted `cells` serve text surfaces; raw `values` are in matching column order so renderers can raise events without parsing display text |
 | `interactions` | What the node offers, resolved: selection targets, brush column, sync, link and emphasis |
 
-A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
+A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
 
 ## Marks carry their rows and columns
 
@@ -32,6 +32,33 @@ Every selectable part of a Scene (a metric tile, an xy mark, a series, a legend 
 Each `XySeries` also carries its `series` reference: the index of its data layer and y entry, uniquely identifying the series even when different layers share the same series key.
 
 Helper marks carry no `source` and are never selected: progress bars, trend lines, reference lines, annotations and the current-time marker.
+
+## Selections and events
+
+Where the node offers a selection target, the part a reader selects carries a `selection`: the event it raises, decided by the resolver.
+
+```ts
+interface SceneSelection {
+  target: SelectTarget;
+  rows: number[];                  // indexes into `data.rows`
+  columns: string[];               // the dimension columns that identify the target
+  values: Record<string, Cell>;    // their raw cells, which every row in `rows` shares
+  description: string;
+}
+```
+
+| Target | Carried by |
+| --- | --- |
+| `tile` | Each metric tile |
+| `datum` | Each xy mark |
+| `series` | Each xy series |
+| `legend` | Each legend item |
+| `category` | Each entry of an `XyScene`'s `categories`: every x position with data, in axis order, with its label as the x axis formats it |
+
+A renderer raises events with two helpers, so every renderer raises the same event for the same gesture:
+
+- `selectEvent(nodeId, selection, negate?)` returns the `chart.select` event for a selection.
+- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its description names each end by the nearest x position in `categories`.
 
 ## `SceneRenderer`
 
@@ -47,4 +74,4 @@ interface SceneRenderer<TOutput = unknown> {
 This interface describes a renderer; it does not provide renderer selection or a fallback. `TOutput` is what the renderer produces, such as a React node.
 `SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction.
 
-`metricSingleValueScene` and `xyTimeSeriesScene` are hand-written Scenes for two schema examples, for building renderers before the resolver exists. They show the shape; they are not expected output.
+`metricSingleValueScene`, `xyTimeSeriesScene` and `xyInteractiveScene` are hand-written Scenes for three schema examples, for building renderers before the resolver exists. They show the shape; they are not expected output. `xyInteractiveScene`'s selections raise exactly the events in `chartEventExamples`.

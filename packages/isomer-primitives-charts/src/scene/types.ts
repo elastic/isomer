@@ -34,6 +34,20 @@ export interface SceneSource {
   readonly columns: readonly string[];
 }
 
+/**
+ * What selecting a part of the chart raises, decided by the resolver: the
+ * `select` event without the node id and `negate`. `columns` are the dimension
+ * columns that identify the target, and `values` their raw cells, which every
+ * row in `rows` shares. Present only where the node offers `target`.
+ */
+export interface SceneSelection {
+  readonly target: SelectTarget;
+  readonly rows: readonly number[];
+  readonly columns: readonly string[];
+  readonly values: Readonly<Record<string, Cell>>;
+  readonly description: string;
+}
+
 /** One labelled value in a tooltip, already formatted. */
 export interface SceneTooltipEntry {
   readonly label: string;
@@ -180,6 +194,8 @@ export interface MetricTile {
   readonly tooltip: SceneTooltip;
   /** What a selection of the tile describes, such as "host.name: web-01 · Used: 412 GB". */
   readonly description: string;
+  /** The `tile` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface MetricScene extends SceneBase {
@@ -226,6 +242,18 @@ export interface XyMark {
   readonly description: string;
   /** The mark falls in a partial bucket at an edge of the queried range. */
   readonly partial?: boolean;
+  /** The `datum` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** One x position with data, in axis order. */
+export interface XyCategory {
+  /** As marks place it: epoch milliseconds, a number, or a category. */
+  readonly x: number | string;
+  /** The position as the x axis formats it. */
+  readonly label: string;
+  /** The `category` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface XySeries {
@@ -264,6 +292,8 @@ export interface XySeries {
   readonly valueLabels: boolean;
   /** The cells the whole series represents, for a series or legend selection. */
   readonly source: SceneSource;
+  /** The `series` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
   /** In x order. */
   readonly marks: readonly XyMark[];
 }
@@ -285,6 +315,8 @@ export interface SceneLegendItem {
   }[];
   readonly source: SceneSource;
   readonly description: string;
+  /** The `legend` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface SceneLegend {
@@ -350,6 +382,8 @@ export interface XyScene extends SceneBase {
     readonly y?: SceneAxis;
     readonly y2?: SceneAxis;
   };
+  /** Every x position with data, in axis order. */
+  readonly categories: readonly XyCategory[];
   /** Resolved series and helper marks in the chart's exact cross-kind draw order. */
   readonly layers: readonly XySceneLayer[];
   readonly legend: SceneLegend;
