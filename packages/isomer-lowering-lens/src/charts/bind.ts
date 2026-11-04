@@ -16,6 +16,7 @@ import {
   columnSchema,
   id,
   issueDiagnostics,
+  json,
   type LensDiagnostic,
   type LensTable,
   parseArgument,
@@ -42,18 +43,8 @@ const planSchema = z
     version: z.literal(1),
     source: savedObjectSchema,
     dataViews: z.array(z.unknown()),
-    filters: z.array(
-      z.record(
-        z.string(),
-        z.custom<JsonValue>(() => true)
-      )
-    ),
-    query: z
-      .record(
-        z.string(),
-        z.custom<JsonValue>(() => true)
-      )
-      .optional(),
+    filters: z.array(z.record(z.string(), json)),
+    query: z.record(z.string(), json).optional(),
     layers: z.array(anyLayerPlanSchema).min(1),
   })
   .strict();

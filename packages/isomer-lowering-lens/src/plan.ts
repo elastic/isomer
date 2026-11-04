@@ -5,10 +5,10 @@
  * 2.0.
  */
 
-import { z } from 'zod';
-
 import { planForm } from './form/plan';
-import { copyJson, JSON_LIMITS } from './json';
+import type { JsonValue } from './json';
+import { copyPlain, isJsonObject, JSON_LIMITS } from './json';
+import type { QueryParamsRefusal } from './params';
 import { queryParams } from './params';
 import type {
   EsqlLayer,
@@ -174,7 +174,13 @@ export const plan = (input: unknown): LensPlanResult => {
   }
   const { savedObject, dataViews } = parsed.value;
   const { state } = savedObject.attributes;
-  const datasources = Object.keys(state.datasourceStates).join();
+
+  const named = Object.keys(state.datasourceStates);
+  const datasources = (
+    named.length > 1
+      ? named.filter((key) => !isEmptyDatasource(state.datasourceStates[key]))
+      : named
+  ).join();
   if (datasources === 'formBased') {
     return planForm(savedObject, dataViews);
   }

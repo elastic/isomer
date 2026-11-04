@@ -225,7 +225,7 @@ describe('plan', () => {
     ],
     [
       'mixed datasources',
-      { formBased: {}, textBased: { layers: {} } },
+      { formBased: { layers: { a: {} } }, textBased: { layers: { b: {} } } },
       'lens.unsupported-datasource',
       ['savedObject', 'attributes', 'state', 'datasourceStates'],
     ],

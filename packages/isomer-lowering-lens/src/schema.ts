@@ -243,9 +243,10 @@ export type DataViewMetadata = z.infer<typeof dataViewSchema>;
 export type EsqlLayer = z.infer<typeof esqlLayerSchema>;
 /** One Lens column, as saved; `fieldName` names the ES|QL response column it reads. */
 export type LensColumn = z.infer<typeof columnSchema>;
-/** An ES|QL layer's plan. */
+/** One planned ES|QL layer: the query to run unchanged, its Lens columns, and what the host must supply. */
 export type LensLayerPlan = z.infer<typeof layerPlanSchema>;
 
+/** Each kind of context a form-based layer can need from its host. */
 export const HOST_NEEDS = [
   'dataView',
   'timeRange',
@@ -256,6 +257,7 @@ export const HOST_NEEDS = [
 /** Context a host must supply to run a form-based layer. */
 export type HostNeed = (typeof HOST_NEEDS)[number];
 
+/** One planned form-based layer; `readTable` re-validates it, so a stored plan can be read back. */
 export const formLayerPlanSchema = z
   .object({
     kind: z.literal('form'),
@@ -280,10 +282,12 @@ export const formLayerPlanSchema = z
 /** A form-based layer's plan: its validated Lens columns, in Lens order, and what the host supplies. */
 export type FormLayerPlan = z.infer<typeof formLayerPlanSchema>;
 
+/** Any planned layer, told apart by `kind`. */
 export const anyLayerPlanSchema = z.discriminatedUnion('kind', [
   layerPlanSchema,
   formLayerPlanSchema,
 ]);
+/** A complete ES|QL response, `{ columns, values }`. */
 export type EsqlResponse = z.infer<typeof esqlResponseSchema>;
 
 /** What `plan` returns for a saved object it accepts. */

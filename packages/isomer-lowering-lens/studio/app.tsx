@@ -20,6 +20,8 @@ import {
   EuiTitle,
 } from '@elastic/eui';
 import type {
+  FormLayerPlan,
+  JsonObject,
   JsonValue,
   LensDiagnostic,
   LensLayerPlan,
@@ -127,13 +129,29 @@ const Code = ({ label, text }: { label: string; text: string }) => (
   </div>
 );
 
+type LayerPlan = LensLayerPlan | FormLayerPlan;
+
+/** What a layer's plan shows besides its query. */
+const layerDetails = (layer: LayerPlan) =>
+  layer.kind === 'esql'
+    ? { columns: layer.columns, host: layer.host }
+    : {
+        dataView: layer.dataView,
+        linkedTo: layer.linkedTo,
+        columns: layer.columns,
+        host: layer.host,
+      };
+
 const LayerView = ({
   layers,
   layer,
+  query,
   onSelect,
 }: {
-  layers: readonly LensLayerPlan[];
-  layer: LensLayerPlan | undefined;
+  layers: readonly LayerPlan[];
+  layer: LayerPlan | undefined;
+  /** A form-based plan's saved KQL or Lucene query. */
+  query: JsonObject | undefined;
   onSelect: (layerId: string) => void;
 }) => (
   <>
@@ -155,11 +173,13 @@ const LayerView = ({
     </EuiFormRow>
     {layer ? (
       <>
-        <Code label="Query" text={layer.query.esql} />
         <Code
-          label="Layer plan"
-          text={pretty({ columns: layer.columns, host: layer.host })}
+          label="Query"
+          text={
+            layer.kind === 'esql' ? layer.query.esql : pretty(query ?? null)
+          }
         />
+        <Code label="Layer plan" text={pretty(layerDetails(layer))} />
       </>
     ) : null}
   </>
@@ -260,10 +280,11 @@ const LensInspectorApp = () => {
   const [planned, setPlanned] = useState<Outcome<LensPlanResult>>();
   const [read, setRead] = useState<Outcome<LensResponseResult>>();
   const [layerId, setLayerId] = useState('');
-  const layers =
+  const plannedPlan =
     planned?.kind === 'result' && planned.result.status === 'planned'
-      ? planned.result.plan.layers
-      : [];
+      ? planned.result.plan
+      : undefined;
+  const layers = plannedPlan?.layers ?? [];
   const layer = layers.find((entry) => entry.layerId === layerId);
 
   const runPlan = () => {
@@ -276,36 +297,28 @@ const LensInspectorApp = () => {
         : ''
     );
   };
-  const runRead = () => {
-    const parsed = parse(response);
-    setRead(
-      'error' in parsed
-        ? parsed
-        : layer?.kind === 'form'
-          ? readTable(layer, parsed.value)
-          : readResponse(layer, parsed.value)
-    );
-  };
 
   return (
     <EuiFlexGroup
       direction="column"
       gutterSize="m"
       aria-label="Lens inspector"
-      style={{ padding: 24, display: 'grid', gap: 12 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600 }}>Lens inspector</h1>
-      <p>
-        Plans a native ES|QL or form-based Lens saved object and replays a
-        recorded ES|QL response or Lens <code>Datatable</code> through{' '}
-        <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
-        executed, and nothing is drawn: this shows the plan a host would run,
-        not a chart.
-      </p>
-      <label htmlFor={`${id}-input`}>
-        {'Planning input: { savedObject, dataViews? }'}
-      </label>
-      <textarea
-        id={`${id}-input`}
+      role="region"
+      style={{ padding: 24 }}>
+      <EuiTitle size="m">
+        <h1>Lens inspector</h1>
+      </EuiTitle>
+      <EuiText size="s">
+        <p>
+          Plans a native ES|QL or form-based Lens saved object and replays a
+          recorded ES|QL response or Lens <code>Datatable</code> through{' '}
+          <code>@elastic/isomer-lowering-lens</code>. Nothing is fetched or
+          executed, and nothing is drawn: this shows the plan a host would run,
+          not a chart.
+        </p>
+      </EuiText>
+      <JsonInput
+        label="Planning input: { savedObject, dataViews? }"
         rows={14}
         value={input}
         onChange={(value) => {
@@ -322,66 +335,20 @@ const LensInspectorApp = () => {
       <PlanOutcome outcome={planned} />
       {layers.length ? (
         <>
-          <p>
-            Status: planned, {layers.length}{' '}
-            {layers.length === 1 ? 'layer' : 'layers'}
-          </p>
-          <label htmlFor={`${id}-layer`}>Layer</label>
-          <select
-            id={`${id}-layer`}
-            value={layerId}
-            style={{ ...box, width: 'auto', justifySelf: 'start' }}
-            onChange={(event) => {
-              setLayerId(event.target.value);
-              setRead(undefined);
-            }}>
-            {layers.map((entry) => (
-              <option key={entry.layerId} value={entry.layerId}>
-                {entry.layerId}
-              </option>
-            ))}
-          </select>
-          <pre aria-label="Query" style={pre}>
-            {layer?.kind === 'esql'
-              ? clip(layer.query.esql, TEXT_CHARACTERS)
-              : planned && 'status' in planned && planned.status === 'planned'
-                ? clip(pretty(planned.plan.query ?? null), TEXT_CHARACTERS)
-                : ''}
-          </pre>
-          <pre aria-label="Layer plan" style={pre}>
-            {layer
-              ? clip(
-                  pretty(
-                    layer.kind === 'esql'
-                      ? { columns: layer.columns, host: layer.host }
-                      : {
-                          dataView: layer.dataView,
-                          linkedTo: layer.linkedTo,
-                          columns: layer.columns,
-                          host: layer.host,
-                        }
-                  ),
-                  TEXT_CHARACTERS
-                )
-              : ''}
-          </pre>
-          <label htmlFor={`${id}-response`}>
-            {layer?.kind === 'form'
-              ? "Lens Datatable: { type: 'datatable', columns, rows }"
-              : 'Recorded ES|QL response: { columns, values }'}
-          </label>
-          <textarea
-            id={`${id}-response`}
-            rows={10}
-            style={box}
-            value={response}
-            onChange={(event) => {
-              setResponse(event.target.value);
+          <LayerView
+            {...{ layers, layer }}
+            query={plannedPlan?.query}
+            onSelect={(selected) => {
+              setLayerId(selected);
               setRead(undefined);
             }}
           />
           <JsonInput
-            label="Recorded ES|QL response: { columns, values }"
+            label={
+              layer?.kind === 'form'
+                ? "Lens Datatable: { type: 'datatable', columns, rows }"
+                : 'Recorded ES|QL response: { columns, values }'
+            }
             rows={10}
             value={response}
             onChange={(value) => {
@@ -393,7 +360,13 @@ const LensInspectorApp = () => {
             <EuiButton
               size="s"
               onClick={() =>
-                setRead(runOn(response, (value) => readResponse(layer, value)))
+                setRead(
+                  runOn(response, (value) =>
+                    layer?.kind === 'form'
+                      ? readTable(layer, value)
+                      : readResponse(layer, value)
+                  )
+                )
               }>
               Read response
             </EuiButton>
