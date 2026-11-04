@@ -17,6 +17,7 @@ Read this root first, then the scopes below and any nested `AGENTS.md` along aff
 | Slides reference pack, theme, examples, decks | [Slides](packages/isomer-primitives-slides/AGENTS.md) |
 | Chart, grid and unsupported contracts | [Charts](packages/isomer-primitives-charts/AGENTS.md) |
 | Elastic Charts `SceneRenderer` | [Elastic Charts engine](packages/isomer-charts-elastic/AGENTS.md) |
+| Elastic Charts in Node (jsdom, Skia, worker) | [Elastic Charts engine for Node](packages/isomer-charts-elastic-node/AGENTS.md) |
 | Snapshot rasterization, measurement, PDF workers | [Takumi](packages/isomer-image-takumi/AGENTS.md) |
 | Studio CLI, browser app, config loading | [Studio](packages/isomer-studio/AGENTS.md) |
 | Transport-neutral tools, resources, prompts | [Agent tools](packages/isomer-agent-tools/AGENTS.md) |
@@ -55,7 +56,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface. Hosts and Kibana materializers build against it.
 
-`packages/isomer-charts-elastic` is the published Elastic Charts engine: a browser `SceneRenderer` that draws chart Scenes as Kibana draws its panels. It imports only the charts pack's `./scene` entry and keeps `@elastic/charts` and React as peers, so neither reaches the charts pack or its Hermes-safe entries.
+`packages/isomer-charts-elastic` is the published Elastic Charts engine: a browser `SceneRenderer` that draws chart Scenes as Kibana draws its panels. It imports only the charts pack's `./scene` entry and keeps `@elastic/charts` and React as peers, so neither reaches the charts pack or its Hermes-safe entries. `packages/isomer-charts-elastic-node` hosts it in jsdom with Skia on a worker thread and returns markup the `snapshot` surface rasterizes; it is a package of its own so jsdom and Skia never reach a browser bundle.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
@@ -67,7 +68,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 ## Release posture
 
-Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the Elastic Charts engine is what browser hosts draw charts with, the charts pack is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the Elastic Charts engines are what browser hosts and the render service draw charts with, the charts pack is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 

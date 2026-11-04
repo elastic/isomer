@@ -130,6 +130,7 @@ const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
 /** Entries that only Node loads, so they bundle for Node alone. */
 const NODE_ONLY_ENTRIES = new Set([
+  '@elastic/isomer-charts-elastic-node',
   '@elastic/isomer-image-takumi',
   '@elastic/isomer-runtime/testing',
   '@elastic/isomer-sdk/testing',

@@ -12,6 +12,7 @@ toc:
   - toc: slides
   - toc: charts
   - toc: charts-elastic
+  - toc: charts-elastic-node
   - toc: image-takumi
   - toc: studio
   - toc: evals

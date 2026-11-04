@@ -1,0 +1,80 @@
+{
+  "name": "@elastic/isomer-charts-elastic-node",
+  "version": "0.0.0-development",
+  "description": "Elastic Charts engine for Isomer chart Scenes in Node: draws metric and xy charts as Kibana does, in jsdom with Skia on a worker thread.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-charts-elastic-node"
+  },
+  "sideEffects": false,
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "!**/*.tsbuildinfo",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "isomer": {
+    "packedFiles": [
+      "lib/esm/worker_file.cjs",
+      "lib/cjs/worker.js",
+      "lib/cjs/worker_file.cjs"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types && pnpm copy-files",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "copy-files": "cp src/worker_file.cjs lib/cjs/worker_file.cjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-charts-elastic": "workspace:*",
+    "@elastic/isomer-primitives-charts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@elastic/charts": "^73.3.0",
+    "@napi-rs/canvas": "^1.1.0",
+    "jsdom": "^20.0.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/charts": "73.3.2",
+    "@elastic/eui": "123.1.0",
+    "@elastic/eui-theme-borealis": "8.1.0",
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@emotion/css": "11.13.5",
+    "@emotion/react": "11.14.0",
+    "@napi-rs/canvas": "1.1.0",
+    "@types/jsdom": "^20.0.1",
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "jsdom": "20.0.1",
+    "moment": "2.31.0",
+    "moment-timezone": "0.5.48",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsx": "4.23.15"
+  }
+}
