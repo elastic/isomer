@@ -72,7 +72,9 @@ const context = new Proxy(
           })
         : key === 'getLineDash'
           ? () => []
-          : () => undefined,
+          : typeof key === 'string' && key.startsWith('create')
+            ? () => ({ addColorStop: () => undefined })
+            : () => undefined,
     set: () => true,
   }
 );
