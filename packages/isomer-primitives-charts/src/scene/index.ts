@@ -11,12 +11,20 @@ export type {
   ChartSelectEvent,
   SelectTarget,
 } from '../schema/events';
+export { type ResolveChartOptions } from './common';
 export { brushEvent, selectEvent } from './events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './examples';
+export { type ChartNode, resolveChart } from './resolve';
+export {
+  CATEGORICAL_PALETTE,
+  CHART_CHROME,
+  categoricalColor,
+  resolveColor,
+} from './theme';
 export {
   type AxisId,
   type ColorScheme,
