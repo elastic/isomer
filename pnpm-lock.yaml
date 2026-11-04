@@ -228,7 +228,7 @@ importers:
     devDependencies:
       '@elastic/charts':
         specifier: 73.3.2
-        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
+        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)
       '@elastic/eui':
         specifier: 123.1.0
         version: 123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
@@ -330,9 +330,22 @@ importers:
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk
+      '@elastic/numeral':
+        specifier: 2.5.1
+        version: 2.5.1
       zod:
         specifier: ^4.5.4
         version: 4.6.5
+    devDependencies:
+      '@elastic/eui-theme-borealis':
+        specifier: 8.1.0
+        version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
+      moment-timezone:
+        specifier: 0.6.2
+        version: 0.6.2
 
   packages/isomer-primitives-slides:
     dependencies:
@@ -1264,6 +1277,10 @@ packages:
       react: ^17.0 || ^18.0
       react-dom: ^17.0 || ^18.0
       typescript: ~4.5.3 || ^5
+
+  '@elastic/numeral@2.5.1':
+    resolution: {integrity: sha512-Tby6TKjixRFY+atVNeYUdGr9m0iaOq8230KTwn8BbUhkh7LwozfgKq0U98HRX7n63ZL62szl+cDKTYzh5WPCFQ==}
+    engines: {node: '>= 0.10'}
 
   '@elastic/prismjs-esql@4.31.0':
     resolution: {integrity: sha512-2Y8abeUm4OJs5kz+nwcadxz4Xh86eOOWa2ZMIs8xFy4Xere9xgBo1ybHBFHbucq+3a2AUH8Lf/Yfu0PnBIEfRA==}
@@ -4035,6 +4052,9 @@ packages:
   moment-timezone@0.5.48:
     resolution: {integrity: sha512-f22b8LV1gbTO2ms2j2z13MuPogNoh5UzxL3nzNAYKGraILnbGc9NEE6dyiiiLv46DGRb8A4kg8UKWLjPthxBHw==}
 
+  moment-timezone@0.6.2:
+    resolution: {integrity: sha512-lDsQv8FoGdBUdf0+TjGsq2orxKuXdwFlQ6Zw6TX3xIcTwTfEpCLyKqvEauvCHJ8iu3KBV8+uPhlv70YsNGdUBQ==}
+
   moment@2.31.0:
     resolution: {integrity: sha512-0acOTfMiWOheYS4eoWb80yYMb/JLvVv9SHbs2PehaDzfUG0Bw855SKyk0IKTnPGa5+U2bmi3W68l1+sGLX/pvw==}
 
@@ -6477,6 +6497,36 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
+  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)':
+    dependencies:
+      '@popperjs/core': 2.11.8
+      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)
+      bezier-easing: 2.1.0
+      chroma-js: 2.6.0
+      classnames: 2.5.1
+      d3-array: 1.2.4
+      d3-cloud: 1.2.9
+      d3-collection: 1.0.7
+      d3-interpolate: 3.0.2
+      d3-scale: 3.3.0
+      d3-shape: 2.1.0
+      immer: 11.1.8
+      luxon: 1.28.1
+      moment: 2.31.0
+      moment-timezone: 0.5.48
+      prop-types: 15.8.1
+      re-reselect: 4.0.1(reselect@5.3.0)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      ts-debounce: 4.0.0
+      utility-types: 3.11.0
+      uuid: 14.0.3
+    transitivePeerDependencies:
+      - '@types/react'
+      - redux
+      - reselect
+
   '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
     dependencies:
       '@popperjs/core': 2.11.8
@@ -6586,6 +6636,8 @@ snapshots:
       vfile: 4.2.1
     transitivePeerDependencies:
       - react-native
+
+  '@elastic/numeral@2.5.1': {}
 
   '@elastic/prismjs-esql@4.31.0':
     dependencies:
@@ -9562,6 +9614,10 @@ snapshots:
     dependencies:
       moment: 2.31.0
 
+  moment-timezone@0.6.2:
+    dependencies:
+      moment: 2.31.0
+
   moment@2.31.0: {}
 
   monaco-editor@0.44.0: {}
@@ -9955,6 +10011,15 @@ snapshots:
       '@types/react': 18.3.31
       '@types/react-dom': 18.3.7(@types/react@18.3.31)
       react-dom: 18.3.1(react@18.3.1)
+      redux: 4.2.1
+
+  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1):
+    dependencies:
+      '@types/use-sync-external-store': 0.0.6
+      react: 18.3.1
+      use-sync-external-store: 1.7.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.31
       redux: 4.2.1
 
   react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1):

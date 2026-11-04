@@ -8,6 +8,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 
 | Package | Version | SPDX | Path | Optional dependencies |
 | --- | --- | --- | --- | --- |
+| `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/mdast` | 4.0.4 | MIT | `node_modules/.pnpm/@types+mdast@4.0.4/node_modules/@types/mdast` |  |
 | `@types/ms` | 2.1.0 | MIT | `node_modules/.pnpm/@types+ms@2.1.0/node_modules/@types/ms` |  |

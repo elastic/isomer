@@ -54,7 +54,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
 
-`packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface. Hosts and Kibana materializers build against it.
+`packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface; `./format` is the one formatter, with Kibana's numeral, duration and date formats. Hosts and Kibana materializers build against it.
 
 `packages/isomer-charts-elastic` is the published Elastic Charts engine: a browser `SceneRenderer` that draws chart Scenes as Kibana draws its panels. It imports only the charts pack's `./scene` entry and keeps `@elastic/charts` and React as peers, so neither reaches the charts pack or its Hermes-safe entries. `packages/isomer-charts-elastic-node` hosts it in jsdom with Skia on a worker thread and returns markup the `snapshot` surface rasterizes; it is a package of its own so jsdom and Skia never reach a browser bundle.
 

@@ -25,6 +25,7 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@elastic/eui` | 123.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui@123.1.0_@elastic+datemath@5.0.3_moment@2.31.0__@elastic+eui-theme-borealis_0545661ad584fdf73b0459b64f946f43/node_modules/@elastic/eui` |  |
 | `@elastic/eui-theme-borealis` | 8.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-borealis@8.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18._9b163b4f2fc10823334ba28c294bafcc/node_modules/@elastic/eui-theme-borealis` |  |
 | `@elastic/eui-theme-common` | 10.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-common@10.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18.3_fbe9488fb79dd10ae7c646de20371fd6/node_modules/@elastic/eui-theme-common` |  |
+| `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
 | `@elastic/prismjs-esql` | 4.31.0 | MIT | `node_modules/.pnpm/@elastic+prismjs-esql@4.31.0/node_modules/@elastic/prismjs-esql` |  |
 | `@emotion/babel-plugin` | 11.13.5 | MIT | `node_modules/.pnpm/@emotion+babel-plugin@11.13.5/node_modules/@emotion/babel-plugin` |  |
 | `@emotion/cache` | 11.14.0 | MIT | `node_modules/.pnpm/@emotion+cache@11.14.0/node_modules/@emotion/cache` |  |
@@ -540,6 +541,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
 | `@dual-bundle/import-meta-resolve` | 4.2.1 | MIT | `node_modules/.pnpm/@dual-bundle+import-meta-resolve@4.2.1/node_modules/@dual-bundle/import-meta-resolve` |  |
 | `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
+| `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_961e81b92ee3910109ec6666811f7622/node_modules/@elastic/charts` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
@@ -1281,6 +1283,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `minizlib` | 3.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minizlib` |  |
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
 | `moment-timezone` | 0.5.48 | MIT | `node_modules/.pnpm/moment-timezone@0.5.48/node_modules/moment-timezone` |  |
+| `moment-timezone` | 0.6.2 | MIT | `node_modules/.pnpm/moment-timezone@0.6.2/node_modules/moment-timezone` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ms` |  |
 | `mute-stream` | 3.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/mute-stream` |  |
@@ -1408,6 +1411,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `react-is` | 18.3.1 | MIT | `node_modules/.pnpm/react-is@18.3.1/node_modules/react-is` |  |
 | `react-redux` | 8.1.3 | MIT | `node_modules/.pnpm/react-redux@8.1.3_@types+react-dom@18.3.7_@types+react@18.3.31__@types+react@18.3.31_re_200ec7b00437ba6d838f87a2aabb112b/node_modules/react-redux` |  |
 | `react-redux` | 9.2.0 | MIT | `node_modules/.pnpm/react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@5.0.1/node_modules/react-redux` |  |
+| `react-redux` | 9.2.0 | MIT | `node_modules/.pnpm/react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@4.2.1/node_modules/react-redux` |  |
 | `react-remove-scroll` | 2.7.2 | MIT | `node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@18.3.31_react@18.3.1/node_modules/react-remove-scroll` |  |
 | `react-remove-scroll-bar` | 2.3.8 | MIT | `node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@18.3.31_react@18.3.1/node_modules/react-remove-scroll-bar` |  |
 | `react-style-singleton` | 2.2.3 | MIT | `node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@18.3.31_react@18.3.1/node_modules/react-style-singleton` |  |
