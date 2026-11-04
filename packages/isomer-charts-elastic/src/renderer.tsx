@@ -1,0 +1,47 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import type { ReactNode } from 'react';
+import type {
+  Scene,
+  SceneKind,
+  SceneRenderer,
+} from '@elastic/isomer-primitives-charts/scene';
+
+import { MetricChart } from './metric';
+import type { ElasticChartsOptions } from './options';
+import { XyChart } from './xy';
+
+/** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
+export const ELASTIC_CHARTS_VERSION = '73.3.2';
+
+const KINDS: readonly SceneKind[] = ['metric', 'xy'];
+
+/** Kibana's functional tests turn on `DebugState` through this global. */
+const debugFlag = (): boolean =>
+  (globalThis as { _echDebugStateFlag?: boolean })._echDebugStateFlag ?? false;
+
+/**
+ * A `SceneRenderer` drawing Scenes with Elastic Charts, in the browser. The
+ * page needs Elastic Charts' stylesheet for the Scene's scheme
+ * (`@elastic/charts/dist/theme_light.css` or `theme_dark.css`); Kibana loads it.
+ */
+export const createElasticChartsRenderer = (
+  options: ElasticChartsOptions = {}
+): SceneRenderer<ReactNode> => ({
+  id: 'elastic-charts',
+  environments: ['browser'],
+  supports: (kind) => KINDS.includes(kind),
+  render: (scene: Scene, env) => {
+    const resolved = { debugState: options.debugState ?? debugFlag() };
+    return scene.kind === 'metric' ? (
+      <MetricChart scene={scene} env={env} options={resolved} />
+    ) : (
+      <XyChart scene={scene} env={env} options={resolved} />
+    );
+  },
+});
