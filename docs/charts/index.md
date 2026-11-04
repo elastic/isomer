@@ -23,6 +23,7 @@ Every chart primitive shares the [chart core](core.md): `title`, `description`, 
 | Entry | Holds |
 | --- | --- |
 | `@elastic/isomer-primitives-charts/schema` | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer. |
+| `@elastic/isomer-primitives-charts/format` | The [formatter](format.md) every renderer and surface uses: Kibana's numeral, duration and date formats. |
 | `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, and the `SceneRenderer` interface. |
 | `@elastic/isomer-primitives-charts` | Everything above. |
 

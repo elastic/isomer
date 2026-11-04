@@ -5,6 +5,22 @@
  * 2.0.
  */
 
+export { formatDate, ordinal, toEpoch } from './format/date';
+export {
+  type DurationFormatOptions,
+  type DurationOutput,
+  formatDuration,
+} from './format/duration';
+export {
+  DEFAULT_PATTERNS,
+  EMPTY_LABEL,
+  NAN_LABEL,
+  NULL_LABEL,
+  defaultFormatFor,
+  formatValue,
+} from './format/format';
+export { type NumeralOptions, formatNumeral } from './format/numeral';
+export { type WallClock, wallClock, zoneAbbreviation } from './format/zone';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
