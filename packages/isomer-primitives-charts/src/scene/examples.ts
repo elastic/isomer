@@ -9,7 +9,16 @@
 // against the contract before the resolver exists. They show the shape, not
 // expected output: tests compare a resolver against Kibana, never against these.
 
-import type { MetricScene, SceneChrome, XyScene } from './types';
+import type { Cell } from '../schema/core';
+
+import type {
+  MetricScene,
+  SceneChrome,
+  SceneSelection,
+  XyMark,
+  XyScene,
+  XySeries,
+} from './types';
 
 const lightChrome: SceneChrome = {
   text: '#384861',
@@ -113,6 +122,10 @@ export const xyTimeSeriesScene: XyScene = {
     emphasis: [],
   },
   orientation: 'vertical',
+  categories: counts.map((_, index) => ({
+    x: START + index * HOUR,
+    label: hourLabel(index),
+  })),
   axes: {
     x: {
       id: 'x',
@@ -194,6 +207,234 @@ export const xyTimeSeriesScene: XyScene = {
         description: 'Count of records',
       },
     ],
+  },
+  barMinimumHeight: 1,
+};
+
+const TIME_LABEL = '@timestamp per hour';
+const STATUS_LABEL = 'Top 2 values of response.code';
+const COUNT_LABEL = 'Count of records';
+
+/** Series of the `xyChart` example "Interactive stacked bars", in draw order. */
+const statuses: readonly {
+  key: string;
+  raw: Cell;
+  label: string;
+  color: string;
+  counts: readonly number[];
+}[] = [
+  {
+    key: '200',
+    raw: '200',
+    label: '200',
+    color: '#16C5C0',
+    counts: [802, 911, 870],
+  },
+  {
+    key: '404',
+    raw: '404',
+    label: '404',
+    color: '#61A2FF',
+    counts: [41, 37, 52],
+  },
+  {
+    key: 'Other',
+    raw: 'Other',
+    label: 'Other',
+    color: '#BFDBFF',
+    counts: [12, 9, 15],
+  },
+  {
+    key: 'null',
+    raw: null,
+    label: '(null)',
+    color: '#EE72A6',
+    counts: [3, 0, 1],
+  },
+];
+
+/** The row of `xyInteractive` for an hour and a status: four rows per hour. */
+const rowOf = (hour: number, status: number) => hour * 4 + status;
+
+const interactiveHours = [0, 1, 2];
+
+const interactiveSeries: XySeries[] = statuses.map(
+  ({ key, raw, label, color, counts: values }, status) => {
+    const rows = interactiveHours.map((hour) => rowOf(hour, status));
+    const selection = (target: 'series' | 'legend'): SceneSelection => ({
+      target,
+      rows,
+      columns: ['status'],
+      values: { status: raw },
+      description: `${STATUS_LABEL}: ${label}`,
+    });
+    const marks: XyMark[] = interactiveHours.map((hour) => {
+      const below = statuses
+        .slice(0, status)
+        .reduce((sum, { counts: other }) => sum + (other[hour] ?? 0), 0);
+      const value = values[hour] ?? 0;
+      const description = `${TIME_LABEL}: ${hourLabel(hour)} · ${STATUS_LABEL}: ${label} · ${COUNT_LABEL}: ${value}`;
+      return {
+        source: {
+          rows: [rowOf(hour, status)],
+          columns: ['time', 'status', 'count'],
+        },
+        x: START + hour * HOUR,
+        y: below + value,
+        y0: below,
+        label: String(value),
+        tooltip: {
+          header: hourLabel(hour),
+          entries: [{ label, value: String(value), color }],
+        },
+        description,
+        selection: {
+          target: 'datum',
+          rows: [rowOf(hour, status)],
+          columns: ['time', 'status'],
+          values: { time: START + hour * HOUR, status: raw },
+          description,
+        },
+      };
+    });
+    return {
+      key,
+      label,
+      mark: 'bar',
+      axis: 'y',
+      color,
+      stack: { group: 'y', mode: 'stacked' },
+      interpolation: 'linear',
+      fitting: { kind: 'none', emphasize: false, extend: 'none' },
+      showPoints: false,
+      areaOpacity: 0.3,
+      areaFill: 'solid',
+      valueLabels: false,
+      source: { rows, columns: ['time', 'status', 'count'] },
+      selection: selection('series'),
+      marks,
+    };
+  }
+);
+
+/**
+ * The Scene for the `xyChart` example "Interactive stacked bars", in light.
+ * Its selections are the ones `chartEventExamples` raise.
+ */
+export const xyInteractiveScene: XyScene = {
+  kind: 'xy',
+  scheme: 'light',
+  size: { width: 480, height: 240 },
+  locale: 'en',
+  timeZone: 'UTC',
+  title: 'Responses by status',
+  chrome: lightChrome,
+  summary: `Responses by status: ${COUNT_LABEL} by ${TIME_LABEL} and ${STATUS_LABEL}, from 0 to 911.`,
+  table: {
+    columns: [
+      {
+        id: 'time',
+        label: TIME_LABEL,
+        type: 'date',
+        role: 'dimension',
+        empty: false,
+      },
+      {
+        id: 'status',
+        label: STATUS_LABEL,
+        type: 'string',
+        role: 'dimension',
+        empty: false,
+      },
+      {
+        id: 'count',
+        label: COUNT_LABEL,
+        type: 'number',
+        role: 'metric',
+        empty: false,
+      },
+    ],
+    rows: interactiveHours.flatMap((hour) =>
+      statuses.map(({ label, counts: values }, status) => ({
+        row: rowOf(hour, status),
+        cells: [hourLabel(hour), label, String(values[hour] ?? 0)],
+      }))
+    ),
+  },
+  interactions: {
+    select: ['datum', 'series', 'category', 'legend'],
+    brush: { column: 'time' },
+    sync: { cursor: true, tooltips: true },
+    link: {
+      href: 'https://kibana.example.com/app/lens#/edit/b2f4f8a0-1d2c-11ee-9f1a-0b2e5c1e7d3a',
+      label: 'Open in Kibana',
+    },
+    emphasis: [{ rows: [5], note: '404s peak at 01:00' }],
+  },
+  orientation: 'vertical',
+  axes: {
+    x: {
+      id: 'x',
+      position: 'bottom',
+      scale: 'time',
+      domain: [START, START + 2 * HOUR],
+      ticks: interactiveHours.map((hour) => ({
+        value: START + hour * HOUR,
+        label: hourLabel(hour),
+      })),
+      showTicks: true,
+      showGrid: false,
+      labelRotation: 0,
+    },
+    y: {
+      id: 'y',
+      position: 'left',
+      scale: 'linear',
+      domain: [0, 1000],
+      ticks: [0, 200, 400, 600, 800, 1000].map((value) => ({
+        value,
+        label: value.toLocaleString('en'),
+      })),
+      title: COUNT_LABEL,
+      showTicks: true,
+      showGrid: true,
+      labelRotation: 0,
+    },
+  },
+  categories: interactiveHours.map((hour) => ({
+    x: START + hour * HOUR,
+    label: hourLabel(hour),
+    selection: {
+      target: 'category',
+      rows: statuses.map((_, status) => rowOf(hour, status)),
+      columns: ['time'],
+      values: { time: START + hour * HOUR },
+      description: `${TIME_LABEL}: ${hourLabel(hour)}`,
+    },
+  })),
+  series: interactiveSeries,
+  referenceLines: [],
+  annotations: [],
+  legend: {
+    visible: true,
+    position: 'right',
+    layout: 'list',
+    maxLines: 1,
+    size: 'auto',
+    items: interactiveSeries.map(
+      ({ key, label, color, source, selection }) => ({
+        key,
+        label,
+        color,
+        hidden: key === 'null',
+        statistics: [],
+        source,
+        description: `${STATUS_LABEL}: ${label}`,
+        ...(selection
+          ? { selection: { ...selection, target: 'legend' as const } }
+          : {}),
+      })
+    ),
   },
   barMinimumHeight: 1,
 };

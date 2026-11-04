@@ -11,7 +11,12 @@ export type {
   ChartSelectEvent,
   SelectTarget,
 } from '../schema/events';
-export { metricSingleValueScene, xyTimeSeriesScene } from './examples';
+export { brushEvent, selectEvent } from './events';
+export {
+  metricSingleValueScene,
+  xyInteractiveScene,
+  xyTimeSeriesScene,
+} from './examples';
 export {
   type AxisId,
   type ColorScheme,
@@ -33,12 +38,14 @@ export {
   type SceneReferenceLine,
   type SceneRenderEnv,
   type SceneRenderer,
+  type SceneSelection,
   type SceneSize,
   type SceneSource,
   type SceneTable,
   type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
+  type XyCategory,
   type XyMark,
   type XyScene,
   type XySeries,
