@@ -109,6 +109,17 @@ With the host's `onEvent` and the node's `id`, `isomer-svg` draws `InteractiveSc
 
 Every event comes from the Scene's `selectEvent` and `brushEvent`, so it is the event any other renderer raises for the same gesture. A selection appears only where the node offers its target. A node's `interactions.link` is drawn as a link under the chart by the shim, for every renderer, and written on text and Markdown.
 
+## Images and PDF
+
+`chartsFrame` is a content-sized page for the `snapshot` surface: the body in a column on the scheme's background, `CHARTS_THEME.frame.width` (960 px) wide. Its theme carries `scheme`, so every chart, nested in a grid or not, resolves for the scheme the render asks for.
+
+```ts
+const runtime = createIsomerRuntime({ packs: [chartsPack], frames: { charts: chartsFrame } });
+const png = await takumi.png(await takumi.fit(runtime.surfaces.snapshot.render(composition, { theme: 'dark' })));
+```
+
+`remote_render.test.ts` draws every example through takumi with no browser, to PNG in both schemes and to one PDF with its fonts embedded, in CI.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`, then its link when the node has one: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.

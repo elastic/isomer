@@ -6,6 +6,7 @@
  */
 
 export * from './format';
+export { type ChartsFrameTheme, chartsFrame } from './frame';
 export {
   type ChartsPackOptions,
   CHARTS_INPUT_BUDGET,
