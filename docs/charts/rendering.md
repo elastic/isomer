@@ -22,6 +22,8 @@ const drawingPack = createChartsPack({
 
 `resolveScene` turns a node into its Scene: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
+The pack declares `CHARTS_INPUT_BUDGET` as its [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
+
 ## Choosing a renderer
 
 For each chart node, the shim tries renderers in this order and takes the first that runs in the render's environment and supports the Scene's kind:

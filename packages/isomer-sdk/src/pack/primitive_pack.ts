@@ -55,6 +55,16 @@ export type PackStyleAdapter = {
 };
 
 /** What a pack author passes to {@link definePrimitivePack}. */
+/**
+ * Limits a pack asks the input budget to allow, by name: the same fields as
+ * the validator's `InputBudget`, each a positive integer.
+ */
+export interface PackInputBudget {
+  depth?: number;
+  values?: number;
+  characters?: number;
+}
+
 export interface PrimitivePackInput {
   /** Stable identifier, used in capability reports and error messages. */
   id: string;
@@ -110,6 +120,17 @@ export interface PrimitivePackInput {
    * runtime-level `authoring` option is merged in last and wins on conflict.
    */
   authoring?: PackAuthoringOptions;
+  /**
+   * The input budget this pack's compositions need, where it is larger than
+   * the SDK's default: a chart pack whose nodes carry their data inline needs
+   * more values than a pack of message blocks.
+   *
+   * A runtime takes, per limit, the largest any of its packs declares and
+   * never less than the default, so the budget grows with the packs
+   * registered. A host's own `inputBudget` overrides it. Each limit is a
+   * positive integer.
+   */
+  inputBudget?: PackInputBudget;
 }
 
 /**
@@ -153,6 +174,8 @@ export interface PrimitivePack<TTheme = unknown> {
   readonly styleCollector?: string;
   /** See {@link PrimitivePackInput.authoring}. */
   readonly authoring?: PackAuthoringOptions;
+  /** The input budget the pack declares; see {@link PrimitivePackInput.inputBudget}. */
+  readonly inputBudget?: Readonly<PackInputBudget>;
   /**
    * Phantom: never present at runtime, never read.
    *
@@ -198,6 +221,7 @@ export const definePrimitivePack = <TTheme = unknown>(
       );
     }
   }
+  assertValidInputBudget(input.id, input.inputBudget);
   const styleCollector =
     input.styleCollector ?? input.styleAdapter?.styleCollector;
 
@@ -214,7 +238,28 @@ export const definePrimitivePack = <TTheme = unknown>(
       : {}),
     ...(styleCollector !== undefined ? { styleCollector } : {}),
     ...(input.authoring !== undefined ? { authoring: input.authoring } : {}),
+    ...(input.inputBudget !== undefined
+      ? { inputBudget: Object.freeze({ ...input.inputBudget }) }
+      : {}),
   };
+};
+
+/** Throws unless every limit `budget` sets is a positive integer. */
+const assertValidInputBudget = (
+  id: string,
+  budget: PackInputBudget | undefined
+): void => {
+  for (const [limit, value] of Object.entries(budget ?? {})) {
+    if (
+      value !== undefined &&
+      (!Number.isSafeInteger(value) || (value as number) <= 0)
+    ) {
+      throw new IsomerError(
+        'INVALID_INPUT_BUDGET',
+        `primitive pack "${id}": inputBudget.${limit} must be a positive integer, got ${String(value)}`
+      );
+    }
+  }
 };
 
 /** Each definition's `icon` by type, null-prototype so a type such as `__proto__` is an ordinary key. */

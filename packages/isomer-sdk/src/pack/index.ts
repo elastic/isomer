@@ -15,6 +15,7 @@ export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
   type AnyPrimitivePack,
   type PackAuthoringOptions,
+  type PackInputBudget,
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,
