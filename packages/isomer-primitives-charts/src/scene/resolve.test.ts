@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { scaleLog } from 'd3-scale';
 import { describe, expect, it } from 'vitest';
 
 import { chartEventExamples } from '../schema/examples/events';
@@ -16,7 +17,13 @@ import type { XyChartNode } from '../schema/xy_chart';
 import { brushEvent, selectEvent } from './events';
 import { xyInteractiveScene } from './examples';
 import { resolveChart } from './resolve';
-import { linearTicks, niceDomain, timeTicks } from './ticks';
+import {
+  linearTicks,
+  logTicks,
+  niceDomain,
+  niceLogDomain,
+  timeTicks,
+} from './ticks';
 import type { MetricScene, Scene, XyScene } from './types';
 
 const SIZE = { width: 480, height: 240 };
@@ -360,6 +367,37 @@ describe('ticks', () => {
     ]);
     expect(linearTicks(-1.25e12, 9.9e11, 5)).toEqual([-1e12, -5e11, 0, 5e11]);
     expect(niceDomain(0, 211, 5)).toEqual([0, 250]);
+  });
+
+  // Elastic Charts draws a log axis with d3-scale 3.3.0's scaleLog, nice() then ticks(count).
+  it.each([
+    [39_800, 91_700, 5],
+    [39_800, 91_700, 10],
+    [1, 1e6, 5],
+    [3, 7, 5],
+    [0.002, 40, 4],
+    [1, 1e20, 5],
+  ])(
+    'log ticks over [%s, %s] for %s ticks match d3-scale',
+    (min, max, count) => {
+      const d3 = scaleLog().domain([min, max]).nice();
+      const [low, high] = d3.domain() as [number, number];
+      expect(niceLogDomain(min, max)).toEqual([low, high]);
+      expect(logTicks(low, high, count)).toEqual(d3.ticks(count));
+      const raw = scaleLog().domain([min, max]);
+      expect(logTicks(min, max, count)).toEqual(raw.ticks(count));
+    }
+  );
+
+  it('gives the log axis in the long-labels example its ticks', () => {
+    const scene = resolveChart(xyNamed('Long labels and legend statistics'), {
+      scheme: 'light',
+      size: SIZE,
+    });
+    const d3 = scaleLog().domain([39_800, 91_700]).nice();
+    expect(scene.axes.y?.domain).toEqual(d3.domain());
+    expect(scene.axes.y?.ticks.map(({ value }) => value)).toEqual(d3.ticks(5));
+    expect(scene.axes.y?.ticks.length).toBeGreaterThan(0);
   });
 
   it('places time ticks on round wall-clock times', () => {
