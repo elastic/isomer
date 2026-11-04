@@ -17,6 +17,12 @@ import {
   portableFormatSchema,
 } from './core';
 import { crossSuperRefine } from './cross_field';
+import {
+  brushingInteractionsSchemaFor,
+  checkInteractions,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+} from './events';
 
 export const XY_MARKER_ICONS = [
   'alert',
@@ -57,7 +63,7 @@ export const XY_LEGEND_STATISTICS = [
 ] as const;
 
 export const XY_SERIES_KEY_RULE =
-  'A series key, for `colors.byKey`, is the y column id without `splitBy`; with `splitBy` it is the split cell as a string (`null` as "null"), prefixed by the y column id and ":" when the layer has more than one y column.';
+  'A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell as a string (`null` as "null"), prefixed by the y column id and ":" when the layer has more than one y column.';
 
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
@@ -235,6 +241,16 @@ const XY_DESCRIPTION = [
 const xyChartObjectSchema = z.object({
   type: z.literal('xyChart'),
   ...chartCoreShape,
+  ...interactionsCoreShape,
+  interactions: brushingInteractionsSchemaFor(
+    ['datum', 'series', 'category', 'legend'],
+    {
+      hiddenSeries: z
+        .array(z.string())
+        .optional()
+        .describe('Series keys hidden until the reader shows them.'),
+    }
+  ).optional(),
   orientation: z
     .enum(['vertical', 'horizontal'])
     .optional()
@@ -388,6 +404,7 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         });
       }
       checkColumnReferences(node.data, references, context, XY_RULES.yType);
+      checkInteractions(node, context);
     },
     [
       COLUMN_REF_RULE,
@@ -396,6 +413,8 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       XY_RULES.stack,
       XY_RULES.dataLayer,
       XY_RULES.rangeOrder,
+      INTERACTION_RULES.brushColumn,
+      INTERACTION_RULES.emphasisRows,
     ]
   )
 );

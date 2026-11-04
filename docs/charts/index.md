@@ -16,7 +16,7 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 
-Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`.
+Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`, and declares its [interactions](interactions.md).
 
 ## Entries
 

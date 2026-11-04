@@ -5,6 +5,12 @@
  * 2.0.
  */
 
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from '../schema/events';
 export { metricSingleValueScene, xyTimeSeriesScene } from './examples';
 export {
   type AxisId,
@@ -20,6 +26,7 @@ export {
   type SceneColor,
   type SceneColumn,
   type SceneEnvironment,
+  type SceneInteractions,
   type SceneKind,
   type SceneLegend,
   type SceneLegendItem,

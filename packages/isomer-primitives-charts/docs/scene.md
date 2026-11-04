@@ -21,6 +21,7 @@ import type { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/sce
 | `chrome` | Text, axis, grid-line, background and border colors |
 | `summary` | One sentence on what the chart shows |
 | `table` | The node's data as formatted text, in `data` order. Columns carry `role` and `empty`; an empty cell carries the empty-value text |
+| `interactions` | What the node offers, resolved: selection targets, brush column, sync, link and emphasis |
 
 A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `series` in draw order with their marks, `referenceLines`, `annotations` and a `legend`.
 
@@ -40,6 +41,8 @@ interface SceneRenderer<TOutput = unknown> {
   render(scene: Scene, env: SceneRenderEnv): TOutput;
 }
 ```
+
+`SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction.
 
 Hosts pass a preference list. The first renderer that runs in the current environment and supports the Scene's kind draws it; the fallback supports every kind, so something always draws. `TOutput` is what the renderer produces, such as a React node.
 
