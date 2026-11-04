@@ -1,6 +1,6 @@
 ---
 navigation_title: Chart core
-description: The fields every chart primitive shares: typed columnar data, colors, portable formats, provenance and losses.
+description: "The fields every chart primitive shares: typed columnar data, colors, portable formats, provenance and losses."
 ---
 
 # Chart core
