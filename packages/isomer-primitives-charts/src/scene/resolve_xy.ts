@@ -25,6 +25,7 @@ import {
   linearTicks,
   logTicks,
   niceDomain,
+  niceLogDomain,
   tickCount,
   timeTicks,
 } from './ticks';
@@ -620,18 +621,25 @@ export const resolveXy = (
       high = Math.max(1, high);
     }
     const count = tickCount(yLength, 50, 5);
-    if (
-      (config?.rounding ?? true) &&
-      domain.kind !== 'custom' &&
-      scale !== 'log'
-    ) {
-      [low, high] = niceDomain(low, high, count);
+    if (scale === 'log') {
+      // A log axis has no zero or negatives; keep the positive part.
+      const positive = values.filter((value) => value > 0);
+      low = low > 0 ? low : positive.length ? Math.min(...positive) : 1;
+      high = high > low ? high : low * 10;
+    }
+    if ((config?.rounding ?? true) && domain.kind !== 'custom') {
+      [low, high] =
+        scale === 'log'
+          ? niceLogDomain(low, high)
+          : niceDomain(low, high, count);
     }
     const format: PortableFormat = percentage
       ? { kind: 'percent', pattern: DEFAULT_PATTERNS.percent }
       : resolution.format(firstDraft!.yColumn);
     const ticks = (
-      scale === 'log' ? logTicks(low, high) : linearTicks(low, high, count)
+      scale === 'log'
+        ? logTicks(low, high, count)
+        : linearTicks(low, high, count)
     ).map((value) => ({ value, label: formatValue(value, format) }));
     return {
       id,
