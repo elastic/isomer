@@ -2913,6 +2913,34 @@ describe('the input budget', () => {
     expect(received).not.toBe(input);
   });
 
+  it('grows with the packs registered, and a host limit replaces only its own', () => {
+    const roomy = definePrimitivePack({
+      id: 'roomy',
+      primitives: [notePrimitive],
+      inputBudget: { characters: 2_000_000 },
+    });
+    const long = view('x'.repeat(1_500_000));
+    expect(
+      createIsomerRuntime({ packs: [packOf(notePrimitive)] }).parse(long)
+        .errors[0]?.code
+    ).toBe('INPUT_OVER_BUDGET');
+    expect(createIsomerRuntime({ packs: [roomy] }).parse(long).errors).toEqual(
+      []
+    );
+    expect(
+      createIsomerRuntime({
+        packs: [roomy],
+        inputBudget: { values: 50 },
+      }).parse(long).errors
+    ).toEqual([]);
+    expect(
+      createIsomerRuntime({
+        packs: [roomy],
+        inputBudget: { characters: 1_000 },
+      }).parse(long).errors[0]?.code
+    ).toBe('INPUT_OVER_BUDGET');
+  });
+
   it('takes the host’s limits', () => {
     const runtime = createIsomerRuntime({
       packs: [packOf(notePrimitive)],

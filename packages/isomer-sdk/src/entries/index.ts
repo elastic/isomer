@@ -78,6 +78,7 @@ export {
   type EnhancementDefinition,
   type HostCapabilities,
   type PackAuthoringOptions,
+  type PackInputBudget,
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,

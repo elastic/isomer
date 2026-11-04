@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-export { type ChartsPackOptions, chartsPack, createChartsPack } from './pack';
+export {
+  type ChartsPackOptions,
+  CHARTS_INPUT_BUDGET,
+  chartsPack,
+  createChartsPack,
+} from './pack';
 export * from './render';
 export * from './scene';
 export * from './schema';

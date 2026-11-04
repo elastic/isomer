@@ -28,6 +28,17 @@ export interface ChartsPackOptions {
   readonly sceneRenderers?: readonly ReactSceneRenderer[];
 }
 
+/**
+ * The input budget the charts pack declares. Chart nodes carry their data
+ * inline, so a dashboard of them passes the SDK's default of 20,000 values
+ * long before it is large. Room for about forty panels at a thousand rows of
+ * a few columns each.
+ */
+export const CHARTS_INPUT_BUDGET = {
+  values: 250_000,
+  characters: 10_000_000,
+} as const;
+
 const noResolver: SceneResolver = (node: ChartNode) => {
   throw new Error(
     `charts pack: cannot draw "${node.type}" without a Scene resolver; pass \`resolveScene\` to createChartsPack`
@@ -42,6 +53,7 @@ export const createChartsPack = ({
   definePrimitivePack({
     id: 'charts',
     slackAssetTypes: ['metric', 'xyChart'],
+    inputBudget: CHARTS_INPUT_BUDGET,
     primitives: [
       ...defineChartPrimitives({
         resolveScene,
