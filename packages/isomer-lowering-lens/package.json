@@ -57,6 +57,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@elastic/esql": "^4.36.0",
     "@elastic/isomer-primitives-charts": "workspace:*",
     "moment": "2.31.0",
     "moment-timezone": "0.6.1"
