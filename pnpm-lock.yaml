@@ -218,6 +218,15 @@ importers:
         specifier: 4.23.15
         version: 4.23.15
 
+  packages/isomer-primitives-charts:
+    dependencies:
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
+      zod:
+        specifier: ^4.5.4
+        version: 4.6.5
+
   packages/isomer-primitives-slides:
     dependencies:
       '@elastic/distillate':
