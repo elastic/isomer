@@ -1,0 +1,350 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+// The Scene is what `resolveChart` returns and the only thing a renderer reads.
+// Everything a renderer draws is decided here: colors for one scheme, every
+// string already formatted, ticks, legend order and draw order. A renderer
+// translates; it never formats, picks a color, sorts or chooses ticks.
+
+import type { Cell, ColumnRole, ColumnType } from '../schema/core';
+
+/** The chart kinds a Scene describes. A renderer declares which it supports. */
+export const SCENE_KINDS = ['metric', 'xy'] as const;
+
+export type SceneKind = (typeof SCENE_KINDS)[number];
+
+export type ColorScheme = 'light' | 'dark';
+
+/** A concrete color for the Scene's scheme: `#rrggbb` or `#rrggbbaa`. */
+export type SceneColor = string;
+
+/**
+ * The cells of the node's `data` a mark represents: row indexes into
+ * `data.rows` and column ids. A renderer maps a gesture to an event through
+ * this, never through its own indexes. Helper marks (reference lines,
+ * annotations, progress bars, trend lines) carry none.
+ */
+export interface SceneSource {
+  readonly rows: readonly number[];
+  readonly columns: readonly string[];
+}
+
+/** One labelled value in a tooltip, already formatted. */
+export interface SceneTooltipEntry {
+  readonly label: string;
+  readonly value: string;
+  readonly color?: SceneColor;
+}
+
+export interface SceneTooltip {
+  readonly header?: string;
+  readonly entries: readonly SceneTooltipEntry[];
+}
+
+/** Chrome colors for the Scene's scheme, resolved from `{ token }` colors and the chart theme. */
+export interface SceneChrome {
+  readonly text: SceneColor;
+  readonly textSubdued: SceneColor;
+  readonly axis: SceneColor;
+  readonly gridLine: SceneColor;
+  readonly background: SceneColor;
+  readonly border: SceneColor;
+}
+
+export interface SceneColumn {
+  readonly id: string;
+  readonly label: string;
+  readonly type: ColumnType;
+  readonly role: ColumnRole;
+  /** Every cell is null or empty. A renderer may hide the column. */
+  readonly empty: boolean;
+}
+
+/**
+ * The node's data as text, for accessible tables and the text, Markdown and
+ * Slack surfaces. Cells are formatted; an empty cell carries the empty-value
+ * text. Rows keep `data` order.
+ */
+export interface SceneTable {
+  readonly columns: readonly SceneColumn[];
+  readonly rows: readonly {
+    /** The row's index in `data.rows`. */
+    readonly row: number;
+    readonly cells: readonly string[];
+  }[];
+}
+
+export interface SceneSize {
+  readonly width: number;
+  readonly height: number;
+}
+
+interface SceneBase {
+  readonly kind: SceneKind;
+  /** The scheme every color in the Scene is for. Always explicit: native targets have no CSS. */
+  readonly scheme: ColorScheme;
+  /** The size ticks and layout were chosen for. Absent when resolved without one. */
+  readonly size?: SceneSize;
+  readonly locale: string;
+  readonly timeZone: string;
+  readonly title?: string;
+  readonly description?: string;
+  readonly chrome: SceneChrome;
+  /** One sentence that states what the chart shows, for screen readers and text surfaces. */
+  readonly summary: string;
+  readonly table: SceneTable;
+}
+
+export type MetricAlignment = 'left' | 'center' | 'right';
+
+export interface MetricLayout {
+  /** Tiles per row. */
+  readonly columns: number;
+  readonly rows: number;
+  readonly density: 'compact' | 'default';
+  readonly valuePosition: 'top' | 'middle' | 'bottom';
+  readonly labelsAlignment: MetricAlignment;
+  readonly valueAlignment: MetricAlignment;
+  readonly valueSizing: 'auto' | 'fill';
+  readonly secondaryAlignment: MetricAlignment;
+  readonly icon?: {
+    readonly name: string;
+    readonly alignment: 'left' | 'right';
+  };
+}
+
+export interface MetricTile {
+  /** The tile's row and the columns it shows. */
+  readonly source: SceneSource;
+  readonly title: string;
+  readonly subtitle?: string;
+  readonly value: {
+    readonly text: string;
+    readonly raw: Cell;
+    readonly color: SceneColor;
+  };
+  readonly background: SceneColor;
+  readonly secondary?: {
+    readonly label?: string;
+    readonly labelPlacement: 'before' | 'after' | 'tooltip';
+    readonly text: string;
+    readonly color: SceneColor;
+    readonly badge?: {
+      readonly direction: 'increase' | 'decrease' | 'neutral';
+      readonly color: SceneColor;
+      readonly showIcon: boolean;
+    };
+  };
+  /** A helper mark: carries no source. */
+  readonly progress?: {
+    /** The value's share of the maximum, clamped to `[0, 1]`. */
+    readonly fraction: number;
+    readonly orientation: 'horizontal' | 'vertical';
+    readonly color: SceneColor;
+    readonly track: SceneColor;
+  };
+  /** A helper mark: carries no source. Points are in data space. */
+  readonly trend?: {
+    readonly points: readonly {
+      readonly x: number;
+      readonly y: number | null;
+    }[];
+    readonly xDomain: readonly [number, number];
+    readonly yDomain: readonly [number, number];
+    readonly color: SceneColor;
+  };
+  readonly tooltip: SceneTooltip;
+  /** What a selection of the tile describes, such as "host.name: web-01 · Used: 412 GB". */
+  readonly description: string;
+}
+
+export interface MetricScene extends SceneBase {
+  readonly kind: 'metric';
+  readonly layout: MetricLayout;
+  /** In `data` order. */
+  readonly tiles: readonly MetricTile[];
+}
+
+export type AxisId = 'x' | 'y' | 'y2';
+
+export interface SceneTick {
+  /** In data space: a number, or a category for an ordinal axis. */
+  readonly value: number | string;
+  readonly label: string;
+}
+
+export interface SceneAxis {
+  readonly id: AxisId;
+  readonly position: 'top' | 'bottom' | 'left' | 'right';
+  readonly scale: 'ordinal' | 'time' | 'linear' | 'log' | 'sqrt';
+  /** `[min, max]`, or the categories in order for an ordinal axis. */
+  readonly domain: readonly [number, number] | readonly string[];
+  readonly ticks: readonly SceneTick[];
+  readonly title?: string;
+  readonly showTicks: boolean;
+  readonly showGrid: boolean;
+  /** Tick label rotation in degrees. */
+  readonly labelRotation: 0 | -45 | -90;
+}
+
+/** One drawn datum: a point, a bar or an area vertex. */
+export interface XyMark {
+  readonly source: SceneSource;
+  /** In data space: epoch milliseconds or a number, or a category on an ordinal axis. */
+  readonly x: number | string;
+  /** Where the mark ends; `null` is a gap. When stacked, the top of its segment. */
+  readonly y: number | null;
+  /** Where a stacked mark starts. Absent means the axis baseline. */
+  readonly y0?: number;
+  /** The value as displayed, such as in a bar label. */
+  readonly label: string;
+  readonly tooltip: SceneTooltip;
+  readonly description: string;
+  /** The mark falls in a partial bucket at an edge of the queried range. */
+  readonly partial?: boolean;
+}
+
+export interface XySeries {
+  /** The series key, as `colors.byKey` names it. */
+  readonly key: string;
+  readonly label: string;
+  readonly mark: 'line' | 'area' | 'bar';
+  readonly axis: 'y' | 'y2';
+  readonly color: SceneColor;
+  /** Series in one stack group stack on each other. */
+  readonly stack?: {
+    readonly group: string;
+    readonly mode: 'stacked' | 'percentage';
+  };
+  readonly interpolation: 'linear' | 'smooth' | 'stepped';
+  readonly fitting: {
+    readonly kind:
+      | 'none'
+      | 'zero'
+      | 'linear'
+      | 'carry'
+      | 'lookahead'
+      | 'average'
+      | 'nearest';
+    readonly emphasize: boolean;
+    readonly extend: 'none' | 'zero' | 'nearest';
+  };
+  readonly showPoints: boolean;
+  readonly areaOpacity: number;
+  readonly areaFill: 'solid' | 'gradient';
+  readonly valueLabels: boolean;
+  /** The cells the whole series represents, for a series or legend selection. */
+  readonly source: SceneSource;
+  /** In x order. */
+  readonly marks: readonly XyMark[];
+}
+
+export interface SceneLegendItem {
+  readonly key: string;
+  readonly label: string;
+  readonly color: SceneColor;
+  readonly hidden: boolean;
+  /** Formatted statistics, in the order the node asks for them. */
+  readonly statistics: readonly {
+    readonly name: string;
+    readonly value: string;
+  }[];
+  readonly source: SceneSource;
+  readonly description: string;
+}
+
+export interface SceneLegend {
+  readonly visible: boolean;
+  readonly position: 'top' | 'bottom' | 'left' | 'right';
+  readonly inside?: 'top_left' | 'top_right' | 'bottom_left' | 'bottom_right';
+  readonly layout: 'grid' | 'list';
+  readonly columns?: number;
+  readonly maxLines: number;
+  readonly size: 'auto' | 's' | 'm' | 'l' | 'xl';
+  readonly header?: string;
+  readonly items: readonly SceneLegendItem[];
+}
+
+/** A helper mark: carries no source. */
+export interface SceneReferenceLine {
+  readonly axis: AxisId;
+  readonly value: number;
+  readonly label?: string;
+  readonly color: SceneColor;
+  readonly fill?: 'above' | 'below';
+  readonly icon?: string;
+  readonly strokeWidth: number;
+  readonly strokeDash: 'solid' | 'dashed' | 'dotted';
+  readonly textPosition: 'auto' | 'left' | 'right';
+}
+
+/** A helper mark: carries no source. Times are epoch milliseconds. */
+export type SceneAnnotation =
+  | {
+      readonly kind: 'point';
+      readonly at: number;
+      readonly label?: string;
+      readonly text?: string;
+      readonly color: SceneColor;
+      readonly icon?: string;
+      readonly line?: {
+        readonly width: number;
+        readonly dash: 'solid' | 'dashed' | 'dotted';
+      };
+      readonly tooltip: SceneTooltip;
+    }
+  | {
+      readonly kind: 'range';
+      readonly from: number;
+      readonly to: number;
+      readonly label?: string;
+      readonly color: SceneColor;
+      readonly fill: 'inside' | 'outside';
+      readonly tooltip: SceneTooltip;
+    };
+
+export interface XyScene extends SceneBase {
+  readonly kind: 'xy';
+  readonly orientation: 'vertical' | 'horizontal';
+  readonly axes: {
+    readonly x: SceneAxis;
+    readonly y?: SceneAxis;
+    readonly y2?: SceneAxis;
+  };
+  /** In draw order: later series draw on top. */
+  readonly series: readonly XySeries[];
+  readonly referenceLines: readonly SceneReferenceLine[];
+  readonly annotations: readonly SceneAnnotation[];
+  readonly legend: SceneLegend;
+  readonly barMinimumHeight: number;
+  /** A helper mark: the current-time marker, in epoch milliseconds. */
+  readonly currentTime?: number;
+}
+
+export type Scene = MetricScene | XyScene;
+
+export type SceneEnvironment = 'browser' | 'node' | 'native';
+
+/** What a renderer is told about where it draws, beside the Scene itself. */
+export interface SceneRenderEnv {
+  readonly environment: SceneEnvironment;
+  /** The node's `id`, which events name. */
+  readonly nodeId?: string;
+}
+
+/**
+ * Draws a Scene. Hosts pass a preference list; the first renderer that runs in
+ * the current environment and supports the Scene's kind draws it. `TOutput` is
+ * what the renderer produces, such as a React node.
+ */
+export interface SceneRenderer<TOutput = unknown> {
+  /** Such as `elastic-charts`, `elastic-charts-node`, `isomer-svg` or `echarts`. */
+  readonly id: string;
+  readonly environments: readonly SceneEnvironment[];
+  supports(kind: SceneKind): boolean;
+  render(scene: Scene, env: SceneRenderEnv): TOutput;
+}

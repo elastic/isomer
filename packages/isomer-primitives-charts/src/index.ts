@@ -5,4 +5,5 @@
  * 2.0.
  */
 
+export * from './scene';
 export * from './schema';
