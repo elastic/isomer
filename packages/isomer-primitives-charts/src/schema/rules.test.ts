@@ -267,10 +267,20 @@ describe('metric', () => {
         data: { columns: [date('d')], rows: [[cell]] },
         value: { column: 'd' },
       });
-    for (const bad of ['2026-11-03T00:00:00', '2026-02-30T00:00:00Z']) {
+    for (const bad of [
+      '2026-11-03T00:00:00',
+      '2026-02-30T00:00:00Z',
+      '2026-11-03T00:00:00Z\n',
+      '1900-02-29T00:00:00Z',
+    ]) {
       expect(issuesOf('metric', withDate(bad)).length).toBeGreaterThan(0);
     }
-    for (const good of ['2026-11-03T00:00:00Z', '2026-11-03T01:00:00+01:00']) {
+    for (const good of [
+      '2026-11-03T00:00:00Z',
+      '2026-11-03T01:00:00+01:00',
+      '0000-02-29T00:00:00Z',
+      '2000-02-29T00:00:00Z',
+    ]) {
       expect(issuesOf('metric', withDate(good))).toEqual([]);
     }
   });
