@@ -279,13 +279,46 @@ describe('xyChart', () => {
       ['200', 0, 802],
       ['404', 802, 843],
       ['Other', 843, 855],
-      ['null', 855, 858],
+      ['\\null', 855, 858],
     ]);
     expect(scene.series.map(({ color }) => color)).toEqual([
       '#16C5C0',
       '#61A2FF',
       '#BFDBFF',
       '#EE72A6',
+    ]);
+  });
+
+  it('keeps a missing split cell, the string "null" and a colon in separate series keys', () => {
+    const node: XyChartNode = {
+      type: 'xyChart',
+      data: {
+        columns: [
+          { id: 'x', label: 'x', type: 'number', role: 'dimension' },
+          { id: 's', label: 's', type: 'string', role: 'dimension' },
+          { id: 'y', label: 'y', type: 'number', role: 'metric' },
+        ],
+        rows: [
+          [1, null, 1],
+          [1, 'null', 2],
+          [1, 'a:b', 3],
+        ],
+      },
+      layers: [
+        {
+          kind: 'data',
+          mark: 'bar',
+          x: 'x',
+          y: [{ column: 'y' }],
+          splitBy: 's',
+        },
+      ],
+    };
+    const scene: XyScene = resolveChart(node, { scheme: 'light' });
+    expect(scene.series.map(({ key }) => key)).toEqual([
+      '\\null',
+      'null',
+      'a\\:b',
     ]);
   });
 

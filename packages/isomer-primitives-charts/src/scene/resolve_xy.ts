@@ -90,9 +90,14 @@ const rowsOf = (layer: DataLayer, total: number): number[] => {
   );
 };
 
-/** The key a split value contributes to a series key: the cell as a string, `null` as "null". */
-const splitKey = (cell: Cell): string =>
-  Array.isArray(cell) ? JSON.stringify(cell) : String(cell);
+/** A key part: the cell as a string with `\` and `:` escaped; a missing cell is `\null`. */
+const keyPart = (cell: Cell | string): string =>
+  cell === null
+    ? '\\null'
+    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
+        /[\\:]/g,
+        '\\$&'
+      );
 
 interface SeriesDraft {
   key: string;
@@ -244,7 +249,7 @@ export const resolveXy = (
       const yColumn = resolution.column(y.column);
       if (layer.splitBy === undefined) {
         drafts.push({
-          key: y.column,
+          key: keyPart(y.column),
           label: yColumn.label,
           layerIndex: index,
           layer,
@@ -257,14 +262,14 @@ export const resolveXy = (
       const splitId = layer.splitBy;
       const groups = new Map<string, number[]>();
       for (const row of rows) {
-        const key = splitKey(resolution.cell(splitId, row));
+        const key = keyPart(resolution.cell(splitId, row));
         groups.set(key, [...(groups.get(key) ?? []), row]);
       }
       for (const [value, groupRows] of groups) {
         const first = groupRows[0]!;
         const text = resolution.text(splitId, first);
         drafts.push({
-          key: layer.y.length > 1 ? `${y.column}:${value}` : value,
+          key: layer.y.length > 1 ? `${keyPart(y.column)}:${value}` : value,
           label: layer.y.length > 1 ? `${text} - ${yColumn.label}` : text,
           layerIndex: index,
           layer,
