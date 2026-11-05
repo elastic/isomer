@@ -20,11 +20,11 @@ export const tickStep = (
   stop: number,
   count: number
 ): number => {
-  const raw = Math.abs(stop - start) / Math.max(1, count);
+  const raw = Math.abs(stop / Math.max(1, count) - start / Math.max(1, count));
   if (raw === 0 || !Number.isFinite(raw)) {
     return 1;
   }
-  let step = 10 ** Math.floor(Math.log10(raw));
+  let step = 10 ** Math.floor(Math.log10(raw)) || Number.MIN_VALUE;
   const error = raw / step;
   if (error >= E10) {
     step *= 10;
@@ -55,8 +55,10 @@ export const niceDomain = (
   let high = max;
   for (let pass = 0; pass < 2; pass += 1) {
     const step = tickStep(low, high, count);
-    low = clean(Math.floor(low / step) * step, step);
-    high = clean(Math.ceil(high / step) * step, step);
+    const roundedLow = clean(Math.floor(low / step) * step, step);
+    const roundedHigh = clean(Math.ceil(high / step) * step, step);
+    low = Number.isFinite(roundedLow) ? roundedLow : min;
+    high = Number.isFinite(roundedHigh) ? roundedHigh : max;
   }
   return [low, high];
 };
@@ -67,12 +69,27 @@ export const linearTicks = (
   max: number,
   count: number
 ): number[] => {
+  if (min === max) {
+    return [min];
+  }
   const step = tickStep(min, max, count);
   const first = Math.ceil(min / step - 1e-9);
   const last = Math.floor(max / step + 1e-9);
   const ticks: number[] = [];
-  for (let index = first; index <= last; index += 1) {
-    ticks.push(clean(index * step, step));
+  const length = Math.min(
+    Math.ceil(count * 2) + 2,
+    Math.max(0, last - first + 1)
+  );
+  for (let index = 0; index < length; index += 1) {
+    const value = clean((first + index) * step, step);
+    if (
+      Number.isFinite(value) &&
+      value >= min &&
+      value <= max &&
+      ticks.at(-1) !== value
+    ) {
+      ticks.push(value);
+    }
   }
   return ticks;
 };
@@ -107,8 +124,8 @@ const d3Ticks = (start: number, stop: number, count: number): number[] => {
     if (r1 * step > stop) {
       --r1;
     }
-    for (let r = r0; r <= r1; r += 1) {
-      ticks.push(r * step);
+    for (let index = 0; index <= Math.min(count * 2 + 2, r1 - r0); index += 1) {
+      ticks.push((r0 + index) * step);
     }
   } else {
     const inverse = 10 ** -power / factor;
@@ -120,8 +137,8 @@ const d3Ticks = (start: number, stop: number, count: number): number[] => {
     if (r1 / inverse > stop) {
       --r1;
     }
-    for (let r = r0; r <= r1; r += 1) {
-      ticks.push(r / inverse);
+    for (let index = 0; index <= Math.min(count * 2 + 2, r1 - r0); index += 1) {
+      ticks.push((r0 + index) / inverse);
     }
   }
   return ticks;
@@ -170,51 +187,163 @@ const MINUTE = 60 * SECOND;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
-const TIME_STEPS = [
-  SECOND,
-  5 * SECOND,
-  15 * SECOND,
-  30 * SECOND,
-  MINUTE,
-  5 * MINUTE,
-  15 * MINUTE,
-  30 * MINUTE,
-  HOUR,
-  3 * HOUR,
-  6 * HOUR,
-  12 * HOUR,
-  DAY,
-  2 * DAY,
-  7 * DAY,
-  30 * DAY,
-  91 * DAY,
-  365 * DAY,
+interface TimeStep {
+  unit: 'elapsed' | 'hour' | 'day' | 'week' | 'month' | 'year';
+  step: number;
+  duration: number;
+}
+
+const timeSteps = (span: number, count: number): TimeStep[] => [
+  ...[
+    1,
+    5,
+    10,
+    50,
+    100,
+    250,
+    500,
+    SECOND,
+    5 * SECOND,
+    15 * SECOND,
+    30 * SECOND,
+    MINUTE,
+    5 * MINUTE,
+    15 * MINUTE,
+    30 * MINUTE,
+    HOUR,
+    3 * HOUR,
+    6 * HOUR,
+    12 * HOUR,
+  ].map((step): TimeStep =>
+    step > HOUR
+      ? { unit: 'hour', step: step / HOUR, duration: step }
+      : { unit: 'elapsed', step, duration: step }
+  ),
+  { unit: 'day', step: 1, duration: DAY },
+  { unit: 'day', step: 2, duration: 2 * DAY },
+  { unit: 'week', step: 1, duration: 7 * DAY },
+  { unit: 'month', step: 1, duration: 30 * DAY },
+  { unit: 'month', step: 3, duration: 91 * DAY },
+  { unit: 'year', step: 1, duration: 365 * DAY },
+  {
+    unit: 'year',
+    step: Math.max(2, Math.ceil(span / (365 * DAY * Math.max(1, count - 1)))),
+    duration:
+      Math.max(2, Math.ceil(span / (365 * DAY * Math.max(1, count - 1)))) *
+      365 *
+      DAY,
+  },
 ];
 
-/**
- * Time ticks inside `[min, max]` at the smallest calendar-sized step that gives
- * at most `count`, on round wall-clock times in `timeZone`.
- */
+const localTime = (epoch: number, zone: string) =>
+  epoch + timeZoneOffset(epoch, zone) * MINUTE;
+
+const fromLocal = (local: number, zone: string): number => {
+  let epoch = local;
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = local - timeZoneOffset(epoch, zone) * MINUTE;
+    if (next === epoch) {
+      break;
+    }
+    epoch = next;
+  }
+  return epoch;
+};
+
+const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
+  const local = localTime(epoch, zone);
+  if (unit === 'elapsed') {
+    return (
+      Math.floor(local / step) * step - timeZoneOffset(epoch, zone) * MINUTE
+    );
+  }
+  const date = new Date(local);
+  if (unit === 'hour') {
+    date.setUTCHours(Math.floor(date.getUTCHours() / step) * step, 0, 0, 0);
+    return fromLocal(date.getTime(), zone);
+  }
+  date.setUTCHours(0, 0, 0, 0);
+  if (unit === 'week') {
+    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
+  } else if (unit === 'month') {
+    date.setUTCDate(1);
+    date.setUTCMonth(Math.floor(date.getUTCMonth() / step) * step);
+  } else if (unit === 'year') {
+    date.setUTCMonth(0, 1);
+    date.setUTCFullYear(Math.floor(date.getUTCFullYear() / step) * step);
+  } else {
+    date.setUTCDate(Math.floor((date.getUTCDate() - 1) / step) * step + 1);
+  }
+  return fromLocal(date.getTime(), zone);
+};
+
+const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
+  if (unit === 'elapsed') {
+    return epoch + step;
+  }
+  const date = new Date(localTime(epoch, zone));
+  if (unit === 'hour') {
+    date.setUTCHours(date.getUTCHours() + step);
+  } else if (unit === 'year') {
+    date.setUTCFullYear(date.getUTCFullYear() + step);
+  } else if (unit === 'month') {
+    date.setUTCMonth(date.getUTCMonth() + step);
+  } else {
+    date.setUTCDate(date.getUTCDate() + (unit === 'week' ? 7 : step));
+  }
+  return fromLocal(date.getTime(), zone);
+};
+
+const chooseTimeStep = (min: number, max: number, count: number) =>
+  timeSteps(max - min, count).find(
+    ({ duration }) => (max - min) / duration <= count
+  )!;
+
+/** Time ticks at round local times, with calendar steps across offset changes. */
 export const timeTicks = (
   min: number,
   max: number,
   count: number,
   timeZone: string
 ): number[] => {
-  const span = max - min;
-  const step =
-    TIME_STEPS.find((candidate) => span / candidate <= count) ??
-    TIME_STEPS[TIME_STEPS.length - 1]!;
-  const offset = timeZoneOffset(min, timeZone) * MINUTE;
-  const ticks: number[] = [];
-  for (
-    let tick = Math.ceil((min + offset) / step) * step - offset;
-    tick <= max;
-    tick += step
-  ) {
-    ticks.push(tick);
+  if (min === max) {
+    return [min];
   }
-  return ticks;
+  const candidates = timeSteps(max - min, count);
+  const duration = chooseTimeStep(min, max, count).duration;
+  for (const candidate of candidates.filter(
+    (entry) => entry.duration >= duration
+  )) {
+    let tick = floorTime(min, candidate, timeZone);
+    const ticks: number[] = [];
+    for (let index = 0; index <= count + 1 && tick <= max; index += 1) {
+      if (tick >= min) {
+        ticks.push(tick);
+      }
+      const next = advanceTime(tick, candidate, timeZone);
+      if (!(next > tick)) {
+        break;
+      }
+      tick = next;
+    }
+    if (ticks.length <= count) {
+      return ticks;
+    }
+  }
+  return [];
+};
+
+/** Calendar domain bounds, widened in the requested zone. */
+export const niceTimeDomain = (
+  min: number,
+  max: number,
+  count: number,
+  zone: string
+): [number, number] => {
+  const step = chooseTimeStep(min, max, count);
+  const low = floorTime(min, step, zone);
+  const floorHigh = floorTime(max, step, zone);
+  return [low, floorHigh === max ? max : advanceTime(floorHigh, step, zone)];
 };
 
 /** Tick count for an axis `length` pixels long, one tick per `spacing` pixels. */

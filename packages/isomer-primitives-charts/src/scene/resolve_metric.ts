@@ -11,8 +11,10 @@ import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
 
 import {
+  cellKey,
   createResolution,
   describe,
+  keyPart,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
@@ -37,17 +39,14 @@ const TREND_ICONS = {
 } as const;
 const NOT_AVAILABLE = 'N/A';
 
-/** The band `value` falls in: `from` inclusive, `to` exclusive, the last band's `to` inclusive. */
+/** The band `value` falls in: `from` inclusive, `to` exclusive. */
 export const bandFor = (
   bands: readonly ColorBand[],
   value: number
 ): ColorBand | undefined =>
   bands.find(
-    ({ from, to }, index) =>
-      (from === undefined || value >= from) &&
-      (to === undefined ||
-        value < to ||
-        (index === bands.length - 1 && value === to))
+    ({ from, to }) =>
+      (from === undefined || value >= from) && (to === undefined || value < to)
   );
 
 const withSign = (format: PortableFormat): PortableFormat =>
@@ -75,8 +74,11 @@ export const resolveMetric = (
   const numeric = values.filter(
     (value): value is number => value !== undefined
   );
-  const lowest = Math.min(...numeric);
-  const highest = Math.max(...numeric);
+  const lowest = numeric.reduce((low, value) => Math.min(low, value), Infinity);
+  const highest = numeric.reduce(
+    (high, value) => Math.max(high, value),
+    -Infinity
+  );
 
   const maxOf = (row: number): number | undefined =>
     node.background?.kind === 'bar'
@@ -108,10 +110,47 @@ export const resolveMetric = (
   const colorOf = (row: number): SceneColor | undefined => {
     const color = node.value.color;
     if (color === undefined) {
-      return undefined;
+      const colors = node.colors?.byKey;
+      const key =
+        breakdownId === undefined
+          ? undefined
+          : keyPart(resolution.cell(breakdownId, row));
+      const byKey =
+        colors && key !== undefined && Object.hasOwn(colors, key)
+          ? colors[key]
+          : undefined;
+      return byKey === undefined ? undefined : resolveColor(byKey, scheme);
     }
     return color === 'bands' ? bandColor(row) : resolveColor(color, scheme);
   };
+
+  const trends = new Map<
+    string,
+    NonNullable<MetricTile['trend']>['points'][number][]
+  >();
+  if (node.background?.kind === 'trend') {
+    const { data: trendData, x, y, breakdown } = node.background;
+    const trendResolution = createResolution(trendData, options);
+    trendData.rows.forEach((_, row) => {
+      const epoch = toEpoch(trendResolution.cell(x, row));
+      if (epoch === undefined) {
+        return;
+      }
+      const key =
+        breakdown === undefined
+          ? ''
+          : cellKey(trendResolution.cell(breakdown, row));
+      const points = trends.get(key) ?? [];
+      points.push({
+        x: epoch,
+        y: toNumber(trendResolution.cell(y, row)) ?? null,
+      });
+      trends.set(key, points);
+    });
+    for (const points of trends.values()) {
+      points.sort((a, b) => a.x - b.x);
+    }
+  }
 
   const tiles = data.rows.map((_, row): MetricTile => {
     const text = resolution.text(valueId, row);
@@ -128,7 +167,11 @@ export const resolveMetric = (
     const background =
       color !== undefined && onBackground ? color : chrome.background;
     const valueColor =
-      color === undefined ? chrome.text : onBackground ? textOn(color) : color;
+      color === undefined
+        ? chrome.text
+        : onBackground
+          ? textOn(color, chrome.background)
+          : color;
 
     const tooltip = [{ label: valueColumn.label, value: text }];
     let secondary: MetricTile['secondary'];
@@ -199,36 +242,34 @@ export const resolveMetric = (
 
     let trend: MetricTile['trend'];
     if (node.background?.kind === 'trend') {
-      const trendNode = node.background;
-      const trendResolution = createResolution(trendNode.data, options);
       const key =
-        trendNode.breakdown !== undefined && breakdownId !== undefined
-          ? resolution.cell(breakdownId, row)
-          : undefined;
-      const points = trendNode.data.rows
-        .map((_, trendRow) => trendRow)
-        .filter(
-          (trendRow) =>
-            trendNode.breakdown === undefined ||
-            trendResolution.cell(trendNode.breakdown, trendRow) === key
-        )
-        .map((trendRow) => ({
-          x: toEpoch(trendResolution.cell(trendNode.x, trendRow)) ?? Number.NaN,
-          y: toNumber(trendResolution.cell(trendNode.y, trendRow)) ?? null,
-        }))
-        .filter(({ x }) => !Number.isNaN(x))
-        .sort((a, b) => a.x - b.x);
+        node.background.breakdown === undefined
+          ? ''
+          : cellKey(
+              breakdownId === undefined
+                ? null
+                : resolution.cell(breakdownId, row)
+            );
+      const points = trends.get(key) ?? [];
       const xs = points.map(({ x }) => x);
       const ys = points.flatMap(({ y }) => (y === null ? [] : [y]));
       trend = {
         points,
         xDomain: [
-          xs.length ? Math.min(...xs) : 0,
-          xs.length ? Math.max(...xs) : 0,
+          xs.length
+            ? xs.reduce((low, value) => Math.min(low, value), Infinity)
+            : 0,
+          xs.length
+            ? xs.reduce((high, value) => Math.max(high, value), -Infinity)
+            : 0,
         ],
         yDomain: [
-          ys.length ? Math.min(...ys) : 0,
-          ys.length ? Math.max(...ys) : 0,
+          ys.length
+            ? ys.reduce((low, value) => Math.min(low, value), Infinity)
+            : 0,
+          ys.length
+            ? ys.reduce((high, value) => Math.max(high, value), -Infinity)
+            : 0,
         ],
         color: color ?? categoricalColor(0),
       };

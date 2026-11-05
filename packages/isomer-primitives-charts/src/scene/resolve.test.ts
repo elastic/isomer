@@ -357,7 +357,9 @@ describe('xyChart', () => {
   it('turns the chart for horizontal bars', () => {
     const scene = resolveChart(xyNamed('Horizontal bars'), { scheme: 'light' });
     expect(scene.axes.x.position).toBe('left');
-    expect(scene.axes.x.domain).toEqual(['CN', 'IN', 'US', 'ID', 'BR']);
+    expect(scene.axes.x.domain).toEqual(
+      ['CN', 'IN', 'US', 'ID', 'BR'].map((value) => JSON.stringify(value))
+    );
   });
 
   it('keeps reference lines and annotations as helper marks', () => {

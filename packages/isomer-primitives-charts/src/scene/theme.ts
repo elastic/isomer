@@ -89,7 +89,23 @@ const contrast = (a: string, b: string) => {
 };
 
 /** Text on `background`: whichever of the two schemes' text colors contrasts more. */
-export const textOn = (background: SceneColor): SceneColor => {
+export const textOn = (
+  background: SceneColor,
+  canvas: SceneColor
+): SceneColor => {
+  if (background.length === 9) {
+    const alpha = parseInt(background.slice(7), 16) / 255;
+    background = `#${[1, 3, 5]
+      .map((offset) =>
+        Math.round(
+          parseInt(background.slice(offset, offset + 2), 16) * alpha +
+            parseInt(canvas.slice(offset, offset + 2), 16) * (1 - alpha)
+        )
+          .toString(16)
+          .padStart(2, '0')
+      )
+      .join('')}`;
+  }
   const { light, dark } = CHART_CHROME;
   return contrast(background, light.text) >= contrast(background, dark.text)
     ? light.text

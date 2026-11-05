@@ -12,8 +12,10 @@ import type { PortableFormat } from '../schema/format';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import {
+  cellKey,
   createResolution,
   describe,
+  keyPart,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -27,6 +29,7 @@ import {
   logTicks,
   niceDomain,
   niceLogDomain,
+  niceTimeDomain,
   tickCount,
   timeTicks,
 } from './ticks';
@@ -91,15 +94,6 @@ const rowsOf = (layer: DataLayer, total: number): number[] => {
   );
 };
 
-/** A key part: the cell as a string with `\` and `:` escaped; a missing cell is `\null`. */
-const keyPart = (cell: Cell | string): string =>
-  cell === null
-    ? '\\null'
-    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
-        /[\\:]/g,
-        '\\$&'
-      );
-
 interface SeriesDraft {
   key: string;
   label: string;
@@ -139,16 +133,27 @@ const statistic = (
     resolution.valueText(yColumn, number ?? null);
   switch (name) {
     case 'min':
-      return value(present.length ? Math.min(...present) : null);
+      return value(
+        present.length
+          ? present.reduce((low, value) => Math.min(low, value), Infinity)
+          : null
+      );
     case 'max':
-      return value(present.length ? Math.max(...present) : null);
+      return value(
+        present.length
+          ? present.reduce((high, value) => Math.max(high, value), -Infinity)
+          : null
+      );
     case 'avg':
       return value(present.length ? mean : null);
     case 'median':
       return value(present.length ? median(present) : null);
     case 'range':
       return value(
-        present.length ? Math.max(...present) - Math.min(...present) : null
+        present.length
+          ? present.reduce((high, value) => Math.max(high, value), -Infinity) -
+              present.reduce((low, value) => Math.min(low, value), Infinity)
+          : null
       );
     case 'last_value':
       return value(ys[ys.length - 1]);
@@ -234,7 +239,7 @@ export const resolveXy = (
     if (xScale === 'linear') {
       return toNumber(cell) ?? Number.NaN;
     }
-    return xText(row);
+    return cellKey(cell);
   };
 
   // Series, in layer order, then y column, then split value by first appearance.
@@ -260,7 +265,9 @@ export const resolveXy = (
       const groups = new Map<string, number[]>();
       for (const row of rows) {
         const key = keyPart(resolution.cell(splitId, row));
-        groups.set(key, [...(groups.get(key) ?? []), row]);
+        const group = groups.get(key) ?? [];
+        group.push(row);
+        groups.set(key, group);
       }
       for (const [value, groupRows] of groups) {
         const first = groupRows[0]!;
@@ -285,7 +292,11 @@ export const resolveXy = (
   }
 
   const colorOf = (draft: SeriesDraft, index: number): SceneColor => {
-    const byKey = node.colors?.byKey?.[draft.key];
+    const colors = node.colors?.byKey;
+    const byKey =
+      colors && Object.hasOwn(colors, draft.key)
+        ? colors[draft.key]
+        : undefined;
     if (byKey) {
       return resolveColor(byKey, scheme);
     }
@@ -299,17 +310,15 @@ export const resolveXy = (
   };
 
   // Categories: every x position with data, in axis order.
-  const categoryRows = new Map<number | string, number[]>();
+  const categoryRows = new Map<number | string, Set<number>>();
   for (const draft of drafts) {
     for (const row of draft.rows) {
       const x = xOf(row);
       if (typeof x === 'number' && Number.isNaN(x)) {
         continue;
       }
-      const rows = categoryRows.get(x) ?? [];
-      if (!rows.includes(row)) {
-        rows.push(row);
-      }
+      const rows = categoryRows.get(x) ?? new Set<number>();
+      rows.add(row);
       categoryRows.set(x, rows);
     }
   }
@@ -320,11 +329,9 @@ export const resolveXy = (
   const categoryLabel = (x: number | string, rows: number[]) =>
     xId === undefined
       ? ''
-      : typeof x === 'string'
-        ? x
-        : rows[0] === undefined
-          ? resolution.valueText(xId, x)
-          : xText(rows[0]);
+      : rows[0] === undefined
+        ? resolution.valueText(xId, x)
+        : xText(rows[0]);
   const categories: XyCategory[] = categoryKeys.map((x) => {
     const rows = [...(categoryRows.get(x) ?? [])].sort((a, b) => a - b);
     const label = categoryLabel(x, rows);
@@ -344,6 +351,8 @@ export const resolveXy = (
         : {}),
     };
   });
+  const categoryOrder = new Map(categoryKeys.map((key, index) => [key, index]));
+  const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
   const numericXs = categoryKeys.filter(
     (x): x is number => typeof x === 'number'
   );
@@ -367,7 +376,11 @@ export const resolveXy = (
     draft.layer.stack ? `${draft.layerIndex}:${draft.axis}` : undefined;
   for (const draft of drafts) {
     const group = stackGroup(draft);
-    if (group === undefined || draft.layer.stack !== 'percentage') {
+    if (
+      hidden.has(draft.key) ||
+      group === undefined ||
+      draft.layer.stack !== 'percentage'
+    ) {
       continue;
     }
     for (const row of draft.rows) {
@@ -384,8 +397,6 @@ export const resolveXy = (
       ]
     : undefined;
 
-  const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
-
   const seriesDrafts = drafts.map((draft, seriesIndex) => {
     const color = colorOf(draft, seriesIndex);
     const yColumn = resolution.column(draft.yColumn);
@@ -395,7 +406,7 @@ export const resolveXy = (
       const bx = xOf(b);
       return typeof ax === 'number' && typeof bx === 'number'
         ? ax - bx
-        : categoryKeys.indexOf(ax) - categoryKeys.indexOf(bx);
+        : (categoryOrder.get(ax) ?? 0) - (categoryOrder.get(bx) ?? 0);
     });
     const dims = [
       ...(xId === undefined ? [] : [xId]),
@@ -409,7 +420,7 @@ export const resolveXy = (
       const raw = toNumber(resolution.cell(draft.yColumn, row));
       let y: number | null = raw ?? null;
       let y0: number | undefined;
-      if (group !== undefined && raw !== undefined) {
+      if (!hidden.has(draft.key) && group !== undefined && raw !== undefined) {
         const key = `${group}|${String(x)}`;
         const scaled =
           draft.layer.stack === 'percentage'
@@ -470,16 +481,23 @@ export const resolveXy = (
     return { draft, color, marks, seriesIndex };
   });
 
-  // Tooltips list every visible series at the mark's x, as Elastic Charts' cursor tooltip does.
+  const tooltipEntries = new Map<
+    number | string,
+    Array<SceneTooltip['entries'][number]>
+  >();
+  for (const { draft, color, marks } of seriesDrafts) {
+    if (hidden.has(draft.key)) {
+      continue;
+    }
+    for (const { x, label } of marks) {
+      const entries = tooltipEntries.get(x) ?? [];
+      entries.push({ label: draft.label, value: label, color });
+      tooltipEntries.set(x, entries);
+    }
+  }
   const tooltipAt = (x: number | string, row: number): SceneTooltip => ({
     ...(xId === undefined ? {} : { header: xText(row) }),
-    entries: seriesDrafts.flatMap(({ draft, color, marks }) =>
-      hidden.has(draft.key)
-        ? []
-        : marks
-            .filter((mark) => mark.x === x)
-            .map((mark) => ({ label: draft.label, value: mark.label, color }))
-    ),
+    entries: tooltipEntries.get(x) ?? [],
   });
 
   const size = resolution.size;
@@ -595,7 +613,9 @@ export const resolveXy = (
   const referenceLines = referenceLinesByLayer.flat();
 
   const yAxis = (id: 'y' | 'y2'): SceneAxis | undefined => {
-    const onAxis = series.filter((entry) => entry.axis === id);
+    const onAxis = series.filter(
+      (entry) => entry.axis === id && !hidden.has(entry.key)
+    );
     const firstDraft = drafts.find((draft) => draft.axis === id);
     if (onAxis.length === 0) {
       return undefined;
@@ -616,8 +636,12 @@ export const resolveXy = (
         .map(({ value }) => value),
     ];
     const scale = config?.scale ?? 'linear';
-    let low = values.length ? Math.min(...values) : 0;
-    let high = values.length ? Math.max(...values) : 1;
+    let low = values.length
+      ? values.reduce((low, value) => Math.min(low, value), Infinity)
+      : 0;
+    let high = values.length
+      ? values.reduce((high, value) => Math.max(high, value), -Infinity)
+      : 1;
     const domain = config?.domain ?? { kind: 'full' as const };
     if (domain.kind === 'custom') {
       low = domain.min;
@@ -634,7 +658,12 @@ export const resolveXy = (
     if (scale === 'log') {
       // A log axis has no zero or negatives; keep the positive part.
       const positive = values.filter((value) => value > 0);
-      low = low > 0 ? low : positive.length ? Math.min(...positive) : 1;
+      low =
+        low > 0
+          ? low
+          : positive.length
+            ? positive.reduce((low, value) => Math.min(low, value), Infinity)
+            : 1;
       high = high > low ? high : low * 10;
     }
     if ((config?.rounding ?? true) && domain.kind !== 'custom') {
@@ -710,6 +739,12 @@ export const resolveXy = (
       high += interval;
     }
     const count = tickCount(xLength, 100, 5);
+    if ((xConfig?.rounding ?? true) && xConfig?.domain?.kind !== 'custom') {
+      [low, high] =
+        xScale === 'time'
+          ? niceTimeDomain(low, high, count, timeZone)
+          : niceDomain(low, high, count);
+    }
     const values =
       xScale === 'time'
         ? timeTicks(low, high, count, timeZone)

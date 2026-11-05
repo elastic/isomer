@@ -20,13 +20,14 @@ const DEFAULT_STYLE = { dateStyle: 'medium', timeStyle: 'medium' } as const;
  */
 export const formatDate = (
   epoch: number,
-  { kind: _kind, timeZone: own, ...options }: DateFormat,
+  { kind: _kind, timeZone: own, hour12, ...options }: DateFormat,
   { locale, timeZone }: { locale: string; timeZone: string }
 ): string => {
   const fields = Object.values(options).some((value) => value !== undefined);
   return dateFormat(locale, {
     timeZone: own ?? timeZone,
     ...(fields ? options : DEFAULT_STYLE),
+    ...(hour12 === undefined ? {} : { hour12 }),
   }).format(epoch);
 };
 

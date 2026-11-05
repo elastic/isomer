@@ -175,3 +175,15 @@ export const titled = (title: string | undefined, sentence: string) =>
   title
     ? `${title}: ${sentence}`
     : sentence.charAt(0).toUpperCase() + sentence.slice(1);
+
+/** The documented color/series key encoding. */
+export const keyPart = (cell: Cell): string =>
+  cell === null
+    ? '\\null'
+    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
+        /[\\:]/g,
+        '\\$&'
+      );
+
+/** Raw cell identity, independent of display text and scalar/array encoding. */
+export const cellKey = (cell: Cell): string => JSON.stringify(cell);
