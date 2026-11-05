@@ -10,6 +10,12 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
+import {
+  brushingInteractionsSchemaFor,
+  checkInteractions,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+} from './events';
 import { portableFormatSchema } from './format';
 import {
   checkColumnReferences,
@@ -17,12 +23,6 @@ import {
   type ColumnReference,
   columnRefSchema,
 } from './references';
-import {
-  brushingInteractionsSchemaFor,
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-} from './events';
 
 // The marker icons Kibana's Lens API format accepts.
 const XY_MARKER_ICONS = [

@@ -12,17 +12,17 @@ import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import { chartDataSchema } from './data';
 import {
-  checkColumnReferences,
-  COLUMN_REF_RULE,
-  type ColumnReference,
-  columnRefSchema,
-} from './references';
-import {
   checkInteractions,
   INTERACTION_RULES,
   interactionsCoreShape,
   interactionsSchemaFor,
 } from './events';
+import {
+  checkColumnReferences,
+  COLUMN_REF_RULE,
+  type ColumnReference,
+  columnRefSchema,
+} from './references';
 
 // The icons the Lens API format's metric accepts.
 const METRIC_ICONS = [
