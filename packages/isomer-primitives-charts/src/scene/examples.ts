@@ -9,7 +9,7 @@
 // against the contract before the resolver exists. They show the shape, not
 // expected output: tests compare a resolver against Kibana, never against these.
 
-import type { Cell } from '../schema/core';
+import type { Cell } from '../schema/data';
 
 import type {
   MetricScene,
