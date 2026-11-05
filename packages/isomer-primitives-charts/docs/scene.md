@@ -22,7 +22,7 @@ import type { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/sce
 | `summary` | One sentence on what the chart shows |
 | `table` | The node's data as formatted text, in `data` order. Columns carry `role` and `empty`; an empty cell carries the empty-value text |
 
-A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `series` in draw order with their marks, `referenceLines`, `annotations` and a `legend`.
+A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
 
 ## Marks carry their rows and columns
 
@@ -41,6 +41,6 @@ interface SceneRenderer<TOutput = unknown> {
 }
 ```
 
-Hosts pass a preference list. The first renderer that runs in the current environment and supports the Scene's kind draws it; the fallback supports every kind, so something always draws. `TOutput` is what the renderer produces, such as a React node.
+This interface describes a renderer; it does not provide renderer selection or a fallback. `TOutput` is what the renderer produces, such as a React node.
 
 `metricSingleValueScene` and `xyTimeSeriesScene` are hand-written Scenes for two schema examples, for building renderers before the resolver exists. They show the shape; they are not expected output.

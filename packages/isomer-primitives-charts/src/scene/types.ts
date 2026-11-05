@@ -307,6 +307,11 @@ export type SceneAnnotation =
       readonly tooltip: SceneTooltip;
     };
 
+export type XySceneLayer =
+  | { readonly kind: 'series'; readonly series: XySeries }
+  | { readonly kind: 'referenceLine'; readonly line: SceneReferenceLine }
+  | { readonly kind: 'annotation'; readonly annotation: SceneAnnotation };
+
 export interface XyScene extends SceneBase {
   readonly kind: 'xy';
   readonly orientation: 'vertical' | 'horizontal';
@@ -315,10 +320,8 @@ export interface XyScene extends SceneBase {
     readonly y?: SceneAxis;
     readonly y2?: SceneAxis;
   };
-  /** In draw order: later series draw on top. */
-  readonly series: readonly XySeries[];
-  readonly referenceLines: readonly SceneReferenceLine[];
-  readonly annotations: readonly SceneAnnotation[];
+  /** Resolved series and helper marks in the chart's exact cross-kind draw order. */
+  readonly layers: readonly XySceneLayer[];
   readonly legend: SceneLegend;
   readonly barMinimumHeight: number;
   /** A helper mark: the current-time marker, in epoch milliseconds. */
@@ -337,9 +340,9 @@ export interface SceneRenderEnv {
 }
 
 /**
- * Draws a Scene. Hosts pass a preference list; the first renderer that runs in
- * the current environment and supports the Scene's kind draws it. `TOutput` is
- * what the renderer produces, such as a React node.
+ * Describes a renderer for a Scene. This interface does not provide renderer
+ * selection or a fallback. `TOutput` is what the renderer produces, such as a
+ * React node.
  */
 export interface SceneRenderer<TOutput = unknown> {
   /** Such as `elastic-charts`, `elastic-charts-node`, `isomer-svg` or `echarts`. */

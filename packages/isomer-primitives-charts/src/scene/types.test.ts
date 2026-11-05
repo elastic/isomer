@@ -19,10 +19,14 @@ const sourcesOf = (scene: Scene): SceneSource[] =>
   scene.kind === 'metric'
     ? scene.tiles.map(({ source }) => source)
     : [
-        ...scene.series.flatMap((series) => [
-          series.source,
-          ...series.marks.map(({ source }) => source),
-        ]),
+        ...scene.layers.flatMap((layer) =>
+          layer.kind === 'series'
+            ? [
+                layer.series.source,
+                ...layer.series.marks.map(({ source }) => source),
+              ]
+            : []
+        ),
         ...scene.legend.items.map(({ source }) => source),
       ];
 
@@ -80,5 +84,51 @@ describe('SceneRenderer', () => {
     expect(
       renderer.render(metricSingleValueScene, { environment: 'node' })
     ).toBe(metricSingleValueScene.summary);
+  });
+});
+
+describe('XyScene layers', () => {
+  it('preserves draw order across series and helper marks', () => {
+    const seriesLayer = xyTimeSeriesScene.layers.find(
+      (layer) => layer.kind === 'series'
+    );
+    if (!seriesLayer) {
+      throw new Error(
+        'The xy time series example must include a series layer.'
+      );
+    }
+
+    const scene = {
+      ...xyTimeSeriesScene,
+      layers: [
+        {
+          kind: 'referenceLine' as const,
+          line: {
+            axis: 'y' as const,
+            value: 100,
+            color: '#384861',
+            strokeWidth: 1,
+            strokeDash: 'solid' as const,
+            textPosition: 'auto' as const,
+          },
+        },
+        seriesLayer,
+        {
+          kind: 'annotation' as const,
+          annotation: {
+            kind: 'point' as const,
+            at: 0,
+            color: '#384861',
+            tooltip: { entries: [] },
+          },
+        },
+      ],
+    };
+
+    expect(scene.layers.map(({ kind }) => kind)).toEqual([
+      'referenceLine',
+      'series',
+      'annotation',
+    ]);
   });
 });

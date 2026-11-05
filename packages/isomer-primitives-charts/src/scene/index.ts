@@ -34,6 +34,7 @@ export {
   type SceneTooltipEntry,
   type XyMark,
   type XyScene,
+  type XySceneLayer,
   type XySeries,
   SCENE_KINDS,
 } from './types';
