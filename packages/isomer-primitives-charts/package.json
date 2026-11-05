@@ -26,12 +26,21 @@
       "import": "./lib/esm/schema/index.js",
       "require": "./lib/cjs/schema/index.js",
       "default": "./lib/cjs/schema/index.js"
+    },
+    "./scene": {
+      "types": "./lib/cjs/scene/index.d.ts",
+      "import": "./lib/esm/scene/index.js",
+      "require": "./lib/cjs/scene/index.js",
+      "default": "./lib/cjs/scene/index.js"
     }
   },
   "typesVersions": {
     "*": {
       "schema": [
         "./lib/cjs/schema/index.d.ts"
+      ],
+      "scene": [
+        "./lib/cjs/scene/index.d.ts"
       ]
     }
   },
