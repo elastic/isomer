@@ -25,7 +25,6 @@ Packages a consumer installs with these libraries. Their license texts are folde
 | `@elastic/eui` | 123.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui@123.1.0_@elastic+datemath@5.0.3_moment@2.31.0__@elastic+eui-theme-borealis_0545661ad584fdf73b0459b64f946f43/node_modules/@elastic/eui` |  |
 | `@elastic/eui-theme-borealis` | 8.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-borealis@8.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18._9b163b4f2fc10823334ba28c294bafcc/node_modules/@elastic/eui-theme-borealis` |  |
 | `@elastic/eui-theme-common` | 10.1.0 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+eui-theme-common@10.1.0_@emotion+react@11.14.0_@types+react@18.3.31_react@18.3_fbe9488fb79dd10ae7c646de20371fd6/node_modules/@elastic/eui-theme-common` |  |
-| `@elastic/numeral` | 2.5.1 | MIT | `node_modules/.pnpm/@elastic+numeral@2.5.1/node_modules/@elastic/numeral` |  |
 | `@elastic/prismjs-esql` | 4.31.0 | MIT | `node_modules/.pnpm/@elastic+prismjs-esql@4.31.0/node_modules/@elastic/prismjs-esql` |  |
 | `@emotion/babel-plugin` | 11.13.5 | MIT | `node_modules/.pnpm/@emotion+babel-plugin@11.13.5/node_modules/@emotion/babel-plugin` |  |
 | `@emotion/cache` | 11.14.0 | MIT | `node_modules/.pnpm/@emotion+cache@11.14.0/node_modules/@emotion/cache` |  |
@@ -1243,7 +1242,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `minipass-sized` | 2.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minipass-sized` |  |
 | `minizlib` | 3.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/minizlib` |  |
 | `moment` | 2.31.0 | MIT | `node_modules/.pnpm/moment@2.31.0/node_modules/moment` |  |
-| `moment-timezone` | 0.6.2 | MIT | `node_modules/.pnpm/moment-timezone@0.6.2/node_modules/moment-timezone` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/ms@2.1.3/node_modules/ms` |  |
 | `ms` | 2.1.3 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ms` |  |
 | `mute-stream` | 3.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/mute-stream` |  |

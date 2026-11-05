@@ -72,14 +72,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-sdk": "workspace:*",
-    "@elastic/numeral": "2.5.1"
+    "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
-  },
-  "devDependencies": {
-    "moment": "2.31.0",
-    "moment-timezone": "0.6.2"
   }
 }
