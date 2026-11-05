@@ -6,7 +6,7 @@ Read the [root instructions](../../AGENTS.md) first.
 
 - Any contract: [Charts](docs/index.md) and the page for the primitive, starting with the [chart core](docs/core.md).
 - The Scene or a renderer: [Scene](docs/scene.md).
-- Formatting: [Format](docs/format.md). `Intl` stays confined to `src/format/zone.ts`.
+- Formatting: [Format](docs/format.md). Formats are `Intl` options; host-specific formats, such as Kibana's field formats, belong in the host's `ChartFormatter`, not this package.
 - A container, or anything nested in `grid`: the SDK's [Primitives](../isomer-sdk/docs/primitives.md#containers-schemafor-and-children).
 
 ## When changing this area

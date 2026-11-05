@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BAND_RULE } from './colors';
 import { DATA_RULES } from './data';
+import { FORMAT_RULES } from './format';
 import { GRID_RULES } from './grid';
 import { METRIC_RULES } from './metric';
 import { COLUMN_REF_RULE } from './references';
@@ -85,6 +86,45 @@ describe('chart data', () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it('accepts a date format with styles or with fields', () => {
+    for (const format of [
+      { kind: 'date', dateStyle: 'short', hour12: false },
+      { kind: 'date', month: 'short', day: 'numeric' },
+    ]) {
+      expect(
+        issuesOf(
+          'metric',
+          metric({
+            data: { columns: [{ ...date('d'), format }], rows: [[0]] },
+            value: { column: 'd' },
+          })
+        )
+      ).not.toContainEqual(
+        expect.objectContaining({ message: containing(FORMAT_RULES.dateStyle) })
+      );
+    }
+  });
+
+  it('rejects a date format with both a style and a field', () => {
+    expectRule(
+      'metric',
+      metric({
+        data: {
+          columns: [
+            number('v'),
+            {
+              ...date('d'),
+              format: { kind: 'date', timeStyle: 'short', day: 'numeric' },
+            },
+          ],
+          rows: [[1, 0]],
+        },
+      }),
+      FORMAT_RULES.dateStyle,
+      'data.columns.1.format.timeStyle'
+    );
   });
 
   it('rejects a repeated column id', () => {

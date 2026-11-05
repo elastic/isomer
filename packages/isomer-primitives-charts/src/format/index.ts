@@ -5,19 +5,18 @@
  * 2.0.
  */
 
-export { formatDate, ordinal, toEpoch } from './date';
+export { type DateFormat, formatDate, toEpoch } from './date';
+export { type DurationFormat, formatDuration } from './duration';
 export {
-  type DurationFormatOptions,
-  type DurationOutput,
-  formatDuration,
-} from './duration';
-export {
-  DEFAULT_PATTERNS,
-  EMPTY_LABEL,
-  NAN_LABEL,
-  NULL_LABEL,
+  type ChartFormatter,
+  type FormatContext,
+  type FormatLabels,
+  type FormatOptions,
+  DEFAULT_FORMATS,
+  DEFAULT_LABELS,
   defaultFormatFor,
+  formatContext,
   formatValue,
+  intlFormatter,
 } from './format';
-export { type NumeralOptions, formatNumeral } from './numeral';
-export { type WallClock, wallClock, zoneAbbreviation } from './zone';
+export { timeZoneOffset } from './zone';

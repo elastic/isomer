@@ -10,41 +10,94 @@ import type { PortableFormat } from '../schema/format';
 
 import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
-import { formatNumeral } from './numeral';
+import { numberFormat, numberOptions } from './intl';
 
-/** Kibana's text for a missing value in charts and text output. */
-export const NULL_LABEL = '(null)';
-/** Kibana's text for an empty string. */
-export const EMPTY_LABEL = '(blank)';
-/** Kibana's text for a number that is not one. */
-export const NAN_LABEL = 'NaN';
+/** The text for values a format cannot show. */
+export interface FormatLabels {
+  /** A missing (`null` or absent) value. */
+  readonly null: string;
+  /** An empty string. */
+  readonly empty: string;
+  /** A number-like value that is not a number. */
+  readonly nan: string;
+}
 
-/** Kibana's default patterns, from its `format:*:defaultPattern` and `dateFormat` settings. */
-export const DEFAULT_PATTERNS = {
-  number: '0,0.[000]',
-  percent: '0,0.[000]%',
-  bytes: '0,0.[0]b',
-  date: 'MMM D, YYYY @ HH:mm:ss.SSS',
-} as const;
+export const DEFAULT_LABELS: FormatLabels = {
+  null: '(null)',
+  empty: '(blank)',
+  nan: 'NaN',
+};
+
+/** What a formatter formats in, beside the value and its format. */
+export interface FormatContext {
+  /** A BCP 47 locale, such as `en` or `fr-CA`. */
+  readonly locale: string;
+  /** The time zone for a date format that names none. */
+  readonly timeZone: string;
+  readonly labels: FormatLabels;
+  /** The id of the column the value belongs to, when there is one. */
+  readonly column?: string;
+}
+
+/**
+ * Turns one cell into the string every surface shows. `formatValue` is the
+ * default; a host with its own formats, such as Kibana's field formats,
+ * passes its own to `resolveChart`.
+ */
+export type ChartFormatter = (
+  value: Cell | undefined,
+  format: PortableFormat,
+  context: FormatContext
+) => string;
+
+export interface FormatOptions {
+  /** Absent means `en`. */
+  readonly locale?: string | undefined;
+  /** Absent means `UTC`. */
+  readonly timeZone?: string | undefined;
+  readonly labels?: Partial<FormatLabels> | undefined;
+  readonly column?: string | undefined;
+}
+
+/** A complete context from options, with the defaults filled in. */
+export const formatContext = ({
+  locale,
+  timeZone,
+  labels,
+  column,
+}: FormatOptions = {}): FormatContext => ({
+  locale: locale ?? 'en',
+  timeZone: timeZone ?? 'UTC',
+  labels: { ...DEFAULT_LABELS, ...labels },
+  ...(column === undefined ? {} : { column }),
+});
+
+/** The format a value gets when its column and the chart state none. */
+export const DEFAULT_FORMATS = {
+  number: { kind: 'number', maximumFractionDigits: 3 },
+  percent: { kind: 'percent', maximumFractionDigits: 3 },
+  date: { kind: 'date' },
+  text: { kind: 'text' },
+} as const satisfies Record<string, PortableFormat>;
 
 type Scalar = Exclude<Cell, readonly unknown[]> | undefined;
 
-const missingLabel = (value: unknown): string | undefined => {
-  if (value === '') {
-    return EMPTY_LABEL;
-  }
-  if (value === null || value === undefined) {
-    return NULL_LABEL;
-  }
-  return undefined;
-};
+const BYTES = [
+  'byte',
+  'kilobyte',
+  'megabyte',
+  'gigabyte',
+  'terabyte',
+  'petabyte',
+] as const;
+const BITS = ['bit', 'kilobit', 'megabit', 'gigabit', 'terabit'] as const;
 
-const prettyString = (value: Scalar | object): string => {
+const prettyString = (value: Scalar | object, labels: FormatLabels) => {
   if (value === null || value === undefined) {
-    return NULL_LABEL;
+    return labels.null;
   }
   if (typeof value === 'string') {
-    return value;
+    return value === '' ? labels.empty : value;
   }
   if (typeof value === 'object') {
     return JSON.stringify(value, null, '  ');
@@ -52,73 +105,95 @@ const prettyString = (value: Scalar | object): string => {
   return String(value);
 };
 
-type NumeralFormat = Extract<
-  PortableFormat,
-  { kind: 'number' | 'percent' | 'bytes' | 'bits' }
->;
-
-const formatNumber = (value: Scalar, format: NumeralFormat): string => {
-  if (value === null || value === undefined) {
-    return NULL_LABEL;
-  }
-  let number: number;
+const toNumber = (value: Scalar): number | undefined => {
   if (typeof value === 'number') {
-    number = value;
-  } else if (typeof value === 'string') {
-    number = parseFloat(value);
-  } else {
-    return prettyString(value);
+    return value;
   }
-  if (number === Infinity) {
-    return '+∞';
+  if (typeof value === 'string' && value.trim() !== '') {
+    return Number(value);
   }
-  if (number === -Infinity) {
-    return '-∞';
-  }
-  if (!Number.isFinite(number)) {
-    return NAN_LABEL;
-  }
-  if (format.kind === 'percent' && format.fractional === false) {
-    number /= 100;
-  }
-  return formatNumeral(number, format);
+  return undefined;
 };
 
-const formatScalar = (value: Scalar, format: PortableFormat): string => {
+type NumericFormat = Extract<
+  PortableFormat,
+  { kind: 'number' | 'percent' | 'bytes' | 'bits' | 'duration' }
+>;
+
+const formatNumeric = (
+  number: number,
+  format: NumericFormat,
+  locale: string
+): string => {
+  switch (format.kind) {
+    case 'number':
+      return numberFormat(locale, {
+        ...numberOptions(format),
+        ...(format.notation ? { notation: format.notation } : {}),
+      }).format(number);
+    case 'percent':
+      return numberFormat(locale, {
+        style: 'percent',
+        ...numberOptions(format),
+      }).format(format.fractional === false ? number / 100 : number);
+    case 'bytes':
+    case 'bits': {
+      const units = format.kind === 'bytes' ? BYTES : BITS;
+      const base = format.base ?? (format.kind === 'bytes' ? 1024 : 1000);
+      const magnitude = Math.abs(number);
+      const exponent =
+        magnitude < 1
+          ? 0
+          : Math.min(
+              units.length - 1,
+              Math.floor(Math.log(magnitude) / Math.log(base))
+            );
+      return numberFormat(locale, {
+        style: 'unit',
+        unit: units[exponent]!,
+        unitDisplay: format.unitDisplay ?? 'short',
+        ...numberOptions(format),
+      }).format(number / base ** exponent);
+    }
+    case 'duration':
+      return formatDuration(number, format, locale);
+  }
+};
+
+const formatScalar = (
+  value: Scalar,
+  format: PortableFormat,
+  context: FormatContext
+): string => {
+  const { labels } = context;
+  if (value === null || value === undefined) {
+    return labels.null;
+  }
+  if (value === '') {
+    return labels.empty;
+  }
   switch (format.kind) {
     case 'number':
     case 'percent':
     case 'bytes':
     case 'bits':
-      return formatNumber(value, format);
     case 'duration': {
-      const missing = missingLabel(value);
-      if (missing !== undefined) {
-        return missing;
+      const number = toNumber(value);
+      if (number === undefined) {
+        return prettyString(value, labels);
       }
-      const number = Number(value);
       return Number.isNaN(number)
-        ? prettyString(value)
-        : formatDuration(number, {
-            input: format.input,
-            output: format.output,
-            decimals: format.decimals,
-            showSuffix: format.showSuffix,
-            useShortSuffix: format.useShortSuffix,
-            includeSpaceWithSuffix: format.includeSpaceWithSuffix,
-          });
+        ? labels.nan
+        : formatNumeric(number, format, context.locale);
     }
     case 'date': {
-      if (value === null || value === undefined) {
-        return NULL_LABEL;
-      }
       const epoch = toEpoch(value);
       return epoch === undefined
         ? String(value)
-        : formatDate(epoch, format.pattern, format.timeZone);
+        : formatDate(epoch, format, context);
     }
     case 'text':
-      return missingLabel(value) ?? prettyString(value);
+      return prettyString(value, labels);
   }
 };
 
@@ -127,34 +202,35 @@ const withSuffix = (text: string, format: PortableFormat): string =>
     ? `${text}${format.suffix}`
     : text;
 
-/**
- * Formats one cell as Kibana's field format does for text: missing and empty
- * values get Kibana's labels, and a multivalue cell becomes a JSON array of
- * its formatted values. A `suffix` is appended to the whole result.
- */
-export const formatValue = (
-  value: Cell | undefined,
-  format: PortableFormat
-): string =>
+/** The default `ChartFormatter`, with `Intl`. */
+export const intlFormatter: ChartFormatter = (value, format, context) =>
   withSuffix(
     Array.isArray(value)
-      ? JSON.stringify(value.map((item) => formatScalar(item, format)))
-      : formatScalar(value, format),
+      ? JSON.stringify(value.map((item) => formatScalar(item, format, context)))
+      : formatScalar(value, format, context),
     format
   );
 
-/** The format a column of `type` gets when it declares none, as Kibana's defaults. */
-export const defaultFormatFor = (
-  type: ColumnType,
-  timeZone: string
-): PortableFormat => {
+/**
+ * Formats one cell with `Intl`: missing and empty values get their labels,
+ * and a multivalue cell becomes a JSON array of its formatted values. A
+ * `suffix` is appended to the whole result.
+ */
+export const formatValue = (
+  value: Cell | undefined,
+  format: PortableFormat,
+  options?: FormatOptions
+): string => intlFormatter(value, format, formatContext(options));
+
+/** The format a column of `type` gets when it declares none. */
+export const defaultFormatFor = (type: ColumnType): PortableFormat => {
   switch (type) {
     case 'number':
-      return { kind: 'number', pattern: DEFAULT_PATTERNS.number };
+      return DEFAULT_FORMATS.number;
     case 'date':
-      return { kind: 'date', pattern: DEFAULT_PATTERNS.date, timeZone };
+      return DEFAULT_FORMATS.date;
     case 'string':
     case 'boolean':
-      return { kind: 'text' };
+      return DEFAULT_FORMATS.text;
   }
 };

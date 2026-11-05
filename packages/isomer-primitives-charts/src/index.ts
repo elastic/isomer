@@ -5,22 +5,21 @@
  * 2.0.
  */
 
-export { formatDate, ordinal, toEpoch } from './format/date';
+export { type DateFormat, formatDate, toEpoch } from './format/date';
+export { type DurationFormat, formatDuration } from './format/duration';
 export {
-  type DurationFormatOptions,
-  type DurationOutput,
-  formatDuration,
-} from './format/duration';
-export {
-  DEFAULT_PATTERNS,
-  EMPTY_LABEL,
-  NAN_LABEL,
-  NULL_LABEL,
+  type ChartFormatter,
+  type FormatContext,
+  type FormatLabels,
+  type FormatOptions,
+  DEFAULT_FORMATS,
+  DEFAULT_LABELS,
   defaultFormatFor,
+  formatContext,
   formatValue,
+  intlFormatter,
 } from './format/format';
-export { type NumeralOptions, formatNumeral } from './format/numeral';
-export { type WallClock, wallClock, zoneAbbreviation } from './format/zone';
+export { timeZoneOffset } from './format/zone';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
@@ -114,8 +113,10 @@ export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
 export {
