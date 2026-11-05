@@ -5,7 +5,12 @@
  * 2.0.
  */
 
-export { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
+export { brushEvent, selectEvent } from './scene/events';
+export {
+  metricSingleValueScene,
+  xyInteractiveScene,
+  xyTimeSeriesScene,
+} from './scene/examples';
 export {
   type AxisId,
   type ColorScheme,
@@ -27,12 +32,14 @@ export {
   type SceneReferenceLine,
   type SceneRenderEnv,
   type SceneRenderer,
+  type SceneSelection,
   type SceneSize,
   type SceneSource,
   type SceneTable,
   type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
+  type XyCategory,
   type XyMark,
   type XyScene,
   type XySeries,
