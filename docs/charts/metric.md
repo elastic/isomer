@@ -21,6 +21,8 @@ Rules:
 
 - Every column reference names a column in `data.columns`.
 - A bar `max` and a trend `y` are `number` columns; a trend `x` is a `date` or `number` column.
+- A `compare` secondary column is a single-valued `number` column, as is the headline `value` column when `background` is a bar or `color` is `bands`.
+- A `colors.byKey` key names a tile by its `breakdown` cell, and applies only with a `breakdown`. A key part is the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, which no string produces.
 - Trend column references name a column in `background.data.columns`.
 - Without a `breakdown`, `data` holds at most one row.
 - A `bands` color needs `colors.bands`.
