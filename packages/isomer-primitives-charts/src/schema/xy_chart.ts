@@ -408,12 +408,16 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
       const references: ColumnReference[] = [];
+      const brushColumns: string[] = [];
       let dataLayers = 0;
       node.layers.forEach((layer, index) => {
         if (layer.kind === 'annotations') {
           checkAnnotationRanges(layer, index, context);
         } else if (layer.kind === 'data') {
           dataLayers += 1;
+          if (layer.x !== undefined) {
+            brushColumns.push(layer.x);
+          }
           references.push(...dataLayerReferences(layer, index));
           checkDataLayer(layer, index, node.data.rows.length, context);
         }
@@ -429,7 +433,7 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
-      checkInteractions(node, context);
+      checkInteractions(node, context, { brushColumns });
     },
     [
       COLUMN_REF_RULE,

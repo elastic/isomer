@@ -38,7 +38,8 @@ export const SELECT_TARGETS = [
 export type SelectTarget = (typeof SELECT_TARGETS)[number];
 
 export const INTERACTION_RULES = {
-  brushColumn: 'A `brush` column is a `date` or `number` column.',
+  brushColumn:
+    'A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.',
   emphasisRows: 'Emphasis rows are indexes into `data.rows`.',
 } as const;
 
@@ -136,13 +137,17 @@ interface InteractionsInput {
   interactions?: object | undefined;
 }
 
-/** Checks `emphasis` rows and a `brush` column against `data`. */
+interface InteractionCheckOptions {
+  brushColumns?: readonly string[];
+}
+
+/** Checks emphasis rows and an `xyChart` brush against `data` and its x columns. */
 export const checkInteractions = (
   node: InteractionsInput,
   context: z.core.$RefinementCtx<unknown>,
-  extra: readonly ColumnReference[] = []
+  options: InteractionCheckOptions = {}
 ): void => {
-  const references: ColumnReference[] = [...extra];
+  const references: ColumnReference[] = [];
   const brush =
     node.interactions && 'brush' in node.interactions
       ? (node.interactions.brush as { column: string } | undefined)
@@ -153,6 +158,13 @@ export const checkInteractions = (
       id: brush.column,
       types: ['date', 'number'],
     });
+    if (options.brushColumns && !options.brushColumns.includes(brush.column)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['interactions', 'brush', 'column'],
+        message: INTERACTION_RULES.brushColumn,
+      });
+    }
   }
   checkColumnReferences(node.data, references, context, {
     missing: COLUMN_REF_RULE,
@@ -189,26 +201,41 @@ const eventShared = {
     .describe('The raw value of each referenced column, by column id.'),
 };
 
+const selectEventShape = {
+  kind: z.literal('select'),
+  rows: z
+    .array(z.int().min(0))
+    .min(1)
+    .describe('Indexes into the node’s `data.rows`.'),
+  columns: z
+    .array(z.string().min(1))
+    .describe(
+      'The dimension columns that identify the target. Every row in `rows` holds the same value in each.'
+    ),
+  negate: z
+    .boolean()
+    .optional()
+    .describe('A "filter out" gesture rather than "filter for".'),
+  ...eventShared,
+};
+
+const selectEventSchema = z.discriminatedUnion('target', [
+  z.strictObject({
+    ...selectEventShape,
+    target: z.enum(['datum', 'series', 'legend']),
+    seriesKey: requiredString().describe(
+      'The xyChart series key, needed to identify which y series was selected.'
+    ),
+  }),
+  z.strictObject({
+    ...selectEventShape,
+    target: z.enum(['category', 'cell', 'tile']),
+  }),
+]);
+
 export const chartEventSchema = z
   .discriminatedUnion('kind', [
-    z.strictObject({
-      kind: z.literal('select'),
-      target: z.enum(SELECT_TARGETS),
-      rows: z
-        .array(z.int().min(0))
-        .min(1)
-        .describe('Indexes into the node’s `data.rows`.'),
-      columns: z
-        .array(z.string().min(1))
-        .describe(
-          'The dimension columns that identify the target. Every row in `rows` holds the same value in each.'
-        ),
-      negate: z
-        .boolean()
-        .optional()
-        .describe('A "filter out" gesture rather than "filter for".'),
-      ...eventShared,
-    }),
+    selectEventSchema,
     z.strictObject({
       kind: z.literal('brush'),
       column: z.string().min(1),

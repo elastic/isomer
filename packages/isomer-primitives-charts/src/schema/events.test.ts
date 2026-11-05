@@ -55,6 +55,38 @@ describe('chart event examples', () => {
       )
     );
   });
+
+  it('distinguishes selections of different series on the same row', () => {
+    const [{ event }] = chartEventExamples as [
+      (typeof chartEventExamples)[number],
+    ];
+    if (event.kind !== 'select') {
+      throw new Error('The first chart event example must be a selection.');
+    }
+
+    const count = chartEventSchema.parse({ ...event, seriesKey: 'count' });
+    const errors = chartEventSchema.parse({ ...event, seriesKey: 'errors' });
+
+    expect(count).not.toEqual(errors);
+    expect(count.kind === 'select' ? count.rows : []).toEqual(event.rows);
+    expect(errors.kind === 'select' ? errors.rows : []).toEqual(event.rows);
+  });
+
+  it.each(['datum', 'series', 'legend'] as const)(
+    'requires a series key for %s selections',
+    (target) => {
+      const result = chartEventSchema.safeParse({
+        kind: 'select',
+        node: 'responses',
+        target,
+        rows: [0],
+        columns: ['time'],
+        values: { time: 0 },
+        description: '00:00',
+      });
+      expect(result.success).toBe(false);
+    }
+  );
 });
 
 describe('ActionEventRef', () => {
@@ -96,19 +128,35 @@ describe('interactions', () => {
   };
 
   it('rejects a brush along a string column', () => {
+    const issues = issuesOf('xyChart', {
+      ...xyInteractive,
+      interactions: { brush: { column: 'status' } },
+    });
+    expect(issues).toContainEqual({
+      path: 'interactions.brush.column',
+      message: expect.stringContaining(INTERACTION_RULES.brushColumn) as string,
+    });
+  });
+
+  it('rejects a numeric brush column that is not used as x', () => {
     expect(
       issuesOf('xyChart', {
         ...xyInteractive,
-        interactions: { brush: { column: 'status' } },
+        interactions: { brush: { column: 'count' } },
       })
-    ).toEqual([
-      {
-        path: 'interactions.brush.column',
-        message: expect.stringContaining(
-          INTERACTION_RULES.brushColumn
-        ) as string,
-      },
-    ]);
+    ).toContainEqual({
+      path: 'interactions.brush.column',
+      message: INTERACTION_RULES.brushColumn,
+    });
+  });
+
+  it('accepts a brush along an x column', () => {
+    expect(
+      issuesOf('xyChart', {
+        ...xyInteractive,
+        interactions: { brush: { column: 'time' } },
+      })
+    ).toEqual([]);
   });
 
   it('rejects emphasis past the last row', () => {
