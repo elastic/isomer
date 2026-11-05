@@ -5,9 +5,8 @@
  * 2.0.
  */
 
-// Formats are ECMA-402 (`Intl`) options, so any host can format them. A host
-// with its own formatter, such as Kibana's field formats, passes it to
-// `resolveChart` instead, or sends `data.display` strings.
+// Formats are ECMA-402 (`Intl`) options, so they mean the same thing to every
+// renderer. Text no format describes travels as `data.display` strings.
 
 import { z } from '@elastic/isomer-sdk';
 

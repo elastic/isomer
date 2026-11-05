@@ -12,65 +12,22 @@ import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
 import { numberFormat, numberOptions } from './intl';
 
-/** The text for values a format cannot show. */
-export interface FormatLabels {
-  /** A missing (`null` or absent) value. */
-  readonly null: string;
-  /** An empty string. */
-  readonly empty: string;
-  /** A number-like value that is not a number. */
-  readonly nan: string;
-}
+// The text for values a format cannot show: missing, empty, and number-like but not a number.
+const LABELS = { null: '(null)', empty: '(blank)', nan: 'NaN' } as const;
 
-export const DEFAULT_LABELS: FormatLabels = {
-  null: '(null)',
-  empty: '(blank)',
-  nan: 'NaN',
-};
-
-/** What a formatter formats in, beside the value and its format. */
-export interface FormatContext {
+interface FormatContext {
   /** A BCP 47 locale, such as `en` or `fr-CA`. */
   readonly locale: string;
   /** The time zone for a date format that names none. */
   readonly timeZone: string;
-  readonly labels: FormatLabels;
-  /** The id of the column the value belongs to, when there is one. */
-  readonly column?: string;
 }
-
-/**
- * Turns one cell into the string every surface shows. `formatValue` is the
- * default; a host with its own formats, such as Kibana's field formats,
- * passes its own to `resolveChart`.
- */
-export type ChartFormatter = (
-  value: Cell | undefined,
-  format: PortableFormat,
-  context: FormatContext
-) => string;
 
 export interface FormatOptions {
   /** Absent means `en`. */
   readonly locale?: string | undefined;
   /** Absent means `UTC`. */
   readonly timeZone?: string | undefined;
-  readonly labels?: Partial<FormatLabels> | undefined;
-  readonly column?: string | undefined;
 }
-
-/** A complete context from options, with the defaults filled in. */
-export const formatContext = ({
-  locale,
-  timeZone,
-  labels,
-  column,
-}: FormatOptions = {}): FormatContext => ({
-  locale: locale ?? 'en',
-  timeZone: timeZone ?? 'UTC',
-  labels: { ...DEFAULT_LABELS, ...labels },
-  ...(column === undefined ? {} : { column }),
-});
 
 /** The format a value gets when its column and the chart state none. */
 export const DEFAULT_FORMATS = {
@@ -92,12 +49,12 @@ const BYTES = [
 ] as const;
 const BITS = ['bit', 'kilobit', 'megabit', 'gigabit', 'terabit'] as const;
 
-const prettyString = (value: Scalar | object, labels: FormatLabels) => {
+const prettyString = (value: Scalar | object) => {
   if (value === null || value === undefined) {
-    return labels.null;
+    return LABELS.null;
   }
   if (typeof value === 'string') {
-    return value === '' ? labels.empty : value;
+    return value === '' ? LABELS.empty : value;
   }
   if (typeof value === 'object') {
     return JSON.stringify(value, null, '  ');
@@ -165,12 +122,11 @@ const formatScalar = (
   format: PortableFormat,
   context: FormatContext
 ): string => {
-  const { labels } = context;
   if (value === null || value === undefined) {
-    return labels.null;
+    return LABELS.null;
   }
   if (value === '') {
-    return labels.empty;
+    return LABELS.empty;
   }
   switch (format.kind) {
     case 'number':
@@ -180,10 +136,10 @@ const formatScalar = (
     case 'duration': {
       const number = toNumber(value);
       if (number === undefined) {
-        return prettyString(value, labels);
+        return prettyString(value);
       }
       return Number.isNaN(number)
-        ? labels.nan
+        ? LABELS.nan
         : formatNumeric(number, format, context.locale);
     }
     case 'date': {
@@ -193,7 +149,7 @@ const formatScalar = (
         : formatDate(epoch, format, context);
     }
     case 'text':
-      return prettyString(value, labels);
+      return prettyString(value);
   }
 };
 
@@ -201,15 +157,6 @@ const withSuffix = (text: string, format: PortableFormat): string =>
   'suffix' in format && format.suffix !== undefined && text !== ''
     ? `${text}${format.suffix}`
     : text;
-
-/** The default `ChartFormatter`, with `Intl`. */
-export const intlFormatter: ChartFormatter = (value, format, context) =>
-  withSuffix(
-    Array.isArray(value)
-      ? JSON.stringify(value.map((item) => formatScalar(item, format, context)))
-      : formatScalar(value, format, context),
-    format
-  );
 
 /**
  * Formats one cell with `Intl`: missing and empty values get their labels,
@@ -219,8 +166,16 @@ export const intlFormatter: ChartFormatter = (value, format, context) =>
 export const formatValue = (
   value: Cell | undefined,
   format: PortableFormat,
-  options?: FormatOptions
-): string => intlFormatter(value, format, formatContext(options));
+  { locale = 'en', timeZone = 'UTC' }: FormatOptions = {}
+): string => {
+  const context: FormatContext = { locale, timeZone };
+  return withSuffix(
+    Array.isArray(value)
+      ? JSON.stringify(value.map((item) => formatScalar(item, format, context)))
+      : formatScalar(value, format, context),
+    format
+  );
+};
 
 /** The format a column of `type` gets when it declares none. */
 export const defaultFormatFor = (type: ColumnType): PortableFormat => {
