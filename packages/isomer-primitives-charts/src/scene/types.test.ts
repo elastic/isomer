@@ -12,7 +12,7 @@ import { metricSingleValue } from '../schema/examples/metric';
 import { xyTimeSeries } from '../schema/examples/xy_chart';
 
 import { metricSingleValueScene, xyTimeSeriesScene } from './examples';
-import type { Scene, SceneRenderer, SceneSource } from './types';
+import type { Scene, SceneRenderer, SceneSource, XyScene } from './types';
 
 /** Every source a selectable part of the Scene carries. */
 const sourcesOf = (scene: Scene): SceneSource[] =>
@@ -123,7 +123,7 @@ describe('XyScene layers', () => {
           },
         },
       ],
-    };
+    } satisfies XyScene;
 
     expect(scene.layers.map(({ kind }) => kind)).toEqual([
       'referenceLine',
