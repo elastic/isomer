@@ -5,16 +5,7 @@
  * 2.0.
  */
 
-export type {
-  ChartBrushEvent,
-  ChartEvent,
-  ChartSelectEvent,
-  SelectTarget,
-} from './schema/events';
-export {
-  metricSingleValueScene,
-  xyTimeSeriesScene,
-} from './scene/examples';
+export { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
 export {
   type AxisId,
   type ColorScheme,
@@ -61,9 +52,7 @@ export {
   chartColorsSchema,
   colorValueSchema,
 } from './schema/colors';
-export {
-  chartCoreShape,
-} from './schema/core';
+export { chartCoreShape } from './schema/core';
 export {
   type Cell,
   type ChartColumn,
@@ -74,6 +63,12 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from './schema/events';
 export {
   type Emphasis,
   CHART_EVENT_NAMES,
@@ -90,21 +85,11 @@ export {
   selectSchema,
   toActionEvent,
 } from './schema/events';
-export {
-  chartEventExamples,
-} from './schema/examples/events';
-export {
-  gridExamples,
-} from './schema/examples/grid';
-export {
-  metricExamples,
-} from './schema/examples/metric';
-export {
-  unsupportedExamples,
-} from './schema/examples/unsupported';
-export {
-  xyChartExamples,
-} from './schema/examples/xy_chart';
+export { chartEventExamples } from './schema/examples/events';
+export { gridExamples } from './schema/examples/grid';
+export { metricExamples } from './schema/examples/metric';
+export { unsupportedExamples } from './schema/examples/unsupported';
+export { xyChartExamples } from './schema/examples/xy_chart';
 export {
   type DurationUnit,
   type PortableFormat,
@@ -122,27 +107,13 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
-export {
-  type MetricNode,
-  METRIC_RULES,
-  metricSchema,
-} from './schema/metric';
+export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type Loss,
   type Provenance,
   lossSchema,
   provenanceSchema,
 } from './schema/provenance';
-export {
-  type ColumnReference,
-  columnRefSchema,
-} from './schema/references';
-export {
-  type UnsupportedNode,
-  unsupportedSchema,
-} from './schema/unsupported';
-export {
-  type XyChartNode,
-  XY_RULES,
-  xyChartSchema,
-} from './schema/xy_chart';
+export { type ColumnReference, columnRefSchema } from './schema/references';
+export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
+export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
