@@ -6,13 +6,9 @@
  */
 
 import { defaultFormatFor, formatValue } from '../format/format';
-import type {
-  Cell,
-  ChartColumn,
-  ChartData,
-  PortableFormat,
-} from '../schema/core';
+import type { Cell, ChartColumn, ChartData } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
+import type { PortableFormat } from '../schema/format';
 
 import { CHART_CHROME } from './theme';
 import type {

@@ -7,11 +7,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { BAND_RULE, COLUMN_REF_RULE, DATA_RULES } from './core';
+import { BAND_RULE } from './colors';
+import { DATA_RULES } from './data';
 import { DATA_TABLE_RULES } from './data_table';
 import { INTERACTION_RULES } from './events';
 import { GRID_RULES } from './grid';
 import { METRIC_RULES } from './metric';
+import { COLUMN_REF_RULE } from './references';
 import { nodeSchemaOf } from './schema.fixtures';
 import { XY_RULES } from './xy_chart';
 
@@ -215,6 +217,74 @@ describe('metric', () => {
       COLUMN_REF_RULE,
       'value.column'
     );
+  });
+
+  it('requires arithmetic operands to be single-valued numbers', () => {
+    const data = { columns: [number('v'), string('s')], rows: [[1, 'x']] };
+    expectRule(
+      'metric',
+      metric({
+        data,
+        secondary: { column: 's', compare: { to: 'primary' } },
+      }),
+      METRIC_RULES.operands,
+      'secondary.column'
+    );
+    expectRule(
+      'metric',
+      metric({
+        data: { columns: [string('s')], rows: [['x']] },
+        value: { column: 's' },
+        background: { kind: 'bar', max: 'v' },
+      }),
+      METRIC_RULES.operands,
+      'value.column'
+    );
+    expectRule(
+      'metric',
+      metric({
+        data: {
+          columns: [{ ...number('v'), multivalue: true }],
+          rows: [[[1, 2]]],
+        },
+        value: { column: 'v', color: 'bands' },
+      }),
+      METRIC_RULES.operands,
+      'value.column'
+    );
+    expect(
+      issuesOf(
+        'metric',
+        metric({
+          data: { columns: [string('s')], rows: [['x']] },
+          value: { column: 's' },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it('requires a date cell to be a real instant with a UTC offset', () => {
+    const withDate = (cell: string) =>
+      metric({
+        data: { columns: [date('d')], rows: [[cell]] },
+        value: { column: 'd' },
+      });
+    for (const bad of [
+      '2026-11-03T00:00:00',
+      '2026-02-30T00:00:00Z',
+      '2026-11-03T00:00:00Z\n',
+      '1900-02-29T00:00:00Z',
+    ]) {
+      expect(issuesOf('metric', withDate(bad)).length).toBeGreaterThan(0);
+    }
+    for (const good of [
+      '2026-11-03T00:00:00Z',
+      '2026-11-03T01:00:00+01:00',
+      '0000-02-29T00:00:00Z',
+      '2000-02-29T00:00:00Z',
+    ]) {
+      expect(issuesOf('metric', withDate(good))).toEqual([]);
+    }
   });
 
   it('rejects a non-number bar maximum', () => {

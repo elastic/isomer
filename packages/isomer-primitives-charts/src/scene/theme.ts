@@ -9,7 +9,7 @@
 // the default categorical palette. Values are EUI Borealis tokens, which
 // `theme.test.ts` checks against the theme package.
 
-import type { ColorValue } from '../schema/core';
+import type { ColorValue } from '../schema/colors';
 
 import type { ColorScheme, SceneChrome, SceneColor } from './types';
 
