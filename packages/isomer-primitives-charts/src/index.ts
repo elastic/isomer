@@ -20,6 +20,7 @@ export {
   type SceneColor,
   type SceneColumn,
   type SceneEnvironment,
+  type SceneInteractions,
   type SceneKind,
   type SceneLegend,
   type SceneLegendItem,
@@ -62,6 +63,29 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from './schema/events';
+export {
+  type Emphasis,
+  CHART_EVENT_NAMES,
+  INTERACTION_RULES,
+  SELECT_TARGETS,
+  brushingInteractionsSchemaFor,
+  brushSchema,
+  chartEventSchema,
+  checkInteractions,
+  emphasisSchema,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  readChartEvent,
+  selectSchema,
+  toActionEvent,
+} from './schema/events';
+export { chartEventExamples } from './schema/examples/events';
 export { gridExamples } from './schema/examples/grid';
 export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';

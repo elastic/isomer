@@ -14,6 +14,7 @@ One headline value, or one tile per row of `data`, on the [chart core](core.md).
 | `secondary.compare` | `to` (`baseline` or `primary`), `baseline?`, `showIcon?`, `showValue?`, and `colors: { increase, decrease, neutral }` |
 | `background` | `{ kind: 'bar', max, orientation? }`, a progress bar to the `max` column; or `{ kind: 'trend', data, x, y, breakdown? }`, a trend line from its own table |
 | `breakdown` | `column`, whose value titles each tile, and `maxColumns?` before wrapping |
+| `interactions`, `emphasis` | Selectable tiles, a link and static highlights: [Interactions](interactions.md) |
 | `layout` | `density`, `icon`, `valuePosition`, `labelsAlignment`, `valueAlignment`, `valueSizing`, `secondaryAlignment` |
 
 Rules:
@@ -27,5 +28,6 @@ Rules:
 - A `bands` color needs `colors.bands`.
 - Percentage bands need a `background` bar or a `breakdown`, which supply the maximum.
 - A trend `breakdown` needs a `breakdown` on the metric.
+- Emphasis rows are indexes into `data.rows`.
 
 `metricExamples` covers a single value, a comparison, a breakdown with the Other and missing buckets, a trend, huge, tiny and negative values, a missing value, a multivalue headline, long text, and a pre-rendered value with provenance.
