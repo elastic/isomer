@@ -17,13 +17,12 @@ import {
   z,
 } from '@elastic/isomer-sdk';
 
+import { cellSchema, type ChartColumn } from './data';
 import {
-  cellSchema,
-  type ChartColumn,
   checkColumnReferences,
   type ColumnReference,
   columnRefSchema,
-} from './core';
+} from './references';
 
 export const SELECT_TARGETS = [
   'datum',
