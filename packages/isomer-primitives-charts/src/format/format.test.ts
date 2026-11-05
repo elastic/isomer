@@ -203,7 +203,7 @@ describe('date', () => {
   });
 });
 
-describe('labels', () => {
+describe('missing values', () => {
   const number: PortableFormat = { kind: 'number' };
 
   it('defaults to (null), (blank) and NaN', () => {
@@ -211,13 +211,6 @@ describe('labels', () => {
     expect(formatValue(undefined, { kind: 'text' })).toBe('(null)');
     expect(formatValue('', { kind: 'text' })).toBe('(blank)');
     expect(formatValue('abc', number)).toBe('NaN');
-  });
-
-  it('can be replaced', () => {
-    const labels = { null: '—', empty: '', nan: 'n/a' };
-    expect(formatValue(null, number, { labels })).toBe('—');
-    expect(formatValue('', { kind: 'text' }, { labels })).toBe('');
-    expect(formatValue('abc', number, { labels })).toBe('n/a');
   });
 });
 

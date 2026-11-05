@@ -66,7 +66,7 @@ Rules:
 
 - A date format uses `dateStyle` and `timeStyle`, or individual date and time fields, not both.
 
-A Kibana materializer maps each field format to the nearest portable one; a host that needs its own formats exactly passes its own [formatter](format.md#replacing-the-formatter) or sends `data.display` strings.
+A host whose formats have no portable equivalent, such as Kibana's field formats, maps each to the nearest portable one or sends `data.display` strings; it never formats at render time.
 
 [Format](format.md) formats every kind.
 

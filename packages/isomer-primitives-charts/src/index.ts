@@ -5,21 +5,6 @@
  * 2.0.
  */
 
-export { type DateFormat, formatDate, toEpoch } from './format/date';
-export { type DurationFormat, formatDuration } from './format/duration';
-export {
-  type ChartFormatter,
-  type FormatContext,
-  type FormatLabels,
-  type FormatOptions,
-  DEFAULT_FORMATS,
-  DEFAULT_LABELS,
-  defaultFormatFor,
-  formatContext,
-  formatValue,
-  intlFormatter,
-} from './format/format';
-export { timeZoneOffset } from './format/zone';
 export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
