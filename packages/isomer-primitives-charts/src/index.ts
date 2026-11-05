@@ -5,4 +5,58 @@
  * 2.0.
  */
 
-export * from './schema';
+export {
+  gridCatalog,
+  metricCatalog,
+  unsupportedCatalog,
+  xyChartCatalog,
+} from './schema/catalog';
+export {
+  type ChartColors,
+  type ColorBand,
+  type ColorValue,
+  chartColorsSchema,
+  colorValueSchema,
+} from './schema/colors';
+export { chartCoreShape } from './schema/core';
+export {
+  type Cell,
+  type ChartColumn,
+  type ChartData,
+  type ColumnRole,
+  type ColumnType,
+  type ScalarCell,
+  cellSchema,
+  chartDataSchema,
+} from './schema/data';
+export { gridExamples } from './schema/examples/grid';
+export { metricExamples } from './schema/examples/metric';
+export { unsupportedExamples } from './schema/examples/unsupported';
+export { xyChartExamples } from './schema/examples/xy_chart';
+export {
+  type DurationUnit,
+  type PortableFormat,
+  portableFormatSchema,
+} from './schema/format';
+export {
+  type GridNode,
+  type GridPanel,
+  type GridReadingEntry,
+  type GridSection,
+  GRID_COLUMNS,
+  GRID_RULES,
+  GRID_SINGLE_COLUMN_BELOW,
+  gridReadingOrder,
+  gridSchema,
+  gridSchemaFor,
+} from './schema/grid';
+export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
+export {
+  type Loss,
+  type Provenance,
+  lossSchema,
+  provenanceSchema,
+} from './schema/provenance';
+export { type ColumnReference, columnRefSchema } from './schema/references';
+export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
+export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
