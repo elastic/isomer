@@ -32,6 +32,10 @@ const metricNamed = (name: string): MetricNode =>
   metricExamples.find((example) => example.name === name)!.node;
 const xyNamed = (name: string): XyChartNode =>
   xyChartExamples.find((example) => example.name === name)!.node;
+const seriesIn = (scene: XyScene) =>
+  scene.layers.flatMap((layer) =>
+    layer.kind === 'series' ? [layer.series] : []
+  );
 
 const deepFreeze = <T>(value: T): T => {
   if (value && typeof value === 'object') {
@@ -106,7 +110,7 @@ describe('resolveChart on every example', () => {
       const sources =
         scene.kind === 'metric'
           ? scene.tiles.map(({ source }) => source)
-          : scene.series.flatMap((series) => [
+          : seriesIn(scene).flatMap((series) => [
               series.source,
               ...series.marks.map(({ source }) => source),
             ]);
@@ -128,7 +132,7 @@ describe('interaction parity with the C4 events', () => {
   const byName = (name: string) =>
     chartEventExamples.find((example) => example.name === name)!.event;
   const markAt = (row: number) =>
-    scene.series
+    seriesIn(scene)
       .flatMap(({ marks }) => marks)
       .find(({ source }) => source.rows[0] === row)!;
 
@@ -169,9 +173,9 @@ describe('interaction parity with the C4 events', () => {
   it('agrees with the hand-written interactive Scene on what each part selects', () => {
     expect(scene.categories).toEqual(xyInteractiveScene.categories);
     expect(
-      scene.series.map(({ key, selection }) => ({ key, selection }))
+      seriesIn(scene).map(({ key, selection }) => ({ key, selection }))
     ).toEqual(
-      xyInteractiveScene.series.map(({ key, selection }) => ({
+      seriesIn(xyInteractiveScene).map(({ key, selection }) => ({
         key,
         selection,
       }))
@@ -192,7 +196,9 @@ describe('interaction parity with the C4 events', () => {
     });
     expect(plain.interactions.select).toEqual([]);
     expect(
-      plain.series[0]?.marks.every(({ selection }) => selection === undefined)
+      seriesIn(plain)[0]?.marks.every(
+        ({ selection }) => selection === undefined
+      )
     ).toBe(true);
   });
 });
@@ -270,7 +276,8 @@ describe('xyChart', () => {
       xyNamed('Stacked bars with Other and missing buckets'),
       { scheme: 'light' }
     );
-    const atFirstHour = scene.series.map(({ key, marks }) => [
+    const series = seriesIn(scene);
+    const atFirstHour = series.map(({ key, marks }) => [
       key,
       marks[0]?.y0,
       marks[0]?.y,
@@ -281,7 +288,7 @@ describe('xyChart', () => {
       ['Other', 843, 855],
       ['\\null', 855, 858],
     ]);
-    expect(scene.series.map(({ color }) => color)).toEqual([
+    expect(series.map(({ color }) => color)).toEqual([
       '#16C5C0',
       '#61A2FF',
       '#BFDBFF',
@@ -315,7 +322,7 @@ describe('xyChart', () => {
       ],
     };
     const scene: XyScene = resolveChart(node, { scheme: 'light' });
-    expect(scene.series.map(({ key }) => key)).toEqual([
+    expect(seriesIn(scene).map(({ key }) => key)).toEqual([
       '\\null',
       'null',
       'a\\:b',
@@ -326,7 +333,9 @@ describe('xyChart', () => {
     const scene = resolveChart(xyNamed('Percentage areas'), {
       scheme: 'light',
     });
-    const tops = scene.series.at(-1)!.marks.map(({ y }) => y);
+    const tops = seriesIn(scene)
+      .at(-1)!
+      .marks.map(({ y }) => y);
     for (const top of tops) {
       expect(top).toBeCloseTo(1);
     }
@@ -355,7 +364,11 @@ describe('xyChart', () => {
     const scene = resolveChart(xyNamed('Reference lines and annotations'), {
       scheme: 'light',
     });
-    expect(scene.referenceLines).toEqual([
+    expect(
+      scene.layers.flatMap((layer) =>
+        layer.kind === 'referenceLine' ? [layer.line] : []
+      )
+    ).toEqual([
       expect.objectContaining({
         value: 0.8,
         label: 'SLO',
@@ -363,10 +376,17 @@ describe('xyChart', () => {
         fill: 'above',
       }),
     ]);
-    expect(scene.annotations.map(({ kind }) => kind)).toEqual([
-      'point',
-      'range',
+    expect(scene.layers.map(({ kind }) => kind)).toEqual([
+      'series',
+      'referenceLine',
+      'annotation',
+      'annotation',
     ]);
+    expect(
+      scene.layers.flatMap((layer) =>
+        layer.kind === 'annotation' ? [layer.annotation.kind] : []
+      )
+    ).toEqual(['point', 'range']);
     expect(scene.axes.y?.domain).toEqual([0, 1]);
   });
 
@@ -374,7 +394,7 @@ describe('xyChart', () => {
     const scene = resolveChart(xyNamed('Layers from two tables'), {
       scheme: 'light',
     });
-    expect(scene.series.map(({ source }) => source.rows)).toEqual([
+    expect(seriesIn(scene).map(({ source }) => source.rows)).toEqual([
       [0, 1, 2],
       [3, 4, 5],
     ]);

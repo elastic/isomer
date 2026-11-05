@@ -101,9 +101,10 @@ export const buildTable = (resolution: Resolution): SceneTable => {
       role,
       empty: data.rows.every((row) => isEmpty(row[index])),
     })),
-    rows: data.rows.map((_, row) => ({
+    rows: data.rows.map((cells, row) => ({
       row,
       cells: data.columns.map(({ id }) => resolution.text(id, row)),
+      values: cells,
     })),
   };
 };

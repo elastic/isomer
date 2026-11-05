@@ -72,6 +72,8 @@ export const XY_RULES = {
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
+  sharedX:
+    'Every data layer uses the same x column; absent means every row draws at one x position.',
   rangeOrder: "An annotation range's `from` is not after its `to`.",
 } as const;
 
@@ -403,10 +405,29 @@ const checkDataLayer = (
   }
 };
 
+const checkSharedX = (layers: readonly XyLayer[], context: Issues) => {
+  const first = layers.find(
+    (layer): layer is DataLayer => layer.kind === 'data'
+  );
+  if (!first) {
+    return;
+  }
+  layers.forEach((layer, index) => {
+    if (layer.kind === 'data' && layer.x !== first.x) {
+      context.addIssue({
+        code: 'custom',
+        path: ['layers', index, 'x'],
+        message: XY_RULES.sharedX,
+      });
+    }
+  });
+};
+
 /** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
 export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
+      checkSharedX(node.layers, context);
       const references: ColumnReference[] = [];
       const brushColumns: string[] = [];
       let dataLayers = 0;
@@ -441,6 +462,7 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       XY_RULES.rows,
       XY_RULES.stack,
       XY_RULES.dataLayer,
+      XY_RULES.sharedX,
       XY_RULES.rangeOrder,
       INTERACTION_RULES.brushColumn,
       INTERACTION_RULES.emphasisRows,

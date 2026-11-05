@@ -41,6 +41,7 @@ import type {
   XyCategory,
   XyMark,
   XyScene,
+  XySceneLayer,
   XySeries,
 } from './types';
 
@@ -103,6 +104,7 @@ interface SeriesDraft {
   key: string;
   label: string;
   layerIndex: number;
+  yIndex: number;
   layer: DataLayer;
   yColumn: string;
   axis: 'y' | 'y2';
@@ -245,13 +247,14 @@ export const resolveXy = (
   const drafts: SeriesDraft[] = [];
   for (const { layer, index } of dataLayers) {
     const rows = rowsOf(layer, data.rows.length);
-    for (const y of layer.y) {
+    for (const [yIndex, y] of layer.y.entries()) {
       const yColumn = resolution.column(y.column);
       if (layer.splitBy === undefined) {
         drafts.push({
           key: keyPart(y.column),
           label: yColumn.label,
           layerIndex: index,
+          yIndex,
           layer,
           yColumn: y.column,
           axis: y.axis ?? 'y',
@@ -272,6 +275,7 @@ export const resolveXy = (
           key: layer.y.length > 1 ? `${keyPart(y.column)}:${value}` : value,
           label: layer.y.length > 1 ? `${text} - ${yColumn.label}` : text,
           layerIndex: index,
+          yIndex,
           layer,
           yColumn: y.column,
           axis: y.axis ?? 'y',
@@ -461,6 +465,8 @@ export const resolveXy = (
                   dims.map((id) => [id, resolution.cell(id, row)])
                 ),
                 description,
+                series: { layer: draft.layerIndex, y: draft.yIndex },
+                seriesKey: draft.key,
               },
             }
           : {}),
@@ -505,6 +511,7 @@ export const resolveXy = (
         ? undefined
         : xLength / marks.length;
     return {
+      series: { layer: draft.layerIndex, y: draft.yIndex },
       key: draft.key,
       label: draft.label,
       mark: draft.layer.mark,
@@ -550,6 +557,8 @@ export const resolveXy = (
               columns,
               values,
               description,
+              series: { layer: draft.layerIndex, y: draft.yIndex },
+              seriesKey: draft.key,
             },
           }
         : {}),
@@ -561,34 +570,38 @@ export const resolveXy = (
   });
 
   // Y axes.
-  const referenceLines: SceneReferenceLine[] = node.layers.flatMap((layer) =>
-    layer.kind === 'referenceLines'
-      ? layer.lines.map((line) => {
-          const text =
-            line.label ??
-            (line.showText
-              ? formatValue(
-                  line.value,
-                  line.format ?? {
-                    kind: 'number',
-                    pattern: DEFAULT_PATTERNS.number,
-                  }
-                )
-              : undefined);
-          return {
-            axis: line.axis ?? 'y',
-            value: line.value,
-            ...(text === undefined ? {} : { label: text }),
-            color: line.color ? resolveColor(line.color, scheme) : chrome.text,
-            ...(line.fill ? { fill: line.fill } : {}),
-            ...(line.icon ? { icon: line.icon } : {}),
-            strokeWidth: line.strokeWidth ?? 1,
-            strokeDash: line.strokeDash ?? 'solid',
-            textPosition: line.textPosition ?? 'auto',
-          };
-        })
-      : []
+  const referenceLinesByLayer: SceneReferenceLine[][] = node.layers.map(
+    (layer) =>
+      layer.kind === 'referenceLines'
+        ? layer.lines.map((line) => {
+            const text =
+              line.label ??
+              (line.showText
+                ? formatValue(
+                    line.value,
+                    line.format ?? {
+                      kind: 'number',
+                      pattern: DEFAULT_PATTERNS.number,
+                    }
+                  )
+                : undefined);
+            return {
+              axis: line.axis ?? 'y',
+              value: line.value,
+              ...(text === undefined ? {} : { label: text }),
+              color: line.color
+                ? resolveColor(line.color, scheme)
+                : chrome.text,
+              ...(line.fill ? { fill: line.fill } : {}),
+              ...(line.icon ? { icon: line.icon } : {}),
+              strokeWidth: line.strokeWidth ?? 1,
+              strokeDash: line.strokeDash ?? 'solid',
+              textPosition: line.textPosition ?? 'auto',
+            };
+          })
+        : []
   );
+  const referenceLines = referenceLinesByLayer.flat();
 
   const yAxis = (id: 'y' | 'y2'): SceneAxis | undefined => {
     const onAxis = series.filter((entry) => entry.axis === id);
@@ -736,6 +749,7 @@ export const resolveXy = (
         toNumber(resolution.cell(draft.yColumn, source.rows[0] ?? 0)) ?? null
     );
     return {
+      series: entry.series,
       key: entry.key,
       label: entry.label,
       color: entry.color,
@@ -756,13 +770,15 @@ export const resolveXy = (
                 ? { [draft.split.column]: draft.split.cell }
                 : {},
               description,
+              series: entry.series,
+              seriesKey: entry.key,
             },
           }
         : {}),
     };
   });
 
-  const annotations: SceneAnnotation[] = node.layers.flatMap((layer) =>
+  const annotationsByLayer: SceneAnnotation[][] = node.layers.map((layer) =>
     layer.kind === 'annotations'
       ? layer.events.flatMap((event): SceneAnnotation[] => {
           if (event.hidden) {
@@ -860,6 +876,23 @@ export const resolveXy = (
     node.style?.currentTime === undefined
       ? undefined
       : toEpoch(node.style.currentTime);
+  const layers: XySceneLayer[] = node.layers.flatMap(
+    (layer, layerIndex): XySceneLayer[] => {
+      if (layer.kind === 'data') {
+        return series
+          .filter(({ series: source }) => source.layer === layerIndex)
+          .map((series): XySceneLayer => ({ kind: 'series', series }));
+      }
+      if (layer.kind === 'referenceLines') {
+        return (referenceLinesByLayer[layerIndex] ?? []).map(
+          (line): XySceneLayer => ({ kind: 'referenceLine', line })
+        );
+      }
+      return (annotationsByLayer[layerIndex] ?? []).map(
+        (annotation): XySceneLayer => ({ kind: 'annotation', annotation })
+      );
+    }
+  );
 
   return {
     kind: 'xy',
@@ -869,9 +902,7 @@ export const resolveXy = (
     orientation,
     axes: { x: xAxis, ...(y ? { y } : {}), ...(y2 ? { y2 } : {}) },
     categories,
-    series,
-    referenceLines,
-    annotations,
+    layers,
     legend: {
       visible:
         visibility === 'visible' ||
