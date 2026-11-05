@@ -39,7 +39,10 @@ export const tickStep = (
 /** Rounds floating-point noise from a multiple of `step`. */
 const clean = (value: number, step: number) => {
   const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 1);
-  return Number(value.toFixed(Math.min(decimals, 20)));
+  // `toFixed` stops at 20 decimals, which would round tiny values to zero.
+  return decimals > 20
+    ? Number(value.toPrecision(15))
+    : Number(value.toFixed(decimals));
 };
 
 /** `[min, max]` widened to multiples of the tick step, as d3's `nice`. */
@@ -60,7 +63,7 @@ export const niceDomain = (
     low = Number.isFinite(roundedLow) ? roundedLow : min;
     high = Number.isFinite(roundedHigh) ? roundedHigh : max;
   }
-  return [low, high];
+  return [Math.min(low, min), Math.max(high, max)];
 };
 
 /** Linear ticks inside `[min, max]`. */
@@ -238,16 +241,24 @@ const timeSteps = (span: number, count: number): TimeStep[] => [
 const localTime = (epoch: number, zone: string) =>
   epoch + timeZoneOffset(epoch, zone) * MINUTE;
 
-const fromLocal = (local: number, zone: string): number => {
-  let epoch = local;
-  for (let pass = 0; pass < 4; pass += 1) {
-    const next = local - timeZoneOffset(epoch, zone) * MINUTE;
-    if (next === epoch) {
-      break;
-    }
-    epoch = next;
-  }
-  return epoch;
+/**
+ * The instant a local wall-clock time names in `zone`: the earliest occurrence
+ * after `after` when given, else the earliest. A local time skipped by an
+ * offset change names the moment of the change, so a day still starts on its
+ * own date.
+ */
+const fromLocal = (local: number, zone: string, after?: number): number => {
+  // With the offset in force before the change, a skipped time lands on the change itself.
+  const before = local - timeZoneOffset(local - DAY, zone) * MINUTE;
+  const following = local - timeZoneOffset(local + DAY, zone) * MINUTE;
+  const valid = [...new Set([before, following])]
+    .filter((epoch) => localTime(epoch, zone) === local)
+    .sort((a, b) => a - b);
+  const options = valid.length > 0 ? valid : [before];
+  return (
+    options.find((epoch) => after === undefined || epoch > after) ??
+    options[options.length - 1]!
+  );
 };
 
 const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
@@ -291,7 +302,11 @@ const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   } else {
     date.setUTCDate(date.getUTCDate() + (unit === 'week' ? 7 : step));
   }
-  return fromLocal(date.getTime(), zone);
+  if (unit !== 'hour') {
+    // A day that started late after a skipped midnight must not shift the next.
+    date.setUTCHours(0, 0, 0, 0);
+  }
+  return fromLocal(date.getTime(), zone, epoch);
 };
 
 const chooseTimeStep = (min: number, max: number, count: number) =>

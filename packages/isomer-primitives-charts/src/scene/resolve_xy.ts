@@ -618,13 +618,15 @@ export const resolveXy = (
       (entry) => entry.axis === id && !hidden.has(entry.key)
     );
     const firstDraft = drafts.find((draft) => draft.axis === id);
-    if (onAxis.length === 0) {
+    const linesOnAxis = referenceLines.filter((line) => line.axis === id);
+    // Reference lines keep their axis even when every series on it is hidden.
+    if (onAxis.length === 0 && linesOnAxis.length === 0) {
       return undefined;
     }
     const config = node.axes?.[id];
-    const percentage = onAxis.every(
-      (entry) => entry.stack?.mode === 'percentage'
-    );
+    const percentage =
+      onAxis.length > 0 &&
+      onAxis.every((entry) => entry.stack?.mode === 'percentage');
     const values = [
       ...onAxis.flatMap(({ marks }) =>
         marks.flatMap((mark) => [
@@ -632,9 +634,7 @@ export const resolveXy = (
           ...(mark.y0 === undefined ? [] : [mark.y0]),
         ])
       ),
-      ...referenceLines
-        .filter((line) => line.axis === id)
-        .map(({ value }) => value),
+      ...linesOnAxis.map(({ value }) => value),
     ];
     const scale = config?.scale ?? 'linear';
     let low = values.length
@@ -675,7 +675,9 @@ export const resolveXy = (
     }
     const format: PortableFormat = percentage
       ? DEFAULT_FORMATS.percent
-      : resolution.format(firstDraft!.yColumn);
+      : firstDraft
+        ? resolution.format(firstDraft.yColumn)
+        : DEFAULT_FORMATS.number;
     const ticks = (
       scale === 'log'
         ? logTicks(low, high, count)

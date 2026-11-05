@@ -176,14 +176,15 @@ export const titled = (title: string | undefined, sentence: string) =>
     ? `${title}: ${sentence}`
     : sentence.charAt(0).toUpperCase() + sentence.slice(1);
 
-/** The documented color/series key encoding. */
+const escapeKey = (text: string) => text.replace(/[\\:]/g, '\\$&');
+
+/** The documented color/series key encoding. No string produces `\null` or a leading `\[`. */
 export const keyPart = (cell: Cell): string =>
   cell === null
     ? '\\null'
-    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
-        /[\\:]/g,
-        '\\$&'
-      );
+    : Array.isArray(cell)
+      ? `\\${escapeKey(JSON.stringify(cell))}`
+      : escapeKey(String(cell));
 
 /** Raw cell identity, independent of display text and scalar/array encoding. */
 export const cellKey = (cell: Cell): string => JSON.stringify(cell);

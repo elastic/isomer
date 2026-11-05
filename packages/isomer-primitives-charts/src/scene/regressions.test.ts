@@ -13,7 +13,7 @@ import type { MetricNode } from '../schema/metric';
 import { type XyChartNode, xyChartSchema } from '../schema/xy_chart';
 
 import { resolveChart } from './resolve';
-import { linearTicks, niceTimeDomain, timeTicks } from './ticks';
+import { linearTicks, niceDomain, niceTimeDomain, timeTicks } from './ticks';
 import type { XyScene } from './types';
 
 const seriesIn = (scene: XyScene) =>
@@ -162,6 +162,19 @@ describe('resolver regressions', () => {
       ['a'],
       '["a"]',
     ]);
+    expect(series.map(({ key }) => key)).toEqual(['\\["a"]', '["a"]']);
+
+    node.interactions = { initial: { hiddenSeries: ['\\["a"]'] } };
+    node.colors = { byKey: { '["a"]': blue } };
+    const scene = resolveChart(node, { scheme: 'light' });
+    expect(scene.legend.items.map(({ hidden }) => hidden)).toEqual([
+      true,
+      false,
+    ]);
+    expect(seriesIn(scene).map(({ color }) => color)).toEqual([
+      expect.not.stringMatching(/^#0000FF$/),
+      '#0000FF',
+    ]);
   });
 
   it.each(['stacked', 'percentage'] as const)(
@@ -193,6 +206,34 @@ describe('resolver regressions', () => {
       ).toEqual(['B']);
     }
   );
+
+  it('keeps an axis for reference lines when its series are hidden', () => {
+    const node = xy([
+      ['x', 'A', 10],
+      ['x', 'B', 20],
+    ]);
+    node.layers = [
+      {
+        kind: 'data',
+        mark: 'bar',
+        x: 'x',
+        splitBy: 's',
+        y: [{ column: 'y', axis: 'y2' }],
+      },
+      { kind: 'referenceLines', lines: [{ value: 50, axis: 'y2' }] },
+    ];
+    node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
+    const scene = resolveChart(node, { scheme: 'light' });
+    expect(scene.axes.y2?.domain).toEqual([0, 50]);
+    expect(scene.axes.y2?.ticks.length).toBeGreaterThan(0);
+  });
+
+  it('keeps tiny numeric x values inside a rounded domain', () => {
+    const [low, high] = niceDomain(1e-21, 2e-21, 5);
+    expect(low).toBeLessThanOrEqual(1e-21);
+    expect(high).toBeGreaterThanOrEqual(2e-21);
+    expect(high).toBeGreaterThan(low);
+  });
 
   it('rounds continuous x domains unless disabled or custom', () => {
     const node = xy([
@@ -310,6 +351,44 @@ describe('tick boundaries', () => {
         ticks.map(() => '00')
       );
     }
+  });
+
+  it('starts each day on its own date when DST skips midnight', () => {
+    // Santiago skips 2026-09-06 00:00; that day starts at 01:00.
+    const zone = 'America/Santiago';
+    const ticks = timeTicks(
+      Date.UTC(2026, 8, 4, 12),
+      Date.UTC(2026, 8, 9, 12),
+      5,
+      zone
+    );
+    const local = new Intl.DateTimeFormat('en-CA', {
+      timeZone: zone,
+      dateStyle: 'short',
+      timeStyle: 'short',
+      hourCycle: 'h23',
+    });
+    expect(ticks.map((tick) => local.format(tick))).toEqual([
+      '2026-09-05, 00:00',
+      '2026-09-06, 01:00',
+      '2026-09-07, 00:00',
+      '2026-09-08, 00:00',
+      '2026-09-09, 00:00',
+    ]);
+  });
+
+  it('rounds a domain down across a repeated local hour', () => {
+    // Helsinki repeats 03:00–04:00 local on 2026-10-25.
+    const min = Date.parse('2026-10-25T00:30:00Z');
+    const [low, high] = niceTimeDomain(
+      min,
+      Date.parse('2026-10-25T12:30:00Z'),
+      5,
+      'Europe/Helsinki'
+    );
+    expect(low).toBe(Date.parse('2026-10-25T00:00:00Z'));
+    expect(low).toBeLessThanOrEqual(min);
+    expect(high).toBeGreaterThanOrEqual(Date.parse('2026-10-25T12:30:00Z'));
   });
 
   it('uses quarter starts and bounds multi-year tick counts', () => {
