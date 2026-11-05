@@ -61,6 +61,24 @@ describe('Scene events', () => {
     ).toEqual([START, START + 2 * HOUR]);
   });
 
+  it('describes brush ends by their nearest category', () => {
+    expect(
+      brushEvent(xyInteractiveScene, NODE, [
+        START + 0.4 * HOUR,
+        START + 1.6 * HOUR,
+      ])?.description
+    ).toBe('@timestamp per hour: 00:00 to 02:00');
+  });
+
+  it('falls back to the brush column label when there are no categories', () => {
+    expect(
+      brushEvent({ ...xyInteractiveScene, categories: [] }, NODE, [
+        START,
+        START + HOUR,
+      ])?.description
+    ).toBe('@timestamp per hour');
+  });
+
   it('raises no brush where the node offers none', () => {
     expect(brushEvent(xyTimeSeriesScene, NODE, [START, START + HOUR])).toBe(
       undefined
