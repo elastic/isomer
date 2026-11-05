@@ -31,7 +31,7 @@ const gestures: Record<string, () => ChartEvent | undefined> = {
   'Select a bar segment': () =>
     selectEvent(NODE, seriesOf('404').marks[0]!.selection!),
   'Select the missing bucket': () =>
-    selectEvent(NODE, seriesOf('null').marks[0]!.selection!),
+    selectEvent(NODE, seriesOf('\\null').marks[0]!.selection!),
   'Filter out a legend item': () =>
     selectEvent(
       NODE,

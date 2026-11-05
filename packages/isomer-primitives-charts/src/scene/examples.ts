@@ -245,7 +245,7 @@ const statuses: readonly {
     counts: [12, 9, 15],
   },
   {
-    key: 'null',
+    key: '\\null',
     raw: null,
     label: '(null)',
     color: '#EE72A6',
@@ -426,7 +426,7 @@ export const xyInteractiveScene: XyScene = {
         key,
         label,
         color,
-        hidden: key === 'null',
+        hidden: key === '\\null',
         statistics: [],
         source,
         description: `${STATUS_LABEL}: ${label}`,
