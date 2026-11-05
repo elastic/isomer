@@ -18,6 +18,7 @@ import { customChecksOf } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { rulesOf } from './cross_field';
+import { navigationHrefSchema } from './links';
 import { contractDefinitions } from './schema.fixtures';
 
 const members = new Map(
@@ -30,6 +31,19 @@ const memberSchemas = new Set<unknown>(members.values());
 
 const customChecks = (root: z.ZodType): object[] =>
   customChecksOf(root, { skip: (schema) => memberSchemas.has(schema) });
+
+const navigationHrefChecks = new Set(customChecksOf(navigationHrefSchema));
+
+const rulesFor = (check: object): readonly string[] => {
+  const rules = rulesOf(check);
+  if (rules) {
+    return rules;
+  }
+  if (navigationHrefChecks.has(check)) {
+    return [NAVIGATION_HREF_RULE];
+  }
+  throw new Error('Custom check has no stated rule metadata.');
+};
 
 const descriptions = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -62,9 +76,7 @@ describe('stated rules', () => {
     ({ type, checks }) => {
       const stated = descriptions(authoringSchemaSubset(authoring, [type]));
       for (const check of checks) {
-        // A link's URL check is the SDK's, which states its own rule.
-        const rules = rulesOf(check) ?? [NAVIGATION_HREF_RULE];
-        for (const rule of rules ?? []) {
+        for (const rule of rulesFor(check)) {
           expect(
             stated.some((description) =>
               description.toLowerCase().includes(rule.toLowerCase())
@@ -75,4 +87,16 @@ describe('stated rules', () => {
       }
     }
   );
+
+  it('does not treat an unregistered custom check as a URL check', () => {
+    const check = customChecksOf(navigationHrefSchema.refine(() => true)).find(
+      (candidate) => !navigationHrefChecks.has(candidate) && !rulesOf(candidate)
+    );
+    if (!check) {
+      throw new Error('Expected custom checks on the chart link schema.');
+    }
+    expect(() => rulesFor(check)).toThrow(
+      'Custom check has no stated rule metadata.'
+    );
+  });
 });

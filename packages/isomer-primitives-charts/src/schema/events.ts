@@ -10,14 +10,10 @@
 // means. Events refer to rows and columns of the node's own `data`, never to
 // pixels or an engine's indexes, so every renderer raises the same event.
 
-import {
-  type ActionEventRef,
-  navigationHref,
-  requiredString,
-  z,
-} from '@elastic/isomer-sdk';
+import { type ActionEventRef, requiredString, z } from '@elastic/isomer-sdk';
 
 import { cellSchema, type ChartColumn } from './data';
+import { navigationHrefSchema } from './links';
 import {
   checkColumnReferences,
   COLUMN_REF_RULE,
@@ -44,7 +40,7 @@ export const INTERACTION_RULES = {
 } as const;
 
 const linkSchema = z
-  .strictObject({ href: navigationHref(), label: requiredString() })
+  .strictObject({ href: navigationHrefSchema, label: requiredString() })
   .describe(
     'A static link, such as "Open in Kibana", drawn on every surface including images and text.'
   );
@@ -223,9 +219,18 @@ const selectEventSchema = z.discriminatedUnion('target', [
   z.strictObject({
     ...selectEventShape,
     target: z.enum(['datum', 'series', 'legend']),
-    seriesKey: requiredString().describe(
-      'The xyChart series key, needed to identify which y series was selected.'
-    ),
+    seriesKey: z
+      .string()
+      .describe(
+        'The xyChart series key; it may be empty for an empty split value.'
+      ),
+    series: z.strictObject({
+      layer: z
+        .int()
+        .min(0)
+        .describe('The index of the data layer in `layers`.'),
+      y: z.int().min(0).describe('The index of the y entry in that layer.'),
+    }),
   }),
   z.strictObject({
     ...selectEventShape,

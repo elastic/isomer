@@ -65,11 +65,22 @@ describe('Scene examples', () => {
       expect(scene.table.rows.map(({ row }) => row)).toEqual(
         data.rows.map((_, index) => index)
       );
+      expect(scene.table.rows.map(({ values }) => values)).toEqual(data.rows);
       expect(scene.table.columns.map(({ id }) => id)).toEqual(
         data.columns.map(({ id }) => id)
       );
     }
   );
+
+  it('keeps series identity on the series and its legend item', () => {
+    const series = xyTimeSeriesScene.layers.flatMap((layer) =>
+      layer.kind === 'series' ? [layer.series.series] : []
+    );
+    const legend = xyTimeSeriesScene.legend.items.map(({ series }) => series);
+
+    expect(series).toEqual([{ layer: 0, y: 0 }]);
+    expect(legend).toEqual(series);
+  });
 });
 
 describe('SceneRenderer', () => {

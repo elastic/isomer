@@ -5,13 +5,9 @@
  * 2.0.
  */
 
-import {
-  navigationHref,
-  type PrimitiveNode,
-  requiredString,
-  z,
-} from '@elastic/isomer-sdk';
+import { type PrimitiveNode, requiredString, z } from '@elastic/isomer-sdk';
 
+import { navigationHrefSchema } from './links';
 import { provenanceSchema } from './provenance';
 
 /** A visible placeholder for content that could not be materialized or rendered. */
@@ -24,7 +20,7 @@ export const unsupportedSchema = z
     ),
     link: z
       .strictObject({
-        href: navigationHref(),
+        href: navigationHrefSchema,
         label: requiredString(),
       })
       .optional()

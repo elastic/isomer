@@ -31,6 +31,7 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'datum',
       rows: [1],
       columns: ['time', 'status'],
+      series: { layer: 0, y: 0 },
       seriesKey: '404',
       values: { time: START, status: '404' },
       description:
@@ -46,6 +47,7 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'datum',
       rows: [3],
       columns: ['time', 'status'],
+      series: { layer: 0, y: 0 },
       seriesKey: '\\null',
       values: { time: START, status: null },
       description:
@@ -62,6 +64,7 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'legend',
       rows: [2, 6, 10],
       columns: ['status'],
+      series: { layer: 0, y: 0 },
       seriesKey: 'Other',
       values: { status: 'Other' },
       negate: true,

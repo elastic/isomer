@@ -76,6 +76,8 @@ export interface SceneTable {
     /** The row's index in `data.rows`. */
     readonly row: number;
     readonly cells: readonly string[];
+    /** Raw node data in matching column order, for constructing chart events without parsing display text. */
+    readonly values: readonly Cell[];
   }[];
 }
 
@@ -227,6 +229,11 @@ export interface XyMark {
 }
 
 export interface XySeries {
+  /** The source data layer and y entry, uniquely identifying this series in its node. */
+  readonly series: {
+    readonly layer: number;
+    readonly y: number;
+  };
   /** The series key, as `colors.byKey` names it. */
   readonly key: string;
   readonly label: string;
@@ -262,6 +269,11 @@ export interface XySeries {
 }
 
 export interface SceneLegendItem {
+  /** The source data layer and y entry, uniquely identifying this series in its node. */
+  readonly series: {
+    readonly layer: number;
+    readonly y: number;
+  };
   readonly key: string;
   readonly label: string;
   readonly color: SceneColor;

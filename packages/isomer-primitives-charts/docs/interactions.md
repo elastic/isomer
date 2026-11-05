@@ -43,7 +43,7 @@ type ChartEvent = {
   description: string;              // in words from the Scene
   values: Record<string, Cell>;     // the raw value of each referenced column
 } & (
-  | { kind: 'select'; target: 'datum' | 'series' | 'legend'; seriesKey: string; rows: number[]; columns: string[]; negate?: boolean }
+  | { kind: 'select'; target: 'datum' | 'series' | 'legend'; seriesKey: string; series: { layer: number; y: number }; rows: number[]; columns: string[]; negate?: boolean }
   | { kind: 'select'; target: 'category' | 'cell' | 'tile'; rows: number[]; columns: string[]; negate?: boolean }
   | { kind: 'brush'; column: string; range: [number, number] }
 );
@@ -51,7 +51,7 @@ type ChartEvent = {
 
 An event refers to data, never to pixels: `rows` are indexes into the node's `data.rows`, and `columns` are the dimension columns that identify the target, whose value every row in `rows` shares. A click in the SVG renderer, Elastic Charts or ECharts, and a tap on a phone, raise the same event. A renderer raises no event for a node without an `id`.
 
-`datum`, `series` and `legend` selections also carry `seriesKey`, using the [xyChart series-key rule](xy-chart.md#xychart). It distinguishes y series that share the same source row.
+`datum`, `series` and `legend` selections carry `seriesKey`, using the [xyChart series-key rule](xy-chart.md#xychart), and `series`, the `{ layer, y }` indexes identifying the chosen y entry. The indexes distinguish different y series across layers even when their keys and source rows match; an empty key is valid.
 
 | Target | `rows` | `columns` |
 | --- | --- | --- |

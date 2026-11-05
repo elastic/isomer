@@ -40,7 +40,7 @@ export const metricSingleValueScene: MetricScene = {
         empty: false,
       },
     ],
-    rows: [{ row: 0, cells: ['14,074'] }],
+    rows: [{ row: 0, cells: ['14,074'], values: [14_074] }],
   },
   interactions: {
     select: [],
@@ -105,6 +105,7 @@ export const xyTimeSeriesScene: XyScene = {
     rows: counts.map((count, index) => ({
       row: index,
       cells: [hourLabel(index), String(count)],
+      values: [START + index * HOUR, count],
     })),
   },
   interactions: {
@@ -146,6 +147,7 @@ export const xyTimeSeriesScene: XyScene = {
     {
       kind: 'series',
       series: {
+        series: { layer: 0, y: 0 },
         key: 'count',
         label: 'Count of records',
         mark: 'line',
@@ -186,6 +188,7 @@ export const xyTimeSeriesScene: XyScene = {
     size: 'auto',
     items: [
       {
+        series: { layer: 0, y: 0 },
         key: 'count',
         label: 'Count of records',
         color: '#16C5C0',

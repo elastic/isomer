@@ -60,17 +60,50 @@ describe('chart event examples', () => {
     const [{ event }] = chartEventExamples as [
       (typeof chartEventExamples)[number],
     ];
-    if (event.kind !== 'select') {
+    if (event.kind !== 'select' || !('seriesKey' in event)) {
       throw new Error('The first chart event example must be a selection.');
     }
 
-    const count = chartEventSchema.parse({ ...event, seriesKey: 'count' });
-    const errors = chartEventSchema.parse({ ...event, seriesKey: 'errors' });
+    const count = chartEventSchema.parse({
+      ...event,
+      series: { layer: 0, y: 0 },
+      seriesKey: '200',
+    });
+    const errors = chartEventSchema.parse({
+      ...event,
+      series: { layer: 1, y: 0 },
+      seriesKey: '200',
+    });
 
+    if (!('seriesKey' in count) || !('seriesKey' in errors)) {
+      throw new Error('Expected xy series selections.');
+    }
     expect(count).not.toEqual(errors);
+    expect(count.seriesKey).toBe(errors.seriesKey);
+    expect(readChartEvent(toActionEvent(count))).toEqual(count);
+    expect(readChartEvent(toActionEvent(errors))).toEqual(errors);
     expect(count.kind === 'select' ? count.rows : []).toEqual(event.rows);
     expect(errors.kind === 'select' ? errors.rows : []).toEqual(event.rows);
   });
+
+  it.each(['datum', 'series', 'legend'] as const)(
+    'round-trips an empty series key for %s selections',
+    (target) => {
+      const example = chartEventExamples.find(
+        ({ event }) => event.kind === 'select' && event.target === 'datum'
+      );
+      if (
+        !example ||
+        example.event.kind !== 'select' ||
+        !('seriesKey' in example.event)
+      ) {
+        throw new Error('A datum selection example is required.');
+      }
+
+      const event = { ...example.event, target, seriesKey: '' };
+      expect(readChartEvent(toActionEvent(event))).toEqual(event);
+    }
+  );
 
   it.each(['datum', 'series', 'legend'] as const)(
     'requires a series key for %s selections',
