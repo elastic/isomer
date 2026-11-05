@@ -185,12 +185,10 @@ export const dataTableSchema = dataTableObjectSchema
             id: sort.column,
           });
         }
-        checkColumnReferences(
-          node.data,
-          references,
-          context,
-          DATA_TABLE_RULES.numberOnly
-        );
+        checkColumnReferences(node.data, references, context, {
+          missing: COLUMN_REF_RULE,
+          type: DATA_TABLE_RULES.numberOnly,
+        });
         checkInteractions(node, context);
 
         const types = new Map(
