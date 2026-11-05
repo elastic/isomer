@@ -96,7 +96,10 @@ const isIsoDateTime = (value: string): boolean => {
       number,
       number,
     ];
-  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
+  const daysInMonth =
+    [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ??
+    0;
   return (
     month >= 1 &&
     month <= 12 &&
