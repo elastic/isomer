@@ -7,7 +7,8 @@
 
 import { toEpoch } from '../format/date';
 import { DEFAULT_PATTERNS, formatValue } from '../format/format';
-import type { Cell, PortableFormat } from '../schema/core';
+import type { Cell } from '../schema/data';
+import type { PortableFormat } from '../schema/format';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import {
