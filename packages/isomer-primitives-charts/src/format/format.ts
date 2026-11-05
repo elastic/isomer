@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { Cell, ColumnType, PortableFormat } from '../schema/core';
+import type { Cell, ColumnType } from '../schema/data';
+import type { PortableFormat } from '../schema/format';
 
 import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
