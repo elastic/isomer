@@ -652,11 +652,7 @@ export const resolveXy = (
         : linearTicks(low, high, count)
     ).map((value) => ({
       value,
-      label: resolution.formatAs(
-        value,
-        format,
-        percentage ? undefined : firstDraft!.yColumn
-      ),
+      label: resolution.formatAs(value, format),
     }));
     return {
       id,
@@ -726,7 +722,7 @@ export const resolveXy = (
       domain: [low, high],
       ticks: values.map((value) => ({
         value,
-        label: resolution.formatAs(value, format, xId),
+        label: resolution.formatAs(value, format),
       })),
       ...(interval === undefined ? {} : { interval }),
     };

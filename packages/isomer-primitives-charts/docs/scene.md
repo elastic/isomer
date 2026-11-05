@@ -36,7 +36,7 @@ import { resolveChart } from '@elastic/isomer-primitives-charts/scene';
 const scene = resolveChart(node, { scheme: 'dark', size: { width: 480, height: 240 } });
 ```
 
-`resolveChart(node, { scheme, size?, locale?, timeZone?, formatter?, labels? })` turns a `metric` or `xyChart` node into its Scene. It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node's `display` strings or from `formatter`, which defaults to [`intlFormatter`](format.md); a host such as Kibana passes its own to print exactly what it prints. `labels` replaces the text for missing (`(null)`), empty (`(blank)`) and non-numeric (`NaN`) values.
+`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric` or `xyChart` node into its Scene. It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
 
 What it decides:
 

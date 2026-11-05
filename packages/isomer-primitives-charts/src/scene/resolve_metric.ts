@@ -156,11 +156,7 @@ export const resolveMetric = (
         if (toPrimary) {
           shown = Number.isNaN(delta)
             ? NOT_AVAILABLE
-            : resolution.formatAs(
-                delta,
-                withSign(resolution.format(column)),
-                column
-              );
+            : resolution.formatAs(delta, withSign(resolution.format(column)));
         }
         if (!(compare.showValue ?? true)) {
           shown = '';
