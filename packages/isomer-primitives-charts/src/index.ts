@@ -20,31 +20,17 @@ export {
   type ResolveSceneOptions,
   type SceneResolver,
 } from './render/context';
-export {
-  gridPrimitive,
-  gridSnapshotHeight,
-} from './render/grid';
-export {
-  defineChartPrimitives,
-} from './render/primitives';
+export { gridPrimitive, gridSnapshotHeight } from './render/grid';
+export { defineChartPrimitives } from './render/primitives';
 export {
   type SceneShimConfig,
   detectSceneEnvironment,
   renderSceneNode,
 } from './render/scene_node';
-export {
-  CHARTS_THEME,
-} from './render/theme';
-export {
-  unsupportedPrimitive,
-} from './render/unsupported';
-export {
-  metricSingleValueScene,
-  xyTimeSeriesScene,
-} from './scene/examples';
-export {
-  selectSceneRenderer,
-} from './scene/select';
+export { CHARTS_THEME } from './render/theme';
+export { unsupportedPrimitive } from './render/unsupported';
+export { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
+export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,
@@ -89,9 +75,7 @@ export {
   chartColorsSchema,
   colorValueSchema,
 } from './schema/colors';
-export {
-  chartCoreShape,
-} from './schema/core';
+export { chartCoreShape } from './schema/core';
 export {
   type Cell,
   type ChartColumn,
@@ -102,18 +86,10 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
-export {
-  gridExamples,
-} from './schema/examples/grid';
-export {
-  metricExamples,
-} from './schema/examples/metric';
-export {
-  unsupportedExamples,
-} from './schema/examples/unsupported';
-export {
-  xyChartExamples,
-} from './schema/examples/xy_chart';
+export { gridExamples } from './schema/examples/grid';
+export { metricExamples } from './schema/examples/metric';
+export { unsupportedExamples } from './schema/examples/unsupported';
+export { xyChartExamples } from './schema/examples/xy_chart';
 export {
   type DurationUnit,
   type PortableFormat,
@@ -131,43 +107,20 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
-export {
-  type MetricNode,
-  METRIC_RULES,
-  metricSchema,
-} from './schema/metric';
+export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type Loss,
   type Provenance,
   lossSchema,
   provenanceSchema,
 } from './schema/provenance';
-export {
-  type ColumnReference,
-  columnRefSchema,
-} from './schema/references';
-export {
-  type UnsupportedNode,
-  unsupportedSchema,
-} from './schema/unsupported';
-export {
-  type XyChartNode,
-  XY_RULES,
-  xyChartSchema,
-} from './schema/xy_chart';
-export {
-  drawScene,
-  sceneDrawSize,
-} from './svg/draw';
-export {
-  toReactDom,
-} from './svg/react_dom';
-export {
-  isomerSvgRenderer,
-} from './svg/renderer';
-export {
-  SVG_THEME,
-} from './svg/theme';
+export { type ColumnReference, columnRefSchema } from './schema/references';
+export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
+export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
+export { drawScene, sceneDrawSize } from './svg/draw';
+export { toReactDom } from './svg/react_dom';
+export { isomerSvgRenderer } from './svg/renderer';
+export { SVG_THEME } from './svg/theme';
 export {
   type SvgAttributes,
   type SvgChild,
