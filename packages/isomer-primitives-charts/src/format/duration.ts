@@ -8,7 +8,7 @@
 // Kibana's duration field format, with Moment's duration arithmetic and its
 // English `humanize`, in plain JavaScript.
 
-import type { DurationUnit } from '../schema/core';
+import type { DurationUnit } from '../schema/format';
 
 export type DurationOutput =
   | 'humanize'

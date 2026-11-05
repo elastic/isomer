@@ -7,7 +7,8 @@
 
 import { toEpoch } from '../format/date';
 import { formatValue } from '../format/format';
-import type { ColorBand, PortableFormat } from '../schema/core';
+import type { ColorBand } from '../schema/colors';
+import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
 
 import {

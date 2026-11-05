@@ -9,7 +9,7 @@
 // against the contract before the resolver exists. They show the shape, not
 // expected output: tests compare a resolver against Kibana, never against these.
 
-import type { Cell } from '../schema/core';
+import type { Cell } from '../schema/data';
 
 import type {
   MetricScene,
@@ -245,7 +245,7 @@ const statuses: readonly {
     counts: [12, 9, 15],
   },
   {
-    key: 'null',
+    key: '\\null',
     raw: null,
     label: '(null)',
     color: '#EE72A6',
@@ -426,7 +426,7 @@ export const xyInteractiveScene: XyScene = {
         key,
         label,
         color,
-        hidden: key === 'null',
+        hidden: key === '\\null',
         statistics: [],
         source,
         description: `${STATUS_LABEL}: ${label}`,
