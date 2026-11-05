@@ -1,6 +1,6 @@
 ---
 navigation_title: Format
-description: The one formatter every renderer and surface uses: Kibana's numeral, duration and Moment date formats, in plain JavaScript.
+description: "The one formatter every renderer and surface uses: Kibana's numeral, duration and Moment date formats, in plain JavaScript."
 ---
 
 # Format

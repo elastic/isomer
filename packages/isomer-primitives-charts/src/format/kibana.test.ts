@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import type { DurationUnit, PortableFormat } from '../schema/core';
+import type { DurationUnit, PortableFormat } from '../schema/format';
 
 import { formatValue } from './format';
 import { kibanaDurationCases } from './kibana_duration.fixtures';

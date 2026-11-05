@@ -77,18 +77,92 @@ export const linearTicks = (
   return ticks;
 };
 
-/** Powers of ten inside `[min, max]`, for a log axis. */
-export const logTicks = (min: number, max: number): number[] => {
+const pow10 = (exponent: number) =>
+  Number.isFinite(exponent)
+    ? Number(`1e${exponent}`)
+    : exponent < 0
+      ? 0
+      : exponent;
+
+/** d3-array 2's `ticks`, which d3's log scale falls back to. */
+const d3Ticks = (start: number, stop: number, count: number): number[] => {
+  if (start === stop && count > 0) {
+    return [start];
+  }
+  const raw = (stop - start) / Math.max(0, count);
+  const power = Math.floor(Math.log(raw) / Math.LN10);
+  const error = raw / 10 ** power;
+  const factor = error >= E10 ? 10 : error >= E5 ? 5 : error >= E2 ? 2 : 1;
   const ticks: number[] = [];
-  const low = Math.floor(Math.log10(Math.max(min, Number.MIN_VALUE)));
-  const high = Math.ceil(Math.log10(Math.max(max, Number.MIN_VALUE)));
-  for (let power = low; power <= high; power += 1) {
-    const value = 10 ** power;
-    if (value >= min && value <= max) {
-      ticks.push(value);
+  if (power >= 0) {
+    const step = factor * 10 ** power;
+    if (!Number.isFinite(step) || step === 0) {
+      return [];
+    }
+    let r0 = Math.round(start / step);
+    let r1 = Math.round(stop / step);
+    if (r0 * step < start) {
+      ++r0;
+    }
+    if (r1 * step > stop) {
+      --r1;
+    }
+    for (let r = r0; r <= r1; r += 1) {
+      ticks.push(r * step);
+    }
+  } else {
+    const inverse = 10 ** -power / factor;
+    let r0 = Math.round(start * inverse);
+    let r1 = Math.round(stop * inverse);
+    if (r0 / inverse < start) {
+      ++r0;
+    }
+    if (r1 / inverse > stop) {
+      --r1;
+    }
+    for (let r = r0; r <= r1; r += 1) {
+      ticks.push(r / inverse);
     }
   }
   return ticks;
+};
+
+/** `[min, max]` widened to powers of ten, as d3's log `nice`. */
+export const niceLogDomain = (min: number, max: number): [number, number] => [
+  pow10(Math.floor(Math.log10(min))),
+  pow10(Math.ceil(Math.log10(max))),
+];
+
+/**
+ * Ticks for a base-10 log axis over a positive `[min, max]`, as d3-scale 3's
+ * `scaleLog().ticks(count)`, which Elastic Charts uses: 1–9 times each power
+ * of ten inside the domain, or linear ticks when those are too few.
+ */
+export const logTicks = (min: number, max: number, count: number): number[] => {
+  const i = Math.log10(min);
+  const j = Math.log10(max);
+  if (j - i < count) {
+    const ticks: number[] = [];
+    for (
+      let exponent = Math.floor(i);
+      exponent <= Math.ceil(j);
+      exponent += 1
+    ) {
+      const power = pow10(exponent);
+      for (let k = 1; k < 10; k += 1) {
+        const tick = power * k;
+        if (tick < min) {
+          continue;
+        }
+        if (tick > max) {
+          break;
+        }
+        ticks.push(tick);
+      }
+    }
+    return ticks.length * 2 < count ? d3Ticks(min, max, count) : ticks;
+  }
+  return d3Ticks(i, j, Math.min(j - i, count)).map(pow10);
 };
 
 const SECOND = 1000;
