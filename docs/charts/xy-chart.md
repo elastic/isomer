@@ -20,7 +20,7 @@ A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y:
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Neither carries rows, so neither is ever selected.
 
-A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell as a string (`null` as "null"), prefixed by the y column id and ":" when the layer has more than one y column.
+A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, which no string produces.
 
 Rules:
 
