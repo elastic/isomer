@@ -13,6 +13,7 @@ import { metricSingleValue } from './metric';
 import { unsupportedVega } from './unsupported';
 import { xyTimeSeries } from './xy_chart';
 
+/** Named `grid` examples, each of which validates in a composition. */
 export const gridExamples: PrimitiveExample<GridNode>[] = [
   {
     name: 'Panels side by side',

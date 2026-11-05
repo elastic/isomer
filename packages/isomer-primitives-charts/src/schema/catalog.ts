@@ -11,6 +11,7 @@ import { metricSingleValue } from './examples/metric';
 import { unsupportedVega } from './examples/unsupported';
 import { xyTimeSeries } from './examples/xy_chart';
 
+/** What an agent reads to choose `metric`: purpose, when to use it, and an example. */
 export const metricCatalog: PrimitiveCatalogEntry = {
   type: 'metric',
   name: 'Metric',
@@ -28,6 +29,7 @@ export const metricCatalog: PrimitiveCatalogEntry = {
   example: metricSingleValue,
 };
 
+/** What an agent reads to choose `xyChart`: purpose, when to use it, and an example. */
 export const xyChartCatalog: PrimitiveCatalogEntry = {
   type: 'xyChart',
   name: 'XY chart',
@@ -45,6 +47,7 @@ export const xyChartCatalog: PrimitiveCatalogEntry = {
   example: xyTimeSeries,
 };
 
+/** What an agent reads to choose `grid`: purpose, when to use it, and an example. */
 export const gridCatalog: PrimitiveCatalogEntry = {
   type: 'grid',
   name: 'Grid',
@@ -66,6 +69,7 @@ export const gridCatalog: PrimitiveCatalogEntry = {
   },
 };
 
+/** What an agent reads to choose `unsupported`: purpose, when to use it, and an example. */
 export const unsupportedCatalog: PrimitiveCatalogEntry = {
   type: 'unsupported',
   name: 'Unsupported',
