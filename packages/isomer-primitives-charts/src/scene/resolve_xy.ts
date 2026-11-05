@@ -624,9 +624,11 @@ export const resolveXy = (
       return undefined;
     }
     const config = node.axes?.[id];
+    // Hidden series still decide what the axis means.
+    const allOnAxis = series.filter((entry) => entry.axis === id);
     const percentage =
-      onAxis.length > 0 &&
-      onAxis.every((entry) => entry.stack?.mode === 'percentage');
+      allOnAxis.length > 0 &&
+      allOnAxis.every((entry) => entry.stack?.mode === 'percentage');
     const values = [
       ...onAxis.flatMap(({ marks }) =>
         marks.flatMap((mark) => [

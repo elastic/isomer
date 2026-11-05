@@ -39,10 +39,13 @@ export const tickStep = (
 /** Rounds floating-point noise from a multiple of `step`. */
 const clean = (value: number, step: number) => {
   const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 1);
-  // `toFixed` stops at 20 decimals, which would round tiny values to zero.
-  return decimals > 20
-    ? Number(value.toPrecision(15))
-    : Number(value.toFixed(decimals));
+  if (decimals <= 20) {
+    return Number(value.toFixed(decimals));
+  }
+  // `toFixed` stops at 20 decimals; round to a hundredth of the step instead.
+  const unit = step / 100;
+  const cleaned = Math.round(value / unit) * unit;
+  return Number.isFinite(cleaned) ? cleaned : value;
 };
 
 /** `[min, max]` widened to multiples of the tick step, as d3's `nice`. */

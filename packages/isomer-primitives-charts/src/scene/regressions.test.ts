@@ -235,6 +235,35 @@ describe('resolver regressions', () => {
     expect(high).toBeGreaterThan(low);
   });
 
+  it('keeps a percentage axis when every stacked series is hidden', () => {
+    const node = xy([
+      ['x', 'A', 10],
+      ['x', 'B', 20],
+    ]);
+    node.layers = [
+      {
+        kind: 'data',
+        mark: 'bar',
+        stack: 'percentage',
+        x: 'x',
+        splitBy: 's',
+        y: [{ column: 'y' }],
+      },
+      { kind: 'referenceLines', lines: [{ value: 0.8 }] },
+    ];
+    node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
+    const axis = resolveChart(node, { scheme: 'light' }).axes.y;
+    expect(axis?.domain).toEqual([0, 1]);
+    expect(axis?.ticks.at(-1)?.label).toBe('100%');
+  });
+
+  it('keeps variation in a narrow domain away from zero', () => {
+    const [low, high] = niceDomain(1e-5, 1e-5 + 4e-20, 5);
+    expect(low).toBeLessThanOrEqual(1e-5);
+    expect(high).toBeGreaterThanOrEqual(1e-5 + 4e-20);
+    expect(high - low).toBeLessThan(1e-18);
+  });
+
   it('rounds continuous x domains unless disabled or custom', () => {
     const node = xy([
       [1.2, 'A', 1],
