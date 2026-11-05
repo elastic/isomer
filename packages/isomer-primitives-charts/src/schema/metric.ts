@@ -7,24 +7,25 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
-import {
-  chartCoreShape,
-  chartDataSchema,
-  checkColumnReferences,
-  colorValueSchema,
-  COLUMN_REF_RULE,
-  type ColumnReference,
-  columnRefSchema,
-} from './core';
+import { colorValueSchema, KEY_PART_RULE } from './colors';
+import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
+import { chartDataSchema } from './data';
 import {
   checkInteractions,
   INTERACTION_RULES,
   interactionsCoreShape,
   interactionsSchemaFor,
 } from './events';
+import {
+  checkColumnReferences,
+  COLUMN_REF_RULE,
+  type ColumnReference,
+  columnRefSchema,
+} from './references';
 
-export const METRIC_ICONS = [
+// The icons the Lens API format's metric accepts.
+const METRIC_ICONS = [
   'alert',
   'asterisk',
   'bell',
@@ -45,9 +46,12 @@ export const METRIC_ICONS = [
   'temperature',
 ] as const;
 
+/** The cross-field rules `metricSchema` states in its description, one sentence each. */
 export const METRIC_RULES = {
   columnType:
     'A bar `max` and a trend `y` are `number` columns; a trend `x` is a `date` or `number` column.',
+  operands:
+    'A `compare` secondary column is a single-valued `number` column, as is the headline `value` column when `background` is a bar or `color` is `bands`.',
   trendColumns:
     'Trend column references name a column in `background.data.columns`.',
   oneRow: 'Without a `breakdown`, `data` holds at most one row.',
@@ -59,7 +63,7 @@ export const METRIC_RULES = {
 
 const alignmentSchema = z.enum(['left', 'center', 'right']);
 
-export const metricCompareSchema = z
+const metricCompareSchema = z
   .strictObject({
     to: z
       .enum(['baseline', 'primary'])
@@ -111,8 +115,11 @@ const backgroundSchema = z.discriminatedUnion('kind', [
     ),
 ]);
 
+const METRIC_KEY_RULE = `A \`colors.byKey\` key names a tile by its \`breakdown\` cell, and applies only with a \`breakdown\`. ${KEY_PART_RULE}`;
+
 const METRIC_DESCRIPTION = [
   'One or more metric tiles: a headline value with optional secondary value, progress bar or trend line. Each row of `data` is one tile.',
+  METRIC_KEY_RULE,
   ...Object.values(METRIC_RULES),
 ].join(' ');
 
@@ -183,78 +190,110 @@ const metricObjectSchema = z.object({
     .optional(),
 });
 
+type MetricInput = z.infer<typeof metricObjectSchema>;
+type Issues = z.core.$RefinementCtx<MetricInput>;
+
+const operand = (path: string[], id: string): ColumnReference => ({
+  path,
+  id,
+  types: ['number'],
+  single: true,
+  rule: METRIC_RULES.operands,
+});
+
+// The columns of `data` the node names. A column that takes part in arithmetic
+// (a comparison, a progress bar or bands) must be a single-valued number.
+const dataReferences = (node: MetricInput): ColumnReference[] => {
+  const valueIsOperand =
+    node.background?.kind === 'bar' || node.value.color === 'bands';
+  const references: ColumnReference[] = [
+    valueIsOperand
+      ? operand(['value', 'column'], node.value.column)
+      : { path: ['value', 'column'], id: node.value.column },
+  ];
+  if (node.secondary) {
+    const path = ['secondary', 'column'];
+    references.push(
+      node.secondary.compare
+        ? operand(path, node.secondary.column)
+        : { path, id: node.secondary.column }
+    );
+  }
+  if (node.breakdown) {
+    references.push({
+      path: ['breakdown', 'column'],
+      id: node.breakdown.column,
+    });
+  }
+  if (node.background?.kind === 'bar') {
+    references.push({
+      path: ['background', 'max'],
+      id: node.background.max,
+      types: ['number'],
+    });
+  }
+  return references;
+};
+
+const checkTrend = (
+  node: MetricInput,
+  trend: Extract<NonNullable<MetricInput['background']>, { kind: 'trend' }>,
+  context: Issues
+) => {
+  const { data, x, y, breakdown } = trend;
+  const references: ColumnReference[] = [
+    { path: ['background', 'x'], id: x, types: ['date', 'number'] },
+    { path: ['background', 'y'], id: y, types: ['number'] },
+    ...(breakdown === undefined
+      ? []
+      : [{ path: ['background', 'breakdown'], id: breakdown }]),
+  ];
+  checkColumnReferences(data, references, context, {
+    missing: METRIC_RULES.trendColumns,
+    type: METRIC_RULES.columnType,
+    noun: 'trend column',
+  });
+  if (breakdown !== undefined && !node.breakdown) {
+    context.addIssue({
+      code: 'custom',
+      path: ['background', 'breakdown'],
+      message: METRIC_RULES.trendBreakdown,
+    });
+  }
+};
+
+const checkBands = (node: MetricInput, context: Issues) => {
+  if (node.value.color === 'bands' && !node.colors?.bands?.length) {
+    context.addIssue({
+      code: 'custom',
+      path: ['value', 'color'],
+      message: METRIC_RULES.bands,
+    });
+  }
+  const hasMaximum = node.background?.kind === 'bar' || node.breakdown;
+  if (node.value.bandsRange === 'percentage' && !hasMaximum) {
+    context.addIssue({
+      code: 'custom',
+      path: ['value', 'bandsRange'],
+      message: METRIC_RULES.percentage,
+    });
+  }
+};
+
+/** A metric: one headline value per tile, with optional secondary value, progress bar or trend. */
 export const metricSchema = metricObjectSchema
   .describe(METRIC_DESCRIPTION)
   .check(
-    crossSuperRefine<z.infer<typeof metricObjectSchema>>(
+    crossSuperRefine<MetricInput>(
       (node, context) => {
-        const references: ColumnReference[] = [
-          { path: ['value', 'column'], id: node.value.column },
-        ];
-        if (node.secondary) {
-          references.push({
-            path: ['secondary', 'column'],
-            id: node.secondary.column,
-          });
-        }
-        if (node.breakdown) {
-          references.push({
-            path: ['breakdown', 'column'],
-            id: node.breakdown.column,
-          });
-        }
-        if (node.background?.kind === 'bar') {
-          references.push({
-            path: ['background', 'max'],
-            id: node.background.max,
-            types: ['number'],
-          });
-        }
-        checkColumnReferences(
-          node.data,
-          references,
-          context,
-          METRIC_RULES.columnType
-        );
+        checkColumnReferences(node.data, dataReferences(node), context, {
+          missing: COLUMN_REF_RULE,
+          type: METRIC_RULES.columnType,
+        });
         checkInteractions(node, context);
-
         if (node.background?.kind === 'trend') {
-          const { data, x, y, breakdown } = node.background;
-          const trend: ColumnReference[] = [
-            { path: ['background', 'x'], id: x, types: ['date', 'number'] },
-            { path: ['background', 'y'], id: y, types: ['number'] },
-          ];
-          if (breakdown !== undefined) {
-            trend.push({ path: ['background', 'breakdown'], id: breakdown });
-          }
-          for (const reference of trend) {
-            const column = data.columns.find(({ id }) => id === reference.id);
-            if (!column) {
-              context.addIssue({
-                code: 'custom',
-                path: reference.path,
-                message: `${METRIC_RULES.trendColumns} No trend column is "${reference.id}".`,
-              });
-            } else if (
-              reference.types &&
-              !reference.types.includes(column.type)
-            ) {
-              context.addIssue({
-                code: 'custom',
-                path: reference.path,
-                message: `${METRIC_RULES.columnType} Column "${reference.id}" is \`${column.type}\`.`,
-              });
-            }
-          }
-          if (breakdown !== undefined && !node.breakdown) {
-            context.addIssue({
-              code: 'custom',
-              path: ['background', 'breakdown'],
-              message: METRIC_RULES.trendBreakdown,
-            });
-          }
+          checkTrend(node, node.background, context);
         }
-
         if (!node.breakdown && node.data.rows.length > 1) {
           context.addIssue({
             code: 'custom',
@@ -262,28 +301,12 @@ export const metricSchema = metricObjectSchema
             message: `${METRIC_RULES.oneRow} It holds ${node.data.rows.length}.`,
           });
         }
-        if (node.value.color === 'bands' && !node.colors?.bands?.length) {
-          context.addIssue({
-            code: 'custom',
-            path: ['value', 'color'],
-            message: METRIC_RULES.bands,
-          });
-        }
-        if (
-          node.value.bandsRange === 'percentage' &&
-          node.background?.kind !== 'bar' &&
-          !node.breakdown
-        ) {
-          context.addIssue({
-            code: 'custom',
-            path: ['value', 'bandsRange'],
-            message: METRIC_RULES.percentage,
-          });
-        }
+        checkBands(node, context);
       },
       [
         COLUMN_REF_RULE,
         METRIC_RULES.columnType,
+        METRIC_RULES.operands,
         METRIC_RULES.trendColumns,
         METRIC_RULES.oneRow,
         METRIC_RULES.bands,
@@ -294,4 +317,5 @@ export const metricSchema = metricObjectSchema
     )
   );
 
+/** A validated `metric` node. */
 export type MetricNode = z.infer<typeof metricSchema> & PrimitiveNode;
