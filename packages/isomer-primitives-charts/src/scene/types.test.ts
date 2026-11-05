@@ -9,10 +9,20 @@ import { describe, expect, it } from 'vitest';
 
 import type { ChartData } from '../schema/data';
 import { metricSingleValue } from '../schema/examples/metric';
-import { xyTimeSeries } from '../schema/examples/xy_chart';
+import { xyInteractive, xyTimeSeries } from '../schema/examples/xy_chart';
 
-import { metricSingleValueScene, xyTimeSeriesScene } from './examples';
-import type { Scene, SceneRenderer, SceneSource, XyScene } from './types';
+import {
+  metricSingleValueScene,
+  xyInteractiveScene,
+  xyTimeSeriesScene,
+} from './examples';
+import type {
+  Scene,
+  SceneRenderer,
+  SceneSelection,
+  SceneSource,
+  XyScene,
+} from './types';
 
 /** Every source a selectable part of the Scene carries. */
 const sourcesOf = (scene: Scene): SceneSource[] =>
@@ -37,7 +47,30 @@ const cases: { name: string; scene: Scene; data: ChartData }[] = [
     data: metricSingleValue.data,
   },
   { name: 'xy', scene: xyTimeSeriesScene, data: xyTimeSeries.data },
+  {
+    name: 'interactive xy',
+    scene: xyInteractiveScene,
+    data: xyInteractive.data,
+  },
 ];
+
+/** Every selection the Scene offers. */
+const selectionsOf = (scene: Scene): SceneSelection[] =>
+  (scene.kind === 'metric'
+    ? scene.tiles.map(({ selection }) => selection)
+    : [
+        ...scene.categories.map(({ selection }) => selection),
+        ...scene.layers.flatMap((layer) =>
+          layer.kind === 'series'
+            ? [
+                layer.series.selection,
+                ...layer.series.marks.map(({ selection }) => selection),
+              ]
+            : []
+        ),
+        ...scene.legend.items.map(({ selection }) => selection),
+      ]
+  ).filter((selection) => selection !== undefined);
 
 describe('Scene examples', () => {
   it.each(cases)(
@@ -71,7 +104,6 @@ describe('Scene examples', () => {
       );
     }
   );
-
   it('keeps series identity on the series and its legend item', () => {
     const series = xyTimeSeriesScene.layers.flatMap((layer) =>
       layer.kind === 'series' ? [layer.series.series] : []
@@ -81,6 +113,32 @@ describe('Scene examples', () => {
     expect(series).toEqual([{ layer: 0, y: 0 }]);
     expect(legend).toEqual(series);
   });
+
+  it.each(cases)(
+    '$name: a selection names dimension columns every selected row shares',
+    ({ scene, data }) => {
+      const dimensions = new Set(
+        data.columns
+          .filter(({ role }) => role === 'dimension')
+          .map(({ id }) => id)
+      );
+      const index = new Map(data.columns.map(({ id }, at) => [id, at]));
+      for (const selection of selectionsOf(scene)) {
+        expect(scene.interactions.select).toContain(selection.target);
+        expect(Object.keys(selection.values).sort()).toEqual(
+          [...selection.columns].sort()
+        );
+        for (const column of selection.columns) {
+          expect(dimensions.has(column)).toBe(true);
+          for (const row of selection.rows) {
+            expect(data.rows[row]?.[index.get(column)!]).toEqual(
+              selection.values[column]
+            );
+          }
+        }
+      }
+    }
+  );
 });
 
 describe('SceneRenderer', () => {
