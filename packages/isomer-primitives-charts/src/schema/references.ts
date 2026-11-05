@@ -7,7 +7,7 @@
 
 import { z } from '@elastic/isomer-sdk';
 
-import type { ChartData, ColumnType } from './data';
+import type { ChartColumn, ColumnType } from './data';
 
 /** The rule every chart states for its column references. */
 export const COLUMN_REF_RULE =
@@ -46,7 +46,7 @@ interface ColumnReferenceRules {
  * of a type it does not accept.
  */
 export const checkColumnReferences = (
-  data: Pick<ChartData, 'columns'> | undefined,
+  data: { readonly columns: readonly ChartColumn[] } | undefined,
   references: readonly ColumnReference[],
   context: z.core.$RefinementCtx<unknown>,
   rules: ColumnReferenceRules
