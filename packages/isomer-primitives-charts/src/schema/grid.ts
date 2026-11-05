@@ -25,12 +25,13 @@ export const GRID_COLUMNS = 48;
  */
 export const GRID_SINGLE_COLUMN_BELOW = 768;
 
+/** The cross-field rules `gridSchema` states in its description, one sentence each. */
 export const GRID_RULES = {
   width: `A panel's \`x + w\` is at most ${GRID_COLUMNS}.`,
   ids: 'Panel and section ids are unique within the grid.',
 } as const;
 
-export const GRID_READING_ORDER =
+const GRID_READING_ORDER =
   'Reading order is the top-level panels by `y`, then `x`, followed by each section by `y` with its panels by `y`, then `x`; ties keep array order.';
 
 const panelShape = <TNode extends ZodType>(node: TNode) => ({
@@ -146,6 +147,7 @@ export const gridSchema = gridObject(unresolvedBodyNodeSchema);
 export const gridSchemaFor = (bodyNode: ZodType<unknown>) =>
   gridObject(bodyNode);
 
+/** A node placed on the grid, at `x`, `y` with size `w` by `h` in grid units. */
 export interface GridPanel<TNode = PrimitiveNode> {
   id?: string;
   title?: string;
@@ -157,6 +159,7 @@ export interface GridPanel<TNode = PrimitiveNode> {
   node: TNode;
 }
 
+/** A titled group of panels, positioned by `y` and optionally collapsed. */
 export interface GridSection<TNode = PrimitiveNode> {
   id?: string;
   title: string;
@@ -174,6 +177,7 @@ export interface GridNode<TNode = PrimitiveNode> extends PrimitiveNode {
   sections?: GridSection<TNode>[];
 }
 
+/** A panel in reading order, with where it sits in the grid. */
 export interface GridReadingEntry<TNode = PrimitiveNode> {
   panel: GridPanel<TNode>;
   /** The field path of the panel's node, such as `sections[0].panels[2].node`. */

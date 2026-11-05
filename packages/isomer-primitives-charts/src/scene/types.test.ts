@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import type { ChartData } from '../schema/core';
+import type { ChartData } from '../schema/data';
 import { metricSingleValue } from '../schema/examples/metric';
 import { xyTimeSeries } from '../schema/examples/xy_chart';
 
