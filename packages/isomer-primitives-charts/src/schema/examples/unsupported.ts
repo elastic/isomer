@@ -9,6 +9,7 @@ import type { PrimitiveExample } from '@elastic/isomer-sdk';
 
 import type { UnsupportedNode } from '../unsupported';
 
+/** An `unsupported` node for a Vega chart. The catalog's example. */
 export const unsupportedVega: UnsupportedNode = {
   type: 'unsupported',
   title: '[Logs] Visitors by OS',
@@ -19,6 +20,7 @@ export const unsupportedVega: UnsupportedNode = {
   },
 };
 
+/** Named `unsupported` examples, each valid in a composition. */
 export const unsupportedExamples: PrimitiveExample<UnsupportedNode>[] = [
   {
     name: 'With a link',
