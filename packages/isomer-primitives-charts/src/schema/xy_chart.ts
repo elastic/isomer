@@ -7,15 +7,8 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
-import {
-  chartCoreShape,
-  checkColumnReferences,
-  colorValueSchema,
-  COLUMN_REF_RULE,
-  type ColumnReference,
-  columnRefSchema,
-  portableFormatSchema,
-} from './core';
+import { colorValueSchema, KEY_PART_RULE } from './colors';
+import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import {
   brushingInteractionsSchemaFor,
@@ -23,8 +16,16 @@ import {
   INTERACTION_RULES,
   interactionsCoreShape,
 } from './events';
+import { portableFormatSchema } from './format';
+import {
+  checkColumnReferences,
+  COLUMN_REF_RULE,
+  type ColumnReference,
+  columnRefSchema,
+} from './references';
 
-export const XY_MARKER_ICONS = [
+// The marker icons Kibana's Lens API format accepts.
+const XY_MARKER_ICONS = [
   'alert',
   'asterisk',
   'bell',
@@ -42,7 +43,8 @@ export const XY_MARKER_ICONS = [
   'triangle',
 ] as const;
 
-export const XY_LEGEND_STATISTICS = [
+// The per-series statistics the Lens API format's legend accepts.
+const XY_LEGEND_STATISTICS = [
   'min',
   'max',
   'avg',
@@ -62,9 +64,9 @@ export const XY_LEGEND_STATISTICS = [
   'current_and_last_value',
 ] as const;
 
-export const XY_SERIES_KEY_RULE =
-  'A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell as a string (`null` as "null"), prefixed by the y column id and ":" when the layer has more than one y column.';
+const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
+/** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
@@ -337,63 +339,83 @@ const xyChartObjectSchema = z.object({
 const toTime = (value: number | string): number =>
   typeof value === 'number' ? value : Date.parse(value);
 
+type XyChartInput = z.infer<typeof xyChartObjectSchema>;
+type XyLayer = XyChartInput['layers'][number];
+type DataLayer = Extract<XyLayer, { kind: 'data' }>;
+type Issues = z.core.$RefinementCtx<XyChartInput>;
+
+const checkAnnotationRanges = (
+  layer: Extract<XyLayer, { kind: 'annotations' }>,
+  layerIndex: number,
+  context: Issues
+) => {
+  layer.events.forEach((event, eventIndex) => {
+    if (event.kind === 'range' && toTime(event.from) > toTime(event.to)) {
+      context.addIssue({
+        code: 'custom',
+        path: ['layers', layerIndex, 'events', eventIndex],
+        message: XY_RULES.rangeOrder,
+      });
+    }
+  });
+};
+
+const dataLayerReferences = (
+  layer: DataLayer,
+  layerIndex: number
+): ColumnReference[] => {
+  const base = ['layers', layerIndex];
+  return [
+    ...(layer.x === undefined ? [] : [{ path: [...base, 'x'], id: layer.x }]),
+    ...(layer.splitBy === undefined
+      ? []
+      : [{ path: [...base, 'splitBy'], id: layer.splitBy }]),
+    ...layer.y.map(({ column }, yIndex) => ({
+      path: [...base, 'y', yIndex, 'column'],
+      id: column,
+      types: ['number'] as const,
+    })),
+  ];
+};
+
+const checkDataLayer = (
+  layer: DataLayer,
+  layerIndex: number,
+  rowCount: number,
+  context: Issues
+) => {
+  if (layer.stack && layer.mark === 'line') {
+    context.addIssue({
+      code: 'custom',
+      path: ['layers', layerIndex, 'stack'],
+      message: XY_RULES.stack,
+    });
+  }
+  if (layer.rows) {
+    const [start, end] = layer.rows;
+    if (start > end || end > rowCount) {
+      context.addIssue({
+        code: 'custom',
+        path: ['layers', layerIndex, 'rows'],
+        message: `${XY_RULES.rows} \`data\` has ${rowCount} rows.`,
+      });
+    }
+  }
+};
+
+/** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
 export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
-  crossSuperRefine<z.infer<typeof xyChartObjectSchema>>(
+  crossSuperRefine<XyChartInput>(
     (node, context) => {
       const references: ColumnReference[] = [];
       let dataLayers = 0;
       node.layers.forEach((layer, index) => {
         if (layer.kind === 'annotations') {
-          layer.events.forEach((event, eventIndex) => {
-            if (
-              event.kind === 'range' &&
-              toTime(event.from) > toTime(event.to)
-            ) {
-              context.addIssue({
-                code: 'custom',
-                path: ['layers', index, 'events', eventIndex],
-                message: XY_RULES.rangeOrder,
-              });
-            }
-          });
-          return;
-        }
-        if (layer.kind !== 'data') {
-          return;
-        }
-        dataLayers += 1;
-        if (layer.x !== undefined) {
-          references.push({ path: ['layers', index, 'x'], id: layer.x });
-        }
-        if (layer.splitBy !== undefined) {
-          references.push({
-            path: ['layers', index, 'splitBy'],
-            id: layer.splitBy,
-          });
-        }
-        layer.y.forEach(({ column }, yIndex) => {
-          references.push({
-            path: ['layers', index, 'y', yIndex, 'column'],
-            id: column,
-            types: ['number'],
-          });
-        });
-        if (layer.stack && layer.mark === 'line') {
-          context.addIssue({
-            code: 'custom',
-            path: ['layers', index, 'stack'],
-            message: XY_RULES.stack,
-          });
-        }
-        if (layer.rows) {
-          const [start, end] = layer.rows;
-          if (start > end || end > node.data.rows.length) {
-            context.addIssue({
-              code: 'custom',
-              path: ['layers', index, 'rows'],
-              message: `${XY_RULES.rows} \`data\` has ${node.data.rows.length} rows.`,
-            });
-          }
+          checkAnnotationRanges(layer, index, context);
+        } else if (layer.kind === 'data') {
+          dataLayers += 1;
+          references.push(...dataLayerReferences(layer, index));
+          checkDataLayer(layer, index, node.data.rows.length, context);
         }
       });
       if (dataLayers === 0) {
@@ -403,7 +425,10 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
           message: XY_RULES.dataLayer,
         });
       }
-      checkColumnReferences(node.data, references, context, XY_RULES.yType);
+      checkColumnReferences(node.data, references, context, {
+        missing: COLUMN_REF_RULE,
+        type: XY_RULES.yType,
+      });
       checkInteractions(node, context);
     },
     [
@@ -419,4 +444,5 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   )
 );
 
+/** A validated `xyChart` node. */
 export type XyChartNode = z.infer<typeof xyChartSchema> & PrimitiveNode;
