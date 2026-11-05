@@ -1,0 +1,61 @@
+{
+  "name": "@elastic/isomer-primitives-charts",
+  "version": "0.0.0-development",
+  "description": "Chart primitive pack for Isomer: chart families on one shared core, a dashboard grid, and an unsupported placeholder.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-primitives-charts"
+  },
+  "sideEffects": false,
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
+    },
+    "./schema": {
+      "types": "./lib/cjs/schema/index.d.ts",
+      "import": "./lib/esm/schema/index.js",
+      "require": "./lib/cjs/schema/index.js",
+      "default": "./lib/cjs/schema/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "schema": [
+        "./lib/cjs/schema/index.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "lib",
+    "!**/*.tsbuildinfo",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "zod": "^4.5.4"
+  }
+}
