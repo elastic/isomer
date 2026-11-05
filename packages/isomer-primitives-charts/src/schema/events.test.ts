@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
+import type { Cell } from './data';
 import {
   CHART_EVENT_NAMES,
   chartEventSchema,
@@ -22,6 +23,8 @@ import { nodeSchemaOf } from './schema.fixtures';
 const { data } = xyInteractive;
 const columnIndex = (id: string) =>
   data.columns.findIndex((column) => column.id === id);
+const keyPart = (value: Cell): string =>
+  value === null ? '\\null' : String(value).replace(/[\\:]/g, '\\$&');
 
 describe('chart event examples', () => {
   it.each(chartEventExamples)('$name parses', ({ event }) => {
@@ -43,6 +46,42 @@ describe('chart event examples', () => {
       }
     }
   );
+
+  it.each(
+    chartEventExamples.filter(
+      ({ event }) => event.kind === 'select' && 'series' in event
+    )
+  )('$name references its data layer, y entry, and series key', ({ event }) => {
+    if (event.kind !== 'select' || !('series' in event)) {
+      throw new Error('Expected an xy series selection.');
+    }
+
+    const layer = xyInteractive.layers[event.series.layer];
+    if (!layer || layer.kind !== 'data') {
+      throw new Error('The series reference must point to a data layer.');
+    }
+    const y = layer.y[event.series.y];
+    if (!y) {
+      throw new Error('The series reference must point to a y entry.');
+    }
+
+    const expectedKey =
+      layer.splitBy === undefined
+        ? y.column
+        : `${layer.y.length > 1 ? `${y.column}:` : ''}${keyPart(event.values[layer.splitBy] ?? null)}`;
+    expect(event.seriesKey).toBe(expectedKey);
+
+    if (layer.splitBy !== undefined) {
+      const splitColumn = columnIndex(layer.splitBy);
+      expect(splitColumn).toBeGreaterThanOrEqual(0);
+      expect(event.columns).toContain(layer.splitBy);
+      for (const row of event.rows) {
+        expect(data.rows[row]?.[splitColumn]).toEqual(
+          event.values[layer.splitBy]
+        );
+      }
+    }
+  });
 
   it('selects every row of a legend item’s series', () => {
     const legend = chartEventExamples.find(
@@ -114,10 +153,17 @@ describe('chart event examples', () => {
         target,
         rows: [0],
         columns: ['time'],
+        series: { layer: 0, y: 0 },
         values: { time: 0 },
         description: '00:00',
       });
       expect(result.success).toBe(false);
+      if (result.success) {
+        throw new Error('Expected the missing series key to be rejected.');
+      }
+      expect(result.error.issues.map(({ path }) => path)).toContainEqual([
+        'seriesKey',
+      ]);
     }
   );
 });
