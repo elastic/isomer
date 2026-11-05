@@ -12,8 +12,9 @@ import {
   z,
 } from '@elastic/isomer-sdk';
 
-import { provenanceSchema } from './core';
+import { provenanceSchema } from './provenance';
 
+/** A visible placeholder for content that could not be materialized or rendered. */
 export const unsupportedSchema = z
   .object({
     type: z.literal('unsupported'),
@@ -34,4 +35,5 @@ export const unsupportedSchema = z
     'A visible placeholder for something that could not be materialized or rendered, so nothing is dropped or approximated silently.'
   );
 
+/** A validated `unsupported` node. */
 export type UnsupportedNode = z.infer<typeof unsupportedSchema> & PrimitiveNode;

@@ -12,46 +12,23 @@ export {
   xyChartCatalog,
 } from './catalog';
 export {
-  type Cell,
   type ChartColors,
-  type ChartColumn,
-  type ChartData,
-  type ChromeToken,
   type ColorBand,
   type ColorValue,
-  type ColumnReference,
+  chartColorsSchema,
+  colorValueSchema,
+} from './colors';
+export { chartCoreShape } from './core';
+export {
+  type Cell,
+  type ChartColumn,
+  type ChartData,
   type ColumnRole,
   type ColumnType,
-  type DurationUnit,
-  type Loss,
-  type PortableFormat,
-  type Provenance,
   type ScalarCell,
-  BAND_RULE,
-  CHROME_TOKENS,
-  COLUMN_REF_RULE,
-  COLUMN_ROLES,
-  COLUMN_TYPES,
-  DATA_RULES,
-  DURATION_OUTPUT_UNITS,
-  DURATION_UNITS,
-  LOSS_KINDS,
-  cellMatchesColumn,
   cellSchema,
-  chartColorsSchema,
-  chartCoreShape,
   chartDataSchema,
-  checkColumnReferences,
-  colorBandSchema,
-  colorValueSchema,
-  columnRefSchema,
-  columnSchema,
-  hexColorSchema,
-  lossSchema,
-  portableFormatSchema,
-  provenanceSchema,
-  scalarCellSchema,
-} from './core';
+} from './data';
 export {
   type ChartBrushEvent,
   type ChartEvent,
@@ -78,31 +55,29 @@ export { metricExamples } from './examples/metric';
 export { unsupportedExamples } from './examples/unsupported';
 export { xyChartExamples } from './examples/xy_chart';
 export {
+  type DurationUnit,
+  type PortableFormat,
+  portableFormatSchema,
+} from './format';
+export {
   type GridNode,
   type GridPanel,
   type GridReadingEntry,
   type GridSection,
   GRID_COLUMNS,
-  GRID_READING_ORDER,
   GRID_RULES,
   GRID_SINGLE_COLUMN_BELOW,
   gridReadingOrder,
   gridSchema,
   gridSchemaFor,
 } from './grid';
+export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
 export {
-  type MetricNode,
-  METRIC_ICONS,
-  METRIC_RULES,
-  metricCompareSchema,
-  metricSchema,
-} from './metric';
+  type Loss,
+  type Provenance,
+  lossSchema,
+  provenanceSchema,
+} from './provenance';
+export { type ColumnReference, columnRefSchema } from './references';
 export { type UnsupportedNode, unsupportedSchema } from './unsupported';
-export {
-  type XyChartNode,
-  XY_LEGEND_STATISTICS,
-  XY_MARKER_ICONS,
-  XY_RULES,
-  XY_SERIES_KEY_RULE,
-  xyChartSchema,
-} from './xy_chart';
+export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';

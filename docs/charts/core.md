@@ -46,7 +46,7 @@ Rules:
 
 - Column ids are unique.
 - Every row has exactly one cell per column, in column order.
-- A cell holds its column type or null: a number in a `number` column, a string in a `string` column, a boolean in a `boolean` column, and epoch milliseconds or an ISO 8601 date-time string in a `date` column. Only a `multivalue` column holds arrays of those.
+- A cell holds its column type or null: a number in a `number` column, a string in a `string` column, a boolean in a `boolean` column, and epoch milliseconds or an ISO 8601 date-time string with a UTC offset (`Z` or `+hh:mm`) in a `date` column. Only a `multivalue` column holds arrays of those.
 - Each `display` key names a column and holds one string per row.
 
 ## `PortableFormat`
@@ -71,7 +71,7 @@ type ColorValue =
 
 Colors are `#rgb`, `#rrggbb` or `#rrggbbaa`. `ChromeToken` is one of `text`, `textSubdued`, `axis`, `gridLine`, `background` and `border`. The scheme is always chosen explicitly when a node is drawn, so a renderer never relies on CSS `light-dark()` alone.
 
-`colors.byKey` maps a series or category key to a color; each chart states what its keys are. `colors.bands` colors by value range: `from` is inclusive, `to` exclusive, and an absent bound is open. Each band with both bounds has `from` below `to`, and bands ascend without overlapping.
+`colors.byKey` maps a series or category key to a color; each chart states what its keys are (`metric` by its `breakdown` cell, `xyChart` by series), and each key part is escaped so a missing cell (`\null`) never collides with the string "null". `colors.bands` colors by value range: `from` is inclusive, `to` exclusive, and an absent bound is open. Each band with both bounds has `from` below `to`, and bands ascend without overlapping.
 
 ## `source`
 
