@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PortableFormat } from '../schema/format';
 
+import { toEpoch } from './date';
 import { defaultFormatFor, formatValue } from './format';
 import { timeZoneOffset } from './zone';
 
@@ -85,6 +86,22 @@ describe('percent', () => {
 });
 
 describe('bytes and bits', () => {
+  it.each(['bytes', 'bits'] as const)(
+    'keeps %s below a unit boundary in the smaller unit',
+    (kind) => {
+      expect(
+        formatValue(1024 ** 4 - 0.001, {
+          kind,
+          base: 1024,
+          unitDisplay: 'long',
+        })
+      ).toBe(kind === 'bytes' ? '1,024 gigabytes' : '1,024 gigabits');
+      expect(
+        formatValue(1024 ** 4, { kind, base: 1024, unitDisplay: 'long' })
+      ).toBe(kind === 'bytes' ? '1 terabyte' : '1 terabit');
+    }
+  );
+
   it('scales bytes by 1024 by default', () => {
     expect(
       formatValue(5_150_000, { kind: 'bytes', maximumFractionDigits: 1 })
@@ -111,6 +128,18 @@ describe('bytes and bits', () => {
 });
 
 describe('duration', () => {
+  it('preserves finite values when conversion through milliseconds would overflow', () => {
+    const format = {
+      kind: 'duration',
+      input: 'years',
+      useGrouping: false,
+    } as const;
+    const value = 1e300;
+    const expected = `1${'0'.repeat(300)} years`;
+    expect(formatValue(value, format)).toBe(expected);
+    expect(formatValue(value, { ...format, output: 'years' })).toBe(expected);
+  });
+
   it('picks the largest unit the value is at least one of', () => {
     expect(formatValue(90, { kind: 'duration', input: 'minutes' })).toBe(
       '1.5 hours'
@@ -143,6 +172,35 @@ describe('duration', () => {
 });
 
 describe('date', () => {
+  it('keeps the default styles when only the clock or zone is stated', () => {
+    expect(formatValue(MAY_5_2019, { kind: 'date', hour12: false })).toBe(
+      'May 5, 2019, 14:04:56'
+    );
+    expect(
+      formatValue(MAY_5_2019, {
+        kind: 'date',
+        hour12: true,
+        timeZone: '+01:00',
+      })
+    ).toMatch(/^May 5, 2019, 3:04:56\sPM$/);
+  });
+
+  it.each([-8.64e15 - 1, 8.64e15 + 1, Number.MAX_VALUE])(
+    'prints an out-of-range epoch %s as it is',
+    (epoch) => {
+      expect(formatValue(epoch, { kind: 'date' })).toBe(String(epoch));
+      expect(toEpoch(epoch)).toBeUndefined();
+    }
+  );
+
+  it.each([-8.64e15, 8.64e15])(
+    'accepts the date range boundary %s',
+    (epoch) => {
+      expect(toEpoch(epoch)).toBe(epoch);
+      expect(() => formatValue(epoch, { kind: 'date' })).not.toThrow();
+    }
+  );
+
   it('formats in the format’s time zone', () => {
     expect(
       formatValue(MAY_5_2019, {
@@ -215,6 +273,15 @@ describe('missing values', () => {
 });
 
 describe('timeZoneOffset', () => {
+  it('preserves historical offset seconds in either direction', () => {
+    const epoch = Date.UTC(1890, 0, 1);
+    expect(timeZoneOffset(epoch, 'Europe/Paris')).toBeCloseTo(9.35);
+    expect(timeZoneOffset(epoch, 'America/New_York')).toBe(-300);
+    expect(
+      timeZoneOffset(Date.UTC(1880, 0, 1), 'America/New_York')
+    ).toBeCloseTo(-296 - 2 / 60);
+  });
+
   it('reads minutes east of UTC, with daylight saving', () => {
     expect(timeZoneOffset(MAY_5_2019, 'UTC')).toBe(0);
     expect(timeZoneOffset(MAY_5_2019, 'Asia/Kathmandu')).toBe(345);

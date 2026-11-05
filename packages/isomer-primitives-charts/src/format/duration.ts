@@ -51,11 +51,11 @@ export const formatDuration = (
   locale: string
 ): string => {
   const { input, output = 'auto', unitDisplay = 'long' } = format;
-  const milliseconds = value * MILLISECONDS[input];
+  const inputScale = MILLISECONDS[input];
   const unit =
     output === 'auto'
       ? (LARGEST_FIRST.find(
-          (candidate) => Math.abs(milliseconds) >= MILLISECONDS[candidate]
+          (candidate) => Math.abs(value) >= MILLISECONDS[candidate] / inputScale
         ) ?? 'milliseconds')
       : output;
   return numberFormat(locale, {
@@ -64,5 +64,5 @@ export const formatDuration = (
     unit: unit.slice(0, -1),
     unitDisplay,
     ...numberOptions(format),
-  }).format(milliseconds / MILLISECONDS[unit]);
+  }).format(value * (inputScale / MILLISECONDS[unit]));
 };

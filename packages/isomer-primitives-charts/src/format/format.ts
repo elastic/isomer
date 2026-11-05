@@ -98,13 +98,13 @@ const formatNumeric = (
       const units = format.kind === 'bytes' ? BYTES : BITS;
       const base = format.base ?? (format.kind === 'bytes' ? 1024 : 1000);
       const magnitude = Math.abs(number);
-      const exponent =
-        magnitude < 1
-          ? 0
-          : Math.min(
-              units.length - 1,
-              Math.floor(Math.log(magnitude) / Math.log(base))
-            );
+      let exponent = 0;
+      while (
+        exponent < units.length - 1 &&
+        magnitude >= base ** (exponent + 1)
+      ) {
+        exponent++;
+      }
       return numberFormat(locale, {
         style: 'unit',
         unit: units[exponent]!,

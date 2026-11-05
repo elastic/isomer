@@ -20,7 +20,7 @@ Formats are `Intl` options, so they mean the same thing in any JavaScript host a
 
 A missing value is `(null)`, an empty string `(blank)`, and a number-like value that is not a number `NaN`. A multivalue cell becomes a JSON array of its formatted values, such as `["1,000","2,000"]`. A `suffix` is appended to the whole result.
 
-A column without a format gets its type's default: at most three decimals for numbers, and a medium date and time for dates.
+A column without a format gets its type's default: at most three decimals for numbers, and a medium date and time for dates. A date format that states only `hour12` or `timeZone` keeps the medium date and time default. Unparseable dates and numeric dates outside ±8.64e15 epoch milliseconds print as their raw values.
 
 ## Formats a host has that Isomer does not
 

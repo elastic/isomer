@@ -7,7 +7,7 @@
 
 import { dateFormat } from './intl';
 
-const OFFSET = /([+-])(\d{1,2})(?::?(\d{2}))?/;
+const OFFSET = /([+-])(\d{1,2})(?::?(\d{2}))?(?::(\d{2}))?$/;
 
 /**
  * Minutes east of UTC in `timeZone` at `epoch` (milliseconds). Throws a
@@ -21,6 +21,7 @@ export const timeZoneOffset = (epoch: number, timeZone: string): number => {
   if (!match) {
     return 0;
   }
-  const minutes = Number(match[2]) * 60 + Number(match[3] ?? 0);
+  const minutes =
+    Number(match[2]) * 60 + Number(match[3] ?? 0) + Number(match[4] ?? 0) / 60;
   return match[1] === '-' ? -minutes : minutes;
 };
