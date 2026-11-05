@@ -20,6 +20,7 @@ import {
 import { cellSchema, type ChartColumn } from './data';
 import {
   checkColumnReferences,
+  COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
 } from './references';
@@ -153,12 +154,10 @@ export const checkInteractions = (
       types: ['date', 'number'],
     });
   }
-  checkColumnReferences(
-    node.data,
-    references,
-    context,
-    INTERACTION_RULES.brushColumn
-  );
+  checkColumnReferences(node.data, references, context, {
+    missing: COLUMN_REF_RULE,
+    type: INTERACTION_RULES.brushColumn,
+  });
   (node.emphasis ?? []).forEach(({ rows }, index) => {
     rows.forEach((row, rowIndex) => {
       if (row >= node.data.rows.length) {
