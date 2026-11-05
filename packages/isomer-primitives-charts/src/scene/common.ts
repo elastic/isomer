@@ -170,3 +170,12 @@ export const titled = (title: string | undefined, sentence: string) =>
   title
     ? `${title}: ${sentence}`
     : sentence.charAt(0).toUpperCase() + sentence.slice(1);
+
+/** A key part: the cell as a string with `\` and `:` escaped; a missing cell is `\null`. */
+export const keyPart = (cell: Cell | string): string =>
+  cell === null
+    ? '\\null'
+    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
+        /[\\:]/g,
+        '\\$&'
+      );

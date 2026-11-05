@@ -7,8 +7,9 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk';
 
-import type { ChartColumn, PortableFormat } from '../core';
+import type { ChartColumn } from '../data';
 import type { DataTableNode } from '../data_table';
+import type { PortableFormat } from '../format';
 
 // Kibana's default patterns (`format:number:defaultPattern` and siblings).
 const NUMBER: PortableFormat = { kind: 'number', pattern: '0,0.[000]' };

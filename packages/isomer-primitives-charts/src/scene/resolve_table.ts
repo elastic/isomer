@@ -16,22 +16,19 @@ import {
   formatValue,
   NULL_LABEL,
 } from '../format/format';
-import type {
-  Cell,
-  ChartColors,
-  ColumnType,
-  PortableFormat,
-  ScalarCell,
-} from '../schema/core';
+import type { ChartColors } from '../schema/colors';
+import type { Cell, ColumnType, ScalarCell } from '../schema/data';
 import type {
   DataTableColumn,
   DataTableNode,
   DataTableSummary,
 } from '../schema/data_table';
+import type { PortableFormat } from '../schema/format';
 
 import {
   createResolution,
   describe,
+  keyPart,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -177,7 +174,7 @@ const keyColor = (
       return resolveColor(band.color, scheme);
     }
   }
-  const byKey = colors.byKey?.[String(value)];
+  const byKey = colors.byKey?.[keyPart(value)];
   return byKey ? resolveColor(byKey, scheme) : undefined;
 };
 

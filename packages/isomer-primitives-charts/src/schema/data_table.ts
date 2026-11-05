@@ -7,15 +7,8 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
-import {
-  chartColorsSchema,
-  chartCoreShape,
-  checkColumnReferences,
-  colorValueSchema,
-  COLUMN_REF_RULE,
-  type ColumnReference,
-  columnRefSchema,
-} from './core';
+import { chartColorsSchema, colorValueSchema } from './colors';
+import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import {
   checkInteractions,
@@ -23,6 +16,12 @@ import {
   interactionsCoreShape,
   interactionsSchemaFor,
 } from './events';
+import {
+  checkColumnReferences,
+  COLUMN_REF_RULE,
+  type ColumnReference,
+  columnRefSchema,
+} from './references';
 
 export const DATA_TABLE_SUMMARIES = [
   'sum',
@@ -39,9 +38,9 @@ export const DATA_TABLE_RULES = {
   numberOnly: 'A `bar` decoration and a `summary` need a `number` column.',
 } as const;
 
-/** How a `byKey` color names a cell: its value as a string, `null` as "null". */
+/** How a `byKey` color names a cell. */
 export const DATA_TABLE_KEY_RULE =
-  'A `byKey` key is a cell value as a string: `null` as "null". A number inside a band takes the band’s color first.';
+  'A `byKey` key is a cell value as a string with each `\\` and `:` preceded by `\\`; an empty cell is never colored. A number inside a band takes the band’s color first.';
 
 const decorationColors = chartColorsSchema.describe(
   `Colors by value range (\`bands\`), or by cell value (\`byKey\`). ${DATA_TABLE_KEY_RULE}`

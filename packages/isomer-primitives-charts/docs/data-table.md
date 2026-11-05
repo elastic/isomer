@@ -21,7 +21,7 @@ Rules:
 - Every column reference names a column in `data.columns`.
 - Each data column is listed in `columns` at most once.
 - A `bar` decoration and a `summary` need a `number` column.
-- A `byKey` key is a cell value as a string: `null` as "null". A number inside a band takes the band's color first.
+- A `byKey` key is a cell value as a string with each `\` and `:` preceded by `\`; an empty cell is never colored. A number inside a band takes the band's color first.
 - Emphasis rows are indexes into `data.rows`.
 
 ## How it resolves

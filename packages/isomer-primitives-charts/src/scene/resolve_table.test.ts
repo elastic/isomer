@@ -13,7 +13,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import type { ChartColumn } from '../schema/core';
+import type { ChartColumn } from '../schema/data';
 import type { DataTableNode } from '../schema/data_table';
 
 import { resolveChart } from './resolve';
@@ -137,6 +137,26 @@ describe('dataTable cells', () => {
     for (const { cells } of scene.rows) {
       expect(cells[0]?.background).toBeUndefined();
     }
+  });
+
+  it('looks a byKey color up by the escaped key part', () => {
+    const scene = resolve(
+      table([column('s', 'string')], [['a:b'], ['a']], {
+        columns: [
+          {
+            column: 's',
+            decoration: {
+              kind: 'background',
+              colors: {
+                byKey: { 'a\\:b': { light: '#112233', dark: '#112233' } },
+              },
+            },
+          },
+        ],
+      })
+    );
+    expect(scene.rows[0]?.cells[0]?.background).toBeDefined();
+    expect(scene.rows[1]?.cells[0]?.background).toBeUndefined();
   });
 
   it('puts textGhost on a dark cell and textInk on a light one', () => {

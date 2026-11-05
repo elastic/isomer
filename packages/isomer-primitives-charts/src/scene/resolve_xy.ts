@@ -14,6 +14,7 @@ import type { XyChartNode } from '../schema/xy_chart';
 import {
   createResolution,
   describe,
+  keyPart,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -89,15 +90,6 @@ const rowsOf = (layer: DataLayer, total: number): number[] => {
     (_, index) => start + index
   );
 };
-
-/** A key part: the cell as a string with `\` and `:` escaped; a missing cell is `\null`. */
-const keyPart = (cell: Cell | string): string =>
-  cell === null
-    ? '\\null'
-    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
-        /[\\:]/g,
-        '\\$&'
-      );
 
 interface SeriesDraft {
   key: string;
