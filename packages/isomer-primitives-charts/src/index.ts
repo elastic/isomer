@@ -5,11 +5,7 @@
  * 2.0.
  */
 
-export {
-  formatDate,
-  ordinal,
-  toEpoch,
-} from './format/date';
+export { formatDate, ordinal, toEpoch } from './format/date';
 export {
   type DurationFormatOptions,
   type DurationOutput,
@@ -23,19 +19,9 @@ export {
   defaultFormatFor,
   formatValue,
 } from './format/format';
-export {
-  type NumeralOptions,
-  formatNumeral,
-} from './format/numeral';
-export {
-  type WallClock,
-  wallClock,
-  zoneAbbreviation,
-} from './format/zone';
-export {
-  type ChartsFrameTheme,
-  chartsFrame,
-} from './frame';
+export { type NumeralOptions, formatNumeral } from './format/numeral';
+export { type WallClock, wallClock, zoneAbbreviation } from './format/zone';
+export { type ChartsFrameTheme, chartsFrame } from './frame';
 export {
   type ChartsPackOptions,
   CHARTS_INPUT_BUDGET,
@@ -50,49 +36,24 @@ export {
   type ResolveSceneOptions,
   type SceneResolver,
 } from './render/context';
-export {
-  gridPrimitive,
-  gridSnapshotHeight,
-} from './render/grid';
-export {
-  defineChartPrimitives,
-} from './render/primitives';
+export { gridPrimitive, gridSnapshotHeight } from './render/grid';
+export { defineChartPrimitives } from './render/primitives';
 export {
   type SceneShimConfig,
   detectSceneEnvironment,
   renderSceneNode,
 } from './render/scene_node';
-export {
-  CHARTS_THEME,
-} from './render/theme';
-export {
-  unsupportedPrimitive,
-} from './render/unsupported';
-export type {
-  ChartBrushEvent,
-  ChartEvent,
-  ChartSelectEvent,
-  SelectTarget,
-} from './schema/events';
-export {
-  type ResolveChartOptions,
-} from './scene/common';
-export {
-  brushEvent,
-  selectEvent,
-} from './scene/events';
+export { CHARTS_THEME } from './render/theme';
+export { unsupportedPrimitive } from './render/unsupported';
+export { type ResolveChartOptions } from './scene/common';
+export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
-export {
-  type ChartNode,
-  resolveChart,
-} from './scene/resolve';
-export {
-  selectSceneRenderer,
-} from './scene/select';
+export { type ChartNode, resolveChart } from './scene/resolve';
+export { selectSceneRenderer } from './scene/select';
 export {
   CATEGORICAL_PALETTE,
   CHART_CHROME,
@@ -146,9 +107,7 @@ export {
   chartColorsSchema,
   colorValueSchema,
 } from './schema/colors';
-export {
-  chartCoreShape,
-} from './schema/core';
+export { chartCoreShape } from './schema/core';
 export {
   type Cell,
   type ChartColumn,
@@ -159,6 +118,12 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from './schema/events';
 export {
   type Emphasis,
   CHART_EVENT_NAMES,
@@ -175,21 +140,11 @@ export {
   selectSchema,
   toActionEvent,
 } from './schema/events';
-export {
-  chartEventExamples,
-} from './schema/examples/events';
-export {
-  gridExamples,
-} from './schema/examples/grid';
-export {
-  metricExamples,
-} from './schema/examples/metric';
-export {
-  unsupportedExamples,
-} from './schema/examples/unsupported';
-export {
-  xyChartExamples,
-} from './schema/examples/xy_chart';
+export { chartEventExamples } from './schema/examples/events';
+export { gridExamples } from './schema/examples/grid';
+export { metricExamples } from './schema/examples/metric';
+export { unsupportedExamples } from './schema/examples/unsupported';
+export { xyChartExamples } from './schema/examples/xy_chart';
 export {
   type DurationUnit,
   type PortableFormat,
@@ -207,48 +162,24 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
-export {
-  type MetricNode,
-  METRIC_RULES,
-  metricSchema,
-} from './schema/metric';
+export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type Loss,
   type Provenance,
   lossSchema,
   provenanceSchema,
 } from './schema/provenance';
-export {
-  type ColumnReference,
-  columnRefSchema,
-} from './schema/references';
-export {
-  type UnsupportedNode,
-  unsupportedSchema,
-} from './schema/unsupported';
-export {
-  type XyChartNode,
-  XY_RULES,
-  xyChartSchema,
-} from './schema/xy_chart';
-export {
-  drawScene,
-  sceneDrawSize,
-} from './svg/draw';
+export { type ColumnReference, columnRefSchema } from './schema/references';
+export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
+export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
+export { drawScene, sceneDrawSize } from './svg/draw';
 export {
   type InteractiveSceneSvgProps,
   InteractiveSceneSvg,
 } from './svg/interactive';
-export {
-  type ReactDomOptions,
-  toReactDom,
-} from './svg/react_dom';
-export {
-  isomerSvgRenderer,
-} from './svg/renderer';
-export {
-  SVG_THEME,
-} from './svg/theme';
+export { type ReactDomOptions, toReactDom } from './svg/react_dom';
+export { isomerSvgRenderer } from './svg/renderer';
+export { SVG_THEME } from './svg/theme';
 export {
   type SvgAttributes,
   type SvgChild,
@@ -260,12 +191,7 @@ export {
   walkSvg,
   withAttrs,
 } from './svg/tree';
-export {
-  type Box,
-  type DrawOptions,
-  type XyLayout,
-  layoutXy,
-} from './svg/xy';
+export { type Box, type DrawOptions, type XyLayout, layoutXy } from './svg/xy';
 export {
   sceneTableRows,
   sceneToMarkdown,
