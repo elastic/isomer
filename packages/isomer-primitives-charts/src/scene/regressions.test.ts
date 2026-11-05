@@ -148,6 +148,22 @@ describe('resolver regressions', () => {
     ]);
   });
 
+  it('separates array split cells from scalar JSON text', () => {
+    const node = xy([
+      ['x', ['a'], 1],
+      ['x', '["a"]', 2],
+    ]);
+    node.data.columns[1]!.multivalue = true;
+    node.interactions = { select: ['series'] };
+    expect(xyChartSchema.safeParse(node).success).toBe(true);
+    const series = seriesIn(resolveChart(node, { scheme: 'light' }));
+    expect(series.map(({ source }) => source.rows)).toEqual([[0], [1]]);
+    expect(series.map(({ selection }) => selection?.values.s)).toEqual([
+      ['a'],
+      '["a"]',
+    ]);
+  });
+
   it.each(['stacked', 'percentage'] as const)(
     'excludes hidden series from %s geometry and domains',
     (stack) => {

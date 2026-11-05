@@ -264,13 +264,14 @@ export const resolveXy = (
       const splitId = layer.splitBy;
       const groups = new Map<string, number[]>();
       for (const row of rows) {
-        const key = keyPart(resolution.cell(splitId, row));
+        const key = cellKey(resolution.cell(splitId, row));
         const group = groups.get(key) ?? [];
         group.push(row);
         groups.set(key, group);
       }
-      for (const [value, groupRows] of groups) {
+      for (const groupRows of groups.values()) {
         const first = groupRows[0]!;
+        const value = keyPart(resolution.cell(splitId, first));
         const text = resolution.text(splitId, first);
         drafts.push({
           key: layer.y.length > 1 ? `${keyPart(y.column)}:${value}` : value,
