@@ -6,7 +6,6 @@
  */
 
 import { toEpoch } from '../format/date';
-import { formatValue } from '../format/format';
 import type { ColorBand } from '../schema/colors';
 import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
@@ -28,11 +27,9 @@ import type {
   SceneSelection,
 } from './types';
 
-// Lens's metric defaults (`config_builder/transforms/charts/metric/defaults.ts`
-// and `LENS_METRIC_BREAKDOWN_DEFAULT_MAX_COLUMNS`).
+// Defaults for nodes that state none; a materializer states its source's own.
 const DEFAULT_MAX_COLUMNS = 3;
 
-// Kibana's secondary-metric trend glyphs (`secondary_metric_info.ts`).
 const TREND_ICONS = {
   increase: '\u2191',
   decrease: '\u2193',
@@ -54,12 +51,9 @@ export const bandFor = (
   );
 
 const withSign = (format: PortableFormat): PortableFormat =>
-  format.kind === 'number' ||
-  format.kind === 'percent' ||
-  format.kind === 'bytes' ||
-  format.kind === 'bits'
-    ? { ...format, alwaysShowSign: true }
-    : format;
+  format.kind === 'date' || format.kind === 'text'
+    ? format
+    : { ...format, signDisplay: 'exceptZero' };
 
 export const resolveMetric = (
   node: MetricNode,
@@ -162,7 +156,11 @@ export const resolveMetric = (
         if (toPrimary) {
           shown = Number.isNaN(delta)
             ? NOT_AVAILABLE
-            : formatValue(delta, withSign(resolution.format(column)));
+            : resolution.formatAs(
+                delta,
+                withSign(resolution.format(column)),
+                column
+              );
         }
         if (!(compare.showValue ?? true)) {
           shown = '';

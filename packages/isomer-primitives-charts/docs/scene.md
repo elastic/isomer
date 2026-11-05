@@ -36,17 +36,17 @@ import { resolveChart } from '@elastic/isomer-primitives-charts/scene';
 const scene = resolveChart(node, { scheme: 'dark', size: { width: 480, height: 240 } });
 ```
 
-`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric` or `xyChart` node into its Scene. It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from [Format](format.md), or from the node's `display` strings.
+`resolveChart(node, { scheme, size?, locale?, timeZone?, formatter?, labels? })` turns a `metric` or `xyChart` node into its Scene. It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node's `display` strings or from `formatter`, which defaults to [`intlFormatter`](format.md); a host such as Kibana passes its own to print exactly what it prints. `labels` replaces the text for missing (`(null)`), empty (`(blank)`) and non-numeric (`NaN`) values.
 
 What it decides:
 
 - **Colors** from the node, concrete for the scheme. Chrome and the default categorical palette come from one theme, EUI Borealis tokens (`CHART_CHROME`, `CATEGORICAL_PALETTE`). Text on a colored metric background is whichever scheme's text color contrasts more.
-- **Metric tiles**, one per row: titles from the breakdown, colors by band (a percentage band reads each tile's share of its own `max`, or of the range across tiles), comparisons as Kibana's metric draws them (to the primary: the signed difference; to a baseline: the value, colored by the difference's sign), and three tiles per row unless `maxColumns` says otherwise.
+- **Metric tiles**, one per row: titles from the breakdown, colors by band (a percentage band reads each tile's share of its own `max`, or of the range across tiles), comparisons (to the primary: the signed difference; to a baseline: the value, colored by the difference's sign), and three tiles per row unless `maxColumns` says otherwise.
 - **Xy series** in layer, y-column and first-appearance order of split values; stacks (positive and negative values separately, percentages to one); categories in axis order; tooltips listing every visible series at an x.
 - **Axes**: a domain including zero unless `fit` or `custom`, rounded out to the tick step; linear ticks at 1, 2 or 5 times a power of ten (one per 50 px on y, 100 px on x, five without a size); time ticks on round wall-clock times in the Scene's time zone; ordinal ticks thinned to one per 30 px. Tick labels use the column's format.
 - **Selections** for each target the node offers, and none it does not.
 
-Tick placement, legend statistic names and default reference-line and annotation colors are Isomer's choices for nodes that do not state them; the parity gates compare the result with Elastic Charts and refine them.
+Tick placement, legend statistic names, default reference-line and annotation colors, and style defaults such as area opacity and bar minimum height are Isomer's choices for nodes that do not state them. A materializer states its source's own values; the parity gates compare the result with Elastic Charts and refine them.
 
 ## Marks carry their rows and columns
 

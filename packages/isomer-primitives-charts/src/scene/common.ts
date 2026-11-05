@@ -5,7 +5,13 @@
  * 2.0.
  */
 
-import { defaultFormatFor, formatValue } from '../format/format';
+import {
+  type ChartFormatter,
+  defaultFormatFor,
+  formatContext,
+  type FormatLabels,
+  intlFormatter,
+} from '../format/format';
 import type { Cell, ChartColumn, ChartData } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
 import type { PortableFormat } from '../schema/format';
@@ -27,6 +33,10 @@ export interface ResolveChartOptions {
   locale?: string | undefined;
   /** IANA time zone for dates whose format names none. Absent means `UTC`. */
   timeZone?: string | undefined;
+  /** Formats every value. Absent means `intlFormatter`. */
+  formatter?: ChartFormatter | undefined;
+  /** Text for missing, empty and non-numeric values. Absent ones keep their defaults. */
+  labels?: Partial<FormatLabels> | undefined;
 }
 
 /** What every resolver step reads: the options, resolved, and the node's data. */
@@ -40,8 +50,15 @@ export interface Resolution {
   column(id: string): ChartColumn;
   index(id: string): number;
   cell(id: string, row: number): Cell;
-  /** The column's format, or Kibana's default for its type. */
+  readonly labels: FormatLabels;
+  /** The column's format, or the default for its type. */
   format(id: string): PortableFormat;
+  /** A value formatted with `format`, as a value of column `id` when given. */
+  formatAs(
+    value: Cell | undefined,
+    format: PortableFormat,
+    id?: string
+  ): string;
   /** A cell as displayed: its `display` string, or its value formatted. */
   text(id: string, row: number): string;
   /** A value formatted as the column formats its cells. */
@@ -50,9 +67,20 @@ export interface Resolution {
 
 export const createResolution = (
   data: ChartData,
-  { scheme, size, locale, timeZone }: ResolveChartOptions
+  { scheme, size, locale, timeZone, formatter, labels }: ResolveChartOptions
 ): Resolution => {
-  const zone = timeZone ?? 'UTC';
+  const context = formatContext({ locale, timeZone, labels });
+  const formatWith = formatter ?? intlFormatter;
+  const formatAs = (
+    value: Cell | undefined,
+    format: PortableFormat,
+    id?: string
+  ) =>
+    formatWith(
+      value,
+      format,
+      id === undefined ? context : { ...context, column: id }
+    );
   const byId = new Map(data.columns.map((column, index) => [column.id, index]));
   const index = (id: string) => {
     const found = byId.get(id);
@@ -64,24 +92,26 @@ export const createResolution = (
   const column = (id: string) => data.columns[index(id)]!;
   const format = (id: string) => {
     const { format: own, type } = column(id);
-    return own ?? defaultFormatFor(type, zone);
+    return own ?? defaultFormatFor(type);
   };
   const cell = (id: string, row: number): Cell =>
     data.rows[row]?.[index(id)] ?? null;
   return {
     scheme,
     ...(size ? { size } : {}),
-    locale: locale ?? 'en',
-    timeZone: zone,
+    locale: context.locale,
+    timeZone: context.timeZone,
+    labels: context.labels,
     chrome: CHART_CHROME[scheme],
     data,
     column,
     index,
     cell,
     format,
+    formatAs,
     text: (id, row) =>
-      data.display?.[id]?.[row] ?? formatValue(cell(id, row), format(id)),
-    valueText: (id, value) => formatValue(value, format(id)),
+      data.display?.[id]?.[row] ?? formatAs(cell(id, row), format(id), id),
+    valueText: (id, value) => formatAs(value, format(id), id),
   };
 };
 

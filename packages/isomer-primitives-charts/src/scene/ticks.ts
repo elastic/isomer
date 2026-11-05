@@ -8,7 +8,7 @@
 // Tick positions for an axis of a given length. Linear steps follow d3's
 // `tickStep` (1, 2 or 5 times a power of ten); time steps are calendar-sized.
 
-import { wallClock } from '../format/zone';
+import { timeZoneOffset } from '../format/zone';
 
 const E10 = Math.sqrt(50);
 const E5 = Math.sqrt(10);
@@ -205,7 +205,7 @@ export const timeTicks = (
   const step =
     TIME_STEPS.find((candidate) => span / candidate <= count) ??
     TIME_STEPS[TIME_STEPS.length - 1]!;
-  const offset = wallClock(min, timeZone).offset * MINUTE;
+  const offset = timeZoneOffset(min, timeZone) * MINUTE;
   const ticks: number[] = [];
   for (
     let tick = Math.ceil((min + offset) / step) * step - offset;

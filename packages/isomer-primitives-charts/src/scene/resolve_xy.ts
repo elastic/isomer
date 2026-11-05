@@ -6,7 +6,7 @@
  */
 
 import { toEpoch } from '../format/date';
-import { DEFAULT_PATTERNS, formatValue } from '../format/format';
+import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
 import type { PortableFormat } from '../schema/format';
 import type { XyChartNode } from '../schema/xy_chart';
@@ -51,14 +51,14 @@ type Statistic = NonNullable<
   NonNullable<XyChartNode['legend']>['statistics']
 >[number];
 
-// Lens's xy defaults (`config_builder/transforms/charts/xy/defaults.ts`).
+// Defaults for nodes that state none; a materializer states its source's own.
 const DEFAULTS = {
   areaOpacity: 0.3,
   areaFill: 'gradient',
   barMinimumHeight: 1,
 } as const;
 
-/** Elastic Charts hides points on `auto` once neighbours are closer than this, in pixels. */
+/** Points on `auto` hide once neighbours are closer than this, in pixels. */
 const POINT_MIN_DISTANCE = 20;
 
 const STATISTIC_NAMES: Record<Statistic, string> = {
@@ -163,17 +163,14 @@ const statistic = (
         first === undefined || last === undefined ? null : last - first
       );
     case 'difference_percentage':
-      return formatValue(
+      return resolution.formatAs(
         first === undefined || last === undefined || first === 0
           ? null
           : (last - first) / first,
-        { kind: 'percent', pattern: DEFAULT_PATTERNS.percent }
+        DEFAULT_FORMATS.percent
       );
     case 'count':
-      return formatValue(ys.length, {
-        kind: 'number',
-        pattern: DEFAULT_PATTERNS.number,
-      });
+      return resolution.formatAs(ys.length, DEFAULT_FORMATS.number);
     case 'total':
       return value(present.length ? sum : null);
     case 'standard_deviation':
@@ -181,10 +178,7 @@ const statistic = (
     case 'variance':
       return value(present.length ? variance : null);
     case 'distinct_count':
-      return formatValue(new Set(present).size, {
-        kind: 'number',
-        pattern: DEFAULT_PATTERNS.number,
-      });
+      return resolution.formatAs(new Set(present).size, DEFAULT_FORMATS.number);
     case 'current_and_last_value':
       return value(ys[ys.length - 1]);
   }
@@ -577,12 +571,9 @@ export const resolveXy = (
             const text =
               line.label ??
               (line.showText
-                ? formatValue(
+                ? resolution.formatAs(
                     line.value,
-                    line.format ?? {
-                      kind: 'number',
-                      pattern: DEFAULT_PATTERNS.number,
-                    }
+                    line.format ?? DEFAULT_FORMATS.number
                   )
                 : undefined);
             return {
@@ -653,13 +644,20 @@ export const resolveXy = (
           : niceDomain(low, high, count);
     }
     const format: PortableFormat = percentage
-      ? { kind: 'percent', pattern: DEFAULT_PATTERNS.percent }
+      ? DEFAULT_FORMATS.percent
       : resolution.format(firstDraft!.yColumn);
     const ticks = (
       scale === 'log'
         ? logTicks(low, high, count)
         : linearTicks(low, high, count)
-    ).map((value) => ({ value, label: formatValue(value, format) }));
+    ).map((value) => ({
+      value,
+      label: resolution.formatAs(
+        value,
+        format,
+        percentage ? undefined : firstDraft!.yColumn
+      ),
+    }));
     return {
       id,
       position: horizontal
@@ -721,16 +719,14 @@ export const resolveXy = (
         ? timeTicks(low, high, count, timeZone)
         : linearTicks(low, high, count);
     const format: PortableFormat =
-      xId === undefined
-        ? { kind: 'number', pattern: DEFAULT_PATTERNS.number }
-        : resolution.format(xId);
+      xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
     return {
       ...base,
       scale: xScale,
       domain: [low, high],
       ticks: values.map((value) => ({
         value,
-        label: formatValue(value, format),
+        label: resolution.formatAs(value, format, xId),
       })),
       ...(interval === undefined ? {} : { interval }),
     };
@@ -789,11 +785,7 @@ export const resolveXy = (
             : chrome.textSubdued;
           const time = (value: number | string) => toEpoch(value) ?? 0;
           const when = (value: number) =>
-            formatValue(value, {
-              kind: 'date',
-              pattern: DEFAULT_PATTERNS.date,
-              timeZone,
-            });
+            resolution.formatAs(value, DEFAULT_FORMATS.date);
           if (event.kind === 'point') {
             const at = time(event.at);
             return [

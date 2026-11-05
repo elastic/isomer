@@ -8,6 +8,7 @@
 import { scaleLog } from 'd3-scale';
 import { describe, expect, it } from 'vitest';
 
+import type { ChartFormatter } from '../format/format';
 import { chartEventExamples } from '../schema/examples/events';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples, xyInteractive } from '../schema/examples/xy_chart';
@@ -207,9 +208,9 @@ describe('metric', () => {
   const tileOf = (scene: MetricScene, title: string) =>
     scene.tiles.find((tile) => tile.title === title)!;
 
-  // Kibana's secondary_metric_info.ts: comparing to the primary shows
-  // primary − secondary with a sign, colored by its direction.
-  it('compares a secondary value to the primary as Kibana does', () => {
+  // Comparing to the primary shows primary − secondary with a sign, colored by
+  // its direction.
+  it('compares a secondary value to the primary with a signed difference', () => {
     const scene = resolveChart(metricNamed('Compared to the primary value'), {
       scheme: 'light',
     });
@@ -260,7 +261,7 @@ describe('metric', () => {
     expect(scene.table.rows[0]?.cells).toEqual(['(null)']);
   });
 
-  it('defaults to three tiles per row, as Lens does', () => {
+  it('defaults to three tiles per row', () => {
     const node = metricNamed('Huge, tiny and negative values');
     const scene = resolveChart(
       { ...node, breakdown: { column: 'case' } },
@@ -462,5 +463,52 @@ describe('ticks', () => {
       Date.UTC(2026, 10, 3, 3, 30),
       Date.UTC(2026, 10, 3, 4, 30),
     ]);
+  });
+});
+
+describe('formatting options', () => {
+  it('formats in the requested locale', () => {
+    const node: MetricNode = {
+      type: 'metric',
+      data: {
+        columns: [{ id: 'v', label: 'V', type: 'number', role: 'metric' }],
+        rows: [[1234.5]],
+      },
+      value: { column: 'v' },
+    };
+    expect(resolveChart(node, { scheme: 'light' }).tiles[0]?.value.text).toBe(
+      '1,234.5'
+    );
+    const de = resolveChart(node, { scheme: 'light', locale: 'de' });
+    expect(de.locale).toBe('de');
+    expect(de.tiles[0]?.value.text).toBe('1.234,5');
+  });
+
+  it('formats every value with a host formatter, naming the column', () => {
+    const seen = new Set<string | undefined>();
+    const formatter: ChartFormatter = (value, _format, { column }) => {
+      seen.add(column);
+      return `<${String(value)}>`;
+    };
+    const node = xyNamed('Time series line');
+    const scene = resolveChart(node, { scheme: 'light', formatter });
+    const ids = node.data.columns.map(({ id }) => id);
+    expect(scene.table.rows[0]?.cells).toEqual(
+      node.data.rows[0]!.map((cell) => `<${String(cell)}>`)
+    );
+    expect(scene.axes.x.ticks.every(({ label }) => /^<.*>$/.test(label))).toBe(
+      true
+    );
+    for (const id of ids) {
+      expect(seen.has(id)).toBe(true);
+    }
+  });
+
+  it('replaces the missing-value labels', () => {
+    const scene = resolveChart(metricNamed('Missing value'), {
+      scheme: 'light',
+      labels: { null: '—' },
+    });
+    expect(scene.table.rows[0]?.cells).toEqual(['—']);
   });
 });
