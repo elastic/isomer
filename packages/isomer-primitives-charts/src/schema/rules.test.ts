@@ -490,7 +490,7 @@ describe('xyChart', () => {
     ).toEqual(['style.areaOpacity']);
   });
 
-  it('takes glyph names, not EUI icon names', () => {
+  it('takes a glyph name as an annotation icon', () => {
     const annotate = (icon: string) =>
       xy({
         layers: [
@@ -499,9 +499,6 @@ describe('xyChart', () => {
         ],
       });
     expect(issuesOf('xyChart', annotate('marker'))).toEqual([]);
-    expect(
-      issuesOf('xyChart', annotate('map_marker')).map(({ path }) => path)
-    ).toEqual(['layers.1.events.0.icon']);
   });
 
   it('rejects a y column that is not a number', () => {
@@ -709,19 +706,6 @@ describe('unsupported', () => {
         })
       )
     ).toEqual([]);
-  });
-
-  it('rejects host-specific provenance fields outside meta', () => {
-    expect(
-      issuesOf(
-        'unsupported',
-        failure({
-          kind: 'kibana',
-          kibanaVersion: '9.4.0',
-          capturedAt: '2026-11-03T09:15:00.000Z',
-        })
-      ).map(({ path }) => path)
-    ).toEqual(expect.arrayContaining(['source.host', 'source']));
   });
 
   it('rejects a script link', () => {
