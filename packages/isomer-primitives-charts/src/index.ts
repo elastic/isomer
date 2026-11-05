@@ -119,6 +119,7 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
+export { type ChartGlyph, CHART_GLYPHS, glyphSchema } from './schema/icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type Loss,

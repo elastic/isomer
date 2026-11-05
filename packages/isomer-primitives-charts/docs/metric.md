@@ -15,7 +15,7 @@ One headline value, or one tile per row of `data`, on the [chart core](core.md).
 | `background` | `{ kind: 'bar', max, orientation? }`, a progress bar to the `max` column; or `{ kind: 'trend', data, x, y, breakdown? }`, a trend line from its own table |
 | `breakdown` | `column`, whose value titles each tile, and `maxColumns?` before wrapping |
 | `interactions`, `emphasis` | Selectable tiles, a link and static highlights: [Interactions](interactions.md) |
-| `layout` | `density`, `icon`, `valuePosition`, `labelsAlignment`, `valueAlignment`, `valueSizing`, `secondaryAlignment` |
+| `layout` | `density`, `icon` (a [glyph](core.md#glyphs) and its `alignment`), `valuePosition`, `labelsAlignment`, `valueAlignment`, `valueSizing`, `secondaryAlignment` |
 
 Rules:
 

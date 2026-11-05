@@ -481,6 +481,28 @@ describe('xyChart', () => {
       expect(errors.map(({ path }) => path)).toContain('data.rows.0.0');
     }
   );
+  it('accepts area opacity from 0 to 1 and rejects more', () => {
+    expect(issuesOf('xyChart', xy({ style: { areaOpacity: 1 } }))).toEqual([]);
+    expect(
+      issuesOf('xyChart', xy({ style: { areaOpacity: 1.5 } })).map(
+        ({ path }) => path
+      )
+    ).toEqual(['style.areaOpacity']);
+  });
+
+  it('takes glyph names, not EUI icon names', () => {
+    const annotate = (icon: string) =>
+      xy({
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'annotations', events: [{ kind: 'point', at: 0, icon }] },
+        ],
+      });
+    expect(issuesOf('xyChart', annotate('marker'))).toEqual([]);
+    expect(
+      issuesOf('xyChart', annotate('map_marker')).map(({ path }) => path)
+    ).toEqual(['layers.1.events.0.icon']);
+  });
 
   it('rejects a y column that is not a number', () => {
     expectRule(
@@ -669,6 +691,39 @@ describe('grid', () => {
 });
 
 describe('unsupported', () => {
+  const failure = (source: unknown) => ({
+    type: 'unsupported',
+    title: 'x',
+    reason: 'y',
+    source,
+  });
+
+  it('takes provenance from any host, with opaque meta', () => {
+    expect(
+      issuesOf(
+        'unsupported',
+        failure({
+          host: 'an-agent',
+          capturedAt: '2026-11-03T09:15:00.000Z',
+          meta: { conversation: 'c1', turn: 4 },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it('rejects host-specific provenance fields outside meta', () => {
+    expect(
+      issuesOf(
+        'unsupported',
+        failure({
+          kind: 'kibana',
+          kibanaVersion: '9.4.0',
+          capturedAt: '2026-11-03T09:15:00.000Z',
+        })
+      ).map(({ path }) => path)
+    ).toEqual(expect.arrayContaining(['source.host', 'source']));
+  });
+
   it('rejects a script link', () => {
     expect(
       issuesOf('unsupported', {

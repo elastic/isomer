@@ -17,34 +17,13 @@ import {
   interactionsCoreShape,
   interactionsSchemaFor,
 } from './events';
+import { glyphSchema } from './icons';
 import {
   checkColumnReferences,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
 } from './references';
-
-// The icons the Lens API format's metric accepts.
-const METRIC_ICONS = [
-  'alert',
-  'asterisk',
-  'bell',
-  'bolt',
-  'bug',
-  'compute',
-  'editor_comment',
-  'flag',
-  'globe',
-  'heart',
-  'map_marker',
-  'pin',
-  'popout',
-  'sort_down',
-  'sort_up',
-  'star_empty',
-  'tag',
-  'temperature',
-] as const;
 
 /** The cross-field rules `metricSchema` states in its description, one sentence each. */
 export const METRIC_RULES = {
@@ -175,7 +154,7 @@ const metricObjectSchema = z.object({
       density: z.enum(['compact', 'default']).optional(),
       icon: z
         .strictObject({
-          name: z.enum(METRIC_ICONS),
+          name: glyphSchema,
           alignment: z.enum(['left', 'right']).optional(),
         })
         .optional(),

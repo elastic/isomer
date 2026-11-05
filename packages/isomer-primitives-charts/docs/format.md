@@ -18,7 +18,7 @@ Formats are `Intl` options, so they mean the same thing in any JavaScript host a
 | `date` | `Intl.DateTimeFormat` with the format's styles or fields, in the format's `timeZone` or the chart's. With neither styles nor fields, a medium date and time. Cells are epoch milliseconds or ISO 8601 date-times with a UTC offset |
 | `text` | The value as a string |
 
-A missing value is `(null)`, an empty string `(blank)`, and a value that is not a number in a numeric format `NaN`. A multivalue cell becomes a JSON array of its formatted values, such as `["1,000","2,000"]`. A `suffix` is appended to the whole result, but not to a missing or empty value's label. Zero never prints as `-0` unless the format's `signDisplay` is `always`.
+A missing value, an empty string and a value that is not a number in a numeric format print the node's [`data.missing`](core.md#data) text, by default `(null)`, `(blank)` and `NaN`. A multivalue cell becomes a JSON array of its formatted values, such as `["1,000","2,000"]`. A `suffix` is appended to the whole result, but not to a missing or empty value's text. Zero never prints as `-0` unless the format's `signDisplay` is `always`.
 
 A column without a format gets its type's default: at most three decimals for numbers, and a medium date and time for dates. A `maximumFractionDigits` below `minimumFractionDigits` is raised to it. A date format that states only `hour12` or `timeZone` keeps the medium date and time default. Unparseable dates and numeric dates outside ±8.64e15 epoch milliseconds print as their raw values.
 

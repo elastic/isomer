@@ -472,4 +472,14 @@ describe('formatting options', () => {
     });
     expect(scene.table.rows[0]?.cells).toEqual(['(null)']);
   });
+
+  it('prints missing values with the node’s data.missing text', () => {
+    const node = metricNamed('Missing value');
+    const scene = resolveChart(
+      { ...node, data: { ...node.data, missing: { null: 'n/a' } } },
+      { scheme: 'light' }
+    );
+    expect(scene.table.rows[0]?.cells).toEqual(['n/a']);
+    expect(scene.tiles[0]?.value.text).toBe('n/a');
+  });
 });
