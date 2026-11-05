@@ -7,22 +7,18 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk';
 
-import type { PortableFormat } from '../core';
+import type { PortableFormat } from '../format';
 import type { MetricNode } from '../metric';
 
-// Kibana's default patterns (`format:number:defaultPattern` and siblings).
-const NUMBER: PortableFormat = { kind: 'number', pattern: '0,0.[000]' };
-const PERCENT: PortableFormat = { kind: 'percent', pattern: '0,0.[000]%' };
-const BYTES: PortableFormat = { kind: 'bytes', pattern: '0,0.[0]b' };
+import { BYTES, HOUR, NUMBER, PERCENT, START } from './shared';
+
 const DATE: PortableFormat = {
   kind: 'date',
   pattern: 'MMM D, YYYY @ HH:mm:ss.SSS',
   timeZone: 'UTC',
 };
 
-const HOUR = 3_600_000;
-const START = Date.UTC(2026, 10, 3);
-
+/** The smallest `metric`: one value from one row. The catalog's example. */
 export const metricSingleValue: MetricNode = {
   type: 'metric',
   title: 'Requests',
@@ -41,6 +37,7 @@ export const metricSingleValue: MetricNode = {
   value: { column: 'count' },
 };
 
+/** Named `metric` examples covering the corpus edge cases, each valid in a composition. */
 export const metricExamples: PrimitiveExample<MetricNode>[] = [
   {
     name: 'Single value',

@@ -10,7 +10,7 @@
 // string already formatted, ticks, legend order and draw order. A renderer
 // translates; it never formats, picks a color, sorts or chooses ticks.
 
-import type { Cell, ColumnRole, ColumnType } from '../schema/core';
+import type { Cell, ColumnRole, ColumnType } from '../schema/data';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = ['metric', 'xy'] as const;
