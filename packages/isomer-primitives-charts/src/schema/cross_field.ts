@@ -11,11 +11,6 @@ import { z } from '@elastic/isomer-sdk';
 
 const always = () => true;
 
-type RefineParams = Exclude<Parameters<typeof z.refine>[1], string | undefined>;
-
-/** `rule` is the sentence, word for word, that a description the authoring JSON Schema keeps states the check in. */
-type StatedParams = RefineParams & { rule: string };
-
 const statedRules = new WeakMap<object, readonly string[]>();
 
 const stated = <C extends object>(check: C, rules: readonly string[]): C => {
@@ -27,33 +22,25 @@ const stated = <C extends object>(check: C, rules: readonly string[]): C => {
 export const rulesOf = (check: object): readonly string[] | undefined =>
   statedRules.get(check);
 
-/** A `.check()` rule on one field, stated in the authoring schema. */
-export const statedRefine = <T>(
-  check: (value: NoInfer<T>) => boolean,
-  { rule, ...params }: StatedParams
-) => stated(z.refine<T>(check, params), [rule]);
-
-/** A `.check()` rule that runs even after a field fails, so one validation reports both. */
-export const crossRefine = <T>(
-  check: (value: NoInfer<T>) => boolean,
-  { rule, ...params }: StatedParams
-) =>
-  stated(
-    z.refine<T>(
-      (value) => {
-        try {
-          return check(value);
-        } catch {
-          // Unreadable input passes; the field that broke it reports the error.
-          return true;
-        }
-      },
-      { ...params, when: always }
-    ),
-    [rule]
-  );
-
-/** {@link crossRefine} for a check that adds its own issues, one stated rule for each kind it raises. */
+/**
+ * A `.check()` that adds its own issues and runs even after a field fails, so
+ * one validation reports every problem. `rules` are the sentences, word for
+ * word, that a description in the authoring JSON Schema states, one for each
+ * kind of issue the check raises.
+ *
+ * ```ts
+ * schema.check(
+ *   crossSuperRefine<Node>(
+ *     ({ rows }, context) => {
+ *       if (rows.length > 1) {
+ *         context.addIssue({ code: 'custom', path: ['rows'], message: RULES.oneRow });
+ *       }
+ *     },
+ *     [RULES.oneRow]
+ *   )
+ * );
+ * ```
+ */
 export const crossSuperRefine = <T>(
   refine: (value: T, context: z.core.$RefinementCtx<T>) => void,
   rules: readonly [string, ...string[]]

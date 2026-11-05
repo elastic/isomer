@@ -7,20 +7,18 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk';
 
-import type { Cell, ChartColumn, PortableFormat } from '../core';
+import type { Cell, ChartColumn } from '../data';
+import type { PortableFormat } from '../format';
 import type { XyChartNode } from '../xy_chart';
 
-const NUMBER: PortableFormat = { kind: 'number', pattern: '0,0.[000]' };
-const PERCENT: PortableFormat = { kind: 'percent', pattern: '0,0.[000]%' };
-const BYTES: PortableFormat = { kind: 'bytes', pattern: '0,0.[0]b' };
+import { BYTES, HOUR, NUMBER, PERCENT, START } from './shared';
+
 const HOURLY: PortableFormat = {
   kind: 'date',
   pattern: 'HH:mm',
   timeZone: 'UTC',
 };
 
-const HOUR = 3_600_000;
-const START = Date.UTC(2026, 10, 3);
 const hours = (count: number) =>
   Array.from({ length: count }, (_, index) => START + index * HOUR);
 
@@ -46,6 +44,7 @@ const countColumn: ChartColumn = {
 
 const vis = (hex: string) => ({ light: hex, dark: hex });
 
+/** One line over a time axis. The catalog's example. */
 export const xyTimeSeries: XyChartNode = {
   type: 'xyChart',
   title: 'Requests over time',
@@ -109,11 +108,12 @@ export const xyInteractive: XyChartNode = {
       href: 'https://kibana.example.com/app/lens#/edit/b2f4f8a0-1d2c-11ee-9f1a-0b2e5c1e7d3a',
       label: 'Open in Kibana',
     },
-    initial: { hiddenSeries: ['null'] },
+    initial: { hiddenSeries: ['\\null'] },
   },
   emphasis: [{ rows: [5], note: '404s peak at 01:00' }],
 };
 
+/** Named `xyChart` examples covering the corpus edge cases, each valid in a composition. */
 export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
   {
     name: 'Time series line',
@@ -145,7 +145,7 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
           '200': vis('#16C5C0'),
           '404': vis('#61A2FF'),
           Other: vis('#BFDBFF'),
-          null: vis('#EE72A6'),
+          '\\null': vis('#EE72A6'),
         },
       },
       layers: [
