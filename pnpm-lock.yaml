@@ -340,6 +340,12 @@ importers:
       '@elastic/eui-theme-borealis':
         specifier: 8.1.0
         version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@types/d3-scale':
+        specifier: 3.3.5
+        version: 3.3.5
+      d3-scale:
+        specifier: 3.3.0
+        version: 3.3.0
       moment:
         specifier: 2.31.0
         version: 2.31.0
@@ -2025,6 +2031,12 @@ packages:
 
   '@types/conventional-commits-parser@5.0.2':
     resolution: {integrity: sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g==}
+
+  '@types/d3-scale@3.3.5':
+    resolution: {integrity: sha512-YOpKj0kIEusRf7ofeJcSZQsvKbnTwpe1DUF+P2qsotqG53kEsjm7EzzliqQxMkAWdkZcHrg5rRhB4JiDOQPX+A==}
+
+  '@types/d3-time@2.1.4':
+    resolution: {integrity: sha512-BTfLsxTeo7yFxI/haOOf1ZwJ6xKgQLT9dCp+EcmQv87Gox6X+oKl4mLKfO6fnWm3P22+A6DknMNEZany8ql2Rw==}
 
   '@types/debug@4.1.13':
     resolution: {integrity: sha512-KSVgmQmzMwPlmtljOomayoR89W4FynCAi3E8PPs7vmDVPe84hT+vGPKkJfThkmXs0x0jAaa9U8uW8bbfyS2fWw==}
@@ -7290,6 +7302,12 @@ snapshots:
   '@types/conventional-commits-parser@5.0.2':
     dependencies:
       '@types/node': 22.20.2
+
+  '@types/d3-scale@3.3.5':
+    dependencies:
+      '@types/d3-time': 2.1.4
+
+  '@types/d3-time@2.1.4': {}
 
   '@types/debug@4.1.13':
     dependencies:

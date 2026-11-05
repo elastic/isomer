@@ -7,7 +7,8 @@
 
 import { toEpoch } from '../format/date';
 import { DEFAULT_PATTERNS, formatValue } from '../format/format';
-import type { Cell, PortableFormat } from '../schema/core';
+import type { Cell } from '../schema/data';
+import type { PortableFormat } from '../schema/format';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import {
@@ -25,6 +26,7 @@ import {
   linearTicks,
   logTicks,
   niceDomain,
+  niceLogDomain,
   tickCount,
   timeTicks,
 } from './ticks';
@@ -88,9 +90,14 @@ const rowsOf = (layer: DataLayer, total: number): number[] => {
   );
 };
 
-/** The key a split value contributes to a series key: the cell as a string, `null` as "null". */
-const splitKey = (cell: Cell): string =>
-  Array.isArray(cell) ? JSON.stringify(cell) : String(cell);
+/** A key part: the cell as a string with `\` and `:` escaped; a missing cell is `\null`. */
+const keyPart = (cell: Cell | string): string =>
+  cell === null
+    ? '\\null'
+    : (Array.isArray(cell) ? JSON.stringify(cell) : String(cell)).replace(
+        /[\\:]/g,
+        '\\$&'
+      );
 
 interface SeriesDraft {
   key: string;
@@ -242,7 +249,7 @@ export const resolveXy = (
       const yColumn = resolution.column(y.column);
       if (layer.splitBy === undefined) {
         drafts.push({
-          key: y.column,
+          key: keyPart(y.column),
           label: yColumn.label,
           layerIndex: index,
           layer,
@@ -255,14 +262,14 @@ export const resolveXy = (
       const splitId = layer.splitBy;
       const groups = new Map<string, number[]>();
       for (const row of rows) {
-        const key = splitKey(resolution.cell(splitId, row));
+        const key = keyPart(resolution.cell(splitId, row));
         groups.set(key, [...(groups.get(key) ?? []), row]);
       }
       for (const [value, groupRows] of groups) {
         const first = groupRows[0]!;
         const text = resolution.text(splitId, first);
         drafts.push({
-          key: layer.y.length > 1 ? `${y.column}:${value}` : value,
+          key: layer.y.length > 1 ? `${keyPart(y.column)}:${value}` : value,
           label: layer.y.length > 1 ? `${text} - ${yColumn.label}` : text,
           layerIndex: index,
           layer,
@@ -620,18 +627,25 @@ export const resolveXy = (
       high = Math.max(1, high);
     }
     const count = tickCount(yLength, 50, 5);
-    if (
-      (config?.rounding ?? true) &&
-      domain.kind !== 'custom' &&
-      scale !== 'log'
-    ) {
-      [low, high] = niceDomain(low, high, count);
+    if (scale === 'log') {
+      // A log axis has no zero or negatives; keep the positive part.
+      const positive = values.filter((value) => value > 0);
+      low = low > 0 ? low : positive.length ? Math.min(...positive) : 1;
+      high = high > low ? high : low * 10;
+    }
+    if ((config?.rounding ?? true) && domain.kind !== 'custom') {
+      [low, high] =
+        scale === 'log'
+          ? niceLogDomain(low, high)
+          : niceDomain(low, high, count);
     }
     const format: PortableFormat = percentage
       ? { kind: 'percent', pattern: DEFAULT_PATTERNS.percent }
       : resolution.format(firstDraft!.yColumn);
     const ticks = (
-      scale === 'log' ? logTicks(low, high) : linearTicks(low, high, count)
+      scale === 'log'
+        ? logTicks(low, high, count)
+        : linearTicks(low, high, count)
     ).map((value) => ({ value, label: formatValue(value, format) }));
     return {
       id,

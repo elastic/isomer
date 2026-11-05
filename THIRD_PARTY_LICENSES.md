@@ -707,6 +707,8 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@tufjs/models` | 4.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/models` |  |
 | `@types/chai` | 5.2.3 | MIT | `node_modules/.pnpm/@types+chai@5.2.3/node_modules/@types/chai` |  |
 | `@types/conventional-commits-parser` | 5.0.2 | MIT | `node_modules/.pnpm/@types+conventional-commits-parser@5.0.2/node_modules/@types/conventional-commits-parser` |  |
+| `@types/d3-scale` | 3.3.5 | MIT | `node_modules/.pnpm/@types+d3-scale@3.3.5/node_modules/@types/d3-scale` |  |
+| `@types/d3-time` | 2.1.4 | MIT | `node_modules/.pnpm/@types+d3-time@2.1.4/node_modules/@types/d3-time` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/deep-eql` | 4.0.2 | MIT | `node_modules/.pnpm/@types+deep-eql@4.0.2/node_modules/@types/deep-eql` |  |
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
