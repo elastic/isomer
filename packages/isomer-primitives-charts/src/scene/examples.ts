@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-// Hand-written Scenes for two of the schema examples, so renderers can be built
+// Hand-written Scenes for schema examples, so renderers can be built
 // against the contract before the resolver exists. They show the shape, not
 // expected output: tests compare a resolver against Kibana, never against these.
 
@@ -249,7 +249,7 @@ const statuses: readonly {
     counts: [12, 9, 15],
   },
   {
-    key: 'null',
+    key: '\\null',
     raw: null,
     label: '(null)',
     color: '#EE72A6',
@@ -265,12 +265,16 @@ const interactiveHours = [0, 1, 2];
 const interactiveSeries: XySeries[] = statuses.map(
   ({ key, raw, label, color, counts: values }, status) => {
     const rows = interactiveHours.map((hour) => rowOf(hour, status));
-    const selection = (target: 'series' | 'legend'): SceneSelection => ({
+    const selection = (
+      target: 'series' | 'legend'
+    ): Extract<SceneSelection, { target: 'series' | 'legend' }> => ({
       target,
       rows,
       columns: ['status'],
       values: { status: raw },
       description: `${STATUS_LABEL}: ${label}`,
+      series: { layer: 0, y: 0 },
+      seriesKey: key,
     });
     const marks: XyMark[] = interactiveHours.map((hour) => {
       const below = statuses
@@ -298,10 +302,13 @@ const interactiveSeries: XySeries[] = statuses.map(
           columns: ['time', 'status'],
           values: { time: START + hour * HOUR, status: raw },
           description,
+          series: { layer: 0, y: 0 },
+          seriesKey: key,
         },
       };
     });
     return {
+      series: { layer: 0, y: 0 },
       key,
       label,
       mark: 'bar',
@@ -362,6 +369,11 @@ export const xyInteractiveScene: XyScene = {
       statuses.map(({ label, counts: values }, status) => ({
         row: rowOf(hour, status),
         cells: [hourLabel(hour), label, String(values[hour] ?? 0)],
+        values: [
+          START + hour * HOUR,
+          statuses[status]?.raw ?? null,
+          values[hour] ?? 0,
+        ],
       }))
     ),
   },
@@ -416,9 +428,7 @@ export const xyInteractiveScene: XyScene = {
       description: `${TIME_LABEL}: ${hourLabel(hour)}`,
     },
   })),
-  series: interactiveSeries,
-  referenceLines: [],
-  annotations: [],
+  layers: interactiveSeries.map((series) => ({ kind: 'series', series })),
   legend: {
     visible: true,
     position: 'right',
@@ -427,14 +437,15 @@ export const xyInteractiveScene: XyScene = {
     size: 'auto',
     items: interactiveSeries.map(
       ({ key, label, color, source, selection }) => ({
+        series: { layer: 0, y: 0 },
         key,
         label,
         color,
-        hidden: key === 'null',
+        hidden: key === '\\null',
         statistics: [],
         source,
         description: `${STATUS_LABEL}: ${label}`,
-        ...(selection
+        ...(selection?.target === 'series'
           ? { selection: { ...selection, target: 'legend' as const } }
           : {}),
       })

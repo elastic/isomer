@@ -8,20 +8,23 @@ description: The Scene a chart node resolves to, and the SceneRenderer interface
 A chart node resolves to a **Scene**: everything a renderer draws, decided once. Colors are concrete for one scheme, every displayed string is formatted, ticks are chosen for the size, legend items and series are in order, and marks are in data space. Renderers read only the Scene, so text, colors and order are identical in every engine.
 
 ```ts
-import type { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/scene';
+import type {
+  Scene,
+  SceneRenderer,
+} from '@elastic/isomer-primitives-charts/scene';
 ```
 
 ## What every Scene holds
 
-| Field | What it is |
-| --- | --- |
-| `kind` | `metric` or `xy` |
-| `scheme` | `light` or `dark`. Always explicit: native targets have no CSS, so `light-dark()` is never the only source of a color |
-| `size`, `locale`, `timeZone` | What the Scene was resolved for |
-| `chrome` | Text, axis, grid-line, background and border colors |
-| `summary` | One sentence on what the chart shows |
-| `table` | The node's data in `data` order. Formatted `cells` serve text surfaces; raw `values` are in matching column order so renderers can raise events without parsing display text |
-| `interactions` | What the node offers, resolved: selection targets, brush column, sync, link and emphasis |
+| Field                        | What it is                                                                                                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `kind`                       | `metric` or `xy`                                                                                                                                                             |
+| `scheme`                     | `light` or `dark`. Always explicit: native targets have no CSS, so `light-dark()` is never the only source of a color                                                        |
+| `size`, `locale`, `timeZone` | What the Scene was resolved for                                                                                                                                              |
+| `chrome`                     | Text, axis, grid-line, background and border colors                                                                                                                          |
+| `summary`                    | One sentence on what the chart shows                                                                                                                                         |
+| `table`                      | The node's data in `data` order. Formatted `cells` serve text surfaces; raw `values` are in matching column order so renderers can raise events without parsing display text |
+| `interactions`               | What the node offers, resolved: selection targets, brush column, sync, link and emphasis                                                                                     |
 
 A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
 
@@ -38,22 +41,30 @@ Helper marks carry no `source` and are never selected: progress bars, trend line
 Where the node offers a selection target, the part a reader selects carries a `selection`: the event it raises, decided by the resolver.
 
 ```ts
-interface SceneSelection {
-  target: SelectTarget;
-  rows: number[];                  // indexes into `data.rows`
-  columns: string[];               // the dimension columns that identify the target
-  values: Record<string, Cell>;    // their raw cells, which every row in `rows` shares
+type SceneSelection = {
+  rows: number[]; // indexes into `data.rows`
+  columns: string[]; // the dimension columns that identify the target
+  values: Record<string, Cell>; // their raw cells, which every row in `rows` shares
   description: string;
-}
+} & (
+  | {
+      target: 'datum' | 'series' | 'legend';
+      series: { layer: number; y: number };
+      seriesKey: string;
+    }
+  | { target: 'category' | 'cell' | 'tile' }
+);
 ```
 
-| Target | Carried by |
-| --- | --- |
-| `tile` | Each metric tile |
-| `datum` | Each xy mark |
-| `series` | Each xy series |
-| `legend` | Each legend item |
+| Target     | Carried by                                                                                                                    |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `tile`     | Each metric tile                                                                                                              |
+| `datum`    | Each xy mark                                                                                                                  |
+| `series`   | Each xy series                                                                                                                |
+| `legend`   | Each legend item                                                                                                              |
 | `category` | Each entry of an `XyScene`'s `categories`: every x position with data, in axis order, with its label as the x axis formats it |
+
+`datum`, `series` and `legend` selections also carry the data layer and y-entry reference (`series`) and the encoded `seriesKey` required by `ChartEvent`.
 
 A renderer raises events with two helpers, so every renderer raises the same event for the same gesture:
 
@@ -64,7 +75,7 @@ A renderer raises events with two helpers, so every renderer raises the same eve
 
 ```ts
 interface SceneRenderer<TOutput = unknown> {
-  id: string;                                  // 'elastic-charts', 'isomer-svg', 'echarts', …
+  id: string; // 'elastic-charts', 'isomer-svg', 'echarts', …
   environments: Array<'browser' | 'node' | 'native'>;
   supports(kind: SceneKind): boolean;
   render(scene: Scene, env: SceneRenderEnv): TOutput;

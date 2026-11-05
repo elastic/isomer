@@ -13,13 +13,16 @@ import { xyInteractive } from '../schema/examples/xy_chart';
 
 import { brushEvent, selectEvent } from './events';
 import { xyInteractiveScene, xyTimeSeriesScene } from './examples';
+import type { SceneSelection } from './types';
 
 const NODE = xyInteractive.id ?? '';
 const HOUR = 3_600_000;
 const START = Date.UTC(2026, 10, 3);
 
 const seriesOf = (key: string) => {
-  const series = xyInteractiveScene.series.find((entry) => entry.key === key);
+  const series = xyInteractiveScene.layers
+    .flatMap((layer) => (layer.kind === 'series' ? [layer.series] : []))
+    .find((entry) => entry.key === key);
   if (!series) {
     throw new Error(`no series ${key}`);
   }
@@ -31,7 +34,7 @@ const gestures: Record<string, () => ChartEvent | undefined> = {
   'Select a bar segment': () =>
     selectEvent(NODE, seriesOf('404').marks[0]!.selection!),
   'Select the missing bucket': () =>
-    selectEvent(NODE, seriesOf('null').marks[0]!.selection!),
+    selectEvent(NODE, seriesOf('\\null').marks[0]!.selection!),
   'Filter out a legend item': () =>
     selectEvent(
       NODE,
@@ -69,5 +72,23 @@ describe('Scene events', () => {
     const event = selectEvent(NODE, selection);
     event.rows.push(99);
     expect(selection.rows).not.toContain(99);
+  });
+
+  it('copies multivalue cells in selection values', () => {
+    const selection: SceneSelection = {
+      target: 'category',
+      rows: [0],
+      columns: ['tags'],
+      values: { tags: ['red', 'blue'] },
+      description: 'tags',
+    };
+    const event = selectEvent(NODE, selection);
+    const tags = event.values.tags;
+    if (!Array.isArray(tags)) {
+      throw new Error('Expected a multivalue cell.');
+    }
+
+    tags.push('green');
+    expect(selection.values.tags).toEqual(['red', 'blue']);
   });
 });

@@ -15,18 +15,37 @@ import type { SceneSelection, XyCategory, XyScene } from './types';
 /** The `select` event for a part of the Scene the reader selected. */
 export const selectEvent = (
   node: string,
-  { target, rows, columns, values, description }: SceneSelection,
+  selection: SceneSelection,
   negate = false
-): ChartSelectEvent => ({
-  kind: 'select',
-  node,
-  target,
-  rows: [...rows],
-  columns: [...columns],
-  values: { ...values },
-  description,
-  ...(negate ? { negate } : {}),
-});
+): ChartSelectEvent => {
+  const event = {
+    kind: 'select' as const,
+    node,
+    rows: [...selection.rows],
+    columns: [...selection.columns],
+    values: Object.fromEntries(
+      Object.entries(selection.values).map(([column, value]) => [
+        column,
+        Array.isArray(value) ? [...value] : value,
+      ])
+    ),
+    description: selection.description,
+    ...(negate ? { negate } : {}),
+  };
+  if (
+    selection.target === 'datum' ||
+    selection.target === 'series' ||
+    selection.target === 'legend'
+  ) {
+    return {
+      ...event,
+      target: selection.target,
+      series: { ...selection.series },
+      seriesKey: selection.seriesKey,
+    };
+  }
+  return { ...event, target: selection.target };
+};
 
 const nearest = (
   categories: readonly XyCategory[],

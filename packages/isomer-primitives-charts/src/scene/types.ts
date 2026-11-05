@@ -40,13 +40,32 @@ export interface SceneSource {
  * columns that identify the target, and `values` their raw cells, which every
  * row in `rows` shares. Present only where the node offers `target`.
  */
-export interface SceneSelection {
-  readonly target: SelectTarget;
+interface SceneSelectionBase {
   readonly rows: readonly number[];
   readonly columns: readonly string[];
   readonly values: Readonly<Record<string, Cell>>;
   readonly description: string;
 }
+
+export type SceneSelection =
+  | (SceneSelectionBase & {
+      readonly target: 'datum';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: 'series';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: 'legend';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: Exclude<SelectTarget, 'datum' | 'series' | 'legend'>;
+    });
 
 /** One labelled value in a tooltip, already formatted. */
 export interface SceneTooltipEntry {
