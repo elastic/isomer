@@ -19,6 +19,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | Field             | Effect                                                                         |
 | ----------------- | ------------------------------------------------------------------------------ |
 | `id`              | Names the pack in capability reports and errors. Unique across composed packs. |
+| `version`         | Optional. The vocabulary's version, a positive integer; absent means 1.        |
 | `surfaces`        | The optional surfaces (only `slack`) every primitive here implements.          |
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
@@ -38,6 +39,12 @@ What comes back adds `types`, a set for duplicate detection across packs, and `i
 There is nothing to declare for `snapshot`. Every pack reaches the `snapshot` surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
 
 A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
+
+## `version`
+
+A positive integer, raised when a change means a document that was valid no longer validates, or means something else. Adding an optional field does not raise it. Anything else throws `INVALID_PACK_VERSION`; absent means 1, and `packVersionOf` reads a pack built before versions as 1.
+
+A runtime stamps the compositions it writes with every pack's version, in the envelope's `packs`: `{ "type": "view", "packs": { "slides": 2 }, "body": [...] }`. Only a runtime writes it: the authoring JSON Schema omits it, the JSX root takes no `packs` prop, and `printCompositionJsx` never prints it. `comparePackVersions(composition, packs)` reports how a stamp differs from a set of packs, so a host that draws compositions written elsewhere, such as a render service, can refuse a mismatch rather than draw against a different vocabulary.
 
 ## `slackAssetTypes`
 

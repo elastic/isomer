@@ -24,6 +24,12 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
    * already means v1 — writing one in would rewrite stored documents.
    */
   version?: 1;
+  /**
+   * The packs, and their versions, the composition was written for: one
+   * positive integer per pack id. Only a runtime's `stamp` writes it; an author
+   * never does, and the authoring schema omits it.
+   */
+  packs?: PackVersions;
   title?: string;
   subtitle?: string;
   /** Light/dark preference, not a resolved value; `auto` resolves light. */
@@ -32,6 +38,9 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
   body: TNode[];
   meta?: CompositionMeta;
 }
+
+/** Pack versions by pack id, as {@link Composition.packs} records them. */
+export type PackVersions = Readonly<Record<string, number>>;
 
 /**
  * Context a host may surface beside the render.

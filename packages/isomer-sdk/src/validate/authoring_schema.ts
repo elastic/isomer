@@ -272,6 +272,14 @@ const mergeExtraDefs = (
   return [...byId.values()];
 };
 
+/** Only a runtime's `stamp` writes `packs`, so an author is never shown it. */
+const dropPackStamp = (schema: JsonSchema): void => {
+  const { properties } = schema;
+  if (isJsonObject(properties)) {
+    delete properties.packs;
+  }
+};
+
 const slimAuthoringSchema = (
   schema: JsonSchema,
   describe: Readonly<Record<string, string>>
@@ -279,6 +287,7 @@ const slimAuthoringSchema = (
   const next = cloneJson(schema);
   dropSafeIntegerMaxima(next);
   dropNodeIdAndSurfaces(next);
+  dropPackStamp(next);
   const flattened = flattenRefOnlyDefs(next);
   const inlined = inlineScalarDefs(flattened);
   const pruned = pruneUnreferencedDefs(inlined);
