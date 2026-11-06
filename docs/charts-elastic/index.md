@@ -54,6 +54,17 @@ const imagePack = createChartsPack({
 
 Headless metrics differ from the browser's: values draw smaller and words can break mid-word. Those gaps are Elastic Charts', reported on #2939.
 
+### Measuring it
+
+`pnpm --filter @elastic/isomer-charts-elastic bench` draws every `metric` and `xyChart` example, light and dark, through the `snapshot` surface and takumi to PNG, as a render service does. Each run is a fresh Node process loading the CommonJS build, so run `pnpm build` first. It compares headless Elastic Charts with a baseline that has no chart engine, and reports:
+
+- peak RSS;
+- heap held after the run and a forced GC;
+- cold start to the first PNG;
+- the median draw and rasterization time per chart.
+
+`--repeat <n>` draws the examples n times in each process. Peak memory that grows with `--repeat` while the held heap stays flat is V8 keeping freed memory, not a leak. `--json` prints every run.
+
 ## What it takes from the Scene
 
 A renderer translates; it never formats, picks a color, sorts or chooses ticks. Everything Elastic Charts would otherwise decide is fed from the Scene or switched off.

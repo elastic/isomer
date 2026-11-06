@@ -51,7 +51,8 @@
     "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.test.tsx,**/*.fixtures.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench": "node scripts/bench_render.cjs"
   },
   "dependencies": {
     "@elastic/isomer-primitives-charts": "workspace:*"
