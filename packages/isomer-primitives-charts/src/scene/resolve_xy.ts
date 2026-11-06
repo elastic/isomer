@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { coordinateOf, coordinateScale } from '../coordinates';
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
@@ -223,21 +224,12 @@ export const resolveXy = (
     if (requested) {
       return requested;
     }
-    const types = new Set(
+    const scale = coordinateScale(
       dataLayers.flatMap(({ layer }) =>
         layer.x === undefined ? [] : [resolution.column(layer.x).type]
       )
     );
-    if (types.size > 1) {
-      return 'ordinal';
-    }
-    if (xColumn?.type === 'date') {
-      return 'time';
-    }
-    if (xColumn?.type === 'number') {
-      return 'linear';
-    }
-    return 'ordinal';
+    return scale === 'temporal' ? 'time' : (scale ?? 'ordinal');
   })();
   const xText = (row: number, id = xId) =>
     id === undefined ? '' : resolution.text(id, row);
@@ -248,7 +240,10 @@ export const resolveXy = (
     const cell = resolution.cell(id, row);
     if (xScale !== 'ordinal') {
       const value = scalarCell(cell);
-      const coordinate = xScale === 'time' ? toEpoch(value) : toNumber(value);
+      const coordinate = coordinateOf(
+        value,
+        xScale === 'time' ? 'temporal' : 'linear'
+      );
       if (coordinate === undefined && value !== null && value !== undefined) {
         throw new RangeError(
           `Cannot resolve x column "${id}" on a ${xScale} axis.`

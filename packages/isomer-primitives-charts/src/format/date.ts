@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { MAX_EPOCH } from '../coordinates';
 import { isoDateTimeEpoch } from '../iso_date_time';
 import type { PortableFormat } from '../schema/format';
 
@@ -39,7 +40,7 @@ export const formatDate = (
  */
 export const toEpoch = (value: unknown): number | undefined => {
   if (typeof value === 'number') {
-    return Number.isFinite(value) && Math.abs(value) <= 8.64e15
+    return Number.isFinite(value) && Math.abs(value) <= MAX_EPOCH
       ? value
       : undefined;
   }

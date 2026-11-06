@@ -70,12 +70,16 @@ describe('Scene events', () => {
     ).toBe('@timestamp per hour: 00:00 to 02:00');
   });
 
-  it('falls back to the brush column label when there are no categories', () => {
+  it('falls back to the brush column label when there is no table data', () => {
     expect(
-      brushEvent({ ...xyInteractiveScene, categories: [] }, NODE, [
-        START,
-        START + HOUR,
-      ])?.description
+      brushEvent(
+        {
+          ...xyInteractiveScene,
+          table: { ...xyInteractiveScene.table, rows: [] },
+        },
+        NODE,
+        [START, START + HOUR]
+      )?.description
     ).toBe('@timestamp per hour');
   });
 

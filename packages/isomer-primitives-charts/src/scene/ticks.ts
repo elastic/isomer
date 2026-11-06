@@ -8,6 +8,7 @@
 // Tick positions for an axis of a given length. Linear steps follow d3's
 // `tickStep` (1, 2 or 5 times a power of ten); time steps are calendar-sized.
 
+import { MAX_EPOCH } from '../coordinates';
 import { timeZoneOffset } from '../format/zone';
 
 const E10 = Math.sqrt(50);
@@ -248,8 +249,12 @@ const timeSteps = (span: number, count: number): TimeStep[] => [
   },
 ];
 
+const clampEpoch = (epoch: number) =>
+  Math.max(-MAX_EPOCH, Math.min(MAX_EPOCH, epoch));
+const offsetAt = (epoch: number, zone: string) =>
+  timeZoneOffset(clampEpoch(epoch), zone);
 const localTime = (epoch: number, zone: string) =>
-  epoch + timeZoneOffset(epoch, zone) * MINUTE;
+  epoch + offsetAt(epoch, zone) * MINUTE;
 
 /**
  * The instant a local wall-clock time names in `zone`: the earliest occurrence
@@ -259,12 +264,15 @@ const localTime = (epoch: number, zone: string) =>
  */
 const fromLocal = (local: number, zone: string, after?: number): number => {
   // With the offset in force before the change, a skipped time lands on the change itself.
-  const before = local - timeZoneOffset(local - DAY, zone) * MINUTE;
-  const following = local - timeZoneOffset(local + DAY, zone) * MINUTE;
+  const before = local - offsetAt(local - DAY, zone) * MINUTE;
+  const following = local - offsetAt(local + DAY, zone) * MINUTE;
   const valid = [...new Set([before, following])]
-    .filter((epoch) => localTime(epoch, zone) === local)
+    .filter(
+      (epoch) =>
+        Math.abs(epoch) <= MAX_EPOCH && localTime(epoch, zone) === local
+    )
     .sort((a, b) => a - b);
-  const options = valid.length > 0 ? valid : [before];
+  const options = valid.length > 0 ? valid : [clampEpoch(before)];
   return (
     options.find((epoch) => after === undefined || epoch > after) ??
     options[options.length - 1]!
@@ -274,8 +282,7 @@ const fromLocal = (local: number, zone: string, after?: number): number => {
 const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   const local = localTime(epoch, zone);
   if (unit === 'elapsed') {
-    let tick =
-      Math.floor(local / step) * step - timeZoneOffset(epoch, zone) * MINUTE;
+    let tick = Math.floor(local / step) * step - offsetAt(epoch, zone) * MINUTE;
     if (step >= HOUR) {
       for (let attempt = 0; attempt < 48; attempt += 1) {
         const wall = localTime(tick, zone);
@@ -283,29 +290,34 @@ const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
         if (wall === floor) {
           break;
         }
-        tick = floor - timeZoneOffset(tick, zone) * MINUTE;
+        tick = floor - offsetAt(tick, zone) * MINUTE;
       }
     }
     return tick;
   }
-  const date = new Date(local);
   if (unit === 'hour') {
-    date.setUTCHours(Math.floor(date.getUTCHours() / step) * step, 0, 0, 0);
-    return fromLocal(date.getTime(), zone);
+    return fromLocal(Math.floor(local / (step * HOUR)) * step * HOUR, zone);
   }
+  if (unit === 'day' || unit === 'week') {
+    const day = Math.floor(local / DAY);
+    const weekday = (((day + 4) % 7) + 7) % 7;
+    const date = new Date(clampEpoch(local));
+    const floor =
+      unit === 'week' ? day - weekday : day - ((date.getUTCDate() - 1) % step);
+    return fromLocal(floor * DAY, zone);
+  }
+  const date = new Date(clampEpoch(local));
   date.setUTCHours(0, 0, 0, 0);
-  if (unit === 'week') {
-    date.setUTCDate(date.getUTCDate() - date.getUTCDay());
-  } else if (unit === 'month') {
+  if (unit === 'month') {
     date.setUTCDate(1);
     date.setUTCMonth(Math.floor(date.getUTCMonth() / step) * step);
-  } else if (unit === 'year') {
+  } else {
     date.setUTCMonth(0, 1);
     date.setUTCFullYear(Math.floor(date.getUTCFullYear() / step) * step);
-  } else {
-    date.setUTCDate(Math.floor((date.getUTCDate() - 1) / step) * step + 1);
   }
-  return fromLocal(date.getTime(), zone);
+  return Number.isNaN(date.getTime())
+    ? -MAX_EPOCH
+    : fromLocal(date.getTime(), zone);
 };
 
 const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
@@ -317,21 +329,31 @@ const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
     }
     return next;
   }
-  const date = new Date(localTime(epoch, zone));
+  const local = localTime(epoch, zone);
   if (unit === 'hour') {
-    date.setUTCHours(date.getUTCHours() + step);
-  } else if (unit === 'year') {
-    date.setUTCFullYear(date.getUTCFullYear() + step);
-  } else if (unit === 'month') {
-    date.setUTCMonth(date.getUTCMonth() + step);
+    return fromLocal(local + step * HOUR, zone, epoch);
+  }
+  if (unit === 'day' || unit === 'week') {
+    const day = Math.floor(local / DAY);
+    const date = new Date(clampEpoch(local));
+    const dayOfMonth =
+      date.getUTCDate() + day - Math.floor(clampEpoch(local) / DAY);
+    const distance =
+      unit === 'week'
+        ? 7 - ((((day + 4) % 7) + 7) % 7)
+        : step - ((dayOfMonth - 1) % step);
+    return fromLocal((day + distance) * DAY, zone, epoch);
+  }
+  const date = new Date(clampEpoch(local));
+  if (unit === 'year') {
+    date.setUTCFullYear(date.getUTCFullYear() + step, 0, 1);
   } else {
-    date.setUTCDate(date.getUTCDate() + (unit === 'week' ? 7 : step));
+    date.setUTCMonth(date.getUTCMonth() + step, 1);
   }
-  if (unit !== 'hour') {
-    // A day that started late after a skipped midnight must not shift the next.
-    date.setUTCHours(0, 0, 0, 0);
-  }
-  return fromLocal(date.getTime(), zone, epoch);
+  date.setUTCHours(0, 0, 0, 0);
+  return Number.isNaN(date.getTime())
+    ? MAX_EPOCH
+    : fromLocal(date.getTime(), zone, epoch);
 };
 
 const chooseTimeStep = (min: number, max: number, count: number) =>
@@ -383,14 +405,17 @@ export const niceTimeDomain = (
   if (min === max) {
     const day: TimeStep = { unit: 'day', step: 1, duration: DAY };
     const low = floorTime(min, day, zone);
-    return [low, advanceTime(low, day, zone)];
+    const high = advanceTime(low, day, zone);
+    return high > low ? [low, high] : [floorTime(min - DAY, day, zone), min];
   }
   const step = chooseTimeStep(min, max, count);
   const low = floorTime(min, step, zone);
   const floorHigh = floorTime(max, step, zone);
   return [
-    low,
-    floorHigh === max && low < max ? max : advanceTime(floorHigh, step, zone),
+    clampEpoch(low),
+    clampEpoch(
+      floorHigh === max && low < max ? max : advanceTime(floorHigh, step, zone)
+    ),
   ];
 };
 
