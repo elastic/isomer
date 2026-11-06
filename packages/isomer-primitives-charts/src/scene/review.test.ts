@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+
+import { transformSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
 import { formatValue } from '../format/format';
@@ -591,4 +595,164 @@ describe('review regressions', () => {
       ).not.toBe(tile.background);
     }
   );
+  it('falls back to English in a process with German host defaults', () => {
+    const source = readFileSync(
+      new URL('../format/intl.ts', import.meta.url),
+      'utf8'
+    );
+    const { code } = transformSync(source, { loader: 'ts', format: 'cjs' });
+    const script = `
+      const target = { exports: {} };
+      new Function('module', 'exports', ${JSON.stringify(code)})(target, target.exports);
+      const { numberFormat, dateFormat } = target.exports;
+      console.log(JSON.stringify({
+        host: new Intl.NumberFormat().resolvedOptions().locale,
+        number: numberFormat('zz-ZZ', {}).format(1234.5),
+        date: dateFormat('zz-ZZ', { month: 'long', timeZone: 'UTC' }).format(0),
+      }));
+    `;
+    const { status, stdout, stderr } = spawnSync(
+      process.execPath,
+      ['-e', script],
+      {
+        encoding: 'utf8',
+        env: { ...process.env, LC_ALL: 'de_DE.UTF-8', LANG: 'de_DE.UTF-8' },
+      }
+    );
+    expect({ status, stderr }).toEqual({ status: 0, stderr: '' });
+    expect(JSON.parse(stdout)).toEqual({
+      host: 'de-DE',
+      number: '1,234.5',
+      date: 'January',
+    });
+  });
+
+  it.each([
+    ['number', 'string'],
+    ['date', 'number'],
+    ['boolean', 'number'],
+  ] as const)(
+    'preserves incompatible %s/%s x columns on an automatic ordinal axis',
+    (first, second) => {
+      const values = {
+        number: 1,
+        string: 'one',
+        date: '2026-11-06T00:00:00Z',
+        boolean: true,
+      };
+      const node = xy({
+        data: {
+          columns: [
+            { id: 'a', label: 'A', type: first, role: 'dimension' },
+            { id: 'b', label: 'B', type: second, role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [values[first], null, 1],
+            [null, values[second], 2],
+          ],
+        },
+        layers: [
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 'a',
+            rows: [0, 1],
+            y: [{ column: 'y' }],
+          },
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 'b',
+            rows: [1, 2],
+            y: [{ column: 'y' }],
+          },
+        ],
+      });
+      expect(xyChartSchema.safeParse(node).success).toBe(true);
+      const scene = resolve(node);
+      expect(scene.axes.x.scale).toBe('ordinal');
+      expect(seriesIn(scene).map(({ marks }) => marks.length)).toEqual([1, 1]);
+    }
+  );
+
+  it.each(['linear', 'temporal'] as const)(
+    'diagnoses a string x column incompatible with an explicit %s scale',
+    (scale) => {
+      const node = xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'string', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [['not a coordinate', 1]],
+        },
+        axes: { x: { scale } },
+      });
+      expect(() => resolve(node)).toThrow(/x column "x".*axis/);
+    }
+  );
+
+  it('rounds a domain across a half-hour DST jump to local hour boundaries', () => {
+    expect(
+      niceTimeDomain(
+        Date.parse('2026-10-03T11:30Z'),
+        Date.parse('2026-10-03T15:40Z'),
+        5,
+        'Australia/Lord_Howe'
+      )
+    ).toEqual([
+      Date.parse('2026-10-03T11:30Z'),
+      Date.parse('2026-10-03T16:00Z'),
+    ]);
+  });
+
+  it.each(['2026-01-01T00:00:00Z', '2026-01-01T12:00:00Z'])(
+    'uses calendar-day bounds for a singleton time at %s',
+    (iso) => {
+      const t = Date.parse(iso);
+      const [low, high] = niceTimeDomain(t, t, 5, 'UTC');
+      expect([low, high]).toEqual([
+        Date.parse('2026-01-01T00:00:00Z'),
+        Date.parse('2026-01-02T00:00:00Z'),
+      ]);
+      const ticks = timeTicks(low, high, 5, 'UTC');
+      const labels = ticks.map((value) => formatValue(value, { kind: 'date' }));
+      expect(new Set(labels).size).toBe(labels.length);
+    }
+  );
+  it.each([
+    ['2026-03-08T12:00:00Z', '2026-03-08T05:00:00Z', '2026-03-09T04:00:00Z'],
+    ['2026-11-01T12:00:00Z', '2026-11-01T04:00:00Z', '2026-11-02T05:00:00Z'],
+  ])(
+    'keeps singleton calendar-day bounds across DST at %s',
+    (iso, low, high) => {
+      const t = Date.parse(iso);
+      expect(niceTimeDomain(t, t, 5, 'America/New_York')).toEqual([
+        Date.parse(low),
+        Date.parse(high),
+      ]);
+    }
+  );
+
+  it('accepts representable strings and missing cells on an explicit temporal axis', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'string', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            ['2026-11-06T00:00:00Z', 1],
+            [null, 2],
+          ],
+        },
+        axes: { x: { scale: 'temporal' } },
+      })
+    );
+    expect(seriesIn(scene)[0]?.marks.map(({ x }) => x)).toEqual([
+      Date.parse('2026-11-06T00:00:00Z'),
+    ]);
+  });
 });

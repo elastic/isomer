@@ -12,8 +12,8 @@ sources:
 
 # Definition
 
-`resolveChart` reads each layer's own x column and retains raw cells in tables and selections. Cell-valued legend statistics and summary extrema retain authored display text. Numeric and date arrays use the first non-null element for coordinates; their labels and source values retain the full cell.[^scene]
+`resolveChart` uses ordinal positions for mixed x-column types and diagnoses non-missing cells incompatible with an explicit continuous scale. It reads each layer's own x column and retains raw cells in tables and selections. Cell-valued legend statistics and summary extrema retain authored display text. Numeric and date arrays use the first non-null element for coordinates; their labels and source values retain the full cell.[^scene]
 
-Full domains include zero for bars and areas; fitted singleton domains widen around their value. Automatic points use projected neighbor distances, and hourly ticks stay on local hours across fractional-hour daylight-saving changes. Metric overlays contrast with colored tile backgrounds.[^scene]
+Full domains include zero for bars and areas; fitted singleton domains widen around their value. Automatic points use projected neighbor distances. Singleton time domains span their local calendar day, and hourly ticks stay on local hours across fractional-hour daylight-saving changes. Metric overlays contrast with colored tile backgrounds.[^scene]
 
 [^scene]: https://github.com/elastic/isomer/blob/main/packages/isomer-primitives-charts/docs/scene.md
