@@ -5,12 +5,32 @@
  * 2.0.
  */
 
+export { type ChartsPackOptions, chartsPack, createChartsPack } from './pack';
+export {
+  type ChartNode,
+  type ChartsPackTypes,
+  type ChartsReactEnv,
+  type ChartsRenderContext,
+  type ReactSceneRenderer,
+  type ResolveSceneOptions,
+  type SceneResolver,
+} from './render/context';
+export { gridPrimitive, gridSnapshotHeight } from './render/grid';
+export { defineChartPrimitives } from './render/primitives';
+export {
+  type SceneShimConfig,
+  detectSceneEnvironment,
+  renderSceneNode,
+} from './render/scene_node';
+export { CHARTS_THEME } from './render/theme';
+export { unsupportedPrimitive } from './render/unsupported';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
+export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,

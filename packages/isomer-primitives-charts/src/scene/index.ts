@@ -17,6 +17,7 @@ export {
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './examples';
+export { selectSceneRenderer } from './select';
 export {
   type AxisId,
   type ColorScheme,

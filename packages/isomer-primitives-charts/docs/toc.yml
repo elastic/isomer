@@ -12,3 +12,4 @@ toc:
   - file: unsupported.md
   - file: interactions.md
   - file: scene.md
+  - file: rendering.md
