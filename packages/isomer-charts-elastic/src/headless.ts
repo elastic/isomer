@@ -107,6 +107,27 @@ export interface HeadlessRendererOptions extends HeadlessSvgOptions {
 
 const KINDS: readonly SceneKind[] = ['metric', 'xy'];
 
+/** A short, stable name for a drawing: the same SVG always gets the same one. */
+const drawingScope = (svg: string): string => {
+  let hash = 5381;
+  for (let index = 0; index < svg.length; index += 1) {
+    hash = ((hash * 33) ^ svg.charCodeAt(index)) >>> 0;
+  }
+  return `ech${hash.toString(36)}`;
+};
+
+/**
+ * Prefixes every id in an SVG and each reference to one. Elastic Charts names
+ * its clip paths `clip0`, `clip1`, …, so two charts inline in one page would
+ * otherwise clip with each other's paths. Identical drawings share a prefix,
+ * and their paths are identical too.
+ */
+export const scopeSvgIds = (svg: string, scope: string): string =>
+  svg
+    .replace(/\bid="([^"]+)"/g, `id="${scope}-$1"`)
+    .replace(/url\(#([^)]+)\)/g, `url(#${scope}-$1)`)
+    .replace(/\bhref="#([^"]+)"/g, `href="#${scope}-$1"`);
+
 /**
  * A `SceneRenderer` drawing the chart's SVG inline in a `div`, so static
  * markup, such as the `snapshot` surface's, carries it to takumi. It is
@@ -121,11 +142,31 @@ export const createElasticChartsHeadlessRenderer = ({
   environments,
   sized: true,
   supports: (kind) => KINDS.includes(kind),
-  render: (scene) => {
-    const { svg, width, height } = renderSceneSvg(scene, options);
+  render: (scene, { environment }) => {
+    const drawn = renderSceneSvg(scene, options);
+    const { width, height } = drawn;
+    const svg = scopeSvgIds(drawn.svg, drawingScope(drawn.svg));
+    if (environment === 'node') {
+      return createElement('div', {
+        style: { display: 'flex', width, height },
+        dangerouslySetInnerHTML: { __html: svg },
+      });
+    }
+    // A browser lays the page out fluidly, so the drawing scales to its
+    // container at its own aspect ratio, never past the size it was drawn at.
     return createElement('div', {
-      style: { display: 'flex', width, height },
-      dangerouslySetInnerHTML: { __html: svg },
+      style: {
+        display: 'flex',
+        width: '100%',
+        maxWidth: width,
+        aspectRatio: `${width} / ${height}`,
+      },
+      dangerouslySetInnerHTML: {
+        __html: svg.replace(
+          /^<svg\b([^>]*?) width="[^"]*" height="[^"]*"/,
+          '<svg$1 width="100%" height="100%"'
+        ),
+      },
     });
   },
 });
