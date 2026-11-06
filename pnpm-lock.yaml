@@ -193,12 +193,18 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../isomer-image-takumi
       '@elastic/isomer-runtime':
         specifier: workspace:*
         version: link:../isomer-runtime
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@types/react':
         specifier: ^18.3.31
         version: 18.3.31

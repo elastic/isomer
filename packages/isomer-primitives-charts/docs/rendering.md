@@ -74,6 +74,18 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 
 In a browser, the shim's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height to `snapshot` frames as `metrics.snapshotHeight`.
 
+## Images and PDF
+
+`chartsFrame` is a content-sized page for the `snapshot` surface: the body in a column on the scheme's background, `CHARTS_THEME.frame.width` (960 px) wide. Its theme carries `scheme`, so every chart, nested in a grid or not, resolves for the scheme the render asks for.
+
+```ts
+const imagePack = createChartsPack({ sceneRenderers: [createElasticChartsHeadlessRenderer()] });
+const runtime = createIsomerRuntime({ packs: [imagePack], frames: { charts: chartsFrame } });
+const png = await takumi.png(await takumi.fit(runtime.surfaces.snapshot.render(composition, { theme: 'dark' })));
+```
+
+The [Elastic Charts engine's](../../isomer-charts-elastic/docs/index.md#headless-on-node) `remote_render.test.ts` draws every example of the pack this way with no browser: to PNG in both schemes, and to one PDF with its fonts embedded.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.
@@ -92,7 +104,7 @@ On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collect
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A panel's title is its header and its description is the header's tooltip; the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
-When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box and fits the panel's height. Without a `size` from the host, the grid lays out for `CHARTS_THEME.grid.nominalWidth` (1,200 px).
+When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box and fits the panel's height. Without a `size` from the host, the grid lays out for `CHARTS_THEME.grid.nominalWidth`: the content width of `chartsFrame`, 928 px, so a grid on `snapshot` fits its page.
 
 On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone.
 
