@@ -499,6 +499,9 @@ describe('xyChart', () => {
         ],
       });
     expect(issuesOf('xyChart', annotate('marker'))).toEqual([]);
+    expect(
+      issuesOf('xyChart', annotate('map_marker')).map(({ path }) => path)
+    ).toEqual(['layers.1.events.0.icon']);
   });
 
   it('rejects a y column that is not a number', () => {
@@ -706,6 +709,23 @@ describe('unsupported', () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it.each([
+    { host: 'kibana', capturedAt: 'invalid' },
+    { capturedAt: '2026-11-03T09:15:00.000Z' },
+    {
+      host: 'kibana',
+      capturedAt: '2026-11-03T09:15:00.000Z',
+      savedObjectId: 'dashboard-1',
+    },
+    {
+      host: 'kibana',
+      capturedAt: '2026-11-03T09:15:00.000Z',
+      materializer: 'lens',
+    },
+  ])('rejects invalid or former top-level provenance: %j', (source) => {
+    expect(issuesOf('unsupported', failure(source)).length).toBeGreaterThan(0);
   });
 
   it('rejects a script link', () => {
