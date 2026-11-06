@@ -812,6 +812,100 @@ describe('review regressions', () => {
     }
   );
 
+  it.each([
+    ['number', 'other-x'],
+    ['date', 'other-x'],
+    ['number', 'split'],
+    ['date', 'split'],
+    ['number', 'row-index'],
+    ['date', 'row-index'],
+  ] as const)(
+    'brushes only the plotted %s x cells with %s layers',
+    (type, mode) => {
+      const node = xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'Range', type, role: 'dimension' },
+            { id: 's', label: 'Group', type: 'string', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [0, null, 1],
+            [100, null, 2],
+            [50, 'bucket', 3],
+          ],
+          display: { x: ['start', 'end', 'unplotted'] },
+        },
+        layers: [
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 'x',
+            rows: [0, 2],
+            y: [{ column: 'y' }],
+          },
+          {
+            kind: 'data',
+            mark: 'line',
+            rows: [2, 3],
+            y: [{ column: 'y' }],
+            ...(mode === 'row-index' ? {} : { x: 's' }),
+            ...(mode === 'other-x' ? {} : { splitBy: 'x' }),
+          },
+        ],
+        interactions: { brush: { column: 'x' } },
+      });
+      expect(xyChartSchema.safeParse(node).success).toBe(true);
+      expect(brushEvent(resolve(node), 'chart', [50, 100])?.description).toBe(
+        'Range: start to end'
+      );
+    }
+  );
+
+  it.each([
+    ['2026-01-29', '2026-02-04', [29, 31, 1, 3]],
+    ['2026-04-29', '2026-05-04', [29, 1, 3]],
+    ['2026-02-27', '2026-03-04', [27, 1, 3]],
+    ['2024-02-27', '2024-03-04', [27, 29, 1, 3]],
+    ['2026-12-29', '2027-01-04', [29, 31, 1, 3]],
+  ] as const)('keeps two-day ticks aligned from %s to %s', (from, to, days) => {
+    expect(
+      timeTicks(Date.parse(from), Date.parse(to), 4, 'UTC').map((tick) =>
+        new Date(tick).getUTCDate()
+      )
+    ).toEqual(days);
+  });
+
+  it.each([
+    [
+      '2026-03-07T05:00Z',
+      '2026-03-14T04:00Z',
+      [
+        '2026-03-07T05:00Z',
+        '2026-03-09T04:00Z',
+        '2026-03-11T04:00Z',
+        '2026-03-13T04:00Z',
+      ],
+    ],
+    [
+      '2026-10-31T04:00Z',
+      '2026-11-06T05:00Z',
+      [
+        '2026-10-31T04:00Z',
+        '2026-11-01T04:00Z',
+        '2026-11-03T05:00Z',
+        '2026-11-05T05:00Z',
+      ],
+    ],
+  ] as const)(
+    'keeps two-day ticks at local midnight across %s',
+    (from, to, expected) => {
+      expect(
+        timeTicks(Date.parse(from), Date.parse(to), 4, 'America/New_York')
+      ).toEqual(expected.map((date) => Date.parse(date)));
+    }
+  );
+
   it.each([-8.64e15, 8.64e15])(
     'resolves a singleton at the valid Date boundary %s',
     (epoch) => {

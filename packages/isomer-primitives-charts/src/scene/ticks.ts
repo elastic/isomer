@@ -335,15 +335,24 @@ const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   }
   if (unit === 'day' || unit === 'week') {
     const day = Math.floor(local / DAY);
-    const date = new Date(clampEpoch(local));
-    const dayOfMonth =
-      date.getUTCDate() + day - Math.floor(clampEpoch(local) / DAY);
-    const distance =
-      unit === 'week'
-        ? 7 - ((((day + 4) % 7) + 7) % 7)
-        : step - ((dayOfMonth - 1) % step);
-    return fromLocal((day + distance) * DAY, zone, epoch);
+    if (unit === 'week') {
+      const distance = 7 - ((((day + 4) % 7) + 7) % 7);
+      return fromLocal((day + distance) * DAY, zone, epoch);
+    }
+    let next = (day + 1) * DAY;
+    for (
+      let distance = 1;
+      distance < step && Math.abs(next) <= MAX_EPOCH;
+      distance += 1
+    ) {
+      if ((new Date(next).getUTCDate() - 1) % step === 0) {
+        break;
+      }
+      next += DAY;
+    }
+    return fromLocal(next, zone, epoch);
   }
+
   const date = new Date(clampEpoch(local));
   if (unit === 'year') {
     date.setUTCFullYear(date.getUTCFullYear() + step, 0, 1);
