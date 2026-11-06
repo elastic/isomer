@@ -28,4 +28,4 @@ A host with formats no portable format describes, such as Kibana's field formats
 
 ## Time zones and environments
 
-Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones, such as some React Native builds, renders a Scene resolved on a server.
+Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server.
