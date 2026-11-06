@@ -12,6 +12,7 @@ import { gridPrimitive } from './render/grid';
 import { defineChartPrimitives } from './render/primitives';
 import { chartsDistillery, chartsStyleAdapter } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
+import { tableSceneRenderer } from './render/table';
 import { unsupportedPrimitive } from './render/unsupported';
 import { resolveChart } from './scene/resolve';
 
@@ -49,14 +50,18 @@ export const createChartsPack = ({
     inputBudget: CHARTS_INPUT_BUDGET,
     authoring: {
       groups: [
-        { title: 'Charts', types: ['metric', 'xyChart'] },
+        { title: 'Charts', types: ['metric', 'xyChart', 'dataTable'] },
         { title: 'Dashboards', types: ['grid', 'unsupported'] },
       ],
     },
     primitives: [
       ...defineChartPrimitives({
         resolveScene,
-        sceneRenderers: [...sceneRenderers, summarySceneRenderer],
+        sceneRenderers: [
+          ...sceneRenderers,
+          tableSceneRenderer,
+          summarySceneRenderer,
+        ],
       }),
       gridPrimitive,
       unsupportedPrimitive,
