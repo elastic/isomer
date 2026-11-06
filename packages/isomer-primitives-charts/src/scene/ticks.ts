@@ -55,7 +55,14 @@ export const niceDomain = (
   count: number
 ): [number, number] => {
   if (min === max) {
-    return min === 0 ? [0, 1] : min > 0 ? [0, min] : [min, 0];
+    if (min === 0) {
+      return [0, 1];
+    }
+    const padding = Math.max(Math.abs(min) * 0.02, Number.MIN_VALUE);
+    return [
+      Number.isFinite(min - padding) ? min - padding : min,
+      Number.isFinite(max + padding) ? max + padding : max,
+    ];
   }
   let low = min;
   let high = max;
@@ -293,7 +300,14 @@ const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
 
 const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   if (unit === 'elapsed') {
-    return epoch + step;
+    const next = epoch + step;
+    if (step >= HOUR) {
+      const offsetChange =
+        (timeZoneOffset(next, zone) - timeZoneOffset(epoch, zone)) * MINUTE;
+      const remainder = ((offsetChange % step) + step) % step;
+      return next + (remainder === 0 ? 0 : step - remainder);
+    }
+    return next;
   }
   const date = new Date(localTime(epoch, zone));
   if (unit === 'hour') {
@@ -361,7 +375,10 @@ export const niceTimeDomain = (
   const step = chooseTimeStep(min, max, count);
   const low = floorTime(min, step, zone);
   const floorHigh = floorTime(max, step, zone);
-  return [low, floorHigh === max ? max : advanceTime(floorHigh, step, zone)];
+  return [
+    low,
+    floorHigh === max && low < max ? max : advanceTime(floorHigh, step, zone),
+  ];
 };
 
 /** Tick count for an axis `length` pixels long, one tick per `spacing` pixels. */

@@ -224,7 +224,7 @@ describe('resolver regressions', () => {
     ];
     node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
     const scene = resolveChart(node, { scheme: 'light' });
-    expect(scene.axes.y2?.domain).toEqual([0, 50]);
+    expect(scene.axes.y2?.domain).toEqual([49, 51]);
     expect(scene.axes.y2?.ticks.length).toBeGreaterThan(0);
   });
 

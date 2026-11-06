@@ -19,6 +19,7 @@ import {
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
+  scalarCell,
   sceneBase,
   titled,
   toNumber,
@@ -118,7 +119,8 @@ const statistic = (
   name: Statistic,
   ys: (number | null)[],
   resolution: Resolution,
-  yColumn: string
+  yColumn: string,
+  rows: number[]
 ): string => {
   const present = ys.filter((value): value is number => value !== null);
   const sum = present.reduce((total, value) => total + value, 0);
@@ -131,19 +133,22 @@ const statistic = (
   const last = present[present.length - 1];
   const value = (number: number | null | undefined) =>
     resolution.valueText(yColumn, number ?? null);
+  const cellText = (index: number | undefined) =>
+    index === undefined ? value(null) : resolution.text(yColumn, rows[index]!);
+  const presentIndexes = ys.flatMap((y, index) => (y === null ? [] : [index]));
   switch (name) {
     case 'min':
-      return value(
-        present.length
-          ? present.reduce((low, value) => Math.min(low, value), Infinity)
-          : null
+    case 'max': {
+      const selected = presentIndexes.reduce<number | undefined>(
+        (best, index) =>
+          best === undefined ||
+          (name === 'min' ? ys[index]! < ys[best]! : ys[index]! > ys[best]!)
+            ? index
+            : best,
+        undefined
       );
-    case 'max':
-      return value(
-        present.length
-          ? present.reduce((high, value) => Math.max(high, value), -Infinity)
-          : null
-      );
+      return cellText(selected);
+    }
     case 'avg':
       return value(present.length ? mean : null);
     case 'median':
@@ -156,13 +161,13 @@ const statistic = (
           : null
       );
     case 'last_value':
-      return value(ys[ys.length - 1]);
+      return cellText(ys.length ? ys.length - 1 : undefined);
     case 'last_non_null_value':
-      return value(last);
+      return cellText(presentIndexes.at(-1));
     case 'first_value':
-      return value(ys[0]);
+      return cellText(ys.length ? 0 : undefined);
     case 'first_non_null_value':
-      return value(first);
+      return cellText(presentIndexes[0]);
     case 'difference':
       return value(
         first === undefined || last === undefined ? null : last - first
@@ -185,7 +190,7 @@ const statistic = (
     case 'distinct_count':
       return resolution.formatAs(new Set(present).size, DEFAULT_FORMATS.number);
     case 'current_and_last_value':
-      return value(ys[ys.length - 1]);
+      return cellText(ys.length ? ys.length - 1 : undefined);
   }
 };
 
@@ -207,7 +212,7 @@ export const resolveXy = (
         entry.layer.kind === 'data'
     );
 
-  // The x column every data layer shares, as the axis reads it.
+  // The first x column supplies the shared axis format.
   const xId = dataLayers.find(({ layer }) => layer.x !== undefined)?.layer.x;
   const xColumn = xId === undefined ? undefined : resolution.column(xId);
   const xScale: XScale = (() => {
@@ -226,15 +231,15 @@ export const resolveXy = (
     }
     return 'ordinal';
   })();
-  const xText = (row: number) =>
-    xId === undefined ? '' : resolution.text(xId, row);
-  const xOf = (row: number): number | string => {
-    if (xId === undefined) {
-      return '';
+  const xText = (row: number, id = xId) =>
+    id === undefined ? '' : resolution.text(id, row);
+  const xOf = (row: number, id: string | undefined): number | string => {
+    if (id === undefined) {
+      return xScale === 'ordinal' ? '' : 0;
     }
-    const cell = resolution.cell(xId, row);
+    const cell = resolution.cell(id, row);
     if (xScale === 'time') {
-      return toEpoch(cell) ?? Number.NaN;
+      return toEpoch(scalarCell(cell)) ?? Number.NaN;
     }
     if (xScale === 'linear') {
       return toNumber(cell) ?? Number.NaN;
@@ -301,9 +306,7 @@ export const resolveXy = (
     if (byKey) {
       return resolveColor(byKey, scheme);
     }
-    const own = draft.layer.y.find(
-      ({ column }) => column === draft.yColumn
-    )?.color;
+    const own = draft.layer.y[draft.yIndex]?.color;
     if (own && !draft.split) {
       return resolveColor(own, scheme);
     }
@@ -312,41 +315,56 @@ export const resolveXy = (
 
   // Categories: every x position with data, in axis order.
   const categoryRows = new Map<number | string, Set<number>>();
+  const categoryColumns = new Map<number | string, Map<string, number>>();
   for (const draft of drafts) {
     for (const row of draft.rows) {
-      const x = xOf(row);
+      const x = xOf(row, draft.layer.x);
       if (typeof x === 'number' && Number.isNaN(x)) {
         continue;
       }
       const rows = categoryRows.get(x) ?? new Set<number>();
       rows.add(row);
       categoryRows.set(x, rows);
+      if (draft.layer.x !== undefined) {
+        const columns = categoryColumns.get(x) ?? new Map<string, number>();
+        columns.set(draft.layer.x, row);
+        categoryColumns.set(x, columns);
+      }
     }
   }
   const categoryKeys = [...categoryRows.keys()];
   if (xScale !== 'ordinal') {
     (categoryKeys as number[]).sort((a, b) => a - b);
   }
-  const categoryLabel = (x: number | string, rows: number[]) =>
-    xId === undefined
-      ? ''
-      : rows[0] === undefined
-        ? resolution.valueText(xId, x)
-        : xText(rows[0]);
   const categories: XyCategory[] = categoryKeys.map((x) => {
     const rows = [...(categoryRows.get(x) ?? [])].sort((a, b) => a - b);
-    const label = categoryLabel(x, rows);
+    const columns = categoryColumns.get(x) ?? new Map<string, number>();
+    const [column, row] = columns.entries().next().value ?? [];
+    const label = column === undefined ? '' : resolution.text(column, row!);
+    const values = Object.fromEntries(
+      [...columns].map(([id, source]) => [id, resolution.cell(id, source)])
+    );
+    const sameValues = rows.every((source) =>
+      [...columns].every(
+        ([id]) => cellKey(resolution.cell(id, source)) === cellKey(values[id]!)
+      )
+    );
     return {
       x,
       label,
-      ...(offers('category') && xId !== undefined && xColumn
+      ...(offers('category') && columns.size > 0 && sameValues
         ? {
             selection: {
               target: 'category' as const,
               rows,
-              columns: [xId],
-              values: { [xId]: resolution.cell(xId, rows[0] ?? 0) },
-              description: describe([[xColumn.label, label]]),
+              columns: [...columns.keys()],
+              values,
+              description: describe(
+                [...columns.keys()].map((id) => [
+                  resolution.column(id).label,
+                  resolution.text(id, rows[0]!),
+                ])
+              ),
             },
           }
         : {}),
@@ -385,7 +403,7 @@ export const resolveXy = (
       continue;
     }
     for (const row of draft.rows) {
-      const key = `${group}|${String(xOf(row))}`;
+      const key = `${group}|${String(xOf(row, draft.layer.x))}`;
       const value = toNumber(resolution.cell(draft.yColumn, row)) ?? 0;
       stackTotals.set(key, (stackTotals.get(key) ?? 0) + Math.abs(value));
     }
@@ -403,18 +421,18 @@ export const resolveXy = (
     const yColumn = resolution.column(draft.yColumn);
     const group = stackGroup(draft);
     const ordered = [...draft.rows].sort((a, b) => {
-      const ax = xOf(a);
-      const bx = xOf(b);
+      const ax = xOf(a, draft.layer.x);
+      const bx = xOf(b, draft.layer.x);
       return typeof ax === 'number' && typeof bx === 'number'
         ? ax - bx
         : (categoryOrder.get(ax) ?? 0) - (categoryOrder.get(bx) ?? 0);
     });
     const dims = [
-      ...(xId === undefined ? [] : [xId]),
+      ...(draft.layer.x === undefined ? [] : [draft.layer.x]),
       ...(draft.split ? [draft.split.column] : []),
     ];
     const marks = ordered.flatMap((row) => {
-      const x = xOf(row);
+      const x = xOf(row, draft.layer.x);
       if (typeof x === 'number' && Number.isNaN(x)) {
         return [];
       }
@@ -436,7 +454,14 @@ export const resolveXy = (
       }
       const label = resolution.text(draft.yColumn, row);
       const description = describe([
-        ...(xColumn ? [[xColumn.label, xText(row)] as const] : []),
+        ...(draft.layer.x === undefined
+          ? []
+          : [
+              [
+                resolution.column(draft.layer.x).label,
+                xText(row, draft.layer.x),
+              ] as const,
+            ]),
         ...(draft.split
           ? [
               [
@@ -496,8 +521,12 @@ export const resolveXy = (
       tooltipEntries.set(x, entries);
     }
   }
-  const tooltipAt = (x: number | string, row: number): SceneTooltip => ({
-    ...(xId === undefined ? {} : { header: xText(row) }),
+  const tooltipAt = (
+    x: number | string,
+    row: number,
+    id: string | undefined
+  ): SceneTooltip => ({
+    ...(id === undefined ? {} : { header: xText(row, id) }),
     entries: tooltipEntries.get(x) ?? [],
   });
 
@@ -505,7 +534,7 @@ export const resolveXy = (
   const xLength = size ? (horizontal ? size.height : size.width) : undefined;
   const yLength = size ? (horizontal ? size.width : size.height) : undefined;
 
-  const series: XySeries[] = seriesDrafts.map(({ draft, color, marks }) => {
+  let series: XySeries[] = seriesDrafts.map(({ draft, color, marks }) => {
     const splitLabel = draft.split
       ? resolution.column(draft.split.column).label
       : undefined;
@@ -519,10 +548,7 @@ export const resolveXy = (
       : {};
     const rows = [...draft.rows].sort((a, b) => a - b);
     const points = node.style?.points ?? 'auto';
-    const spacing =
-      xLength === undefined || marks.length < 2
-        ? undefined
-        : xLength / marks.length;
+
     return {
       series: { layer: draft.layerIndex, y: draft.yIndex },
       key: draft.key,
@@ -546,10 +572,7 @@ export const resolveXy = (
       },
       showPoints:
         points === 'visible' ||
-        (points === 'auto' &&
-          (spacing === undefined
-            ? marks.length <= POINT_MIN_DISTANCE
-            : spacing >= POINT_MIN_DISTANCE)),
+        (points === 'auto' && marks.length <= POINT_MIN_DISTANCE),
       areaOpacity: node.style?.areaOpacity ?? DEFAULTS.areaOpacity,
       areaFill: node.style?.areaFill ?? DEFAULTS.areaFill,
       valueLabels:
@@ -557,12 +580,12 @@ export const resolveXy = (
       source: {
         rows,
         columns: [
-          ...(xId === undefined ? [] : [xId]),
+          ...(draft.layer.x === undefined ? [] : [draft.layer.x]),
           ...columns,
           draft.yColumn,
         ],
       },
-      ...(offers('series')
+      ...(offers('series') && rows.length > 0
         ? {
             selection: {
               target: 'series' as const,
@@ -577,10 +600,25 @@ export const resolveXy = (
         : {}),
       marks: marks.map((mark) => ({
         ...mark,
-        tooltip: tooltipAt(mark.x, mark.source.rows[0] ?? 0),
+        tooltip: tooltipAt(mark.x, mark.source.rows[0] ?? 0, draft.layer.x),
       })),
     };
   });
+
+  const axisFormat = (axis: 'x' | 'y' | 'y2'): PortableFormat => {
+    if (axis === 'x') {
+      return xId === undefined
+        ? DEFAULT_FORMATS.number
+        : resolution.format(xId);
+    }
+    const onAxis = drafts.filter((draft) => draft.axis === axis);
+    return onAxis.length > 0 &&
+      onAxis.every(({ layer }) => layer.stack === 'percentage')
+      ? DEFAULT_FORMATS.percent
+      : onAxis[0]
+        ? resolution.format(onAxis[0].yColumn)
+        : DEFAULT_FORMATS.number;
+  };
 
   // Y axes.
   const referenceLinesByLayer: SceneReferenceLine[][] = node.layers.map(
@@ -592,7 +630,7 @@ export const resolveXy = (
               (line.showText
                 ? resolution.formatAs(
                     line.value,
-                    line.format ?? DEFAULT_FORMATS.number
+                    line.format ?? axisFormat(line.axis ?? 'y')
                   )
                 : undefined);
             return {
@@ -649,7 +687,11 @@ export const resolveXy = (
     if (domain.kind === 'custom') {
       low = domain.min;
       high = domain.max;
-    } else if (domain.kind === 'full' && scale !== 'log') {
+    } else if (
+      domain.kind === 'full' &&
+      scale !== 'log' &&
+      onAxis.some(({ mark }) => mark === 'bar' || mark === 'area')
+    ) {
       low = Math.min(0, low);
       high = Math.max(0, high);
     }
@@ -668,6 +710,9 @@ export const resolveXy = (
             ? positive.reduce((low, value) => Math.min(low, value), Infinity)
             : 1;
       high = high > low ? high : low * 10;
+    }
+    if (low === high && domain.kind !== 'custom') {
+      [low, high] = niceDomain(low, high, count);
     }
     if ((config?.rounding ?? true) && domain.kind !== 'custom') {
       [low, high] =
@@ -744,7 +789,10 @@ export const resolveXy = (
       high += interval;
     }
     const count = tickCount(xLength, 100, 5);
-    if ((xConfig?.rounding ?? true) && xConfig?.domain?.kind !== 'custom') {
+    if (
+      ((xConfig?.rounding ?? true) || low === high) &&
+      xConfig?.domain?.kind !== 'custom'
+    ) {
       [low, high] =
         xScale === 'time'
           ? niceTimeDomain(low, high, count, timeZone)
@@ -768,6 +816,30 @@ export const resolveXy = (
     };
   })();
 
+  if ((node.style?.points ?? 'auto') === 'auto' && xLength !== undefined) {
+    const project = (x: number | string): number => {
+      if (xScale === 'ordinal') {
+        return (
+          (((categoryOrder.get(x) ?? 0) + 0.5) * xLength) /
+          Math.max(1, categoryKeys.length)
+        );
+      }
+      const [low, high] = xAxis.domain as [number, number];
+      return ((Number(x) - low) / (high - low)) * xLength;
+    };
+    series = series.map((entry) => {
+      const positions = entry.marks
+        .filter(({ y }) => y !== null)
+        .map(({ x }) => project(x))
+        .sort((a, b) => a - b);
+      const showPoints = positions.every(
+        (position, index) =>
+          index === 0 || position - positions[index - 1]! >= POINT_MIN_DISTANCE
+      );
+      return { ...entry, showPoints };
+    });
+  }
+
   const legendConfig = node.legend;
   const legendItems: SceneLegendItem[] = series.map((entry, index) => {
     const draft = drafts[index]!;
@@ -788,11 +860,17 @@ export const resolveXy = (
       hidden: hidden.has(entry.key),
       statistics: (legendConfig?.statistics ?? []).map((name) => ({
         name: STATISTIC_NAMES[name],
-        value: statistic(name, ys, resolution, draft.yColumn),
+        value: statistic(
+          name,
+          ys,
+          resolution,
+          draft.yColumn,
+          entry.marks.map(({ source }) => source.rows[0]!)
+        ),
       })),
       source: entry.source,
       description,
-      ...(offers('legend')
+      ...(offers('legend') && entry.source.rows.length > 0
         ? {
             selection: {
               target: 'legend' as const,
@@ -866,7 +944,7 @@ export const resolveXy = (
   const allYs = drafts.flatMap((draft) =>
     draft.rows.flatMap((row) => {
       const value = toNumber(resolution.cell(draft.yColumn, row));
-      return value === undefined ? [] : [{ value, column: draft.yColumn }];
+      return value === undefined ? [] : [{ value, column: draft.yColumn, row }];
     })
   );
   const yLabels = [
@@ -892,7 +970,7 @@ export const resolveXy = (
   );
   const range =
     lowest && highest
-      ? `, from ${resolution.valueText(lowest.column, lowest.value)} to ${resolution.valueText(highest.column, highest.value)}`
+      ? `, from ${resolution.text(lowest.column, lowest.row)} to ${resolution.text(highest.column, highest.row)}`
       : ', with no data';
   const sentence = `${yLabels.join(' and ')}${
     dimensions.length ? ` by ${dimensions.join(' and ')}` : ''
