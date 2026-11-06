@@ -125,6 +125,49 @@ describe('renderers', () => {
     ).toEqual([]);
   });
 
+  it.each([
+    "import { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/scene';",
+    "import type * as S from '@elastic/isomer-primitives-charts/scene';",
+    "export { Scene, SceneRenderer } from '@elastic/isomer-primitives-charts/scene';",
+    "export type * from '@elastic/isomer-primitives-charts/scene';",
+    "export type * as S from '@elastic/isomer-primitives-charts/scene';",
+    "import type S = require('@elastic/isomer-primitives-charts/scene');",
+    "import { Scene, selectEvent } from '@elastic/isomer-primitives-charts/scene';",
+  ])('accepts erased Scene imports and exports: %s', (source) => {
+    expect(
+      rendererViolations(
+        [engineFile],
+        () => ['@elastic/isomer-primitives-charts/scene'],
+        src,
+        () => source
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    'resolveChart',
+    'resolveColor',
+    'categoricalColor',
+    'CATEGORICAL_PALETTE',
+    'CHART_CHROME',
+    'metricSingleValueScene',
+    'xyInteractiveScene',
+    'xyTimeSeriesScene',
+  ])(
+    'rejects the resolver value %s even alongside inferred Scene types',
+    (name) => {
+      const source = `import { Scene, ${name} as helper } from '@elastic/isomer-primitives-charts/scene';`;
+      expect(
+        rendererViolations(
+          [engineFile],
+          () => ['@elastic/isomer-primitives-charts/scene'],
+          src,
+          () => source
+        )
+      ).toHaveLength(1);
+    }
+  );
+
   it('checks sources, not tests, fixtures or declarations', () => {
     expect(isRendererSource('draw.ts')).toBe(true);
     expect(isRendererSource('metric.tsx')).toBe(true);

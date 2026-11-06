@@ -81,8 +81,16 @@ export const rendererViolation = (specifier, file, chartsSrc) => {
   return `"${specifier}" (src/${fromSrc}): a renderer reads only the Scene types`;
 };
 
-const RENDERER_VALUES = new Set(['brushEvent', 'selectEvent', 'SCENE_KINDS']);
-const RESOLVER_TYPES = new Set(['ChartNode', 'ResolveChartOptions']);
+const RESOLVER_VALUES = new Set([
+  'resolveChart',
+  'resolveColor',
+  'categoricalColor',
+  'CATEGORICAL_PALETTE',
+  'CHART_CHROME',
+  'metricSingleValueScene',
+  'xyInteractiveScene',
+  'xyTimeSeriesScene',
+]);
 
 const sceneBindings = (source, file) => {
   const tree = ts.createSourceFile(
@@ -108,14 +116,15 @@ const sceneBindings = (source, file) => {
       const bindings = ts.isImportDeclaration(node)
         ? clause?.namedBindings
         : node.exportClause;
+      if (clause?.isTypeOnly) {
+        return;
+      }
       if (!bindings || !('elements' in bindings) || clause?.name) {
         record();
       } else if (
         bindings.elements.some((binding) => {
           const name = (binding.propertyName ?? binding.name).text;
-          return clause.isTypeOnly || binding.isTypeOnly
-            ? RESOLVER_TYPES.has(name)
-            : !RENDERER_VALUES.has(name);
+          return !binding.isTypeOnly && RESOLVER_VALUES.has(name);
         })
       ) {
         record();
@@ -129,6 +138,7 @@ const sceneBindings = (source, file) => {
       record();
     } else if (
       ts.isImportEqualsDeclaration(node) &&
+      !node.isTypeOnly &&
       ts.isExternalModuleReference(node.moduleReference) &&
       node.moduleReference.expression?.text === RENDERER_SCENE_ENTRY
     ) {
