@@ -46,7 +46,7 @@ What it decides:
 - **Colors** from the node, concrete for the scheme. Chrome and the default categorical palette come from one theme, EUI Borealis tokens (`CHART_CHROME`, `CATEGORICAL_PALETTE`). Text, trend strokes and progress fills on a colored metric background use whichever scheme's text color contrasts more after compositing over the chart background.
 - **Metric tiles**, one per row: titles from the breakdown, colors by band (a percentage band reads each tile's share of its own `max`, or of the range across tiles), comparisons (to the primary: the signed difference; to a baseline: the value, colored by the difference's sign), and three tiles per row unless `maxColumns` says otherwise.
 - **Xy series** in layer, y-column and first-appearance order of split values; stacks (positive and negative values separately, percentages to one); categories in axis order; tooltips listing every visible series at an x. Initially hidden series contribute neither stack offsets nor percentage totals nor y-axis domains.
-- **Axes**: a domain including zero for bars and areas unless `fit` or `custom`, rounded out to the tick step; linear ticks at 1, 2 or 5 times a power of ten (one per 50 px on y, 100 px on x, five without a size); time ticks on round wall-clock times in the Scene's time zone, with calendar days, Sunday weeks, months, quarters and years across daylight-saving changes; ordinal ticks thinned to one per 30 px. A singleton time domain spans its local calendar day, clipped to the supported Date range (±8.64e15 milliseconds). Tick labels use the column's format.
+- **Axes**: a domain including zero for bars and areas unless `fit` or `custom`, rounded out to the tick step; linear ticks at 1, 2 or 5 times a power of ten (one per 50 px on y, 100 px on x, five without a size); time ticks on round wall-clock times in the Scene's time zone, with calendar days, two-day ticks on odd local dates, Sunday weeks, months, quarters and years across daylight-saving changes; ordinal ticks thinned to one per 30 px. A singleton time domain spans its local calendar day, clipped to the supported Date range (±8.64e15 milliseconds). Tick labels use the column's format.
 - **Multivalue coordinates** use the first non-null element for numeric values, dates, trend coordinates and bar maxima. Empty arrays are missing. Labels, tables and selection values retain the whole cell.
 - **Selections** for each target the node offers, and none it does not.
 
@@ -60,7 +60,7 @@ Ordinal x positions are opaque keys derived from raw cells; tick and category la
 
 Every selectable part of a Scene (a metric tile, an xy mark, a series, a legend item) carries a `source`: the row indexes into `data.rows` and the column ids it represents, built in the same pass as the mark. The table keeps each row's raw `values` alongside its formatted `cells`. A renderer maps a gesture to an event through `source` and those raw values, never through its own indexes or parsed display text, so alignment, helper series and duplicate labels cannot send a click to the wrong row.
 
-Each `XySeries` also carries its `series` reference: the index of its data layer and y entry, uniquely identifying the series even when different layers share the same series key.
+Each `XySeries` names its x-coordinate column in `xColumn`, absent for row-index positions. It also carries its `series` reference: the index of its data layer and y entry, uniquely identifying the series even when different layers share the same series key.
 
 Helper marks carry no `source` and are never selected: progress bars, trend lines, reference lines, annotations and the current-time marker.
 
@@ -97,7 +97,7 @@ type SceneSelection = {
 A renderer raises events with two helpers, so every renderer raises the same event for the same gesture:
 
 - `selectEvent(nodeId, selection, negate?)` returns the `chart.select` event for a selection.
-- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its endpoint descriptions use the nearest plotted values and authored display strings of the brush column, including on an ordinal fallback.
+- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its endpoint descriptions use the nearest plotted values and authored display strings from series whose `xColumn` is the brush column, including on an ordinal fallback.
 
 ## `SceneRenderer`
 

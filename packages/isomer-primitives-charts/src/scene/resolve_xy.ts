@@ -561,6 +561,7 @@ export const resolveXy = (
       key: draft.key,
       label: draft.label,
       mark: draft.layer.mark,
+      ...(draft.layer.x === undefined ? {} : { xColumn: draft.layer.x }),
       axis: draft.axis,
       color,
       ...(draft.layer.stack
