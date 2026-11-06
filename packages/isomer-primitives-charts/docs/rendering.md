@@ -62,6 +62,18 @@ A host that loads the charts pack without a style adapter names the runtime's ty
 
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
 
+## Images and PDF
+
+`chartsFrame` is a content-sized page for the `snapshot` surface: the body in a column on the scheme's background, `CHARTS_THEME.frame.width` (960 px) wide. Its theme carries `scheme`, so every chart, nested in a grid or not, resolves for the scheme the render asks for.
+
+```ts
+const imagePack = createChartsPack({ sceneRenderers: [createElasticChartsHeadlessRenderer()] });
+const runtime = createIsomerRuntime({ packs: [imagePack], frames: { charts: chartsFrame } });
+const png = await takumi.png(await takumi.fit(runtime.surfaces.snapshot.render(composition, { theme: 'dark' })));
+```
+
+The [Elastic Charts engine's](../../isomer-charts-elastic/docs/index.md#headless-on-node) `remote_render.test.ts` draws every example of the pack this way with no browser: to PNG in both schemes, and to one PDF with its fonts embedded.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.

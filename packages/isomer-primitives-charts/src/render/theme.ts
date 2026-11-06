@@ -10,6 +10,14 @@
 // inherits the page's text color.
 
 export const CHARTS_THEME = {
+  frame: {
+    /** The page width of `chartsFrame`, in pixels. */
+    width: 960,
+    padding: 16,
+    gap: 16,
+    /** The page title size, in pixels. */
+    title: 20,
+  },
   /**
    * The box a chart resolves for on Node when the host gives none, so an
    * engine drawing a fixed-size picture has one. Browsers lay charts out fluidly.
