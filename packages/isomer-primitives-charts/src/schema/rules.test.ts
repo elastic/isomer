@@ -421,6 +421,48 @@ describe('xyChart', () => {
     expect(issuesOf('xyChart', xy())).toEqual([]);
   });
 
+  it('validates coordinates on an inferred date axis', () => {
+    const errors = issuesOf(
+      'xyChart',
+      xy({
+        data: { columns: [date('t'), number('y')], rows: [[8.64e15 + 1, 1]] },
+      })
+    );
+    expect(errors).toContainEqual({
+      path: 'data.rows.0.0',
+      message: XY_RULES.xCoordinate,
+    });
+  });
+
+  it.each([
+    ['string', 'not numeric', 'linear'],
+    ['boolean', true, 'linear'],
+    ['date', '2026-11-06T00:00:00Z', 'linear'],
+    ['string', 'not a date', 'temporal'],
+    ['number', 8.64e15 + 1, 'temporal'],
+  ])(
+    'diagnoses incompatible %s x cells on a %s scale',
+    (type, value, scale) => {
+      const errors = issuesOf(
+        'xyChart',
+        xy({
+          data: {
+            columns: [
+              { id: 'x', label: 'X', type, role: 'dimension' },
+              number('y'),
+            ],
+            rows: [[value, 1]],
+          },
+          layers: [
+            { kind: 'data', mark: 'line', x: 'x', y: [{ column: 'y' }] },
+          ],
+          axes: { x: { scale } },
+        })
+      );
+      expect(errors.map(({ path }) => path)).toContain('data.rows.0.0');
+    }
+  );
+
   it('rejects a y column that is not a number', () => {
     expectRule(
       'xyChart',

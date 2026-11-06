@@ -7,6 +7,8 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
+import { coordinateOf, coordinateScale } from '../coordinates';
+
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
@@ -69,6 +71,8 @@ const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interaction
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
+  xCoordinate:
+    "On a continuous x scale, including an automatically inferred scale, each layer's non-missing x cells supply a finite number for `linear` or a valid date coordinate for `temporal`; multivalue cells use their first non-null value.",
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
@@ -403,6 +407,60 @@ const checkDataLayer = (
   }
 };
 
+const checkXCoordinates = (node: XyChartInput, context: Issues) => {
+  const scale =
+    node.axes?.x?.scale ??
+    coordinateScale(
+      node.layers.flatMap((layer) => {
+        if (layer.kind !== 'data' || layer.x === undefined) {
+          return [];
+        }
+        const column = node.data.columns.find(({ id }) => id === layer.x);
+        return column ? [column.type] : [];
+      })
+    );
+  if (scale !== 'linear' && scale !== 'temporal') {
+    return;
+  }
+  const checked = new Set<string>();
+  for (const layer of node.layers) {
+    if (layer.kind !== 'data' || layer.x === undefined) {
+      continue;
+    }
+    const column = node.data.columns.findIndex(({ id }) => id === layer.x);
+    if (column < 0) {
+      continue;
+    }
+    const [start, end] = layer.rows ?? [0, node.data.rows.length];
+    for (
+      let row = Math.max(0, start);
+      row < Math.min(end, node.data.rows.length);
+      row += 1
+    ) {
+      const key = `${row}:${column}`;
+      if (checked.has(key)) {
+        continue;
+      }
+      checked.add(key);
+      const cell = node.data.rows[row]?.[column];
+      const value = Array.isArray(cell)
+        ? cell.find((entry) => entry !== null)
+        : cell;
+      if (
+        value !== null &&
+        value !== undefined &&
+        coordinateOf(value, scale) === undefined
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['data', 'rows', row, column],
+          message: XY_RULES.xCoordinate,
+        });
+      }
+    }
+  }
+};
+
 /** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
 export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
@@ -433,11 +491,13 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
+      checkXCoordinates(node, context);
       checkInteractions(node, context, { brushColumns });
     },
     [
       COLUMN_REF_RULE,
       XY_RULES.yType,
+      XY_RULES.xCoordinate,
       XY_RULES.rows,
       XY_RULES.stack,
       XY_RULES.dataLayer,

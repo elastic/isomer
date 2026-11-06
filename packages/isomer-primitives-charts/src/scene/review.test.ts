@@ -6,9 +6,9 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-import { transformSync } from 'esbuild';
+import { buildSync } from 'esbuild';
 import { describe, expect, it } from 'vitest';
 
 import { formatValue } from '../format/format';
@@ -16,6 +16,7 @@ import { dateFormat, numberFormat } from '../format/intl';
 import type { MetricNode } from '../schema/metric';
 import { type XyChartNode, xyChartSchema } from '../schema/xy_chart';
 
+import { brushEvent } from './events';
 import { resolveChart } from './resolve';
 import { niceDomain, niceTimeDomain, timeTicks } from './ticks';
 import type { XyScene } from './types';
@@ -595,36 +596,49 @@ describe('review regressions', () => {
       ).not.toBe(tile.background);
     }
   );
-  it('falls back to English in a process with German host defaults', () => {
-    const source = readFileSync(
-      new URL('../format/intl.ts', import.meta.url),
-      'utf8'
-    );
-    const { code } = transformSync(source, { loader: 'ts', format: 'cjs' });
+  it('falls back to English in a process with German host defaults', ({
+    skip,
+  }) => {
+    const file = fileURLToPath(new URL('../format/intl.ts', import.meta.url));
+    const { outputFiles } = buildSync({
+      entryPoints: [file],
+      bundle: true,
+      write: false,
+      platform: 'node',
+      format: 'cjs',
+    });
+    const code = outputFiles[0]!.text;
     const script = `
       const target = { exports: {} };
-      new Function('module', 'exports', ${JSON.stringify(code)})(target, target.exports);
+      new Function('module', 'exports', 'require', ${JSON.stringify(code)})(target, target.exports, require);
       const { numberFormat, dateFormat } = target.exports;
       console.log(JSON.stringify({
         host: new Intl.NumberFormat().resolvedOptions().locale,
+        german: Intl.NumberFormat.supportedLocalesOf('de').length > 0 && Intl.DateTimeFormat.supportedLocalesOf('de').length > 0,
         number: numberFormat('zz-ZZ', {}).format(1234.5),
         date: dateFormat('zz-ZZ', { month: 'long', timeZone: 'UTC' }).format(0),
       }));
     `;
     const { status, stdout, stderr } = spawnSync(
       process.execPath,
-      ['-e', script],
+      ['--input-type=commonjs', '-e', script],
       {
         encoding: 'utf8',
         env: { ...process.env, LC_ALL: 'de_DE.UTF-8', LANG: 'de_DE.UTF-8' },
       }
     );
     expect({ status, stderr }).toEqual({ status: 0, stderr: '' });
-    expect(JSON.parse(stdout)).toEqual({
-      host: 'de-DE',
-      number: '1,234.5',
-      date: 'January',
-    });
+    const { host, german, number, date } = JSON.parse(stdout) as {
+      host: string;
+      german: boolean;
+      number: string;
+      date: string;
+    };
+    if (!host.startsWith('de') || !german) {
+      skip();
+      return;
+    }
+    expect({ number, date }).toEqual({ number: '1,234.5', date: 'January' });
   });
 
   it.each([
@@ -755,4 +769,115 @@ describe('review regressions', () => {
       Date.parse('2026-11-06T00:00:00Z'),
     ]);
   });
+  it.each(['number', 'date'] as const)(
+    'keeps brush endpoint labels after a mixed %s/string fallback',
+    (type) => {
+      const node = xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'Range', type, role: 'dimension' },
+            { id: 's', label: 'Group', type: 'string', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [0, null, 1],
+            [1000, null, 2],
+            [null, 'bucket', 3],
+          ],
+          display: { x: ['start', 'end', 'missing'] },
+        },
+        layers: [
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 'x',
+            rows: [0, 2],
+            y: [{ column: 'y' }],
+          },
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 's',
+            rows: [2, 3],
+            y: [{ column: 'y' }],
+          },
+        ],
+        interactions: { brush: { column: 'x' } },
+      });
+      expect(xyChartSchema.safeParse(node).success).toBe(true);
+      expect(brushEvent(resolve(node), 'chart', [1000, 0])).toMatchObject({
+        description: 'Range: start to end',
+        range: [0, 1000],
+      });
+    }
+  );
+
+  it.each([-8.64e15, 8.64e15])(
+    'resolves a singleton at the valid Date boundary %s',
+    (epoch) => {
+      for (const timeZone of ['UTC', 'Pacific/Kiritimati', 'Etc/GMT+12']) {
+        const node = xy({
+          data: {
+            columns: [
+              { id: 'x', label: 'Time', type: 'date', role: 'dimension' },
+              { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+            ],
+            rows: [[epoch, 1]],
+          },
+        });
+        expect(xyChartSchema.safeParse(node).success).toBe(true);
+        const scene = resolveChart(node, { scheme: 'light', timeZone });
+        const [low, high] = scene.axes.x.domain as [number, number];
+        expect(low).toBeLessThan(high);
+        expect(low).toBeGreaterThanOrEqual(-8.64e15);
+        expect(high).toBeLessThanOrEqual(8.64e15);
+        expect(low).toBeLessThanOrEqual(epoch);
+        expect(high).toBeGreaterThanOrEqual(epoch);
+        expect(scene.axes.x.ticks.length).toBeGreaterThan(0);
+      }
+    }
+  );
+
+  it.each([-1, 1])(
+    'keeps nearby Date-boundary ranges representable on side %s',
+    (sign) => {
+      const edge = sign * 8.64e15;
+      const other = edge - sign * 3 * 86400000;
+      for (const zone of ['UTC', 'Pacific/Kiritimati', 'Etc/GMT+12']) {
+        for (const count of [2, 5, 10]) {
+          const [low, high] = niceTimeDomain(
+            Math.min(edge, other),
+            Math.max(edge, other),
+            count,
+            zone
+          );
+          expect(low).toBeGreaterThanOrEqual(-8.64e15);
+          expect(high).toBeLessThanOrEqual(8.64e15);
+          expect(
+            timeTicks(low, high, count, zone).every(
+              (tick) => Number.isFinite(tick) && Math.abs(tick) <= 8.64e15
+            )
+          ).toBe(true);
+        }
+      }
+    }
+  );
+  it.each([30, 365])(
+    'realigns calendar ticks after a clipped lower boundary over %s days',
+    (days) => {
+      const ticks = timeTicks(
+        -8.64e15,
+        -8.64e15 + days * 86400000,
+        5,
+        'UTC'
+      ).filter((value) => value !== -8.64e15);
+      expect(ticks.length).toBeGreaterThan(0);
+      for (const tick of ticks) {
+        const date = new Date(tick);
+        expect(days === 30 ? date.getUTCDay() : date.getUTCDate()).toBe(
+          days === 30 ? 0 : 1
+        );
+      }
+    }
+  );
 });
