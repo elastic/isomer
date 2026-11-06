@@ -104,7 +104,7 @@ On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collect
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A panel's title is its header and its description is the header's tooltip; the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
-When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box and fits the panel's height. Without a `size` from the host, the grid lays out for `CHARTS_THEME.grid.nominalWidth` (1,200 px).
+When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box and fits the panel's height. Without a `size` from the host, the grid lays out for `CHARTS_THEME.grid.nominalWidth`: the content width of `chartsFrame`, 928 px, so a grid on `snapshot` fits its page.
 
 On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone.
 

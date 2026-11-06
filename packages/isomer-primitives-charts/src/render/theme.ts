@@ -9,15 +9,17 @@
 // Colors are not here: chart colors come from the Scene, and container chrome
 // inherits the page's text color.
 
+const frame = {
+  /** The page width of `chartsFrame`, in pixels. */
+  width: 960,
+  padding: 16,
+  gap: 16,
+  /** The page title size, in pixels. */
+  title: 20,
+} as const;
+
 export const CHARTS_THEME = {
-  frame: {
-    /** The page width of `chartsFrame`, in pixels. */
-    width: 960,
-    padding: 16,
-    gap: 16,
-    /** The page title size, in pixels. */
-    title: 20,
-  },
+  frame,
   /**
    * How a chart sizes itself outside a sized container, as Lens's chart size
    * specs do. A grid panel or a host `size` overrides it.
@@ -45,8 +47,11 @@ export const CHARTS_THEME = {
     gap: 8,
     /** Space between a section title and its panels, in pixels. */
     sectionGap: 16,
-    /** The width a grid lays out for when the host gives none, in pixels. */
-    nominalWidth: 1200,
+    /**
+     * The width a grid lays out for when the host gives none, in pixels:
+     * `chartsFrame`'s content, so a grid on `snapshot` fits its page.
+     */
+    nominalWidth: frame.width - 2 * frame.padding,
     /** Height of a panel header with a title, in pixels. */
     headerHeight: 24,
   },
