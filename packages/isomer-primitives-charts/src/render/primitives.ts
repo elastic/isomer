@@ -23,6 +23,7 @@ import { tableSceneToSlack } from '../text/slack_table';
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import { chartSize, chartSizeSpec } from './size';
 import { tableHeight } from './table';
 
 // Surfaces without a render context resolve for the light scheme: their output
@@ -37,6 +38,14 @@ const chartRenderers = <TNode extends ChartNode>(config: SceneShimConfig) => ({
   markdown: (node: TNode) => sceneToMarkdown(resolveForText(node, config)),
 });
 
+/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws. */
+const snapshotHeight =
+  (config: SceneShimConfig) =>
+  (node: ChartNode): number => {
+    const spec = chartSizeSpec(resolveForText(node, config));
+    return spec ? chartSize(spec).height : 0;
+  };
+
 /** The chart primitives, each drawing through `config`. */
 export const defineChartPrimitives = (config: SceneShimConfig) =>
   [
@@ -45,6 +54,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
     definePrimitive({
@@ -70,6 +80,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
   ] as const;
