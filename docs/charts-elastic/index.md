@@ -23,9 +23,15 @@ The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.c
 
 `@elastic/charts`, React and React DOM are peer dependencies, so a host shares its own copy: Kibana's pin is the version this engine is tested against (`ELASTIC_CHARTS_VERSION`).
 
+## One spec builder
+
+`sceneSpecs(scene, env, options?)` turns a `metric` or `xy` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, or the metric grid. The renderer wraps them in `<Chart>`; headless drawing hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
+
 ## What it takes from the Scene
 
-A renderer translates; it never formats, picks a color, sorts or chooses ticks. Everything Elastic Charts would otherwise decide is fed from the Scene or switched off:
+A renderer translates; it never formats, picks a color, sorts or chooses ticks. Everything Elastic Charts would otherwise decide is fed from the Scene or switched off.
+
+Ticks are the one split, and it is settled: Elastic Charts places them, and every label is the Scene's. Letting Elastic Charts format its own labels would put formatting in a renderer, which the Scene contract forbids, so time axes stay on one row and a position the Scene has no tick for prints nothing.
 
 | Elastic Charts input | From the Scene |
 | --- | --- |

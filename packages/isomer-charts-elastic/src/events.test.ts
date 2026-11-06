@@ -15,7 +15,7 @@ import {
 import { chartEventExamples } from '@elastic/isomer-primitives-charts/schema';
 import { describe, expect, it } from 'vitest';
 
-import { legendSelect, metricHandlers, xyHandlers } from './events';
+import { legendSelect, metricHandlers, seriesOf, xyHandlers } from './events';
 import { seriesData } from './xy';
 
 const HOUR = 3_600_000;
@@ -44,10 +44,10 @@ const listen = () => {
 
 /** An element as Elastic Charts' `onElementClick` reports it: geometry value and series identifier. */
 const element = (seriesKey: string, mark: number) => {
-  const index = xyInteractiveScene.series.findIndex(
+  const index = seriesOf(xyInteractiveScene).findIndex(
     ({ key }) => key === seriesKey
   );
-  const datum = seriesData(xyInteractiveScene.series[index]!, index)[mark]!;
+  const datum = seriesData(seriesOf(xyInteractiveScene)[index]!, index)[mark]!;
   return [
     { x: datum.x, y: datum.y, mark: null, accessor: 'y1', datum },
     {
@@ -69,7 +69,9 @@ describe('xy events from Elastic Charts callbacks', () => {
 
   it('raises the missing bucket with its null value', () => {
     const { events, env } = listen();
-    xyHandlers(xyInteractiveScene, env).onElementClick?.([element('null', 0)]);
+    xyHandlers(xyInteractiveScene, env).onElementClick?.([
+      element('\\null', 0),
+    ]);
     expect(events).toEqual([expected('Select the missing bucket')]);
   });
 

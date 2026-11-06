@@ -30,5 +30,5 @@ Rules:
 - Only `bar` and `area` layers stack.
 - At least one layer is a `data` layer.
 - An annotation range's `from` is not after its `to`.
-- A `brush` column is a `date` or `number` column.
+- A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.

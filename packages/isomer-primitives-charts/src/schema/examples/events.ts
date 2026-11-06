@@ -31,6 +31,8 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'datum',
       rows: [1],
       columns: ['time', 'status'],
+      series: { layer: 0, y: 0 },
+      seriesKey: '404',
       values: { time: START, status: '404' },
       description:
         '@timestamp per hour: 00:00 · Top 2 values of response.code: 404 · Count of records: 41',
@@ -45,6 +47,8 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'datum',
       rows: [3],
       columns: ['time', 'status'],
+      series: { layer: 0, y: 0 },
+      seriesKey: '\\null',
       values: { time: START, status: null },
       description:
         '@timestamp per hour: 00:00 · Top 2 values of response.code: (null) · Count of records: 3',
@@ -60,6 +64,8 @@ export const chartEventExamples: ChartEventExample[] = [
       target: 'legend',
       rows: [2, 6, 10],
       columns: ['status'],
+      series: { layer: 0, y: 0 },
+      seriesKey: 'Other',
       values: { status: 'Other' },
       negate: true,
       description: 'Top 2 values of response.code: Other',

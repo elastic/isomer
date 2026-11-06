@@ -30,7 +30,7 @@ interactions?: {
 
 Rules:
 
-- A `brush` column is a `date` or `number` column.
+- A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.
 
 ## `ChartEvent`
@@ -43,12 +43,29 @@ type ChartEvent = {
   description: string;              // in words from the Scene
   values: Record<string, Cell>;     // the raw value of each referenced column
 } & (
-  | { kind: 'select'; target: SelectTarget; rows: number[]; columns: string[]; negate?: boolean }
+  | {
+      kind: 'select';
+      target: 'datum' | 'series' | 'legend';
+      seriesKey: string;
+      series: { layer: number; y: number };
+      rows: number[];
+      columns: string[];
+      negate?: boolean;
+    }
+  | {
+      kind: 'select';
+      target: 'category' | 'cell' | 'tile';
+      rows: number[];
+      columns: string[];
+      negate?: boolean;
+    }
   | { kind: 'brush'; column: string; range: [number, number] }
 );
 ```
 
 An event refers to data, never to pixels: `rows` are indexes into the node's `data.rows`, and `columns` are the dimension columns that identify the target, whose value every row in `rows` shares. A click in the SVG renderer, Elastic Charts or ECharts, and a tap on a phone, raise the same event. A renderer raises no event for a node without an `id`.
+
+`datum`, `series` and `legend` selections carry `seriesKey`, using the [xyChart series-key rule](xy-chart.md), and `series`, the `{ layer, y }` indexes identifying the chosen y entry. The indexes distinguish different y series across layers even when their keys and source rows match; an empty key is valid.
 
 | Target | `rows` | `columns` |
 | --- | --- | --- |
@@ -57,7 +74,7 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 | `category` | Every row at that x | The x column |
 | `tile` | The tile's row | Its breakdown column, if any |
 
-`negate` marks a "filter out" gesture. A brush `range` is in the column's units: epoch milliseconds for a date.
+`negate` marks a "filter out" gesture. A brush `range` is in the x column's units: epoch milliseconds for a date.
 
 A Kibana host rebuilds Kibana's click and range contexts from the node's `data` and the opaque column `source`, and fires its triggers; a host without Kibana's UI actions asks the Kibana server to turn the event into filters. Either way it keeps filters as its state and materializes the node again.
 

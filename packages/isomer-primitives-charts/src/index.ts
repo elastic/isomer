@@ -42,6 +42,7 @@ export {
   type XyCategory,
   type XyMark,
   type XyScene,
+  type XySceneLayer,
   type XySeries,
   SCENE_KINDS,
 } from './scene/types';

@@ -1,6 +1,7 @@
 {
   "name": "@elastic/isomer-primitives-charts",
   "version": "0.0.0-development",
+  "private": true,
   "description": "Chart primitive pack for Isomer: chart families on one shared core, a dashboard grid, and an unsupported placeholder.",
   "license": "Elastic-2.0",
   "author": "Elastic",

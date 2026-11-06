@@ -11,7 +11,6 @@
 
 import type { ReactNode } from 'react';
 import {
-  Chart,
   Metric,
   type MetricDatum,
   type PartialTheme,
@@ -115,16 +114,13 @@ export const metricTheme = (scene: MetricScene): PartialTheme => {
   };
 };
 
-export const MetricChart = ({
-  scene,
-  env,
-  options,
-}: {
-  scene: MetricScene;
-  env: SceneRenderEnv;
-  options: ElasticChartsOptions;
-}): ReactNode => (
-  <Chart size={scene.size ?? { width: '100%', height: '100%' }}>
+/** A metric Scene's spec elements, for `<Chart>` or headless drawing. */
+export const metricSpecs = (
+  scene: MetricScene,
+  env: SceneRenderEnv,
+  options: ElasticChartsOptions
+): ReactNode => (
+  <>
     <Settings
       baseTheme={kibanaBaseTheme(scene.scheme)}
       theme={metricTheme(scene)}
@@ -135,5 +131,5 @@ export const MetricChart = ({
       {...metricHandlers(scene, env)}
     />
     <Metric id="metric" data={metricGrid(scene)} />
-  </Chart>
+  </>
 );

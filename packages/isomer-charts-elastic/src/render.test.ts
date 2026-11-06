@@ -31,6 +31,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { seriesOf } from './events';
 import { createElasticChartsRenderer } from './renderer';
 
 // jsdom has no layout and no canvas: Elastic Charts learns its size from
@@ -194,7 +195,7 @@ describe('elastic-charts renderer: xy', () => {
         heights: bars.map(({ x, y }): unknown[] => [x, y]),
       }))
     ).toEqual(
-      xyInteractiveScene.series.map(({ label, color, marks }) => ({
+      seriesOf(xyInteractiveScene).map(({ label, color, marks }) => ({
         name: label,
         color,
         heights: marks.map(({ x, y, y0 }) => [x, (y ?? 0) - (y0 ?? 0)]),
@@ -204,7 +205,7 @@ describe('elastic-charts renderer: xy', () => {
 
   it('draws line points where the Scene places its marks', async () => {
     const state = await debugState(xyTimeSeriesScene);
-    const [series] = xyTimeSeriesScene.series;
+    const [series] = seriesOf(xyTimeSeriesScene);
     expect(state.lines?.map(({ name, color }) => ({ name, color }))).toEqual([
       { name: series!.label, color: series!.color },
     ]);

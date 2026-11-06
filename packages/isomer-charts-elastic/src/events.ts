@@ -19,13 +19,14 @@ import {
   type XyCategory,
   type XyMark,
   type XyScene,
+  type XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
 
 /** What each datum this engine passes Elastic Charts carries, so a hit names its mark. */
 export interface XyDatum {
   readonly x: number | string;
   readonly y: number | null;
-  /** The series' index in `scene.series`. */
+  /** The series' index in {@link seriesOf}. */
   readonly series: number;
   /** The mark's index in its series' `marks`. */
   readonly mark: number;
@@ -37,9 +38,17 @@ const isXyDatum = (value: unknown): value is XyDatum =>
   typeof (value as XyDatum).series === 'number' &&
   typeof (value as XyDatum).mark === 'number';
 
+/** The Scene's series, in draw order, without its reference lines and annotations. */
+export const seriesOf = (scene: XyScene): readonly XySeries[] =>
+  scene.layers.flatMap((layer) =>
+    layer.kind === 'series' ? [layer.series] : []
+  );
+
 /** The Scene mark an Elastic Charts geometry value was drawn from. */
 export const markOf = (scene: XyScene, datum: unknown): XyMark | undefined =>
-  isXyDatum(datum) ? scene.series[datum.series]?.marks[datum.mark] : undefined;
+  isXyDatum(datum)
+    ? seriesOf(scene)[datum.series]?.marks[datum.mark]
+    : undefined;
 
 /** The category at `x`: the position itself on an ordinal axis, else the last at or before it. */
 export const categoryAt = (

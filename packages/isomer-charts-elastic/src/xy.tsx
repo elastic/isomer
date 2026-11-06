@@ -17,7 +17,6 @@ import {
   AreaSeries,
   Axis,
   BarSeries,
-  Chart,
   ColorVariant,
   CurveType,
   type CustomTooltip,
@@ -39,6 +38,7 @@ import {
   TooltipTableRow,
 } from '@elastic/charts';
 import type {
+  SceneAnnotation,
   SceneAxis,
   SceneLegend,
   SceneReferenceLine,
@@ -47,7 +47,13 @@ import type {
   XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { legendSelect, markOf, type XyDatum, xyHandlers } from './events';
+import {
+  legendSelect,
+  markOf,
+  seriesOf,
+  type XyDatum,
+  xyHandlers,
+} from './events';
 import type { ElasticChartsOptions } from './options';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
@@ -266,7 +272,7 @@ const seriesElement = (
       : {}),
   };
   if (series.mark === 'bar') {
-    const bars = scene.series.filter(({ mark }) => mark === 'bar').length;
+    const bars = seriesOf(scene).filter(({ mark }) => mark === 'bar').length;
     return (
       <BarSeries
         key={series.key}
@@ -395,51 +401,53 @@ const referenceLineElements = (
   return elements;
 };
 
-const annotationElements = (scene: XyScene): ReactNode[] =>
-  scene.annotations.map((annotation, index) => {
-    const id = `annotation-${index}`;
-    if (annotation.kind === 'range') {
-      return (
-        <RectAnnotation
-          key={id}
-          id={id}
-          dataValues={[
-            {
-              coordinates: { x0: annotation.from, x1: annotation.to },
-              ...(annotation.label === undefined
-                ? {}
-                : { details: annotation.label }),
-            },
-          ]}
-          style={{ fill: annotation.color, opacity: 1 }}
-        />
-      );
-    }
-    const width = annotation.line?.width ?? 1;
-    const dash = dashOf(annotation.line?.dash ?? 'solid', width);
-    const details = annotation.text ?? annotation.label;
+const annotationElement = (
+  annotation: SceneAnnotation,
+  index: number
+): ReactNode => {
+  const id = `annotation-${index}`;
+  if (annotation.kind === 'range') {
     return (
-      <LineAnnotation
+      <RectAnnotation
         key={id}
         id={id}
-        domainType={AnnotationDomainType.XDomain}
         dataValues={[
           {
-            dataValue: annotation.at,
-            ...(details === undefined ? {} : { details }),
+            coordinates: { x0: annotation.from, x1: annotation.to },
+            ...(annotation.label === undefined
+              ? {}
+              : { details: annotation.label }),
           },
         ]}
-        style={{
-          line: {
-            stroke: annotation.color,
-            strokeWidth: width,
-            opacity: 1,
-            ...(dash ? { dash } : {}),
-          },
-        }}
+        style={{ fill: annotation.color, opacity: 1 }}
       />
     );
-  });
+  }
+  const width = annotation.line?.width ?? 1;
+  const dash = dashOf(annotation.line?.dash ?? 'solid', width);
+  const details = annotation.text ?? annotation.label;
+  return (
+    <LineAnnotation
+      key={id}
+      id={id}
+      domainType={AnnotationDomainType.XDomain}
+      dataValues={[
+        {
+          dataValue: annotation.at,
+          ...(details === undefined ? {} : { details }),
+        },
+      ]}
+      style={{
+        line: {
+          stroke: annotation.color,
+          strokeWidth: width,
+          opacity: 1,
+          ...(dash ? { dash } : {}),
+        },
+      }}
+    />
+  );
+};
 
 const legendProps = (legend: SceneLegend) => {
   const inside = legend.inside ? INSIDE[legend.inside] : undefined;
@@ -503,7 +511,7 @@ const legendAction =
     label: string;
   }) => {
     const index = Number(series[0]?.specId.replace('series-', ''));
-    const key = scene.series[index]?.key;
+    const key = seriesOf(scene)[index]?.key;
     if (key === undefined) {
       return null;
     }
@@ -525,28 +533,43 @@ const legendAction =
     );
   };
 
+/**
+ * The Scene's layers in draw order. Each kind keeps its own index, so a
+ * series' spec id is its position in {@link seriesOf}.
+ */
+const layerElements = (scene: XyScene): ReactNode[] => {
+  const next = { series: 0, referenceLine: 0, annotation: 0 };
+  return scene.layers.flatMap((layer) => {
+    switch (layer.kind) {
+      case 'series':
+        return [seriesElement(layer.series, next.series++, scene)];
+      case 'referenceLine':
+        return referenceLineElements(layer.line, next.referenceLine++, scene);
+      case 'annotation':
+        return [annotationElement(layer.annotation, next.annotation++)];
+    }
+  });
+};
+
 /** The base theme's overrides: the Scene's chrome and legend truncation. */
 export const xyTheme = (scene: XyScene): PartialTheme => ({
   ...chromeTheme(scene.chrome),
   legend: { labelOptions: { maxLines: scene.legend.maxLines } },
 });
 
-export const XyChart = ({
-  scene,
-  env,
-  options,
-}: {
-  scene: XyScene;
-  env: SceneRenderEnv;
-  options: ElasticChartsOptions;
-}): ReactNode => {
+/** An xy Scene's spec elements, for `<Chart>` or headless drawing. */
+export const xySpecs = (
+  scene: XyScene,
+  env: SceneRenderEnv,
+  options: ElasticChartsOptions
+): ReactNode => {
   const offersLegend =
     env.onEvent !== undefined &&
     env.nodeId !== undefined &&
     scene.interactions.select.includes('legend');
   const continuous = SCALE[scene.axes.x.scale] !== ScaleType.Ordinal;
   return (
-    <Chart size={scene.size ?? { width: '100%', height: '100%' }}>
+    <>
       <Tooltip customTooltip={sceneTooltip(scene)} />
       <Settings
         baseTheme={kibanaBaseTheme(scene.scheme)}
@@ -570,11 +593,7 @@ export const XyChart = ({
       {axisElement(scene.axes.x, scene)}
       {scene.axes.y ? axisElement(scene.axes.y, scene) : null}
       {scene.axes.y2 ? axisElement(scene.axes.y2, scene) : null}
-      {scene.series.map((series, index) => seriesElement(series, index, scene))}
-      {scene.referenceLines.flatMap((line, index) =>
-        referenceLineElements(line, index, scene)
-      )}
-      {annotationElements(scene)}
-    </Chart>
+      {layerElements(scene)}
+    </>
   );
 };
