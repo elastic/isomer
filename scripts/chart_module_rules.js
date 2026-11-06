@@ -11,6 +11,8 @@
 
 import { dirname, relative, resolve, sep } from 'node:path';
 
+import ts from 'typescript';
+
 export const CHARTS = '@elastic/isomer-primitives-charts';
 
 /** The charts entries that must load on Hermes, and what they may never reach. */
@@ -79,14 +81,79 @@ export const rendererViolation = (specifier, file, chartsSrc) => {
   return `"${specifier}" (src/${fromSrc}): a renderer reads only the Scene types`;
 };
 
+const RENDERER_VALUES = new Set(['brushEvent', 'selectEvent', 'SCENE_KINDS']);
+const RESOLVER_TYPES = new Set(['ChartNode', 'ResolveChartOptions']);
+
+const sceneBindings = (source, file) => {
+  const tree = ts.createSourceFile(
+    file,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX
+  );
+  const violations = [];
+  const record = () =>
+    violations.push({
+      file,
+      specifier: RENDERER_SCENE_ENTRY,
+      reason: `"${RENDERER_SCENE_ENTRY}": import only Scene types and event helpers`,
+    });
+  const visit = (node) => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier?.text === RENDERER_SCENE_ENTRY
+    ) {
+      const clause = ts.isImportDeclaration(node) ? node.importClause : node;
+      const bindings = ts.isImportDeclaration(node)
+        ? clause?.namedBindings
+        : node.exportClause;
+      if (!bindings || !('elements' in bindings) || clause?.name) {
+        record();
+      } else if (
+        bindings.elements.some((binding) => {
+          const name = (binding.propertyName ?? binding.name).text;
+          return clause.isTypeOnly || binding.isTypeOnly
+            ? RESOLVER_TYPES.has(name)
+            : !RENDERER_VALUES.has(name);
+        })
+      ) {
+        record();
+      }
+    } else if (
+      ts.isCallExpression(node) &&
+      node.arguments[0]?.text === RENDERER_SCENE_ENTRY &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        node.expression.getText(tree) === 'require')
+    ) {
+      record();
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference) &&
+      node.moduleReference.expression?.text === RENDERER_SCENE_ENTRY
+    ) {
+      record();
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return violations;
+};
+
 /** Every violation in `files`, each `{ file, specifier, reason }`. */
-export const rendererViolations = (files, specifiersOf, chartsSrc) =>
-  files.flatMap((file) =>
-    specifiersOf(file).flatMap((specifier) => {
+export const rendererViolations = (
+  files,
+  specifiersOf,
+  chartsSrc,
+  sourceOf = () => ''
+) =>
+  files.flatMap((file) => [
+    ...specifiersOf(file).flatMap((specifier) => {
       const reason = rendererViolation(specifier, file, chartsSrc);
       return reason ? [{ file, specifier, reason }] : [];
-    })
-  );
+    }),
+    ...sceneBindings(sourceOf(file), file),
+  ]);
 
 /** The renderer source files in a charts pack directory or engine package, tests excluded. */
 export const isRendererSource = (file) =>

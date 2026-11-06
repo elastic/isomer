@@ -42,11 +42,12 @@ Pack authors, mostly. If you are writing primitives, a theme, or a frame, this i
 
 ## Entry points
 
-Eight subpaths, split by what a consumer is willing to load:
+Nine entry points, split by what a consumer is willing to load:
 
 | Entry | Pulls in | Typical consumer |
 | --- | --- | --- |
 | `.` | zod, React, and the GFM parser and serializer | everyone — contracts, schema, validation, dispatch |
+| `./schema` | zod | pack schemas without React or a DOM |
 | `./html` | React, `react-dom/server`, and a JavaScript parser | the HTML surface, a pack's HTML entry |
 | `./text` | nothing | text envelopes |
 | `./markdown` | zod and the GFM parser and serializer | markdown envelopes and formatting |

@@ -48,12 +48,25 @@ describe('checkEntry', () => {
     ['message_channel', 'global: MessageChannel'],
     ['message_channel_typeof', 'global: MessageChannel'],
     ['structured_clone', 'global: structuredClone'],
+    ['document', 'global: document'],
+    ['structured_clone_destructure', 'global: structuredClone'],
+    ['structured_clone_alias', 'global: structuredClone'],
+    ['structured_clone_computed', 'global: structuredClone'],
+    ['structured_clone_assignment', 'global: structuredClone'],
     ['structured_clone_global_this', 'global: structuredClone'],
     ['top_level_await', 'syntax: top-level await'],
     ['import_meta', 'syntax: import.meta'],
   ])('fails on %s', async (name, expected) => {
     const result = await checkEntry(esbuild, violation(name));
     expect(summarize(result)).toEqual([expected]);
+  });
+
+  it('allows shadowed global owners and local destructuring', async () => {
+    const result = await checkEntry(
+      esbuild,
+      fixture('clean', 'destructure.ts')
+    );
+    expect(result.violations).toEqual([]);
   });
 
   it('names the module that reaches a banned import', async () => {
@@ -152,6 +165,12 @@ describe('CLI', () => {
     expect(status).toBe(1);
     expect(stderr).toContain('react_dom.ts');
     expect(stderr).toContain('top_level_await.ts');
+  });
+
+  it('rejects DOM globals with the default CLI configuration', () => {
+    const { status, stderr } = run(violation('document'));
+    expect(status).toBe(1);
+    expect(stderr).toContain('global: document');
   });
 
   it('exits 2 on usage errors', () => {

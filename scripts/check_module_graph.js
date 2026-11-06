@@ -174,7 +174,8 @@ const rendererFiles = rendererDirs.flatMap((dir) =>
 for (const { file, reason } of rendererViolations(
   rendererFiles,
   specifiersIn,
-  chartsSrc
+  chartsSrc,
+  (file) => readFileSync(file, 'utf8')
 )) {
   violations.push(`${relative(repoRoot, file)} imports ${reason}`);
 }
