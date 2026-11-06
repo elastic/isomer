@@ -12,7 +12,12 @@ import { createElement, type ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { selectSceneRenderer } from '../scene/select';
-import type { ColorScheme, Scene, SceneEnvironment } from '../scene/types';
+import type {
+  ColorScheme,
+  Scene,
+  SceneEnvironment,
+  SceneSize,
+} from '../scene/types';
 
 import type {
   ChartNode,
@@ -26,6 +31,8 @@ export interface SceneShimConfig {
   readonly resolveScene: SceneResolver;
   /** Tried after the host's `sceneRenderers`. The last should support every kind. */
   readonly sceneRenderers: readonly ReactSceneRenderer[];
+  /** The box a node resolves for on Node when the host gives none. */
+  readonly nodeSize?: (node: ChartNode) => SceneSize | undefined;
 }
 
 /** Where a render is drawing, when the host does not say. */
@@ -51,14 +58,20 @@ const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
 export const resolveForReact = (
   node: ChartNode,
   { context, theme }: Pick<ChartsReactEnv, 'context' | 'theme'>,
-  config: SceneShimConfig
-): Scene =>
-  config.resolveScene(node, {
+  config: SceneShimConfig,
+  environment: SceneEnvironment = context?.environment ??
+    detectSceneEnvironment()
+): Scene => {
+  const size =
+    context?.size ??
+    (environment === 'node' ? config.nodeSize?.(node) : undefined);
+  return config.resolveScene(node, {
     scheme: context?.scheme ?? schemeOfTheme(theme) ?? 'light',
-    ...(context?.size && { size: context.size }),
+    ...(size && { size }),
     ...(context?.locale && { locale: context.locale }),
     ...(context?.timeZone && { timeZone: context.timeZone }),
   });
+};
 
 /** The renderer that draws `scene` in this render, if any. */
 export const pickSceneRenderer = (
@@ -83,8 +96,8 @@ export const renderSceneNode = (
   env: Pick<ChartsReactEnv, 'context' | 'theme'>,
   config: SceneShimConfig
 ): ReactNode => {
-  const scene = resolveForReact(node, env, config);
   const environment = env.context?.environment ?? detectSceneEnvironment();
+  const scene = resolveForReact(node, env, config, environment);
   const renderer = pickSceneRenderer(scene, environment, env.context, config);
   const drawn = renderer
     ? renderer.render(scene, {

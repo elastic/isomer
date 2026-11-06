@@ -18,6 +18,7 @@ import type {
   ReactSceneRenderer,
   ResolveSceneOptions,
 } from './render/context';
+import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
 import { selectSceneRenderer } from './scene/select';
 import type { Scene, SceneRenderEnv } from './scene/types';
@@ -167,6 +168,37 @@ describe('the charts pack', () => {
       timeZone: 'Europe/Berlin',
       size: { width: 320, height: 200 },
     });
+  });
+
+  it('gives each chart its theme box on Node when the host gives no size, and none in a browser', () => {
+    const { chart } = CHARTS_THEME;
+    const sizes = () =>
+      resolved.flatMap(({ size }) => (size === undefined ? [] : [size]));
+    resolved.length = 0;
+    draw(pack);
+    expect(sizes()).toEqual([
+      {
+        width: chart.width,
+        height: chart.metricTileHeight * metricSingleValueScene.layout.rows,
+      },
+      { width: chart.width, height: chart.xyHeight },
+    ]);
+    resolved.length = 0;
+    draw(pack, { environment: 'browser' });
+    expect(sizes()).toEqual([]);
+  });
+
+  it('reports the same heights to snapshot frames', () => {
+    const { chart } = CHARTS_THEME;
+    const heightOf = (type: string, node: ChartNode) =>
+      (
+        pack.primitives.find((definition) => definition.type === type)!.metrics
+          ?.snapshotHeight as (node: ChartNode) => number
+      )(node);
+    expect(heightOf('metric', metricSingleValue)).toBe(
+      chart.metricTileHeight * metricSingleValueScene.layout.rows
+    );
+    expect(heightOf('xyChart', xyTimeSeries)).toBe(chart.xyHeight);
   });
 
   it('tells the renderer where it draws and which node it is', () => {

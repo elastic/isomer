@@ -10,6 +10,16 @@
 // inherits the page's text color.
 
 export const CHARTS_THEME = {
+  /**
+   * The box a chart resolves for on Node when the host gives none, so an
+   * engine drawing a fixed-size picture has one. Browsers lay charts out fluidly.
+   */
+  chart: {
+    width: 480,
+    xyHeight: 240,
+    /** Height of one row of metric tiles, in pixels. */
+    metricTileHeight: 160,
+  },
   grid: {
     /** Height of one grid row unit, in pixels. */
     rowHeight: 20,

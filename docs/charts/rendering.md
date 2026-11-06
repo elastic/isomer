@@ -54,9 +54,11 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 | `environment` | `browser`, `node` or `native`. Absent: detected from the global scope |
 | `scheme` | `light` or `dark`. Absent: the frame theme's `scheme` field on `snapshot`, else `light` |
 | `locale`, `timeZone` | Passed to the resolver. Absent: `resolveChart`'s defaults, `en` and `UTC`, for dates whose format names no time zone |
-| `size` | The box the chart draws in. Absent: the renderer's default size |
+| `size` | The box the chart draws in. Absent: on Node, `CHARTS_THEME.chart`'s box, 480 px wide and 240 px tall for an `xyChart` or 160 px per row of metric tiles, so an engine drawing a fixed-size picture has one; in a browser, none, and the chart fills its container |
 
 A host that loads the charts pack without a style adapter names the runtime's type parameters to pass these fields, as [Runtime](../runtime/runtime.md#typing-the-render-context) shows.
+
+`metric` and `xyChart` report that same box's height to `snapshot` frames as `metrics.snapshotHeight`.
 
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
 
