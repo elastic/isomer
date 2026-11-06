@@ -16,11 +16,14 @@ import {
 } from '@elastic/isomer-sdk';
 
 import {
+  dataTableCatalog,
   gridCatalog,
   metricCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './catalog';
+import { dataTableSchema } from './data_table';
+import { dataTableExamples } from './examples/data_table';
 import { gridExamples } from './examples/grid';
 import { metricExamples } from './examples/metric';
 import { unsupportedExamples } from './examples/unsupported';
@@ -49,6 +52,13 @@ export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
     schema: xyChartSchema,
     catalog: xyChartCatalog,
     examples: xyChartExamples,
+    renderers,
+  }),
+  definePrimitive({
+    type: 'dataTable',
+    schema: dataTableSchema,
+    catalog: dataTableCatalog,
+    examples: dataTableExamples,
     renderers,
   }),
   definePrimitive<GridNode>({

@@ -26,6 +26,7 @@ import { gridSnapshotHeight } from './render/grid';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
+import { dataTableTopHosts } from './schema/examples/data_table';
 import { gridExamples } from './schema/examples/grid';
 import { unsupportedVega } from './schema/examples/unsupported';
 import type { GridNode } from './schema/grid';
@@ -76,8 +77,9 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
+      'dataTable',
       'grid',
       'metric',
       'unsupported',
@@ -346,5 +348,28 @@ CLOSED`);
     expect(gridSnapshotHeight(sectioned)).toBe(
       24 + 160 + (24 + 8 + 76) + 24 + 3 * 16
     );
+  });
+});
+
+describe('dataTable', () => {
+  const runtime = createIsomerRuntime({ packs: [chartsPack] });
+
+  it('sends a native Slack table in its starting order, not a picture', () => {
+    const { blocks, assets } = runtime.surfaces.slack.render(
+      view(dataTableTopHosts),
+      { heading: false, collectAssets: true }
+    );
+    expect(assets).toHaveLength(0);
+    const tableBlock = blocks.find(
+      (block) => (block as { type: string }).type === 'table'
+    ) as { rows: { text: string }[][] } | undefined;
+    expect(tableBlock?.rows.map((row) => row[0]?.text)).toEqual([
+      'host.name',
+      'web-02',
+      'web-01',
+      'db-01',
+      'Other',
+    ]);
+    expect(tableBlock?.rows[1]?.[1]?.text).toBe('6,310');
   });
 });

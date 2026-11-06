@@ -6,6 +6,7 @@
  */
 
 export {
+  dataTableCatalog,
   gridCatalog,
   metricCatalog,
   unsupportedCatalog,
@@ -30,6 +31,15 @@ export {
   chartDataSchema,
 } from './data';
 export {
+  type DataTableColumn,
+  type DataTableNode,
+  type DataTableSummary,
+  DATA_TABLE_KEY_RULE,
+  DATA_TABLE_RULES,
+  DATA_TABLE_SUMMARIES,
+  dataTableSchema,
+} from './data_table';
+export {
   type ChartBrushEvent,
   type ChartEvent,
   type ChartSelectEvent,
@@ -49,6 +59,7 @@ export {
   selectSchema,
   toActionEvent,
 } from './events';
+export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
 export { gridExamples } from './examples/grid';
 export { metricExamples } from './examples/metric';

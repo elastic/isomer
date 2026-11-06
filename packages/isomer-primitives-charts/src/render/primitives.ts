@@ -5,17 +5,25 @@
  * 2.0.
  */
 
-import type { Scene } from '../scene/types';
-import { metricCatalog, xyChartCatalog } from '../schema/catalog';
+import type { Scene, TableScene } from '../scene/types';
+import {
+  dataTableCatalog,
+  metricCatalog,
+  xyChartCatalog,
+} from '../schema/catalog';
+import { type DataTableNode, dataTableSchema } from '../schema/data_table';
+import { dataTableExamples } from '../schema/examples/data_table';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples } from '../schema/examples/xy_chart';
 import { metricSchema } from '../schema/metric';
 import { xyChartSchema } from '../schema/xy_chart';
 import { sceneToMarkdown, sceneToText } from '../text/scene_text';
+import { tableSceneToSlack } from '../text/slack_table';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import { tableHeight } from './table';
 
 // Surfaces without a render context resolve for the light scheme: their output
 // carries text, not colors.
@@ -38,6 +46,24 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       catalog: metricCatalog,
       examples: metricExamples,
       renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'dataTable',
+      schema: dataTableSchema,
+      catalog: dataTableCatalog,
+      examples: dataTableExamples,
+      metrics: {
+        snapshotHeight: (node: DataTableNode) =>
+          tableHeight(resolveForText(node, config) as TableScene),
+      },
+      renderers: {
+        ...chartRenderers<DataTableNode>(config),
+        slack: (node: DataTableNode, { baseUrl }: { baseUrl?: string }) =>
+          tableSceneToSlack(
+            resolveForText(node, config) as TableScene,
+            baseUrl
+          ),
+      },
     }),
     definePrimitive({
       type: 'xyChart',

@@ -20,5 +20,6 @@ export {
   detectSceneEnvironment,
   renderSceneNode,
 } from './scene_node';
+export { tableHeight, tableSceneRenderer, TableView } from './table';
 export { CHARTS_THEME } from './theme';
 export { unsupportedPrimitive } from './unsupported';

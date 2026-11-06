@@ -26,6 +26,7 @@ export {
   detectSceneEnvironment,
   renderSceneNode,
 } from './render/scene_node';
+export { tableHeight, tableSceneRenderer, TableView } from './render/table';
 export { CHARTS_THEME } from './render/theme';
 export { unsupportedPrimitive } from './render/unsupported';
 export { type ResolveChartOptions } from './scene/common';

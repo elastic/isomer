@@ -19,11 +19,19 @@ export {
   xyTimeSeriesScene,
 } from './examples';
 export { type ChartNode, resolveChart } from './resolve';
+export {
+  SUMMARY_LABELS,
+  TABLE_EMPTY_TEXT,
+  TABLE_MISSING_TEXT,
+} from './resolve_table';
 export { selectSceneRenderer } from './select';
 export {
   CATEGORICAL_PALETTE,
   CHART_CHROME,
+  DEFAULT_TABLE_BAR_COLOR,
+  TABLE_CHROME,
   categoricalColor,
+  contrastText,
   resolveColor,
 } from './theme';
 export {
@@ -54,6 +62,12 @@ export {
   type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
+  type TableAlignment,
+  type TableCell,
+  type TableColumn,
+  type TableOrder,
+  type TableRow,
+  type TableScene,
   type XyCategory,
   type XyMark,
   type XyScene,

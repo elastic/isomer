@@ -1,0 +1,179 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { createElement, Fragment } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
+import { describe, expect, it } from 'vitest';
+
+import { chartsPack, createChartsPack } from '../pack';
+import { resolveChart } from '../scene/resolve';
+import type { ColorScheme, TableScene } from '../scene/types';
+import type { DataTableNode } from '../schema/data_table';
+import { dataTableExamples } from '../schema/examples/data_table';
+
+import type { ReactSceneRenderer } from './context';
+import { tableHeight, TableView } from './table';
+import { CHARTS_THEME } from './theme';
+
+const tableOf = (
+  node: DataTableNode,
+  scheme: ColorScheme = 'light'
+): TableScene => resolveChart(node, { scheme });
+
+const markup = (scene: TableScene) =>
+  renderToStaticMarkup(createElement(TableView, { scene }));
+
+/** `text` as React writes it into markup. */
+const escaped = (text: string) =>
+  renderToStaticMarkup(createElement(Fragment, null, text));
+
+const example = (name: string) =>
+  dataTableExamples.find((entry) => entry.name === name)!.node;
+
+const firstPage = (scene: TableScene) =>
+  scene.paging ? scene.order.slice(0, scene.paging.pageSize) : scene.order;
+
+const cases = dataTableExamples.flatMap(({ name, node }) =>
+  (['light', 'dark'] as const).map((scheme) => ({
+    name,
+    scheme,
+    scene: tableOf(node, scheme),
+  }))
+);
+
+describe('TableView', () => {
+  it.each(cases)(
+    '$name ($scheme) draws every string its first page shows',
+    ({ scene }) => {
+      const html = markup(scene);
+      const strings = [
+        ...scene.columns.map(({ label }) => label),
+        ...firstPage(scene).flatMap((position) =>
+          scene.rows[position]!.cells.map(({ text }) => text)
+        ),
+        ...scene.columns.flatMap(({ footer }) => (footer ? [footer] : [])),
+        ...(scene.paging
+          ? [scene.paging.rowsPerPage, ...scene.paging.pageLabels]
+          : []),
+        ...(scene.rows.length === 0 ? [scene.emptyText] : []),
+      ];
+      for (const text of strings) {
+        expect(html).toContain(escaped(text));
+      }
+    }
+  );
+
+  it.each(cases)(
+    '$name ($scheme) draws rows in the starting order',
+    ({ scene }) => {
+      const drawn = [...markup(scene).matchAll(/<tr data-row="(\d+)"/g)].map(
+        ([, row]) => Number(row)
+      );
+      expect(drawn).toEqual(
+        firstPage(scene).map((position) => scene.rows[position]!.row)
+      );
+    }
+  );
+
+  it.each(cases)('$name ($scheme) uses the Scene colors', ({ scene }) => {
+    const html = markup(scene);
+    expect(html).toContain(`background:${scene.headerBackground}`);
+    expect(html).toContain(`background:${scene.chrome.background}`);
+    for (const position of firstPage(scene)) {
+      for (const cell of scene.rows[position]!.cells) {
+        expect(html).toContain(`color:${cell.color}`);
+        for (const color of [
+          cell.background,
+          cell.badge,
+          cell.bar?.color,
+          cell.bar?.track,
+        ]) {
+          if (color) {
+            expect(html).toContain(`background:${color}`);
+          }
+        }
+      }
+    }
+  });
+
+  it('marks missing and blank cells', () => {
+    const html = markup(tableOf(example('Missing, blank and empty')));
+    expect(html).toContain('data-empty="missing"');
+    expect(html).toContain('data-empty="blank"');
+  });
+
+  it('draws the empty message across every column when there are no rows', () => {
+    const scene = tableOf(example('No rows'));
+    const span = markup(scene).match(/<td colspan="(\d+)"[^>]*>([^<]*)</i);
+    expect(span?.[1]).toBe(String(scene.columns.length));
+    expect(span?.[2]).toBe(escaped(scene.emptyText));
+  });
+
+  it('is its header, first page, footer and pager tall without a size', () => {
+    const scene = tableOf(example('Paged with a summary row'));
+    const { rowHeight } = CHARTS_THEME.table.density[scene.density];
+    expect(scene.paging).toBeDefined();
+    expect(scene.columns.some(({ footer }) => footer)).toBe(true);
+    expect(tableHeight(scene)).toBe(
+      (1 + scene.paging!.pageSize + 1 + 1) * rowHeight
+    );
+  });
+
+  it('draws only the rows that fit a given size', () => {
+    const scene = tableOf(example('Top hosts'));
+    const { rowHeight } = CHARTS_THEME.table.density[scene.density];
+    const sized = { ...scene, size: { width: 300, height: 3 * rowHeight } };
+    expect(tableHeight(sized)).toBe(3 * rowHeight);
+    expect(markup(sized).match(/<tr data-row=/g)).toHaveLength(2);
+  });
+});
+
+describe('dataTable in the charts pack', () => {
+  const view = (node: PrimitiveNode): Composition => ({
+    type: 'view',
+    body: [node],
+  });
+  const react = (pack = chartsPack, node = example('Top hosts')) =>
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        createIsomerRuntime({ packs: [pack] }).surfaces.react.render(
+          view(node),
+          { heading: false }
+        )
+      )
+    );
+
+  it('draws a table with no engine registered', () => {
+    expect(react()).toContain('<table');
+  });
+
+  it('gives snapshot the height the table draws at', () => {
+    const node = example('Paged with a summary row');
+    const table = chartsPack.primitives.find(
+      ({ type }) => type === 'dataTable'
+    )!;
+    const snapshotHeight = table.metrics?.snapshotHeight as
+      ((node: DataTableNode) => number) | undefined;
+    expect(snapshotHeight?.(node)).toBe(tableHeight(tableOf(node)));
+  });
+
+  it('lets a pack engine that draws tables replace it', () => {
+    const engine: ReactSceneRenderer = {
+      id: 'host-table',
+      environments: ['browser', 'node'],
+      supports: (kind) => kind === 'table',
+      render: () => createElement('output', null, 'host table'),
+    };
+    const html = react(createChartsPack({ sceneRenderers: [engine] }));
+    expect(html).toContain('<output>host table</output>');
+    expect(html).not.toContain('<table');
+  });
+});
