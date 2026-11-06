@@ -20,6 +20,19 @@
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"
+    },
+    "./headless": {
+      "types": "./lib/cjs/headless.d.ts",
+      "import": "./lib/esm/headless.js",
+      "require": "./lib/cjs/headless.js",
+      "default": "./lib/cjs/headless.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "headless": [
+        "./lib/cjs/headless.d.ts"
+      ]
     }
   },
   "files": [
@@ -51,6 +64,8 @@
   },
   "devDependencies": {
     "@elastic/charts": "73.3.2",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
     "@types/react": "^18.3.31",
     "moment": "2.31.0",
     "moment-timezone": "^0.5.48",
