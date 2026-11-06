@@ -54,6 +54,17 @@ The SVG is a `role="img"` named by the Scene's `title` as its `<title>` and desc
 
 Headless metrics differ from the browser's: values draw smaller and words can break mid-word. Those gaps are Elastic Charts', reported on #2939.
 
+### Measuring it
+
+`pnpm --filter @elastic/isomer-charts-elastic bench` draws every `metric` and `xyChart` example, light and dark, through the `snapshot` surface and takumi to PNG, as a render service does. Each run is a fresh Node process loading the CommonJS build, so run `pnpm build` first. It compares headless Elastic Charts with a baseline that has no chart engine, and reports:
+
+- peak RSS;
+- heap held after the run and a forced GC;
+- cold start to the first PNG;
+- the median draw and rasterization time per chart.
+
+`--repeat <n>` draws the examples n times in each process. Peak memory that grows with `--repeat` while the held heap stays flat is V8 keeping freed memory, not a leak. `--json` prints every run.
+
 ## What it takes from the Scene
 
 Colors, text and series are the Scene's, and draw order is as far as Elastic Charts' paint bands allow (see the tolerance table). Ticks, domains, stacks and point density are Elastic Charts', computed from the intent each Scene axis and series states, the way Kibana's xy expression hands them over. A tick label prints through `formatAxisValue`, so it reads the same in every engine.
