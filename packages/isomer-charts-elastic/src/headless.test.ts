@@ -27,6 +27,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createElasticChartsHeadlessRenderer,
   renderSceneSvg,
+  scopeSvgIds,
 } from './headless';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
@@ -137,6 +138,19 @@ describe('renderSceneSvg', () => {
   });
 });
 
+describe('scopeSvgIds', () => {
+  it('prefixes each id and every reference to it', () => {
+    expect(
+      scopeSvgIds(
+        '<svg><clipPath id="clip0"/><g clip-path="url(#clip0)"/><use href="#clip0"/></svg>',
+        's'
+      )
+    ).toBe(
+      '<svg><clipPath id="s-clip0"/><g clip-path="url(#s-clip0)"/><use href="#s-clip0"/></svg>'
+    );
+  });
+});
+
 describe('createElasticChartsHeadlessRenderer', () => {
   const renderer = createElasticChartsHeadlessRenderer();
   const view = (node: PrimitiveNode): Composition => ({
@@ -154,6 +168,56 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
+  });
+
+  const markup = (node: unknown) =>
+    renderToStaticMarkup(createElement('div', null, node as never));
+
+  it('draws at its size on Node, and scales at its aspect ratio in a browser', () => {
+    const { scene } = xyCases[0]!;
+    const { width, height } = scene.size!;
+    const node = markup(renderer.render(scene, { environment: 'node' }));
+    expect(node).toContain(`width:${width}px;height:${height}px`);
+    expect(node).toContain(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"`
+    );
+    const browser = markup(
+      createElasticChartsHeadlessRenderer({ environments: ['browser'] }).render(
+        scene,
+        { environment: 'browser' }
+      )
+    );
+    expect(browser).toContain(
+      `width:100%;max-width:${width}px;aspect-ratio:${width} / ${height}`
+    );
+    expect(browser).toContain('width="100%" height="100%"');
+  });
+
+  it('gives every chart on a page its own ids', () => {
+    const runtime = createIsomerRuntime({
+      packs: [createChartsPack({ sceneRenderers: [renderer] })],
+    });
+    const html = markup(
+      runtime.surfaces.react.render(
+        {
+          type: 'view',
+          body: [...xyChartExamples, ...metricExamples].map(({ node }) => node),
+        },
+        { heading: false }
+      )
+    );
+    const svgs = html.split('<svg ').slice(1);
+    expect(svgs.length).toBeGreaterThan(1);
+    const owners = new Map<string, number>();
+    svgs.forEach((svg, index) => {
+      for (const [, id] of svg.matchAll(/\bid="([^"]+)"/g)) {
+        expect(owners.get(id!) ?? index).toBe(index);
+        owners.set(id!, index);
+      }
+      for (const [, ref] of svg.matchAll(/url\(#([^)]+)\)/g)) {
+        expect(owners.get(ref!)).toBe(index);
+      }
+    });
   });
 
   it.each([
