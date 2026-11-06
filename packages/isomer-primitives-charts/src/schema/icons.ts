@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 /**
  * The glyphs a chart can draw beside a value, line or event: what each shows,

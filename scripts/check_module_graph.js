@@ -11,12 +11,22 @@
 // is what matters.
 
 import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
+import {
+  CHARTS,
+  CHARTS_RENDERER_DIRS,
+  CONTRACT_ENTRIES,
+  CONTRACT_FORBIDDEN,
+  ENGINE_PACKAGE_PREFIX,
+  isRendererSource,
+  matchesForbidden,
+  rendererViolations,
+} from './chart_module_rules.js';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
@@ -39,11 +49,19 @@ const RULES = {
     './markdown': ['react-dom', 'react-dom/server'],
     './slack': ['react-dom', 'react-dom/server'],
     './author': ['react-dom', 'react-dom/server'],
+    './schema': [
+      'react',
+      'react-dom',
+      'mdast-util-from-markdown',
+      'mdast-util-gfm',
+      'mdast-util-to-markdown',
+      'micromark-extension-gfm',
+    ],
   },
+  [CHARTS]: Object.fromEntries(
+    CONTRACT_ENTRIES.map((entry) => [entry, CONTRACT_FORBIDDEN])
+  ),
 };
-
-const matchesForbidden = (specifier, forbidden) =>
-  specifier === forbidden || specifier.startsWith(`${forbidden}/`);
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
@@ -137,6 +155,30 @@ for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {
     }
   }
 }
+
+// Renderers read only the Scene: in the charts pack's renderer directories and
+// in every chart engine package.
+const charts = manifests.get(CHARTS);
+const chartsSrc = join(charts.dir, 'src');
+const rendererDirs = [
+  ...CHARTS_RENDERER_DIRS.map((dir) => join(charts.dir, dir)),
+  ...[...manifests.values()]
+    .filter(({ manifest }) => manifest.name.startsWith(ENGINE_PACKAGE_PREFIX))
+    .map(({ dir }) => join(dir, 'src')),
+].filter((dir) => existsSync(dir));
+const rendererFiles = rendererDirs.flatMap((dir) =>
+  readdirSync(dir, { recursive: true })
+    .filter(isRendererSource)
+    .map((file) => join(dir, file))
+);
+for (const { file, reason } of rendererViolations(
+  rendererFiles,
+  specifiersIn,
+  chartsSrc
+)) {
+  violations.push(`${relative(repoRoot, file)} imports ${reason}`);
+}
+checked += rendererDirs.length;
 
 // A host may bundle `slideStylesheet` without the pack; from the built ESM entry, that bundle must emit what the CommonJS build does.
 const slides = manifests.get('@elastic/isomer-primitives-slides');

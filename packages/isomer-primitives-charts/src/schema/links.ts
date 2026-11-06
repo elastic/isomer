@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { navigationHref } from '@elastic/isomer-sdk';
+import { navigationHref } from '@elastic/isomer-sdk/schema';
 
 /** The shared URL validation check for navigation links in this pack. */
 export const navigationHrefSchema = navigationHref();

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
+import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import { continuousScaleOf, coordinateOf, scalarOf } from '../coordinates';
 

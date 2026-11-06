@@ -7,7 +7,7 @@
 
 // `z.toJSONSchema` drops refinements, so each one here names the sentence a description in the authoring schema states its rule in; `stated_rules.test.ts` checks both.
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 const always = () => true;
 

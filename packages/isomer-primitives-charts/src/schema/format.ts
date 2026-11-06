@@ -8,7 +8,7 @@
 // Formats are ECMA-402 (`Intl`) options, so they mean the same thing to every
 // renderer. Text no format describes travels as `data.display` strings.
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 import { crossSuperRefine } from './cross_field';
 

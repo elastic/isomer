@@ -322,6 +322,8 @@ export default tseslint.config(
       '.github',
       '.artifacts',
       '.claude',
+      'scripts/fixtures',
+      'test-results',
     ],
   },
   {
