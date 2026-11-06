@@ -51,6 +51,8 @@ A chart node carries everything a faithful rendering needs, and drawing it is th
 
 `./schema` and `./scene` reach only zod and the SDK's React-free `./schema` entry, so they load in browsers, on servers and on React Native's Hermes. The build checks it on every change. Renderers import only the Scene from `./scene`, never the formatter, the schemas or the resolver.
 
+Renderer imports may use inferred named Scene types or explicit `import type` forms, including type-only namespaces. Resolver values and runtime namespace imports remain excluded.
+
 ## Rules
 
 `z.toJSONSchema` drops refinements, so each cross-field rule is stated word for word in the description an agent reads, and a test checks that each check states its rule there. The rules are on each primitive's page.
