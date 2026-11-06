@@ -92,6 +92,39 @@ describe('renderers', () => {
     ]);
   });
 
+  it.each([
+    "import { resolveChart } from '@elastic/isomer-primitives-charts/scene';",
+    "import { resolveColor as color } from '@elastic/isomer-primitives-charts/scene';",
+    "import { categoricalColor } from '@elastic/isomer-primitives-charts/scene';",
+    "import * as charts from '@elastic/isomer-primitives-charts/scene';",
+    "export { resolveChart as resolve } from '@elastic/isomer-primitives-charts/scene';",
+    "export * from '@elastic/isomer-primitives-charts/scene';",
+    "const charts = require('@elastic/isomer-primitives-charts/scene');",
+    "const charts = import('@elastic/isomer-primitives-charts/scene');",
+  ])('rejects resolver access through the scene entry: %s', (source) => {
+    expect(
+      rendererViolations(
+        [engineFile],
+        () => ['@elastic/isomer-primitives-charts/scene'],
+        src,
+        () => source
+      )
+    ).toHaveLength(1);
+  });
+
+  it('allows Scene types and event helpers through the public scene entry', () => {
+    const source =
+      "import { type Scene, type SceneRenderer, selectEvent, brushEvent, SCENE_KINDS } from '@elastic/isomer-primitives-charts/scene';";
+    expect(
+      rendererViolations(
+        [engineFile],
+        () => ['@elastic/isomer-primitives-charts/scene'],
+        src,
+        () => source
+      )
+    ).toEqual([]);
+  });
+
   it('checks sources, not tests, fixtures or declarations', () => {
     expect(isRendererSource('draw.ts')).toBe(true);
     expect(isRendererSource('metric.tsx')).toBe(true);

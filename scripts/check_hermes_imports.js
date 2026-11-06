@@ -26,6 +26,8 @@ import { builtinModules } from 'node:module';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import ts from 'typescript';
+
 /** Modules unreachable from a Hermes-safe entry. Each covers its subpaths unless `exact`. */
 export const BANNED_MODULES = [
   { specifier: 'react-dom', reason: 'needs a DOM' },
@@ -37,7 +39,22 @@ export const BANNED_MODULES = [
   },
 ];
 
-export const BANNED_GLOBALS = ['MessageChannel', 'structuredClone'];
+export const BANNED_GLOBALS = [
+  'MessageChannel',
+  'structuredClone',
+  'document',
+  'window',
+  'HTMLElement',
+  'Element',
+  'Node',
+  'HTMLCanvasElement',
+  'CanvasRenderingContext2D',
+  'DOMParser',
+  'XMLSerializer',
+  'MutationObserver',
+  'ResizeObserver',
+  'IntersectionObserver',
+];
 
 const NODE_BUILTINS = new Set(
   builtinModules.filter((name) => !name.startsWith('_'))
@@ -96,6 +113,90 @@ const globalDefines = (globals) =>
       ];
     })
   );
+
+const namespaceGlobals = (text, globals) => {
+  const file = '/hermes-bundle.js';
+  const tree = ts.createSourceFile(
+    file,
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS
+  );
+  const options = { allowJs: true, noLib: true, noResolve: true };
+  const host = ts.createCompilerHost(options);
+  host.getSourceFile = (name) => (name === file ? tree : undefined);
+  const checker = ts.createProgram([file], options, host).getTypeChecker();
+  const reads = [];
+  const namespace = (node, seen = new Set()) => {
+    if (!node || !ts.isIdentifier(node) || seen.has(node)) {
+      return false;
+    }
+    seen.add(node);
+    const symbol = checker.getSymbolAtLocation(node);
+    const declarations = symbol?.declarations ?? [];
+    if (GLOBAL_OWNERS.includes(node.text) && declarations.length === 0) {
+      return true;
+    }
+    return declarations.some(
+      (declaration) =>
+        ts.isVariableDeclaration(declaration) &&
+        namespace(declaration.initializer, seen)
+    );
+  };
+  const property = (name) => {
+    if (ts.isComputedPropertyName(name)) {
+      return ts.isStringLiteral(name.expression)
+        ? name.expression.text
+        : undefined;
+    }
+    return name.text;
+  };
+  const record = (name, node) => {
+    if (globals.includes(name)) {
+      reads.push({
+        name,
+        line: tree.getLineAndCharacterOfPosition(node.getStart(tree)).line,
+      });
+    }
+  };
+  const visit = (node) => {
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isObjectBindingPattern(node.name) &&
+      namespace(node.initializer)
+    ) {
+      for (const element of node.name.elements) {
+        record(property(element.propertyName ?? element.name), node);
+      }
+    } else if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isObjectLiteralExpression(node.left) &&
+      namespace(node.right)
+    ) {
+      for (const element of node.left.properties) {
+        if (element.name) {
+          record(property(element.name), node);
+        }
+      }
+    } else if (
+      ts.isPropertyAccessExpression(node) &&
+      namespace(node.expression)
+    ) {
+      record(node.name.text, node);
+    } else if (
+      ts.isElementAccessExpression(node) &&
+      namespace(node.expression) &&
+      ts.isStringLiteral(node.argumentExpression)
+    ) {
+      record(node.argumentExpression.text, node);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(tree);
+  return reads;
+};
 
 const location = (message) =>
   message.location
@@ -190,12 +291,21 @@ export const checkEntry = async (esbuild, entry, options = {}) => {
   // Unminified esbuild output starts each module with a `// <path>` comment.
   const text = result.outputFiles[0].text;
   const markerPattern = new RegExp(`${MARKER_PREFIX}(\\d+)`, 'g');
+  const namespaceReads = new Map();
+  for (const { name, line } of namespaceGlobals(text, bannedGlobals)) {
+    namespaceReads.set(line, [...(namespaceReads.get(line) ?? []), name]);
+  }
   let module = relative(process.cwd(), entry);
-  for (const line of text.split('\n')) {
+  for (const [index, line] of text.split('\n').entries()) {
     const header = /^\s*\/\/ (\S+)$/.exec(line);
     if (header) {
       module = header[1];
       continue;
+    }
+    for (const name of namespaceReads.get(index) ?? []) {
+      if (!allowGlobalIn.some((allowed) => module.includes(allowed))) {
+        record('global', name, module);
+      }
     }
     for (const match of line.matchAll(markerPattern)) {
       if (!allowGlobalIn.some((allowed) => module.includes(allowed))) {
