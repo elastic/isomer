@@ -190,6 +190,8 @@ export interface MetricTile {
       readonly direction: 'increase' | 'decrease' | 'neutral';
       readonly color: SceneColor;
       readonly showIcon: boolean;
+      /** The glyph drawn when `showIcon`: `↑`, `↓` or `=`. Absent when the difference is not a number. */
+      readonly icon?: string;
     };
   };
   /** A helper mark: carries no source. */
@@ -244,6 +246,8 @@ export interface SceneAxis {
   readonly showGrid: boolean;
   /** Tick label rotation in degrees. */
   readonly labelRotation: 0 | -45 | -90;
+  /** On a continuous x axis, the smallest spacing between x positions, which a bar is as wide as. */
+  readonly interval?: number;
 }
 
 /** One drawn datum: a point, a bar or an area vertex. */
