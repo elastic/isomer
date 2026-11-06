@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { BAND_RULE } from './colors';
 import { DATA_RULES } from './data';
+import { FORMAT_RULES } from './format';
 import { GRID_RULES } from './grid';
 import { METRIC_RULES } from './metric';
 import { COLUMN_REF_RULE } from './references';
@@ -85,6 +86,45 @@ describe('chart data', () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it('accepts a date format with styles or with fields', () => {
+    for (const format of [
+      { kind: 'date', dateStyle: 'short', hour12: false },
+      { kind: 'date', month: 'short', day: 'numeric' },
+    ]) {
+      expect(
+        issuesOf(
+          'metric',
+          metric({
+            data: { columns: [{ ...date('d'), format }], rows: [[0]] },
+            value: { column: 'd' },
+          })
+        )
+      ).not.toContainEqual(
+        expect.objectContaining({ message: containing(FORMAT_RULES.dateStyle) })
+      );
+    }
+  });
+
+  it('rejects a date format with both a style and a field', () => {
+    expectRule(
+      'metric',
+      metric({
+        data: {
+          columns: [
+            number('v'),
+            {
+              ...date('d'),
+              format: { kind: 'date', timeStyle: 'short', day: 'numeric' },
+            },
+          ],
+          rows: [[1, 0]],
+        },
+      }),
+      FORMAT_RULES.dateStyle,
+      'data.columns.1.format.timeStyle'
+    );
   });
 
   it('rejects a repeated column id', () => {
@@ -418,6 +458,38 @@ describe('xyChart', () => {
       }),
       XY_RULES.stack,
       'layers.0.stack'
+    );
+  });
+
+  it('rejects data layers with different x columns', () => {
+    expectRule(
+      'xyChart',
+      xy({
+        data: {
+          columns: [date('t'), date('other'), number('y'), string('s')],
+          rows: [[0, 0, 1, 'a']],
+        },
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'line', x: 'other', y: [{ column: 'y' }] },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
+    );
+  });
+
+  it('rejects a data layer without the shared x column', () => {
+    expectRule(
+      'xyChart',
+      xy({
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'line', y: [{ column: 'y' }] },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
     );
   });
 

@@ -6,7 +6,6 @@
  */
 
 export {
-  type ChartNode,
   type ChartsPackTypes,
   type ChartsReactEnv,
   type ChartsRenderContext,

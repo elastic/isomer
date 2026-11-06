@@ -12,7 +12,6 @@ export {
   createChartsPack,
 } from './pack';
 export {
-  type ChartNode,
   type ChartsPackTypes,
   type ChartsReactEnv,
   type ChartsRenderContext,
@@ -29,13 +28,21 @@ export {
 } from './render/scene_node';
 export { CHARTS_THEME } from './render/theme';
 export { unsupportedPrimitive } from './render/unsupported';
+export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
+export { type ChartNode, resolveChart } from './scene/resolve';
 export { selectSceneRenderer } from './scene/select';
+export {
+  CATEGORICAL_PALETTE,
+  CHART_CHROME,
+  categoricalColor,
+  resolveColor,
+} from './scene/theme';
 export {
   type AxisId,
   type ColorScheme,
@@ -123,8 +130,10 @@ export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
 export {

@@ -11,5 +11,6 @@ toc:
   - file: grid.md
   - file: unsupported.md
   - file: interactions.md
+  - file: format.md
   - file: scene.md
   - file: rendering.md
