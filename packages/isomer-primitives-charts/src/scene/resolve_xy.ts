@@ -223,6 +223,14 @@ export const resolveXy = (
     if (requested) {
       return requested;
     }
+    const types = new Set(
+      dataLayers.flatMap(({ layer }) =>
+        layer.x === undefined ? [] : [resolution.column(layer.x).type]
+      )
+    );
+    if (types.size > 1) {
+      return 'ordinal';
+    }
     if (xColumn?.type === 'date') {
       return 'time';
     }
@@ -238,11 +246,15 @@ export const resolveXy = (
       return xScale === 'ordinal' ? '' : 0;
     }
     const cell = resolution.cell(id, row);
-    if (xScale === 'time') {
-      return toEpoch(scalarCell(cell)) ?? Number.NaN;
-    }
-    if (xScale === 'linear') {
-      return toNumber(cell) ?? Number.NaN;
+    if (xScale !== 'ordinal') {
+      const value = scalarCell(cell);
+      const coordinate = xScale === 'time' ? toEpoch(value) : toNumber(value);
+      if (coordinate === undefined && value !== null && value !== undefined) {
+        throw new RangeError(
+          `Cannot resolve x column "${id}" on a ${xScale} axis.`
+        );
+      }
+      return coordinate ?? Number.NaN;
     }
     return cellKey(cell);
   };

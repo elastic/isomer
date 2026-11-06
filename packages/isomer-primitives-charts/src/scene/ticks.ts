@@ -274,9 +274,19 @@ const fromLocal = (local: number, zone: string, after?: number): number => {
 const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   const local = localTime(epoch, zone);
   if (unit === 'elapsed') {
-    return (
-      Math.floor(local / step) * step - timeZoneOffset(epoch, zone) * MINUTE
-    );
+    let tick =
+      Math.floor(local / step) * step - timeZoneOffset(epoch, zone) * MINUTE;
+    if (step >= HOUR) {
+      for (let attempt = 0; attempt < 48; attempt += 1) {
+        const wall = localTime(tick, zone);
+        const floor = Math.floor(wall / step) * step;
+        if (wall === floor) {
+          break;
+        }
+        tick = floor - timeZoneOffset(tick, zone) * MINUTE;
+      }
+    }
+    return tick;
   }
   const date = new Date(local);
   if (unit === 'hour') {
@@ -302,9 +312,7 @@ const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
   if (unit === 'elapsed') {
     const next = epoch + step;
     if (step >= HOUR) {
-      const offsetChange =
-        (timeZoneOffset(next, zone) - timeZoneOffset(epoch, zone)) * MINUTE;
-      const remainder = ((offsetChange % step) + step) % step;
+      const remainder = ((localTime(next, zone) % step) + step) % step;
       return next + (remainder === 0 ? 0 : step - remainder);
     }
     return next;
@@ -372,6 +380,11 @@ export const niceTimeDomain = (
   count: number,
   zone: string
 ): [number, number] => {
+  if (min === max) {
+    const day: TimeStep = { unit: 'day', step: 1, duration: DAY };
+    const low = floorTime(min, day, zone);
+    return [low, advanceTime(low, day, zone)];
+  }
   const step = chooseTimeStep(min, max, count);
   const low = floorTime(min, step, zone);
   const floorHigh = floorTime(max, step, zone);
