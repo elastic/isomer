@@ -13,6 +13,7 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | --- | --- |
 | [`metric`](metric.md) | One headline value, or one tile per row, with an optional secondary value, progress bar or trend line |
 | [`xyChart`](xy-chart.md) | Lines, areas and bars over a shared x axis, with reference lines and annotations |
+| [`dataTable`](data-table.md) | Rows and columns to read exactly, with colored cells, bars, sorting, paging and a summary row |
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 

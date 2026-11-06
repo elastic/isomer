@@ -15,6 +15,12 @@ import { numberFormat, numberOptions } from './intl';
 // The text for values a format cannot show: missing, empty, and number-like but not a number.
 const LABELS = { null: '(null)', empty: '(blank)', nan: 'NaN' } as const;
 
+/** What a missing value prints as. */
+export const NULL_LABEL = LABELS.null;
+
+/** What an empty string prints as. */
+export const EMPTY_LABEL = LABELS.empty;
+
 interface FormatContext {
   /** A BCP 47 locale, such as `en` or `fr-CA`. */
   readonly locale: string;
