@@ -191,6 +191,25 @@ describe('the charts pack', () => {
       expect(html).toContain('aspect-ratio:16 / 9;min-height:300px');
     });
 
+    it('resolves for the spec box in a browser too when the renderer draws a fixed size', () => {
+      const sized: ReactSceneRenderer = {
+        ...tagging('picture', ['metric', 'xy']),
+        sized: true,
+      };
+      resolved.length = 0;
+      const html = draw(
+        createChartsPack({ resolveScene, sceneRenderers: [sized] }),
+        {
+          environment: 'browser',
+        }
+      );
+      expect(sizes()).toEqual([
+        chartSize(chartSizeSpec(metricSingleValueScene)!),
+        chartSize(chartSizeSpec(xyTimeSeriesScene)!),
+      ]);
+      expect(html).not.toContain('aspect-ratio');
+    });
+
     it('reports the spec box height to snapshot frames', () => {
       const heightOf = (type: string, node: ChartNode) =>
         (

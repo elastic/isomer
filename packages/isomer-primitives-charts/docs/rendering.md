@@ -72,7 +72,7 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 | `metric` with several tiles | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
 | `dataTable` | None: the table is its rows tall |
 
-In a browser, the shim's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it. On Node there is no container to fill, so the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height to `snapshot` frames as `metrics.snapshotHeight`.
+In a browser, the shim's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height to `snapshot` frames as `metrics.snapshotHeight`.
 
 ## Text, Markdown and Slack
 
