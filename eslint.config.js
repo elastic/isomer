@@ -290,6 +290,32 @@ export default tseslint.config(
     },
   },
   {
+    // Chart engines draw a Scene; they never format, validate or resolve one.
+    files: ['packages/isomer-charts-*/src/**/*.{ts,tsx}'],
+    ignores: ['packages/isomer-charts-*/src/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@elastic/isomer-primitives-charts',
+              message:
+                'A chart engine imports only @elastic/isomer-primitives-charts/scene.',
+            },
+          ],
+          patterns: [
+            {
+              regex: '^@elastic/isomer-primitives-charts/(?!scene$)',
+              message:
+                'A chart engine imports only @elastic/isomer-primitives-charts/scene.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     files: ['packages/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
@@ -322,7 +348,6 @@ export default tseslint.config(
       '.github',
       '.artifacts',
       '.claude',
-      'scripts/fixtures',
       'test-results',
     ],
   },

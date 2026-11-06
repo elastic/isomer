@@ -11,22 +11,12 @@
 // is what matters.
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { readdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
-import {
-  CHARTS,
-  CHARTS_RENDERER_DIRS,
-  CONTRACT_ENTRIES,
-  CONTRACT_FORBIDDEN,
-  ENGINE_PACKAGE_PREFIX,
-  isRendererSource,
-  matchesForbidden,
-  rendererViolations,
-} from './chart_module_rules.js';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
@@ -42,6 +32,20 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * `cloneElement` and `isValidElement` to carry React renderers, so every surface
  * reaches it through the shared dispatcher — that is the design, not a leak.
  */
+// The charts contracts carry no renderer: the SDK root is out because it reaches
+// React, while the SDK's `./schema` entry is what the schemas build on.
+const CHARTS_CONTRACT_FORBIDDEN = [
+  'react',
+  'react-dom',
+  '@elastic/charts',
+  '@elastic/isomer-runtime',
+  { exact: '@elastic/isomer-sdk' },
+  '@elastic/isomer-sdk/html',
+  '@elastic/isomer-sdk/react',
+  '@elastic/isomer-sdk/author',
+  '@elastic/isomer-sdk/testing',
+];
+
 const RULES = {
   '@elastic/isomer-sdk': {
     '.': ['react-dom', 'react-dom/server'],
@@ -58,10 +62,22 @@ const RULES = {
       'micromark-extension-gfm',
     ],
   },
-  [CHARTS]: Object.fromEntries(
-    CONTRACT_ENTRIES.map((entry) => [entry, CONTRACT_FORBIDDEN])
+  '@elastic/isomer-primitives-charts': Object.fromEntries(
+    ['./schema', './scene', './resolve'].map((entry) => [
+      entry,
+      CHARTS_CONTRACT_FORBIDDEN,
+    ])
   ),
 };
+
+/**
+ * Matches `specifier` against a rule: a string covers the package and its
+ * subpaths, `{ exact }` only itself.
+ */
+const matchesForbidden = (specifier, rule) =>
+  typeof rule === 'string'
+    ? specifier === rule || specifier.startsWith(`${rule}/`)
+    : specifier === rule.exact;
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
@@ -155,31 +171,6 @@ for (const [packageName, forbidden] of Object.entries(FORBIDDEN_PACKAGES)) {
     }
   }
 }
-
-// Renderers read only the Scene: in the charts pack's renderer directories and
-// in every chart engine package.
-const charts = manifests.get(CHARTS);
-const chartsSrc = join(charts.dir, 'src');
-const rendererDirs = [
-  ...CHARTS_RENDERER_DIRS.map((dir) => join(charts.dir, dir)),
-  ...[...manifests.values()]
-    .filter(({ manifest }) => manifest.name.startsWith(ENGINE_PACKAGE_PREFIX))
-    .map(({ dir }) => join(dir, 'src')),
-].filter((dir) => existsSync(dir));
-const rendererFiles = rendererDirs.flatMap((dir) =>
-  readdirSync(dir, { recursive: true })
-    .filter(isRendererSource)
-    .map((file) => join(dir, file))
-);
-for (const { file, reason } of rendererViolations(
-  rendererFiles,
-  specifiersIn,
-  chartsSrc,
-  (file) => readFileSync(file, 'utf8')
-)) {
-  violations.push(`${relative(repoRoot, file)} imports ${reason}`);
-}
-checked += rendererDirs.length;
 
 // A host may bundle `slideStylesheet` without the pack; from the built ESM entry, that bundle must emit what the CommonJS build does.
 const slides = manifests.get('@elastic/isomer-primitives-slides');

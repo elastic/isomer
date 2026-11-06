@@ -49,9 +49,7 @@ A chart node carries everything a faithful rendering needs, and drawing it is th
 
 ## Where each entry loads
 
-`./schema` and `./scene` reach only zod and the SDK's React-free `./schema` entry, so they load in browsers, on servers and on React Native's Hermes. The build checks it on every change. Renderers import only the Scene from `./scene`, never the formatter, the schemas or the resolver.
-
-Renderer imports may use inferred named Scene types or explicit `import type` forms, including type-only namespaces. Resolver values and runtime namespace imports remain excluded.
+`./schema` and `./scene` reach only zod and the SDK's React-free `./schema` entry, and `./resolve` adds d3-scale, so all three load in browsers and on servers without React. `pnpm check:module-graph` checks it on every change. A chart engine imports only `./scene`: it draws a Scene, and never formats, validates or resolves one. ESLint enforces it in every `@elastic/isomer-charts-*` package.
 
 ## Rules
 

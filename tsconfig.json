@@ -3,7 +3,6 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "exclude": ["scripts/fixtures"],
   "include": [
     "*.config.ts",
     "eslint.config.js",

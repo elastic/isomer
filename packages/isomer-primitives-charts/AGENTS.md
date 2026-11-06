@@ -20,7 +20,7 @@ Expected values (formats, colors, orderings) come from this package's documented
 
 ## Module rules
 
-`./schema` and `./scene` load on React Native's Hermes: they reach no React, DOM, Node built-in, Elastic Charts, runtime root, `MessageChannel` or `structuredClone`, and use no top-level `await` or `import.meta`. Schemas import the SDK through `@elastic/isomer-sdk/schema`, never its root. Renderers (`src/svg`, and every `@elastic/isomer-charts-*` engine package) read only the Scene: `src/scene/types`, `src/scene/events` or the `./scene` entry, never the formatter, the schemas or the resolver. `pnpm check:module-graph` and `pnpm check:hermes` enforce both; the rules live in `scripts/chart_module_rules.js`.
+`./schema`, `./scene` and `./resolve` reach no React, Elastic Charts or runtime root; schemas import the SDK through `@elastic/isomer-sdk/schema`, never its root. `pnpm check:module-graph` enforces it. Chart engines (`@elastic/isomer-charts-*`) import only `./scene`, which holds the Scene types and event helpers; ESLint enforces it.
 
 ## Evidence required
 
