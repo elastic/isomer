@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { chartsPack } from '@elastic/isomer-primitives-charts';
+import { createElasticChartsHeadlessRenderer } from '@elastic/isomer-charts-elastic/headless';
+import { createChartsPack } from '@elastic/isomer-primitives-charts';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { defineStudioConfig } from '@elastic/isomer-studio';
 
@@ -15,6 +16,31 @@ import {
   slideDeckFrame,
   slidesPack,
 } from './packages/isomer-primitives-slides/src/index';
+
+// The Studio's previews are static markup, in the browser and on its server,
+// so charts draw with headless Elastic Charts in both.
+// In the browser, text is measured as the browser will draw it.
+const measureTextWidth =
+  typeof document === 'undefined'
+    ? undefined
+    : (() => {
+        const context = document.createElement('canvas').getContext('2d');
+        return context
+          ? (text: string, font: string) => {
+              context.font = font;
+              return context.measureText(text).width;
+            }
+          : undefined;
+      })();
+
+const chartsPack = createChartsPack({
+  sceneRenderers: [
+    createElasticChartsHeadlessRenderer({
+      environments: ['node', 'browser'],
+      ...(measureTextWidth && { measureTextWidth }),
+    }),
+  ],
+});
 
 /** The repository's Studio: every in-repo pack, drawn in the browser alone. */
 export default defineStudioConfig({
