@@ -7,7 +7,7 @@
 
 // Hand-written Scenes for schema examples, so renderers can be built
 // against the contract before the resolver exists. They show the shape, not
-// expected output: tests compare a resolver against Kibana, never against these.
+// expected output: resolver tests state their own expectations, never these.
 
 import type { Cell } from '../schema/data';
 

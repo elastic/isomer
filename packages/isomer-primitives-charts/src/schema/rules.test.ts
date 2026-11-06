@@ -480,6 +480,38 @@ describe('xyChart', () => {
     );
   });
 
+  it('rejects data layers with different x columns', () => {
+    expectRule(
+      'xyChart',
+      xy({
+        data: {
+          columns: [date('t'), date('other'), number('y'), string('s')],
+          rows: [[0, 0, 1, 'a']],
+        },
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'line', x: 'other', y: [{ column: 'y' }] },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
+    );
+  });
+
+  it('rejects a data layer without the shared x column', () => {
+    expectRule(
+      'xyChart',
+      xy({
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'line', y: [{ column: 'y' }] },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
+    );
+  });
+
   it.each([
     ['past the end', [0, 2]],
     ['reversed', [1, 0]],
