@@ -144,3 +144,8 @@ export {
 export { type ColumnReference, columnRefSchema } from './schema/references';
 export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
+export {
+  sceneTableRows,
+  sceneToMarkdown,
+  sceneToText,
+} from './text/scene_text';

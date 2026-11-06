@@ -5,14 +5,13 @@
  * 2.0.
  */
 
-import { md } from '@elastic/isomer-sdk/markdown';
-
 import type { Scene } from '../scene/types';
 import { metricCatalog, xyChartCatalog } from '../schema/catalog';
 import { metricExamples } from '../schema/examples/metric';
 import { xyChartExamples } from '../schema/examples/xy_chart';
 import { metricSchema } from '../schema/metric';
 import { xyChartSchema } from '../schema/xy_chart';
+import { sceneToMarkdown, sceneToText } from '../text/scene_text';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
@@ -26,8 +25,8 @@ const resolveForText = (node: ChartNode, config: SceneShimConfig): Scene =>
 const chartRenderers = <TNode extends ChartNode>(config: SceneShimConfig) => ({
   react: (node: TNode, env: Parameters<typeof renderSceneNode>[1]) =>
     renderSceneNode(node, env, config),
-  text: (node: TNode) => resolveForText(node, config).summary,
-  markdown: (node: TNode) => md.paragraph(resolveForText(node, config).summary),
+  text: (node: TNode) => sceneToText(resolveForText(node, config)),
+  markdown: (node: TNode) => sceneToMarkdown(resolveForText(node, config)),
 });
 
 /** The chart primitives, each drawing through `config`. */

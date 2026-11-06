@@ -8,6 +8,7 @@
 import type { ReactNode } from 'react';
 import { nodeAnchor, type PrimitiveNode, type z } from '@elastic/isomer-sdk';
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
+import { type SlackBlock, slackContainer } from '@elastic/isomer-sdk/slack';
 
 import { gridCatalog } from '../schema/catalog';
 import { gridExamples } from '../schema/examples/grid';
@@ -243,6 +244,30 @@ const gridMarkdown = (
   ]),
 ];
 
+const header = (text: string, level: 2 | 4): SlackBlock => ({
+  type: 'header',
+  level,
+  text: { type: 'plain_text', text, emoji: true },
+});
+
+// Sections become containers; panel titles are headers inside them, since a
+// container nested in another is unwrapped and would lose its title.
+const gridSlack = (
+  node: GridNode,
+  renderSlack: (node: PrimitiveNode) => readonly SlackBlock[]
+): SlackBlock[] => [
+  ...(node.title ? [header(node.title, 2)] : []),
+  ...blocksOf(node).flatMap((block) => {
+    const panels = shown(block).flatMap(({ panel }) => [
+      ...(panel.title ? [header(panel.title, 4)] : []),
+      ...renderSlack(panel.node),
+    ]);
+    return block.section
+      ? slackContainer(block.section.title, panels, { fallbackLevel: 3 })
+      : panels;
+  }),
+];
+
 /** The `snapshot` height of a grid laid out at full width. */
 export const gridSnapshotHeight = (node: GridNode): number =>
   [
@@ -280,5 +305,7 @@ export const gridPrimitive = definePrimitive<GridNode>({
       gridText(node, (child) => scope.renderText(child)),
     markdown: (node, { scope }) =>
       gridMarkdown(node, (child) => scope.renderMarkdownContent(child)),
+    slack: (node, { collector, scope }) =>
+      gridSlack(node, (child) => scope.renderSlack(child, collector)),
   },
 });

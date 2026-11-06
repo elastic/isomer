@@ -178,10 +178,40 @@ describe('the charts pack', () => {
     ]);
   });
 
-  it('gives text and Markdown the Scene summary', () => {
+  it('writes text from the Scene: summary, then table', () => {
     const runtime = runtimeFor(pack);
-    expect(runtime.surfaces.text.render(composition, { heading: false })).toBe(
-      `${metricSingleValueScene.summary}\n\n${xyTimeSeriesScene.summary}`
+    expect(
+      runtime.surfaces.text.render(
+        { type: 'view', body: [metricSingleValue] },
+        { heading: false }
+      )
+    ).toBe('Requests: Count of records is 14,074.\n\nCount of records\n14,074');
+  });
+
+  it('sends charts to Slack as pictures with their text as alt text', () => {
+    const runtime = runtimeFor(pack);
+    const { blocks, assets } = runtime.surfaces.slack.render(composition, {
+      heading: false,
+      collectAssets: true,
+    });
+    const text = runtime.surfaces.text.renderNode(xyTimeSeries);
+    expect(assets.map(({ node }) => node.type)).toEqual(['metric', 'xyChart']);
+    const images = blocks.filter(
+      (block) => (block as { type: string }).type === 'image'
     );
+    expect(images).toHaveLength(2);
+    expect(images[1]).toMatchObject({ alt_text: text });
+    expect(text).toContain(xyTimeSeriesScene.summary);
+    expect(text).toContain('05:00 | 164');
+  });
+
+  it('degrades charts to their Markdown on Slack without asset collection', () => {
+    const runtime = runtimeFor(pack);
+    const { blocks, assets } = runtime.surfaces.slack.render(composition, {
+      heading: false,
+    });
+    expect(assets).toEqual([]);
+    expect(JSON.stringify(blocks)).toContain(xyTimeSeriesScene.summary);
+    expect(JSON.stringify(blocks)).not.toContain('"image"');
   });
 });

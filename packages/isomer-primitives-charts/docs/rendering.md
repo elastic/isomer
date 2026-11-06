@@ -63,9 +63,19 @@ A host that loads the charts pack without a style adapter names the runtime's ty
 
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
 
-## Text and Markdown
+## Text, Markdown and Slack
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. `sceneToText` and `sceneToMarkdown` do this for any Scene.
+
+```text
+Requests over time: Count of records by @timestamp per hour, from 98 to 210.
+
+@timestamp per hour | Count of records
+00:00 | 120
+01:00 | 98
+```
+
+On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ## `grid`
 
@@ -73,7 +83,7 @@ A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEM
 
 When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, so a chart resolves its ticks for that box. Without a `size` the grid passes none on: a browser lays it out fluidly.
 
-On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text and Markdown list the panels in reading order under their section titles; a collapsed section is its title alone.
+On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone.
 
 ## `unsupported`
 
