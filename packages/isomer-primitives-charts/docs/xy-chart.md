@@ -29,7 +29,7 @@ Rules:
 - A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.
 - Only `bar` and `area` layers stack.
 - At least one layer is a `data` layer.
-- Every data layer uses the same x column; absent means every row draws at one x position.
+- Each data layer reads its own x column; absent means its rows draw at one x position (zero on a continuous axis).
 - An annotation range's `from` is not after its `to`.
 - A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.

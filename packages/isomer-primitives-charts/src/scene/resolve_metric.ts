@@ -17,6 +17,7 @@ import {
   keyPart,
   type ResolveChartOptions,
   resolveInteractions,
+  scalarCell,
   sceneBase,
   titled,
   toNumber,
@@ -132,7 +133,7 @@ export const resolveMetric = (
     const { data: trendData, x, y, breakdown } = node.background;
     const trendResolution = createResolution(trendData, options);
     trendData.rows.forEach((_, row) => {
-      const epoch = toEpoch(trendResolution.cell(x, row));
+      const epoch = toEpoch(scalarCell(trendResolution.cell(x, row)));
       if (epoch === undefined) {
         return;
       }
@@ -235,7 +236,10 @@ export const resolveMetric = (
             ? 0
             : Math.min(1, Math.max(0, value / max)),
         orientation: node.background.orientation ?? 'horizontal',
-        color: color ?? categoricalColor(0),
+        color:
+          color !== undefined && onBackground
+            ? textOn(background, chrome.background)
+            : (color ?? categoricalColor(0)),
         track: chrome.gridLine,
       };
     }
@@ -271,7 +275,10 @@ export const resolveMetric = (
             ? ys.reduce((high, value) => Math.max(high, value), -Infinity)
             : 0,
         ],
-        color: color ?? categoricalColor(0),
+        color:
+          color !== undefined && onBackground
+            ? textOn(background, chrome.background)
+            : (color ?? categoricalColor(0)),
       };
     }
 

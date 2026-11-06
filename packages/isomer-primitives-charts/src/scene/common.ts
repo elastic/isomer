@@ -153,8 +153,15 @@ export const describe = (
   parts: readonly (readonly [string, string])[]
 ): string => parts.map(([label, value]) => `${label}: ${value}`).join(' · ');
 
-export const toNumber = (cell: Cell | undefined): number | undefined =>
-  typeof cell === 'number' && Number.isFinite(cell) ? cell : undefined;
+export const scalarCell = (cell: Cell | undefined): Cell | undefined =>
+  Array.isArray(cell) ? cell.find((value) => value !== null) : cell;
+
+export const toNumber = (cell: Cell | undefined): number | undefined => {
+  const value = scalarCell(cell);
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
+};
 
 export const sceneBase = (
   resolution: Resolution,

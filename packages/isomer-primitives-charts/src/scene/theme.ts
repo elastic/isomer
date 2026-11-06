@@ -65,7 +65,10 @@ export const resolveColor = (
   if ('palette' in color) {
     return categoricalColor(color.index);
   }
-  return color[scheme];
+  const hex = color[scheme];
+  return hex.length === 4
+    ? `#${hex[1]}${hex[1]}${hex[2]}${hex[2]}${hex[3]}${hex[3]}`
+    : hex;
 };
 
 const channel = (hex: string, offset: number) => {
