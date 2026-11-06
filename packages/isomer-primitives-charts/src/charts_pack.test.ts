@@ -23,6 +23,7 @@ import type {
   ResolveSceneOptions,
 } from './render/context';
 import { gridSnapshotHeight } from './render/grid';
+import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
@@ -292,8 +293,10 @@ CLOSED`);
     expect(resolved[0]?.size).toEqual({ width: 480, height: 80 });
     resolved.length = 0;
     html(grid);
-    // Without a host width: the nominal 1,200 px, (1200 − 376) × 24/48 + 184.
-    expect(resolved[0]?.size).toEqual({ width: 596, height: 80 });
+    // Without a host width: the frame's content, 960 − 2 × 16 = 928 px, and
+    // (928 − 47 × 8) × 24/48 + 23 × 8 for a half-width panel.
+    expect(CHARTS_THEME.grid.nominalWidth).toBe(928);
+    expect(resolved[0]?.size).toEqual({ width: 460, height: 80 });
   });
 
   it('draws nested charts in the frame theme on snapshot', () => {
