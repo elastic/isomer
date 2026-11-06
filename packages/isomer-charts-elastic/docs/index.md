@@ -29,7 +29,7 @@ The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.c
 
 ## Headless, on Node
 
-`@elastic/isomer-charts-elastic/headless` draws the same specs with Elastic Charts' headless renderer, with no DOM, worker or native canvas. It needs a release of Elastic Charts with headless SVG output ([elastic/elastic-charts#2939](https://github.com/elastic/elastic-charts/pull/2939)); until then it builds only against a local build of that pull request.
+`@elastic/isomer-charts-elastic/headless` draws the same specs with Elastic Charts' headless renderer, with no DOM, worker or native canvas. It needs a release of Elastic Charts with headless SVG output ([elastic/elastic-charts#2939](https://github.com/elastic/elastic-charts/pull/2939)). Until one ships, this repository's `feature/charts-rendering` branch installs a build of that pull request from `vendor/elastic-charts`.
 
 ```ts
 import { createChartsPack } from '@elastic/isomer-primitives-charts';
@@ -40,7 +40,7 @@ const imagePack = createChartsPack({
 });
 ```
 
-`createElasticChartsHeadlessRenderer` is a `SceneRenderer` for `node` that supports `metric` and `xy`. It puts the chart's SVG inline in a `div`, so `snapshot` markup carries it to an image backend such as takumi. Register it in the pack's `sceneRenderers`, since `snapshot` takes no host context. It draws at the Scene's `size`, which the charts pack gives every chart on Node.
+`createElasticChartsHeadlessRenderer` is a `sized` `SceneRenderer` for `metric` and `xy`. It runs on `node`; pass `environments` to add `browser` where markup is static, such as a preview of the `html` or `snapshot` surface. It puts the chart's SVG inline in a `div`, so `snapshot` markup carries it to an image backend such as takumi. Register it in the pack's `sceneRenderers`, since `snapshot` takes no host context. It draws at the Scene's `size`. Being `sized`, it gets a Scene with one wherever it draws: a grid panel's box, the host's `size`, or the chart's [size spec](../../isomer-primitives-charts/docs/rendering.md#chart-size).
 
 `renderSceneSvg(scene, options?)` returns `{ svg, width, height, debugState? }`. Options choose how text is drawn:
 

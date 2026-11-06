@@ -8,15 +8,20 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
-  CHARTS_THEME,
+  chartSize,
+  chartSizeSpec,
   createChartsPack,
   metricExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts';
+import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ColorScheme,
-  resolveChart,
+  formatAxisValue,
   type Scene,
+  type SceneAxis,
+  type SceneSize,
+  type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
@@ -27,32 +32,29 @@ import {
   renderSceneSvg,
 } from './headless';
 
-const { chart } = CHARTS_THEME;
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 
-// Each Scene resolves for the box the charts pack gives a chart on Node.
+// Each Scene resolves for its size spec's box, as the charts pack sizes a chart on Node.
+const sized = <TScene extends Scene>(resolve: (size?: SceneSize) => TScene) =>
+  resolve(chartSize(chartSizeSpec(resolve())!));
+
 const xyCases = xyChartExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
-    scene: resolveChart(node, {
-      scheme,
-      size: { width: chart.width, height: chart.xyHeight },
-    }),
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
   }))
 );
 const metricCases = metricExamples.flatMap(({ name, node }) =>
-  SCHEMES.map((scheme) => {
-    const { rows } = resolveChart(node, { scheme }).layout;
-    return {
-      name,
-      scheme,
-      scene: resolveChart(node, {
-        scheme,
-        size: { width: chart.width, height: chart.metricTileHeight * rows },
-      }),
-    };
-  })
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
 );
 
 /** Every string the SVG draws as `<text>`, unescaped. */
@@ -66,6 +68,12 @@ const svgTexts = (svg: string): string[] =>
 // Elastic Charts may break a string across lines, even mid-word, and draws a
 // metric value's unit apart from its number, so compare without spaces.
 const squash = (text: string) => text.replace(/\s+/g, '');
+
+/** A drawn tick's expected label: its category's label, or the value through `formatAxisValue`. */
+const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
+  (axis.scale === 'ordinal'
+    ? scene.categories.find(({ x }) => x === value)?.label
+    : undefined) ?? formatAxisValue(scene, axis, value as number);
 
 describe('renderSceneSvg', () => {
   it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
@@ -96,16 +104,22 @@ describe('renderSceneSvg', () => {
       }
       // DebugState lists what Elastic Charts drew on each axis, when the
       // Elastic Charts build returns it from a headless render.
-      const sceneLabels = new Set(
-        axes.flatMap(({ ticks }) => ticks.map(({ label }) => label))
-      );
       const drawn = [
-        ...(debugState?.axes?.x ?? []),
-        ...(debugState?.axes?.y ?? []),
-      ].flatMap(({ labels }) => labels.filter((label) => label !== ''));
-      for (const label of drawn) {
-        expect(sceneLabels).toContain(label);
-        expect(texts).toContain(label);
+        ...(debugState?.axes?.x ?? []).map(
+          (state) => [scene.axes.x, state] as const
+        ),
+        ...(debugState?.axes?.y ?? []).map(
+          (state) => [scene.axes[state.id as 'y' | 'y2'], state] as const
+        ),
+      ];
+      for (const [axis, { labels, values }] of drawn) {
+        expect(axis).toBeDefined();
+        labels.forEach((label, index) => {
+          if (label !== '') {
+            expect(label).toBe(sceneLabel(scene, axis!, values[index]));
+            expect(texts).toContain(label);
+          }
+        });
       }
     }
   );
@@ -145,8 +159,13 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node only, for metric and xy', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric and xy', () => {
     expect(renderer.environments).toEqual(['node']);
+    expect(renderer.sized).toBe(true);
+    expect(
+      createElasticChartsHeadlessRenderer({ environments: ['node', 'browser'] })
+        .environments
+    ).toEqual(['node', 'browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
@@ -156,8 +175,11 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ['metric', metricExamples[0]!.node],
     ['xyChart', xyChartExamples[0]!.node],
   ] as const)(
-    'draws a %s through the charts pack at its theme box',
+    'draws a %s through the charts pack at its size spec box',
     (_, node) => {
+      const { width } = chartSize(
+        chartSizeSpec(resolveChart(node as never, { scheme: 'light' }))!
+      );
       const runtime = createIsomerRuntime({
         packs: [createChartsPack({ sceneRenderers: [renderer] })],
       });
@@ -168,7 +190,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
           runtime.surfaces.react.render(view(node), { heading: false })
         )
       );
-      expect(html).toMatch(new RegExp(`<svg[^>]* width="${chart.width}"`));
+      expect(html).toMatch(new RegExp(`<svg[^>]* width="${width}"`));
     }
   );
 });

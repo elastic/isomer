@@ -21,12 +21,14 @@ import {
 } from '@elastic/charts/dist/headless';
 import type {
   Scene,
+  SceneEnvironment,
   SceneKind,
   SceneRenderer,
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { sceneSpecs } from './specs';
 
+/** How {@link renderSceneSvg} draws text. */
 export interface HeadlessSvgOptions {
   /** Draws text as this font's glyph outlines, so output is the same wherever it is drawn. */
   readonly font?: SvgFont;
@@ -34,6 +36,7 @@ export interface HeadlessSvgOptions {
   readonly measureTextWidth?: SvgTextWidthMeasure;
 }
 
+/** A Scene drawn by {@link renderSceneSvg}: the SVG markup and its box. */
 export interface HeadlessSvg {
   readonly svg: string;
   readonly width: number;
@@ -74,18 +77,30 @@ export const renderSceneSvg = (
   };
 };
 
+/** What {@link createElasticChartsHeadlessRenderer} takes: text options and where it runs. */
+export interface HeadlessRendererOptions extends HeadlessSvgOptions {
+  /**
+   * Where the renderer runs. Absent: Node alone. Add `browser` where markup
+   * is static, such as a preview of the `html` or `snapshot` surface.
+   */
+  readonly environments?: readonly SceneEnvironment[];
+}
+
 const KINDS: readonly SceneKind[] = ['metric', 'xy'];
 
 /**
- * A `SceneRenderer` for Node: the chart's SVG inline in a `div`, so the
- * `snapshot` surface's markup carries it to takumi. Register it in the charts
+ * A `SceneRenderer` drawing the chart's SVG inline in a `div`, so static
+ * markup, such as the `snapshot` surface's, carries it to takumi. It is
+ * `sized`: every Scene it draws carries a size. Register it in the charts
  * pack's `sceneRenderers`, since `snapshot` takes no host context.
  */
-export const createElasticChartsHeadlessRenderer = (
-  options: HeadlessSvgOptions = {}
-): SceneRenderer<ReactNode> => ({
+export const createElasticChartsHeadlessRenderer = ({
+  environments = ['node'],
+  ...options
+}: HeadlessRendererOptions = {}): SceneRenderer<ReactNode> => ({
   id: 'elastic-charts-headless',
-  environments: ['node'],
+  environments,
+  sized: true,
   supports: (kind) => KINDS.includes(kind),
   render: (scene) => {
     const { svg, width, height } = renderSceneSvg(scene, options);

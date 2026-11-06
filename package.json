@@ -107,7 +107,8 @@
     "overrides": {
       "katex": "^0.18.2",
       "nwsapi": "2.2.2",
-      "smol-toml": "^1.9.1"
+      "smol-toml": "^1.9.1",
+      "@elastic/charts": "file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz"
     },
     "onlyBuiltDependencies": [
       "esbuild"
