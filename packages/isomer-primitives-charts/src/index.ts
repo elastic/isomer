@@ -144,3 +144,17 @@ export {
 export { type ColumnReference, columnRefSchema } from './schema/references';
 export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
+export { drawScene, sceneDrawSize } from './svg/draw';
+export { toReactDom } from './svg/react_dom';
+export { isomerSvgRenderer } from './svg/renderer';
+export { SVG_THEME } from './svg/theme';
+export {
+  type SvgAttributes,
+  type SvgChild,
+  type SvgElement,
+  type SvgTag,
+  el,
+  svgText,
+  toSvgMarkup,
+  walkSvg,
+} from './svg/tree';

@@ -26,6 +26,10 @@ export const CHARTS_THEME = {
     /** Description and reason size, in pixels. */
     body: 12,
   },
+  metric: {
+    /** Tiles per row when a breakdown sets no `maxColumns`: Kibana's `LENS_METRIC_BREAKDOWN_DEFAULT_MAX_COLUMNS`. */
+    maxColumns: 3,
+  },
   unsupported: {
     padding: 12,
     borderWidth: 1,

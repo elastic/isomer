@@ -145,10 +145,13 @@ describe('the charts pack', () => {
     expect(html).toContain('<output>engine:xy:light</output>');
   });
 
-  it('falls back to the summary when nothing else supports the kind', () => {
+  it('falls back to isomer-svg when nothing else supports the kind', () => {
     const bare = createChartsPack({ resolveScene });
     const html = draw(bare);
-    expect(html).toContain(`<p>${metricSingleValueScene.summary}</p>`);
+    expect(html).toContain(
+      `<svg width="240" height="160" viewBox="0 0 240 160" role="img" aria-label="${metricSingleValueScene.summary}"`
+    );
+    expect(html).toContain(`aria-label="${xyTimeSeriesScene.summary}"`);
   });
 
   it('resolves for the scheme, locale, time zone and size the host gives', () => {
