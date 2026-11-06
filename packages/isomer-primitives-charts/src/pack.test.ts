@@ -18,6 +18,7 @@ import type {
   ReactSceneRenderer,
   ResolveSceneOptions,
 } from './render/context';
+import { chartSize, chartSizeSpec } from './render/size';
 import { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
 import { selectSceneRenderer } from './scene/select';
 import type { Scene, SceneRenderEnv } from './scene/types';
@@ -167,6 +168,69 @@ describe('the charts pack', () => {
       timeZone: 'Europe/Berlin',
       size: { width: 320, height: 200 },
     });
+  });
+
+  describe('without a host size', () => {
+    const sizes = () =>
+      resolved.flatMap(({ size }) => (size === undefined ? [] : [size]));
+
+    it('resolves each chart on Node for its size spec at the theme width', () => {
+      resolved.length = 0;
+      draw(pack);
+      expect(sizes()).toEqual([
+        chartSize(chartSizeSpec(metricSingleValueScene)!),
+        chartSize(chartSizeSpec(xyTimeSeriesScene)!),
+      ]);
+    });
+
+    it('gives each chart its spec as CSS in a browser, and resolves without a size', () => {
+      resolved.length = 0;
+      const html = draw(pack, { environment: 'browser' });
+      expect(sizes()).toEqual([]);
+      expect(html).toContain('aspect-ratio:300 / 160;max-width:300px');
+      expect(html).toContain('aspect-ratio:16 / 9;min-height:300px');
+    });
+
+    it('resolves for the spec box in a browser too when the renderer draws a fixed size', () => {
+      const sized: ReactSceneRenderer = {
+        ...tagging('picture', ['metric', 'xy']),
+        sized: true,
+      };
+      resolved.length = 0;
+      const html = draw(
+        createChartsPack({ resolveScene, sceneRenderers: [sized] }),
+        {
+          environment: 'browser',
+        }
+      );
+      expect(sizes()).toEqual([
+        chartSize(chartSizeSpec(metricSingleValueScene)!),
+        chartSize(chartSizeSpec(xyTimeSeriesScene)!),
+      ]);
+      expect(html).not.toContain('aspect-ratio');
+    });
+
+    it('reports the spec box height to snapshot frames', () => {
+      const heightOf = (type: string, node: ChartNode) =>
+        (
+          pack.primitives.find((definition) => definition.type === type)!
+            .metrics?.snapshotHeight as (node: ChartNode) => number
+        )(node);
+      expect(heightOf('metric', metricSingleValue)).toBe(
+        chartSize(chartSizeSpec(metricSingleValueScene)!).height
+      );
+      expect(heightOf('xyChart', xyTimeSeries)).toBe(
+        chartSize(chartSizeSpec(xyTimeSeriesScene)!).height
+      );
+    });
+  });
+
+  it('uses the host size over any size spec', () => {
+    resolved.length = 0;
+    const size = { width: 320, height: 200 };
+    const html = draw(pack, { environment: 'browser', size });
+    expect(resolved.map((options) => options.size)).toEqual([size, size]);
+    expect(html).not.toContain('aspect-ratio');
   });
 
   it('tells the renderer where it draws and which node it is', () => {
