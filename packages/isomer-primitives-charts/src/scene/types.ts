@@ -11,6 +11,7 @@
 // translates; it never formats, picks a color, sorts or chooses ticks.
 
 import type { Cell, ColumnRole, ColumnType } from '../schema/data';
+import type { ChartEvent, SelectTarget } from '../schema/events';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = ['metric', 'xy'] as const;
@@ -32,6 +33,39 @@ export interface SceneSource {
   readonly rows: readonly number[];
   readonly columns: readonly string[];
 }
+
+/**
+ * What selecting a part of the chart raises, decided by the resolver: the
+ * `select` event without the node id and `negate`. `columns` are the dimension
+ * columns that identify the target, and `values` their raw cells, which every
+ * row in `rows` shares. Present only where the node offers `target`.
+ */
+interface SceneSelectionBase {
+  readonly rows: readonly number[];
+  readonly columns: readonly string[];
+  readonly values: Readonly<Record<string, Cell>>;
+  readonly description: string;
+}
+
+export type SceneSelection =
+  | (SceneSelectionBase & {
+      readonly target: 'datum';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: 'series';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: 'legend';
+      readonly series: { readonly layer: number; readonly y: number };
+      readonly seriesKey: string;
+    })
+  | (SceneSelectionBase & {
+      readonly target: Exclude<SelectTarget, 'datum' | 'series' | 'legend'>;
+    });
 
 /** One labelled value in a tooltip, already formatted. */
 export interface SceneTooltipEntry {
@@ -75,12 +109,30 @@ export interface SceneTable {
     /** The row's index in `data.rows`. */
     readonly row: number;
     readonly cells: readonly string[];
+    /** Raw node data in matching column order, for constructing chart events without parsing display text. */
+    readonly values: readonly Cell[];
   }[];
 }
 
 export interface SceneSize {
   readonly width: number;
   readonly height: number;
+}
+
+/** What the node offers, resolved. A renderer offers nothing when the host passes no `onEvent`. */
+export interface SceneInteractions {
+  /** Empty when nothing is selectable. */
+  readonly select: readonly SelectTarget[];
+  /** The continuous column a range can be brushed along. */
+  readonly brush?: { readonly column: string };
+  readonly sync: { readonly cursor: boolean; readonly tooltips: boolean };
+  /** Drawn on every surface, including images and text. */
+  readonly link?: { readonly href: string; readonly label: string };
+  /** Static highlights, by row. */
+  readonly emphasis: readonly {
+    readonly rows: readonly number[];
+    readonly note?: string;
+  }[];
 }
 
 interface SceneBase {
@@ -97,6 +149,7 @@ interface SceneBase {
   /** One sentence that states what the chart shows, for screen readers and text surfaces. */
   readonly summary: string;
   readonly table: SceneTable;
+  readonly interactions: SceneInteractions;
 }
 
 export type MetricAlignment = 'left' | 'center' | 'right';
@@ -160,6 +213,8 @@ export interface MetricTile {
   readonly tooltip: SceneTooltip;
   /** What a selection of the tile describes, such as "host.name: web-01 · Used: 412 GB". */
   readonly description: string;
+  /** The `tile` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface MetricScene extends SceneBase {
@@ -206,9 +261,26 @@ export interface XyMark {
   readonly description: string;
   /** The mark falls in a partial bucket at an edge of the queried range. */
   readonly partial?: boolean;
+  /** The `datum` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** One x position with data, in axis order. */
+export interface XyCategory {
+  /** As marks place it: epoch milliseconds, a number, or a category. */
+  readonly x: number | string;
+  /** The position as the x axis formats it. */
+  readonly label: string;
+  /** The `category` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface XySeries {
+  /** The source data layer and y entry, uniquely identifying this series in its node. */
+  readonly series: {
+    readonly layer: number;
+    readonly y: number;
+  };
   /** The series key, as `colors.byKey` names it. */
   readonly key: string;
   readonly label: string;
@@ -239,11 +311,18 @@ export interface XySeries {
   readonly valueLabels: boolean;
   /** The cells the whole series represents, for a series or legend selection. */
   readonly source: SceneSource;
+  /** The `series` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
   /** In x order. */
   readonly marks: readonly XyMark[];
 }
 
 export interface SceneLegendItem {
+  /** The source data layer and y entry, uniquely identifying this series in its node. */
+  readonly series: {
+    readonly layer: number;
+    readonly y: number;
+  };
   readonly key: string;
   readonly label: string;
   readonly color: SceneColor;
@@ -255,6 +334,8 @@ export interface SceneLegendItem {
   }[];
   readonly source: SceneSource;
   readonly description: string;
+  /** The `legend` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
 }
 
 export interface SceneLegend {
@@ -307,6 +388,11 @@ export type SceneAnnotation =
       readonly tooltip: SceneTooltip;
     };
 
+export type XySceneLayer =
+  | { readonly kind: 'series'; readonly series: XySeries }
+  | { readonly kind: 'referenceLine'; readonly line: SceneReferenceLine }
+  | { readonly kind: 'annotation'; readonly annotation: SceneAnnotation };
+
 export interface XyScene extends SceneBase {
   readonly kind: 'xy';
   readonly orientation: 'vertical' | 'horizontal';
@@ -315,10 +401,10 @@ export interface XyScene extends SceneBase {
     readonly y?: SceneAxis;
     readonly y2?: SceneAxis;
   };
-  /** In draw order: later series draw on top. */
-  readonly series: readonly XySeries[];
-  readonly referenceLines: readonly SceneReferenceLine[];
-  readonly annotations: readonly SceneAnnotation[];
+  /** Every x position with data, in axis order. */
+  readonly categories: readonly XyCategory[];
+  /** Resolved series and helper marks in the chart's exact cross-kind draw order. */
+  readonly layers: readonly XySceneLayer[];
   readonly legend: SceneLegend;
   readonly barMinimumHeight: number;
   /** A helper mark: the current-time marker, in epoch milliseconds. */
@@ -332,14 +418,16 @@ export type SceneEnvironment = 'browser' | 'node' | 'native';
 /** What a renderer is told about where it draws, beside the Scene itself. */
 export interface SceneRenderEnv {
   readonly environment: SceneEnvironment;
-  /** The node's `id`, which events name. */
+  /** The node's `id`, which events name. A renderer raises no event for a node without one. */
   readonly nodeId?: string;
+  /** Receives every raised event. Absent means the chart offers no interaction. */
+  readonly onEvent?: (event: ChartEvent) => void;
 }
 
 /**
- * Draws a Scene. Hosts pass a preference list; the first renderer that runs in
- * the current environment and supports the Scene's kind draws it. `TOutput` is
- * what the renderer produces, such as a React node.
+ * Describes a renderer for a Scene. This interface does not provide renderer
+ * selection or a fallback. `TOutput` is what the renderer produces, such as a
+ * React node.
  */
 export interface SceneRenderer<TOutput = unknown> {
   /** Such as `elastic-charts`, `elastic-charts-node`, `isomer-svg` or `echarts`. */

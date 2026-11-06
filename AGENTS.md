@@ -52,7 +52,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-primitives-slides` is the in-repo reference pack. Its `src/registry.ts` and `src/body_node.ts` are hand-maintained the same way, and `src/registry.test.ts` fails when they drift. Its docs live in `packages/isomer-primitives-slides/docs/`. Primitive packs for Kibana iterate in that repo.
 
-`packages/isomer-primitives-charts` is the published chart pack: chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface. Hosts and Kibana materializers build against it.
+`packages/isomer-primitives-charts` is the chart pack, `"private": true` until the npm admin seeds `@elastic/isomer-primitives-charts` (TODO: remove `private`, and add it back to the Trusted Publisher list in RELEASING.md, once seeded; unseeded, its publish fails with `E404`): chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface. Hosts and Kibana materializers build against it.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 
@@ -64,7 +64,7 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 ## Release posture
 
-Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the charts pack is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the charts pack (private until seeded on npm) is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A published package never lists a private one in `dependencies` or `peerDependencies`, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 

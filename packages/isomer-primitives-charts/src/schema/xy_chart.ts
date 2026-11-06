@@ -10,6 +10,12 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
+import {
+  brushingInteractionsSchemaFor,
+  checkInteractions,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+} from './events';
 import { portableFormatSchema } from './format';
 import {
   checkColumnReferences,
@@ -58,7 +64,7 @@ const XY_LEGEND_STATISTICS = [
   'current_and_last_value',
 ] as const;
 
-const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
+const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
@@ -237,6 +243,16 @@ const XY_DESCRIPTION = [
 const xyChartObjectSchema = z.object({
   type: z.literal('xyChart'),
   ...chartCoreShape,
+  ...interactionsCoreShape,
+  interactions: brushingInteractionsSchemaFor(
+    ['datum', 'series', 'category', 'legend'],
+    {
+      hiddenSeries: z
+        .array(z.string())
+        .optional()
+        .describe('Series keys hidden until the reader shows them.'),
+    }
+  ).optional(),
   orientation: z
     .enum(['vertical', 'horizontal'])
     .optional()
@@ -392,12 +408,16 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
       const references: ColumnReference[] = [];
+      const brushColumns: string[] = [];
       let dataLayers = 0;
       node.layers.forEach((layer, index) => {
         if (layer.kind === 'annotations') {
           checkAnnotationRanges(layer, index, context);
         } else if (layer.kind === 'data') {
           dataLayers += 1;
+          if (layer.x !== undefined) {
+            brushColumns.push(layer.x);
+          }
           references.push(...dataLayerReferences(layer, index));
           checkDataLayer(layer, index, node.data.rows.length, context);
         }
@@ -413,6 +433,7 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
+      checkInteractions(node, context, { brushColumns });
     },
     [
       COLUMN_REF_RULE,
@@ -421,6 +442,8 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       XY_RULES.stack,
       XY_RULES.dataLayer,
       XY_RULES.rangeOrder,
+      INTERACTION_RULES.brushColumn,
+      INTERACTION_RULES.emphasisRows,
     ]
   )
 );

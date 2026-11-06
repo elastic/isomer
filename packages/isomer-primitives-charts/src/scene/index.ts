@@ -5,7 +5,18 @@
  * 2.0.
  */
 
-export { metricSingleValueScene, xyTimeSeriesScene } from './examples';
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from '../schema/events';
+export { brushEvent, selectEvent } from './events';
+export {
+  metricSingleValueScene,
+  xyInteractiveScene,
+  xyTimeSeriesScene,
+} from './examples';
 export { selectSceneRenderer } from './select';
 export {
   type AxisId,
@@ -21,20 +32,24 @@ export {
   type SceneColor,
   type SceneColumn,
   type SceneEnvironment,
+  type SceneInteractions,
   type SceneKind,
   type SceneLegend,
   type SceneLegendItem,
   type SceneReferenceLine,
   type SceneRenderEnv,
   type SceneRenderer,
+  type SceneSelection,
   type SceneSize,
   type SceneSource,
   type SceneTable,
   type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
+  type XyCategory,
   type XyMark,
   type XyScene,
+  type XySceneLayer,
   type XySeries,
   SCENE_KINDS,
 } from './types';

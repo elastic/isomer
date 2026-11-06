@@ -18,6 +18,7 @@ import { customChecksOf } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { rulesOf } from './cross_field';
+import { navigationHrefSchema } from './links';
 import { contractDefinitions } from './schema.fixtures';
 
 const members = new Map(
@@ -30,6 +31,19 @@ const memberSchemas = new Set<unknown>(members.values());
 
 const customChecks = (root: z.ZodType): object[] =>
   customChecksOf(root, { skip: (schema) => memberSchemas.has(schema) });
+
+const navigationHrefChecks = new Set(customChecksOf(navigationHrefSchema));
+
+const rulesFor = (check: object): readonly string[] => {
+  const rules = rulesOf(check);
+  if (rules) {
+    return rules;
+  }
+  if (navigationHrefChecks.has(check)) {
+    return [NAVIGATION_HREF_RULE];
+  }
+  throw new Error('Custom check has no stated rule metadata.');
+};
 
 const descriptions = (value: unknown): string[] => {
   if (Array.isArray(value)) {
@@ -54,7 +68,7 @@ const rows = [...members].map(([type, schema]) => ({
 
 describe('stated rules', () => {
   it('finds the checks it guards', () => {
-    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(3);
+    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(4);
   });
 
   it.each(rows)(
@@ -62,15 +76,7 @@ describe('stated rules', () => {
     ({ type, checks }) => {
       const stated = descriptions(authoringSchemaSubset(authoring, [type]));
       for (const check of checks) {
-        // The SDK's URL check is the one not made here; it states its own rule.
-        const rules =
-          rulesOf(check) ??
-          (type === 'unsupported' ? [NAVIGATION_HREF_RULE] : undefined);
-        expect(
-          rules,
-          `${type} has a check made without cross_field`
-        ).toBeDefined();
-        for (const rule of rules ?? []) {
+        for (const rule of rulesFor(check)) {
           expect(
             stated.some((description) =>
               description.toLowerCase().includes(rule.toLowerCase())
@@ -81,4 +87,16 @@ describe('stated rules', () => {
       }
     }
   );
+
+  it('does not treat an unregistered custom check as a URL check', () => {
+    const check = customChecksOf(navigationHrefSchema.refine(() => true)).find(
+      (candidate) => !navigationHrefChecks.has(candidate) && !rulesOf(candidate)
+    );
+    if (!check) {
+      throw new Error('Expected custom checks on the chart link schema.');
+    }
+    expect(() => rulesFor(check)).toThrow(
+      'Custom check has no stated rule metadata.'
+    );
+  });
 });

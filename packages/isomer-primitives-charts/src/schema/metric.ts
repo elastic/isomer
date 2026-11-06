@@ -12,6 +12,12 @@ import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import { chartDataSchema } from './data';
 import {
+  checkInteractions,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+} from './events';
+import {
   checkColumnReferences,
   COLUMN_REF_RULE,
   type ColumnReference,
@@ -120,6 +126,8 @@ const METRIC_DESCRIPTION = [
 const metricObjectSchema = z.object({
   type: z.literal('metric'),
   ...chartCoreShape,
+  ...interactionsCoreShape,
+  interactions: interactionsSchemaFor(['tile']).optional(),
   value: z.strictObject({
     column: columnRefSchema.describe(
       `The column holding the headline value. ${COLUMN_REF_RULE}`
@@ -282,6 +290,7 @@ export const metricSchema = metricObjectSchema
           missing: COLUMN_REF_RULE,
           type: METRIC_RULES.columnType,
         });
+        checkInteractions(node, context);
         if (node.background?.kind === 'trend') {
           checkTrend(node, node.background, context);
         }
@@ -303,6 +312,7 @@ export const metricSchema = metricObjectSchema
         METRIC_RULES.bands,
         METRIC_RULES.percentage,
         METRIC_RULES.trendBreakdown,
+        INTERACTION_RULES.emphasisRows,
       ]
     )
   );

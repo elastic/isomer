@@ -10,5 +10,6 @@ toc:
   - file: xy-chart.md
   - file: grid.md
   - file: unsupported.md
+  - file: interactions.md
   - file: scene.md
   - file: rendering.md

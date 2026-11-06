@@ -66,6 +66,53 @@ const statusRows = hours(3).flatMap((time, index) => [
   [time, null, pick([3, 0, 1], index)],
 ]);
 
+/** Interactive: selectable marks, series and legend items, a time brush, and a static highlight. */
+export const xyInteractive: XyChartNode = {
+  type: 'xyChart',
+  id: 'responses',
+  title: 'Responses by status',
+  data: {
+    columns: [
+      { ...timeColumn, source: { field: '@timestamp', sourceParams: {} } },
+      {
+        id: 'status',
+        label: 'Top 2 values of response.code',
+        type: 'string',
+        role: 'dimension',
+        source: {
+          field: 'response.code',
+          otherBucket: true,
+          missingBucket: true,
+        },
+      },
+      countColumn,
+    ],
+    rows: statusRows,
+  },
+  layers: [
+    {
+      kind: 'data',
+      mark: 'bar',
+      stack: 'stacked',
+      x: 'time',
+      y: [{ column: 'count' }],
+      splitBy: 'status',
+    },
+  ],
+  axes: { x: { scale: 'temporal' } },
+  interactions: {
+    select: ['datum', 'series', 'category', 'legend'],
+    brush: { column: 'time' },
+    sync: { cursor: true, tooltips: true },
+    link: {
+      href: 'https://kibana.example.com/app/lens#/edit/b2f4f8a0-1d2c-11ee-9f1a-0b2e5c1e7d3a',
+      label: 'Open in Kibana',
+    },
+    initial: { hiddenSeries: ['\\null'] },
+  },
+  emphasis: [{ rows: [5], note: '404s peak at 01:00' }],
+};
+
 /** Named `xyChart` examples covering the corpus edge cases, each valid in a composition. */
 export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
   {
@@ -114,6 +161,12 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       axes: { x: { scale: 'temporal', title: '@timestamp per hour' } },
       legend: { visibility: 'visible', position: 'right' },
     },
+  },
+  {
+    name: 'Interactive stacked bars',
+    description:
+      'Selectable marks, series and legend items, a time brush, synced cursor, a link back to the source, a series hidden at first, and a highlighted row.',
+    node: xyInteractive,
   },
   {
     name: 'Horizontal bars',
