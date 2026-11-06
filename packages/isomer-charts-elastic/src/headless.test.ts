@@ -8,7 +8,8 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import {
-  CHARTS_THEME,
+  chartSize,
+  chartSizeSpec,
   createChartsPack,
   metricExamples,
   xyChartExamples,
@@ -17,6 +18,7 @@ import {
   type ColorScheme,
   resolveChart,
   type Scene,
+  type SceneSize,
 } from '@elastic/isomer-primitives-charts/scene';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
@@ -27,32 +29,29 @@ import {
   renderSceneSvg,
 } from './headless';
 
-const { chart } = CHARTS_THEME;
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 
-// Each Scene resolves for the box the charts pack gives a chart on Node.
+// Each Scene resolves for its size spec's box, as the charts pack sizes a chart on Node.
+const sized = <TScene extends Scene>(resolve: (size?: SceneSize) => TScene) =>
+  resolve(chartSize(chartSizeSpec(resolve())!));
+
 const xyCases = xyChartExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
-    scene: resolveChart(node, {
-      scheme,
-      size: { width: chart.width, height: chart.xyHeight },
-    }),
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
   }))
 );
 const metricCases = metricExamples.flatMap(({ name, node }) =>
-  SCHEMES.map((scheme) => {
-    const { rows } = resolveChart(node, { scheme }).layout;
-    return {
-      name,
-      scheme,
-      scene: resolveChart(node, {
-        scheme,
-        size: { width: chart.width, height: chart.metricTileHeight * rows },
-      }),
-    };
-  })
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
 );
 
 /** Every string the SVG draws as `<text>`, unescaped. */
@@ -145,8 +144,13 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node only, for metric and xy', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric and xy', () => {
     expect(renderer.environments).toEqual(['node']);
+    expect(renderer.sized).toBe(true);
+    expect(
+      createElasticChartsHeadlessRenderer({ environments: ['node', 'browser'] })
+        .environments
+    ).toEqual(['node', 'browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
@@ -156,8 +160,11 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ['metric', metricExamples[0]!.node],
     ['xyChart', xyChartExamples[0]!.node],
   ] as const)(
-    'draws a %s through the charts pack at its theme box',
+    'draws a %s through the charts pack at its size spec box',
     (_, node) => {
+      const { width } = chartSize(
+        chartSizeSpec(resolveChart(node as never, { scheme: 'light' }))!
+      );
       const runtime = createIsomerRuntime({
         packs: [createChartsPack({ sceneRenderers: [renderer] })],
       });
@@ -168,7 +175,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
           runtime.surfaces.react.render(view(node), { heading: false })
         )
       );
-      expect(html).toMatch(new RegExp(`<svg[^>]* width="${chart.width}"`));
+      expect(html).toMatch(new RegExp(`<svg[^>]* width="${width}"`));
     }
   );
 });

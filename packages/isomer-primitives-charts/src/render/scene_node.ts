@@ -25,14 +25,13 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
 
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
 export interface SceneShimConfig {
   readonly resolveScene: SceneResolver;
   /** Tried after the host's `sceneRenderers`. The last should support every kind. */
   readonly sceneRenderers: readonly ReactSceneRenderer[];
-  /** The box a node resolves for on Node when the host gives none. */
-  readonly nodeSize?: (node: ChartNode) => SceneSize | undefined;
 }
 
 /** Where a render is drawing, when the host does not say. */
@@ -54,24 +53,19 @@ const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
   return scheme === 'light' || scheme === 'dark' ? scheme : undefined;
 };
 
-/** The Scene a `react` or `snapshot` render of `node` draws. */
+/** The Scene a `react` or `snapshot` render of `node` draws, at `size` or the host's. */
 export const resolveForReact = (
   node: ChartNode,
   { context, theme }: Pick<ChartsReactEnv, 'context' | 'theme'>,
   config: SceneShimConfig,
-  environment: SceneEnvironment = context?.environment ??
-    detectSceneEnvironment()
-): Scene => {
-  const size =
-    context?.size ??
-    (environment === 'node' ? config.nodeSize?.(node) : undefined);
-  return config.resolveScene(node, {
+  size: SceneSize | undefined = context?.size
+): Scene =>
+  config.resolveScene(node, {
     scheme: context?.scheme ?? schemeOfTheme(theme) ?? 'light',
     ...(size && { size }),
     ...(context?.locale && { locale: context.locale }),
     ...(context?.timeZone && { timeZone: context.timeZone }),
   });
-};
 
 /** The renderer that draws `scene` in this render, if any. */
 export const pickSceneRenderer = (
@@ -90,6 +84,10 @@ export const pickSceneRenderer = (
  * Draws a chart node through the first renderer that runs here and supports
  * its kind. Off native, the output sits in one `div` that carries the node
  * anchor; native output is the renderer's own.
+ *
+ * Without a host `size`, the chart takes its kind's size spec. On Node, or
+ * for a `sized` renderer, it resolves for the spec's box; otherwise, in a
+ * browser, the `div` takes the spec's shape and the renderer fills it.
  */
 export const renderSceneNode = (
   node: ChartNode,
@@ -97,8 +95,15 @@ export const renderSceneNode = (
   config: SceneShimConfig
 ): ReactNode => {
   const environment = env.context?.environment ?? detectSceneEnvironment();
-  const scene = resolveForReact(node, env, config, environment);
-  const renderer = pickSceneRenderer(scene, environment, env.context, config);
+  const unsized = resolveForReact(node, env, config);
+  const renderer = pickSceneRenderer(unsized, environment, env.context, config);
+  const spec = env.context?.size ? undefined : chartSizeSpec(unsized);
+  // A fixed box where nothing fills: on Node, or for a renderer that draws a fixed-size picture.
+  const fixed = spec && (environment === 'node' || renderer?.sized === true);
+  const scene =
+    fixed && spec
+      ? resolveForReact(node, env, config, chartSize(spec))
+      : unsized;
   const drawn = renderer
     ? renderer.render(scene, {
         environment,
@@ -107,5 +112,14 @@ export const renderSceneNode = (
     : null;
   return environment === 'native'
     ? drawn
-    : createElement('div', nodeAnchor(env.context, node), drawn);
+    : createElement(
+        'div',
+        {
+          ...nodeAnchor(env.context, node),
+          ...(spec && !fixed && environment === 'browser'
+            ? { style: chartSizeStyle(spec) }
+            : {}),
+        },
+        drawn
+      );
 };

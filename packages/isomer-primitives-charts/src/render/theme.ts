@@ -19,14 +19,24 @@ export const CHARTS_THEME = {
     title: 20,
   },
   /**
-   * The box a chart resolves for on Node when the host gives none, so an
-   * engine drawing a fixed-size picture has one. Browsers lay charts out fluidly.
+   * How a chart sizes itself outside a sized container, as Lens's chart size
+   * specs do. A grid panel or a host `size` overrides it.
    */
   chart: {
+    /** The width a chart lays out for on Node, where there is no container to fill, in pixels. */
     width: 480,
-    xyHeight: 240,
-    /** Height of one row of metric tiles, in pixels. */
-    metricTileHeight: 160,
+    xy: {
+      /** Width to height. Lens uses it for a vertical time chart and fills a container otherwise. */
+      aspectRatio: { x: 16, y: 9 },
+      /** The least height of a vertical time chart, in pixels. */
+      timeMinHeight: 300,
+    },
+    metric: {
+      /** The largest box of a metric with one tile, in pixels. */
+      single: { width: 300, height: 160 },
+      /** The largest side of each tile when there are several, in pixels. */
+      tileSide: 200,
+    },
   },
   grid: {
     /** Height of one grid row unit, in pixels. */

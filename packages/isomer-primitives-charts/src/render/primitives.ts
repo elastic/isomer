@@ -23,8 +23,8 @@ import { tableSceneToSlack } from '../text/slack_table';
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import { chartSize, chartSizeSpec } from './size';
 import { tableHeight } from './table';
-import { CHARTS_THEME } from './theme';
 
 // Surfaces without a render context resolve for the light scheme: their output
 // carries text, not colors.
@@ -38,42 +38,23 @@ const chartRenderers = <TNode extends ChartNode>(config: SceneShimConfig) => ({
   markdown: (node: TNode) => sceneToMarkdown(resolveForText(node, config)),
 });
 
-const { chart } = CHARTS_THEME;
-
-/** A chart's height without a host size: rows of metric tiles, or the xy default. */
-const chartHeight = (
-  node: ChartNode,
-  config: SceneShimConfig
-): number | undefined => {
-  if (node.type === 'xyChart') {
-    return chart.xyHeight;
-  }
-  if (node.type === 'metric') {
-    const scene = resolveForText(node, config);
-    return scene.kind === 'metric'
-      ? chart.metricTileHeight * Math.max(scene.layout.rows, 1)
-      : undefined;
-  }
-  return undefined;
-};
+/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws. */
+const snapshotHeight =
+  (config: SceneShimConfig) =>
+  (node: ChartNode): number => {
+    const spec = chartSizeSpec(resolveForText(node, config));
+    return spec ? chartSize(spec).height : 0;
+  };
 
 /** The chart primitives, each drawing through `config`. */
-export const defineChartPrimitives = (shim: SceneShimConfig) => {
-  const config: SceneShimConfig = {
-    ...shim,
-    nodeSize: (node) => {
-      const height = chartHeight(node, shim);
-      return height === undefined ? undefined : { width: chart.width, height };
-    },
-  };
-  const snapshotHeight = (node: ChartNode) => chartHeight(node, shim) ?? 0;
-  return [
+export const defineChartPrimitives = (config: SceneShimConfig) =>
+  [
     definePrimitive({
       type: 'metric',
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
-      metrics: { snapshotHeight },
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
     definePrimitive({
@@ -99,8 +80,7 @@ export const defineChartPrimitives = (shim: SceneShimConfig) => {
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,
-      metrics: { snapshotHeight },
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
   ] as const;
-};
