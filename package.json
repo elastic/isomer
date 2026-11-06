@@ -35,6 +35,7 @@
     "check:pack-consumer": "node scripts/check_pack_consumer.js",
     "check:studio-consumer": "node scripts/check_studio_consumer.js",
     "check:module-graph": "node scripts/check_module_graph.js",
+    "check:hermes": "node scripts/check_hermes_imports.js --ban react packages/isomer-primitives-charts/lib/esm/schema/index.js packages/isomer-primitives-charts/lib/esm/scene/index.js",
     "check:pack-contents": "node scripts/check_pack_contents.js",
     "licenses:report": "node scripts/licenses_report.js",
     "docs:assemble": "node scripts/assemble_package_docs.js",
@@ -48,7 +49,7 @@
     "verify": "pnpm verify:fast && pnpm verify:packed && pnpm test:browser && pnpm check:studio-consumer",
     "verify:fast": "pnpm build && pnpm verify:static && pnpm test",
     "verify:static": "node scripts/run_parallel.js typecheck lint 'licenses:report --check'",
-    "verify:packed": "pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer",
+    "verify:packed": "pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:hermes && pnpm check:pack-consumer",
     "semantic-release": "semantic-release",
     "prepare": "husky"
   },

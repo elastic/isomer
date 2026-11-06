@@ -47,6 +47,10 @@ A chart node carries everything a faithful rendering needs, and drawing it is th
 - **Its default is Isomer's.** A materializer states its source's value rather than relying on the default to match.
 - **A renderer reads it.** What only a host acts on, such as a saved object id, belongs in opaque `source` meta.
 
+## Where each entry loads
+
+`./schema` and `./scene` reach only zod and the SDK's React-free `./schema` entry, so they load in browsers, on servers and on React Native's Hermes. The build checks it on every change. Renderers import only the Scene from `./scene`, never the formatter, the schemas or the resolver.
+
 ## Rules
 
 `z.toJSONSchema` drops refinements, so each cross-field rule is stated word for word in the description an agent reads, and a test checks that each check states its rule there. The rules are on each primitive's page.

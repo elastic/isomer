@@ -10,7 +10,7 @@ import {
   requiredString,
   unresolvedBodyNodeSchema,
   z,
-} from '@elastic/isomer-sdk';
+} from '@elastic/isomer-sdk/schema';
 
 type ZodType<T = unknown> = z.ZodType<T>;
 

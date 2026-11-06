@@ -18,6 +18,10 @@ Add or change a field only as [Adding a field](docs/index.md#adding-a-field) sta
 
 Expected values (formats, colors, orderings) come from this package's documented contract, written independently of its code, never from the code itself. Whether a materialized node matches its source panel is Kibana parity, tested in Kibana.
 
+## Module rules
+
+`./schema` and `./scene` load on React Native's Hermes: they reach no React, DOM, Node built-in, Elastic Charts, runtime root, `MessageChannel` or `structuredClone`, and use no top-level `await` or `import.meta`. Schemas import the SDK through `@elastic/isomer-sdk/schema`, never its root. Renderers (`src/svg`, and every `@elastic/isomer-charts-*` engine package) read only the Scene: `src/scene/types`, `src/scene/events` or the `./scene` entry, never the formatter, the schemas or the resolver. `pnpm check:module-graph` and `pnpm check:hermes` enforce both; the rules live in `scripts/chart_module_rules.js`.
+
 ## Evidence required
 
 Every example validates through the SDK in a composition. A new rule has a failing case at its path and is stated in the authoring schema.
