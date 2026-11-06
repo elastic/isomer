@@ -1,0 +1,34 @@
+From 8ff4949b2c518820bdb267d8d74d4e17f4e00bc8 Mon Sep 17 00:00:00 2001
+From: experiment <x@x>
+Date: Thu, 5 Nov 2026 16:56:38 -0500
+Subject: [PATCH 1/2] experiment: emit numeric font-weight on <text>
+
+---
+ packages/charts/src/headless/svg_canvas.ts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/packages/charts/src/headless/svg_canvas.ts b/packages/charts/src/headless/svg_canvas.ts
+index 265be9c4d..bfaa03b73 100644
+--- a/packages/charts/src/headless/svg_canvas.ts
++++ b/packages/charts/src/headless/svg_canvas.ts
+@@ -646,7 +646,7 @@ class SvgRecordingContext {
+   private emitText(text: string, x: number, y: number, mode: 'fill' | 'stroke') {
+     const { color, opacity } = this.paint(mode === 'fill' ? this.state.fillStyle : this.state.strokeStyle);
+     if (color === 'none' || opacity === 0) return;
+-    const { size, family, bold, italic } = parseFont(this.state.font);
++    const { size, family, italic, weight } = parseFont(this.state.font);
+     const { textAlign, textBaseline, direction, lineWidth } = this.state;
+     const isStart = textAlign === 'start' || textAlign === 'left';
+     const isEnd = textAlign === 'end' || textAlign === 'right';
+@@ -676,7 +676,7 @@ class SvgRecordingContext {
+     const fontAttributes = [
+       `font-family="${escapeXml(family)}"`,
+       `font-size="${round(size)}"`,
+-      bold ? 'font-weight="bold"' : '',
++      weight !== 400 ? `font-weight="${weight}"` : '',
+       italic ? 'font-style="italic"' : '',
+     ].filter(Boolean);
+     const opacityAttribute = opacity < 1 ? ` ${opacityName}="${round(opacity)}"` : '';
+-- 
+2.56.0
+
