@@ -17,6 +17,7 @@ import type {
   Scene,
   SceneEnvironment,
   SceneRenderEnv,
+  SceneSize,
 } from '../scene/types';
 import { toActionEvent } from '../schema/events';
 
@@ -26,6 +27,7 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
 
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
 export interface SceneShimConfig {
@@ -53,15 +55,16 @@ const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
   return scheme === 'light' || scheme === 'dark' ? scheme : undefined;
 };
 
-/** The Scene a `react` or `snapshot` render of `node` draws. */
+/** The Scene a `react` or `snapshot` render of `node` draws, at `size` or the host's. */
 const resolveForReact = (
   node: ChartNode,
   { context, theme }: Pick<ChartsReactEnv, 'context' | 'theme'>,
-  config: SceneShimConfig
+  config: SceneShimConfig,
+  size: SceneSize | undefined = context?.size
 ): Scene =>
   config.resolveScene(node, {
     scheme: context?.scheme ?? schemeOfTheme(theme) ?? 'light',
-    ...(context?.size && { size: context.size }),
+    ...(size && { size }),
     ...(context?.locale && { locale: context.locale }),
     ...(context?.timeZone && { timeZone: context.timeZone }),
   });
@@ -106,6 +109,10 @@ const renderEnv = (
  * Draws a chart node through the first renderer that runs here and supports
  * its kind, and throws when none does. Off native, the output sits in one
  * `div` that carries the node anchor; native output is the renderer's own.
+ *
+ * Without a host `size`, the chart takes its kind's size spec: on Node it
+ * resolves for the spec's box, and in a browser the `div` takes the spec's
+ * shape, which the renderer fills.
  */
 export const renderSceneNode = (
   node: ChartNode,
@@ -113,13 +120,27 @@ export const renderSceneNode = (
   config: SceneShimConfig
 ): ReactNode => {
   const { context } = env;
-  const scene = resolveForReact(node, env, config);
   const environment = context?.environment ?? detectSceneEnvironment();
+  const unsized = resolveForReact(node, env, config);
+  const spec = context?.size ? undefined : chartSizeSpec(unsized);
+  const scene =
+    spec && environment === 'node'
+      ? resolveForReact(node, env, config, chartSize(spec))
+      : unsized;
   const drawn = pickSceneRenderer(scene, environment, context, config).render(
     scene,
     renderEnv(node, environment, context)
   );
   return environment === 'native'
     ? drawn
-    : createElement('div', nodeAnchor(context, node), drawn);
+    : createElement(
+        'div',
+        {
+          ...nodeAnchor(context, node),
+          ...(spec && environment === 'browser'
+            ? { style: chartSizeStyle(spec) }
+            : {}),
+        },
+        drawn
+      );
 };
