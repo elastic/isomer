@@ -13,6 +13,7 @@ import { unsupportedExamples } from '../schema/examples/unsupported';
 import { unsupportedSchema } from '../schema/unsupported';
 
 import { definePrimitive } from './define';
+import { unsupportedIcon } from './icons';
 import { CHARTS_THEME } from './theme';
 
 const { padding, borderWidth, height } = CHARTS_THEME.unsupported;
@@ -20,6 +21,7 @@ const { padding, borderWidth, height } = CHARTS_THEME.unsupported;
 /** A visible placeholder: title, reason, and a link where there is one. */
 export const unsupportedPrimitive = definePrimitive({
   type: 'unsupported',
+  icon: unsupportedIcon,
   schema: unsupportedSchema,
   catalog: unsupportedCatalog,
   examples: unsupportedExamples,

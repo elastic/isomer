@@ -22,6 +22,7 @@ import { tableSceneToSlack } from '../text/slack_table';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
+import { dataTableIcon, metricIcon, xyChartIcon } from './icons';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
 import { chartSize, chartSizeSpec } from './size';
 import { tableHeight } from './table';
@@ -51,6 +52,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
   [
     definePrimitive({
       type: 'metric',
+      icon: metricIcon,
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
@@ -59,6 +61,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
     }),
     definePrimitive({
       type: 'dataTable',
+      icon: dataTableIcon,
       schema: dataTableSchema,
       catalog: dataTableCatalog,
       examples: dataTableExamples,
@@ -77,6 +80,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
     }),
     definePrimitive({
       type: 'xyChart',
+      icon: xyChartIcon,
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,
