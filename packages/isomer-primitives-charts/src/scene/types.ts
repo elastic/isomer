@@ -563,6 +563,11 @@ export interface SceneRenderer<TOutput = unknown> {
   /** Such as `elastic-charts`, `elastic-charts-node`, `isomer-svg` or `echarts`. */
   readonly id: string;
   readonly environments: readonly SceneEnvironment[];
+  /**
+   * True when the renderer draws a fixed-size picture at the Scene's `size`,
+   * such as an SVG, so a Scene drawn by it always carries one.
+   */
+  readonly sized?: boolean;
   supports(kind: SceneKind): boolean;
   render(scene: Scene, env: SceneRenderEnv): TOutput;
 }

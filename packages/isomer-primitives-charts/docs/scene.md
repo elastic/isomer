@@ -108,12 +108,14 @@ A renderer raises events with two helpers, so every renderer raises the same eve
 interface SceneRenderer<TOutput = unknown> {
   id: string; // 'elastic-charts', 'isomer-svg', 'echarts', …
   environments: Array<'browser' | 'node' | 'native'>;
+  sized?: boolean; // draws a fixed-size picture at the Scene's size
   supports(kind: SceneKind): boolean;
   render(scene: Scene, env: SceneRenderEnv): TOutput;
 }
 ```
 
 This interface describes a renderer. `TOutput` is what the renderer produces, such as a React node. `selectSceneRenderer(preferences, kind, environment)` picks the first renderer in a preference list that runs in the current environment and supports the Scene's kind; [Rendering](rendering.md) covers where the pack takes the list from and its fallback.
+A `sized` renderer, such as one that draws an SVG, always gets a Scene with a `size` ([Chart size](rendering.md#chart-size)).
 `SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction. It also carries the render's `resolveClassName`, through which a renderer drawing with the pack's own styles, such as its table, resolves its classes.
 
 `metricSingleValueScene`, `xyTimeSeriesScene` and `xyInteractiveScene` are hand-written Scenes for three schema examples, for building and testing a renderer without the resolver. `xyInteractiveScene`'s selections raise exactly the events in `chartEventExamples`.

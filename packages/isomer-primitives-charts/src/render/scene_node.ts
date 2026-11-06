@@ -110,9 +110,9 @@ const renderEnv = (
  * its kind, and throws when none does. Off native, the output sits in one
  * `div` that carries the node anchor; native output is the renderer's own.
  *
- * Without a host `size`, the chart takes its kind's size spec: on Node it
- * resolves for the spec's box, and in a browser the `div` takes the spec's
- * shape, which the renderer fills.
+ * Without a host `size`, the chart takes its kind's size spec. On Node, or
+ * for a `sized` renderer, it resolves for the spec's box; otherwise, in a
+ * browser, the `div` takes the spec's shape and the renderer fills it.
  */
 export const renderSceneNode = (
   node: ChartNode,
@@ -122,22 +122,22 @@ export const renderSceneNode = (
   const { context } = env;
   const environment = context?.environment ?? detectSceneEnvironment();
   const unsized = resolveForReact(node, env, config);
+  const renderer = pickSceneRenderer(unsized, environment, context, config);
   const spec = context?.size ? undefined : chartSizeSpec(unsized);
+  // A fixed box where nothing fills: on Node, or for a renderer that draws a fixed-size picture.
+  const fixed = spec && (environment === 'node' || renderer.sized === true);
   const scene =
-    spec && environment === 'node'
+    fixed && spec
       ? resolveForReact(node, env, config, chartSize(spec))
       : unsized;
-  const drawn = pickSceneRenderer(scene, environment, context, config).render(
-    scene,
-    renderEnv(node, environment, context)
-  );
+  const drawn = renderer.render(scene, renderEnv(node, environment, context));
   return environment === 'native'
     ? drawn
     : createElement(
         'div',
         {
           ...nodeAnchor(context, node),
-          ...(spec && environment === 'browser'
+          ...(spec && !fixed && environment === 'browser'
             ? { style: chartSizeStyle(spec) }
             : {}),
         },
