@@ -57,7 +57,7 @@
   "scripts": {
     "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
     "build:clean": "rimraf lib/",
-    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts,**/*.d.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -70,8 +70,11 @@
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@elastic/eui-theme-borealis": "8.1.0",
     "@elastic/isomer-runtime": "workspace:*",
+    "@types/d3-scale": "3.3.5",
     "@types/react": "^18.2.14",
+    "d3-scale": "3.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   }

@@ -15,7 +15,9 @@ import { BYTES, HOUR, NUMBER, PERCENT, START } from './shared';
 
 const HOURLY: PortableFormat = {
   kind: 'date',
-  pattern: 'HH:mm',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
   timeZone: 'UTC',
 };
 
@@ -529,9 +531,8 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
               kind: 'duration',
               input: 'microseconds',
               output: 'milliseconds',
-              decimals: 1,
-              showSuffix: true,
-              useShortSuffix: true,
+              maximumFractionDigits: 1,
+              unitDisplay: 'short',
             },
           },
         ],
