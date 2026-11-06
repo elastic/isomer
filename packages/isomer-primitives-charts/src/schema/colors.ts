@@ -51,7 +51,7 @@ export type ColorValue = z.infer<typeof colorValueSchema>;
  * ":" cannot be mistaken for two.
  */
 export const KEY_PART_RULE =
-  'A key part is the value as a string with each `\\` and `:` preceded by `\\`; a missing (null) cell is the key part `\\null`, which no string produces.';
+  'A key part is the value as a string with each `\\` and `:` preceded by `\\`; a missing (null) cell is the key part `\\null`, and a multivalue cell is `\\` followed by the key part of its JSON text, such as `\\["a"]`; no string produces either.';
 
 /** The rule `chartColorsSchema` states for `colors.bands`. */
 export const BAND_RULE =
