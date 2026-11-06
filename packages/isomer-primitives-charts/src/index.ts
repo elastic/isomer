@@ -26,6 +26,12 @@ export {
   detectSceneEnvironment,
   renderSceneNode,
 } from './render/scene_node';
+export {
+  type ChartSizeSpec,
+  chartSize,
+  chartSizeSpec,
+  chartSizeStyle,
+} from './render/size';
 export { tableHeight, tableSceneRenderer, TableView } from './render/table';
 export { CHARTS_THEME } from './render/theme';
 export { unsupportedPrimitive } from './render/unsupported';
