@@ -54,13 +54,25 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 | `environment` | `browser`, `node` or `native`. Absent: detected from the global scope |
 | `scheme` | `light` or `dark`. Absent: the frame theme's `scheme` field on `snapshot`, else `light` |
 | `locale`, `timeZone` | Passed to the resolver. Absent: `resolveChart`'s defaults, `en` and `UTC`, for dates whose format names no time zone |
-| `size` | The box the chart draws in. Absent: on Node, `CHARTS_THEME.chart`'s box, 480 px wide and 240 px tall for an `xyChart` or 160 px per row of metric tiles, so an engine drawing a fixed-size picture has one; in a browser, none, and the chart fills its container |
+| `size` | The box the chart draws in. Absent: the chart's [size spec](#chart-size) |
 
 A host that loads the charts pack without a style adapter names the runtime's type parameters to pass these fields, as [Runtime](../runtime/runtime.md#typing-the-render-context) shows.
 
-`metric` and `xyChart` report that same box's height to `snapshot` frames as `metrics.snapshotHeight`.
-
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
+
+## Chart size
+
+A chart in a grid panel draws in the box the panel leaves it, and a host can pass any chart a `size`. Without either, a chart takes its kind's size spec, as Lens's chart size specs do. Every length comes from `CHARTS_THEME.chart`:
+
+| Kind | Spec |
+| --- | --- |
+| `xyChart` over time, drawn vertically | 16:9, at least 300 px tall |
+| Any other `xyChart` | 16:9. Lens fills its container instead; outside a sized container there is nothing to fill |
+| `metric` with one tile | 300:160, at most 300 px wide |
+| `metric` with several tiles | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
+| `dataTable` | None: the table is its rows tall |
+
+In a browser, the shim's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height to `snapshot` frames as `metrics.snapshotHeight`.
 
 ## Text, Markdown and Slack
 
