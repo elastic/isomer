@@ -87,7 +87,7 @@ export const brushEvent = (
   const label = column?.label ?? brush.column;
   const plotted = new Set(
     scene.layers.flatMap((layer) =>
-      layer.kind === 'series'
+      layer.kind === 'series' && layer.series.xColumn === brush.column
         ? layer.series.marks.flatMap(({ source }) => source.rows)
         : []
     )

@@ -288,6 +288,8 @@ export interface XySeries {
   /** The series key, as `colors.byKey` names it. */
   readonly key: string;
   readonly label: string;
+  /** The x-coordinate column; absent for row-index positions. */
+  readonly xColumn?: string;
   readonly mark: 'line' | 'area' | 'bar';
   readonly axis: 'y' | 'y2';
   readonly color: SceneColor;
