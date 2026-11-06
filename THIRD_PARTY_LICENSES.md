@@ -868,7 +868,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `d3-cloud` | 1.2.9 | BSD-3-Clause | `node_modules/.pnpm/d3-cloud@1.2.9/node_modules/d3-cloud` |  |
 | `d3-collection` | 1.0.7 | BSD-3-Clause | `node_modules/.pnpm/d3-collection@1.0.7/node_modules/d3-collection` |  |
 | `d3-color` | 2.0.0 | BSD-3-Clause | `node_modules/.pnpm/d3-color@2.0.0/node_modules/d3-color` |  |
-| `d3-color` | 3.1.1 | ISC | `node_modules/.pnpm/d3-color@3.1.1/node_modules/d3-color` |  |
 | `d3-dispatch` | 1.0.6 | BSD-3-Clause | `node_modules/.pnpm/d3-dispatch@1.0.6/node_modules/d3-dispatch` |  |
 | `d3-format` | 2.0.0 | BSD-3-Clause | `node_modules/.pnpm/d3-format@2.0.0/node_modules/d3-format` |  |
 | `d3-interpolate` | 2.0.1 | BSD-3-Clause | `node_modules/.pnpm/d3-interpolate@2.0.1/node_modules/d3-interpolate` |  |

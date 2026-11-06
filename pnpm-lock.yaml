@@ -193,12 +193,18 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../isomer-image-takumi
       '@elastic/isomer-runtime':
         specifier: workspace:*
         version: link:../isomer-runtime
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@types/react':
         specifier: ^18.3.31
         version: 18.3.31
@@ -2546,10 +2552,6 @@ packages:
 
   d3-color@2.0.0:
     resolution: {integrity: sha512-SPXi0TSKPD4g9tw0NMZFnR95XVgUZiBH+uUTqQuDu1OsE2zomHU7ho0FISciaPvosimixwHFl3WHLGabv6dDgQ==}
-
-  d3-color@3.1.1:
-    resolution: {integrity: sha512-lfab8x0Bj0UO7SNsY8dZSbNIA6ipbkE3X0NG9nqjCu6CfCHZseuDnOSJY7hidKrjpP++i1M2qT+FlAdPKYRilA==}
-    engines: {node: '>=12'}
 
   d3-dispatch@1.0.6:
     resolution: {integrity: sha512-fVjoElzjhCEy+Hbn8KygnmMS7Or0a9sI2UzGwoB7cCtvI1XpVN9GpoYlnb3xt2YV66oXYb1fLJ8GMvP4hdU1RA==}
@@ -7746,8 +7748,6 @@ snapshots:
 
   d3-color@2.0.0: {}
 
-  d3-color@3.1.1: {}
-
   d3-dispatch@1.0.6: {}
 
   d3-format@2.0.0: {}
@@ -7758,7 +7758,7 @@ snapshots:
 
   d3-interpolate@3.0.2:
     dependencies:
-      d3-color: 3.1.1
+      d3-color: 2.0.0
 
   d3-path@2.0.0: {}
 
