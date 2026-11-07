@@ -436,6 +436,34 @@ describe('xy axes', () => {
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
   });
 
+  it('splits a percentage stack evenly when its total passes the largest double', () => {
+    const node = splitBars([
+      ['a', 's', Number.MAX_VALUE],
+      ['a', 't', Number.MAX_VALUE],
+      ['b', 's', 1],
+      ['b', 't', 3],
+    ]);
+    const [layer] = node.layers;
+    const scene = resolve(
+      xyChartSchema.parse({
+        ...node,
+        layers: [{ ...layer, stack: 'percentage' }],
+      })
+    );
+    expect(
+      seriesIn(scene).map(({ marks }) => marks.map(({ y0, y }) => [y0, y]))
+    ).toEqual([
+      [
+        [0, 0.5],
+        [0, 0.25],
+      ],
+      [
+        [0.5, 1],
+        [0.25, 1],
+      ],
+    ]);
+  });
+
   it('accepts representable strings and missing cells on an explicit temporal axis', () => {
     const scene = resolve(
       xy({

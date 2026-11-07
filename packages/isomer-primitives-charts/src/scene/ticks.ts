@@ -75,7 +75,16 @@ export const niceLogDomain = (min: number, max: number): [number, number] => {
 export const logTicks = (min: number, max: number, count: number) =>
   scaleLog().domain([min, max]).ticks(count);
 
-/** d3's time ticks at round wall-clock times in `zone`. */
+// Every wall time `zone` shows between `min` and `max`, including both sides of an offset change.
+const wallRange = (min: number, max: number, zone: string) => {
+  const offsets = [offsetAt(min, zone), offsetAt(max, zone)];
+  return [
+    clampEpoch(min + Math.min(...offsets)),
+    clampEpoch(max + Math.max(...offsets)),
+  ] as const;
+};
+
+/** d3's time ticks at round wall-clock times in `zone`, as dense as d3's ticks over the same span in UTC. */
 export const timeTicks = (
   min: number,
   max: number,
@@ -85,13 +94,13 @@ export const timeTicks = (
   if (min === max) {
     return [min];
   }
-  const [low, high] = [toWall(min, zone), toWall(max, zone)];
+  const [low, high] = wallRange(min, max, zone);
   if (!calendar(low, high)) {
     return linearTicks(min, max, count);
   }
   const ticks = scaleUtc()
     .domain([low, high])
-    .ticks(count)
+    .ticks((count * (high - low)) / (max - min))
     .flatMap((tick) => fromWall(tick.getTime(), zone))
     .filter((tick) => tick >= min && tick <= max);
   return [...new Set(ticks)].sort((a, b) => a - b);
@@ -112,17 +121,23 @@ export const niceTimeDomain = (
       ? [Math.min(low, min), high]
       : [clampEpoch(low - DAY), min];
   }
-  if (!calendar(toWall(min, zone), toWall(max, zone))) {
-    const [low, high] = niceDomain(min, max, count);
-    return [clampEpoch(low), clampEpoch(high)];
+  const [low, high] = [toWall(min, zone), toWall(max, zone)];
+  if (!calendar(...wallRange(min, max, zone))) {
+    const [niceLow, niceHigh] = niceDomain(min, max, count);
+    return [clampEpoch(niceLow), clampEpoch(niceHigh)];
   }
-  const [lows, highs] = scaleUtc()
-    .domain([toWall(min, zone), toWall(max, zone)])
+  // Each end rounds in its own offset, at the step d3 picks for the real span.
+  const span = max - min;
+  const [lowWall] = scaleUtc()
+    .domain([low, low + span])
     .nice(count)
-    .domain()
-    .map((date) => fromWall(date.getTime(), zone)) as [number[], number[]];
-  const below = lows.filter((low) => low <= min);
-  const above = highs.filter((high) => high >= max);
+    .domain();
+  const [, highWall] = scaleUtc()
+    .domain([high - span, high])
+    .nice(count)
+    .domain();
+  const below = fromWall(lowWall!.getTime(), zone).filter((t) => t <= min);
+  const above = fromWall(highWall!.getTime(), zone).filter((t) => t >= max);
   return [
     below.length ? Math.max(...below) : min,
     above.length ? Math.min(...above) : max,
