@@ -1,0 +1,60 @@
+{
+  "name": "@elastic/isomer-charts-elastic",
+  "private": true,
+  "version": "0.0.0-development",
+  "description": "Elastic Charts engine for Isomer chart Scenes: a SceneRenderer that draws metric and xy charts as Kibana does, in the browser.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-charts-elastic"
+  },
+  "sideEffects": false,
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "!**/*.tsbuildinfo",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.test.tsx,**/*.fixtures.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-primitives-charts": "workspace:*"
+  },
+  "peerDependencies": {
+    "@elastic/charts": "^73.3.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/charts": "73.3.2",
+    "@types/react": "^18.3.31",
+    "moment": "2.31.0",
+    "moment-timezone": "^0.5.48",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
