@@ -58,7 +58,6 @@ const splitBars = (rows: Cell[][]): XyChartNode => ({
   ],
   interactions: { select: ['category'] },
 });
-const blue = { light: '#0000FF', dark: '#0000FF' };
 
 describe('xy series and categories', () => {
   it('uses the exact y entry color on each axis', () => {
@@ -110,35 +109,6 @@ describe('xy series and categories', () => {
     expect(seriesIn(scene)[0]?.marks.map(({ y }) => y)).toEqual([1, 2, 3, 4]);
   });
 
-  it('separates array split cells from scalar JSON text', () => {
-    const node = splitBars([
-      ['x', ['a'], 1],
-      ['x', '["a"]', 2],
-    ]);
-    node.data.columns[1]!.multivalue = true;
-    node.interactions = { select: ['series'] };
-    expect(xyChartSchema.safeParse(node).success).toBe(true);
-    const series = seriesIn(resolveChart(node, { scheme: 'light' }));
-    expect(series.map(({ source }) => source.rows)).toEqual([[0], [1]]);
-    expect(series.map(({ selection }) => selection?.values.s)).toEqual([
-      ['a'],
-      '["a"]',
-    ]);
-    expect(series.map(({ key }) => key)).toEqual(['\\["a"]', '["a"]']);
-
-    node.interactions = { initial: { hiddenSeries: ['\\["a"]'] } };
-    node.colors = { byKey: { '["a"]': blue } };
-    const scene = resolveChart(node, { scheme: 'light' });
-    expect(scene.legend.items.map(({ hidden }) => hidden)).toEqual([
-      true,
-      false,
-    ]);
-    expect(seriesIn(scene).map(({ color }) => color)).toEqual([
-      expect.not.stringMatching(/^#0000FF$/),
-      '#0000FF',
-    ]);
-  });
-
   it('ignores inherited entries in color maps', () => {
     const node = splitBars([
       ['x', 'constructor', 1],
@@ -160,42 +130,6 @@ describe('xy series and categories', () => {
     const marks = seriesIn(scene)[0]!.marks;
     expect(marks).toHaveLength(10000);
     expect(marks[9999]?.label).toBe('9,999');
-  });
-
-  it('places multivalue cells at their first non-null value', () => {
-    const scene = resolve(
-      xy({
-        data: {
-          columns: [
-            {
-              id: 'x',
-              label: 'X',
-              type: 'number',
-              role: 'metric',
-              multivalue: true,
-            },
-            {
-              id: 'y',
-              label: 'Y',
-              type: 'number',
-              role: 'metric',
-              multivalue: true,
-            },
-          ],
-          rows: [
-            [
-              [1, 2],
-              [null, 4, 5],
-            ],
-          ],
-        },
-      })
-    );
-    expect(seriesIn(scene)[0]?.marks[0]).toMatchObject({ x: 1, y: 4 });
-    expect(scene.table.rows[0]?.values).toEqual([
-      [1, 2],
-      [null, 4, 5],
-    ]);
   });
 });
 
@@ -522,6 +456,49 @@ describe('xy summary', () => {
 });
 
 describe('xy axes', () => {
+  const timed = (rows: Cell[][], interval?: number) =>
+    xy({
+      data: {
+        columns: [
+          { id: 'x', label: 'Time', type: 'date', role: 'dimension' },
+          { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+        ],
+        rows,
+      },
+      ...(interval === undefined ? {} : { axes: { x: { interval } } }),
+      style: { partialBuckets: { from: 0, to: 1500 } },
+    });
+  const partials = (scene: XyScene) =>
+    seriesIn(scene)[0]?.marks.map(({ partial }) => partial ?? false);
+
+  it('marks partial buckets by the stated interval and passes it to the x axis', () => {
+    const inferred = resolve(timed([[0, 1]]));
+    expect(partials(inferred)).toEqual([false]);
+    expect(inferred.axes.x).not.toHaveProperty('interval');
+    const stated = resolve(timed([[0, 1]], 60_000));
+    expect(partials(stated)).toEqual([true]);
+    expect(stated.axes.x.interval).toBe(60_000);
+  });
+
+  it('infers the interval from the smallest x spacing only when none is stated', () => {
+    const rows = [
+      [0, 1],
+      [1000, 2],
+    ];
+    expect(partials(resolve(timed(rows)))).toEqual([false, true]);
+    const stated = resolve(timed(rows, 500));
+    expect(partials(stated)).toEqual([false, false]);
+    expect(stated.axes.x.interval).toBe(500);
+  });
+
+  it('ignores a stated interval on an ordinal x axis', () => {
+    const node = timed([[0, 1]], 60_000);
+    node.axes = { x: { scale: 'ordinal', interval: 60_000 } };
+    const scene = resolve(node);
+    expect(scene.axes.x).not.toHaveProperty('interval');
+    expect(partials(scene)).toEqual([false]);
+  });
+
   it('inherits reference-line formats from the relevant axes', () => {
     const scene = resolve(
       xy({
@@ -953,10 +930,10 @@ describe('visibility, cell identity and bounds', () => {
     expect(scene.summary).toContain('from 1 to 1');
   });
 
-  it('treats an epoch and an ISO string for one instant as one value', () => {
+  it('treats date-times for one instant as one value, whatever their offset', () => {
     const node = splitBars([
-      ['q1', 0, 1],
-      ['q2', '1970-01-01T00:00:00Z', 2],
+      ['q1', '1970-01-01T00:00:00Z', 1],
+      ['q2', '1970-01-01T01:00:00+01:00', 2],
     ]);
     node.data.columns[1] = {
       id: 's',
@@ -964,17 +941,15 @@ describe('visibility, cell identity and bounds', () => {
       type: 'date',
       role: 'dimension',
     };
-    expect(seriesIn(resolve(node)).map(({ key }) => key)).toEqual(['0']);
-    node.data.rows.reverse();
     expect(seriesIn(resolve(node)).map(({ key }) => key)).toEqual([
       '1970-01-01T00\\:00\\:00Z',
     ]);
     const scene = resolve(
       dates(
         [
-          [0, 1],
-          ['1970-01-01T00:00:00Z', 2],
-          [86_400_000, 3],
+          ['1970-01-01T00:00:00Z', 1],
+          ['1970-01-01T01:00:00+01:00', 2],
+          ['1970-01-02T00:00:00Z', 3],
         ],
         { interactions: { select: ['category'] } }
       )

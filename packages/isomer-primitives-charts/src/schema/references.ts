@@ -37,6 +37,8 @@ interface ColumnReferenceRules {
   missing: string;
   /** Reported for a reference to a column of a type it does not accept. */
   type: string;
+  /** Reported for a `single` reference to a `multivalue` column. Absent means `type`. */
+  single?: string;
   /** What the missing thing is called in the message. Absent means "column". */
   noun?: string;
 }
@@ -72,7 +74,7 @@ export const checkColumnReferences = (
       context.addIssue({
         code: 'custom',
         path,
-        message: `${rule ?? rules.type} Column "${id}" is multivalue.`,
+        message: `${rule ?? rules.single ?? rules.type} Column "${id}" is multivalue.`,
       });
     }
   }

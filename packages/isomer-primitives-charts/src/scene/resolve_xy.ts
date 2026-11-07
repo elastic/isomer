@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { continuousScaleOf, coordinateOf, scalarOf } from '../coordinates';
+import { continuousScaleOf, coordinateOf } from '../coordinates';
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
@@ -257,8 +257,7 @@ export const resolveXy = (
       cell,
       xScale === 'time' ? 'temporal' : 'linear'
     );
-    const value = scalarOf(cell);
-    if (coordinate === undefined && value !== null && value !== undefined) {
+    if (coordinate === undefined && cell !== null) {
       throw new RangeError(
         `Cannot resolve x column "${xId}" on a ${xScale} axis.`
       );
@@ -368,7 +367,7 @@ export const resolveXy = (
     }
     const value = resolution.cell(xId, rows[0]!);
     const identity = resolution.identity(xId, rows[0]!);
-    // Rows at one position can hold different cells, such as multivalue cells that share a first value.
+    // Rows at one instant can hold ISO date-times with different offsets.
     return rows.every((row) => resolution.identity(xId, row) === identity)
       ? {
           target: 'category',
@@ -388,22 +387,25 @@ export const resolveXy = (
   const numericXs = categoryKeys.filter(
     (x): x is number => typeof x === 'number'
   );
-  // Each layer's smallest x spacing, which decides whether a mark's bucket crosses the queried range's end.
+  const statedInterval =
+    xScale === 'ordinal' ? undefined : node.axes?.x?.interval;
+  // Decides whether a mark's bucket crosses the queried range's end; absent a stated one, each layer's smallest x spacing.
   const intervals = new Map(
     dataLayers.map(({ layer, index }) => {
       const xs = new Set(rowsOf(layer, data.rows.length).map(xOf));
       const layerXs = numericXs.filter((x) => xs.has(x));
       return [
         index,
-        layerXs.reduce<number | undefined>((smallest, x, at) => {
-          if (at === 0) {
-            return smallest;
-          }
-          const gap = bounded(x - layerXs[at - 1]!);
-          return gap > 0 && (smallest === undefined || gap < smallest)
-            ? gap
-            : smallest;
-        }, undefined),
+        statedInterval ??
+          layerXs.reduce<number | undefined>((smallest, x, at) => {
+            if (at === 0) {
+              return smallest;
+            }
+            const gap = bounded(x - layerXs[at - 1]!);
+            return gap > 0 && (smallest === undefined || gap < smallest)
+              ? gap
+              : smallest;
+          }, undefined),
       ] as const;
     })
   );
@@ -683,6 +685,7 @@ export const resolveXy = (
                   rounding: xConfig?.rounding ?? true,
                 },
         }),
+    ...(statedInterval === undefined ? {} : { interval: statedInterval }),
     ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
     showTicks: xConfig?.ticks ?? true,
     showGrid: xConfig?.grid ?? true,
