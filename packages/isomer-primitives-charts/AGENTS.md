@@ -20,7 +20,7 @@ Expected values (formats, colors, orderings) come from this package's documented
 
 ## Module rules
 
-`./schema`, `./scene` and `./resolve` reach no React, Elastic Charts or runtime root; schemas import the SDK through `@elastic/isomer-sdk/schema`, never its root. `pnpm check:module-graph` enforces it. Chart engines (`@elastic/isomer-charts-*`) import only `./scene`, which holds the Scene types and event helpers; ESLint enforces it.
+`./schema`, `./scene` and `./resolve` reach no React, Elastic Charts, runtime or Markdown parser; schemas import the SDK through `@elastic/isomer-sdk/schema`, never another SDK entry. `pnpm check:module-graph` enforces it. Chart engines (`@elastic/isomer-charts-*`) import only `./scene`, which holds the Scene types and event helpers, statically or with `import()`; ESLint enforces it, and `scripts/chart_engine_imports.test.js` tests the rule.
 
 ## Evidence required
 
