@@ -444,7 +444,8 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
   },
   {
     name: 'Gaps and fitting',
-    description: 'Missing values drawn as gaps carried across, emphasized.',
+    description:
+      'Missing values drawn as gaps carried across, emphasized, with hourly buckets partial at the edges of the queried range.',
     node: {
       type: 'xyChart',
       title: 'Sensor readings',
@@ -461,6 +462,7 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       layers: [
         { kind: 'data', mark: 'area', x: 'time', y: [{ column: 'reading' }] },
       ],
+      axes: { x: { interval: HOUR } },
       style: {
         fitting: { kind: 'carry', emphasize: true, extend: 'nearest' },
         partialBuckets: {

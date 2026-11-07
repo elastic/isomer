@@ -504,6 +504,60 @@ describe('xyChart', () => {
     ).toEqual(['layers.1.events.0.icon']);
   });
 
+  it.each([
+    ['x', 't', 'layers.0.x'],
+    ['splitBy', 's', 'layers.0.splitBy'],
+    ['y', 'y', 'layers.0.y.0.column'],
+  ])('rejects a multivalue %s column', (_, id, path) => {
+    const node = xy({
+      layers: [
+        {
+          kind: 'data',
+          mark: 'line',
+          x: 't',
+          splitBy: 's',
+          y: [{ column: 'y' }],
+        },
+      ],
+    });
+    const column = node.data.columns.find((entry) => entry.id === id)!;
+    Object.assign(column, { multivalue: true });
+    expectRule('xyChart', node, XY_RULES.singleValued, path);
+  });
+
+  it('rejects a date column that mixes epochs and ISO date-times', () => {
+    const rows = [
+      [null, 1, 'a'],
+      ['2026-11-06T00:00:00Z', 2, 'b'],
+      [0, 3, 'c'],
+    ];
+    expectRule(
+      'xyChart',
+      xy({ data: { columns: [date('t'), number('y'), string('s')], rows } }),
+      XY_RULES.dateEncoding,
+      'data.rows.2.0'
+    );
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          data: {
+            columns: [date('t'), number('y'), string('s')],
+            rows: rows.slice(0, 2),
+          },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it('rejects a bucket interval that is not positive', () => {
+    expect(
+      issuesOf('xyChart', xy({ axes: { x: { interval: 0 } } })).map(
+        ({ path }) => path
+      )
+    ).toContain('axes.x.interval');
+  });
+
   it('rejects a y column that is not a number', () => {
     expectRule(
       'xyChart',

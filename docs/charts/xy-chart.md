@@ -11,12 +11,14 @@ Lines, areas and bars over a shared x axis, on the [chart core](core.md).
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `orientation`              | `vertical` (default) or `horizontal`, which puts x on the vertical axis                                                                                                          |
 | `layers`                   | Drawn in order. `data`, `referenceLines` and `annotations` layers                                                                                                                |
-| `axes`                     | `x`, `y` and `y2`: `title?`, `ticks?`, `grid?`, `labelOrientation?`, `scale?`, `domain?`, `rounding?`                                                                            |
+| `axes`                     | `x`, `y` and `y2`: `title?`, `ticks?`, `grid?`, `labelOrientation?`, `scale?`, `domain?`, `rounding?`; `x` also `interval?`, the bucket width                                    |
 | `legend`                   | `visibility`, `position`, `inside` (a corner), `layout`, `columns`, `maxLines`, `size`, `statistics`, `seriesHeader`                                                             |
 | `interactions`, `emphasis` | Selection, brushing, sync, a link, series hidden at first, and static highlights: [Interactions](interactions.md)                                                                |
 | `style`                    | `interpolation`, `fitting`, `points`, `areaOpacity` (0 to 1, default 0.3), `areaFill`, `barMinimumHeight`, `barValueLabels`, `partialBuckets` (the queried range), `currentTime` |
 
 A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y: [{ column, axis?, color? }], splitBy?, rows? }`. Every data layer uses the same `x` column; when it is absent, every row draws at one x position. When layers come from different source tables, the tables are appended to `data` in layer order, each layer names its `[start, end)` row range, and each table's x field maps to the one x column.
+
+`axes.x.interval` is the bucket width in x units, milliseconds on a time axis, which a materializer reads from the aggregation that built the x column, as Kibana's `calculateMinInterval` does. A bucket draws as partial when it crosses an edge of `style.partialBuckets`, and an engine sizes bars by the interval, as Elastic Charts' `minInterval` does. Without it, the resolver takes the smallest spacing between x values for partial buckets, and the engine infers its own. It is ignored on an ordinal axis.
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Both can carry a [glyph](core.md#glyphs) `icon`. Neither carries rows, so neither is ever selected.
 
@@ -25,7 +27,9 @@ A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the
 Rules:
 
 - Every column reference names a column in `data.columns`.
-- On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`; a multivalue cell uses its first non-null value.
+- On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`.
+- The `x`, `y` and `splitBy` columns are not `multivalue`.
+- A `date` column holds one encoding: every non-missing value is epoch milliseconds, or every one is an ISO 8601 date-time.
 - A `y` column is a `number` column.
 - A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.
 - Only `bar` and `area` layers stack.
