@@ -32,7 +32,7 @@ export interface XyDatum {
   readonly mark: number;
 }
 
-const isXyDatum = (value: unknown): value is XyDatum =>
+export const isXyDatum = (value: unknown): value is XyDatum =>
   typeof value === 'object' &&
   value !== null &&
   typeof (value as XyDatum).series === 'number' &&

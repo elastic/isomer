@@ -21,7 +21,9 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { DebugState } from '@elastic/charts';
+import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
+  formatAxisValue,
   metricSingleValueScene,
   type Scene,
   type SceneAxis,
@@ -29,6 +31,10 @@ import {
   type XyScene,
   xyTimeSeriesScene,
 } from '@elastic/isomer-primitives-charts/scene';
+import {
+  metricExamples,
+  xyChartExamples,
+} from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
@@ -73,7 +79,9 @@ const context = new Proxy(
           })
         : key === 'getLineDash'
           ? () => []
-          : () => undefined,
+          : typeof key === 'string' && key.startsWith('create')
+            ? () => ({ addColorStop: () => undefined })
+            : () => undefined,
     set: () => true,
   }
 );
@@ -123,23 +131,26 @@ const debugState = async (scene: XyScene): Promise<DebugState> => {
   return JSON.parse(raw) as DebugState;
 };
 
-/** Each drawn label is the Scene's label for that position. */
+/** Each drawn label is the category's label, or the value through `formatAxisValue`. */
 const expectLabelsFromScene = (
   drawn: { labels: string[]; values: unknown[] } | undefined,
   axis: SceneAxis,
   scene: XyScene
 ) => {
   expect(drawn).toBeDefined();
-  const sceneLabels = new Map<unknown, string>([
-    ...scene.categories.map(({ x, label }) => [x, label] as const),
-    ...axis.ticks.map(({ value, label }) => [value, label] as const),
-  ]);
-  const shown = drawn!.labels
-    .map((label, index) => [drawn!.values[index], label] as const)
-    .filter(([, label]) => label !== '');
+  const categories = new Map<unknown, string>(
+    axis.scale === 'ordinal'
+      ? scene.categories.map(({ x, label }) => [x, label])
+      : []
+  );
+  const shown = drawn!.labels.map(
+    (label, index) => [drawn!.values[index], label] as const
+  );
   expect(shown.length).toBeGreaterThan(0);
   for (const [value, label] of shown) {
-    expect(label).toBe(sceneLabels.get(value));
+    expect(label).toBe(
+      categories.get(value) ?? formatAxisValue(scene, axis, value as number)
+    );
   }
 };
 
@@ -186,7 +197,7 @@ describe('elastic-charts renderer: xy', () => {
     );
   });
 
-  it('stacks bars to the Scene’s segments, in draw order', async () => {
+  it('hands Elastic Charts each bar’s unstacked value, in draw order', async () => {
     const state = await debugState(xyInteractiveScene);
     expect(
       state.bars?.map(({ name, color, bars }) => ({
@@ -198,7 +209,7 @@ describe('elastic-charts renderer: xy', () => {
       seriesOf(xyInteractiveScene).map(({ label, color, marks }) => ({
         name: label,
         color,
-        heights: marks.map(({ x, y, y0 }) => [x, (y ?? 0) - (y0 ?? 0)]),
+        heights: marks.map(({ x, y }) => [x, y ?? 0]),
       }))
     );
   });
@@ -229,6 +240,72 @@ describe('elastic-charts renderer: metric', () => {
     const [tile] = metricSingleValueScene.tiles;
     expect(container.textContent).toContain(tile!.title);
     expect(container.textContent).toContain(tile!.value.text);
+  });
+});
+
+const SIZE = { width: 480, height: 240 };
+
+const resolvedCases = <Node>(
+  examples: readonly { name: string; node: Node }[]
+) =>
+  (['light', 'dark'] as const).flatMap((scheme) =>
+    examples.map(({ name, node }) => ({
+      name: `${name} (${scheme})`,
+      node,
+      scheme,
+    }))
+  );
+
+describe('elastic-charts renderer: resolved xyChart examples', () => {
+  it.each(resolvedCases(xyChartExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'xy') {
+      throw new Error('expected an xy Scene');
+    }
+    const state = await debugState(scene);
+    for (const drawn of state.axes?.x ?? []) {
+      expectLabelsFromScene(drawn, scene.axes.x, scene);
+    }
+    for (const drawn of state.axes?.y ?? []) {
+      const axis = scene.axes[drawn.id as 'y' | 'y2'];
+      expect(axis).toBeDefined();
+      expectLabelsFromScene(drawn, axis!, scene);
+    }
+    const series = seriesOf(scene).map(({ label, color }) => ({
+      name: label,
+      color,
+    }));
+    const drawn = [
+      ...(state.bars ?? []),
+      ...(state.lines ?? []),
+      ...(state.areas ?? []),
+    ].map(({ name, color }) => ({ name, color }));
+    expect(drawn).toHaveLength(series.length);
+    expect(drawn).toEqual(expect.arrayContaining(series));
+    if (scene.legend.visible) {
+      expect(
+        state.legend?.items.map(({ name, color }) => ({ name, color }))
+      ).toEqual(
+        scene.legend.items.map(({ label, color }) => ({ name: label, color }))
+      );
+    }
+  });
+});
+
+describe('elastic-charts renderer: resolved metric examples', () => {
+  it.each(resolvedCases(metricExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'metric') {
+      throw new Error('expected a metric Scene');
+    }
+    const text = (await draw(scene)).textContent ?? '';
+    for (const { title, value, secondary } of scene.tiles) {
+      expect(text).toContain(title);
+      expect(text).toContain(value.text);
+      if (secondary) {
+        expect(text).toContain(secondary.text);
+      }
+    }
   });
 });
 

@@ -8,8 +8,9 @@
 // An xy Scene as Kibana's xy visualization draws it
 // (`expression_xy/public/components/xy_chart.tsx` and `helpers/data_layers.tsx`):
 // one Elastic Charts `Chart` with a series per Scene series and an axis per
-// Scene axis. Strings come from the Scene through formatter callbacks; colors,
-// domains, stacking and draw order are the Scene's.
+// Scene axis. Colors, text and draw order are the Scene's; Elastic Charts
+// computes ticks, domains, stacks and point density from its intent, and labels
+// ticks through `formatAxisValue`.
 
 import type { ReactNode } from 'react';
 import {
@@ -28,6 +29,7 @@ import {
   RectAnnotation,
   ScaleType,
   Settings,
+  StackMode,
   Tooltip,
   TooltipContainer,
   TooltipHeader,
@@ -37,19 +39,20 @@ import {
   TooltipTableColorCell,
   TooltipTableRow,
 } from '@elastic/charts';
-import type {
-  SceneAnnotation,
-  SceneAxis,
-  SceneLegend,
-  SceneReferenceLine,
-  SceneRenderEnv,
-  XyScene,
-  XySeries,
+import {
+  formatAxisValue,
+  type SceneAnnotation,
+  type SceneAxis,
+  type SceneLegend,
+  type SceneReferenceLine,
+  type SceneRenderEnv,
+  type XyScene,
+  type XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
 
 import {
+  isXyDatum,
   legendSelect,
-  markOf,
   seriesOf,
   type XyDatum,
   xyHandlers,
@@ -97,6 +100,12 @@ const FIT = {
   nearest: Fit.Nearest,
 } as const;
 
+const POINTS = {
+  auto: 'auto',
+  visible: 'always',
+  hidden: 'never',
+} as const;
+
 /** Kibana's `LegendSizeToPixels`. */
 const LEGEND_SIZE = {
   auto: undefined,
@@ -113,50 +122,61 @@ const INSIDE = {
   bottom_right: { vAlign: Position.Bottom, hAlign: Position.Right },
 } as const;
 
-const near = (a: number, b: number) =>
-  Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
-
 /**
- * A tick formatter that returns the Scene's label for each of its ticks.
- * Elastic Charts chooses tick positions itself; a position the Scene has no
- * tick for gets no label.
+ * Labels a tick Elastic Charts chose: a category by its Scene label, a value
+ * through `formatAxisValue`.
  */
 export const tickLabeler = (
   axis: SceneAxis,
   scene: XyScene
 ): ((value: unknown) => string) => {
-  const labels = new Map<number | string, string>();
-  for (const { value, label } of axis.ticks) {
-    labels.set(value, label);
-  }
-  if (axis.id === 'x') {
-    for (const { x, label } of scene.categories) {
-      if (!labels.has(x)) {
-        labels.set(x, label);
-      }
-    }
-  }
+  const categories = new Map<number | string, string>(
+    axis.id === 'x' && axis.scale === 'ordinal'
+      ? scene.categories.map(({ x, label }) => [x, label])
+      : []
+  );
   return (value) => {
-    if (typeof value !== 'number' && typeof value !== 'string') {
+    if (typeof value === 'string') {
+      return categories.get(value) ?? value;
+    }
+    if (typeof value !== 'number') {
       return '';
     }
-    const exact = labels.get(value);
-    if (exact !== undefined || typeof value === 'string') {
-      return exact ?? '';
-    }
-    for (const [at, label] of labels) {
-      if (typeof at === 'number' && near(at, value)) {
-        return label;
-      }
-    }
-    return '';
+    return categories.get(value) ?? formatAxisValue(scene, axis, value);
   };
 };
 
-const isNumericDomain = (
-  domain: SceneAxis['domain']
-): domain is readonly [number, number] =>
-  domain.length === 2 && typeof domain[0] === 'number';
+/** The ids of reference lines drawn on an axis, so a data domain includes them. */
+const referenceLineIds = ({ layers }: XyScene, axis: SceneAxis): string[] => {
+  const ids: string[] = [];
+  let index = 0;
+  for (const layer of layers) {
+    if (layer.kind === 'referenceLine') {
+      if (layer.line.axis === axis.id) {
+        ids.push(`reference-${index}`);
+      }
+      index++;
+    }
+  }
+  return ids;
+};
+
+/** Kibana's `getAxisDomain`: a data domain fits the data unless it includes zero. */
+const yDomainOf = (axis: SceneAxis, scene: XyScene) => {
+  const { domain } = axis;
+  if (domain === undefined) {
+    return undefined;
+  }
+  if (domain.kind === 'custom') {
+    return { min: domain.min, max: domain.max };
+  }
+  return {
+    min: Number.NaN,
+    max: Number.NaN,
+    fit: !domain.includeZero,
+    includeDataFromIds: referenceLineIds(scene, axis),
+  };
+};
 
 const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
   const shared = {
@@ -164,7 +184,6 @@ const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
     position: POSITION[axis.position],
     ...(axis.title === undefined ? {} : { title: axis.title }),
     gridLine: { visible: axis.showGrid },
-    ticks: Math.max(axis.ticks.length, 1),
     tickFormat: tickLabeler(axis, scene),
     style: {
       tickLabel: { visible: axis.showTicks, rotation: axis.labelRotation },
@@ -174,34 +193,34 @@ const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
   if (axis.id === 'x') {
     return <Axis key={axis.id} {...shared} timeAxisLayerCount={0} />;
   }
-  const { domain } = axis;
+  const domain = yDomainOf(axis, scene);
   return (
     <Axis
       key={axis.id}
       {...shared}
       groupId={axis.id}
-      {...(isNumericDomain(domain)
-        ? { domain: { min: domain[0], max: domain[1] } }
-        : {})}
+      {...(domain === undefined ? {} : { domain })}
     />
   );
 };
 
-const xDomainOf = ({ axes }: XyScene) => {
-  const { domain } = axes.x;
-  return isNumericDomain(domain)
-    ? { min: domain[0], max: domain[1] }
-    : [...domain];
+/** The categories in order on an ordinal x axis, or a custom domain's bounds. */
+const xDomainOf = ({ axes: { x }, categories }: XyScene) => {
+  if (x.scale === 'ordinal') {
+    return categories.map((category) => category.x);
+  }
+  return x.domain?.kind === 'custom'
+    ? { min: x.domain.min, max: x.domain.max }
+    : undefined;
 };
 
-/** The datum for each mark, with the segment height when its series stacks. */
+/** Whether a data domain rounds out to readable values. */
+const nice = (axis: SceneAxis | undefined): boolean =>
+  axis?.domain?.kind === 'data' && axis.domain.rounding;
+
+/** The datum for each mark, unstacked: Elastic Charts stacks it. */
 export const seriesData = (series: XySeries, index: number): XyDatum[] =>
-  series.marks.map((mark, at) => ({
-    x: mark.x,
-    y: series.stack && mark.y !== null ? mark.y - (mark.y0 ?? 0) : mark.y,
-    series: index,
-    mark: at,
-  }));
+  series.marks.map(({ x, y }, mark) => ({ x, y, series: index, mark }));
 
 /** Each mark's label by the value Elastic Charts passes a value-label formatter. */
 const valueLabeler = (series: XySeries) => {
@@ -209,7 +228,6 @@ const valueLabeler = (series: XySeries) => {
   for (const mark of series.marks) {
     if (mark.y !== null) {
       labels.set(mark.y, mark.label);
-      labels.set(mark.y - (mark.y0 ?? 0), mark.label);
     }
   }
   return (value: unknown) =>
@@ -260,8 +278,15 @@ const seriesElement = (
     xAccessor: 'x',
     yAccessors: ['y'],
     data: seriesData(series, index),
+    xNice: nice(scene.axes.x),
+    yNice: nice(yAxis),
     ...(stacked ? { stackAccessors: ['x'] } : {}),
-    ...(xScale === ScaleType.Time ? { timeZone: scene.timeZone } : {}),
+    ...(series.stack?.mode === 'percentage'
+      ? { stackMode: StackMode.Percentage }
+      : {}),
+    ...(xScale === ScaleType.Time
+      ? { timeZone: scene.axes.x.timeZone ?? scene.timeZone }
+      : {}),
     ...(series.valueLabels
       ? {
           displayValueSettings: {
@@ -283,7 +308,7 @@ const seriesElement = (
     );
   }
   const { fitting } = series;
-  const point = { visible: series.showPoints ? 'always' : 'never' } as const;
+  const point = { visible: POINTS[series.points] };
   const line = {
     ...common,
     curve: CURVE[series.interpolation],
@@ -342,8 +367,7 @@ const dashOf = (style: 'solid' | 'dashed' | 'dotted', width: number) =>
 
 const referenceLineElements = (
   line: SceneReferenceLine,
-  index: number,
-  scene: XyScene
+  index: number
 ): ReactNode[] => {
   const onX = line.axis === 'x';
   const dash = dashOf(line.strokeDash, line.strokeWidth);
@@ -372,16 +396,9 @@ const referenceLineElements = (
     />,
   ];
   if (line.fill) {
-    const axis = onX
-      ? scene.axes.x
-      : line.axis === 'y'
-        ? scene.axes.y
-        : scene.axes.y2;
-    const domain = axis?.domain;
-    const [min, max] =
-      domain && isNumericDomain(domain) ? domain : [undefined, undefined];
+    // A null end reaches the edge of the domain Elastic Charts computed.
     const [from, to] =
-      line.fill === 'above' ? [line.value, max] : [min, line.value];
+      line.fill === 'above' ? [line.value, null] : [null, line.value];
     elements.push(
       <RectAnnotation
         key={`reference-${index}-fill`}
@@ -389,9 +406,7 @@ const referenceLineElements = (
         {...(onX ? {} : { groupId: line.axis })}
         dataValues={[
           {
-            coordinates: onX
-              ? { x0: from ?? null, x1: to ?? null }
-              : { y0: from ?? null, y1: to ?? null },
+            coordinates: onX ? { x0: from, x1: to } : { y0: from, y1: to },
           },
         ]}
         style={{ fill: line.color, opacity: 0.1 }}
@@ -472,16 +487,26 @@ const legendProps = (legend: SceneLegend) => {
   };
 };
 
-/** The tooltip of the hovered marks, as the Scene writes it. */
-const sceneTooltip =
-  (scene: XyScene): CustomTooltip =>
-  ({ values }) => {
-    const marks = values.flatMap(({ datum }) => {
-      const mark = markOf(scene, datum);
-      return mark ? [mark] : [];
+/**
+ * The hovered marks as Lens lists them: the x position as the axis labels it,
+ * then each series with its unstacked value.
+ */
+const sceneTooltip = (scene: XyScene): CustomTooltip => {
+  const series = seriesOf(scene);
+  const label = tickLabeler(scene.axes.x, scene);
+  return ({ values }) => {
+    const hovered = values.flatMap(({ datum }) => {
+      const owner = isXyDatum(datum) ? series[datum.series] : undefined;
+      const mark = isXyDatum(datum) ? owner?.marks[datum.mark] : undefined;
+      return owner && mark ? [{ mark, owner }] : [];
     });
-    const header = marks.find(({ tooltip }) => tooltip.header)?.tooltip.header;
-    const entries = marks.flatMap(({ tooltip }) => tooltip.entries);
+    const first = hovered[0];
+    const header = first === undefined ? undefined : label(first.mark.x);
+    const entries = hovered.map(({ mark, owner }) => ({
+      label: owner.label,
+      value: mark.label,
+      color: owner.color,
+    }));
     return (
       <TooltipContainer>
         {header === undefined ? null : <TooltipHeader>{header}</TooltipHeader>}
@@ -499,6 +524,7 @@ const sceneTooltip =
       </TooltipContainer>
     );
   };
+};
 
 /** "Filter for" and "Filter out" beside each legend item, as Kibana's legend action offers them. */
 const legendAction =
@@ -544,7 +570,7 @@ const layerElements = (scene: XyScene): ReactNode[] => {
       case 'series':
         return [seriesElement(layer.series, next.series++, scene)];
       case 'referenceLine':
-        return referenceLineElements(layer.line, next.referenceLine++, scene);
+        return referenceLineElements(layer.line, next.referenceLine++);
       case 'annotation':
         return [annotationElement(layer.annotation, next.annotation++)];
     }
@@ -568,6 +594,7 @@ export const xySpecs = (
     env.nodeId !== undefined &&
     scene.interactions.select.includes('legend');
   const continuous = SCALE[scene.axes.x.scale] !== ScaleType.Ordinal;
+  const xDomain = xDomainOf(scene);
   return (
     <>
       <Tooltip customTooltip={sceneTooltip(scene)} />
@@ -576,7 +603,7 @@ export const xySpecs = (
         theme={xyTheme(scene)}
         locale={scene.locale}
         rotation={scene.orientation === 'horizontal' ? 90 : 0}
-        xDomain={xDomainOf(scene)}
+        {...(xDomain === undefined ? {} : { xDomain })}
         debugState={options.debugState ?? false}
         {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
         ariaDescription={scene.summary}

@@ -29,19 +29,22 @@ The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.c
 
 ## What it takes from the Scene
 
-A renderer translates; it never formats, picks a color, sorts or chooses ticks. Everything Elastic Charts would otherwise decide is fed from the Scene or switched off.
-
-Ticks are the one split, and it is settled: Elastic Charts places them, and every label is the Scene's. Letting Elastic Charts format its own labels would put formatting in a renderer, which the Scene contract forbids, so time axes stay on one row and a position the Scene has no tick for prints nothing.
+Colors, text, series and draw order are the Scene's. Ticks, domains, stacks and point density are Elastic Charts', computed from the intent each Scene axis and series states, the way Kibana's xy expression hands them over. A tick label prints through `formatAxisValue`, so it reads the same in every engine.
 
 | Elastic Charts input | From the Scene |
 | --- | --- |
 | Base theme | Kibana's charts base theme for the Scene's `scheme`: Elastic Charts' Borealis theme with the `Elastic UI Numeric` font first and axis titles in the tick-label color at weight 500, as Kibana's charts plugin builds it |
 | Background, axis, tick, grid-line and title colors | `chrome` |
 | Series colors, names and draw order | `series` |
-| Stacking | Each mark's segment, `y - y0`, so stacks are the Scene's |
-| Axis domains | `axes.*.domain`; an ordinal x axis keeps the domain's order |
-| Tick labels, value labels | Formatter callbacks that return the Scene's `label` for each position; anything else prints nothing |
-| Tooltip | The hovered marks' `tooltip` header and entries |
+| Stacking | Unstacked `y` with `stackAccessors`; a `percentage` stack sets `stackMode: 'percentage'` |
+| y domain | `custom` is `{ min, max }`; `data` is `fit: !includeZero` with the axis's reference lines in `includeDataFromIds`, as Kibana's `getAxisDomain` builds it |
+| x domain | The `categories` in order on an ordinal axis; `custom` is `{ min, max }`; otherwise Elastic Charts' own |
+| Rounding | `xNice` and `yNice` from each axis's `domain.rounding` |
+| Points | `points`: `auto`, `visible` and `hidden` are `'auto'`, `'always'` and `'never'` |
+| Time zone | The x axis's `timeZone`, else the Scene's |
+| Tick labels | A category's `label` on an ordinal axis; any other value through `formatAxisValue` |
+| Value labels | The mark's `label` |
+| Tooltip | The x position as its axis labels it, then each hovered series' name, color and mark `label` |
 | Legend position, layout, size, title and truncation | `legend` |
 | Reference lines and annotations | `referenceLines` and `annotations`, styled as Kibana's xy chart styles them |
 | Metric tiles, layout and alignment | `tiles` and `layout`, as Kibana's metric visualization sets them; the value prints the tile's `value.text` |
@@ -69,8 +72,8 @@ Content (strings, colors, order) is the Scene's. Where Elastic Charts cannot tak
 
 | Kind | Gap | Effect |
 | --- | --- | --- |
-| xy | Elastic Charts chooses tick positions; it takes only an approximate count | A tick it places where the Scene has none prints no label; a Scene tick it does not place is not drawn |
-| xy | Time axes draw on one row (`timeAxisLayerCount: 0`), so labels are the Scene's | Kibana draws a two-row time axis; tick label layout differs |
+| xy | Time axes draw on one row (`timeAxisLayerCount: 0`), so every label prints through `formatAxisValue` | Kibana draws a two-row time axis; tick label layout differs |
+| xy | Series stack by axis: Elastic Charts has no stack group, so two stacked layers on one axis stack together | Matches Kibana; differs from the Scene's `stack.group` |
 | xy | Bars on a continuous x axis use histogram mode when stacked or alone, as Kibana's rule is; the Scene does not state it | Bar placement follows Kibana's rule, not the Scene |
 | xy | `legend.items[].statistics` are not drawn | Legend statistics missing |
 | xy | `interactions.initial.hiddenSeries` and `legend.items[].hidden` are not applied: Elastic Charts has no public initial deselection | Hidden series draw until a reader toggles them |
