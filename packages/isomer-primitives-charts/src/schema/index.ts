@@ -55,8 +55,10 @@ export { metricExamples } from './examples/metric';
 export { unsupportedExamples } from './examples/unsupported';
 export { xyChartExamples } from './examples/xy_chart';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './format';
 export {
