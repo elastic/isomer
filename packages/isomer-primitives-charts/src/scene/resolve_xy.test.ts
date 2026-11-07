@@ -254,6 +254,23 @@ describe('hidden series', () => {
     expect(scene.axes.y2?.position).toBe('right');
   });
 
+  it('keeps an axis that only a reference line is on', () => {
+    const node = xy();
+    node.layers = [
+      ...node.layers,
+      { kind: 'referenceLines', lines: [{ value: 50, axis: 'y2' }] },
+    ];
+    const scene = resolveChart(node, { scheme: 'light' });
+    expect(scene.axes.y2?.position).toBe('right');
+  });
+
+  it('keeps the y axis, label and split of a split layer with no rows', () => {
+    const node = splitBars([]);
+    const scene = resolveChart(node, { scheme: 'light' });
+    expect(scene.axes.y?.position).toBe('left');
+    expect(scene.summary).toBe('Y by X and Split, with no data.');
+  });
+
   it('keeps a percentage axis when every stacked series is hidden', () => {
     const node = splitBars([
       ['x', 'A', 10],
@@ -273,6 +290,64 @@ describe('hidden series', () => {
     node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
     const scene = resolveChart(node, { scheme: 'light' });
     expect(formatAxisValue(scene, scene.axes.y!, 1)).toBe('100%');
+  });
+});
+
+describe('xy rows without an x', () => {
+  it('leaves them out without disturbing x order or the legend statistics', () => {
+    const node = xy({
+      data: {
+        columns: [
+          { id: 'x', label: 'X', type: 'number', role: 'metric' },
+          { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+        ],
+        rows: [
+          [10, 100],
+          [null, 1],
+          [1, 10],
+          [null, 2],
+          [5, 50],
+          [0, 0],
+        ],
+      },
+      legend: { statistics: ['first_value', 'last_value'] },
+    });
+    const scene = resolve(node);
+    expect(seriesIn(scene)[0]!.marks.map(({ x }) => x)).toEqual([0, 1, 5, 10]);
+    expect(scene.legend.items[0]!.statistics).toEqual([
+      expect.objectContaining({ value: '0' }),
+      expect.objectContaining({ value: '100' }),
+    ]);
+  });
+});
+
+describe('xy summary', () => {
+  it('states a range only when every value is on one axis in one format', () => {
+    const columns = [
+      { id: 'x', label: 'X', type: 'number', role: 'metric' },
+      { id: 'a', label: 'A', type: 'number', role: 'metric' },
+      { id: 'b', label: 'B', type: 'number', role: 'metric' },
+    ] as const;
+    const rows = [
+      [0, 1, 1000],
+      [1, 2, 2000],
+    ];
+    const both = (axis: 'y' | 'y2') =>
+      resolve(
+        xy({
+          data: { columns: [...columns], rows },
+          layers: [
+            {
+              kind: 'data',
+              mark: 'line',
+              x: 'x',
+              y: [{ column: 'a' }, { column: 'b', axis }],
+            },
+          ],
+        })
+      ).summary;
+    expect(both('y')).toBe('A and B by X, from 1 to 2,000.');
+    expect(both('y2')).toBe('A and B by X.');
   });
 });
 

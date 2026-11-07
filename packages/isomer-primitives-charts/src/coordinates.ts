@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { isoDateTimeEpoch } from './iso_date_time';
 import type { Cell } from './schema/data';
 
 /** The largest absolute epoch, in milliseconds, a JavaScript `Date` represents. */
@@ -28,7 +29,7 @@ export const coordinateOf = (
   const value = scalarOf(cell);
   const number =
     scale === 'temporal' && typeof value === 'string'
-      ? Date.parse(value)
+      ? isoDateTimeEpoch(value)
       : value;
   return typeof number === 'number' &&
     Number.isFinite(number) &&

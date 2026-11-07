@@ -30,7 +30,6 @@ export const formatDate = (
     timeZone: own ?? timeZone,
     hour12,
     ...(fields ? options : DEFAULT_STYLE),
-    ...(hour12 === undefined ? {} : { hour12 }),
   }).format(epoch);
 };
 

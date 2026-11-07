@@ -26,10 +26,12 @@ export function resolveChart(
   node: MetricNode,
   options: ResolveChartOptions
 ): MetricScene;
+/** Resolves an `xyChart` node to an {@link XyScene}. */
 export function resolveChart(
   node: XyChartNode,
   options: ResolveChartOptions
 ): XyScene;
+/** Resolves any chart node to its {@link Scene}. */
 export function resolveChart(
   node: ChartNode,
   options: ResolveChartOptions

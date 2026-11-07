@@ -44,7 +44,7 @@ type Statistic = NonNullable<
   NonNullable<XyChartNode['legend']>['statistics']
 >[number];
 
-// Defaults for nodes that state none; a materializer states its source's own.
+// Style for nodes that state none.
 const DEFAULTS = {
   areaOpacity: 0.3,
   areaFill: 'gradient',
@@ -398,22 +398,24 @@ export const resolveXy = (
   const seriesDrafts = drafts.map((draft, seriesIndex) => {
     const color = colorOf(draft, seriesIndex);
     const yColumn = resolution.column(draft.yColumn);
-    const ordered = [...draft.rows].sort((a, b) => {
-      const ax = xOf(a);
-      const bx = xOf(b);
-      return typeof ax === 'number' && typeof bx === 'number'
-        ? ax - bx
-        : (categoryOrder.get(ax) ?? 0) - (categoryOrder.get(bx) ?? 0);
-    });
+    const ordered = draft.rows
+      .filter((row) => {
+        const x = xOf(row);
+        return typeof x !== 'number' || !Number.isNaN(x);
+      })
+      .sort((a, b) => {
+        const ax = xOf(a);
+        const bx = xOf(b);
+        return typeof ax === 'number' && typeof bx === 'number'
+          ? ax - bx
+          : (categoryOrder.get(ax) ?? 0) - (categoryOrder.get(bx) ?? 0);
+      });
     const dims = [
       ...(xId === undefined ? [] : [xId]),
       ...(draft.split ? [draft.split.column] : []),
     ];
-    const marks = ordered.flatMap((row) => {
+    const marks = ordered.map((row) => {
       const x = xOf(row);
-      if (typeof x === 'number' && Number.isNaN(x)) {
-        return [];
-      }
       const y = toNumber(resolution.cell(draft.yColumn, row)) ?? null;
       const label = resolution.text(draft.yColumn, row);
       const description = describe([
@@ -459,7 +461,7 @@ export const resolveXy = (
             }
           : {}),
       };
-      return [mark];
+      return mark;
     });
     return { draft, color, marks, seriesIndex };
   });
@@ -533,23 +535,26 @@ export const resolveXy = (
 
   const xFormat: PortableFormat =
     xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
+  // Every y a data layer states, whether or not its rows produce a series.
+  const yEntries = dataLayers.flatMap(({ layer }) =>
+    layer.y.map(({ column, axis }) => ({ layer, column, axis: axis ?? 'y' }))
+  );
   const percentageAxis = (axis: 'y' | 'y2') => {
-    const onAxis = drafts.filter((draft) => draft.axis === axis);
+    const onAxis = yEntries.filter((entry) => entry.axis === axis);
     return (
       onAxis.length > 0 &&
       onAxis.every(({ layer }) => layer.stack === 'percentage')
     );
   };
   const yFormat = (axis: 'y' | 'y2'): PortableFormat => {
-    const first = drafts.find((draft) => draft.axis === axis);
+    const first = yEntries.find((entry) => entry.axis === axis);
     return percentageAxis(axis)
       ? DEFAULT_FORMATS.percent
       : first
-        ? resolution.format(first.yColumn)
+        ? resolution.format(first.column)
         : DEFAULT_FORMATS.number;
   };
 
-  // Y axes.
   const referenceLinesByLayer: SceneReferenceLine[][] = node.layers.map(
     (layer) =>
       layer.kind === 'referenceLines'
@@ -582,7 +587,7 @@ export const resolveXy = (
   const referenceLines = referenceLinesByLayer.flat();
 
   const yAxis = (id: 'y' | 'y2'): SceneAxis | undefined => {
-    const onAxis = drafts.filter((draft) => draft.axis === id);
+    const onAxis = yEntries.filter((entry) => entry.axis === id);
     // Reference lines keep their axis even when no series is on it.
     if (
       onAxis.length === 0 &&
@@ -626,7 +631,6 @@ export const resolveXy = (
     };
   };
 
-  // The x axis.
   const xConfig = node.axes?.x;
   const xAxis: SceneAxis = {
     id: 'x',
@@ -766,21 +770,25 @@ export const resolveXy = (
 
   const visibility = legendConfig?.visibility ?? 'auto';
   const allYs = series.flatMap(({ key, source }, index) => {
-    const { yColumn } = drafts[index]!;
+    const { yColumn, axis } = drafts[index]!;
     return hidden.has(key)
       ? []
       : source.rows.flatMap((row) => {
           const value = toNumber(resolution.cell(yColumn, row));
-          return value === undefined ? [] : [{ value, column: yColumn, row }];
+          return value === undefined
+            ? []
+            : [{ value, column: yColumn, axis, row }];
         });
   });
   const yLabels = [
-    ...new Set(drafts.map(({ yColumn }) => resolution.column(yColumn).label)),
+    ...new Set(yEntries.map(({ column }) => resolution.column(column).label)),
   ];
   const splitLabels = [
     ...new Set(
-      drafts.flatMap(({ split }) =>
-        split ? [resolution.column(split.column).label] : []
+      dataLayers.flatMap(({ layer }) =>
+        layer.splitBy === undefined
+          ? []
+          : [resolution.column(layer.splitBy).label]
       )
     ),
   ];
@@ -795,10 +803,20 @@ export const resolveXy = (
       best === undefined || entry.value > best.value ? entry : best,
     undefined
   );
+  // Values on two axes, or printed differently, are not on one scale.
+  const oneScale =
+    new Set(
+      allYs.map(
+        ({ column, axis }) =>
+          `${axis}:${JSON.stringify(resolution.format(column))}`
+      )
+    ).size <= 1;
   const range =
-    lowest && highest
-      ? `, from ${resolution.text(lowest.column, lowest.row)} to ${resolution.text(highest.column, highest.row)}`
-      : ', with no data';
+    !lowest || !highest
+      ? ', with no data'
+      : oneScale
+        ? `, from ${resolution.text(lowest.column, lowest.row)} to ${resolution.text(highest.column, highest.row)}`
+        : '';
   const sentence = `${yLabels.join(' and ')}${
     dimensions.length ? ` by ${dimensions.join(' and ')}` : ''
   }${range}.`;

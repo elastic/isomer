@@ -30,7 +30,6 @@ import type {
   SceneSelection,
 } from './types';
 
-// Defaults for nodes that state none; a materializer states its source's own.
 const DEFAULT_MAX_COLUMNS = 3;
 
 const TREND_ICONS = {
@@ -61,17 +60,17 @@ const widen = (only: number): [number, number] => {
   ];
 };
 
-// A trend's extent; a single value widens, a time by half a day either side within the `Date` range, and no values span `[0, 1]`.
+// A trend's extent: `widenOne` around a single value, and `[0, 1]` for none.
 const trendDomain = (
   values: number[],
-  widen: (only: number) => [number, number]
+  widenOne: (only: number) => [number, number]
 ): [number, number] => {
   if (!values.length) {
     return [0, 1];
   }
   const low = values.reduce((least, value) => Math.min(least, value), Infinity);
   const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
-  return low === high ? widen(low) : [low, high];
+  return low === high ? widenOne(low) : [low, high];
 };
 
 const withSign = (format: PortableFormat): PortableFormat =>
@@ -299,6 +298,7 @@ export const resolveMetric = (
       const ys = points.flatMap(({ y }) => (y === null ? [] : [y]));
       trend = {
         points,
+        // A single time widens by half a day either side, within the `Date` range.
         xDomain: trendDomain(xs, (only) =>
           trendScale === 'temporal'
             ? [

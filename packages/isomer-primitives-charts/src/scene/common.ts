@@ -20,7 +20,9 @@ import type {
   SceneTable,
 } from './types';
 
+/** What the host draws a Scene for, passed to `resolveChart`. */
 export interface ResolveChartOptions {
+  /** The scheme every color in the Scene is concrete for. */
   scheme: ColorScheme;
   /** The size the host draws the Scene at, passed through. */
   size?: SceneSize | undefined;
@@ -39,7 +41,6 @@ export interface Resolution {
   readonly chrome: SceneChrome;
   readonly data: ChartData;
   column(id: string): ChartColumn;
-  index(id: string): number;
   cell(id: string, row: number): Cell;
   /** A cell's identity for grouping and matching: a scalar date by its instant, anything else by {@link cellKey}. */
   identity(id: string, row: number): string;
@@ -83,7 +84,6 @@ export const createResolution = (
     chrome: CHART_CHROME[scheme],
     data,
     column,
-    index,
     cell,
     identity: (id, row) => cellIdentity(cell(id, row), column(id).type),
     format,
