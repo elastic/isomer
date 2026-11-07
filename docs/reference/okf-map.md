@@ -7,8 +7,8 @@ description: Generated map of the Isomer OKF concept graph.
 
 Generated from `.okf/isomer` by `pnpm okf:map`. Do not edit by hand.
 
-- Concepts: 68
-- Links: 158
+- Concepts: 69
+- Links: 159
 - Isolated concepts: 0
 
 ## Graph
@@ -54,6 +54,7 @@ flowchart LR
     sdk_entry_points_markdown["Markdown"]:::entrypoint
     sdk_entry_points_react["React"]:::entrypoint
     sdk_entry_points_root["Root"]:::entrypoint
+    sdk_entry_points_schema["Schema"]:::entrypoint
     sdk_entry_points_slack["Slack"]:::entrypoint
     sdk_entry_points_testing["Testing"]:::entrypoint
     sdk_entry_points_text["Text"]:::entrypoint
@@ -181,6 +182,7 @@ flowchart LR
     sdk_entry_points_root --> sdk_entry_points_author
     sdk_entry_points_root --> sdk_entry_points_html
     sdk_entry_points_root --> sdk_entry_points_testing
+    sdk_entry_points_schema --> sdk_concepts_pipeline
     sdk_entry_points_slack --> sdk_concepts_packs
     sdk_entry_points_slack --> sdk_concepts_rendering
     sdk_entry_points_testing --> sdk_concepts_packs
@@ -288,6 +290,7 @@ flowchart LR
 - Markdown (Entry Point): `sdk/entry-points/markdown`
 - React (Entry Point): `sdk/entry-points/react`
 - Root (Entry Point): `sdk/entry-points/root`
+- Schema (Entry Point): `sdk/entry-points/schema`
 - Slack (Entry Point): `sdk/entry-points/slack`
 - Testing (Entry Point): `sdk/entry-points/testing`
 - Text (Entry Point): `sdk/entry-points/text`

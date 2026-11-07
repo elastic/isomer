@@ -23,6 +23,12 @@
       "require": "./lib/cjs/entries/index.js",
       "default": "./lib/cjs/entries/index.js"
     },
+    "./schema": {
+      "types": "./lib/cjs/entries/schema.d.ts",
+      "import": "./lib/esm/entries/schema.js",
+      "require": "./lib/cjs/entries/schema.js",
+      "default": "./lib/cjs/entries/schema.js"
+    },
     "./html": {
       "types": "./lib/cjs/entries/html.d.ts",
       "import": "./lib/esm/entries/html.js",
@@ -68,6 +74,9 @@
   },
   "typesVersions": {
     "*": {
+      "schema": [
+        "./lib/cjs/entries/schema.d.ts"
+      ],
       "html": [
         "./lib/cjs/entries/html.d.ts"
       ],

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 import { CHART_GLYPHS, type ChartGlyph } from '../glyphs';
 
