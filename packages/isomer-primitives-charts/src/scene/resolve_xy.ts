@@ -377,7 +377,7 @@ export const resolveXy = (
 
   // Stacking: positive and negative values stack separately per stack group and x.
   const stackTops = new Map<string, { positive: number; negative: number }>();
-  const stackTotals = new Map<string, number>();
+  const stackMagnitudes = new Map<string, number[]>();
   const stackGroup = (draft: SeriesDraft) =>
     draft.layer.stack ? `${draft.layerIndex}:${draft.axis}` : undefined;
   for (const draft of drafts) {
@@ -392,12 +392,23 @@ export const resolveXy = (
     for (const row of draft.rows) {
       const key = `${group}|${String(xOf(row))}`;
       const value = toNumber(resolution.cell(draft.yColumn, row)) ?? 0;
-      stackTotals.set(
-        key,
-        bounded((stackTotals.get(key) ?? 0) + Math.abs(value))
-      );
+      const magnitudes = stackMagnitudes.get(key) ?? [];
+      magnitudes.push(Math.abs(value));
+      stackMagnitudes.set(key, magnitudes);
     }
   }
+  // A total past the largest double is summed in units of the stack's largest magnitude instead.
+  const stackShares = new Map(
+    [...stackMagnitudes].map(([key, magnitudes]) => {
+      const total = magnitudes.reduce((sum, magnitude) => sum + magnitude, 0);
+      if (Number.isFinite(total)) {
+        return [key, (raw: number) => raw / (total || 1)] as const;
+      }
+      const largest = magnitudes.reduce((most, m) => Math.max(most, m), 0);
+      const units = magnitudes.reduce((sum, m) => sum + m / largest, 0);
+      return [key, (raw: number) => raw / largest / units] as const;
+    })
+  );
 
   const partialRange = node.style?.partialBuckets
     ? [
@@ -433,7 +444,7 @@ export const resolveXy = (
         const key = `${group}|${String(x)}`;
         const scaled =
           draft.layer.stack === 'percentage'
-            ? raw / (stackTotals.get(key) || 1)
+            ? (stackShares.get(key)?.(raw) ?? 0)
             : raw;
         const tops = stackTops.get(key) ?? { positive: 0, negative: 0 };
         const side = scaled >= 0 ? 'positive' : 'negative';

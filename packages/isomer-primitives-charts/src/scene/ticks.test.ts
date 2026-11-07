@@ -169,36 +169,46 @@ describe('wall-clock ticks in a zone', () => {
       'both occurrences',
       '2026-11-01T05:00Z',
       '2026-11-01T07:00Z',
-      [
-        '05:00',
-        '05:15',
-        '05:30',
-        '05:45',
-        '06:00',
-        '06:15',
-        '06:30',
-        '06:45',
-        '07:00',
-      ],
+      ['05:00', '05:30', '06:00', '06:30', '07:00'],
     ],
-  ])('ticks %s of a repeated hour', (_, from, to, expected) => {
-    // New York repeats 01:00–02:00 local on 2026-11-01.
-    const ticks = timeTicks(
-      Date.parse(from),
-      Date.parse(to),
-      4,
-      'America/New_York'
-    );
+    [
+      'the end of the first occurrence and the start of the second',
+      '2026-11-01T05:50Z',
+      '2026-11-01T06:10Z',
+      ['05:50', '05:55', '06:00', '06:05', '06:10'],
+    ],
+  ])(
+    'ticks %s of a repeated hour as densely as UTC',
+    (_, from, to, expected) => {
+      // New York repeats 01:00–02:00 local on 2026-11-01.
+      const [min, max] = [Date.parse(from), Date.parse(to)];
+      const iso = (ticks: number[]) =>
+        ticks.map((tick) => new Date(tick).toISOString().slice(11, 16));
+      expect(iso(timeTicks(min, max, 4, 'America/New_York'))).toEqual(expected);
+      expect(iso(timeTicks(min, max, 4, 'UTC'))).toEqual(expected);
+    }
+  );
+
+  it('rounds each end of a range across a repeated hour in its own offset', () => {
+    // 01:47 EDT to 01:13 EST.
     expect(
-      ticks.map((tick) => new Date(tick).toISOString().slice(11, 16))
-    ).toEqual(expected);
+      niceTimeDomain(
+        Date.parse('2026-11-01T05:47Z'),
+        Date.parse('2026-11-01T06:13Z'),
+        5,
+        'America/New_York'
+      )
+    ).toEqual([
+      Date.parse('2026-11-01T05:45Z'),
+      Date.parse('2026-11-01T06:15Z'),
+    ]);
   });
 
   it('keeps hourly ticks on local hours, moving a skipped hour to the change', () => {
     const ticks = timeTicks(
       Date.parse('2026-10-03T13:30:00Z'),
       Date.parse('2026-10-03T19:00:00Z'),
-      8,
+      6,
       'Australia/Lord_Howe'
     );
     expect(ticks.length).toBeGreaterThan(2);
