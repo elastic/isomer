@@ -32,6 +32,7 @@ export interface XyDatum {
   readonly mark: number;
 }
 
+/** Whether an Elastic Charts datum is one this engine passed it. */
 export const isXyDatum = (value: unknown): value is XyDatum =>
   typeof value === 'object' &&
   value !== null &&
