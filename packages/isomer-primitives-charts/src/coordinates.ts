@@ -33,6 +33,6 @@ export const coordinateOf = (
   return typeof number === 'number' &&
     Number.isFinite(number) &&
     (scale === 'linear' || Math.abs(number) <= MAX_EPOCH)
-    ? number
+    ? number + 0
     : undefined;
 };

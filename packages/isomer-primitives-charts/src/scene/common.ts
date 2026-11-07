@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { scalarOf } from '../coordinates';
+import { coordinateOf, scalarOf } from '../coordinates';
 import { defaultFormatFor, formatValue } from '../format/format';
 import type { Cell, ChartColumn, ChartData } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
@@ -41,6 +41,8 @@ export interface Resolution {
   column(id: string): ChartColumn;
   index(id: string): number;
   cell(id: string, row: number): Cell;
+  /** A cell's identity for grouping and matching: a scalar date by its instant, anything else by {@link cellKey}. */
+  identity(id: string, row: number): string;
   /** The column's format, or the default for its type. */
   format(id: string): PortableFormat;
   /** A value formatted with `format`. */
@@ -83,6 +85,14 @@ export const createResolution = (
     column,
     index,
     cell,
+    identity: (id, row) => {
+      const value = cell(id, row);
+      const instant =
+        column(id).type === 'date' && !Array.isArray(value)
+          ? coordinateOf(value, 'temporal')
+          : undefined;
+      return instant === undefined ? cellKey(value) : `@${instant}`;
+    },
     format,
     formatAs,
     text: (id, row) =>
