@@ -27,6 +27,33 @@ The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.c
 
 `sceneSpecs(scene, env, options?)` turns a `metric` or `xy` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, or the metric grid. The renderer wraps them in `<Chart>`; headless drawing hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
 
+## Headless, on Node
+
+`@elastic/isomer-charts-elastic/headless` draws the same specs with Elastic Charts' headless renderer, with no DOM, worker or native canvas. It needs a release of Elastic Charts with headless SVG output ([elastic/elastic-charts#2939](https://github.com/elastic/elastic-charts/pull/2939)); until then it builds only against a local build of that pull request.
+
+```ts
+import { createChartsPack } from '@elastic/isomer-primitives-charts';
+import { createElasticChartsHeadlessRenderer } from '@elastic/isomer-charts-elastic/headless';
+
+const imagePack = createChartsPack({
+  sceneRenderers: [createElasticChartsHeadlessRenderer({ font })],
+});
+```
+
+`createElasticChartsHeadlessRenderer` is a `SceneRenderer` for `node` that supports `metric` and `xy`. It puts the chart's SVG inline in a `div`, so `snapshot` markup carries it to an image backend such as takumi. Register it in the pack's `sceneRenderers`, since `snapshot` takes no host context. It draws at the Scene's `size`, which the charts pack gives every chart on Node.
+
+`renderSceneSvg(scene, options?)` returns `{ svg, width, height, debugState? }`. Options choose how text is drawn:
+
+| Option | Text |
+| --- | --- |
+| `font` | Glyph outlines of this font, the same wherever the chart is drawn |
+| `measureTextWidth` | SVG `<text>`, laid out with this measure |
+| neither | SVG `<text>`, laid out with Elastic Charts' Helvetica metrics |
+
+`debugState` is what `<Chart debugState>` reports, when the Elastic Charts build returns it from a headless render; #2939 does not yet. Metric has no DebugState in Elastic Charts, so a metric is checked by the text in its SVG.
+
+Headless metrics differ from the browser's: values draw smaller and words can break mid-word. Those gaps are Elastic Charts', reported on #2939.
+
 ## What it takes from the Scene
 
 Colors, text and series are the Scene's, and draw order is as far as Elastic Charts' paint bands allow (see the tolerance table). Ticks, domains, stacks and point density are Elastic Charts', computed from the intent each Scene axis and series states, the way Kibana's xy expression hands them over. A tick label prints through `formatAxisValue`, so it reads the same in every engine.
