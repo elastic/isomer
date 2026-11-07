@@ -8,10 +8,9 @@
 // Events from what a renderer hit, so every renderer raises the same event for
 // the same gesture. Everything an event says comes from the Scene.
 
-import { coordinateOf } from '../coordinates';
 import type { ChartBrushEvent, ChartSelectEvent } from '../schema/events';
 
-import type { SceneSelection, XyScene } from './types';
+import type { SceneSelection, XyCategory, XyScene } from './types';
 
 /** The `select` event for a part of the Scene the reader selected. */
 export const selectEvent = (
@@ -48,28 +47,29 @@ export const selectEvent = (
   return { ...event, target: selection.target };
 };
 
-interface Endpoint {
-  value: number;
-  label: string;
-}
-
 const nearest = (
-  points: readonly Endpoint[],
+  categories: readonly XyCategory[],
   at: number
-): Endpoint | undefined =>
-  points.reduce<Endpoint | undefined>((best, point) => {
-    const distance = Math.abs(point.value - at);
-    const previous = best === undefined ? Infinity : Math.abs(best.value - at);
-    return best === undefined ||
-      distance < previous ||
-      (distance === previous && point.value < best.value)
-      ? point
-      : best;
-  }, undefined);
+): XyCategory | undefined => {
+  let best: XyCategory | undefined;
+  for (const category of categories) {
+    if (typeof category.x !== 'number') {
+      continue;
+    }
+    if (
+      best === undefined ||
+      Math.abs(category.x - at) < Math.abs((best.x as number) - at)
+    ) {
+      best = category;
+    }
+  }
+  return best;
+};
 
 /**
  * The `brush` event for a range along the Scene's brush column, or `undefined`
- * when the node offers no brush. Endpoint labels come from the brush column.
+ * when the node offers no brush. The description names each end by the x
+ * position nearest it, as the x axis formats it.
  */
 export const brushEvent = (
   scene: XyScene,
@@ -82,29 +82,10 @@ export const brushEvent = (
   }
   const from = Math.min(range[0], range[1]);
   const to = Math.max(range[0], range[1]);
-  const index = scene.table.columns.findIndex(({ id }) => id === brush.column);
-  const column = scene.table.columns[index];
-  const label = column?.label ?? brush.column;
-  const plotted = new Set(
-    scene.layers.flatMap((layer) =>
-      layer.kind === 'series' && layer.series.xColumn === brush.column
-        ? layer.series.marks.flatMap(({ source }) => source.rows)
-        : []
-    )
-  );
-  const points = scene.table.rows.flatMap(
-    ({ row, values, cells }): Endpoint[] => {
-      if (!plotted.has(row)) {
-        return [];
-      }
-      const value = coordinateOf(
-        values[index],
-        column?.type === 'date' ? 'temporal' : 'linear'
-      );
-      return value === undefined ? [] : [{ value, label: cells[index] ?? '' }];
-    }
-  );
-  const ends = [nearest(points, from), nearest(points, to)];
+  const label =
+    scene.table.columns.find(({ id }) => id === brush.column)?.label ??
+    brush.column;
+  const ends = [nearest(scene.categories, from), nearest(scene.categories, to)];
   const description =
     ends[0] && ends[1]
       ? `${label}: ${ends[0].label} to ${ends[1].label}`

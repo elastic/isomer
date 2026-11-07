@@ -16,7 +16,7 @@ Lines, areas and bars over a shared x axis, on the [chart core](core.md).
 | `interactions`, `emphasis` | Selection, brushing, sync, a link, series hidden at first, and static highlights: [Interactions](interactions.md)                                          |
 | `style`                    | `interpolation`, `fitting`, `points`, `areaOpacity`, `areaFill`, `barMinimumHeight`, `barValueLabels`, `partialBuckets` (the queried range), `currentTime` |
 
-A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y: [{ column, axis?, color? }], splitBy?, rows? }`. Each data layer reads its own `x` column; when it is absent, its rows draw at one x position (zero on a continuous axis). When layers come from different source tables, the tables are appended to `data` in layer order and each layer names its `[start, end)` row range.
+A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y: [{ column, axis?, color? }], splitBy?, rows? }`. Every data layer uses the same `x` column; when it is absent, every row draws at one x position. When layers come from different source tables, the tables are appended to `data` in layer order, each layer names its `[start, end)` row range, and each table's x field maps to the one x column.
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Neither carries rows, so neither is ever selected.
 
@@ -25,12 +25,12 @@ A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the
 Rules:
 
 - Every column reference names a column in `data.columns`.
-- On a continuous x scale, including an automatically inferred scale, each layer's non-missing x cells supply a finite number for `linear` or a valid date coordinate for `temporal`; multivalue cells use their first non-null value.
+- On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear` or a valid date for `temporal`; a multivalue cell uses its first non-null value.
 - A `y` column is a `number` column.
 - A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.
 - Only `bar` and `area` layers stack.
 - At least one layer is a `data` layer.
-- Each data layer reads its own x column; absent means its rows draw at one x position (zero on a continuous axis).
+- Every data layer uses the same x column; absent means every row draws at one x position.
 - An annotation range's `from` is not after its `to`.
 - A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.

@@ -472,6 +472,23 @@ describe('xyChart', () => {
     );
   });
 
+  it.each([
+    ['another x column', { x: 's' }],
+    ['no x column', {}],
+  ])('rejects a data layer with %s', (_, x) => {
+    expectRule(
+      'xyChart',
+      xy({
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'bar', y: [{ column: 'y' }], ...x },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
+    );
+  });
+
   it('rejects a missing split column', () => {
     expectRule(
       'xyChart',
