@@ -103,7 +103,12 @@ describe('xy events from Elastic Charts callbacks', () => {
 
   it('raises a filtered-out legend item', () => {
     const { events, env } = listen();
-    legendSelect(xyInteractiveScene, env, 'Other', true);
+    legendSelect(
+      xyInteractiveScene,
+      env,
+      seriesOf(xyInteractiveScene).find(({ key }) => key === 'Other')!,
+      true
+    );
     expect(events).toEqual([expected('Filter out a legend item')]);
   });
 

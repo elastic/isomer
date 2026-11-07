@@ -16,6 +16,7 @@ import {
 import { describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
+import { metricDatum } from './metric';
 import { sceneSpecs } from './specs';
 
 const specElements = (specs: ReactNode) => {
@@ -199,6 +200,53 @@ describe('sceneSpecs', () => {
     });
   });
 
+  it('labels a percentage stack’s values by their share, through the y axis', () => {
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: xyInteractiveScene.layers.map((layer) =>
+        layer.kind === 'series'
+          ? {
+              ...layer,
+              series: {
+                ...layer.series,
+                stack: { group: 'y', mode: 'percentage' },
+                valueLabels: true,
+              },
+            }
+          : layer
+      ),
+    };
+    const { displayValueSettings } = specProps(scene, 'series-0') as {
+      displayValueSettings: { valueFormatter: (value: unknown) => string };
+    };
+    const label = displayValueSettings.valueFormatter(0.25);
+    expect(label).not.toBe('');
+    expect(label).toBe(formatAxisValue(scene, scene.axes.y!, 0.25));
+  });
+
+  it('draws a range annotation outside the plot when its fill is outside', () => {
+    const band = (fill: 'inside' | 'outside'): XyScene => ({
+      ...xyInteractiveScene,
+      layers: [
+        {
+          kind: 'annotation',
+          annotation: {
+            kind: 'range',
+            from: 0,
+            to: 1,
+            color: '#00ff00',
+            fill,
+            tooltip: { entries: [] },
+          },
+        },
+      ],
+    });
+    expect(specProps(band('outside'), 'annotation-0')).toMatchObject({
+      outside: true,
+    });
+    expect(specProps(band('inside'), 'annotation-0').outside).toBe(undefined);
+  });
+
   it.each([
     ['auto', 'auto'],
     ['visible', 'always'],
@@ -215,22 +263,50 @@ describe('sceneSpecs', () => {
   });
 
   it('labels value ticks through formatAxisValue and categories by their label', () => {
-    const { x, y } = xyInteractiveScene.axes;
-    const xFormat = specProps(xyInteractiveScene, 'x').tickFormat as (
-      value: unknown
-    ) => string;
+    const { y } = xyInteractiveScene.axes;
     const yFormat = specProps(xyInteractiveScene, 'y').tickFormat as (
       value: unknown
     ) => string;
-    const [category] = xyInteractiveScene.categories;
-    expect(xFormat(category!.x)).toBe(
-      x.scale === 'ordinal'
-        ? category!.label
-        : formatAxisValue(xyInteractiveScene, x, category!.x as number)
-    );
     expect(yFormat(1234.5)).toBe(
       formatAxisValue(xyInteractiveScene, y!, 1234.5)
     );
+    const { domain: _domain, ...x } = xyInteractiveScene.axes.x;
+    const ordinal: XyScene = {
+      ...xyInteractiveScene,
+      axes: { ...xyInteractiveScene.axes, x: { ...x, scale: 'ordinal' } },
+      categories: xyInteractiveScene.categories.map((category, index) => ({
+        ...category,
+        x: `c${index}`,
+        label: `Category ${index}`,
+      })),
+    };
+    const xFormat = specProps(ordinal, 'x').tickFormat as (
+      value: unknown
+    ) => string;
+    expect(xFormat('c0')).toBe('Category 0');
+    expect(xFormat('unknown')).toBe('unknown');
+  });
+
+  it('hands Elastic Charts the comparison badge glyph as its icon', () => {
+    const [tile] = metricSingleValueScene.tiles;
+    const badged = {
+      ...tile!,
+      secondary: {
+        labelPlacement: 'before' as const,
+        text: '+5%',
+        color: '#000000',
+        badge: {
+          direction: 'increase' as const,
+          color: '#00ff00',
+          showIcon: true,
+          icon: '↑',
+        },
+      },
+    };
+    expect(metricDatum(badged).extra).toMatchObject({
+      value: '+5%',
+      icon: '↑',
+    });
   });
 
   it('builds a metric Scene into its grid', () => {

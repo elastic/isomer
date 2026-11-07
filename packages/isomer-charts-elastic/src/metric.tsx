@@ -34,6 +34,9 @@ const secondaryOf = ({
     ? undefined
     : {
         value: secondary.text,
+        ...(secondary.badge?.icon === undefined
+          ? {}
+          : { icon: secondary.badge.icon }),
         ...(secondary.label === undefined ? {} : { label: secondary.label }),
         labelPosition: secondary.labelPlacement,
         ...(secondary.badge === undefined

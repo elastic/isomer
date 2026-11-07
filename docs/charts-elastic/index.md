@@ -35,7 +35,7 @@ Colors, text, series and draw order are the Scene's. Ticks, domains, stacks and 
 | --- | --- |
 | Base theme | Kibana's charts base theme for the Scene's `scheme`: Elastic Charts' Borealis theme with the `Elastic UI Numeric` font first and axis titles in the tick-label color at weight 500, as Kibana's charts plugin builds it |
 | Background, axis, tick, grid-line and title colors | `chrome` |
-| Series colors, names and draw order | `series` |
+| Series colors, names and draw order | The `series` layers |
 | Stacking | Unstacked `y` with `stackAccessors`; a `percentage` stack sets `stackMode: 'percentage'` |
 | y domain | `custom` is `{ min, max }`; `data` is `fit: !includeZero` with the axis's reference lines in `includeDataFromIds`, as Kibana's `getAxisDomain` builds it |
 | x domain | The `categories` in order on an ordinal axis; `custom` is `{ min, max }`; otherwise Elastic Charts' own. A stated `interval` is `minInterval`, which sizes the bars |
@@ -43,11 +43,11 @@ Colors, text, series and draw order are the Scene's. Ticks, domains, stacks and 
 | Points | `points`: `auto`, `visible` and `hidden` are `'auto'`, `'always'` and `'never'` |
 | Time zone | The x axis's `timeZone`, else the Scene's |
 | Tick labels | A category's `label` on an ordinal axis; any other value through `formatAxisValue` |
-| Value labels | The mark's `label` |
+| Value labels | The mark's `label`; on a percentage stack, the mark's share through the y axis, as Lens prints it |
 | Tooltip | The x position as its axis labels it, then each hovered series' name, color and mark `label` |
 | Legend position, layout, size, title and truncation | `legend` |
-| Reference lines and annotations | `referenceLines` and `annotations`, styled as Kibana's xy chart styles them |
-| Metric tiles, layout and alignment | `tiles` and `layout`, as Kibana's metric visualization sets them; the value prints the tile's `value.text` |
+| Reference lines and annotations | The `referenceLine` and `annotation` layers, styled as Kibana's xy chart styles them; a range with `fill: 'outside'` draws beside the axis |
+| Metric tiles, layout and alignment | `tiles` and `layout`, as Kibana's metric visualization sets them; the value prints the tile's `value.text`, and a comparison badge's glyph is its `icon` |
 | Accessible label and description | `title` and `summary` |
 
 With `debugState: true`, or when the page sets `window._echDebugStateFlag` as Kibana's functional tests do, Elastic Charts writes its `DebugState` to the chart.
@@ -76,12 +76,14 @@ Content (strings, colors, order) is the Scene's. Where Elastic Charts cannot tak
 | xy | Series stack by axis: Elastic Charts has no stack group, so two stacked layers on one axis stack together | Matches Kibana; differs from the Scene's `stack.group` |
 | xy | Bars on a continuous x axis use histogram mode when stacked or alone, as Kibana's rule is; the Scene does not state it | Bar placement follows Kibana's rule, not the Scene |
 | xy | `legend.items[].statistics` are not drawn | Legend statistics missing |
-| xy | `interactions.initial.hiddenSeries` and `legend.items[].hidden` are not applied: Elastic Charts has no public initial deselection | Hidden series draw until a reader toggles them |
+| xy | `legend.items[].hidden` is not applied: Elastic Charts has no public initial deselection | Hidden series draw until a reader toggles them |
 | xy | Annotation and reference-line icons and text markers are not drawn | Lines and fills only |
 | xy | `currentTime` is not drawn: the Scene gives it no color | No current-time marker |
 | xy | `interactions.emphasis` and `sync` are not drawn | No static highlight or synced cursor |
+| xy | No gesture raises the `series` select target; legend actions raise `legend` | A node offering `series` raises nothing for it |
 | xy | `partial` marks are not shaded | No end-zone shading |
-| metric | `layout.icon` is not drawn: Elastic Charts takes an icon component, and the Scene names an EUI icon | No tile icon |
+| metric | `layout.icon` is not drawn: Elastic Charts takes an icon component, and this engine maps no `ChartGlyph` to one | No tile icon |
+| metric | `trend.xDomain` and `trend.yDomain` are not applied: Elastic Charts fits the trend to its points | Trend line scale may differ |
 | metric | Title and subtitle colors are Elastic Charts' contrast choice against the tile background | Title color may differ from the Scene's `chrome.text` |
 | metric | A progress bar draws `progress.fraction` against a domain of 1 | Bar length matches; Elastic Charts' accessible progress text reads the fraction |
 | both | Pixel layout (margins, label placement, legend width) | Geometry compared within tolerance, not exactly |

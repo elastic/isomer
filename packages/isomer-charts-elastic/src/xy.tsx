@@ -229,8 +229,19 @@ const nice = (axis: SceneAxis | undefined): boolean =>
 export const seriesData = (series: XySeries, index: number): XyDatum[] =>
   series.marks.map(({ x, y }, mark) => ({ x, y, series: index, mark }));
 
-/** Each mark's label by the value Elastic Charts passes a value-label formatter. */
-const valueLabeler = (series: XySeries) => {
+/**
+ * Each mark's label by the value Elastic Charts passes a value-label formatter.
+ * A percentage stack passes each mark's share, which prints through its axis, as Lens labels it.
+ */
+const valueLabeler = (
+  series: XySeries,
+  scene: XyScene,
+  axis: SceneAxis | undefined
+) => {
+  if (series.stack?.mode === 'percentage' && axis !== undefined) {
+    return (value: unknown) =>
+      typeof value === 'number' ? formatAxisValue(scene, axis, value) : '';
+  }
   const labels = new Map<number, string>();
   for (const mark of series.marks) {
     if (mark.y !== null) {
@@ -298,7 +309,7 @@ const seriesElement = (
       ? {
           displayValueSettings: {
             showValueLabel: true,
-            valueFormatter: valueLabeler(series),
+            valueFormatter: valueLabeler(series, scene, yAxis),
           },
         }
       : {}),
@@ -307,7 +318,7 @@ const seriesElement = (
     const bars = seriesOf(scene).filter(({ mark }) => mark === 'bar').length;
     return (
       <BarSeries
-        key={series.key}
+        key={common.id}
         {...common}
         enableHistogramMode={continuous && (stacked || bars <= 1)}
         minBarHeight={scene.barMinimumHeight}
@@ -330,7 +341,7 @@ const seriesElement = (
   if (series.mark === 'line') {
     return (
       <LineSeries
-        key={series.key}
+        key={common.id}
         {...line}
         lineSeriesStyle={{
           point,
@@ -341,7 +352,7 @@ const seriesElement = (
   }
   return (
     <AreaSeries
-      key={series.key}
+      key={common.id}
       {...line}
       areaSeriesStyle={{
         point,
@@ -423,9 +434,13 @@ const referenceLineElements = (
   return elements;
 };
 
+/** Kibana's `OUTSIDE_RECT_ANNOTATION_WIDTH`. */
+const OUTSIDE_RECT_WIDTH = 8;
+
 const annotationElement = (
   annotation: SceneAnnotation,
-  index: number
+  index: number,
+  scene: XyScene
 ): ReactNode => {
   const id = `annotation-${index}`;
   if (annotation.kind === 'range') {
@@ -442,6 +457,15 @@ const annotationElement = (
           },
         ]}
         style={{ fill: annotation.color, opacity: 1 }}
+        {...(annotation.fill === 'outside'
+          ? {
+              outside: true,
+              outsideDimension: Math.max(
+                kibanaBaseTheme(scene.scheme).axes.tickLine.size,
+                OUTSIDE_RECT_WIDTH
+              ),
+            }
+          : {})}
       />
     );
   }
@@ -544,8 +568,8 @@ const legendAction =
     label: string;
   }) => {
     const index = Number(series[0]?.specId.replace('series-', ''));
-    const key = seriesOf(scene)[index]?.key;
-    if (key === undefined) {
+    const owner = seriesOf(scene)[index];
+    if (owner === undefined) {
       return null;
     }
     return (
@@ -553,13 +577,13 @@ const legendAction =
         <button
           type="button"
           aria-label={`Filter for ${label}`}
-          onClick={() => legendSelect(scene, env, key, false)}>
+          onClick={() => legendSelect(scene, env, owner, false)}>
           +
         </button>
         <button
           type="button"
           aria-label={`Filter out ${label}`}
-          onClick={() => legendSelect(scene, env, key, true)}>
+          onClick={() => legendSelect(scene, env, owner, true)}>
           −
         </button>
       </span>
@@ -579,7 +603,7 @@ const layerElements = (scene: XyScene): ReactNode[] => {
       case 'referenceLine':
         return referenceLineElements(layer.line, next.referenceLine++);
       case 'annotation':
-        return [annotationElement(layer.annotation, next.annotation++)];
+        return [annotationElement(layer.annotation, next.annotation++, scene)];
     }
   });
 };

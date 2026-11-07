@@ -139,15 +139,16 @@ export const xyHandlers = (scene: XyScene, env: SceneRenderEnv) => {
   };
 };
 
-/** Raises the `legend` selection of the legend item for series `key`. */
+/** Raises the `legend` selection of `series`' legend item. */
 export const legendSelect = (
   scene: XyScene,
   env: SceneRenderEnv,
-  key: string,
+  { key, series: { layer, y } }: XySeries,
   negate: boolean
 ): void => {
   const selection = scene.legend.items.find(
-    (item) => item.key === key
+    (item) =>
+      item.key === key && item.series.layer === layer && item.series.y === y
   )?.selection;
   if (selection && listening(env)) {
     raise(env, selectEvent(env.nodeId, selection, negate));
