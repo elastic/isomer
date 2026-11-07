@@ -345,13 +345,15 @@ export const metricExamples: PrimitiveExample<MetricNode>[] = [
       },
       value: { column: 'ip' },
       source: {
-        kind: 'kibana',
-        kibanaVersion: '9.4.0',
-        materializer: 'lens',
-        materializerVersion: 1,
-        savedObjectType: 'dashboard',
-        savedObjectId: 'edf84fe0-e1a0-11e7-b6d5-4dc382ef7f5b',
-        panelId: '4',
+        host: 'kibana',
+        hostVersion: '9.4.0',
+        meta: {
+          materializer: 'lens',
+          materializerVersion: 1,
+          savedObjectType: 'dashboard',
+          savedObjectId: 'edf84fe0-e1a0-11e7-b6d5-4dc382ef7f5b',
+          panelId: '4',
+        },
         timeRange: {
           from: '2026-10-27T00:00:00.000Z',
           to: '2026-11-03T00:00:00.000Z',

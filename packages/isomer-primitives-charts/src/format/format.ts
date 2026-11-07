@@ -12,14 +12,28 @@ import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
 import { formatNumber, numberFormat, numberOptions } from './intl';
 
-// The text for values a format cannot show: missing, empty, and not a number in a numeric format.
-const LABELS = { null: '(null)', empty: '(blank)', nan: 'NaN' } as const;
+/** The text for values a format cannot show. */
+interface MissingText {
+  /** A missing (`null` or absent) value. */
+  readonly null: string;
+  /** An empty string. */
+  readonly empty: string;
+  /** A value that is not a number in a numeric format. */
+  readonly nan: string;
+}
+
+const DEFAULT_MISSING: MissingText = {
+  null: '(null)',
+  empty: '(blank)',
+  nan: 'NaN',
+};
 
 interface FormatContext {
   /** A BCP 47 locale, such as `en` or `fr-CA`. */
   readonly locale: string;
   /** The time zone for a date format that names none. */
   readonly timeZone: string;
+  readonly missing: MissingText;
 }
 
 interface FormatOptions {
@@ -27,6 +41,9 @@ interface FormatOptions {
   readonly locale?: string | undefined;
   /** Absent means `UTC`. */
   readonly timeZone?: string | undefined;
+  /** The node's `data.missing`; absent texts keep their defaults. */
+  readonly missing?:
+    { readonly [Key in keyof MissingText]?: string | undefined } | undefined;
 }
 
 /** The format a value gets when its column and the chart state none. */
@@ -49,12 +66,12 @@ const BYTES = [
 ] as const;
 const BITS = ['bit', 'kilobit', 'megabit', 'gigabit', 'terabit'] as const;
 
-const prettyString = (value: Scalar | object) => {
+const prettyString = (value: Scalar | object, missing: MissingText) => {
   if (value === null || value === undefined) {
-    return LABELS.null;
+    return missing.null;
   }
   if (typeof value === 'string') {
-    return value === '' ? LABELS.empty : value;
+    return value === '' ? missing.empty : value;
   }
   if (typeof value === 'object') {
     return JSON.stringify(value, null, '  ');
@@ -128,11 +145,12 @@ const formatScalar = (
   format: PortableFormat,
   context: FormatContext
 ): string => {
+  const { missing } = context;
   if (value === null || value === undefined) {
-    return LABELS.null;
+    return missing.null;
   }
   if (value === '') {
-    return LABELS.empty;
+    return missing.empty;
   }
   switch (format.kind) {
     case 'number':
@@ -142,10 +160,10 @@ const formatScalar = (
     case 'duration': {
       const number = toNumber(value);
       if (number === undefined) {
-        return prettyString(value);
+        return prettyString(value, missing);
       }
       return Number.isNaN(number)
-        ? LABELS.nan
+        ? missing.nan
         : formatNumeric(number, format, context.locale);
     }
     case 'date': {
@@ -155,7 +173,7 @@ const formatScalar = (
         : formatDate(epoch, format, context);
     }
     case 'text':
-      return prettyString(value);
+      return prettyString(value, missing);
   }
 };
 
@@ -165,17 +183,25 @@ const withSuffix = (text: string, format: PortableFormat): string =>
     : text;
 
 /**
- * Formats one cell with `Intl`: missing and empty values get their labels,
+ * Formats one cell with `Intl`: missing and empty values get their text,
  * and a multivalue cell becomes a JSON array of its formatted values. A
  * `suffix` is appended to the whole result, except to a missing or empty
- * value's label.
+ * value's text.
  */
 export const formatValue = (
   value: Cell | undefined,
   format: PortableFormat,
-  { locale = 'en', timeZone = 'UTC' }: FormatOptions = {}
+  { locale = 'en', timeZone = 'UTC', missing }: FormatOptions = {}
 ): string => {
-  const context: FormatContext = { locale, timeZone };
+  const context: FormatContext = {
+    locale,
+    timeZone,
+    missing: {
+      null: missing?.null ?? DEFAULT_MISSING.null,
+      empty: missing?.empty ?? DEFAULT_MISSING.empty,
+      nan: missing?.nan ?? DEFAULT_MISSING.nan,
+    },
+  };
   if (Array.isArray(value)) {
     return withSuffix(
       JSON.stringify(value.map((item) => formatScalar(item, format, context))),
