@@ -36,7 +36,9 @@ const numberShape = {
   minimumFractionDigits: fractionDigits.optional(),
   maximumFractionDigits: fractionDigits
     .optional()
-    .describe('Absent means `Intl.NumberFormat`’s default for the kind.'),
+    .describe(
+      'Absent means `Intl.NumberFormat`’s default for the kind. Below `minimumFractionDigits`, it is raised to it.'
+    ),
   signDisplay: z
     .enum(['auto', 'always', 'exceptZero', 'never'])
     .optional()

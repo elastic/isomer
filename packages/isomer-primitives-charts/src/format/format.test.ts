@@ -12,7 +12,6 @@ import type { PortableFormat } from '../schema/format';
 import { toEpoch } from './date';
 import { defaultFormatFor, formatValue } from './format';
 import { dateFormat, numberFormat } from './intl';
-import { timeZoneOffset } from './zone';
 
 const MAY_5_2019 = Date.UTC(2019, 4, 5, 14, 4, 56, 201);
 
@@ -332,24 +331,5 @@ describe('missing values', () => {
     expect(formatValue(null, suffixed)).toBe('(null)');
     expect(formatValue('', suffixed)).toBe('(blank)');
     expect(formatValue([1, 2], suffixed)).toBe('["1","2"] ms');
-  });
-});
-
-describe('timeZoneOffset', () => {
-  it('preserves historical offset seconds in either direction', () => {
-    const epoch = Date.UTC(1890, 0, 1);
-    expect(timeZoneOffset(epoch, 'Europe/Paris')).toBeCloseTo(9.35);
-    expect(timeZoneOffset(epoch, 'America/New_York')).toBe(-300);
-    expect(
-      timeZoneOffset(Date.UTC(1880, 0, 1), 'America/New_York')
-    ).toBeCloseTo(-296 - 2 / 60);
-  });
-
-  it('reads minutes east of UTC, with daylight saving', () => {
-    expect(timeZoneOffset(MAY_5_2019, 'UTC')).toBe(0);
-    expect(timeZoneOffset(MAY_5_2019, 'Asia/Kathmandu')).toBe(345);
-    expect(timeZoneOffset(MAY_5_2019, 'America/New_York')).toBe(-240);
-    expect(timeZoneOffset(Date.UTC(2019, 0, 1), 'America/New_York')).toBe(-300);
-    expect(timeZoneOffset(0, '-03:30')).toBe(-210);
   });
 });

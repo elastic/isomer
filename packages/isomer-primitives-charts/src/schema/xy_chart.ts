@@ -71,7 +71,7 @@ const XY_LEGEND_STATISTICS = [
   'current_and_last_value',
 ] as const;
 
-const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, which for a \`date\` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
+const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, which for a \`date\` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has \`splitBy\`. Series that share a key, such as two layers plotting one y column, share its \`colors.byKey\` entry and hidden state. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {

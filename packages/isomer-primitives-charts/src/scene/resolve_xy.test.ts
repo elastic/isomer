@@ -234,6 +234,60 @@ describe('hidden series', () => {
     }
   );
 
+  it('names the y column in split keys and labels when more than one layer splits', () => {
+    const node = splitBars([
+      ['x', 'A', 1],
+      ['x', 'B', 2],
+    ]);
+    node.data.columns.push({
+      id: 'z',
+      label: 'Z',
+      type: 'number',
+      role: 'metric',
+    });
+    node.data.rows = node.data.rows.map((row) => [...row, 3]);
+    node.layers = [
+      { kind: 'data', mark: 'bar', x: 'x', splitBy: 's', y: [{ column: 'y' }] },
+      {
+        kind: 'data',
+        mark: 'line',
+        x: 'x',
+        splitBy: 's',
+        y: [{ column: 'z' }],
+      },
+    ];
+    node.colors = { byKey: { 'y:A': { light: '#0000FF', dark: '#0000FF' } } };
+    node.interactions = { initial: { hiddenSeries: ['z:B'] } };
+    const { legend } = resolve(node);
+    expect(
+      legend.items.map(({ key, label, hidden }) => ({ key, label, hidden }))
+    ).toEqual([
+      { key: 'y:A', label: 'A - Y', hidden: false },
+      { key: 'y:B', label: 'B - Y', hidden: false },
+      { key: 'z:A', label: 'A - Z', hidden: false },
+      { key: 'z:B', label: 'B - Z', hidden: true },
+    ]);
+    expect(legend.items[0]?.color).toBe('#0000FF');
+  });
+
+  it('gives series that share a key its color and hidden state', () => {
+    const node = xy({
+      layers: [
+        { kind: 'data', mark: 'bar', x: 'x', y: [{ column: 'y' }] },
+        { kind: 'data', mark: 'line', x: 'x', y: [{ column: 'y' }] },
+      ],
+      colors: { byKey: { y: { light: '#0000FF', dark: '#0000FF' } } },
+      interactions: { initial: { hiddenSeries: ['y'] } },
+    });
+    const { legend } = resolve(node);
+    expect(
+      legend.items.map(({ key, color, hidden }) => ({ key, color, hidden }))
+    ).toEqual([
+      { key: 'y', color: '#0000FF', hidden: true },
+      { key: 'y', color: '#0000FF', hidden: true },
+    ]);
+  });
+
   it('keeps an axis for reference lines when its series are hidden', () => {
     const node = splitBars([
       ['x', 'A', 10],

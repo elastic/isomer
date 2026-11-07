@@ -39,14 +39,17 @@ const TREND_ICONS = {
 } as const;
 const NOT_AVAILABLE = 'N/A';
 
-// The band `value` falls in: `from` inclusive, `to` exclusive.
+// The band `value` falls in: `from` inclusive, `to` exclusive except on the last band, as Lens's palette stops.
 const bandFor = (
   bands: readonly ColorBand[],
   value: number
 ): ColorBand | undefined =>
   bands.find(
-    ({ from, to }) =>
-      (from === undefined || value >= from) && (to === undefined || value < to)
+    ({ from, to }, index) =>
+      (from === undefined || value >= from) &&
+      (to === undefined ||
+        value < to ||
+        (index === bands.length - 1 && value === to))
   );
 
 const HALF_DAY = 43_200_000;
@@ -118,18 +121,21 @@ export const resolveMetric = (
     }
     let position = value;
     if (node.value.bandsRange === 'percentage') {
-      const max = maxOf(row);
-      if (max !== undefined) {
-        position = max === 0 ? 0 : (value / max) * 100;
+      // Lens's bounds: 0 to the bar's max, the range across tiles, or 0 to twice a lone value.
+      if (node.background?.kind === 'bar') {
+        position = (value / (maxOf(row) ?? Number.NaN)) * 100;
+      } else if (breakdownId === undefined) {
+        position = value === 0 ? Number.NaN : 50;
       } else {
         const span = highest - lowest;
-        position =
-          highest === lowest
-            ? 100
-            : Number.isFinite(span)
-              ? ((value - lowest) / span) * 100
-              : // Halves keep a span across the largest doubles finite.
-                ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
+        position = Number.isFinite(span)
+          ? ((value - lowest) / span) * 100
+          : // Halves keep a span across the largest doubles finite.
+            ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
+      }
+      // An empty range reads as its bottom.
+      if (!Number.isFinite(position)) {
+        position = bands[0]?.from ?? Number.NEGATIVE_INFINITY;
       }
     }
     const band = bandFor(bands, position);
