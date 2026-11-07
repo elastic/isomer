@@ -667,6 +667,7 @@ CLOSED`);
     ]) {
       expect(json).toContain(`"text":"${title}"`);
     }
+    expect(json).toContain('Hourly request count.');
     expect(
       blocks.filter((block) => (block as { type: string }).type === 'image')
     ).toHaveLength(2);
@@ -677,6 +678,21 @@ CLOSED`);
     expect(sections).toContain('Closed');
     expect(sections).toContain('I reason');
     expect(sections).not.toContain('H reason');
+  });
+
+  it('writes the grid and panel descriptions on Slack', () => {
+    const described: GridNode = {
+      ...gridExamples[0]!.node,
+      description: 'About the board',
+    };
+    const json = JSON.stringify(
+      runtime.surfaces.slack.render(view(described), {
+        heading: false,
+        collectAssets: true,
+      }).blocks
+    );
+    expect(json).toContain('About the board');
+    expect(json).toContain('Hourly request count.');
   });
 
   it('estimates its snapshot height from its rows and sections', () => {

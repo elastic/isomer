@@ -15,7 +15,11 @@ import {
   type z,
 } from '@elastic/isomer-sdk';
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
-import { type SlackBlock, slackContainer } from '@elastic/isomer-sdk/slack';
+import {
+  markdownContentToSlackBlocks,
+  type SlackBlock,
+  slackContainer,
+} from '@elastic/isomer-sdk/slack';
 
 import { gridCatalog } from '../schema/catalog';
 import { gridExamples } from '../schema/examples/grid';
@@ -326,9 +330,17 @@ const gridSlack = (
   renderSlack: (node: PrimitiveNode) => readonly SlackBlock[]
 ): SlackBlock[] => [
   ...(node.title ? [header(node.title, 2)] : []),
+  ...(node.description
+    ? markdownContentToSlackBlocks(md.paragraph(node.description))
+    : []),
   ...blocksOf(node).flatMap((block) => {
     const panels = shown(block).flatMap(({ panel }) => [
       ...(panel.title ? [header(panel.title, 4)] : []),
+      ...(panel.description
+        ? markdownContentToSlackBlocks(
+            md.paragraph(md.emphasis(panel.description))
+          )
+        : []),
       ...renderSlack(panel.node),
     ]);
     return block.section
