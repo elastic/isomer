@@ -32,6 +32,12 @@
       "import": "./lib/esm/scene/index.js",
       "require": "./lib/cjs/scene/index.js",
       "default": "./lib/cjs/scene/index.js"
+    },
+    "./resolve": {
+      "types": "./lib/cjs/resolve/index.d.ts",
+      "import": "./lib/esm/resolve/index.js",
+      "require": "./lib/cjs/resolve/index.js",
+      "default": "./lib/cjs/resolve/index.js"
     }
   },
   "typesVersions": {
@@ -41,6 +47,9 @@
       ],
       "scene": [
         "./lib/cjs/scene/index.d.ts"
+      ],
+      "resolve": [
+        "./lib/cjs/resolve/index.d.ts"
       ]
     }
   },
@@ -63,9 +72,14 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-sdk": "workspace:*"
+    "@elastic/isomer-sdk": "workspace:*",
+    "d3-scale": "3.3.0"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/eui-theme-borealis": "8.1.0",
+    "@types/d3-scale": "3.3.2"
   }
 }

@@ -7,6 +7,8 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
+import { continuousScaleOf, coordinateOf, scalarOf } from '../coordinates';
+
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
@@ -69,6 +71,10 @@ const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interaction
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
+  sharedX:
+    'Every data layer uses the same x column; absent means every row draws at one x position.',
+  xCoordinate:
+    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear` or a valid date for `temporal`; a multivalue cell uses its first non-null value.',
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
@@ -92,7 +98,7 @@ const dataLayerSchema = z
     x: columnRefSchema
       .optional()
       .describe(
-        `The x column. Absent draws every row at one x position. ${COLUMN_REF_RULE}`
+        `The x column. Layers from different source tables share it: each table's x field maps to this one column. ${XY_RULES.sharedX} ${COLUMN_REF_RULE}`
       ),
     y: z
       .array(
@@ -403,10 +409,62 @@ const checkDataLayer = (
   }
 };
 
+const checkSharedX = (layers: readonly XyLayer[], context: Issues) => {
+  const first = layers.find(
+    (layer): layer is DataLayer => layer.kind === 'data'
+  );
+  layers.forEach((layer, index) => {
+    if (layer.kind === 'data' && layer.x !== first?.x) {
+      context.addIssue({
+        code: 'custom',
+        path: ['layers', index, 'x'],
+        message: XY_RULES.sharedX,
+      });
+    }
+  });
+};
+
+const checkXCoordinates = (node: XyChartInput, context: Issues) => {
+  const dataLayers = node.layers.filter(
+    (layer): layer is DataLayer => layer.kind === 'data'
+  );
+  const x = dataLayers[0]?.x;
+  const column = node.data.columns.findIndex(({ id }) => id === x);
+  const type = node.data.columns[column]?.type;
+  if (type === undefined) {
+    return;
+  }
+  const scale = node.axes?.x?.scale ?? continuousScaleOf(type);
+  if (scale !== 'linear' && scale !== 'temporal') {
+    return;
+  }
+  const drawn = (row: number) =>
+    dataLayers.some(({ rows }) => {
+      const [start, end] = rows ?? [0, node.data.rows.length];
+      return row >= start && row < end;
+    });
+  node.data.rows.forEach((cells, row) => {
+    const value = scalarOf(cells[column]);
+    if (
+      drawn(row) &&
+      value !== null &&
+      value !== undefined &&
+      coordinateOf(value, scale) === undefined
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['data', 'rows', row, column],
+        message: XY_RULES.xCoordinate,
+      });
+    }
+  });
+};
+
 /** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
 export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
+      checkSharedX(node.layers, context);
       const references: ColumnReference[] = [];
       const brushColumns: string[] = [];
       let dataLayers = 0;
@@ -433,11 +491,14 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
+      checkXCoordinates(node, context);
       checkInteractions(node, context, { brushColumns });
     },
     [
       COLUMN_REF_RULE,
       XY_RULES.yType,
+      XY_RULES.sharedX,
+      XY_RULES.xCoordinate,
       XY_RULES.rows,
       XY_RULES.stack,
       XY_RULES.dataLayer,

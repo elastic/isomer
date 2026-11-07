@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { MAX_EPOCH } from '../coordinates';
 import type { PortableFormat } from '../schema/format';
 
 import { dateFormat } from './intl';
@@ -28,6 +29,7 @@ export const formatDate = (
     timeZone: own ?? timeZone,
     hour12,
     ...(fields ? options : DEFAULT_STYLE),
+    ...(hour12 === undefined ? {} : { hour12 }),
   }).format(epoch);
 };
 
@@ -37,7 +39,7 @@ export const formatDate = (
  */
 export const toEpoch = (value: unknown): number | undefined => {
   if (typeof value === 'number') {
-    return Number.isFinite(value) && Math.abs(value) <= 8.64e15
+    return Number.isFinite(value) && Math.abs(value) <= MAX_EPOCH
       ? value
       : undefined;
   }

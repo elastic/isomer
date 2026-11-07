@@ -5,12 +5,14 @@
  * 2.0.
  */
 
+export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
+export { type ChartNode, resolveChart } from './scene/resolve';
 export {
   type AxisId,
   type ColorScheme,
