@@ -11,7 +11,7 @@ import type {
   PortableFormat,
 } from '../schema/format';
 
-import { numberFormat, numberOptions } from './intl';
+import { formatNumber, numberFormat, numberOptions } from './intl';
 
 type DurationFormat = Extract<PortableFormat, { kind: 'duration' }>;
 
@@ -39,11 +39,17 @@ const LARGEST_FIRST: readonly DurationOutputUnit[] = [
   'minutes',
   'seconds',
   'milliseconds',
+  'microseconds',
+  'nanoseconds',
 ];
+
+const isOutputUnit = (unit: DurationUnit): unit is DurationOutputUnit =>
+  (LARGEST_FIRST as readonly string[]).includes(unit);
 
 /**
  * Formats a number of `format.input` units in `format.output`, or in the
  * largest unit it is at least one of, with `Intl.NumberFormat`'s unit names.
+ * Zero stays in its input unit when that is one a duration displays in.
  */
 export const formatDuration = (
   value: number,
@@ -56,13 +62,16 @@ export const formatDuration = (
     output === 'auto'
       ? (LARGEST_FIRST.find(
           (candidate) => Math.abs(value) >= MILLISECONDS[candidate] / inputScale
-        ) ?? 'milliseconds')
+        ) ?? (value === 0 && isOutputUnit(input) ? input : 'nanoseconds'))
       : output;
-  return numberFormat(locale, {
-    style: 'unit',
-    // `Intl` names units in the singular: `hour`, not `hours`.
-    unit: unit.slice(0, -1),
-    unitDisplay,
-    ...numberOptions(format),
-  }).format(value * (inputScale / MILLISECONDS[unit]));
+  return formatNumber(
+    numberFormat(locale, {
+      style: 'unit',
+      // `Intl` names units in the singular: `hour`, not `hours`.
+      unit: unit.slice(0, -1),
+      unitDisplay,
+      ...numberOptions(format),
+    }),
+    value * (inputScale / MILLISECONDS[unit])
+  );
 };

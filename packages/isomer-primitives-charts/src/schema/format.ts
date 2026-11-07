@@ -16,7 +16,18 @@ import { crossSuperRefine } from './cross_field';
 export const FORMAT_RULES = {
   dateStyle:
     'A date format uses `dateStyle` and `timeStyle`, or individual date and time fields, not both.',
+  timeZone:
+    'A date format’s `timeZone` is an IANA time zone or an offset that `Intl.DateTimeFormat` accepts.',
 } as const;
+
+const isTimeZone = (timeZone: string): boolean => {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone });
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const fractionDigits = z.int().min(0).max(20);
 
@@ -65,6 +76,8 @@ const DURATION_INPUT_UNITS = [
 export type DurationUnit = (typeof DURATION_INPUT_UNITS)[number];
 
 const DURATION_OUTPUT_UNITS = [
+  'nanoseconds',
+  'microseconds',
   'milliseconds',
   'seconds',
   'minutes',
@@ -85,10 +98,22 @@ const dateSchema = z
     kind: z.literal('date'),
     timeZone: z
       .string()
-      .min(1)
+      .check(
+        crossSuperRefine<string>(
+          (timeZone, context) => {
+            if (typeof timeZone === 'string' && !isTimeZone(timeZone)) {
+              context.addIssue({
+                code: 'custom',
+                message: FORMAT_RULES.timeZone,
+              });
+            }
+          },
+          [FORMAT_RULES.timeZone]
+        )
+      )
       .optional()
       .describe(
-        'An IANA time zone such as `Europe/Paris`, `UTC`, or an offset such as `+05:30`. Absent means the time zone the chart is resolved in.'
+        `An IANA time zone such as \`Europe/Paris\`, \`UTC\`, or an offset such as \`+05:30\`. Absent means the time zone the chart is resolved in. ${FORMAT_RULES.timeZone}`
       ),
     dateStyle: z.enum(['full', 'long', 'medium', 'short']).optional(),
     timeStyle: z.enum(['full', 'long', 'medium', 'short']).optional(),

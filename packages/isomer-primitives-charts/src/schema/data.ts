@@ -7,6 +7,8 @@
 
 import { requiredString, z } from '@elastic/isomer-sdk';
 
+import { isoDateTimeEpoch } from '../iso_date_time';
+
 import { crossSuperRefine } from './cross_field';
 import { portableFormatSchema } from './format';
 
@@ -75,44 +77,6 @@ export const DATA_RULES = {
   display: 'Each `display` key names a column and holds one string per row.',
 } as const;
 
-const ISO_DATE_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(?:Z|[+-](\d{2}):?(\d{2}))$/;
-
-// An offset is required so a date-time names one instant on every host; a
-// calendar-invalid value such as February 30 is rejected, not normalized.
-const isIsoDateTime = (value: string): boolean => {
-  const match = ISO_DATE_TIME.exec(value);
-  if (!match) {
-    return false;
-  }
-  const [year, month, day, hour, minute, second, offsetHour, offsetMinute] =
-    match.slice(1).map((part) => (part === undefined ? 0 : Number(part))) as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
-  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-  const daysInMonth =
-    [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ??
-    0;
-  return (
-    month >= 1 &&
-    month <= 12 &&
-    day >= 1 &&
-    day <= daysInMonth &&
-    hour <= 23 &&
-    minute <= 59 &&
-    second <= 59 &&
-    offsetHour <= 23 &&
-    offsetMinute <= 59
-  );
-};
-
 const scalarMatches = (type: ColumnType, value: ScalarCell): boolean => {
   if (value === null) {
     return true;
@@ -127,7 +91,7 @@ const scalarMatches = (type: ColumnType, value: ScalarCell): boolean => {
     case 'date':
       return (
         typeof value === 'number' ||
-        (typeof value === 'string' && isIsoDateTime(value))
+        (typeof value === 'string' && isoDateTimeEpoch(value) !== undefined)
       );
   }
 };

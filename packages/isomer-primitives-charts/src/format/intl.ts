@@ -47,6 +47,18 @@ export const dateFormat = (
   return format;
 };
 
+/** `value` formatted, printing a negative value that rounds to zero as zero, not `-0`, unless the sign display is `always`. */
+export const formatNumber = (
+  formatter: Intl.NumberFormat,
+  value: number
+): string =>
+  value < 0 || Object.is(value, -0)
+    ? formatter.resolvedOptions().signDisplay !== 'always' &&
+      formatter.format(-value) === formatter.format(0)
+      ? formatter.format(0)
+      : formatter.format(value)
+    : formatter.format(value);
+
 interface NumberFields {
   minimumFractionDigits?: number | undefined;
   maximumFractionDigits?: number | undefined;

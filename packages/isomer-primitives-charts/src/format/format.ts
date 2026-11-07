@@ -10,9 +10,9 @@ import type { PortableFormat } from '../schema/format';
 
 import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
-import { numberFormat, numberOptions } from './intl';
+import { formatNumber, numberFormat, numberOptions } from './intl';
 
-// The text for values a format cannot show: missing, empty, and number-like but not a number.
+// The text for values a format cannot show: missing, empty, and not a number in a numeric format.
 const LABELS = { null: '(null)', empty: '(blank)', nan: 'NaN' } as const;
 
 interface FormatContext {
@@ -84,15 +84,18 @@ const formatNumeric = (
 ): string => {
   switch (format.kind) {
     case 'number':
-      return numberFormat(locale, {
-        ...numberOptions(format),
-        ...(format.notation ? { notation: format.notation } : {}),
-      }).format(number);
+      return formatNumber(
+        numberFormat(locale, {
+          ...numberOptions(format),
+          ...(format.notation ? { notation: format.notation } : {}),
+        }),
+        number
+      );
     case 'percent':
-      return numberFormat(locale, {
-        style: 'percent',
-        ...numberOptions(format),
-      }).format(format.fractional === false ? number / 100 : number);
+      return formatNumber(
+        numberFormat(locale, { style: 'percent', ...numberOptions(format) }),
+        format.fractional === false ? number / 100 : number
+      );
     case 'bytes':
     case 'bits': {
       const units = format.kind === 'bytes' ? BYTES : BITS;
@@ -105,12 +108,15 @@ const formatNumeric = (
       ) {
         exponent++;
       }
-      return numberFormat(locale, {
-        style: 'unit',
-        unit: units[exponent]!,
-        unitDisplay: format.unitDisplay ?? 'short',
-        ...numberOptions(format),
-      }).format(number / base ** exponent);
+      return formatNumber(
+        numberFormat(locale, {
+          style: 'unit',
+          unit: units[exponent]!,
+          unitDisplay: format.unitDisplay ?? 'short',
+          ...numberOptions(format),
+        }),
+        number / base ** exponent
+      );
     }
     case 'duration':
       return formatDuration(number, format, locale);
@@ -154,14 +160,15 @@ const formatScalar = (
 };
 
 const withSuffix = (text: string, format: PortableFormat): string =>
-  'suffix' in format && format.suffix !== undefined && text !== ''
+  'suffix' in format && format.suffix !== undefined
     ? `${text}${format.suffix}`
     : text;
 
 /**
  * Formats one cell with `Intl`: missing and empty values get their labels,
  * and a multivalue cell becomes a JSON array of its formatted values. A
- * `suffix` is appended to the whole result.
+ * `suffix` is appended to the whole result, except to a missing or empty
+ * value's label.
  */
 export const formatValue = (
   value: Cell | undefined,
@@ -169,12 +176,16 @@ export const formatValue = (
   { locale = 'en', timeZone = 'UTC' }: FormatOptions = {}
 ): string => {
   const context: FormatContext = { locale, timeZone };
-  return withSuffix(
-    Array.isArray(value)
-      ? JSON.stringify(value.map((item) => formatScalar(item, format, context)))
-      : formatScalar(value, format, context),
-    format
-  );
+  if (Array.isArray(value)) {
+    return withSuffix(
+      JSON.stringify(value.map((item) => formatScalar(item, format, context))),
+      format
+    );
+  }
+  const text = formatScalar(value, format, context);
+  return value === null || value === undefined || value === ''
+    ? text
+    : withSuffix(text, format);
 };
 
 /** The format a column of `type` gets when it declares none. */

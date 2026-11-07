@@ -61,6 +61,13 @@ describe('number', () => {
     ).toBe('1.50');
   });
 
+  it('never prints zero as -0 unless the format states a sign', () => {
+    expect(formatValue(-0, number)).toBe('0');
+    expect(formatValue(-0.0001, number)).toBe('0');
+    expect(formatValue(-0.00001, { kind: 'percent' })).toBe('0%');
+    expect(formatValue(-3, number)).toBe('-3');
+  });
+
   it('compacts large numbers', () => {
     expect(
       formatValue(1_234_000, { kind: 'number', notation: 'compact' })
@@ -155,6 +162,24 @@ describe('duration', () => {
     );
     expect(formatValue(45, { kind: 'duration', input: 'days' })).toBe(
       '1.5 months'
+    );
+  });
+
+  it('goes below a millisecond, and keeps zero in its input unit', () => {
+    expect(formatValue(400, { kind: 'duration', input: 'nanoseconds' })).toBe(
+      '400 nanoseconds'
+    );
+    expect(formatValue(2500, { kind: 'duration', input: 'nanoseconds' })).toBe(
+      '2.5 microseconds'
+    );
+    expect(formatValue(400, { kind: 'duration', input: 'picoseconds' })).toBe(
+      '0.4 nanoseconds'
+    );
+    expect(formatValue(0, { kind: 'duration', input: 'hours' })).toBe(
+      '0 hours'
+    );
+    expect(formatValue(0, { kind: 'duration', input: 'picoseconds' })).toBe(
+      '0 nanoseconds'
     );
   });
 
@@ -265,6 +290,24 @@ describe('date', () => {
   it('prints an unparseable date as it is', () => {
     expect(formatValue('soon', { kind: 'date' })).toBe('soon');
   });
+
+  it('reads only ISO date-times with an offset, the same on every host', () => {
+    expect(toEpoch('2019-05-05T14:04:56.201Z')).toBe(MAY_5_2019);
+    expect(toEpoch('2019-05-05T14:04:56.2Z')).toBe(MAY_5_2019 - 1);
+    expect(toEpoch('2019-05-05T14:04:56.201999999Z')).toBe(MAY_5_2019);
+    expect(toEpoch('2019-05-05T19:49:56.201+0545')).toBe(MAY_5_2019);
+    expect(toEpoch('2019-05-05T10:04:56.201-04:00')).toBe(MAY_5_2019);
+    expect(toEpoch('0099-01-01T00:00Z')).toBe(-59_042_995_200_000);
+    for (const text of [
+      '2026-11-07T10:00',
+      'Nov 7 2026 10:00',
+      '1',
+      '2026-02-30T00:00Z',
+    ]) {
+      expect(toEpoch(text)).toBeUndefined();
+      expect(formatValue(text, { kind: 'date' })).toBe(text);
+    }
+  });
 });
 
 describe('missing values', () => {
@@ -275,6 +318,14 @@ describe('missing values', () => {
     expect(formatValue(undefined, { kind: 'text' })).toBe('(null)');
     expect(formatValue('', { kind: 'text' })).toBe('(blank)');
     expect(formatValue('abc', number)).toBe('NaN');
+  });
+
+  it('appends a suffix to values, not to a missing or empty label', () => {
+    const suffixed: PortableFormat = { kind: 'number', suffix: ' ms' };
+    expect(formatValue(5, suffixed)).toBe('5 ms');
+    expect(formatValue(null, suffixed)).toBe('(null)');
+    expect(formatValue('', suffixed)).toBe('(blank)');
+    expect(formatValue([1, 2], suffixed)).toBe('["1","2"] ms');
   });
 });
 

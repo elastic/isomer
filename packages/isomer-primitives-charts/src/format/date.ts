@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { isoDateTimeEpoch } from '../iso_date_time';
 import type { PortableFormat } from '../schema/format';
 
 import { dateFormat } from './intl';
@@ -32,8 +33,8 @@ export const formatDate = (
 };
 
 /**
- * A date cell as epoch milliseconds: a number as it is, or an ISO 8601 string
- * parsed. `undefined` when it is neither.
+ * A date cell as epoch milliseconds: a number as it is, or an ISO 8601
+ * date-time with a UTC offset parsed. `undefined` when it is neither.
  */
 export const toEpoch = (value: unknown): number | undefined => {
   if (typeof value === 'number') {
@@ -42,8 +43,7 @@ export const toEpoch = (value: unknown): number | undefined => {
       : undefined;
   }
   if (typeof value === 'string') {
-    const parsed = Date.parse(value);
-    return Number.isNaN(parsed) ? undefined : parsed;
+    return isoDateTimeEpoch(value);
   }
   return undefined;
 };

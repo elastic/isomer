@@ -127,6 +127,25 @@ describe('chart data', () => {
     );
   });
 
+  it('rejects a date format time zone that Intl does not know', () => {
+    for (const timeZone of ['Mars/Olympus_Mons', '']) {
+      expectRule(
+        'metric',
+        metric({
+          data: {
+            columns: [
+              number('v'),
+              { ...date('d'), format: { kind: 'date', timeZone } },
+            ],
+            rows: [[1, 0]],
+          },
+        }),
+        FORMAT_RULES.timeZone,
+        'data.columns.1.format.timeZone'
+      );
+    }
+  });
+
   it('rejects a repeated column id', () => {
     expectRule(
       'metric',
