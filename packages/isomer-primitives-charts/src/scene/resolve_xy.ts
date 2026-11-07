@@ -100,9 +100,13 @@ interface SeriesDraft {
 const median = (values: number[]) => {
   const sorted = [...values].sort((a, b) => a - b);
   const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2
-    ? sorted[middle]!
-    : sorted[middle - 1]! / 2 + sorted[middle]! / 2;
+  if (sorted.length % 2) {
+    return sorted[middle]!;
+  }
+  const low = sorted[middle - 1]!;
+  const high = sorted[middle]!;
+  // Halves keep a sum past the largest double finite.
+  return Number.isFinite(low + high) ? (low + high) / 2 : low / 2 + high / 2;
 };
 
 // The mean and variance, in units of the largest magnitude when a sum would pass the largest double.

@@ -800,6 +800,31 @@ describe('visibility, cell identity and bounds', () => {
     ).toEqual([false, false, false]);
   });
 
+  it('keeps the median of two subnormal values', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'metric' },
+            {
+              id: 'y',
+              label: 'Y',
+              type: 'number',
+              role: 'metric',
+              format: { kind: 'number', notation: 'compact' },
+            },
+          ],
+          rows: [
+            [0, Number.MIN_VALUE],
+            [1, Number.MIN_VALUE],
+          ],
+        },
+        legend: { statistics: ['median'] },
+      })
+    );
+    expect(scene.legend.items[0]?.statistics[0]?.value).toMatch(/^0\.0+5$/);
+  });
+
   it('draws a -0 x cell at 0', () => {
     const scene = resolve(
       xy({
