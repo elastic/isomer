@@ -44,6 +44,23 @@ describe('chart engine imports', () => {
     expect(
       await restrictions(`export const load = () => import('${specifier}');\n`)
     ).toEqual(['no-restricted-syntax']);
+    expect(
+      await restrictions(
+        `export const load = () => import(\`${specifier}\`);\n`
+      )
+    ).toEqual(['no-restricted-syntax']);
+    expect(
+      await restrictions(`export const load = () => require('${specifier}');\n`)
+    ).toEqual(['no-restricted-syntax']);
+  });
+
+  it('accepts a package whose name only begins like the charts pack', async () => {
+    const specifier = '@elastic/isomer-primitives-charts-extra';
+    expect(
+      await restrictions(
+        `import { a } from '${specifier}';\nexport { a };\nexport const load = () => import('${specifier}');\n`
+      )
+    ).toEqual([]);
   });
 
   it('accepts the Scene entry', async () => {

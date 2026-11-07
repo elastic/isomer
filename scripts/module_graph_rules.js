@@ -25,16 +25,8 @@ const CHARTS_CONTRACT_FORBIDDEN = [
 ];
 
 /**
- * Specifiers that must stay unreachable from an entry, by package and export key.
- * A forbidden specifier covers the package and every subpath under it.
- *
- * `react-dom/server` is the one worth guarding: it is the heavy server renderer,
- * and pulling it onto an entry a text-only or edge host imports costs that host
- * a dependency it never asked for. `./html` and `./react` reach it by design.
- *
- * Bare `react` is deliberately absent. `render/primitive_dispatch` uses
- * `cloneElement` and `isValidElement` to carry React renderers, so every surface
- * reaches it through the shared dispatcher — that is the design, not a leak.
+ * Specifiers that must stay unreachable from an entry, by package and export key; each covers its package's subpaths.
+ * The SDK's rendering entries may reach bare `react`, which carries React renderers through the shared dispatcher, but never `react-dom/server`; `./schema` and the charts entries reach neither.
  */
 export const RULES = {
   '@elastic/isomer-sdk': {
@@ -66,7 +58,7 @@ export const matchesForbidden = (specifier, rule) =>
     : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
 /** Every bare specifier reachable from `entryFile` through its relative imports. */
-export const reachableBareSpecifiers = async (entryFile) => {
+const reachableBareSpecifiers = async (entryFile) => {
   const { metafile } = await build({
     entryPoints: [entryFile],
     bundle: true,

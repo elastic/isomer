@@ -293,7 +293,7 @@ export default tseslint.config(
     },
   },
   {
-    // Chart engines draw a Scene; they never format, validate or resolve one.
+    // Chart engines draw a Scene; they never validate or resolve one, and format only through `formatAxisValue`.
     files: ['packages/isomer-charts-*/src/**/*.{ts,tsx}'],
     ignores: ['packages/isomer-charts-*/src/**/*.test.{ts,tsx}'],
     rules: {
@@ -318,7 +318,17 @@ export default tseslint.config(
         'error',
         {
           selector:
-            'ImportExpression[source.value=/^@elastic\\/isomer-primitives-charts(?!\\/scene$)/]',
+            'ImportExpression[source.value=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]',
+          message: CHART_ENGINE_IMPORTS,
+        },
+        {
+          selector:
+            'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]',
+          message: CHART_ENGINE_IMPORTS,
+        },
+        {
+          selector:
+            "CallExpression[callee.name='require'] > Literal.arguments[value=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]",
           message: CHART_ENGINE_IMPORTS,
         },
       ],
