@@ -5,12 +5,15 @@
  * 2.0.
  */
 
+export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
+export { formatAxisValue } from './scene/format_axis';
+export { type ChartNode, resolveChart } from './scene/resolve';
 export {
   type AxisId,
   type ColorScheme,
@@ -24,6 +27,7 @@ export {
   type SceneChrome,
   type SceneColor,
   type SceneColumn,
+  type SceneDomain,
   type SceneEnvironment,
   type SceneInteractions,
   type SceneKind,
@@ -36,7 +40,6 @@ export {
   type SceneSize,
   type SceneSource,
   type SceneTable,
-  type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
   type XyCategory,
@@ -98,8 +101,10 @@ export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
 export {

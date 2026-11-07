@@ -36,6 +36,7 @@ const renderers = {
   markdown: () => [],
 };
 
+/** Each chart contract as a primitive definition with stub renderers, for validating nodes in tests. */
 export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
   definePrimitive({
     type: 'metric',
@@ -80,6 +81,7 @@ export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
   }),
 ];
 
+/** The node schema of the contract named `type`. */
 export const nodeSchemaOf = (type: string): z.ZodType => {
   const definition = contractDefinitions.find(
     (candidate) => candidate.type === type

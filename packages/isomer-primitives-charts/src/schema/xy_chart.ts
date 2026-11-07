@@ -7,6 +7,13 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk';
 
+import {
+  continuousScaleOf,
+  coordinateOf,
+  MAX_EPOCH,
+  scalarOf,
+} from '../coordinates';
+
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
@@ -64,20 +71,31 @@ const XY_LEGEND_STATISTICS = [
   'current_and_last_value',
 ] as const;
 
-const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
+const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, which for a \`date\` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
 /** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
+  sharedX:
+    'Every data layer uses the same x column; absent means every row draws at one x position.',
+  xCoordinate:
+    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`; a multivalue cell uses its first non-null value.',
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
   rangeOrder: "An annotation range's `from` is not after its `to`.",
+  customDomain:
+    'A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.',
 } as const;
 
 const dateOrNumberSchema = z
-  .union([z.number(), z.iso.datetime({ offset: true })])
-  .describe('Epoch milliseconds or an ISO 8601 date-time.');
+  .union([
+    z.number().min(-MAX_EPOCH).max(MAX_EPOCH),
+    z.iso.datetime({ offset: true }),
+  ])
+  .describe(
+    'Epoch milliseconds within the `Date` range, ±8.64e15, or an ISO 8601 date-time.'
+  );
 
 const strokeDashSchema = z.enum(['solid', 'dashed', 'dotted']);
 
@@ -92,7 +110,7 @@ const dataLayerSchema = z
     x: columnRefSchema
       .optional()
       .describe(
-        `The x column. Absent draws every row at one x position. ${COLUMN_REF_RULE}`
+        `The x column. Layers from different source tables share it: each table's x field maps to this one column. ${XY_RULES.sharedX} ${COLUMN_REF_RULE}`
       ),
     y: z
       .array(
@@ -360,6 +378,23 @@ const checkAnnotationRanges = (
   });
 };
 
+const checkCustomDomains = (axes: XyChartInput['axes'], context: Issues) => {
+  for (const [id, axis] of Object.entries(axes ?? {})) {
+    const domain = axis?.domain;
+    const log = axis !== undefined && 'scale' in axis && axis.scale === 'log';
+    if (
+      domain?.kind === 'custom' &&
+      (domain.min >= domain.max || (log && domain.min <= 0))
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['axes', id, 'domain'],
+        message: XY_RULES.customDomain,
+      });
+    }
+  }
+};
+
 const dataLayerReferences = (
   layer: DataLayer,
   layerIndex: number
@@ -403,10 +438,63 @@ const checkDataLayer = (
   }
 };
 
+const checkSharedX = (layers: readonly XyLayer[], context: Issues) => {
+  const first = layers.find(
+    (layer): layer is DataLayer => layer.kind === 'data'
+  );
+  layers.forEach((layer, index) => {
+    if (layer.kind === 'data' && layer.x !== first?.x) {
+      context.addIssue({
+        code: 'custom',
+        path: ['layers', index, 'x'],
+        message: XY_RULES.sharedX,
+      });
+    }
+  });
+};
+
+const checkXCoordinates = (node: XyChartInput, context: Issues) => {
+  const dataLayers = node.layers.filter(
+    (layer): layer is DataLayer => layer.kind === 'data'
+  );
+  const x = dataLayers[0]?.x;
+  const column = node.data.columns.findIndex(({ id }) => id === x);
+  const type = node.data.columns[column]?.type;
+  if (type === undefined) {
+    return;
+  }
+  const scale = node.axes?.x?.scale ?? continuousScaleOf(type);
+  if (scale !== 'linear' && scale !== 'temporal') {
+    return;
+  }
+  const drawn = (row: number) =>
+    dataLayers.some(({ rows }) => {
+      const [start, end] = rows ?? [0, node.data.rows.length];
+      return row >= start && row < end;
+    });
+  node.data.rows.forEach((cells, row) => {
+    const value = scalarOf(cells[column]);
+    if (
+      drawn(row) &&
+      value !== null &&
+      value !== undefined &&
+      coordinateOf(value, scale) === undefined
+    ) {
+      context.addIssue({
+        code: 'custom',
+        path: ['data', 'rows', row, column],
+        message: XY_RULES.xCoordinate,
+      });
+    }
+  });
+};
+
 /** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
 export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
+      checkSharedX(node.layers, context);
+      checkCustomDomains(node.axes, context);
       const references: ColumnReference[] = [];
       const brushColumns: string[] = [];
       let dataLayers = 0;
@@ -433,15 +521,19 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
       });
+      checkXCoordinates(node, context);
       checkInteractions(node, context, { brushColumns });
     },
     [
       COLUMN_REF_RULE,
       XY_RULES.yType,
+      XY_RULES.sharedX,
+      XY_RULES.xCoordinate,
       XY_RULES.rows,
       XY_RULES.stack,
       XY_RULES.dataLayer,
       XY_RULES.rangeOrder,
+      XY_RULES.customDomain,
       INTERACTION_RULES.brushColumn,
       INTERACTION_RULES.emphasisRows,
     ]
