@@ -68,7 +68,7 @@ const rows = [...members].map(([type, schema]) => ({
 
 describe('stated rules', () => {
   it('finds the checks it guards', () => {
-    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(4);
+    expect(rows.find(({ type }) => type === 'metric')?.checks.length).toBe(5);
   });
 
   it.each(rows)(

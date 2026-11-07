@@ -21,6 +21,7 @@ import {
   columnRefSchema,
 } from './references';
 
+/** Every part of a chart a reader can select. */
 export const SELECT_TARGETS = [
   'datum',
   'series',
@@ -33,6 +34,7 @@ export const SELECT_TARGETS = [
 /** What a selection lands on. Each chart states which it offers. */
 export type SelectTarget = (typeof SELECT_TARGETS)[number];
 
+/** The cross-field rules the interaction schemas state in their descriptions, one sentence each. */
 export const INTERACTION_RULES = {
   brushColumn:
     'A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.',
@@ -68,6 +70,7 @@ export const selectSchema = <
     .optional()
     .describe('What a reader may select. Absent means nothing.');
 
+/** A brush along one continuous x column. */
 export const brushSchema = z
   .strictObject({ column: columnRefSchema })
   .describe(
@@ -109,6 +112,7 @@ export const brushingInteractionsSchemaFor = <
     })
     .describe(INTERACTIONS_DESCRIPTION);
 
+/** Rows drawn with emphasis, each with an optional note. */
 export const emphasisSchema = z
   .array(
     z.strictObject({
@@ -238,6 +242,7 @@ const selectEventSchema = z.discriminatedUnion('target', [
   }),
 ]);
 
+/** An event a chart raises: a selection or a brush. */
 export const chartEventSchema = z
   .discriminatedUnion('kind', [
     selectEventSchema,

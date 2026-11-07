@@ -98,8 +98,10 @@ export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
 export {

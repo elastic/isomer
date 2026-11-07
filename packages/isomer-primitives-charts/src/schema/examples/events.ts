@@ -14,7 +14,7 @@ import { xyInteractive } from './xy_chart';
 const HOUR = 3_600_000;
 const START = Date.UTC(2026, 10, 3);
 
-export interface ChartEventExample {
+interface ChartEventExample {
   name: string;
   description: string;
   event: ChartEvent;
