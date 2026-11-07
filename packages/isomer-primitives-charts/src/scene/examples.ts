@@ -5,11 +5,10 @@
  * 2.0.
  */
 
-// Hand-written Scenes for schema examples, so renderers can be built
-// against the contract before the resolver exists. They show the shape, not
-// expected output: tests compare a resolver against Kibana, never against these.
+// Hand-written Scenes for schema examples, so a renderer can be built and tested without the resolver.
 
 import type { Cell } from '../schema/data';
+import type { PortableFormat } from '../schema/format';
 
 import type {
   MetricScene,
@@ -19,6 +18,16 @@ import type {
   XyScene,
   XySeries,
 } from './types';
+
+const HOURLY: PortableFormat = {
+  kind: 'date',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+  timeZone: 'UTC',
+};
+
+const NUMBER: PortableFormat = { kind: 'number', maximumFractionDigits: 3 };
 
 const lightChrome: SceneChrome = {
   text: '#384861',
@@ -132,11 +141,9 @@ export const xyTimeSeriesScene: XyScene = {
       id: 'x',
       position: 'bottom',
       scale: 'time',
-      domain: [START, START + 5 * HOUR],
-      ticks: counts.map((_, index) => ({
-        value: START + index * HOUR,
-        label: hourLabel(index),
-      })),
+      format: HOURLY,
+      timeZone: 'UTC',
+      domain: { kind: 'data', includeZero: false, rounding: true },
       showTicks: true,
       showGrid: true,
       labelRotation: 0,
@@ -145,11 +152,8 @@ export const xyTimeSeriesScene: XyScene = {
       id: 'y',
       position: 'left',
       scale: 'linear',
-      domain: [0, 250],
-      ticks: [0, 50, 100, 150, 200, 250].map((value) => ({
-        value,
-        label: String(value),
-      })),
+      format: NUMBER,
+      domain: { kind: 'data', includeZero: false, rounding: true },
       title: 'Count of records',
       showTicks: true,
       showGrid: true,
@@ -168,7 +172,7 @@ export const xyTimeSeriesScene: XyScene = {
         color: '#16C5C0',
         interpolation: 'linear',
         fitting: { kind: 'none', emphasize: false, extend: 'none' },
-        showPoints: true,
+        points: 'auto',
         areaOpacity: 0.3,
         areaFill: 'solid',
         valueLabels: false,
@@ -178,16 +182,6 @@ export const xyTimeSeriesScene: XyScene = {
           x: START + index * HOUR,
           y: count,
           label: String(count),
-          tooltip: {
-            header: hourLabel(index),
-            entries: [
-              {
-                label: 'Count of records',
-                value: String(count),
-                color: '#16C5C0',
-              },
-            ],
-          },
           description: `@timestamp per hour: ${hourLabel(index)} · Count of records: ${count}`,
         })),
       },
@@ -277,9 +271,6 @@ const interactiveSeries: XySeries[] = statuses.map(
       seriesKey: key,
     });
     const marks: XyMark[] = interactiveHours.map((hour) => {
-      const below = statuses
-        .slice(0, status)
-        .reduce((sum, { counts: other }) => sum + (other[hour] ?? 0), 0);
       const value = values[hour] ?? 0;
       const description = `${TIME_LABEL}: ${hourLabel(hour)} · ${STATUS_LABEL}: ${label} · ${COUNT_LABEL}: ${value}`;
       return {
@@ -288,13 +279,8 @@ const interactiveSeries: XySeries[] = statuses.map(
           columns: ['time', 'status', 'count'],
         },
         x: START + hour * HOUR,
-        y: below + value,
-        y0: below,
+        y: value,
         label: String(value),
-        tooltip: {
-          header: hourLabel(hour),
-          entries: [{ label, value: String(value), color }],
-        },
         description,
         selection: {
           target: 'datum',
@@ -317,7 +303,7 @@ const interactiveSeries: XySeries[] = statuses.map(
       stack: { group: 'y', mode: 'stacked' },
       interpolation: 'linear',
       fitting: { kind: 'none', emphasize: false, extend: 'none' },
-      showPoints: false,
+      points: 'auto',
       areaOpacity: 0.3,
       areaFill: 'solid',
       valueLabels: false,
@@ -393,11 +379,9 @@ export const xyInteractiveScene: XyScene = {
       id: 'x',
       position: 'bottom',
       scale: 'time',
-      domain: [START, START + 2 * HOUR],
-      ticks: interactiveHours.map((hour) => ({
-        value: START + hour * HOUR,
-        label: hourLabel(hour),
-      })),
+      format: HOURLY,
+      timeZone: 'UTC',
+      domain: { kind: 'data', includeZero: false, rounding: true },
       showTicks: true,
       showGrid: false,
       labelRotation: 0,
@@ -406,11 +390,8 @@ export const xyInteractiveScene: XyScene = {
       id: 'y',
       position: 'left',
       scale: 'linear',
-      domain: [0, 1000],
-      ticks: [0, 200, 400, 600, 800, 1000].map((value) => ({
-        value,
-        label: value.toLocaleString('en'),
-      })),
+      format: NUMBER,
+      domain: { kind: 'data', includeZero: true, rounding: true },
       title: COUNT_LABEL,
       showTicks: true,
       showGrid: true,
