@@ -268,8 +268,12 @@ export const resolveXy = (
 
   // Series, in layer order, then y column, then split value by first appearance.
   const drafts: SeriesDraft[] = [];
+  const splitLayers = dataLayers.filter(
+    ({ layer }) => layer.splitBy !== undefined
+  ).length;
   for (const { layer, index } of dataLayers) {
     const rows = rowsOf(layer, data.rows.length);
+    const namesY = layer.y.length > 1 || splitLayers > 1;
     for (const [yIndex, y] of layer.y.entries()) {
       const yColumn = resolution.column(y.column);
       if (layer.splitBy === undefined) {
@@ -298,8 +302,8 @@ export const resolveXy = (
         const value = keyPart(resolution.cell(splitId, first));
         const text = resolution.text(splitId, first);
         drafts.push({
-          key: layer.y.length > 1 ? `${keyPart(y.column)}:${value}` : value,
-          label: layer.y.length > 1 ? `${text} - ${yColumn.label}` : text,
+          key: namesY ? `${keyPart(y.column)}:${value}` : value,
+          label: namesY ? `${text} - ${yColumn.label}` : text,
           layerIndex: index,
           yIndex,
           layer,
