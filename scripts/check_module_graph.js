@@ -20,6 +20,23 @@ import { build } from 'esbuild';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
+const MARKDOWN_PARSERS = [
+  'mdast-util-from-markdown',
+  'mdast-util-gfm',
+  'mdast-util-to-markdown',
+  'micromark-extension-gfm',
+];
+
+// The charts contracts carry no renderer or Markdown parser, and build on the SDK's `./schema` entry alone.
+const CHARTS_CONTRACT_FORBIDDEN = [
+  'react',
+  'react-dom',
+  '@elastic/charts',
+  '@elastic/isomer-runtime',
+  ...MARKDOWN_PARSERS,
+  { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
+];
+
 /**
  * Specifiers that must stay unreachable from an entry, by package and export key.
  * A forbidden specifier covers the package and every subpath under it.
@@ -32,20 +49,6 @@ import { repoRoot, workspacePackages } from './workspace_packages.js';
  * `cloneElement` and `isValidElement` to carry React renderers, so every surface
  * reaches it through the shared dispatcher — that is the design, not a leak.
  */
-// The charts contracts carry no renderer: the SDK root is out because it reaches
-// React, while the SDK's `./schema` entry is what the schemas build on.
-const CHARTS_CONTRACT_FORBIDDEN = [
-  'react',
-  'react-dom',
-  '@elastic/charts',
-  '@elastic/isomer-runtime',
-  { exact: '@elastic/isomer-sdk' },
-  '@elastic/isomer-sdk/html',
-  '@elastic/isomer-sdk/react',
-  '@elastic/isomer-sdk/author',
-  '@elastic/isomer-sdk/testing',
-];
-
 const RULES = {
   '@elastic/isomer-sdk': {
     '.': ['react-dom', 'react-dom/server'],
@@ -53,14 +56,7 @@ const RULES = {
     './markdown': ['react-dom', 'react-dom/server'],
     './slack': ['react-dom', 'react-dom/server'],
     './author': ['react-dom', 'react-dom/server'],
-    './schema': [
-      'react',
-      'react-dom',
-      'mdast-util-from-markdown',
-      'mdast-util-gfm',
-      'mdast-util-to-markdown',
-      'micromark-extension-gfm',
-    ],
+    './schema': ['react', 'react-dom', ...MARKDOWN_PARSERS],
   },
   '@elastic/isomer-primitives-charts': Object.fromEntries(
     ['./schema', './scene', './resolve'].map((entry) => [
@@ -70,14 +66,17 @@ const RULES = {
   ),
 };
 
+const coversPackage = (specifier, name) =>
+  specifier === name || specifier.startsWith(`${name}/`);
+
 /**
  * Matches `specifier` against a rule: a string covers the package and its
- * subpaths, `{ exact }` only itself.
+ * subpaths, `{ under, except }` the same minus one allowed specifier.
  */
 const matchesForbidden = (specifier, rule) =>
   typeof rule === 'string'
-    ? specifier === rule || specifier.startsWith(`${rule}/`)
-    : specifier === rule.exact;
+    ? coversPackage(specifier, rule)
+    : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
 
