@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { type ChartGlyph, CHART_GLYPHS } from './glyphs';
 export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
@@ -119,7 +120,7 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
-export { type ChartGlyph, CHART_GLYPHS, glyphSchema } from './schema/icons';
+export { glyphSchema } from './schema/icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type Loss,

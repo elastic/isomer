@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
 export {
   gridCatalog,
   metricCatalog,
@@ -73,7 +74,7 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './grid';
-export { type ChartGlyph, CHART_GLYPHS, glyphSchema } from './icons';
+export { glyphSchema } from './icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
 export {
   type Loss,

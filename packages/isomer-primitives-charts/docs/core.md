@@ -88,32 +88,32 @@ Colors are `#rgb`, `#rrggbb` or `#rrggbbaa`. `ChromeToken` is one of `text`, `te
 
 ## Glyphs
 
-A metric `layout.icon` and a reference line or annotation `icon` name a glyph. Each glyph is defined by what it shows, and drawn by default as its EUI icon; an engine without EUI draws the same subject. A host maps its own icons to these names.
+A metric `layout.icon` and a reference line or annotation `icon` name a glyph. Each glyph is defined by what it shows, and drawn by default as its EUI icon type; for a glyph EUI has no icon for, or in an engine without EUI, the engine draws the same subject. A host maps its own icons to these names. `CHART_GLYPHS`, on `./scene` as well as `./schema`, holds this table.
 
-| Glyph | Shows | Drawn by default as EUI's |
+| Glyph | Shows | Drawn by default as EUI's icon type |
 | --- | --- | --- |
 | `alert` | A warning triangle with an exclamation mark | `alert` |
 | `asterisk` | An asterisk | `asterisk` |
 | `bell` | A bell | `bell` |
 | `bolt` | A lightning bolt | `bolt` |
 | `bug` | A bug | `bug` |
-| `circle` | A filled circle | `circle` |
-| `comment` | A speech bubble | `editor_comment` |
-| `external` | A box with an arrow leaving its corner | `popout` |
+| `circle` | A filled circle | `dot` |
+| `comment` | A speech bubble | `editorComment` |
+| `external` | A box with an arrow leaving its corner | `external` |
 | `flag` | A flag on a pole | `flag` |
 | `globe` | A globe | `globe` |
 | `heart` | A heart | `heart` |
-| `marker` | A map pin marking a location | `map_marker` |
+| `marker` | A map pin marking a location | `mapMarker` |
 | `pin` | An outlined push pin | `pin` |
-| `pinFilled` | A filled push pin | `pin_filled` |
+| `pinFilled` | A filled push pin | `pinFilled` |
 | `processor` | A processor chip | `compute` |
-| `sortDown` | An arrow pointing down | `sort_down` |
-| `sortUp` | An arrow pointing up | `sort_up` |
-| `star` | An outlined star | `star_empty` |
-| `starFilled` | A filled star | `star_filled` |
+| `sortDown` | An arrow pointing down | `sortDown` |
+| `sortUp` | An arrow pointing up | `sortUp` |
+| `star` | An outlined star | `starEmpty` |
+| `starFilled` | A filled star | `starFilled` |
 | `tag` | A price tag | `tag` |
 | `temperature` | A thermometer | `temperature` |
-| `triangle` | A filled triangle pointing up | `triangle` |
+| `triangle` | A filled triangle pointing up | None; the engine draws it |
 
 ## `source`
 

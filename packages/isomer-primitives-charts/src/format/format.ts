@@ -186,7 +186,7 @@ const withSuffix = (text: string, format: PortableFormat): string =>
  * Formats one cell with `Intl`: missing and empty values get their text,
  * and a multivalue cell becomes a JSON array of its formatted values. A
  * `suffix` is appended to the whole result, except to a missing or empty
- * value's label.
+ * value's text.
  */
 export const formatValue = (
   value: Cell | undefined,
