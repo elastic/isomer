@@ -13,7 +13,7 @@ import { formatDuration } from './duration';
 import { formatNumber, numberFormat, numberOptions } from './intl';
 
 /** The text for values a format cannot show. */
-export interface MissingText {
+interface MissingText {
   /** A missing (`null` or absent) value. */
   readonly null: string;
   /** An empty string. */
