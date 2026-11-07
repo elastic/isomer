@@ -7,7 +7,7 @@
 
 import { coordinateOf, scalarOf } from '../coordinates';
 import { defaultFormatFor, formatValue } from '../format/format';
-import type { Cell, ChartColumn, ChartData } from '../schema/data';
+import type { Cell, ChartColumn, ChartData, ColumnType } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
 import type { PortableFormat } from '../schema/format';
 
@@ -85,14 +85,7 @@ export const createResolution = (
     column,
     index,
     cell,
-    identity: (id, row) => {
-      const value = cell(id, row);
-      const instant =
-        column(id).type === 'date' && !Array.isArray(value)
-          ? coordinateOf(value, 'temporal')
-          : undefined;
-      return instant === undefined ? cellKey(value) : `@${instant}`;
-    },
+    identity: (id, row) => cellIdentity(cell(id, row), column(id).type),
     format,
     formatAs,
     text: (id, row) =>
@@ -207,3 +200,12 @@ export const keyPart = (cell: Cell): string =>
 
 /** Raw cell identity, independent of display text and scalar/array encoding. */
 export const cellKey = (cell: Cell): string => JSON.stringify(cell);
+
+/** A cell's identity in a column of `type`: a scalar date by its instant, anything else by {@link cellKey}. */
+export const cellIdentity = (value: Cell, type: ColumnType): string => {
+  const instant =
+    type === 'date' && !Array.isArray(value)
+      ? coordinateOf(value, 'temporal')
+      : undefined;
+  return instant === undefined ? cellKey(value) : `@${instant}`;
+};

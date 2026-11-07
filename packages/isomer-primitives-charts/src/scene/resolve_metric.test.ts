@@ -272,6 +272,27 @@ describe('metric bounds and identity', () => {
     ).toEqual(['#0000FF', '#FF0000']);
   });
 
+  it('colors percentage bands across subnormal values', () => {
+    const node = buckets();
+    node.data.rows = [
+      ['lo', 1.5e-323],
+      ['hi', 2e-323],
+    ];
+    node.value.color = 'bands';
+    node.value.bandsRange = 'percentage';
+    node.colors = {
+      bands: [
+        { to: 50, color: blue },
+        { from: 50, color: red },
+      ],
+    };
+    expect(
+      resolveChart(node, { scheme: 'light' }).tiles.map(
+        ({ background }) => background
+      )
+    ).toEqual(['#0000FF', '#FF0000']);
+  });
+
   it('keeps secondary text readable on a colored tile', () => {
     const node = withBackground(undefined);
     node.value.color = { light: '#516381', dark: '#98A8C3' };
@@ -319,6 +340,67 @@ describe('metric bounds and identity', () => {
     const trend = resolveChart(node, { scheme: 'light' }).tiles[0]?.trend;
     expect(trend?.xDomain[0]).toBeLessThan(trend!.xDomain[1]);
     expect(trend?.yDomain[0]).toBeLessThan(trend!.yDomain[1]);
+  });
+
+  it.each([8.64e15, -8.64e15])(
+    'keeps a single-point trend at %s within the Date range',
+    (epoch) => {
+      const node = withBackground({
+        kind: 'trend',
+        x: 't',
+        y: 'v',
+        data: {
+          columns: [
+            { id: 't', label: 'Time', type: 'date', role: 'dimension' },
+            { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+          ],
+          rows: [[epoch, 7]],
+        },
+      });
+      const [low, high] = resolveChart(node, { scheme: 'light' }).tiles[0]!
+        .trend!.xDomain;
+      expect(low).toBeLessThan(high);
+      expect(low).toBeGreaterThanOrEqual(-8.64e15);
+      expect(high).toBeLessThanOrEqual(8.64e15);
+    }
+  );
+
+  it('matches trend rows whose breakdown column has another type', () => {
+    const node: MetricNode = {
+      type: 'metric',
+      data: {
+        columns: [
+          { id: 'd', label: 'Day', type: 'number', role: 'dimension' },
+          { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+        ],
+        rows: [[1_700_000_000_000, 1]],
+      },
+      breakdown: { column: 'd' },
+      value: { column: 'v' },
+      background: {
+        kind: 'trend',
+        breakdown: 'd',
+        x: 't',
+        y: 'v',
+        data: {
+          columns: [
+            { id: 'd', label: 'Day', type: 'date', role: 'dimension' },
+            { id: 't', label: 'Time', type: 'date', role: 'dimension' },
+            { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [1_700_000_000_000, 0, 1],
+            [1_700_000_000_000, 1000, 2],
+          ],
+        },
+      },
+    };
+    expect(
+      resolveChart(node, { scheme: 'light' }).tiles[0]?.trend?.points
+    ).toEqual([
+      { x: 0, y: 1 },
+      { x: 1000, y: 2 },
+    ]);
   });
 
   it('matches a trend breakdown that encodes one instant differently', () => {

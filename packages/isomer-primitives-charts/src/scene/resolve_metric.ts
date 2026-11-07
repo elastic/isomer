@@ -5,12 +5,13 @@
  * 2.0.
  */
 
-import { coordinateOf } from '../coordinates';
+import { coordinateOf, MAX_EPOCH } from '../coordinates';
 import type { ColorBand } from '../schema/colors';
 import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
 
 import {
+  cellIdentity,
   cellKey,
   createResolution,
   describe,
@@ -60,7 +61,7 @@ const widen = (only: number): [number, number] => {
   ];
 };
 
-// A trend's extent; a single value widens, a time to its surrounding day, and no values span `[0, 1]`.
+// A trend's extent; a single value widens, a time by half a day either side within the `Date` range, and no values span `[0, 1]`.
 const trendDomain = (
   values: number[],
   widen: (only: number) => [number, number]
@@ -122,11 +123,14 @@ export const resolveMetric = (
       if (max !== undefined) {
         position = max === 0 ? 0 : (value / max) * 100;
       } else {
-        // Halves keep a span across the largest doubles finite.
+        const span = highest - lowest;
         position =
           highest === lowest
             ? 100
-            : ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
+            : Number.isFinite(span)
+              ? ((value - lowest) / span) * 100
+              : // Halves keep a span across the largest doubles finite.
+                ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
       }
     }
     const band = bandFor(bands, position);
@@ -158,6 +162,11 @@ export const resolveMetric = (
   if (node.background?.kind === 'trend') {
     const { data: trendData, x, y, breakdown } = node.background;
     const trendResolution = createResolution(trendData, options);
+    // Trend rows match tiles under the tile breakdown's column type.
+    const matchType =
+      breakdownId === undefined
+        ? undefined
+        : resolution.column(breakdownId).type;
     trendScale =
       trendResolution.column(x).type === 'number' ? 'linear' : 'temporal';
     trendData.rows.forEach((_, row) => {
@@ -166,7 +175,12 @@ export const resolveMetric = (
         return;
       }
       const key =
-        breakdown === undefined ? '' : trendResolution.identity(breakdown, row);
+        breakdown === undefined
+          ? ''
+          : cellIdentity(
+              trendResolution.cell(breakdown, row),
+              matchType ?? trendResolution.column(breakdown).type
+            );
       const points = trends.get(key) ?? [];
       points.push({
         x: coordinate,
@@ -287,7 +301,10 @@ export const resolveMetric = (
         points,
         xDomain: trendDomain(xs, (only) =>
           trendScale === 'temporal'
-            ? [only - HALF_DAY, only + HALF_DAY]
+            ? [
+                Math.max(-MAX_EPOCH, only - HALF_DAY),
+                Math.min(MAX_EPOCH, only + HALF_DAY),
+              ]
             : widen(only)
         ),
         yDomain: trendDomain(ys, widen),
