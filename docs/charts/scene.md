@@ -5,7 +5,7 @@ description: The Scene a chart node resolves to, and the SceneRenderer interface
 
 # Scene
 
-A chart node resolves to a **Scene**: everything a renderer draws, decided once. Colors are concrete for one scheme, every displayed string is formatted, ticks are chosen for the size, legend items and series are in order, and marks are in data space. Renderers read only the Scene, so text, colors and order are identical in every engine.
+A chart node resolves to a **Scene**: what every surface must agree on, decided once. Colors are concrete for one scheme, every displayed string is formatted, legend items and series are in order, and marks are in data space. Axes and series state intent (a scale, a format, where a domain comes from, a stack mode, point visibility), and the chart engine computes ticks, domains, stacks and point density from it, as Elastic Charts does for Lens. Text, colors and order are identical in every engine; tick placement may differ.
 
 ```ts
 import type {
@@ -26,7 +26,7 @@ import type {
 | `table`                      | The node's data in `data` order. Formatted `cells` serve text surfaces; raw `values` are in matching column order so renderers can raise events without parsing display text |
 | `interactions`               | What the node offers, resolved: selection targets, brush column, sync, link and emphasis                                                                                     |
 
-A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (domains and ticks with labels), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
+A `MetricScene` has a `layout` and one tile per row. An `XyScene` has `axes` (scale, format and domain intent), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
 
 ## `resolveChart`
 
@@ -45,14 +45,14 @@ What it decides:
 
 - **Colors** from the node, concrete for the scheme. Chrome and the default categorical palette come from one theme, EUI Borealis tokens. Text, trend strokes and progress fills on a colored metric background use whichever scheme's text color contrasts more after compositing over the chart background.
 - **Metric tiles**, one per row: titles from the breakdown, colors by band (a percentage band reads each tile's share of its own `max`, or of the range across tiles), comparisons (to the primary: the signed difference; to a baseline: the value, colored by the difference's sign), and three tiles per row unless `maxColumns` says otherwise.
-- **Xy series** in layer, y-column and first-appearance order of split values; stacks (positive and negative values separately, percentages to one); categories in axis order, ordinal ones in row order; tooltips listing every visible series at an x once. Hidden series contribute no stack offsets, percentage totals, x positions, axis domains or summary range, though a category still lists every row at its x; a series' `source` holds the rows that drew its marks.
-- **Axes**: a domain including zero for bars and areas unless `fit` or `custom`; ticks and rounded domains from d3-scale 3, the version Elastic Charts uses, aiming for one tick per 50 px on y and 100 px on x (five without a size); ordinal ticks thinned to one per 30 px. Time ticks are d3's UTC ticks on the wall-clock time of the x format's `timeZone`, or the Scene's, so they fall on round local times as densely as d3's ticks over the same span in UTC, on whole milliseconds; a rounded time domain ends at the nearest such tick on each side. A tick at a local time that a daylight-saving change skips moves forward by the skipped length, one at a repeated local time appears at each occurrence the axis covers, and a single instant spans its local day. Tick labels use the column's format.
+- **Xy series** in layer, y-column and first-appearance order of split values, each with its stack group and mode; marks carry unstacked values and their displayed `label`. Categories list every x position any series has data at, in axis order, ordinal ones in row order; a series' `source` holds the rows that drew its marks.
+- **Axes** as intent: the scale; the format values print in (a percentage stack's axis prints percent); on a time axis, the zone ticks fall on round times in (the x format's `timeZone`, or the Scene's); and the domain, either `custom` bounds or `data` with whether it includes zero (bars and areas on a `full` y axis, and percentage stacks, except on a log axis) and whether it rounds. An ordinal axis has no domain: its positions are `categories` in order. The engine chooses ticks and labels each with `formatAxisValue(scene, axis, value)`, the only formatting a renderer does.
 - **Multivalue coordinates** use the first non-null element for numeric values, dates, trend coordinates and bar maxima. Empty arrays are missing. Labels, tables and selection values retain the whole cell.
 - **Selections** for each target the node offers, and none it does not.
 
-Tick placement, legend statistic names, default reference-line and annotation colors, and style defaults such as area opacity and bar minimum height are Isomer's choices for nodes that do not state them. A materializer states its source's own values; the parity gates compare the result with Elastic Charts and refine them.
+Legend statistic names, default reference-line and annotation colors, and style defaults such as area opacity and bar minimum height are Isomer's choices for nodes that do not state them. A materializer states its source's own values; the parity gates compare the result with Elastic Charts and refine them.
 
-A Scene draws one visibility state: the series in `interactions.initial.hiddenSeries` are hidden, and stacks and domains are resolved without them. A renderer that lets a reader show or hide a series resolves the node again with that key added to or removed from `hiddenSeries`.
+The series in `interactions.initial.hiddenSeries` start hidden: their legend items say so, and the summary sentence, which no reader can toggle, leaves them out. Everything else in the Scene holds every series, so an engine shows or hides one without resolving again.
 
 Every data layer shares one x column, so one axis scale and format serve them all. A node that skipped validation and holds an x cell its continuous scale cannot place throws a `RangeError`.
 

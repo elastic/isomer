@@ -7,7 +7,7 @@ description: Chart primitives on one shared core, a dashboard grid, and an unsup
 
 `@elastic/isomer-primitives-charts` is the published chart pack. It holds separate primitives per chart family over one shared core, a `grid` that lays nodes out as a Kibana dashboard does, and an `unsupported` placeholder for anything that cannot be shown.
 
-A chart node is self-contained: its data is inline and typed, its data colors are concrete for both color schemes, and its formats come from one closed portable set. Whoever builds the node, a Kibana materializer or an agent, resolves everything a renderer would otherwise have to decide. Renderers translate; they never format, pick a data color, sort, or choose ticks.
+A chart node is self-contained: its data is inline and typed, its data colors are concrete for both color schemes, and its formats come from one closed portable set. Whoever builds the node, a Kibana materializer or an agent, resolves everything a renderer would otherwise have to decide. Renderers translate; they never pick a data color or sort, and they format only through `formatAxisValue`. The chart engine chooses ticks, domains, stacks and point density from the intent the Scene states.
 
 | Primitive | Holds |
 | --- | --- |

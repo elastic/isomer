@@ -24,15 +24,6 @@ import {
   toNumber,
 } from './common';
 import { categoricalColor, resolveColor } from './theme';
-import {
-  linearTicks,
-  logTicks,
-  niceDomain,
-  niceLogDomain,
-  niceTimeDomain,
-  tickCount,
-  timeTicks,
-} from './ticks';
 import type {
   SceneAnnotation,
   SceneAxis,
@@ -40,7 +31,6 @@ import type {
   SceneLegendItem,
   SceneReferenceLine,
   SceneSelection,
-  SceneTooltip,
   XyCategory,
   XyMark,
   XyScene,
@@ -60,12 +50,6 @@ const DEFAULTS = {
   areaFill: 'gradient',
   barMinimumHeight: 1,
 } as const;
-
-/** Points on `auto` hide once neighbours are closer than this, in pixels. */
-const POINT_MIN_DISTANCE = 20;
-
-/** Without a size, points on `auto` show for at most this many marks. */
-const AUTO_POINTS_MAX_MARKS = 20;
 
 const STATISTIC_NAMES: Record<Statistic, string> = {
   min: 'Min',
@@ -89,7 +73,7 @@ const STATISTIC_NAMES: Record<Statistic, string> = {
 
 const ROTATION = { horizontal: 0, angled: -45, vertical: -90 } as const;
 
-// A sum past the largest double stops at it, keeping the Scene plain JSON.
+// A gap past the largest double stops at it.
 const bounded = (value: number) =>
   Math.max(-Number.MAX_VALUE, Math.min(Number.MAX_VALUE, value));
 
@@ -336,9 +320,8 @@ export const resolveXy = (
 
   const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
 
-  // Categories: every x position a visible series has data at, in axis order; ordinal ones in row order. Each lists every row at its x.
+  // Categories: every x position a series has data at, in axis order; ordinal ones in row order. Each lists every row at its x.
   const categoryRows = new Map<number | string, Set<number>>();
-  const visibleXs = new Set<number | string>();
   for (const draft of drafts) {
     for (const row of draft.rows) {
       const x = xOf(row);
@@ -348,14 +331,6 @@ export const resolveXy = (
       const rows = categoryRows.get(x) ?? new Set<number>();
       rows.add(row);
       categoryRows.set(x, rows);
-      if (!hidden.has(draft.key)) {
-        visibleXs.add(x);
-      }
-    }
-  }
-  for (const x of categoryRows.keys()) {
-    if (!visibleXs.has(x)) {
-      categoryRows.delete(x);
     }
   }
   const firstRows = new Map(
@@ -395,6 +370,7 @@ export const resolveXy = (
   const numericXs = categoryKeys.filter(
     (x): x is number => typeof x === 'number'
   );
+  // The smallest x spacing, which decides whether a mark's bucket crosses the queried range's end.
   const interval = numericXs.reduce<number | undefined>(
     (smallest, x, index) => {
       if (index === 0) {
@@ -408,41 +384,6 @@ export const resolveXy = (
     undefined
   );
 
-  // Stacking: positive and negative values stack separately per stack group and x.
-  const stackTops = new Map<string, { positive: number; negative: number }>();
-  const stackMagnitudes = new Map<string, number[]>();
-  const stackGroup = (draft: SeriesDraft) =>
-    draft.layer.stack ? `${draft.layerIndex}:${draft.axis}` : undefined;
-  for (const draft of drafts) {
-    const group = stackGroup(draft);
-    if (
-      hidden.has(draft.key) ||
-      group === undefined ||
-      draft.layer.stack !== 'percentage'
-    ) {
-      continue;
-    }
-    for (const row of draft.rows) {
-      const key = `${group}|${String(xOf(row))}`;
-      const value = toNumber(resolution.cell(draft.yColumn, row)) ?? 0;
-      const magnitudes = stackMagnitudes.get(key) ?? [];
-      magnitudes.push(Math.abs(value));
-      stackMagnitudes.set(key, magnitudes);
-    }
-  }
-  // A total past the largest double is summed in units of the stack's largest magnitude instead.
-  const stackShares = new Map(
-    [...stackMagnitudes].map(([key, magnitudes]) => {
-      const total = magnitudes.reduce((sum, magnitude) => sum + magnitude, 0);
-      if (Number.isFinite(total)) {
-        return [key, (raw: number) => raw / (total || 1)] as const;
-      }
-      const largest = magnitudes.reduce((most, m) => Math.max(most, m), 0);
-      const units = magnitudes.reduce((sum, m) => sum + m / largest, 0);
-      return [key, (raw: number) => raw / largest / units] as const;
-    })
-  );
-
   const partialRange = node.style?.partialBuckets
     ? [
         toEpoch(node.style.partialBuckets.from),
@@ -453,7 +394,6 @@ export const resolveXy = (
   const seriesDrafts = drafts.map((draft, seriesIndex) => {
     const color = colorOf(draft, seriesIndex);
     const yColumn = resolution.column(draft.yColumn);
-    const group = stackGroup(draft);
     const ordered = [...draft.rows].sort((a, b) => {
       const ax = xOf(a);
       const bx = xOf(b);
@@ -470,22 +410,7 @@ export const resolveXy = (
       if (typeof x === 'number' && Number.isNaN(x)) {
         return [];
       }
-      const raw = toNumber(resolution.cell(draft.yColumn, row));
-      let y: number | null = raw ?? null;
-      let y0: number | undefined;
-      if (!hidden.has(draft.key) && group !== undefined && raw !== undefined) {
-        const key = `${group}|${String(x)}`;
-        const scaled =
-          draft.layer.stack === 'percentage'
-            ? (stackShares.get(key)?.(raw) ?? 0)
-            : raw;
-        const tops = stackTops.get(key) ?? { positive: 0, negative: 0 };
-        const side = scaled >= 0 ? 'positive' : 'negative';
-        y0 = tops[side];
-        y = bounded(y0 + scaled);
-        tops[side] = y;
-        stackTops.set(key, tops);
-      }
+      const y = toNumber(resolution.cell(draft.yColumn, row)) ?? null;
       const label = resolution.text(draft.yColumn, row);
       const description = describe([
         ...(xColumn === undefined
@@ -507,11 +432,10 @@ export const resolveXy = (
         ((partialRange[0] !== undefined && x < partialRange[0]) ||
           (partialRange[1] !== undefined &&
             x + (interval ?? 0) > partialRange[1]));
-      const mark: Omit<XyMark, 'tooltip'> = {
+      const mark: XyMark = {
         source: { rows: [row], columns: [...dims, draft.yColumn] },
         x,
         y,
-        ...(y0 === undefined ? {} : { y0 }),
         label,
         description,
         ...(partial ? { partial } : {}),
@@ -536,35 +460,7 @@ export const resolveXy = (
     return { draft, color, marks, seriesIndex };
   });
 
-  const tooltipEntries = new Map<
-    number | string,
-    Array<SceneTooltip['entries'][number]>
-  >();
-  for (const { draft, color, marks } of seriesDrafts) {
-    if (hidden.has(draft.key)) {
-      continue;
-    }
-    const listed = new Set<number | string>();
-    for (const { x, label } of marks) {
-      if (listed.has(x)) {
-        continue;
-      }
-      listed.add(x);
-      const entries = tooltipEntries.get(x) ?? [];
-      entries.push({ label: draft.label, value: label, color });
-      tooltipEntries.set(x, entries);
-    }
-  }
-  const tooltipAt = (x: number | string, row: number): SceneTooltip => ({
-    ...(xId === undefined ? {} : { header: xText(row) }),
-    entries: tooltipEntries.get(x) ?? [],
-  });
-
-  const size = resolution.size;
-  const xLength = size ? (horizontal ? size.height : size.width) : undefined;
-  const yLength = size ? (horizontal ? size.width : size.height) : undefined;
-
-  let series: XySeries[] = seriesDrafts.map(({ draft, color, marks }) => {
+  const series: XySeries[] = seriesDrafts.map(({ draft, color, marks }) => {
     const splitLabel = draft.split
       ? resolution.column(draft.split.column).label
       : undefined;
@@ -580,8 +476,6 @@ export const resolveXy = (
     const rows = [...new Set(marks.flatMap(({ source }) => source.rows))].sort(
       (a, b) => a - b
     );
-    const points = node.style?.points ?? 'auto';
-
     return {
       series: { layer: draft.layerIndex, y: draft.yIndex },
       key: draft.key,
@@ -603,9 +497,7 @@ export const resolveXy = (
         emphasize: node.style?.fitting?.emphasize ?? false,
         extend: node.style?.fitting?.extend ?? 'none',
       },
-      showPoints:
-        points === 'visible' ||
-        (points === 'auto' && marks.length <= AUTO_POINTS_MAX_MARKS),
+      points: node.style?.points ?? 'auto',
       areaOpacity: node.style?.areaOpacity ?? DEFAULTS.areaOpacity,
       areaFill: node.style?.areaFill ?? DEFAULTS.areaFill,
       valueLabels:
@@ -631,19 +523,12 @@ export const resolveXy = (
             },
           }
         : {}),
-      marks: marks.map((mark) => ({
-        ...mark,
-        tooltip: tooltipAt(mark.x, mark.source.rows[0] ?? 0),
-      })),
+      marks,
     };
   });
 
   const xFormat: PortableFormat =
     xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
-  // Time ticks fall on round times in the zone their labels show.
-  const xZone =
-    xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone;
-  // Hidden series count: they still decide what an axis means.
   const percentageAxis = (axis: 'y' | 'y2') => {
     const onAxis = drafts.filter((draft) => draft.axis === axis);
     return (
@@ -693,78 +578,17 @@ export const resolveXy = (
   const referenceLines = referenceLinesByLayer.flat();
 
   const yAxis = (id: 'y' | 'y2'): SceneAxis | undefined => {
-    const onAxis = series.filter(
-      (entry) => entry.axis === id && !hidden.has(entry.key)
-    );
-    const linesOnAxis = referenceLines.filter((line) => line.axis === id);
-    // Reference lines keep their axis even when every series on it is hidden.
-    if (onAxis.length === 0 && linesOnAxis.length === 0) {
+    const onAxis = drafts.filter((draft) => draft.axis === id);
+    // Reference lines keep their axis even when no series is on it.
+    if (
+      onAxis.length === 0 &&
+      !referenceLines.some((line) => line.axis === id)
+    ) {
       return undefined;
     }
     const config = node.axes?.[id];
-    const percentage = percentageAxis(id);
-    const values = [
-      ...onAxis.flatMap(({ marks }) =>
-        marks.flatMap((mark) => [
-          ...(mark.y === null ? [] : [mark.y]),
-          ...(mark.y0 === undefined ? [] : [mark.y0]),
-        ])
-      ),
-      ...linesOnAxis.map(({ value }) => value),
-    ];
     const scale = config?.scale ?? 'linear';
-    let low = values.length
-      ? values.reduce((low, value) => Math.min(low, value), Infinity)
-      : 0;
-    let high = values.length
-      ? values.reduce((high, value) => Math.max(high, value), -Infinity)
-      : 1;
     const domain = config?.domain ?? { kind: 'full' as const };
-    if (domain.kind === 'custom') {
-      low = domain.min;
-      high = domain.max;
-    } else if (
-      domain.kind === 'full' &&
-      scale !== 'log' &&
-      onAxis.some(({ mark }) => mark === 'bar' || mark === 'area')
-    ) {
-      low = Math.min(0, low);
-      high = Math.max(0, high);
-    }
-    if (percentage && domain.kind !== 'custom') {
-      low = Math.min(0, low);
-      high = Math.max(1, high);
-    }
-    const count = tickCount(yLength, 50, 5);
-    if (scale === 'log' && domain.kind !== 'custom') {
-      // A log axis has no zero or negatives; keep the positive part.
-      const positive = values.filter((value) => value > 0);
-      low =
-        low > 0
-          ? low
-          : positive.length
-            ? positive.reduce((low, value) => Math.min(low, value), Infinity)
-            : 1;
-      high = high > low ? high : bounded(low * 10);
-    }
-    if (low === high && domain.kind !== 'custom') {
-      [low, high] = niceDomain(low, high, count);
-    }
-    if ((config?.rounding ?? true) && domain.kind !== 'custom') {
-      [low, high] =
-        scale === 'log'
-          ? niceLogDomain(low, high)
-          : niceDomain(low, high, count);
-    }
-    const format = yFormat(id);
-    const ticks = (
-      scale === 'log'
-        ? logTicks(low, high, count)
-        : linearTicks(low, high, count)
-    ).map((value) => ({
-      value,
-      label: resolution.formatAs(value, format),
-    }));
     return {
       id,
       position: horizontal
@@ -775,8 +599,22 @@ export const resolveXy = (
           ? 'left'
           : 'right',
       scale,
-      domain: [low, high],
-      ticks,
+      format: yFormat(id),
+      domain:
+        domain.kind === 'custom'
+          ? { kind: 'custom', min: domain.min, max: domain.max }
+          : {
+              kind: 'data',
+              includeZero:
+                scale !== 'log' &&
+                (percentageAxis(id) ||
+                  (domain.kind === 'full' &&
+                    onAxis.some(
+                      ({ layer }) =>
+                        layer.mark === 'bar' || layer.mark === 'area'
+                    ))),
+              rounding: config?.rounding ?? true,
+            },
       ...(config?.title === undefined ? {} : { title: config.title }),
       showTicks: config?.ticks ?? true,
       showGrid: config?.grid ?? true,
@@ -786,89 +624,38 @@ export const resolveXy = (
 
   // The x axis.
   const xConfig = node.axes?.x;
-  const xAxis: SceneAxis = (() => {
-    const base = {
-      id: 'x' as const,
-      position: horizontal ? ('left' as const) : ('bottom' as const),
-      ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
-      showTicks: xConfig?.ticks ?? true,
-      showGrid: xConfig?.grid ?? true,
-      labelRotation: ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
-    };
-    if (xScale === 'ordinal') {
-      const labels = categories.map(({ label }) => label);
-      const most =
-        xLength === undefined
-          ? labels.length
-          : Math.max(1, Math.floor(xLength / 30));
-      const every = Math.max(1, Math.ceil(labels.length / most));
-      return {
-        ...base,
-        scale: 'ordinal',
-        domain: categoryKeys.map(String),
-        ticks: categories
-          .filter((_, index) => index % every === 0)
-          .map(({ x, label }) => ({ value: x, label })),
-      };
-    }
-    const hasBars = series.some(({ mark }) => mark === 'bar');
-    let low = numericXs.length ? numericXs[0]! : 0;
-    let high = numericXs.length ? numericXs[numericXs.length - 1]! : 1;
-    if (xConfig?.domain?.kind === 'custom') {
-      low = xConfig.domain.min;
-      high = xConfig.domain.max;
-    } else if (hasBars && interval !== undefined) {
-      high = bounded(high + interval);
-    }
-    const count = tickCount(xLength, 100, 5);
-    if (
-      ((xConfig?.rounding ?? true) || low === high) &&
-      xConfig?.domain?.kind !== 'custom'
-    ) {
-      [low, high] =
-        xScale === 'time'
-          ? niceTimeDomain(low, high, count, xZone)
-          : niceDomain(low, high, count);
-    }
-    const values =
-      xScale === 'time'
-        ? timeTicks(low, high, count, xZone)
-        : linearTicks(low, high, count);
-    return {
-      ...base,
-      scale: xScale,
-      domain: [low, high],
-      ticks: values.map((value) => ({
-        value,
-        label: resolution.formatAs(value, xFormat),
-      })),
-      ...(interval === undefined ? {} : { interval }),
-    };
-  })();
-
-  if ((node.style?.points ?? 'auto') === 'auto' && xLength !== undefined) {
-    const project = (x: number | string): number => {
-      if (xScale === 'ordinal') {
-        return (
-          (((categoryOrder.get(x) ?? 0) + 0.5) * xLength) /
-          Math.max(1, categoryKeys.length)
-        );
-      }
-      const [low, high] = xAxis.domain as [number, number];
-      return ((Number(x) - low) / (high - low)) * xLength;
-    };
-    series = series.map((entry) => {
-      const positions = entry.marks
-        .filter(({ y }) => y !== null)
-        .map(({ x }) => project(x))
-        .sort((a, b) => a - b);
-      const showPoints = positions.every(
-        (position, index) =>
-          index === 0 || position - positions[index - 1]! >= POINT_MIN_DISTANCE
-      );
-      return { ...entry, showPoints };
-    });
-  }
+  const xAxis: SceneAxis = {
+    id: 'x',
+    position: horizontal ? 'left' : 'bottom',
+    scale: xScale,
+    format: xFormat,
+    ...(xScale === 'time'
+      ? {
+          timeZone:
+            xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone,
+        }
+      : {}),
+    ...(xScale === 'ordinal'
+      ? {}
+      : {
+          domain:
+            xConfig?.domain?.kind === 'custom'
+              ? {
+                  kind: 'custom' as const,
+                  min: xConfig.domain.min,
+                  max: xConfig.domain.max,
+                }
+              : {
+                  kind: 'data' as const,
+                  includeZero: false,
+                  rounding: xConfig?.rounding ?? true,
+                },
+        }),
+    ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
+    showTicks: xConfig?.ticks ?? true,
+    showGrid: xConfig?.grid ?? true,
+    labelRotation: ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+  };
 
   const legendConfig = node.legend;
   const legendItems: SceneLegendItem[] = series.map((entry, index) => {

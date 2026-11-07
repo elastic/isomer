@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { scaleLog } from 'd3-scale';
 import { describe, expect, it } from 'vitest';
 
 import { chartEventExamples } from '../schema/examples/events';
@@ -16,14 +15,8 @@ import type { XyChartNode } from '../schema/xy_chart';
 
 import { brushEvent, selectEvent } from './events';
 import { xyInteractiveScene } from './examples';
+import { formatAxisValue } from './format_axis';
 import { resolveChart } from './resolve';
-import {
-  linearTicks,
-  logTicks,
-  niceDomain,
-  niceLogDomain,
-  timeTicks,
-} from './ticks';
 import type { MetricScene, Scene, XyScene } from './types';
 
 const SIZE = { width: 480, height: 240 };
@@ -271,23 +264,23 @@ describe('metric', () => {
 });
 
 describe('xyChart', () => {
-  it('stacks split series per x in split order', () => {
+  it('orders split series in split order, unstacked, in one stack group', () => {
     const scene: XyScene = resolveChart(
       xyNamed('Stacked bars with Other and missing buckets'),
       { scheme: 'light' }
     );
     const series = seriesIn(scene);
-    const atFirstHour = series.map(({ key, marks }) => [
-      key,
-      marks[0]?.y0,
-      marks[0]?.y,
-    ]);
+    const atFirstHour = series.map(({ key, marks }) => [key, marks[0]?.y]);
     expect(atFirstHour).toEqual([
-      ['200', 0, 802],
-      ['404', 802, 843],
-      ['Other', 843, 855],
-      ['\\null', 855, 858],
+      ['200', 802],
+      ['404', 41],
+      ['Other', 12],
+      ['\\null', 3],
     ]);
+    expect(new Set(series.map(({ stack }) => JSON.stringify(stack))).size).toBe(
+      1
+    );
+    expect(series[0]?.stack?.mode).toBe('stacked');
     expect(series.map(({ color }) => color)).toEqual([
       '#16C5C0',
       '#61A2FF',
@@ -329,17 +322,14 @@ describe('xyChart', () => {
     ]);
   });
 
-  it('stacks percentages to one', () => {
+  it('formats a percentage stack axis as percent, from zero', () => {
     const scene = resolveChart(xyNamed('Percentage areas'), {
       scheme: 'light',
     });
-    const tops = seriesIn(scene)
-      .at(-1)!
-      .marks.map(({ y }) => y);
-    for (const top of tops) {
-      expect(top).toBeCloseTo(1);
-    }
-    expect(scene.axes.y?.ticks.at(-1)?.label).toBe('100%');
+    expect(seriesIn(scene)[0]?.stack?.mode).toBe('percentage');
+    const axis = scene.axes.y!;
+    expect(axis.domain).toMatchObject({ kind: 'data', includeZero: true });
+    expect(formatAxisValue(scene, axis, 1)).toBe('100%');
   });
 
   it('puts each series on its own axis, formatted as its column', () => {
@@ -349,15 +339,14 @@ describe('xyChart', () => {
     });
     expect(scene.axes.y?.position).toBe('left');
     expect(scene.axes.y2?.position).toBe('right');
-    expect(scene.axes.y2?.ticks.every(({ label }) => label.endsWith('%'))).toBe(
-      true
-    );
+    expect(formatAxisValue(scene, scene.axes.y2!, 0.25)).toBe('25%');
   });
 
   it('turns the chart for horizontal bars', () => {
     const scene = resolveChart(xyNamed('Horizontal bars'), { scheme: 'light' });
     expect(scene.axes.x.position).toBe('left');
-    expect(scene.axes.x.domain).toEqual(
+    expect(scene.axes.x.domain).toBeUndefined();
+    expect(scene.categories.map(({ x }) => x)).toEqual(
       ['CN', 'IN', 'US', 'ID', 'BR'].map((value) => JSON.stringify(value))
     );
   });
@@ -389,7 +378,7 @@ describe('xyChart', () => {
         layer.kind === 'annotation' ? [layer.annotation.kind] : []
       )
     ).toEqual(['point', 'range']);
-    expect(scene.axes.y?.domain).toEqual([0, 1]);
+    expect(scene.axes.y?.domain).toEqual({ kind: 'custom', min: 0, max: 1 });
   });
 
   it('reads each layer’s own rows', () => {
@@ -413,57 +402,49 @@ describe('xyChart', () => {
   });
 });
 
-// d3-array's `ticks` and `nice` give these for the same inputs.
-describe('ticks', () => {
-  it('steps by 1, 2 or 5 times a power of ten', () => {
-    expect(linearTicks(0, 211, 5)).toEqual([0, 50, 100, 150, 200]);
-    expect(linearTicks(0, 1, 10)).toEqual([
-      0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1,
-    ]);
-    expect(linearTicks(-1.25e12, 9.9e11, 5)).toEqual([-1e12, -5e11, 0, 5e11]);
-    expect(niceDomain(0, 211, 5)).toEqual([0, 250]);
-  });
-
-  // Elastic Charts draws a log axis with d3-scale 3.3.0's scaleLog, nice() then ticks(count).
-  it.each([
-    [39_800, 91_700, 5],
-    [39_800, 91_700, 10],
-    [1, 1e6, 5],
-    [3, 7, 5],
-    [0.002, 40, 4],
-    [1, 1e20, 5],
-  ])(
-    'log ticks over [%s, %s] for %s ticks match d3-scale',
-    (min, max, count) => {
-      const d3 = scaleLog().domain([min, max]).nice();
-      const [low, high] = d3.domain() as [number, number];
-      expect(niceLogDomain(min, max)).toEqual([low, high]);
-      expect(logTicks(low, high, count)).toEqual(d3.ticks(count));
-      const raw = scaleLog().domain([min, max]);
-      expect(logTicks(min, max, count)).toEqual(raw.ticks(count));
-    }
-  );
-
-  it('gives the log axis in the long-labels example its ticks', () => {
+describe('axes', () => {
+  it('states a log axis as intent, leaving its ticks to the engine', () => {
     const scene = resolveChart(xyNamed('Long labels and legend statistics'), {
       scheme: 'light',
       size: SIZE,
     });
-    const d3 = scaleLog().domain([39_800, 91_700]).nice();
-    expect(scene.axes.y?.domain).toEqual(d3.domain());
-    expect(scene.axes.y?.ticks.map(({ value }) => value)).toEqual(d3.ticks(5));
-    expect(scene.axes.y?.ticks.length).toBeGreaterThan(0);
+    expect(scene.axes.y).toMatchObject({
+      scale: 'log',
+      domain: { kind: 'data', includeZero: false, rounding: true },
+    });
   });
 
-  it('places time ticks on round wall-clock times', () => {
-    const start = Date.UTC(2026, 10, 3, 0, 7);
-    expect(timeTicks(start, start + 5 * 3_600_000, 5, 'Asia/Kolkata')).toEqual([
-      Date.UTC(2026, 10, 3, 0, 30),
-      Date.UTC(2026, 10, 3, 1, 30),
-      Date.UTC(2026, 10, 3, 2, 30),
-      Date.UTC(2026, 10, 3, 3, 30),
-      Date.UTC(2026, 10, 3, 4, 30),
-    ]);
+  it('labels an engine tick in the time axis zone', () => {
+    const node: XyChartNode = {
+      type: 'xyChart',
+      data: {
+        columns: [
+          {
+            id: 't',
+            label: 'T',
+            type: 'date',
+            role: 'dimension',
+            format: {
+              kind: 'date',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            },
+          },
+          { id: 'v', label: 'V', type: 'number', role: 'metric' },
+        ],
+        rows: [[Date.UTC(2026, 10, 3, 0, 7), 1]],
+      },
+      layers: [{ kind: 'data', mark: 'line', x: 't', y: [{ column: 'v' }] }],
+    };
+    const scene = resolveChart(node, {
+      scheme: 'light',
+      timeZone: 'Asia/Kolkata',
+    });
+    expect(scene.axes.x.timeZone).toBe('Asia/Kolkata');
+    expect(
+      formatAxisValue(scene, scene.axes.x, Date.UTC(2026, 10, 3, 0, 30))
+    ).toBe('06:00');
   });
 });
 
