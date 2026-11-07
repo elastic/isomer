@@ -407,6 +407,35 @@ describe('xy axes', () => {
     }
   );
 
+  it.each([
+    [
+      'stacked values past the largest double',
+      splitBars([
+        ['a', 's', Number.MAX_VALUE],
+        ['a', 't', Number.MAX_VALUE],
+      ]),
+    ],
+    [
+      'bars spanning the whole double range',
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'metric' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [-Number.MAX_VALUE, 1],
+            [Number.MAX_VALUE, 2],
+          ],
+        },
+        layers: [{ kind: 'data', mark: 'bar', x: 'x', y: [{ column: 'y' }] }],
+      }),
+    ],
+  ])('keeps %s finite', (_, node) => {
+    const scene = resolve(xyChartSchema.parse(node));
+    expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
+  });
+
   it('accepts representable strings and missing cells on an explicit temporal axis', () => {
     const scene = resolve(
       xy({
