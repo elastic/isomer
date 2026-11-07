@@ -3386,6 +3386,37 @@ describe('the input budget', () => {
     ).toBe('INPUT_OVER_BUDGET');
   });
 
+  it('takes, per limit, the largest any pack declares, in either order, never below the default', () => {
+    const roomy = definePrimitivePack({
+      id: 'roomy',
+      primitives: [boldPrimitive],
+      inputBudget: { characters: 2_000_000, values: 1 },
+    });
+    const tight = definePrimitivePack({
+      id: 'tight',
+      primitives: [notePrimitive],
+      inputBudget: { characters: 1_000 },
+    });
+    const long = view('x'.repeat(1_500_000));
+    const tooLong = view('x'.repeat(2_000_001));
+    for (const packs of [
+      [roomy, tight],
+      [tight, roomy],
+    ]) {
+      const runtime = createIsomerRuntime({ packs });
+      expect(runtime.parse(long).errors).toEqual([]);
+      expect(runtime.parse(tooLong).errors[0]?.code).toBe('INPUT_OVER_BUDGET');
+    }
+    // `roomy`'s one value and `tight`'s 1,000 characters are below the defaults.
+    const small = view('x'.repeat(5_000));
+    expect(createIsomerRuntime({ packs: [tight] }).parse(small).errors).toEqual(
+      []
+    );
+    expect(
+      createIsomerRuntime({ packs: [roomy, tight] }).parse(view('a')).errors
+    ).toEqual([]);
+  });
+
   it('takes the host’s limits', () => {
     const runtime = createIsomerRuntime({
       packs: [packOf(notePrimitive)],

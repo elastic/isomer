@@ -54,7 +54,6 @@ export type PackStyleAdapter = {
   renderStyles: (...args: never[]) => string;
 };
 
-/** What a pack author passes to {@link definePrimitivePack}. */
 /**
  * Limits a pack asks the input budget to allow, by name: the same fields as
  * the validator's `InputBudget`, each a positive integer.
@@ -65,6 +64,7 @@ export interface PackInputBudget {
   characters?: number;
 }
 
+/** What a pack author passes to {@link definePrimitivePack}. */
 export interface PrimitivePackInput {
   /** Stable identifier, used in capability reports and error messages. */
   id: string;
