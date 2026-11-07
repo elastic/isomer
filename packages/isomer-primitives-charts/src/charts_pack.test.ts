@@ -680,6 +680,16 @@ CLOSED`);
     expect(sections).not.toContain('H reason');
   });
 
+  it('keeps a chart hidden from snapshot as its Markdown on Slack', () => {
+    const chart = gridExamples[0]!.node.panels[0]!.node;
+    const { blocks, assets } = runtime.surfaces.slack.render(
+      view({ ...chart, surfaces: ['text', 'markdown', 'slack'] }),
+      { heading: false, collectAssets: true }
+    );
+    expect(assets).toEqual([]);
+    expect(JSON.stringify(blocks)).toContain(metricSingleValueScene.summary);
+  });
+
   it('writes the grid and panel descriptions on Slack', () => {
     const described: GridNode = {
       ...gridExamples[0]!.node,
