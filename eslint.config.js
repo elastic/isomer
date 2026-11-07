@@ -16,6 +16,9 @@ import tseslint from 'typescript-eslint';
 
 const SCREAMING_SNAKE = '^[A-Z][A-Z0-9_]*$';
 
+const CHART_ENGINE_IMPORTS =
+  'A chart engine imports only @elastic/isomer-primitives-charts/scene.';
+
 const namedSpecifiers = (typeGroup, valueGroup) => [
   'error',
   {
@@ -300,17 +303,23 @@ export default tseslint.config(
           paths: [
             {
               name: '@elastic/isomer-primitives-charts',
-              message:
-                'A chart engine imports only @elastic/isomer-primitives-charts/scene.',
+              message: CHART_ENGINE_IMPORTS,
             },
           ],
           patterns: [
             {
               regex: '^@elastic/isomer-primitives-charts/(?!scene$)',
-              message:
-                'A chart engine imports only @elastic/isomer-primitives-charts/scene.',
+              message: CHART_ENGINE_IMPORTS,
             },
           ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportExpression[source.value=/^@elastic\\/isomer-primitives-charts(?!\\/scene$)/]',
+          message: CHART_ENGINE_IMPORTS,
         },
       ],
     },
