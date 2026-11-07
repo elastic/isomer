@@ -83,7 +83,7 @@ const metricCompareSchema = z
         neutral: colorValueSchema,
       })
       .describe(
-        'Colors for a secondary value above, below and equal to what it is compared to.'
+        'Colors by the difference’s sign. To a `baseline`, the difference is the secondary minus the baseline; to the `primary`, the primary minus the secondary.'
       ),
   })
   .describe('Shows the secondary value as a difference, colored by its sign.');
@@ -143,7 +143,7 @@ const metricObjectSchema = z.object({
       .enum(['absolute', 'percentage'])
       .optional()
       .describe(
-        'Whether band bounds are values, or percentages of the maximum. Absent means `absolute`.'
+        'Whether band bounds are values, or percentages of the maximum. A tile at the maximum is at 100, which a band reaches only with an open `to`. Absent means `absolute`.'
       ),
     applyColorTo: z
       .enum(['value', 'background'])

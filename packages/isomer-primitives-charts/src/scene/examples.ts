@@ -5,9 +5,7 @@
  * 2.0.
  */
 
-// Hand-written Scenes for schema examples, so renderers can be built
-// against the contract before the resolver exists. They show the shape, not
-// expected output: resolver tests state their own expectations, never these.
+// Hand-written Scenes for schema examples, so a renderer can be built and tested without the resolver.
 
 import type { Cell } from '../schema/data';
 import type { PortableFormat } from '../schema/format';
