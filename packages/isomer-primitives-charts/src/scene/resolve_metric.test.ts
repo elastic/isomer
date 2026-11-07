@@ -39,15 +39,72 @@ const buckets = (): MetricNode => ({
   value: { column: 'v' },
 });
 const blue = { light: '#0000FF', dark: '#0000FF' };
+const red = { light: '#FF0000', dark: '#FF0000' };
 
 describe('metric colors', () => {
-  it('excludes every finite band upper bound', () => {
+  it('excludes a band’s upper bound except on the last band', () => {
     const node = buckets();
     node.value.color = 'bands';
-    node.colors = { bands: [{ from: 0, to: 10, color: blue }] };
-    expect(resolveChart(node, { scheme: 'light' }).tiles[0]?.background).toBe(
-      '#FFFFFF'
-    );
+    node.colors = {
+      bands: [
+        { from: 0, to: 10, color: blue },
+        { from: 10, to: 20, color: red },
+      ],
+    };
+    const backgrounds = (bands: NonNullable<MetricNode['colors']>['bands']) =>
+      resolveChart(
+        { ...node, colors: { bands } },
+        { scheme: 'light' }
+      ).tiles.map(({ background }) => background);
+    expect(backgrounds(node.colors.bands)).toEqual(['#FF0000', '#FF0000']);
+    expect(backgrounds([{ from: 0, to: 10, color: blue }])).toEqual([
+      '#0000FF',
+      '#FFFFFF',
+    ]);
+  });
+
+  describe('percentage bands', () => {
+    const bands = [
+      { to: 50, color: blue },
+      { from: 50, to: 100, color: red },
+    ];
+    const backgroundsOf = (node: MetricNode) =>
+      resolveChart(
+        {
+          ...node,
+          value: { ...node.value, color: 'bands', bandsRange: 'percentage' },
+          colors: { bands },
+        },
+        { scheme: 'light' }
+      ).tiles.map(({ background }) => background);
+
+    it('colors a tile at its bar’s maximum with the last band', () => {
+      const node = withBackground({ kind: 'bar', max: 'max' });
+      node.data.rows = [[10, 10]];
+      expect(backgroundsOf(node)).toEqual(['#FF0000']);
+    });
+
+    it('places a lone value at 50, between 0 and twice itself', () => {
+      const node = withBackground(undefined);
+      expect(backgroundsOf(node)).toEqual(['#FF0000']);
+      node.data.rows = [[-5, 10]];
+      expect(backgroundsOf(node)).toEqual(['#FF0000']);
+    });
+
+    it('gives a tile in an empty range the first band', () => {
+      const lone = withBackground(undefined);
+      lone.data.rows = [[0, 10]];
+      const barAtZero = withBackground({ kind: 'bar', max: 'max' });
+      barAtZero.data.rows = [[5, 0]];
+      const equal = buckets();
+      equal.data.rows = [
+        ['a', 7],
+        ['b', 7],
+      ];
+      expect(backgroundsOf(lone)).toEqual(['#0000FF']);
+      expect(backgroundsOf(barAtZero)).toEqual(['#0000FF']);
+      expect(backgroundsOf(equal)).toEqual(['#0000FF', '#0000FF']);
+    });
   });
 
   it('resolves escaped and missing metric bucket colors', () => {
@@ -249,7 +306,6 @@ describe('metric trends', () => {
 
 describe('metric bounds and identity', () => {
   const max = Number.MAX_VALUE;
-  const red = { light: '#FF0000', dark: '#FF0000' };
 
   it('colors percentage bands across the largest doubles', () => {
     const node = buckets();

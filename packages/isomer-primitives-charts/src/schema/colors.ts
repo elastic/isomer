@@ -65,7 +65,9 @@ const colorBandSchema = z.strictObject({
   to: z
     .number()
     .optional()
-    .describe('Exclusive upper bound. Absent means unbounded.'),
+    .describe(
+      'Exclusive upper bound, except on the last band, which includes it. Absent means unbounded.'
+    ),
   color: colorValueSchema,
 });
 

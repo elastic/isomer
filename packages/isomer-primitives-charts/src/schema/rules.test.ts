@@ -415,13 +415,13 @@ describe('metric', () => {
     );
   });
 
-  it('rejects percentage bands with nothing to supply a maximum', () => {
-    expectRule(
-      'metric',
-      metric({ value: { column: 'v', bandsRange: 'percentage' } }),
-      METRIC_RULES.percentage,
-      'value.bandsRange'
-    );
+  it('accepts percentage bands on a lone metric', () => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ value: { column: 'v', bandsRange: 'percentage' } })
+      )
+    ).toEqual([]);
   });
 });
 
