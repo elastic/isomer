@@ -59,6 +59,23 @@ describe('d3 parity', () => {
     expect(niceDomain(0, 0, 5)).toEqual([0, 1]);
     expect(linearTicks(1e20, 1e20, 5)).toEqual([1e20]);
   });
+
+  it.each([
+    [Number.MAX_VALUE, Number.MAX_VALUE],
+    [-Number.MAX_VALUE, -Number.MAX_VALUE],
+    [0, Number.MAX_VALUE],
+    [-Number.MAX_VALUE, Number.MAX_VALUE],
+  ])('keeps domains over [%d, %d] finite', (min, max) => {
+    const [low, high] = niceDomain(min, max, 5);
+    expect([Number.isFinite(low), Number.isFinite(high)]).toEqual([true, true]);
+    expect(low).toBeLessThanOrEqual(min);
+    expect(high).toBeGreaterThanOrEqual(max);
+    expect(linearTicks(low, high, 5).every(Number.isFinite)).toBe(true);
+  });
+
+  it('keeps log domains up to the largest double finite', () => {
+    expect(niceLogDomain(1, Number.MAX_VALUE)).toEqual([1, Number.MAX_VALUE]);
+  });
 });
 
 describe('calendar ticks', () => {
@@ -139,6 +156,42 @@ describe('wall-clock ticks in a zone', () => {
     expect(low).toBe(Date.parse('2026-10-25T00:00:00Z'));
     expect(low).toBeLessThanOrEqual(min);
     expect(high).toBeGreaterThanOrEqual(Date.parse('2026-10-25T12:30:00Z'));
+  });
+
+  it.each([
+    [
+      'the second occurrence',
+      '2026-11-01T06:10Z',
+      '2026-11-01T06:50Z',
+      ['06:15', '06:30', '06:45'],
+    ],
+    [
+      'both occurrences',
+      '2026-11-01T05:00Z',
+      '2026-11-01T07:00Z',
+      [
+        '05:00',
+        '05:15',
+        '05:30',
+        '05:45',
+        '06:00',
+        '06:15',
+        '06:30',
+        '06:45',
+        '07:00',
+      ],
+    ],
+  ])('ticks %s of a repeated hour', (_, from, to, expected) => {
+    // New York repeats 01:00–02:00 local on 2026-11-01.
+    const ticks = timeTicks(
+      Date.parse(from),
+      Date.parse(to),
+      4,
+      'America/New_York'
+    );
+    expect(
+      ticks.map((tick) => new Date(tick).toISOString().slice(11, 16))
+    ).toEqual(expected);
   });
 
   it('keeps hourly ticks on local hours, moving a skipped hour to the change', () => {

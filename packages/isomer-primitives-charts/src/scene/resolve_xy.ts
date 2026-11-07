@@ -90,6 +90,10 @@ const STATISTIC_NAMES: Record<Statistic, string> = {
 
 const ROTATION = { horizontal: 0, angled: -45, vertical: -90 } as const;
 
+// A sum past the largest double stops at it, keeping the Scene plain JSON.
+const bounded = (value: number) =>
+  Math.max(-Number.MAX_VALUE, Math.min(Number.MAX_VALUE, value));
+
 const rowsOf = (layer: DataLayer, total: number): number[] => {
   const [start, end] = layer.rows ?? [0, total];
   return Array.from(
@@ -363,7 +367,7 @@ export const resolveXy = (
       if (index === 0) {
         return smallest;
       }
-      const gap = x - numericXs[index - 1]!;
+      const gap = bounded(x - numericXs[index - 1]!);
       return gap > 0 && (smallest === undefined || gap < smallest)
         ? gap
         : smallest;
@@ -388,7 +392,10 @@ export const resolveXy = (
     for (const row of draft.rows) {
       const key = `${group}|${String(xOf(row))}`;
       const value = toNumber(resolution.cell(draft.yColumn, row)) ?? 0;
-      stackTotals.set(key, (stackTotals.get(key) ?? 0) + Math.abs(value));
+      stackTotals.set(
+        key,
+        bounded((stackTotals.get(key) ?? 0) + Math.abs(value))
+      );
     }
   }
 
@@ -431,7 +438,7 @@ export const resolveXy = (
         const tops = stackTops.get(key) ?? { positive: 0, negative: 0 };
         const side = scaled >= 0 ? 'positive' : 'negative';
         y0 = tops[side];
-        y = y0 + scaled;
+        y = bounded(y0 + scaled);
         tops[side] = y;
         stackTops.set(key, tops);
       }
@@ -756,7 +763,7 @@ export const resolveXy = (
       low = xConfig.domain.min;
       high = xConfig.domain.max;
     } else if (hasBars && interval !== undefined) {
-      high += interval;
+      high = bounded(high + interval);
     }
     const count = tickCount(xLength, 100, 5);
     if (
