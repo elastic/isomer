@@ -99,7 +99,7 @@ type SceneSelection = {
 A renderer raises events with two helpers, so every renderer raises the same event for the same gesture:
 
 - `selectEvent(nodeId, selection, negate?)` returns the `chart.select` event for a selection.
-- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its endpoint descriptions use the nearest plotted values and authored display strings from series whose `xColumn` is the brush column, including on an ordinal fallback.
+- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its description names each end by the nearest x position in `categories`; on an ordinal axis, whose positions are not numbers, it names only the column.
 
 ## `SceneRenderer`
 
