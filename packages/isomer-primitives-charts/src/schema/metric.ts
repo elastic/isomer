@@ -56,8 +56,6 @@ export const METRIC_RULES = {
     'Trend column references name a column in `background.data.columns`.',
   oneRow: 'Without a `breakdown`, `data` holds at most one row.',
   bands: 'A `bands` color needs `colors.bands`.',
-  percentage:
-    'Percentage bands need a `background` bar or a `breakdown`, which supply the maximum.',
   trendBreakdown: 'A trend `breakdown` needs a `breakdown` on the metric.',
 } as const;
 
@@ -83,7 +81,7 @@ const metricCompareSchema = z
         neutral: colorValueSchema,
       })
       .describe(
-        'Colors for a secondary value above, below and equal to what it is compared to.'
+        'Colors by the difference’s sign. To a `baseline`, the difference is the secondary minus the baseline; to the `primary`, the primary minus the secondary.'
       ),
   })
   .describe('Shows the secondary value as a difference, colored by its sign.');
@@ -143,7 +141,7 @@ const metricObjectSchema = z.object({
       .enum(['absolute', 'percentage'])
       .optional()
       .describe(
-        'Whether band bounds are values, or percentages of the maximum. Absent means `absolute`.'
+        'Whether band bounds are values, or percentages from 0 to the `background` bar’s `max`, across the range of `breakdown` tiles, or from 0 to twice a lone value. A tile in an empty range takes the first band. Absent means `absolute`.'
       ),
     applyColorTo: z
       .enum(['value', 'background'])
@@ -270,14 +268,6 @@ const checkBands = (node: MetricInput, context: Issues) => {
       message: METRIC_RULES.bands,
     });
   }
-  const hasMaximum = node.background?.kind === 'bar' || node.breakdown;
-  if (node.value.bandsRange === 'percentage' && !hasMaximum) {
-    context.addIssue({
-      code: 'custom',
-      path: ['value', 'bandsRange'],
-      message: METRIC_RULES.percentage,
-    });
-  }
 };
 
 /** A metric: one headline value per tile, with optional secondary value, progress bar or trend. */
@@ -310,7 +300,6 @@ export const metricSchema = metricObjectSchema
         METRIC_RULES.trendColumns,
         METRIC_RULES.oneRow,
         METRIC_RULES.bands,
-        METRIC_RULES.percentage,
         METRIC_RULES.trendBreakdown,
         INTERACTION_RULES.emphasisRows,
       ]

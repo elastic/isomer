@@ -415,13 +415,13 @@ describe('metric', () => {
     );
   });
 
-  it('rejects percentage bands with nothing to supply a maximum', () => {
-    expectRule(
-      'metric',
-      metric({ value: { column: 'v', bandsRange: 'percentage' } }),
-      METRIC_RULES.percentage,
-      'value.bandsRange'
-    );
+  it('accepts percentage bands on a lone metric', () => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ value: { column: 'v', bandsRange: 'percentage' } })
+      )
+    ).toEqual([]);
   });
 });
 
@@ -440,12 +440,71 @@ describe('xyChart', () => {
     expect(issuesOf('xyChart', xy())).toEqual([]);
   });
 
+  it('validates coordinates on an inferred date axis', () => {
+    const errors = issuesOf(
+      'xyChart',
+      xy({
+        data: { columns: [date('t'), number('y')], rows: [[8.64e15 + 1, 1]] },
+      })
+    );
+    expect(errors).toContainEqual({
+      path: 'data.rows.0.0',
+      message: XY_RULES.xCoordinate,
+    });
+  });
+
+  it.each([
+    ['string', 'not numeric', 'linear'],
+    ['boolean', true, 'linear'],
+    ['date', '2026-11-06T00:00:00Z', 'linear'],
+    ['string', 'not a date', 'temporal'],
+    ['number', 8.64e15 + 1, 'temporal'],
+  ])(
+    'diagnoses incompatible %s x cells on a %s scale',
+    (type, value, scale) => {
+      const errors = issuesOf(
+        'xyChart',
+        xy({
+          data: {
+            columns: [
+              { id: 'x', label: 'X', type, role: 'dimension' },
+              number('y'),
+            ],
+            rows: [[value, 1]],
+          },
+          layers: [
+            { kind: 'data', mark: 'line', x: 'x', y: [{ column: 'y' }] },
+          ],
+          axes: { x: { scale } },
+        })
+      );
+      expect(errors.map(({ path }) => path)).toContain('data.rows.0.0');
+    }
+  );
+
   it('rejects a y column that is not a number', () => {
     expectRule(
       'xyChart',
       xy({ layers: [{ kind: 'data', mark: 'bar', y: [{ column: 's' }] }] }),
       XY_RULES.yType,
       'layers.0.y.0.column'
+    );
+  });
+
+  it.each([
+    ['another x column', { x: 's' }],
+    ['no x column', {}],
+  ])('rejects a data layer with %s', (_, x) => {
+    expectRule(
+      'xyChart',
+      xy({
+        layers: [
+          { kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] },
+          { kind: 'data', mark: 'bar', y: [{ column: 'y' }], ...x },
+        ],
+      }),
+      XY_RULES.sharedX,
+      'layers.1.x'
     );
   });
 
@@ -524,6 +583,59 @@ describe('xyChart', () => {
       XY_RULES.rangeOrder,
       'layers.1.events.0'
     );
+  });
+
+  it.each([
+    ['x', { domain: { kind: 'custom', min: 5, max: 5 } }],
+    ['y', { domain: { kind: 'custom', min: 10, max: 0 } }],
+    ['y2', { scale: 'log', domain: { kind: 'custom', min: 0, max: 100 } }],
+  ])('rejects a degenerate custom %s domain', (id, axis) => {
+    expectRule(
+      'xyChart',
+      xy({ axes: { [id]: axis } }),
+      XY_RULES.customDomain,
+      `axes.${id}.domain`
+    );
+  });
+
+  it('accepts a custom log domain above zero', () => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          axes: {
+            y: { scale: 'log', domain: { kind: 'custom', min: 1, max: 100 } },
+          },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    [
+      'an annotation',
+      {
+        layers: [
+          ...xy().layers,
+          { kind: 'annotations', events: [{ kind: 'point', at: 1e16 }] },
+        ],
+      },
+      'layers.1.events.0.at',
+    ],
+    [
+      'the current time',
+      { style: { currentTime: -1e16 } },
+      'style.currentTime',
+    ],
+    [
+      'a partial bucket edge',
+      { style: { partialBuckets: { from: 0, to: 1e16 } } },
+      'style.partialBuckets.to',
+    ],
+  ])('rejects %s outside the Date range', (_, overrides, path) => {
+    expect(
+      issuesOf('xyChart', xy(overrides)).map((issue) => issue.path)
+    ).toContain(path);
   });
 });
 

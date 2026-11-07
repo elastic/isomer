@@ -6,12 +6,13 @@
  */
 
 // The Scene is what `resolveChart` returns and the only thing a renderer reads.
-// Everything a renderer draws is decided here: colors for one scheme, every
-// string already formatted, ticks, legend order and draw order. A renderer
-// translates; it never formats, picks a color, sorts or chooses ticks.
+// Colors, text, series, legend order and draw order are decided here. An
+// engine chooses ticks, domains, stacking and point density from the intent
+// each axis and series states, and formats only through `formatAxisValue`.
 
 import type { Cell, ColumnRole, ColumnType } from '../schema/data';
 import type { ChartEvent, SelectTarget } from '../schema/events';
+import type { PortableFormat } from '../schema/format';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = ['metric', 'xy'] as const;
@@ -139,7 +140,7 @@ interface SceneBase {
   readonly kind: SceneKind;
   /** The scheme every color in the Scene is for. Always explicit: native targets have no CSS. */
   readonly scheme: ColorScheme;
-  /** The size ticks and layout were chosen for. Absent when resolved without one. */
+  /** The size the host draws the Scene at. Absent when resolved without one. */
   readonly size?: SceneSize;
   readonly locale: string;
   readonly timeZone: string;
@@ -190,6 +191,8 @@ export interface MetricTile {
       readonly direction: 'increase' | 'decrease' | 'neutral';
       readonly color: SceneColor;
       readonly showIcon: boolean;
+      /** The glyph drawn when `showIcon`: `↑`, `↓` or `=`. Absent when the difference is not a number. */
+      readonly icon?: string;
     };
   };
   /** A helper mark: carries no source. */
@@ -226,19 +229,27 @@ export interface MetricScene extends SceneBase {
 
 export type AxisId = 'x' | 'y' | 'y2';
 
-export interface SceneTick {
-  /** In data space: a number, or a category for an ordinal axis. */
-  readonly value: number | string;
-  readonly label: string;
-}
+/** Where a continuous axis's domain comes from. An engine computes it. */
+export type SceneDomain =
+  | {
+      readonly kind: 'data';
+      /** Extend the domain to include zero. */
+      readonly includeZero: boolean;
+      /** Round the domain out to readable values. */
+      readonly rounding: boolean;
+    }
+  | { readonly kind: 'custom'; readonly min: number; readonly max: number };
 
 export interface SceneAxis {
   readonly id: AxisId;
   readonly position: 'top' | 'bottom' | 'left' | 'right';
   readonly scale: 'ordinal' | 'time' | 'linear' | 'log' | 'sqrt';
-  /** `[min, max]`, or the categories in order for an ordinal axis. */
-  readonly domain: readonly [number, number] | readonly string[];
-  readonly ticks: readonly SceneTick[];
+  /** How a value on the axis prints, through `formatAxisValue`. */
+  readonly format: PortableFormat;
+  /** On a time axis, the zone whose round times ticks fall on. */
+  readonly timeZone?: string;
+  /** Absent on an ordinal axis, whose positions are the Scene's `categories` in order. */
+  readonly domain?: SceneDomain;
   readonly title?: string;
   readonly showTicks: boolean;
   readonly showGrid: boolean;
@@ -251,13 +262,10 @@ export interface XyMark {
   readonly source: SceneSource;
   /** In data space: epoch milliseconds or a number, or a category on an ordinal axis. */
   readonly x: number | string;
-  /** Where the mark ends; `null` is a gap. When stacked, the top of its segment. */
+  /** The value, unstacked; `null` is a gap. */
   readonly y: number | null;
-  /** Where a stacked mark starts. Absent means the axis baseline. */
-  readonly y0?: number;
-  /** The value as displayed, such as in a bar label. */
+  /** The value as displayed, such as in a bar label or tooltip. */
   readonly label: string;
-  readonly tooltip: SceneTooltip;
   readonly description: string;
   /** The mark falls in a partial bucket at an edge of the queried range. */
   readonly partial?: boolean;
@@ -287,7 +295,7 @@ export interface XySeries {
   readonly mark: 'line' | 'area' | 'bar';
   readonly axis: 'y' | 'y2';
   readonly color: SceneColor;
-  /** Series in one stack group stack on each other. */
+  /** Series in one stack group stack on each other; the engine stacks them. */
   readonly stack?: {
     readonly group: string;
     readonly mode: 'stacked' | 'percentage';
@@ -305,7 +313,8 @@ export interface XySeries {
     readonly emphasize: boolean;
     readonly extend: 'none' | 'zero' | 'nearest';
   };
-  readonly showPoints: boolean;
+  /** On `auto`, the engine shows points where marks are far enough apart. */
+  readonly points: 'auto' | 'visible' | 'hidden';
   readonly areaOpacity: number;
   readonly areaFill: 'solid' | 'gradient';
   readonly valueLabels: boolean;

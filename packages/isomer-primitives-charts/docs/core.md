@@ -81,7 +81,7 @@ type ColorValue =
 
 Colors are `#rgb`, `#rrggbb` or `#rrggbbaa`. `ChromeToken` is one of `text`, `textSubdued`, `axis`, `gridLine`, `background` and `border`. The scheme is always chosen explicitly when a node is drawn, so a renderer never relies on CSS `light-dark()` alone.
 
-`colors.byKey` maps a series or category key to a color; each chart states what its keys are (`metric` by its `breakdown` cell, `xyChart` by series), and each key part is escaped so a missing cell (`\null`) never collides with the string "null". `colors.bands` colors by value range: `from` is inclusive, `to` exclusive, and an absent bound is open. Each band with both bounds has `from` below `to`, and bands ascend without overlapping.
+`colors.byKey` maps a series or category key to a color; each chart states what its keys are (`metric` by its `breakdown` cell, `xyChart` by series), and each key part is escaped so a missing cell (`\null`) never collides with the string "null". `colors.bands` colors by value range: `from` is inclusive, `to` exclusive except on the last band, and an absent bound is open. Each band with both bounds has `from` below `to`, and bands ascend without overlapping.
 
 ## `source`
 

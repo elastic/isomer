@@ -26,6 +26,8 @@ A column without a format gets its type's default: at most three decimals for nu
 
 A host with formats no portable format describes, such as Kibana's field formats, maps each to the nearest portable format when it builds the node, or sends `data.display` strings and records a `losses` entry. It does not format at render time.
 
+Unsupported or invalid locale tags fall back to English, independent of the host locale.
+
 ## Time zones and environments
 
-Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server.
+Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server, except its time-axis labels: an engine labels the ticks it chooses with `formatAxisValue` where it runs, so a time axis needs time-zone support there too.
