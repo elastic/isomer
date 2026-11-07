@@ -80,8 +80,8 @@ const channel = (hex: string, offset: number) => {
   return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
 };
 
-/** WCAG relative luminance of a `#rgb`, `#rrggbb` or `#rrggbbaa` color. */
-export const luminance = (hex: string): number =>
+// WCAG relative luminance of a `#rgb`, `#rrggbb` or `#rrggbbaa` color.
+const luminance = (hex: string): number =>
   0.2126 * channel(hex, 1) +
   0.7152 * channel(hex, 3) +
   0.0722 * channel(hex, 5);

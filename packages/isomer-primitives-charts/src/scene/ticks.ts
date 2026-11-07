@@ -5,406 +5,96 @@
  * 2.0.
  */
 
-// Tick positions for an axis of a given length. Linear steps follow d3's
-// `tickStep` (1, 2 or 5 times a power of ten); time steps are calendar-sized.
+// Ticks and rounded domains are d3-scale's, the version Elastic Charts uses.
+// Time ticks are d3's UTC ticks on the Scene's wall-clock time.
+
+import { scaleLinear, scaleLog, scaleUtc } from 'd3-scale';
 
 import { MAX_EPOCH } from '../coordinates';
 import { timeZoneOffset } from '../format/zone';
 
-const E10 = Math.sqrt(50);
-const E5 = Math.sqrt(10);
-const E2 = Math.sqrt(2);
+const MINUTE = 60_000;
+const DAY = 24 * 60 * MINUTE;
 
-/** d3's tick step for `count` ticks across `[start, stop]`. */
-export const tickStep = (
-  start: number,
-  stop: number,
-  count: number
-): number => {
-  const raw = Math.abs(stop / Math.max(1, count) - start / Math.max(1, count));
-  if (raw === 0 || !Number.isFinite(raw)) {
-    return 1;
-  }
-  let step = 10 ** Math.floor(Math.log10(raw)) || Number.MIN_VALUE;
-  const error = raw / step;
-  if (error >= E10) {
-    step *= 10;
-  } else if (error >= E5) {
-    step *= 5;
-  } else if (error >= E2) {
-    step *= 2;
-  }
-  return step;
+// d3-time loops forever on a date outside the Date range, which rounding near its edges reaches; beyond this, times get linear ticks.
+const CALENDAR_LIMIT = MAX_EPOCH / 4;
+
+const calendar = (low: number, high: number) =>
+  Math.abs(low) <= CALENDAR_LIMIT && Math.abs(high) <= CALENDAR_LIMIT;
+
+const clampEpoch = (epoch: number) =>
+  Math.max(-MAX_EPOCH, Math.min(MAX_EPOCH, epoch));
+
+const offsetAt = (epoch: number, zone: string) =>
+  timeZoneOffset(clampEpoch(epoch), zone) * MINUTE;
+
+const toWall = (epoch: number, zone: string) =>
+  clampEpoch(epoch + offsetAt(epoch, zone));
+
+// The earliest instant showing `wall` in `zone`; a wall time an offset change skips names the change itself.
+const fromWall = (wall: number, zone: string): number => {
+  const candidates = [
+    wall - offsetAt(wall - DAY, zone),
+    wall - offsetAt(wall + DAY, zone),
+  ].filter((epoch) => epoch + offsetAt(epoch, zone) === wall);
+  return clampEpoch(
+    candidates.length
+      ? Math.min(...candidates)
+      : wall - offsetAt(wall - DAY, zone)
+  );
 };
 
-/** Rounds floating-point noise from a multiple of `step`. */
-const clean = (value: number, step: number) => {
-  const decimals = Math.max(0, -Math.floor(Math.log10(step)) + 1);
-  if (decimals <= 20) {
-    return Number(value.toFixed(decimals));
-  }
-  // `toFixed` stops at 20 decimals; round to a hundredth of the step instead.
-  const unit = step / 100;
-  const cleaned = Math.round(value / unit) * unit;
-  return Number.isFinite(cleaned) ? cleaned : value;
-};
-
-/** `[min, max]` widened to multiples of the tick step, as d3's `nice`. */
+/** `[min, max]` widened to d3's round tick steps; a single value widens by 2%, or to `[0, 1]` at zero. */
 export const niceDomain = (
   min: number,
   max: number,
   count: number
 ): [number, number] => {
   if (min === max) {
-    if (min === 0) {
-      return [0, 1];
-    }
     const padding = Math.max(Math.abs(min) * 0.02, Number.MIN_VALUE);
-    return [
-      Number.isFinite(min - padding) ? min - padding : min,
-      Number.isFinite(max + padding) ? max + padding : max,
-    ];
+    return min === 0 ? [0, 1] : [min - padding, max + padding];
   }
-  let low = min;
-  let high = max;
-  for (let pass = 0; pass < 2; pass += 1) {
-    const step = tickStep(low, high, count);
-    const roundedLow = clean(Math.floor(low / step) * step, step);
-    const roundedHigh = clean(Math.ceil(high / step) * step, step);
-    low = Number.isFinite(roundedLow) ? roundedLow : min;
-    high = Number.isFinite(roundedHigh) ? roundedHigh : max;
-  }
-  return [Math.min(low, min), Math.max(high, max)];
+  const [low, high] = scaleLinear().domain([min, max]).nice(count).domain();
+  return [Math.min(low!, min), Math.max(high!, max)];
 };
 
-/** Linear ticks inside `[min, max]`. */
-export const linearTicks = (
-  min: number,
-  max: number,
-  count: number
-): number[] => {
-  if (min === max) {
-    return [min];
-  }
-  const step = tickStep(min, max, count);
-  const first = Math.ceil(min / step - 1e-9);
-  const last = Math.floor(max / step + 1e-9);
-  const ticks: number[] = [];
-  const length = Math.min(
-    Math.ceil(count * 2) + 2,
-    Math.max(0, last - first + 1)
-  );
-  for (let index = 0; index < length; index += 1) {
-    const value = clean((first + index) * step, step);
-    if (
-      Number.isFinite(value) &&
-      value >= min &&
-      value <= max &&
-      ticks.at(-1) !== value
-    ) {
-      ticks.push(value);
-    }
-  }
-  return ticks;
+/** d3's linear ticks inside `[min, max]`. */
+export const linearTicks = (min: number, max: number, count: number) =>
+  min === max ? [min] : scaleLinear().domain([min, max]).ticks(count);
+
+/** A positive `[min, max]` widened to powers of ten. */
+export const niceLogDomain = (min: number, max: number): [number, number] => {
+  const [low, high] = scaleLog().domain([min, max]).nice().domain();
+  return [low!, high!];
 };
 
-const pow10 = (exponent: number) =>
-  Number.isFinite(exponent)
-    ? Number(`1e${exponent}`)
-    : exponent < 0
-      ? 0
-      : exponent;
+/** d3's base-10 log ticks inside a positive `[min, max]`. */
+export const logTicks = (min: number, max: number, count: number) =>
+  scaleLog().domain([min, max]).ticks(count);
 
-/** d3-array 2's `ticks`, which d3's log scale falls back to. */
-const d3Ticks = (start: number, stop: number, count: number): number[] => {
-  if (start === stop && count > 0) {
-    return [start];
-  }
-  const raw = (stop - start) / Math.max(0, count);
-  const power = Math.floor(Math.log(raw) / Math.LN10);
-  const error = raw / 10 ** power;
-  const factor = error >= E10 ? 10 : error >= E5 ? 5 : error >= E2 ? 2 : 1;
-  const ticks: number[] = [];
-  if (power >= 0) {
-    const step = factor * 10 ** power;
-    if (!Number.isFinite(step) || step === 0) {
-      return [];
-    }
-    let r0 = Math.round(start / step);
-    let r1 = Math.round(stop / step);
-    if (r0 * step < start) {
-      ++r0;
-    }
-    if (r1 * step > stop) {
-      --r1;
-    }
-    for (let index = 0; index <= Math.min(count * 2 + 2, r1 - r0); index += 1) {
-      ticks.push((r0 + index) * step);
-    }
-  } else {
-    const inverse = 10 ** -power / factor;
-    let r0 = Math.round(start * inverse);
-    let r1 = Math.round(stop * inverse);
-    if (r0 / inverse < start) {
-      ++r0;
-    }
-    if (r1 / inverse > stop) {
-      --r1;
-    }
-    for (let index = 0; index <= Math.min(count * 2 + 2, r1 - r0); index += 1) {
-      ticks.push((r0 + index) / inverse);
-    }
-  }
-  return ticks;
-};
-
-/** `[min, max]` widened to powers of ten, as d3's log `nice`. */
-export const niceLogDomain = (min: number, max: number): [number, number] => [
-  pow10(Math.floor(Math.log10(min))),
-  pow10(Math.ceil(Math.log10(max))),
-];
-
-/**
- * Ticks for a base-10 log axis over a positive `[min, max]`, as d3-scale 3's
- * `scaleLog().ticks(count)`, which Elastic Charts uses: 1–9 times each power
- * of ten inside the domain, or linear ticks when those are too few.
- */
-export const logTicks = (min: number, max: number, count: number): number[] => {
-  const i = Math.log10(min);
-  const j = Math.log10(max);
-  if (j - i < count) {
-    const ticks: number[] = [];
-    for (
-      let exponent = Math.floor(i);
-      exponent <= Math.ceil(j);
-      exponent += 1
-    ) {
-      const power = pow10(exponent);
-      for (let k = 1; k < 10; k += 1) {
-        const tick = power * k;
-        if (tick < min) {
-          continue;
-        }
-        if (tick > max) {
-          break;
-        }
-        ticks.push(tick);
-      }
-    }
-    return ticks.length * 2 < count ? d3Ticks(min, max, count) : ticks;
-  }
-  return d3Ticks(i, j, Math.min(j - i, count)).map(pow10);
-};
-
-const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-interface TimeStep {
-  unit: 'elapsed' | 'hour' | 'day' | 'week' | 'month' | 'year';
-  step: number;
-  duration: number;
-}
-
-const timeSteps = (span: number, count: number): TimeStep[] => [
-  ...[
-    1,
-    5,
-    10,
-    50,
-    100,
-    250,
-    500,
-    SECOND,
-    5 * SECOND,
-    15 * SECOND,
-    30 * SECOND,
-    MINUTE,
-    5 * MINUTE,
-    15 * MINUTE,
-    30 * MINUTE,
-    HOUR,
-    3 * HOUR,
-    6 * HOUR,
-    12 * HOUR,
-  ].map((step): TimeStep =>
-    step > HOUR
-      ? { unit: 'hour', step: step / HOUR, duration: step }
-      : { unit: 'elapsed', step, duration: step }
-  ),
-  { unit: 'day', step: 1, duration: DAY },
-  { unit: 'day', step: 2, duration: 2 * DAY },
-  { unit: 'week', step: 1, duration: 7 * DAY },
-  { unit: 'month', step: 1, duration: 30 * DAY },
-  { unit: 'month', step: 3, duration: 91 * DAY },
-  { unit: 'year', step: 1, duration: 365 * DAY },
-  {
-    unit: 'year',
-    step: Math.max(2, Math.ceil(span / (365 * DAY * Math.max(1, count - 1)))),
-    duration:
-      Math.max(2, Math.ceil(span / (365 * DAY * Math.max(1, count - 1)))) *
-      365 *
-      DAY,
-  },
-];
-
-const clampEpoch = (epoch: number) =>
-  Math.max(-MAX_EPOCH, Math.min(MAX_EPOCH, epoch));
-const offsetAt = (epoch: number, zone: string) =>
-  timeZoneOffset(clampEpoch(epoch), zone);
-const localTime = (epoch: number, zone: string) =>
-  epoch + offsetAt(epoch, zone) * MINUTE;
-
-/**
- * The instant a local wall-clock time names in `zone`: the earliest occurrence
- * after `after` when given, else the earliest. A local time skipped by an
- * offset change names the moment of the change, so a day still starts on its
- * own date.
- */
-const fromLocal = (local: number, zone: string, after?: number): number => {
-  // With the offset in force before the change, a skipped time lands on the change itself.
-  const before = local - offsetAt(local - DAY, zone) * MINUTE;
-  const following = local - offsetAt(local + DAY, zone) * MINUTE;
-  const valid = [...new Set([before, following])]
-    .filter(
-      (epoch) =>
-        Math.abs(epoch) <= MAX_EPOCH && localTime(epoch, zone) === local
-    )
-    .sort((a, b) => a - b);
-  const options = valid.length > 0 ? valid : [clampEpoch(before)];
-  return (
-    options.find((epoch) => after === undefined || epoch > after) ??
-    options[options.length - 1]!
-  );
-};
-
-const floorTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
-  const local = localTime(epoch, zone);
-  if (unit === 'elapsed') {
-    let tick = Math.floor(local / step) * step - offsetAt(epoch, zone) * MINUTE;
-    if (step >= HOUR) {
-      for (let attempt = 0; attempt < 48; attempt += 1) {
-        const wall = localTime(tick, zone);
-        const floor = Math.floor(wall / step) * step;
-        if (wall === floor) {
-          break;
-        }
-        tick = floor - offsetAt(tick, zone) * MINUTE;
-      }
-    }
-    return tick;
-  }
-  if (unit === 'hour') {
-    return fromLocal(Math.floor(local / (step * HOUR)) * step * HOUR, zone);
-  }
-  if (unit === 'day' || unit === 'week') {
-    const day = Math.floor(local / DAY);
-    const weekday = (((day + 4) % 7) + 7) % 7;
-    const date = new Date(clampEpoch(local));
-    const floor =
-      unit === 'week' ? day - weekday : day - ((date.getUTCDate() - 1) % step);
-    return fromLocal(floor * DAY, zone);
-  }
-  const date = new Date(clampEpoch(local));
-  date.setUTCHours(0, 0, 0, 0);
-  if (unit === 'month') {
-    date.setUTCDate(1);
-    date.setUTCMonth(Math.floor(date.getUTCMonth() / step) * step);
-  } else {
-    date.setUTCMonth(0, 1);
-    date.setUTCFullYear(Math.floor(date.getUTCFullYear() / step) * step);
-  }
-  return Number.isNaN(date.getTime())
-    ? -MAX_EPOCH
-    : fromLocal(date.getTime(), zone);
-};
-
-const advanceTime = (epoch: number, { unit, step }: TimeStep, zone: string) => {
-  if (unit === 'elapsed') {
-    const next = epoch + step;
-    if (step >= HOUR) {
-      const remainder = ((localTime(next, zone) % step) + step) % step;
-      return next + (remainder === 0 ? 0 : step - remainder);
-    }
-    return next;
-  }
-  const local = localTime(epoch, zone);
-  if (unit === 'hour') {
-    return fromLocal(local + step * HOUR, zone, epoch);
-  }
-  if (unit === 'day' || unit === 'week') {
-    const day = Math.floor(local / DAY);
-    if (unit === 'week') {
-      const distance = 7 - ((((day + 4) % 7) + 7) % 7);
-      return fromLocal((day + distance) * DAY, zone, epoch);
-    }
-    let next = (day + 1) * DAY;
-    for (
-      let distance = 1;
-      distance < step && Math.abs(next) <= MAX_EPOCH;
-      distance += 1
-    ) {
-      if ((new Date(next).getUTCDate() - 1) % step === 0) {
-        break;
-      }
-      next += DAY;
-    }
-    return fromLocal(next, zone, epoch);
-  }
-
-  const date = new Date(clampEpoch(local));
-  if (unit === 'year') {
-    date.setUTCFullYear(date.getUTCFullYear() + step, 0, 1);
-  } else {
-    date.setUTCMonth(date.getUTCMonth() + step, 1);
-  }
-  date.setUTCHours(0, 0, 0, 0);
-  return Number.isNaN(date.getTime())
-    ? MAX_EPOCH
-    : fromLocal(date.getTime(), zone, epoch);
-};
-
-const chooseTimeStep = (min: number, max: number, count: number) =>
-  timeSteps(max - min, count).find(
-    ({ duration }) => (max - min) / duration <= count
-  )!;
-
-/** Time ticks at round local times, with calendar steps across offset changes. */
+/** d3's time ticks at round wall-clock times in `zone`. */
 export const timeTicks = (
   min: number,
   max: number,
   count: number,
-  timeZone: string
+  zone: string
 ): number[] => {
   if (min === max) {
     return [min];
   }
-  const candidates = timeSteps(max - min, count);
-  const duration = chooseTimeStep(min, max, count).duration;
-  for (const candidate of candidates.filter(
-    (entry) => entry.duration >= duration
-  )) {
-    let tick = floorTime(min, candidate, timeZone);
-    const ticks: number[] = [];
-    for (let index = 0; index <= count + 1 && tick <= max; index += 1) {
-      if (tick >= min) {
-        ticks.push(tick);
-      }
-      const next = advanceTime(tick, candidate, timeZone);
-      if (!(next > tick)) {
-        break;
-      }
-      tick = next;
-    }
-    if (ticks.length <= count) {
-      return ticks;
-    }
+  const [low, high] = [toWall(min, zone), toWall(max, zone)];
+  if (!calendar(low, high)) {
+    return linearTicks(min, max, count);
   }
-  return [];
+  const ticks = scaleUtc()
+    .domain([low, high])
+    .ticks(count)
+    .map((tick) => fromWall(tick.getTime(), zone))
+    .filter((tick) => tick >= min && tick <= max);
+  return [...new Set(ticks)];
 };
 
-/** Calendar domain bounds, widened in the requested zone. */
+/** `[min, max]` widened to d3's round wall-clock times in `zone`; a single instant widens to its local day. */
 export const niceTimeDomain = (
   min: number,
   max: number,
@@ -412,20 +102,23 @@ export const niceTimeDomain = (
   zone: string
 ): [number, number] => {
   if (min === max) {
-    const day: TimeStep = { unit: 'day', step: 1, duration: DAY };
-    const low = floorTime(min, day, zone);
-    const high = advanceTime(low, day, zone);
-    return high > low ? [low, high] : [floorTime(min - DAY, day, zone), min];
+    const day = Math.floor(toWall(min, zone) / DAY) * DAY;
+    const low = fromWall(day, zone);
+    const high = fromWall(clampEpoch(day + DAY), zone);
+    return high > low
+      ? [Math.min(low, min), high]
+      : [clampEpoch(low - DAY), min];
   }
-  const step = chooseTimeStep(min, max, count);
-  const low = floorTime(min, step, zone);
-  const floorHigh = floorTime(max, step, zone);
-  return [
-    clampEpoch(low),
-    clampEpoch(
-      floorHigh === max && low < max ? max : advanceTime(floorHigh, step, zone)
-    ),
-  ];
+  if (!calendar(toWall(min, zone), toWall(max, zone))) {
+    const [low, high] = niceDomain(min, max, count);
+    return [clampEpoch(low), clampEpoch(high)];
+  }
+  const [low, high] = scaleUtc()
+    .domain([toWall(min, zone), toWall(max, zone)])
+    .nice(count)
+    .domain()
+    .map((date) => fromWall(date.getTime(), zone));
+  return [Math.min(low!, min), Math.max(high!, max)];
 };
 
 /** Tick count for an axis `length` pixels long, one tick per `spacing` pixels. */

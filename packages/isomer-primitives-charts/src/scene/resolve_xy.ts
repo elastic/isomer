@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { coordinateOf, coordinateScale } from '../coordinates';
+import { continuousScaleOf, coordinateOf, scalarOf } from '../coordinates';
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
@@ -20,7 +20,6 @@ import {
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
-  scalarCell,
   sceneBase,
   titled,
   toNumber,
@@ -65,6 +64,9 @@ const DEFAULTS = {
 
 /** Points on `auto` hide once neighbours are closer than this, in pixels. */
 const POINT_MIN_DISTANCE = 20;
+
+/** Without a size, points on `auto` show for at most this many marks. */
+const AUTO_POINTS_MAX_MARKS = 20;
 
 const STATISTIC_NAMES: Record<Statistic, string> = {
   min: 'Min',
@@ -195,6 +197,7 @@ const statistic = (
   }
 };
 
+/** The Scene of an `xyChart` node. */
 export const resolveXy = (
   node: XyChartNode,
   options: ResolveChartOptions
@@ -213,45 +216,35 @@ export const resolveXy = (
         entry.layer.kind === 'data'
     );
 
-  // The first x column supplies the shared axis format.
-  const xId = dataLayers.find(({ layer }) => layer.x !== undefined)?.layer.x;
+  const xId = dataLayers[0]?.layer.x;
   const xColumn = xId === undefined ? undefined : resolution.column(xId);
   const xScale: XScale = (() => {
-    const requested = node.axes?.x?.scale;
-    if (requested === 'temporal') {
-      return 'time';
-    }
-    if (requested) {
-      return requested;
-    }
-    const scale = coordinateScale(
-      dataLayers.flatMap(({ layer }) =>
-        layer.x === undefined ? [] : [resolution.column(layer.x).type]
-      )
-    );
+    const scale =
+      node.axes?.x?.scale ??
+      (xColumn === undefined ? undefined : continuousScaleOf(xColumn.type));
     return scale === 'temporal' ? 'time' : (scale ?? 'ordinal');
   })();
-  const xText = (row: number, id = xId) =>
-    id === undefined ? '' : resolution.text(id, row);
-  const xOf = (row: number, id: string | undefined): number | string => {
-    if (id === undefined) {
+  const xText = (row: number) =>
+    xId === undefined ? '' : resolution.text(xId, row);
+  const xOf = (row: number): number | string => {
+    if (xId === undefined) {
       return xScale === 'ordinal' ? '' : 0;
     }
-    const cell = resolution.cell(id, row);
-    if (xScale !== 'ordinal') {
-      const value = scalarCell(cell);
-      const coordinate = coordinateOf(
-        value,
-        xScale === 'time' ? 'temporal' : 'linear'
-      );
-      if (coordinate === undefined && value !== null && value !== undefined) {
-        throw new RangeError(
-          `Cannot resolve x column "${id}" on a ${xScale} axis.`
-        );
-      }
-      return coordinate ?? Number.NaN;
+    const cell = resolution.cell(xId, row);
+    if (xScale === 'ordinal') {
+      return cellKey(cell);
     }
-    return cellKey(cell);
+    const coordinate = coordinateOf(
+      cell,
+      xScale === 'time' ? 'temporal' : 'linear'
+    );
+    const value = scalarOf(cell);
+    if (coordinate === undefined && value !== null && value !== undefined) {
+      throw new RangeError(
+        `Cannot resolve x column "${xId}" on a ${xScale} axis.`
+      );
+    }
+    return coordinate ?? Number.NaN;
   };
 
   // Series, in layer order, then y column, then split value by first appearance.
@@ -322,60 +315,43 @@ export const resolveXy = (
 
   // Categories: every x position with data, in axis order.
   const categoryRows = new Map<number | string, Set<number>>();
-  const categoryColumns = new Map<number | string, Map<string, number>>();
   for (const draft of drafts) {
     for (const row of draft.rows) {
-      const x = xOf(row, draft.layer.x);
+      const x = xOf(row);
       if (typeof x === 'number' && Number.isNaN(x)) {
         continue;
       }
       const rows = categoryRows.get(x) ?? new Set<number>();
       rows.add(row);
       categoryRows.set(x, rows);
-      if (draft.layer.x !== undefined) {
-        const columns = categoryColumns.get(x) ?? new Map<string, number>();
-        columns.set(draft.layer.x, row);
-        categoryColumns.set(x, columns);
-      }
     }
   }
   const categoryKeys = [...categoryRows.keys()];
   if (xScale !== 'ordinal') {
     (categoryKeys as number[]).sort((a, b) => a - b);
   }
+  const categorySelection = (rows: number[]): SceneSelection | undefined => {
+    if (!offers('category') || xId === undefined || xColumn === undefined) {
+      return undefined;
+    }
+    const value = resolution.cell(xId, rows[0]!);
+    // Rows at one position can hold different raw cells, such as an epoch and an ISO string.
+    return rows.every(
+      (row) => cellKey(resolution.cell(xId, row)) === cellKey(value)
+    )
+      ? {
+          target: 'category',
+          rows,
+          columns: [xId],
+          values: { [xId]: value },
+          description: describe([[xColumn.label, xText(rows[0]!)]]),
+        }
+      : undefined;
+  };
   const categories: XyCategory[] = categoryKeys.map((x) => {
     const rows = [...(categoryRows.get(x) ?? [])].sort((a, b) => a - b);
-    const columns = categoryColumns.get(x) ?? new Map<string, number>();
-    const [column, row] = columns.entries().next().value ?? [];
-    const label = column === undefined ? '' : resolution.text(column, row!);
-    const values = Object.fromEntries(
-      [...columns].map(([id, source]) => [id, resolution.cell(id, source)])
-    );
-    const sameValues = rows.every((source) =>
-      [...columns].every(
-        ([id]) => cellKey(resolution.cell(id, source)) === cellKey(values[id]!)
-      )
-    );
-    return {
-      x,
-      label,
-      ...(offers('category') && columns.size > 0 && sameValues
-        ? {
-            selection: {
-              target: 'category' as const,
-              rows,
-              columns: [...columns.keys()],
-              values,
-              description: describe(
-                [...columns.keys()].map((id) => [
-                  resolution.column(id).label,
-                  resolution.text(id, rows[0]!),
-                ])
-              ),
-            },
-          }
-        : {}),
-    };
+    const selection = categorySelection(rows);
+    return { x, label: xText(rows[0]!), ...(selection ? { selection } : {}) };
   });
   const categoryOrder = new Map(categoryKeys.map((key, index) => [key, index]));
   const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
@@ -410,7 +386,7 @@ export const resolveXy = (
       continue;
     }
     for (const row of draft.rows) {
-      const key = `${group}|${String(xOf(row, draft.layer.x))}`;
+      const key = `${group}|${String(xOf(row))}`;
       const value = toNumber(resolution.cell(draft.yColumn, row)) ?? 0;
       stackTotals.set(key, (stackTotals.get(key) ?? 0) + Math.abs(value));
     }
@@ -428,18 +404,18 @@ export const resolveXy = (
     const yColumn = resolution.column(draft.yColumn);
     const group = stackGroup(draft);
     const ordered = [...draft.rows].sort((a, b) => {
-      const ax = xOf(a, draft.layer.x);
-      const bx = xOf(b, draft.layer.x);
+      const ax = xOf(a);
+      const bx = xOf(b);
       return typeof ax === 'number' && typeof bx === 'number'
         ? ax - bx
         : (categoryOrder.get(ax) ?? 0) - (categoryOrder.get(bx) ?? 0);
     });
     const dims = [
-      ...(draft.layer.x === undefined ? [] : [draft.layer.x]),
+      ...(xId === undefined ? [] : [xId]),
       ...(draft.split ? [draft.split.column] : []),
     ];
     const marks = ordered.flatMap((row) => {
-      const x = xOf(row, draft.layer.x);
+      const x = xOf(row);
       if (typeof x === 'number' && Number.isNaN(x)) {
         return [];
       }
@@ -461,14 +437,9 @@ export const resolveXy = (
       }
       const label = resolution.text(draft.yColumn, row);
       const description = describe([
-        ...(draft.layer.x === undefined
+        ...(xColumn === undefined
           ? []
-          : [
-              [
-                resolution.column(draft.layer.x).label,
-                xText(row, draft.layer.x),
-              ] as const,
-            ]),
+          : [[xColumn.label, xText(row)] as const]),
         ...(draft.split
           ? [
               [
@@ -528,12 +499,8 @@ export const resolveXy = (
       tooltipEntries.set(x, entries);
     }
   }
-  const tooltipAt = (
-    x: number | string,
-    row: number,
-    id: string | undefined
-  ): SceneTooltip => ({
-    ...(id === undefined ? {} : { header: xText(row, id) }),
+  const tooltipAt = (x: number | string, row: number): SceneTooltip => ({
+    ...(xId === undefined ? {} : { header: xText(row) }),
     entries: tooltipEntries.get(x) ?? [],
   });
 
@@ -561,7 +528,6 @@ export const resolveXy = (
       key: draft.key,
       label: draft.label,
       mark: draft.layer.mark,
-      ...(draft.layer.x === undefined ? {} : { xColumn: draft.layer.x }),
       axis: draft.axis,
       color,
       ...(draft.layer.stack
@@ -580,7 +546,7 @@ export const resolveXy = (
       },
       showPoints:
         points === 'visible' ||
-        (points === 'auto' && marks.length <= POINT_MIN_DISTANCE),
+        (points === 'auto' && marks.length <= AUTO_POINTS_MAX_MARKS),
       areaOpacity: node.style?.areaOpacity ?? DEFAULTS.areaOpacity,
       areaFill: node.style?.areaFill ?? DEFAULTS.areaFill,
       valueLabels:
@@ -588,7 +554,7 @@ export const resolveXy = (
       source: {
         rows,
         columns: [
-          ...(draft.layer.x === undefined ? [] : [draft.layer.x]),
+          ...(xId === undefined ? [] : [xId]),
           ...columns,
           draft.yColumn,
         ],
@@ -608,23 +574,27 @@ export const resolveXy = (
         : {}),
       marks: marks.map((mark) => ({
         ...mark,
-        tooltip: tooltipAt(mark.x, mark.source.rows[0] ?? 0, draft.layer.x),
+        tooltip: tooltipAt(mark.x, mark.source.rows[0] ?? 0),
       })),
     };
   });
 
-  const axisFormat = (axis: 'x' | 'y' | 'y2'): PortableFormat => {
-    if (axis === 'x') {
-      return xId === undefined
-        ? DEFAULT_FORMATS.number
-        : resolution.format(xId);
-    }
+  const xFormat: PortableFormat =
+    xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
+  // Hidden series count: they still decide what an axis means.
+  const percentageAxis = (axis: 'y' | 'y2') => {
     const onAxis = drafts.filter((draft) => draft.axis === axis);
-    return onAxis.length > 0 &&
+    return (
+      onAxis.length > 0 &&
       onAxis.every(({ layer }) => layer.stack === 'percentage')
+    );
+  };
+  const yFormat = (axis: 'y' | 'y2'): PortableFormat => {
+    const first = drafts.find((draft) => draft.axis === axis);
+    return percentageAxis(axis)
       ? DEFAULT_FORMATS.percent
-      : onAxis[0]
-        ? resolution.format(onAxis[0].yColumn)
+      : first
+        ? resolution.format(first.yColumn)
         : DEFAULT_FORMATS.number;
   };
 
@@ -638,7 +608,8 @@ export const resolveXy = (
               (line.showText
                 ? resolution.formatAs(
                     line.value,
-                    line.format ?? axisFormat(line.axis ?? 'y')
+                    line.format ??
+                      (line.axis === 'x' ? xFormat : yFormat(line.axis ?? 'y'))
                   )
                 : undefined);
             return {
@@ -663,18 +634,13 @@ export const resolveXy = (
     const onAxis = series.filter(
       (entry) => entry.axis === id && !hidden.has(entry.key)
     );
-    const firstDraft = drafts.find((draft) => draft.axis === id);
     const linesOnAxis = referenceLines.filter((line) => line.axis === id);
     // Reference lines keep their axis even when every series on it is hidden.
     if (onAxis.length === 0 && linesOnAxis.length === 0) {
       return undefined;
     }
     const config = node.axes?.[id];
-    // Hidden series still decide what the axis means.
-    const allOnAxis = series.filter((entry) => entry.axis === id);
-    const percentage =
-      allOnAxis.length > 0 &&
-      allOnAxis.every((entry) => entry.stack?.mode === 'percentage');
+    const percentage = percentageAxis(id);
     const values = [
       ...onAxis.flatMap(({ marks }) =>
         marks.flatMap((mark) => [
@@ -728,11 +694,7 @@ export const resolveXy = (
           ? niceLogDomain(low, high)
           : niceDomain(low, high, count);
     }
-    const format: PortableFormat = percentage
-      ? DEFAULT_FORMATS.percent
-      : firstDraft
-        ? resolution.format(firstDraft.yColumn)
-        : DEFAULT_FORMATS.number;
+    const format = yFormat(id);
     const ticks = (
       scale === 'log'
         ? logTicks(low, high, count)
@@ -810,15 +772,13 @@ export const resolveXy = (
       xScale === 'time'
         ? timeTicks(low, high, count, timeZone)
         : linearTicks(low, high, count);
-    const format: PortableFormat =
-      xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
     return {
       ...base,
       scale: xScale,
       domain: [low, high],
       ticks: values.map((value) => ({
         value,
-        label: resolution.formatAs(value, format),
+        label: resolution.formatAs(value, xFormat),
       })),
       ...(interval === undefined ? {} : { interval }),
     };

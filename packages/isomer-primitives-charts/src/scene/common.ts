@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { scalarOf } from '../coordinates';
 import { defaultFormatFor, formatValue } from '../format/format';
 import type { Cell, ChartColumn, ChartData } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
@@ -50,6 +51,7 @@ export interface Resolution {
   valueText(id: string, value: Cell | undefined): string;
 }
 
+/** The {@link Resolution} of `data` under `options`. */
 export const createResolution = (
   data: ChartData,
   { scheme, size, locale = 'en', timeZone = 'UTC' }: ResolveChartOptions
@@ -95,7 +97,7 @@ const isEmpty = (cell: Cell | undefined) =>
   cell === '' ||
   (Array.isArray(cell) && cell.length === 0);
 
-export const buildTable = (resolution: Resolution): SceneTable => {
+const buildTable = (resolution: Resolution): SceneTable => {
   const { data } = resolution;
   return {
     columns: data.columns.map(({ id, label, type, role }, index) => ({
@@ -127,6 +129,7 @@ interface InteractionsInput {
   emphasis?: Emphasis | undefined;
 }
 
+/** The node's interactions, with defaults filled in. */
 export const resolveInteractions = ({
   interactions,
   emphasis,
@@ -153,16 +156,15 @@ export const describe = (
   parts: readonly (readonly [string, string])[]
 ): string => parts.map(([label, value]) => `${label}: ${value}`).join(' · ');
 
-export const scalarCell = (cell: Cell | undefined): Cell | undefined =>
-  Array.isArray(cell) ? cell.find((value) => value !== null) : cell;
-
+/** A cell's finite number, or `undefined` when it has none. */
 export const toNumber = (cell: Cell | undefined): number | undefined => {
-  const value = scalarCell(cell);
+  const value = scalarOf(cell);
   return typeof value === 'number' && Number.isFinite(value)
     ? value
     : undefined;
 };
 
+/** The fields every Scene kind shares. */
 export const sceneBase = (
   resolution: Resolution,
   node: { title?: string | undefined; description?: string | undefined }

@@ -226,6 +226,9 @@ importers:
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk
+      d3-scale:
+        specifier: 3.3.0
+        version: 3.3.0
       zod:
         specifier: ^4.5.4
         version: 4.6.5
@@ -234,11 +237,8 @@ importers:
         specifier: 8.1.0
         version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@types/d3-scale':
-        specifier: 3.3.5
-        version: 3.3.5
-      d3-scale:
-        specifier: 3.3.0
-        version: 3.3.0
+        specifier: 3.3.2
+        version: 3.3.2
 
   packages/isomer-primitives-slides:
     dependencies:
@@ -1815,8 +1815,8 @@ packages:
   '@types/conventional-commits-parser@5.0.2':
     resolution: {integrity: sha512-BgT2szDXnVypgpNxOK8aL5SGjUdaQbC++WZNjF1Qge3Og2+zhHj+RWhmehLhYyvQwqAmvezruVfOf8+3m74W+g==}
 
-  '@types/d3-scale@3.3.5':
-    resolution: {integrity: sha512-YOpKj0kIEusRf7ofeJcSZQsvKbnTwpe1DUF+P2qsotqG53kEsjm7EzzliqQxMkAWdkZcHrg5rRhB4JiDOQPX+A==}
+  '@types/d3-scale@3.3.2':
+    resolution: {integrity: sha512-gGqr7x1ost9px3FvIfUMi5XA/F/yAf4UkUDtdQhpH92XCT0Oa7zkkRzY61gPVJq+DxpHn/btouw5ohWkbBsCzQ==}
 
   '@types/d3-time@2.1.4':
     resolution: {integrity: sha512-BTfLsxTeo7yFxI/haOOf1ZwJ6xKgQLT9dCp+EcmQv87Gox6X+oKl4mLKfO6fnWm3P22+A6DknMNEZany8ql2Rw==}
@@ -6876,7 +6876,7 @@ snapshots:
     dependencies:
       '@types/node': 22.20.2
 
-  '@types/d3-scale@3.3.5':
+  '@types/d3-scale@3.3.2':
     dependencies:
       '@types/d3-time': 2.1.4
 

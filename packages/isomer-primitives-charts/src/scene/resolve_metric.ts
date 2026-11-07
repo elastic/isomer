@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import { scalarOf } from '../coordinates';
 import { toEpoch } from '../format/date';
 import type { ColorBand } from '../schema/colors';
 import type { PortableFormat } from '../schema/format';
@@ -17,7 +18,6 @@ import {
   keyPart,
   type ResolveChartOptions,
   resolveInteractions,
-  scalarCell,
   sceneBase,
   titled,
   toNumber,
@@ -40,8 +40,8 @@ const TREND_ICONS = {
 } as const;
 const NOT_AVAILABLE = 'N/A';
 
-/** The band `value` falls in: `from` inclusive, `to` exclusive. */
-export const bandFor = (
+// The band `value` falls in: `from` inclusive, `to` exclusive.
+const bandFor = (
   bands: readonly ColorBand[],
   value: number
 ): ColorBand | undefined =>
@@ -55,6 +55,7 @@ const withSign = (format: PortableFormat): PortableFormat =>
     ? format
     : { ...format, signDisplay: 'exceptZero' };
 
+/** The Scene of a `metric` node. */
 export const resolveMetric = (
   node: MetricNode,
   options: ResolveChartOptions
@@ -133,7 +134,7 @@ export const resolveMetric = (
     const { data: trendData, x, y, breakdown } = node.background;
     const trendResolution = createResolution(trendData, options);
     trendData.rows.forEach((_, row) => {
-      const epoch = toEpoch(scalarCell(trendResolution.cell(x, row)));
+      const epoch = toEpoch(scalarOf(trendResolution.cell(x, row)));
       if (epoch === undefined) {
         return;
       }

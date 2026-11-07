@@ -5,16 +5,28 @@
  * 2.0.
  */
 
+import type { Cell } from './schema/data';
+
+/** The largest absolute epoch, in milliseconds, a JavaScript `Date` represents. */
 export const MAX_EPOCH = 8.64e15;
 
+/** A cell's scalar value: a multivalue cell's first non-null entry. */
+export const scalarOf = (cell: Cell | undefined): Cell | undefined =>
+  Array.isArray(cell) ? cell.find((value) => value !== null) : cell;
+
+/** The continuous scale a column type implies, if any. */
+export const continuousScaleOf = (
+  type: string
+): 'linear' | 'temporal' | undefined =>
+  type === 'number' ? 'linear' : type === 'date' ? 'temporal' : undefined;
+
+/** A cell's position on a continuous scale, or `undefined` when it has none. */
 export const coordinateOf = (
-  cell: unknown,
+  cell: Cell | undefined,
   scale: 'linear' | 'temporal'
 ): number | undefined => {
-  const value: unknown = Array.isArray(cell)
-    ? cell.find((entry: unknown) => entry !== null)
-    : cell;
-  const number: unknown =
+  const value = scalarOf(cell);
+  const number =
     scale === 'temporal' && typeof value === 'string'
       ? Date.parse(value)
       : value;
@@ -23,17 +35,4 @@ export const coordinateOf = (
     (scale === 'linear' || Math.abs(number) <= MAX_EPOCH)
     ? number
     : undefined;
-};
-
-export const coordinateScale = (
-  types: readonly string[]
-): 'linear' | 'temporal' | undefined => {
-  if (new Set(types).size !== 1) {
-    return undefined;
-  }
-  return types[0] === 'number'
-    ? 'linear'
-    : types[0] === 'date'
-      ? 'temporal'
-      : undefined;
 };

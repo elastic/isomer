@@ -12,7 +12,7 @@ Read the [root instructions](../../AGENTS.md) first.
 
 ## When changing this area
 
-Schema changes are additive within a major version: hosts and the render service depend on the same published version. Keep each schema, its stated rules, its catalog entry, its examples and its docs page together. Make every cross-field check with `cross_field.ts`, whose rule sentence the description an agent reads must state.
+Once the pack is published, schema changes are additive within a major version, because hosts and the render service depend on the same published version. Until then a rule may tighten when the contract calls for it. Keep each schema, its stated rules, its catalog entry, its examples and its docs page together. Make every cross-field check with `cross_field.ts`, whose rule sentence the description an agent reads must state.
 
 Add or change a field only as [Adding a field](docs/index.md#adding-a-field) states. The spec carries everything a faithful rendering needs; an engine that cannot draw a field documents its fallback, and the field stays.
 
