@@ -584,6 +584,59 @@ describe('xyChart', () => {
       'layers.1.events.0'
     );
   });
+
+  it.each([
+    ['x', { domain: { kind: 'custom', min: 5, max: 5 } }],
+    ['y', { domain: { kind: 'custom', min: 10, max: 0 } }],
+    ['y2', { scale: 'log', domain: { kind: 'custom', min: 0, max: 100 } }],
+  ])('rejects a degenerate custom %s domain', (id, axis) => {
+    expectRule(
+      'xyChart',
+      xy({ axes: { [id]: axis } }),
+      XY_RULES.customDomain,
+      `axes.${id}.domain`
+    );
+  });
+
+  it('accepts a custom log domain above zero', () => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          axes: {
+            y: { scale: 'log', domain: { kind: 'custom', min: 1, max: 100 } },
+          },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    [
+      'an annotation',
+      {
+        layers: [
+          ...xy().layers,
+          { kind: 'annotations', events: [{ kind: 'point', at: 1e16 }] },
+        ],
+      },
+      'layers.1.events.0.at',
+    ],
+    [
+      'the current time',
+      { style: { currentTime: -1e16 } },
+      'style.currentTime',
+    ],
+    [
+      'a partial bucket edge',
+      { style: { partialBuckets: { from: 0, to: 1e16 } } },
+      'style.partialBuckets.to',
+    ],
+  ])('rejects %s outside the Date range', (_, overrides, path) => {
+    expect(
+      issuesOf('xyChart', xy(overrides)).map((issue) => issue.path)
+    ).toContain(path);
+  });
 });
 
 describe('grid', () => {

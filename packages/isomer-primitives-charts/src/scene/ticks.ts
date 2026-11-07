@@ -58,7 +58,11 @@ export const niceDomain = (
       : [finite(min - padding, min), finite(max + padding, max)];
   }
   const [low, high] = scaleLinear().domain([min, max]).nice(count).domain();
-  return [Math.min(finite(low!, min), min), Math.max(finite(high!, max), max)];
+  // `+ 0` turns a rounded `-0` into `0`.
+  return [
+    Math.min(finite(low!, min), min) + 0,
+    Math.max(finite(high!, max), max) + 0,
+  ];
 };
 
 /** d3's linear ticks inside `[min, max]`. */
@@ -68,7 +72,9 @@ export const linearTicks = (min: number, max: number, count: number) =>
 /** A positive `[min, max]` widened to powers of ten. */
 export const niceLogDomain = (min: number, max: number): [number, number] => {
   const [low, high] = scaleLog().domain([min, max]).nice().domain();
-  return [finite(low!, min), finite(high!, max)];
+  const positive = (value: number, fallback: number) =>
+    value > 0 && Number.isFinite(value) ? value : fallback;
+  return [positive(low!, min), positive(high!, max)];
 };
 
 /** d3's base-10 log ticks inside a positive `[min, max]`. */
@@ -84,15 +90,15 @@ const wallRange = (min: number, max: number, zone: string) => {
   ] as const;
 };
 
-// `[from, to]` cut where `zone`'s offset changes, as `[from, to, offset]`; a stretch whose ends share an offset stays whole.
-const offsetSegments = (
+// Each stretch of the whole milliseconds `[from, to]` at one offset of `zone`, as `[start, offset]`, earliest first. A stretch whose ends share an offset stays whole.
+const offsetStretches = (
   from: number,
   to: number,
   zone: string
-): Array<[number, number, number]> => {
+): Array<[number, number]> => {
   const offset = offsetAt(from, zone);
   if (offset === offsetAt(to, zone)) {
-    return [[from, to, offset]];
+    return [[from, offset]];
   }
   let [before, after] = [from, to];
   while (after - before > 1) {
@@ -103,7 +109,7 @@ const offsetSegments = (
       after = middle;
     }
   }
-  return [[from, after, offset], ...offsetSegments(after, to, zone)];
+  return [[from, offset], ...offsetStretches(after, to, zone)];
 };
 
 /** d3's time ticks at round wall-clock times in `zone`, as dense as d3's ticks over the same span in UTC. */
@@ -119,24 +125,34 @@ export const timeTicks = (
   if (!calendar(...wallRange(min, max, zone))) {
     return linearTicks(min, max, count);
   }
-  const ticks = offsetSegments(min, max, zone)
-    .flatMap(([from, to, offset], index, segments) => {
-      // A wall time the next offset skips lands that far later, so it can still fall inside `max`.
-      const skipped = Math.max(
-        0,
-        (segments[index + 1]?.[2] ?? offset) - offset
-      );
-      const low = clampEpoch(from + offset);
-      const high = clampEpoch(Math.min(max, to + skipped) + offset);
-      return high > low
-        ? scaleUtc()
-            .domain([low, high])
-            .ticks((count * (high - low)) / (max - min))
-        : [];
-    })
-    .flatMap((tick) => fromWall(tick.getTime(), zone))
-    .filter((tick) => tick >= min && tick <= max);
-  return [...new Set(ticks)].sort((a, b) => a - b);
+  // Ticks are whole milliseconds.
+  const [first, last] = [Math.ceil(min), Math.floor(max)];
+  if (first >= last) {
+    return first === last ? [first] : [];
+  }
+  const inside = (tick: number) => tick >= first && tick <= last;
+  // A wall time skipped up to a day before `first` can move forward into it.
+  const stretches = offsetStretches(first - DAY, last, zone);
+  const utc = scaleUtc().domain([first, last]).ticks(count).map(Number);
+  const step = utc.length > 1 ? utc[1]! - utc[0]! : DAY;
+  // Below a day, d3's UTC ticks are multiples of their step, so they are round local times wherever the offset is one too.
+  if (step < DAY && stretches.every(([, offset]) => offset % step === 0)) {
+    return utc.filter(inside);
+  }
+  const span = last - first;
+  const ticks = stretches.flatMap(([start, offset], index) => {
+    const [end, next] = stretches[index + 1] ?? [last + 1, offset];
+    // A wall time the next offset skips moves forward by the skipped length.
+    const wallEnd = end + offset + Math.max(0, next - offset);
+    const anchor = Math.max(start, first) + offset;
+    return scaleUtc()
+      .domain([anchor, anchor + span])
+      .ticks(count)
+      .map(Number)
+      .filter((wall) => wall >= start + offset && wall < wallEnd)
+      .flatMap((wall) => fromWall(wall, zone));
+  });
+  return [...new Set(ticks.filter(inside))].sort((a, b) => a - b);
 };
 
 /** `[min, max]` widened to d3's round wall-clock times in `zone`; a single instant widens to its local day. */
@@ -154,27 +170,16 @@ export const niceTimeDomain = (
       ? [Math.min(low, min), high]
       : [clampEpoch(low - DAY), min];
   }
-  const [low, high] = [toWall(min, zone), toWall(max, zone)];
-  if (!calendar(...wallRange(min, max, zone))) {
+  const [first, last] = [Math.floor(min), Math.ceil(max)];
+  const span = last - first;
+  if (!calendar(...wallRange(first - span, last + span, zone))) {
     const [niceLow, niceHigh] = niceDomain(min, max, count);
     return [clampEpoch(niceLow), clampEpoch(niceHigh)];
   }
-  // Each end rounds in its own offset, at the step d3 picks for the real span.
-  const span = max - min;
-  const [lowWall] = scaleUtc()
-    .domain([low, low + span])
-    .nice(count)
-    .domain();
-  const [, highWall] = scaleUtc()
-    .domain([high - span, high])
-    .nice(count)
-    .domain();
-  const below = fromWall(lowWall!.getTime(), zone).filter((t) => t <= min);
-  const above = fromWall(highWall!.getTime(), zone).filter((t) => t >= max);
-  return [
-    below.length ? Math.max(...below) : min,
-    above.length ? Math.min(...above) : max,
-  ];
+  // Each end moves out to the nearest tick, at the step d3 picks for the real span.
+  const below = timeTicks(first - span, first, count, zone);
+  const [above] = timeTicks(last, last + span, count, zone);
+  return [below.at(-1) ?? first, above ?? last];
 };
 
 /** Tick count for an axis `length` pixels long, one tick per `spacing` pixels. */

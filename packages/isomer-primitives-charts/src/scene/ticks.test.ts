@@ -76,6 +76,15 @@ describe('d3 parity', () => {
   it('keeps log domains up to the largest double finite', () => {
     expect(niceLogDomain(1, Number.MAX_VALUE)).toEqual([1, Number.MAX_VALUE]);
   });
+
+  it('keeps a log domain above zero below the smallest normal double', () => {
+    const [low] = niceLogDomain(5e-324, 1);
+    expect(low).toBeGreaterThan(0);
+  });
+
+  it('rounds an all-negative domain up to 0, not -0', () => {
+    expect(Object.is(niceDomain(-5, -0.4, 5)[1], 0)).toBe(true);
+  });
 });
 
 describe('calendar ticks', () => {

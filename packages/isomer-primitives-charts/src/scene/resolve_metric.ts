@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { scalarOf } from '../coordinates';
-import { toEpoch } from '../format/date';
+import { coordinateOf } from '../coordinates';
 import type { ColorBand } from '../schema/colors';
 import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
@@ -23,6 +22,7 @@ import {
   toNumber,
 } from './common';
 import { categoricalColor, resolveColor, textOn } from './theme';
+import { niceDomain, niceTimeDomain } from './ticks';
 import type {
   MetricScene,
   MetricTile,
@@ -50,6 +50,19 @@ const bandFor = (
       (from === undefined || value >= from) && (to === undefined || value < to)
   );
 
+// A trend's extent; a single value widens as an axis domain does, and no values span `[0, 1]`.
+const trendDomain = (
+  values: number[],
+  widen: (only: number) => [number, number]
+): [number, number] => {
+  if (!values.length) {
+    return [0, 1];
+  }
+  const low = values.reduce((least, value) => Math.min(least, value), Infinity);
+  const high = values.reduce((most, value) => Math.max(most, value), -Infinity);
+  return low === high ? widen(low) : [low, high];
+};
+
 const withSign = (format: PortableFormat): PortableFormat =>
   format.kind === 'date' || format.kind === 'text'
     ? format
@@ -61,7 +74,7 @@ export const resolveMetric = (
   options: ResolveChartOptions
 ): MetricScene => {
   const resolution = createResolution(node.data, options);
-  const { chrome, data, scheme } = resolution;
+  const { chrome, data, scheme, timeZone } = resolution;
   const valueId = node.value.column;
   const valueColumn = resolution.column(valueId);
   const breakdownId = node.breakdown?.column;
@@ -99,10 +112,11 @@ export const resolveMetric = (
       if (max !== undefined) {
         position = max === 0 ? 0 : (value / max) * 100;
       } else {
+        // Halves keep a span across the largest doubles finite.
         position =
           highest === lowest
             ? 100
-            : ((value - lowest) / (highest - lowest)) * 100;
+            : ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
       }
     }
     const band = bandFor(bands, position);
@@ -130,21 +144,22 @@ export const resolveMetric = (
     string,
     NonNullable<MetricTile['trend']>['points'][number][]
   >();
+  let trendScale: 'linear' | 'temporal' = 'temporal';
   if (node.background?.kind === 'trend') {
     const { data: trendData, x, y, breakdown } = node.background;
     const trendResolution = createResolution(trendData, options);
+    trendScale =
+      trendResolution.column(x).type === 'number' ? 'linear' : 'temporal';
     trendData.rows.forEach((_, row) => {
-      const epoch = toEpoch(scalarOf(trendResolution.cell(x, row)));
-      if (epoch === undefined) {
+      const coordinate = coordinateOf(trendResolution.cell(x, row), trendScale);
+      if (coordinate === undefined) {
         return;
       }
       const key =
-        breakdown === undefined
-          ? ''
-          : cellKey(trendResolution.cell(breakdown, row));
+        breakdown === undefined ? '' : trendResolution.identity(breakdown, row);
       const points = trends.get(key) ?? [];
       points.push({
-        x: epoch,
+        x: coordinate,
         y: toNumber(trendResolution.cell(y, row)) ?? null,
       });
       trends.set(key, points);
@@ -221,7 +236,9 @@ export const resolveMetric = (
         text: shown,
         color: node.secondary.color
           ? resolveColor(node.secondary.color, scheme)
-          : chrome.textSubdued,
+          : color !== undefined && onBackground
+            ? textOn(background, chrome.background)
+            : chrome.textSubdued,
         ...(badge ? { badge } : {}),
       };
       tooltip.push({ label: secondaryColumn.label, value: secondaryText });
@@ -250,32 +267,20 @@ export const resolveMetric = (
       const key =
         node.background.breakdown === undefined
           ? ''
-          : cellKey(
-              breakdownId === undefined
-                ? null
-                : resolution.cell(breakdownId, row)
-            );
+          : breakdownId === undefined
+            ? cellKey(null)
+            : resolution.identity(breakdownId, row);
       const points = trends.get(key) ?? [];
       const xs = points.map(({ x }) => x);
       const ys = points.flatMap(({ y }) => (y === null ? [] : [y]));
       trend = {
         points,
-        xDomain: [
-          xs.length
-            ? xs.reduce((low, value) => Math.min(low, value), Infinity)
-            : 0,
-          xs.length
-            ? xs.reduce((high, value) => Math.max(high, value), -Infinity)
-            : 0,
-        ],
-        yDomain: [
-          ys.length
-            ? ys.reduce((low, value) => Math.min(low, value), Infinity)
-            : 0,
-          ys.length
-            ? ys.reduce((high, value) => Math.max(high, value), -Infinity)
-            : 0,
-        ],
+        xDomain: trendDomain(xs, (only) =>
+          trendScale === 'temporal'
+            ? niceTimeDomain(only, only, 2, timeZone)
+            : niceDomain(only, only, 2)
+        ),
+        yDomain: trendDomain(ys, (only) => niceDomain(only, only, 2)),
         color:
           color !== undefined && onBackground
             ? textOn(background, chrome.background)

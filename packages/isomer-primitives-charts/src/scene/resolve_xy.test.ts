@@ -688,3 +688,230 @@ describe('legend, points and selections', () => {
     expect(seriesIn(scene)[0]?.showPoints).toBe(false);
   });
 });
+
+describe('one visibility state, cell identity and bounds', () => {
+  const dates = (rows: Cell[][], changes: Partial<XyChartNode> = {}) =>
+    xy({
+      data: {
+        columns: [
+          { id: 'x', label: 'Time', type: 'date', role: 'dimension' },
+          { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+        ],
+        rows,
+      },
+      ...changes,
+    });
+
+  it('lists each series once in a tooltip, however many rows share its x', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [{ id: 'y', label: 'Y', type: 'number', role: 'metric' }],
+          rows: Array.from({ length: 50 }, (_, index) => [index]),
+        },
+        layers: [{ kind: 'data', mark: 'line', y: [{ column: 'y' }] }],
+      })
+    );
+    expect(
+      seriesIn(scene)[0]?.marks.map(({ tooltip }) => tooltip.entries.length)
+    ).toEqual(Array.from({ length: 50 }, () => 1));
+  });
+
+  it('orders ordinal categories by row, whatever the split', () => {
+    const scene = resolve(
+      splitBars([
+        ['q1', 'a', 1],
+        ['q2', 'b', 2],
+        ['q3', 'a', 3],
+      ])
+    );
+    expect(scene.categories.map(({ label }) => label)).toEqual([
+      'q1',
+      'q2',
+      'q3',
+    ]);
+  });
+
+  it('leaves hidden series out of x positions, the x domain and the summary', () => {
+    const node = splitBars([
+      [0, 'a', 1],
+      [1, 'a', 2],
+      [1000, 'b', 999],
+    ]);
+    node.data.columns[0] = {
+      id: 'x',
+      label: 'X',
+      type: 'number',
+      role: 'metric',
+    };
+    node.interactions = {
+      select: ['category'],
+      initial: { hiddenSeries: ['b'] },
+    };
+    const scene = resolve(node);
+    expect(scene.categories.map(({ x }) => x)).toEqual([0, 1]);
+    expect(scene.axes.x.domain[1]).toBeLessThan(1000);
+    expect(scene.summary).toContain('from 1 to 2');
+  });
+
+  it('selects only the rows a series drew', () => {
+    const node = splitBars([
+      [0, 'a', 1],
+      [null, 'a', 2],
+      [null, 'b', 3],
+    ]);
+    node.data.columns[0] = {
+      id: 'x',
+      label: 'X',
+      type: 'number',
+      role: 'metric',
+    };
+    node.interactions = { select: ['series', 'legend'] };
+    const scene = resolve(node);
+    expect(seriesIn(scene).map(({ selection }) => selection?.rows)).toEqual([
+      [0],
+      undefined,
+    ]);
+    expect(scene.legend.items.map(({ selection }) => selection?.rows)).toEqual([
+      [0],
+      undefined,
+    ]);
+    expect(scene.summary).toContain('from 1 to 1');
+  });
+
+  it('treats an epoch and an ISO string for one instant as one value', () => {
+    const node = splitBars([
+      ['q1', 0, 1],
+      ['q2', '1970-01-01T00:00:00Z', 2],
+    ]);
+    node.data.columns[1] = {
+      id: 's',
+      label: 'When',
+      type: 'date',
+      role: 'dimension',
+    };
+    expect(seriesIn(resolve(node)).map(({ key }) => key)).toEqual(['0']);
+    node.data.rows.reverse();
+    expect(seriesIn(resolve(node)).map(({ key }) => key)).toEqual([
+      '1970-01-01T00\\:00\\:00Z',
+    ]);
+    const scene = resolve(
+      dates(
+        [
+          [0, 1],
+          ['1970-01-01T00:00:00Z', 2],
+          [86_400_000, 3],
+        ],
+        { interactions: { select: ['category'] } }
+      )
+    );
+    expect(scene.categories[0]?.selection?.rows).toEqual([0, 1]);
+  });
+
+  it('keeps log domains positive and finite', () => {
+    for (const [low, high] of [
+      [1e308, 1e308],
+      [5e-324, 1],
+    ] as const) {
+      const [min, max] = resolve(
+        xy({
+          data: {
+            columns: [
+              { id: 'x', label: 'X', type: 'number', role: 'metric' },
+              { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+            ],
+            rows: [
+              [0, low],
+              [1, high],
+            ],
+          },
+          axes: { y: { scale: 'log' } },
+        })
+      ).axes.y!.domain as [number, number];
+      expect(min).toBeGreaterThan(0);
+      expect(Number.isFinite(max)).toBe(true);
+    }
+  });
+
+  it('keeps a custom log domain', () => {
+    expect(
+      resolve(
+        xy({
+          axes: {
+            y: { scale: 'log', domain: { kind: 'custom', min: 1, max: 100 } },
+          },
+        })
+      ).axes.y?.domain
+    ).toEqual([1, 100]);
+  });
+
+  it('ticks and labels annotations in the x format and its time zone', () => {
+    const at = Date.parse('2026-01-01T06:00:00Z');
+    const node = dates(
+      [
+        [at, 1],
+        [at + 6 * 3_600_000, 2],
+      ],
+      {
+        layers: [
+          { kind: 'data', mark: 'line', x: 'x', y: [{ column: 'y' }] },
+          { kind: 'annotations', events: [{ kind: 'point', at }] },
+        ],
+      }
+    );
+    node.data.columns[0]!.format = {
+      kind: 'date',
+      timeZone: 'Asia/Kolkata',
+      timeStyle: 'short',
+    };
+    const scene = resolve(node);
+    expect(
+      scene.axes.x.ticks.every(({ label }) => /:00\s?[AP]M$/.test(label))
+    ).toBe(true);
+    const annotation = scene.layers.find(
+      (layer) => layer.kind === 'annotation'
+    );
+    expect(
+      annotation?.kind === 'annotation' && annotation.annotation.tooltip.header
+    ).toMatch(/^11:30\s?AM$/);
+  });
+
+  it('keeps legend averages, medians and deviations finite near the largest double', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'metric' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [0, Number.MAX_VALUE],
+            [1, Number.MAX_VALUE],
+          ],
+        },
+        legend: { statistics: ['avg', 'median', 'standard_deviation'] },
+      })
+    );
+    expect(
+      scene.legend.items[0]?.statistics.map(({ value }) => value.includes('∞'))
+    ).toEqual([false, false, false]);
+  });
+
+  it('draws a -0 x cell at 0', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'metric' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [-0, 1],
+            [1, 2],
+          ],
+        },
+      })
+    );
+    expect(Object.is(seriesIn(scene)[0]?.marks[0]?.x, 0)).toBe(true);
+  });
+});

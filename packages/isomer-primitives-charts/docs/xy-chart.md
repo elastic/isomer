@@ -20,7 +20,7 @@ A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y:
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Neither carries rows, so neither is ever selected.
 
-A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, and a multivalue cell is `\` followed by the key part of its JSON text, such as `\["a"]`; no string produces either.
+A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, and a multivalue cell is `\` followed by the key part of its JSON text, such as `\["a"]`; no string produces either.
 
 Rules:
 
@@ -32,5 +32,6 @@ Rules:
 - At least one layer is a `data` layer.
 - Every data layer uses the same x column; absent means every row draws at one x position.
 - An annotation range's `from` is not after its `to`.
+- A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.
 - A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.

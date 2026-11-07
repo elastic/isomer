@@ -246,3 +246,113 @@ describe('metric trends', () => {
     ).toEqual([{ x: 1000, y: 5 }]);
   });
 });
+
+describe('metric bounds and identity', () => {
+  const max = Number.MAX_VALUE;
+  const red = { light: '#FF0000', dark: '#FF0000' };
+
+  it('colors percentage bands across the largest doubles', () => {
+    const node = buckets();
+    node.data.rows = [
+      ['lo', -max],
+      ['hi', max],
+    ];
+    node.value.color = 'bands';
+    node.value.bandsRange = 'percentage';
+    node.colors = {
+      bands: [
+        { to: 50, color: blue },
+        { from: 50, color: red },
+      ],
+    };
+    expect(
+      resolveChart(node, { scheme: 'light' }).tiles.map(
+        ({ background }) => background
+      )
+    ).toEqual(['#0000FF', '#FF0000']);
+  });
+
+  it('keeps secondary text readable on a colored tile', () => {
+    const node = withBackground(undefined);
+    node.value.color = { light: '#516381', dark: '#98A8C3' };
+    node.secondary = { column: 'max' };
+    for (const scheme of ['light', 'dark'] as const) {
+      const [tile] = resolveChart(node, { scheme }).tiles;
+      expect(tile?.secondary?.color).not.toBe(tile?.background);
+    }
+  });
+
+  it('plots a number trend x past the Date range', () => {
+    const node = withBackground({
+      kind: 'trend',
+      x: 'i',
+      y: 'v',
+      data: {
+        columns: [
+          { id: 'i', label: 'Index', type: 'number', role: 'dimension' },
+          { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+        ],
+        rows: [
+          [1e16, 1],
+          [2e16, 2],
+        ],
+      },
+    });
+    expect(
+      resolveChart(node, { scheme: 'light' }).tiles[0]?.trend?.points
+    ).toHaveLength(2);
+  });
+
+  it('widens a single-point trend', () => {
+    const node = withBackground({
+      kind: 'trend',
+      x: 't',
+      y: 'v',
+      data: {
+        columns: [
+          { id: 't', label: 'Time', type: 'date', role: 'dimension' },
+          { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+        ],
+        rows: [[5, 7]],
+      },
+    });
+    const trend = resolveChart(node, { scheme: 'light' }).tiles[0]?.trend;
+    expect(trend?.xDomain[0]).toBeLessThan(trend!.xDomain[1]);
+    expect(trend?.yDomain[0]).toBeLessThan(trend!.yDomain[1]);
+  });
+
+  it('matches a trend breakdown that encodes one instant differently', () => {
+    const node: MetricNode = {
+      type: 'metric',
+      data: {
+        columns: [
+          { id: 'd', label: 'Day', type: 'date', role: 'dimension' },
+          { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+        ],
+        rows: [[0, 1]],
+      },
+      breakdown: { column: 'd' },
+      value: { column: 'v' },
+      background: {
+        kind: 'trend',
+        breakdown: 'd',
+        x: 't',
+        y: 'v',
+        data: {
+          columns: [
+            { id: 'd', label: 'Day', type: 'date', role: 'dimension' },
+            { id: 't', label: 'Time', type: 'date', role: 'dimension' },
+            { id: 'v', label: 'Value', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            ['1970-01-01T00:00:00Z', 0, 1],
+            ['1970-01-01T00:00:00Z', 1000, 2],
+          ],
+        },
+      },
+    };
+    expect(
+      resolveChart(node, { scheme: 'light' }).tiles[0]?.trend?.points
+    ).toHaveLength(2);
+  });
+});

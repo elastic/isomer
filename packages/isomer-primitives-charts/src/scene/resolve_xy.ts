@@ -13,7 +13,6 @@ import type { PortableFormat } from '../schema/format';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import {
-  cellKey,
   createResolution,
   describe,
   keyPart,
@@ -119,7 +118,29 @@ const median = (values: number[]) => {
   const middle = Math.floor(sorted.length / 2);
   return sorted.length % 2
     ? sorted[middle]!
-    : (sorted[middle - 1]! + sorted[middle]!) / 2;
+    : sorted[middle - 1]! / 2 + sorted[middle]! / 2;
+};
+
+// The mean and variance, in units of the largest magnitude when a sum would pass the largest double.
+const moments = (values: number[]) => {
+  const largest = values.reduce(
+    (most, value) => Math.max(most, Math.abs(value)),
+    0
+  );
+  const unit = Number.isFinite(
+    values.reduce((sum, value) => sum + value * value, 0)
+  )
+    ? 1
+    : largest;
+  const scaled = values.map((value) => value / unit);
+  const mean = scaled.reduce((sum, value) => sum + value, 0) / scaled.length;
+  const variance =
+    scaled.reduce((sum, value) => sum + (value - mean) ** 2, 0) / scaled.length;
+  return {
+    mean: mean * unit,
+    deviation: Math.sqrt(variance) * unit,
+    variance: variance * unit * unit,
+  };
 };
 
 const statistic = (
@@ -131,11 +152,7 @@ const statistic = (
 ): string => {
   const present = ys.filter((value): value is number => value !== null);
   const sum = present.reduce((total, value) => total + value, 0);
-  const mean = present.length ? sum / present.length : Number.NaN;
-  const variance = present.length
-    ? present.reduce((total, value) => total + (value - mean) ** 2, 0) /
-      present.length
-    : Number.NaN;
+  const { mean, deviation, variance } = moments(present);
   const first = present[0];
   const last = present[present.length - 1];
   const value = (number: number | null | undefined) =>
@@ -191,7 +208,7 @@ const statistic = (
     case 'total':
       return value(present.length ? sum : null);
     case 'standard_deviation':
-      return value(present.length ? Math.sqrt(variance) : null);
+      return value(present.length ? deviation : null);
     case 'variance':
       return value(present.length ? variance : null);
     case 'distinct_count':
@@ -234,10 +251,10 @@ export const resolveXy = (
     if (xId === undefined) {
       return xScale === 'ordinal' ? '' : 0;
     }
-    const cell = resolution.cell(xId, row);
     if (xScale === 'ordinal') {
-      return cellKey(cell);
+      return resolution.identity(xId, row);
     }
+    const cell = resolution.cell(xId, row);
     const coordinate = coordinateOf(
       cell,
       xScale === 'time' ? 'temporal' : 'linear'
@@ -273,7 +290,7 @@ export const resolveXy = (
       const splitId = layer.splitBy;
       const groups = new Map<string, number[]>();
       for (const row of rows) {
-        const key = cellKey(resolution.cell(splitId, row));
+        const key = resolution.identity(splitId, row);
         const group = groups.get(key) ?? [];
         group.push(row);
         groups.set(key, group);
@@ -317,8 +334,11 @@ export const resolveXy = (
     return categoricalColor(index);
   };
 
-  // Categories: every x position with data, in axis order.
+  const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
+
+  // Categories: every x position a visible series has data at, in axis order; ordinal ones in row order. Each lists every row at its x.
   const categoryRows = new Map<number | string, Set<number>>();
+  const visibleXs = new Set<number | string>();
   for (const draft of drafts) {
     for (const row of draft.rows) {
       const x = xOf(row);
@@ -328,21 +348,35 @@ export const resolveXy = (
       const rows = categoryRows.get(x) ?? new Set<number>();
       rows.add(row);
       categoryRows.set(x, rows);
+      if (!hidden.has(draft.key)) {
+        visibleXs.add(x);
+      }
     }
   }
-  const categoryKeys = [...categoryRows.keys()];
-  if (xScale !== 'ordinal') {
-    (categoryKeys as number[]).sort((a, b) => a - b);
+  for (const x of categoryRows.keys()) {
+    if (!visibleXs.has(x)) {
+      categoryRows.delete(x);
+    }
   }
+  const firstRows = new Map(
+    [...categoryRows].map(([x, rows]) => [
+      x,
+      [...rows].reduce((first, row) => Math.min(first, row), Infinity),
+    ])
+  );
+  const categoryKeys = [...categoryRows.keys()].sort((a, b) =>
+    typeof a === 'number' && typeof b === 'number'
+      ? a - b
+      : firstRows.get(a)! - firstRows.get(b)!
+  );
   const categorySelection = (rows: number[]): SceneSelection | undefined => {
     if (!offers('category') || xId === undefined || xColumn === undefined) {
       return undefined;
     }
     const value = resolution.cell(xId, rows[0]!);
-    // Rows at one position can hold different raw cells, such as an epoch and an ISO string.
-    return rows.every(
-      (row) => cellKey(resolution.cell(xId, row)) === cellKey(value)
-    )
+    const identity = resolution.identity(xId, rows[0]!);
+    // Rows at one position can hold different cells, such as multivalue cells that share a first value.
+    return rows.every((row) => resolution.identity(xId, row) === identity)
       ? {
           target: 'category',
           rows,
@@ -358,7 +392,6 @@ export const resolveXy = (
     return { x, label: xText(rows[0]!), ...(selection ? { selection } : {}) };
   });
   const categoryOrder = new Map(categoryKeys.map((key, index) => [key, index]));
-  const hidden = new Set(node.interactions?.initial?.hiddenSeries ?? []);
   const numericXs = categoryKeys.filter(
     (x): x is number => typeof x === 'number'
   );
@@ -511,7 +544,12 @@ export const resolveXy = (
     if (hidden.has(draft.key)) {
       continue;
     }
+    const listed = new Set<number | string>();
     for (const { x, label } of marks) {
+      if (listed.has(x)) {
+        continue;
+      }
+      listed.add(x);
       const entries = tooltipEntries.get(x) ?? [];
       entries.push({ label: draft.label, value: label, color });
       tooltipEntries.set(x, entries);
@@ -538,7 +576,10 @@ export const resolveXy = (
     const values = draft.split
       ? { [draft.split.column]: draft.split.cell }
       : {};
-    const rows = [...draft.rows].sort((a, b) => a - b);
+    // Rows that drew a mark; a row whose x is missing draws none.
+    const rows = [...new Set(marks.flatMap(({ source }) => source.rows))].sort(
+      (a, b) => a - b
+    );
     const points = node.style?.points ?? 'auto';
 
     return {
@@ -599,6 +640,9 @@ export const resolveXy = (
 
   const xFormat: PortableFormat =
     xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
+  // Time ticks fall on round times in the zone their labels show.
+  const xZone =
+    xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone;
   // Hidden series count: they still decide what an axis means.
   const percentageAxis = (axis: 'y' | 'y2') => {
     const onAxis = drafts.filter((draft) => draft.axis === axis);
@@ -692,7 +736,7 @@ export const resolveXy = (
       high = Math.max(1, high);
     }
     const count = tickCount(yLength, 50, 5);
-    if (scale === 'log') {
+    if (scale === 'log' && domain.kind !== 'custom') {
       // A log axis has no zero or negatives; keep the positive part.
       const positive = values.filter((value) => value > 0);
       low =
@@ -701,7 +745,7 @@ export const resolveXy = (
           : positive.length
             ? positive.reduce((low, value) => Math.min(low, value), Infinity)
             : 1;
-      high = high > low ? high : low * 10;
+      high = high > low ? high : bounded(low * 10);
     }
     if (low === high && domain.kind !== 'custom') {
       [low, high] = niceDomain(low, high, count);
@@ -783,12 +827,12 @@ export const resolveXy = (
     ) {
       [low, high] =
         xScale === 'time'
-          ? niceTimeDomain(low, high, count, timeZone)
+          ? niceTimeDomain(low, high, count, xZone)
           : niceDomain(low, high, count);
     }
     const values =
       xScale === 'time'
-        ? timeTicks(low, high, count, timeZone)
+        ? timeTicks(low, high, count, xZone)
         : linearTicks(low, high, count);
     return {
       ...base,
@@ -885,7 +929,10 @@ export const resolveXy = (
             : chrome.textSubdued;
           const time = (value: number | string) => toEpoch(value) ?? 0;
           const when = (value: number) =>
-            resolution.formatAs(value, DEFAULT_FORMATS.date);
+            resolution.formatAs(
+              value,
+              xScale === 'ordinal' ? DEFAULT_FORMATS.date : xFormat
+            );
           if (event.kind === 'point') {
             const at = time(event.at);
             return [
@@ -927,12 +974,15 @@ export const resolveXy = (
   );
 
   const visibility = legendConfig?.visibility ?? 'auto';
-  const allYs = drafts.flatMap((draft) =>
-    draft.rows.flatMap((row) => {
-      const value = toNumber(resolution.cell(draft.yColumn, row));
-      return value === undefined ? [] : [{ value, column: draft.yColumn, row }];
-    })
-  );
+  const allYs = series.flatMap(({ key, source }, index) => {
+    const { yColumn } = drafts[index]!;
+    return hidden.has(key)
+      ? []
+      : source.rows.flatMap((row) => {
+          const value = toNumber(resolution.cell(yColumn, row));
+          return value === undefined ? [] : [{ value, column: yColumn, row }];
+        });
+  });
   const yLabels = [
     ...new Set(drafts.map(({ yColumn }) => resolution.column(yColumn).label)),
   ];
