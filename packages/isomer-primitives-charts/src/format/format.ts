@@ -22,7 +22,7 @@ interface FormatContext {
   readonly timeZone: string;
 }
 
-export interface FormatOptions {
+interface FormatOptions {
   /** Absent means `en`. */
   readonly locale?: string | undefined;
   /** Absent means `UTC`. */

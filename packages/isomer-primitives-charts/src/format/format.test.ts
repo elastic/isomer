@@ -11,6 +11,7 @@ import type { PortableFormat } from '../schema/format';
 
 import { toEpoch } from './date';
 import { defaultFormatFor, formatValue } from './format';
+import { dateFormat, numberFormat } from './intl';
 import { timeZoneOffset } from './zone';
 
 const MAY_5_2019 = Date.UTC(2019, 4, 5, 14, 4, 56, 201);
@@ -32,6 +33,11 @@ describe('number', () => {
     expect(formatValue(1234.5, number, { locale: 'not a locale!' })).toBe(
       '1,234.5'
     );
+  });
+
+  it('falls back to English, not the host default, for a well-formed locale the environment lacks', () => {
+    expect(numberFormat('zz-ZZ', {}).resolvedOptions().locale).toBe('en');
+    expect(dateFormat('zz-ZZ', {}).resolvedOptions().locale).toBe('en');
   });
 
   it('signs values that do not round to zero with exceptZero', () => {

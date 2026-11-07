@@ -9,7 +9,7 @@ import type { PortableFormat } from '../schema/format';
 
 import { dateFormat } from './intl';
 
-export type DateFormat = Extract<PortableFormat, { kind: 'date' }>;
+type DateFormat = Extract<PortableFormat, { kind: 'date' }>;
 
 const DEFAULT_STYLE = { dateStyle: 'medium', timeStyle: 'medium' } as const;
 

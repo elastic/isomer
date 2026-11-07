@@ -10,8 +10,8 @@
 const numberFormats = new Map<string, Intl.NumberFormat>();
 const dateFormats = new Map<string, Intl.DateTimeFormat>();
 
-/** `locale` when the environment accepts it as a BCP 47 tag, else `en`. */
-export const supportedLocale = (locale: string): string => {
+// `locale` when well-formed, else `en`. The constructors also fall back to `en` for a well-formed tag the environment lacks.
+const supportedLocale = (locale: string): string => {
   try {
     return Intl.getCanonicalLocales(locale)[0] ?? 'en';
   } catch {
@@ -19,6 +19,7 @@ export const supportedLocale = (locale: string): string => {
   }
 };
 
+/** A cached `Intl.NumberFormat`, falling back to `en` rather than the host default. */
 export const numberFormat = (
   locale: string,
   options: Intl.NumberFormatOptions
@@ -26,13 +27,13 @@ export const numberFormat = (
   const key = `${locale}|${JSON.stringify(options)}`;
   let format = numberFormats.get(key);
   if (!format) {
-    format = new Intl.NumberFormat(supportedLocale(locale), options);
+    format = new Intl.NumberFormat([supportedLocale(locale), 'en'], options);
     numberFormats.set(key, format);
   }
   return format;
 };
 
-/** Throws a `RangeError` for a time zone the environment does not know. */
+/** A cached `Intl.DateTimeFormat`, falling back to `en` rather than the host default. Throws a `RangeError` for a time zone the environment does not know. */
 export const dateFormat = (
   locale: string,
   options: Intl.DateTimeFormatOptions
@@ -40,7 +41,7 @@ export const dateFormat = (
   const key = `${locale}|${JSON.stringify(options)}`;
   let format = dateFormats.get(key);
   if (!format) {
-    format = new Intl.DateTimeFormat(supportedLocale(locale), options);
+    format = new Intl.DateTimeFormat([supportedLocale(locale), 'en'], options);
     dateFormats.set(key, format);
   }
   return format;

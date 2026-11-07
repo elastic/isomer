@@ -12,6 +12,7 @@ import { z } from '@elastic/isomer-sdk';
 
 import { crossSuperRefine } from './cross_field';
 
+/** The cross-field rules `portableFormatSchema` states in its description, one sentence each. */
 export const FORMAT_RULES = {
   dateStyle:
     'A date format uses `dateStyle` and `timeStyle`, or individual date and time fields, not both.',

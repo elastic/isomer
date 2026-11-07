@@ -13,7 +13,7 @@ import type {
 
 import { numberFormat, numberOptions } from './intl';
 
-export type DurationFormat = Extract<PortableFormat, { kind: 'duration' }>;
+type DurationFormat = Extract<PortableFormat, { kind: 'duration' }>;
 
 /** Milliseconds per unit. A month is 30 days and a year 365. */
 const MILLISECONDS: Record<DurationUnit, number> = {
