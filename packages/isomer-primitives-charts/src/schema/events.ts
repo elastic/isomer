@@ -10,7 +10,11 @@
 // means. Events refer to rows and columns of the node's own `data`, never to
 // pixels or an engine's indexes, so every renderer raises the same event.
 
-import { type ActionEventRef, requiredString, z } from '@elastic/isomer-sdk';
+import {
+  type ActionEventRef,
+  requiredString,
+  z,
+} from '@elastic/isomer-sdk/schema';
 
 import { cellSchema, type ChartColumn } from './data';
 import { navigationHrefSchema } from './links';

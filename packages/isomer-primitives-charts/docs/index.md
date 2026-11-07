@@ -47,6 +47,10 @@ A chart node carries everything a faithful rendering needs, and drawing it is th
 - **Its default is Isomer's.** A materializer states its source's value rather than relying on the default to match.
 - **A renderer reads it.** What only a host acts on, such as a saved object id, belongs in opaque `source` meta.
 
+## Where each entry loads
+
+`./schema` and `./scene` reach only zod and the SDK's React-free `./schema` entry, and `./resolve` adds d3-scale, so all three load in browsers and on servers without React. `pnpm check:module-graph` checks it on every change. A chart engine imports only `./scene`: it draws a Scene, and never formats, validates or resolves one. ESLint enforces it in every `@elastic/isomer-charts-*` package.
+
 ## Rules
 
 `z.toJSONSchema` drops refinements, so each cross-field rule is stated word for word in the description an agent reads, and a test checks that each check states its rule there. The rules are on each primitive's page.

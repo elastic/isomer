@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { requiredString, z } from '@elastic/isomer-sdk';
+import { requiredString, z } from '@elastic/isomer-sdk/schema';
 
 import { crossSuperRefine } from './cross_field';
 import { portableFormatSchema } from './format';

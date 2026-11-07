@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { PrimitiveExample } from '@elastic/isomer-sdk';
+import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
 import type { Cell, ChartColumn } from '../data';
 import type { PortableFormat } from '../format';

@@ -16,6 +16,9 @@ import tseslint from 'typescript-eslint';
 
 const SCREAMING_SNAKE = '^[A-Z][A-Z0-9_]*$';
 
+const CHART_ENGINE_IMPORTS =
+  'A chart engine imports only @elastic/isomer-primitives-charts/scene.';
+
 const namedSpecifiers = (typeGroup, valueGroup) => [
   'error',
   {
@@ -290,6 +293,38 @@ export default tseslint.config(
     },
   },
   {
+    // Chart engines draw a Scene; they never format, validate or resolve one.
+    files: ['packages/isomer-charts-*/src/**/*.{ts,tsx}'],
+    ignores: ['packages/isomer-charts-*/src/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@elastic/isomer-primitives-charts',
+              message: CHART_ENGINE_IMPORTS,
+            },
+          ],
+          patterns: [
+            {
+              regex: '^@elastic/isomer-primitives-charts/(?!scene$)',
+              message: CHART_ENGINE_IMPORTS,
+            },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'ImportExpression[source.value=/^@elastic\\/isomer-primitives-charts(?!\\/scene$)/]',
+          message: CHART_ENGINE_IMPORTS,
+        },
+      ],
+    },
+  },
+  {
     files: ['packages/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
@@ -322,6 +357,7 @@ export default tseslint.config(
       '.github',
       '.artifacts',
       '.claude',
+      'test-results',
     ],
   },
   {

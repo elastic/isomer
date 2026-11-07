@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk';
+import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 
 import { metricSingleValue } from './examples/metric';
 import { unsupportedVega } from './examples/unsupported';
