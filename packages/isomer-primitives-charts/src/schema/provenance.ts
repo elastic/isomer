@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { requiredString, z } from '@elastic/isomer-sdk';
+import { requiredString, z } from '@elastic/isomer-sdk/schema';
 
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
 

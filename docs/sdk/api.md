@@ -7,6 +7,7 @@ What each entry point exports, and which ones cost you a dependency.
 | Entry | Loads | Reach for it when |
 | --- | --- | --- |
 | `.` | zod, React, and the GFM parser and serializer (`mdast-util-from-markdown`, `micromark-extension-gfm`, `mdast-util-to-markdown`, `mdast-util-gfm`) | Defining primitives, packs, frames; validating |
+| `./schema` | zod | A pack's schemas, where React and a DOM cannot load: `z`, `requiredString`, `unresolvedBodyNodeSchema`, `navigationHref`, `assetUrl`, `NAVIGATION_HREF_RULE`, `ASSET_URL_RULE`, and the types `PrimitiveNode`, `ActionEventRef`, `PrimitiveCatalogEntry` and `PrimitiveExample`, each the same as from `.` |
 | `./html` | React, `react-dom/server`, and the JavaScript parser `acorn` | Rendering HTML, writing a style adapter |
 | `./text` | nothing | Text envelopes |
 | `./markdown` | zod and the GFM parser and serializer | Markdown envelopes and formatting |

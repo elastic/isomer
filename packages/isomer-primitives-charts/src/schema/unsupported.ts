@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-import { type PrimitiveNode, requiredString, z } from '@elastic/isomer-sdk';
+import {
+  type PrimitiveNode,
+  requiredString,
+  z,
+} from '@elastic/isomer-sdk/schema';
 
 import { navigationHrefSchema } from './links';
 import { provenanceSchema } from './provenance';

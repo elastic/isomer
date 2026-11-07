@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { requiredString, z } from '@elastic/isomer-sdk';
+import { requiredString, z } from '@elastic/isomer-sdk/schema';
 
 import { isoDateTimeEpoch } from '../iso_date_time';
 

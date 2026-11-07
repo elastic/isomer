@@ -18,6 +18,10 @@ Add or change a field only as [Adding a field](docs/index.md#adding-a-field) sta
 
 Expected values (formats, colors, orderings) come from this package's documented contract, written independently of its code, never from the code itself. Whether a materialized node matches its source panel is Kibana parity, tested in Kibana.
 
+## Module rules
+
+`./schema`, `./scene` and `./resolve` reach no React, Elastic Charts, runtime or Markdown parser; schemas import the SDK through `@elastic/isomer-sdk/schema`, never another SDK entry. `pnpm check:module-graph` enforces it, and `scripts/module_graph_rules.test.js` tests its rules. Chart engines (`@elastic/isomer-charts-*`) import only `./scene`, which holds the Scene types and event helpers, statically or with `import()`; ESLint enforces it, and `scripts/chart_engine_imports.test.js` tests the rule.
+
 ## Evidence required
 
 Every example validates through the SDK in a composition. A new rule has a failing case at its path and is stated in the authoring schema.
