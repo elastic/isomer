@@ -7,18 +7,18 @@ description: Lines, areas and bars over a shared x axis, with reference lines an
 
 Lines, areas and bars over a shared x axis, on the [chart core](core.md).
 
-| Field                      | What it is                                                                                                                                                 |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `orientation`              | `vertical` (default) or `horizontal`, which puts x on the vertical axis                                                                                    |
-| `layers`                   | Drawn in order. `data`, `referenceLines` and `annotations` layers                                                                                          |
-| `axes`                     | `x`, `y` and `y2`: `title?`, `ticks?`, `grid?`, `labelOrientation?`, `scale?`, `domain?`, `rounding?`                                                      |
-| `legend`                   | `visibility`, `position`, `inside` (a corner), `layout`, `columns`, `maxLines`, `size`, `statistics`, `seriesHeader`                                       |
-| `interactions`, `emphasis` | Selection, brushing, sync, a link, series hidden at first, and static highlights: [Interactions](interactions.md)                                          |
-| `style`                    | `interpolation`, `fitting`, `points`, `areaOpacity`, `areaFill`, `barMinimumHeight`, `barValueLabels`, `partialBuckets` (the queried range), `currentTime` |
+| Field                      | What it is                                                                                                                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orientation`              | `vertical` (default) or `horizontal`, which puts x on the vertical axis                                                                                                          |
+| `layers`                   | Drawn in order. `data`, `referenceLines` and `annotations` layers                                                                                                                |
+| `axes`                     | `x`, `y` and `y2`: `title?`, `ticks?`, `grid?`, `labelOrientation?`, `scale?`, `domain?`, `rounding?`                                                                            |
+| `legend`                   | `visibility`, `position`, `inside` (a corner), `layout`, `columns`, `maxLines`, `size`, `statistics`, `seriesHeader`                                                             |
+| `interactions`, `emphasis` | Selection, brushing, sync, a link, series hidden at first, and static highlights: [Interactions](interactions.md)                                                                |
+| `style`                    | `interpolation`, `fitting`, `points`, `areaOpacity` (0 to 1, default 0.3), `areaFill`, `barMinimumHeight`, `barValueLabels`, `partialBuckets` (the queried range), `currentTime` |
 
 A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y: [{ column, axis?, color? }], splitBy?, rows? }`. Every data layer uses the same `x` column; when it is absent, every row draws at one x position. When layers come from different source tables, the tables are appended to `data` in layer order, each layer names its `[start, end)` row range, and each table's x field maps to the one x column.
 
-Reference lines sit at fixed values; annotations are points or ranges at fixed times. Neither carries rows, so neither is ever selected.
+Reference lines sit at fixed values; annotations are points or ranges at fixed times. Both can carry a [glyph](core.md#glyphs) `icon`. Neither carries rows, so neither is ever selected.
 
 A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, prefixed by the y column id and ":" when the layer has more than one y column. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, and a multivalue cell is `\` followed by the key part of its JSON text, such as `\["a"]`; no string produces either.
 

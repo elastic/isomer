@@ -276,6 +276,13 @@ describe('missing values', () => {
     expect(formatValue('', { kind: 'text' })).toBe('(blank)');
     expect(formatValue('abc', number)).toBe('NaN');
   });
+
+  it('takes the node’s text, keeping defaults for the rest', () => {
+    const missing = { null: '—', empty: '' };
+    expect(formatValue(null, number, { missing })).toBe('—');
+    expect(formatValue('', { kind: 'text' }, { missing })).toBe('');
+    expect(formatValue('abc', number, { missing })).toBe('NaN');
+  });
 });
 
 describe('timeZoneOffset', () => {

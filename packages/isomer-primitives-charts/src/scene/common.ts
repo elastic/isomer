@@ -57,7 +57,7 @@ export const createResolution = (
   { scheme, size, locale = 'en', timeZone = 'UTC' }: ResolveChartOptions
 ): Resolution => {
   const formatAs = (value: Cell | undefined, format: PortableFormat) =>
-    formatValue(value, format, { locale, timeZone });
+    formatValue(value, format, { locale, timeZone, missing: data.missing });
   const byId = new Map(data.columns.map((column, index) => [column.id, index]));
   const index = (id: string) => {
     const found = byId.get(id);
