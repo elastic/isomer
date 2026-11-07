@@ -51,12 +51,24 @@ Rules:
 
 ## `PortableFormat`
 
-| `kind` | Fields | As Kibana's field format |
+Formats are ECMA-402 `Intl` options, formatted in the locale and time zone the chart is resolved in.
+
+| `kind` | Fields | Meaning |
 | --- | --- | --- |
-| `number`, `percent`, `bytes`, `bits` | `pattern`, `locale?`, `alwaysShowSign?`, `suffix?` | Numeral.js pattern, in Kibana's number locale (`format:number:defaultLocale`, `en` when absent) |
-| `duration` | `input`, `output`, `decimals?`, `showSuffix?`, `useShortSuffix?`, `includeSpaceWithSuffix?`, `suffix?` | `input` is the stored unit; `output` a unit, `humanize` or `humanizePrecise` |
-| `date` | `pattern`, `timeZone` | Moment.js pattern in an IANA time zone (`dateFormat:tz`, resolved) |
+| `number` | `minimumFractionDigits?`, `maximumFractionDigits?`, `signDisplay?`, `useGrouping?`, `notation?`, `suffix?` | As `Intl.NumberFormat`. `signDisplay: 'exceptZero'` signs values that do not round to zero |
+| `percent` | The `number` fields without `notation`, and `fractional?` | `fractional: false` means percentages rather than fractions |
+| `bytes`, `bits` | The `number` fields without `notation`, `base?` (1000 or 1024), `unitDisplay?` | The largest unit the value is at least one of |
+| `duration` | `input`, `output?`, the `number` fields without `notation`, `unitDisplay?` | `input` is the stored unit; `output` a unit, or `auto` for the largest unit the value is at least one of |
+| `date` | `timeZone?`, and `dateStyle?` and `timeStyle?` or `weekday?`, `year?`, `month?`, `day?`, `hour?`, `minute?`, `second?`, `fractionalSecondDigits?`, `timeZoneName?`; `hour12?` with either | As `Intl.DateTimeFormat`. Absent `timeZone` means the chart's |
 | `text` | — | The value as a string |
+
+Rules:
+
+- A date format uses `dateStyle` and `timeStyle`, or individual date and time fields, not both.
+
+A host whose formats have no portable equivalent, such as Kibana's field formats, maps each to the nearest portable one or sends `data.display` strings; it never formats at render time.
+
+[Format](format.md) formats every kind.
 
 ## `ColorValue`
 

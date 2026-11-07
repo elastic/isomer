@@ -14,7 +14,8 @@ import { BYTES, HOUR, NUMBER, PERCENT, START } from './shared';
 
 const DATE: PortableFormat = {
   kind: 'date',
-  pattern: 'MMM D, YYYY @ HH:mm:ss.SSS',
+  dateStyle: 'medium',
+  timeStyle: 'medium',
   timeZone: 'UTC',
 };
 
@@ -41,7 +42,7 @@ export const metricSingleValue: MetricNode = {
 export const metricExamples: PrimitiveExample<MetricNode>[] = [
   {
     name: 'Single value',
-    description: 'One number, formatted with Kibana’s default number pattern.',
+    description: 'One number, formatted with at most three decimals.',
     node: metricSingleValue,
   },
   {
@@ -158,9 +159,9 @@ export const metricExamples: PrimitiveExample<MetricNode>[] = [
             format: {
               kind: 'duration',
               input: 'milliseconds',
-              output: 'humanizePrecise',
-              decimals: 1,
-              useShortSuffix: true,
+              output: 'auto',
+              maximumFractionDigits: 1,
+              unitDisplay: 'short',
             },
           },
         ],
