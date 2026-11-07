@@ -41,8 +41,14 @@ import { gridModule } from './grid_styles';
 import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
 
-const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
-  CHARTS_THEME.grid;
+const {
+  rowHeight,
+  gap,
+  sectionGap,
+  headerHeight,
+  descriptionHeight,
+  nominalWidth,
+} = CHARTS_THEME.grid;
 const { handles: grid } = gridModule;
 
 const rowsHeight = (rows: number) =>
@@ -85,22 +91,20 @@ const headerOf = ({
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
-/** The context a panel's node renders with: the grid's own, with the panel's box when the grid knows its width. */
+/** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
   oneColumn: boolean
-): ChartsRenderContext | undefined => {
-  const size = context?.size;
-  if (!context || !size) {
-    return context;
-  }
+): ChartsRenderContext => {
+  const gridWidth = context?.size?.width ?? nominalWidth;
   const width = oneColumn
-    ? size.width
-    : (size.width - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
+    ? gridWidth
+    : (gridWidth - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
   const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
-  return contextWith(context, 'size', { width, height });
+  const size = { width, height };
+  return context ? contextWith(context, 'size', size) : { size };
 };
 
 type Context = ChartsReactEnv['context'];

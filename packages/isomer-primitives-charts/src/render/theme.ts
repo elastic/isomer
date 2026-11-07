@@ -18,6 +18,8 @@ export const CHARTS_THEME = {
     gap: 8,
     /** Space between a section title and its panels, in pixels. */
     sectionGap: 16,
+    /** The width a grid lays out for when the host gives none, in pixels. */
+    nominalWidth: 1200,
     /** Height of a panel header with a title, in pixels. */
     headerHeight: 24,
     /** Height of a grid or panel description line, in pixels. */
