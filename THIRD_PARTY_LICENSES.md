@@ -689,8 +689,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@tufjs/models` | 4.1.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/@tufjs/models` |  |
 | `@types/chai` | 5.2.3 | MIT | `node_modules/.pnpm/@types+chai@5.2.3/node_modules/@types/chai` |  |
 | `@types/conventional-commits-parser` | 5.0.2 | MIT | `node_modules/.pnpm/@types+conventional-commits-parser@5.0.2/node_modules/@types/conventional-commits-parser` |  |
-| `@types/d3-scale` | 3.3.2 | MIT | `node_modules/.pnpm/@types+d3-scale@3.3.2/node_modules/@types/d3-scale` |  |
-| `@types/d3-time` | 2.1.4 | MIT | `node_modules/.pnpm/@types+d3-time@2.1.4/node_modules/@types/d3-time` |  |
 | `@types/debug` | 4.1.13 | MIT | `node_modules/.pnpm/@types+debug@4.1.13/node_modules/@types/debug` |  |
 | `@types/deep-eql` | 4.0.2 | MIT | `node_modules/.pnpm/@types+deep-eql@4.0.2/node_modules/@types/deep-eql` |  |
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
@@ -859,13 +857,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `cssom` | 0.5.0 | MIT | `node_modules/.pnpm/cssom@0.5.0/node_modules/cssom` |  |
 | `cssstyle` | 2.3.0 | MIT | `node_modules/.pnpm/cssstyle@2.3.0/node_modules/cssstyle` |  |
 | `csstype` | 3.2.3 | MIT | `node_modules/.pnpm/csstype@3.2.3/node_modules/csstype` |  |
-| `d3-array` | 2.12.1 | BSD-3-Clause | `node_modules/.pnpm/d3-array@2.12.1/node_modules/d3-array` |  |
-| `d3-color` | 2.0.0 | BSD-3-Clause | `node_modules/.pnpm/d3-color@2.0.0/node_modules/d3-color` |  |
-| `d3-format` | 2.0.0 | BSD-3-Clause | `node_modules/.pnpm/d3-format@2.0.0/node_modules/d3-format` |  |
-| `d3-interpolate` | 2.0.1 | BSD-3-Clause | `node_modules/.pnpm/d3-interpolate@2.0.1/node_modules/d3-interpolate` |  |
-| `d3-scale` | 3.3.0 | BSD-3-Clause | `node_modules/.pnpm/d3-scale@3.3.0/node_modules/d3-scale` |  |
-| `d3-time` | 2.1.1 | BSD-3-Clause | `node_modules/.pnpm/d3-time@2.1.1/node_modules/d3-time` |  |
-| `d3-time-format` | 3.0.0 | BSD-3-Clause | `node_modules/.pnpm/d3-time-format@3.0.0/node_modules/d3-time-format` |  |
 | `dargs` | 8.1.0 | MIT | `node_modules/.pnpm/dargs@8.1.0/node_modules/dargs` |  |
 | `data-urls` | 3.0.2 | MIT | `node_modules/.pnpm/data-urls@3.0.2/node_modules/data-urls` |  |
 | `debug` | 4.4.3 | MIT | `node_modules/.pnpm/debug@4.4.3/node_modules/debug` |  |
@@ -1044,7 +1035,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `ini` | 6.0.0 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ini` |  |
 | `init-package-json` | 8.2.5 | ISC | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/init-package-json` |  |
 | `inline-style-parser` | 0.1.1 | MIT | `node_modules/.pnpm/inline-style-parser@0.1.1/node_modules/inline-style-parser` |  |
-| `internmap` | 1.0.1 | ISC | `node_modules/.pnpm/internmap@1.0.1/node_modules/internmap` |  |
 | `ip-address` | 10.5.0 | MIT | `node_modules/.pnpm/npm@11.19.1/node_modules/npm/node_modules/ip-address` |  |
 | `is-alphabetical` | 1.0.4 | MIT | `node_modules/.pnpm/is-alphabetical@1.0.4/node_modules/is-alphabetical` |  |
 | `is-alphabetical` | 2.0.1 | MIT | `node_modules/.pnpm/is-alphabetical@2.0.1/node_modules/is-alphabetical` |  |

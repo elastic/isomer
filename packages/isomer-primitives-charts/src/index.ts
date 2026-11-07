@@ -12,6 +12,7 @@ export {
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './scene/examples';
+export { formatAxisValue } from './scene/format_axis';
 export { type ChartNode, resolveChart } from './scene/resolve';
 export {
   type AxisId,
@@ -26,6 +27,7 @@ export {
   type SceneChrome,
   type SceneColor,
   type SceneColumn,
+  type SceneDomain,
   type SceneEnvironment,
   type SceneInteractions,
   type SceneKind,
@@ -38,7 +40,6 @@ export {
   type SceneSize,
   type SceneSource,
   type SceneTable,
-  type SceneTick,
   type SceneTooltip,
   type SceneTooltipEntry,
   type XyCategory,

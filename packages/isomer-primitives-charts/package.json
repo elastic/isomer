@@ -72,14 +72,12 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-sdk": "workspace:*",
-    "d3-scale": "3.3.0"
+    "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@elastic/eui-theme-borealis": "8.1.0",
-    "@types/d3-scale": "3.3.2"
+    "@elastic/eui-theme-borealis": "8.1.0"
   }
 }

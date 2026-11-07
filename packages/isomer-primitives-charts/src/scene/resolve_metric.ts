@@ -22,7 +22,6 @@ import {
   toNumber,
 } from './common';
 import { categoricalColor, resolveColor, textOn } from './theme';
-import { niceDomain, niceTimeDomain } from './ticks';
 import type {
   MetricScene,
   MetricTile,
@@ -50,7 +49,18 @@ const bandFor = (
       (from === undefined || value >= from) && (to === undefined || value < to)
   );
 
-// A trend's extent; a single value widens as an axis domain does, and no values span `[0, 1]`.
+const HALF_DAY = 43_200_000;
+
+// A single number widens by half its magnitude, at least one, either side.
+const widen = (only: number): [number, number] => {
+  const pad = Math.max(1, Math.abs(only) / 2);
+  return [
+    Math.max(-Number.MAX_VALUE, only - pad),
+    Math.min(Number.MAX_VALUE, only + pad),
+  ];
+};
+
+// A trend's extent; a single value widens, a time to its surrounding day, and no values span `[0, 1]`.
 const trendDomain = (
   values: number[],
   widen: (only: number) => [number, number]
@@ -74,7 +84,7 @@ export const resolveMetric = (
   options: ResolveChartOptions
 ): MetricScene => {
   const resolution = createResolution(node.data, options);
-  const { chrome, data, scheme, timeZone } = resolution;
+  const { chrome, data, scheme } = resolution;
   const valueId = node.value.column;
   const valueColumn = resolution.column(valueId);
   const breakdownId = node.breakdown?.column;
@@ -277,10 +287,10 @@ export const resolveMetric = (
         points,
         xDomain: trendDomain(xs, (only) =>
           trendScale === 'temporal'
-            ? niceTimeDomain(only, only, 2, timeZone)
-            : niceDomain(only, only, 2)
+            ? [only - HALF_DAY, only + HALF_DAY]
+            : widen(only)
         ),
-        yDomain: trendDomain(ys, (only) => niceDomain(only, only, 2)),
+        yDomain: trendDomain(ys, widen),
         color:
           color !== undefined && onBackground
             ? textOn(background, chrome.background)

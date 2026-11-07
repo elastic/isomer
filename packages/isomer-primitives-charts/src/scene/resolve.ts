@@ -18,7 +18,7 @@ export type ChartNode = MetricNode | XyChartNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
- * `options.scheme`, every string formatted, ticks for `options.size`, and the
+ * `options.scheme`, every string formatted, axis and series intent, and the
  * rows and columns each selectable part stands for. Pure and synchronous; the
  * result is plain JSON data.
  */

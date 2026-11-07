@@ -10,8 +10,8 @@ import { describe, expect, it } from 'vitest';
 import type { Cell } from '../schema/data';
 import { type XyChartNode, xyChartSchema } from '../schema/xy_chart';
 
+import { formatAxisValue } from './format_axis';
 import { resolveChart } from './resolve';
-import { niceDomain, niceTimeDomain } from './ticks';
 import type { XyScene } from './types';
 
 const seriesIn = (scene: XyScene) =>
@@ -107,12 +107,7 @@ describe('xy series and categories', () => {
     expect(
       scene.categories.map(({ selection }) => selection?.values.x)
     ).toEqual(['a', 'b', null, '(null)']);
-    expect(seriesIn(scene)[0]?.marks.map(({ y0, y }) => [y0, y])).toEqual([
-      [0, 1],
-      [0, 2],
-      [0, 3],
-      [0, 4],
-    ]);
+    expect(seriesIn(scene)[0]?.marks.map(({ y }) => y)).toEqual([1, 2, 3, 4]);
   });
 
   it('separates array split cells from scalar JSON text', () => {
@@ -157,16 +152,14 @@ describe('xy series and categories', () => {
     ).toEqual(['#16C5C0', '#A6EDEA']);
   });
 
-  it('indexes tooltips and grouping for a large ordinal series', () => {
+  it('indexes grouping for a large ordinal series', () => {
     const node = splitBars(
       Array.from({ length: 10000 }, (_, index) => [`x${index}`, 'A', index])
     );
     const scene = resolveChart(node, { scheme: 'light' });
     const marks = seriesIn(scene)[0]!.marks;
     expect(marks).toHaveLength(10000);
-    expect(marks[9999]?.tooltip.entries).toEqual([
-      expect.objectContaining({ label: 'A', value: '9,999' }),
-    ]);
+    expect(marks[9999]?.label).toBe('9,999');
   });
 
   it('places multivalue cells at their first non-null value', () => {
@@ -208,11 +201,12 @@ describe('xy series and categories', () => {
 
 describe('hidden series', () => {
   it.each(['stacked', 'percentage'] as const)(
-    'excludes hidden series from %s geometry and domains',
+    'marks a %s series hidden and leaves its stacking to the engine',
     (stack) => {
       const node = splitBars([
         ['x', 'A', 1000],
         ['x', 'B', 20],
+        ['only A', 'A', 5],
       ]);
       node.layers = [
         {
@@ -226,14 +220,17 @@ describe('hidden series', () => {
       ];
       node.interactions = { initial: { hiddenSeries: ['A'] } };
       const scene = resolveChart(node, { scheme: 'light' });
-      expect(seriesIn(scene)[1]?.marks[0]).toMatchObject({
-        y0: 0,
-        y: stack === 'stacked' ? 20 : 1,
-      });
-      expect(scene.axes.y?.domain).toEqual([0, stack === 'stacked' ? 20 : 1]);
       expect(
-        seriesIn(scene)[1]?.marks[0]?.tooltip.entries.map(({ label }) => label)
-      ).toEqual(['B']);
+        seriesIn(scene).map(({ marks }) => marks.map(({ y }) => y))
+      ).toEqual([[1000, 5], [20]]);
+      expect(scene.legend.items.map(({ hidden }) => hidden)).toEqual([
+        true,
+        false,
+      ]);
+      expect(scene.categories.map(({ label }) => label)).toEqual([
+        'x',
+        'only A',
+      ]);
     }
   );
 
@@ -254,8 +251,7 @@ describe('hidden series', () => {
     ];
     node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
     const scene = resolveChart(node, { scheme: 'light' });
-    expect(scene.axes.y2?.domain).toEqual([49, 51]);
-    expect(scene.axes.y2?.ticks.length).toBeGreaterThan(0);
+    expect(scene.axes.y2?.position).toBe('right');
   });
 
   it('keeps a percentage axis when every stacked series is hidden', () => {
@@ -275,9 +271,8 @@ describe('hidden series', () => {
       { kind: 'referenceLines', lines: [{ value: 0.8 }] },
     ];
     node.interactions = { initial: { hiddenSeries: ['A', 'B'] } };
-    const axis = resolveChart(node, { scheme: 'light' }).axes.y;
-    expect(axis?.domain).toEqual([0, 1]);
-    expect(axis?.ticks.at(-1)?.label).toBe('100%');
+    const scene = resolveChart(node, { scheme: 'light' });
+    expect(formatAxisValue(scene, scene.axes.y!, 1)).toBe('100%');
   });
 });
 
@@ -324,31 +319,6 @@ describe('xy axes', () => {
     ).toEqual(['1970', '80%', '0.8']);
   });
 
-  it('widens singleton domains without dragging fitted data to zero', () => {
-    expect(niceDomain(100, 100, 5)).toEqual([98, 102]);
-    const t = Date.UTC(2026, 0, 1);
-    const [low, high] = niceTimeDomain(t, t, 5, 'UTC');
-    expect(low).toBeLessThanOrEqual(t);
-    expect(high).toBeGreaterThan(t);
-    const scene = resolve(
-      xy({
-        data: {
-          columns: [
-            { id: 'x', label: 'X', type: 'date', role: 'dimension' },
-            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
-          ],
-          rows: [[t, 100]],
-        },
-        axes: {
-          x: { rounding: false },
-          y: { domain: { kind: 'fit' }, rounding: false },
-        },
-      })
-    );
-    expect(scene.axes.x.domain[0]).toBeLessThan(Number(scene.axes.x.domain[1]));
-    expect(scene.axes.y?.domain).toEqual([98, 102]);
-  });
-
   it('includes zero for bars and areas, and fits line-only full axes', () => {
     for (const mark of ['line', 'bar', 'area'] as const) {
       const scene = resolve(
@@ -361,9 +331,11 @@ describe('xy axes', () => {
           axes: { y: { rounding: false } },
         })
       );
-      expect(scene.axes.y?.domain).toEqual(
-        mark === 'line' ? [40, 90] : [0, 90]
-      );
+      expect(scene.axes.y?.domain).toEqual({
+        kind: 'data',
+        includeZero: mark !== 'line',
+        rounding: false,
+      });
     }
   });
 
@@ -376,18 +348,24 @@ describe('xy axes', () => {
     node.layers = [
       { kind: 'data', mark: 'line', x: 'x', y: [{ column: 'y' }] },
     ];
-    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual([
-      0, 10,
-    ]);
+    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual({
+      kind: 'data',
+      includeZero: false,
+      rounding: true,
+    });
     node.axes = { x: { rounding: false } };
-    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual([
-      1.2, 9.1,
-    ]);
+    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual({
+      kind: 'data',
+      includeZero: false,
+      rounding: false,
+    });
     node.axes.x!.domain = { kind: 'custom', min: 1.3, max: 8.7 };
     node.axes.x!.rounding = true;
-    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual([
-      1.3, 8.7,
-    ]);
+    expect(resolveChart(node, { scheme: 'light' }).axes.x.domain).toEqual({
+      kind: 'custom',
+      min: 1.3,
+      max: 8.7,
+    });
   });
 
   it.each(['linear', 'temporal'] as const)(
@@ -436,34 +414,6 @@ describe('xy axes', () => {
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
   });
 
-  it('splits a percentage stack evenly when its total passes the largest double', () => {
-    const node = splitBars([
-      ['a', 's', Number.MAX_VALUE],
-      ['a', 't', Number.MAX_VALUE],
-      ['b', 's', 1],
-      ['b', 't', 3],
-    ]);
-    const [layer] = node.layers;
-    const scene = resolve(
-      xyChartSchema.parse({
-        ...node,
-        layers: [{ ...layer, stack: 'percentage' }],
-      })
-    );
-    expect(
-      seriesIn(scene).map(({ marks }) => marks.map(({ y0, y }) => [y0, y]))
-    ).toEqual([
-      [
-        [0, 0.5],
-        [0, 0.25],
-      ],
-      [
-        [0.5, 1],
-        [0.25, 1],
-      ],
-    ]);
-  });
-
   it('accepts representable strings and missing cells on an explicit temporal axis', () => {
     const scene = resolve(
       xy({
@@ -500,13 +450,8 @@ describe('xy axes', () => {
         });
         expect(xyChartSchema.safeParse(node).success).toBe(true);
         const scene = resolveChart(node, { scheme: 'light', timeZone });
-        const [low, high] = scene.axes.x.domain as [number, number];
-        expect(low).toBeLessThan(high);
-        expect(low).toBeGreaterThanOrEqual(-8.64e15);
-        expect(high).toBeLessThanOrEqual(8.64e15);
-        expect(low).toBeLessThanOrEqual(epoch);
-        expect(high).toBeGreaterThanOrEqual(epoch);
-        expect(scene.axes.x.ticks.length).toBeGreaterThan(0);
+        expect(seriesIn(scene)[0]?.marks[0]?.x).toBe(epoch);
+        expect(scene.axes.x.timeZone).toBe(timeZone);
       }
     }
   );
@@ -669,7 +614,7 @@ describe('legend, points and selections', () => {
     }
   );
 
-  it('uses projected distances to hide automatic points in clusters', () => {
+  it('passes automatic points to the engine', () => {
     const scene = resolve(
       xy({
         data: {
@@ -685,11 +630,11 @@ describe('legend, points and selections', () => {
         },
       })
     );
-    expect(seriesIn(scene)[0]?.showPoints).toBe(false);
+    expect(seriesIn(scene)[0]?.points).toBe('auto');
   });
 });
 
-describe('one visibility state, cell identity and bounds', () => {
+describe('visibility, cell identity and bounds', () => {
   const dates = (rows: Cell[][], changes: Partial<XyChartNode> = {}) =>
     xy({
       data: {
@@ -701,21 +646,6 @@ describe('one visibility state, cell identity and bounds', () => {
       },
       ...changes,
     });
-
-  it('lists each series once in a tooltip, however many rows share its x', () => {
-    const scene = resolve(
-      xy({
-        data: {
-          columns: [{ id: 'y', label: 'Y', type: 'number', role: 'metric' }],
-          rows: Array.from({ length: 50 }, (_, index) => [index]),
-        },
-        layers: [{ kind: 'data', mark: 'line', y: [{ column: 'y' }] }],
-      })
-    );
-    expect(
-      seriesIn(scene)[0]?.marks.map(({ tooltip }) => tooltip.entries.length)
-    ).toEqual(Array.from({ length: 50 }, () => 1));
-  });
 
   it('orders ordinal categories by row, whatever the split', () => {
     const scene = resolve(
@@ -732,7 +662,7 @@ describe('one visibility state, cell identity and bounds', () => {
     ]);
   });
 
-  it('leaves hidden series out of x positions, the x domain and the summary', () => {
+  it('keeps hidden series in x positions and leaves them out of the summary', () => {
     const node = splitBars([
       [0, 'a', 1],
       [1, 'a', 2],
@@ -749,8 +679,7 @@ describe('one visibility state, cell identity and bounds', () => {
       initial: { hiddenSeries: ['b'] },
     };
     const scene = resolve(node);
-    expect(scene.categories.map(({ x }) => x)).toEqual([0, 1]);
-    expect(scene.axes.x.domain[1]).toBeLessThan(1000);
+    expect(scene.categories.map(({ x }) => x)).toEqual([0, 1, 1000]);
     expect(scene.summary).toContain('from 1 to 2');
   });
 
@@ -808,31 +737,6 @@ describe('one visibility state, cell identity and bounds', () => {
     expect(scene.categories[0]?.selection?.rows).toEqual([0, 1]);
   });
 
-  it('keeps log domains positive and finite', () => {
-    for (const [low, high] of [
-      [1e308, 1e308],
-      [5e-324, 1],
-    ] as const) {
-      const [min, max] = resolve(
-        xy({
-          data: {
-            columns: [
-              { id: 'x', label: 'X', type: 'number', role: 'metric' },
-              { id: 'y', label: 'Y', type: 'number', role: 'metric' },
-            ],
-            rows: [
-              [0, low],
-              [1, high],
-            ],
-          },
-          axes: { y: { scale: 'log' } },
-        })
-      ).axes.y!.domain as [number, number];
-      expect(min).toBeGreaterThan(0);
-      expect(Number.isFinite(max)).toBe(true);
-    }
-  });
-
   it('keeps a custom log domain', () => {
     expect(
       resolve(
@@ -842,10 +746,10 @@ describe('one visibility state, cell identity and bounds', () => {
           },
         })
       ).axes.y?.domain
-    ).toEqual([1, 100]);
+    ).toEqual({ kind: 'custom', min: 1, max: 100 });
   });
 
-  it('ticks and labels annotations in the x format and its time zone', () => {
+  it('labels the axis and annotations in the x format and its time zone', () => {
     const at = Date.parse('2026-01-01T06:00:00Z');
     const node = dates(
       [
@@ -865,9 +769,8 @@ describe('one visibility state, cell identity and bounds', () => {
       timeStyle: 'short',
     };
     const scene = resolve(node);
-    expect(
-      scene.axes.x.ticks.every(({ label }) => /:00\s?[AP]M$/.test(label))
-    ).toBe(true);
+    expect(scene.axes.x.timeZone).toBe('Asia/Kolkata');
+    expect(formatAxisValue(scene, scene.axes.x, at)).toMatch(/^11:30\s?AM$/);
     const annotation = scene.layers.find(
       (layer) => layer.kind === 'annotation'
     );

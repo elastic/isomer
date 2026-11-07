@@ -22,7 +22,7 @@ import type {
 
 export interface ResolveChartOptions {
   scheme: ColorScheme;
-  /** The size ticks and layout are chosen for. */
+  /** The size the host draws the Scene at, passed through. */
   size?: SceneSize | undefined;
   /** Absent means `en`. */
   locale?: string | undefined;
