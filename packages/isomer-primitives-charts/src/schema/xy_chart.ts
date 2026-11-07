@@ -7,12 +7,7 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import {
-  continuousScaleOf,
-  coordinateOf,
-  MAX_EPOCH,
-  scalarOf,
-} from '../coordinates';
+import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../coordinates';
 
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
@@ -61,7 +56,10 @@ export const XY_RULES = {
   sharedX:
     'Every data layer uses the same x column; absent means every row draws at one x position.',
   xCoordinate:
-    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`; a multivalue cell uses its first non-null value.',
+    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`.',
+  singleValued: 'The `x`, `y` and `splitBy` columns are not `multivalue`.',
+  dateEncoding:
+    'A `date` column holds one encoding: every non-missing value is epoch milliseconds, or every one is an ISO 8601 date-time.',
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
@@ -232,6 +230,13 @@ const xAxisSchema = z.strictObject({
     ])
     .optional(),
   rounding: yAxisSchema.shape.rounding,
+  interval: z
+    .number()
+    .positive()
+    .optional()
+    .describe(
+      'The bucket width in x units, such as milliseconds on a `temporal` axis, from the aggregation that built the x column. It decides which buckets cross `style.partialBuckets` and how wide an engine draws bars. Absent means the smallest spacing between x values. Ignored on an `ordinal` axis.'
+    ),
 });
 
 const XY_DESCRIPTION = [
@@ -390,14 +395,17 @@ const dataLayerReferences = (
 ): ColumnReference[] => {
   const base = ['layers', layerIndex];
   return [
-    ...(layer.x === undefined ? [] : [{ path: [...base, 'x'], id: layer.x }]),
+    ...(layer.x === undefined
+      ? []
+      : [{ path: [...base, 'x'], id: layer.x, single: true }]),
     ...(layer.splitBy === undefined
       ? []
-      : [{ path: [...base, 'splitBy'], id: layer.splitBy }]),
+      : [{ path: [...base, 'splitBy'], id: layer.splitBy, single: true }]),
     ...layer.y.map(({ column }, yIndex) => ({
       path: [...base, 'y', yIndex, 'column'],
       id: column,
       types: ['number'] as const,
+      single: true,
     })),
   ];
 };
@@ -462,11 +470,12 @@ const checkXCoordinates = (node: XyChartInput, context: Issues) => {
       return row >= start && row < end;
     });
   node.data.rows.forEach((cells, row) => {
-    const value = scalarOf(cells[column]);
+    const value = cells[column];
     if (
       drawn(row) &&
       value !== null &&
       value !== undefined &&
+      !Array.isArray(value) &&
       coordinateOf(value, scale) === undefined
     ) {
       context.addIssue({
@@ -475,6 +484,31 @@ const checkXCoordinates = (node: XyChartInput, context: Issues) => {
         message: XY_RULES.xCoordinate,
       });
     }
+  });
+};
+
+const checkDateEncodings = ({ data }: XyChartInput, context: Issues) => {
+  data.columns.forEach(({ type }, column) => {
+    if (type !== 'date') {
+      return;
+    }
+    let encoding: string | undefined;
+    data.rows.forEach((cells, row) => {
+      for (const value of [cells[column]].flat()) {
+        if (typeof value !== 'number' && typeof value !== 'string') {
+          continue;
+        }
+        encoding ??= typeof value;
+        if (typeof value !== encoding) {
+          context.addIssue({
+            code: 'custom',
+            path: ['data', 'rows', row, column],
+            message: XY_RULES.dateEncoding,
+          });
+          return;
+        }
+      }
+    });
   });
 };
 
@@ -509,8 +543,10 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       checkColumnReferences(node.data, references, context, {
         missing: COLUMN_REF_RULE,
         type: XY_RULES.yType,
+        single: XY_RULES.singleValued,
       });
       checkXCoordinates(node, context);
+      checkDateEncodings(node, context);
       checkInteractions(node, context, { brushColumns });
     },
     [
@@ -518,6 +554,8 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
       XY_RULES.yType,
       XY_RULES.sharedX,
       XY_RULES.xCoordinate,
+      XY_RULES.singleValued,
+      XY_RULES.dateEncoding,
       XY_RULES.rows,
       XY_RULES.stack,
       XY_RULES.dataLayer,

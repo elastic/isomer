@@ -251,6 +251,8 @@ export interface SceneAxis {
   readonly timeZone?: string;
   /** Absent on an ordinal axis, whose positions are the Scene's `categories` in order. */
   readonly domain?: SceneDomain;
+  /** On a continuous x axis, the bucket width the node states, in axis units; an engine sizes bars by it. */
+  readonly interval?: number;
   readonly title?: string;
   readonly showTicks: boolean;
   readonly showGrid: boolean;
