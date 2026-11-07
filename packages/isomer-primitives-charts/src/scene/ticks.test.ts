@@ -189,6 +189,18 @@ describe('wall-clock ticks in a zone', () => {
     }
   );
 
+  it.each([
+    ['repeats', '2026-11-01T06:00:00Z', 'America/New_York'],
+    ['skips', '2026-03-08T07:00:00Z', 'America/New_York'],
+    ['skips half', '2026-10-03T15:30:00Z', 'Australia/Lord_Howe'],
+  ])(
+    'ticks a two-millisecond range by the millisecond across a change that %s an hour',
+    (_, change, zone) => {
+      const at = Date.parse(change);
+      expect(timeTicks(at - 1, at + 1, 5, zone)).toEqual([at - 1, at, at + 1]);
+    }
+  );
+
   it('rounds each end of a range across a repeated hour in its own offset', () => {
     // 01:47 EDT to 01:13 EST.
     expect(

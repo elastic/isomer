@@ -84,6 +84,28 @@ const wallRange = (min: number, max: number, zone: string) => {
   ] as const;
 };
 
+// `[from, to]` cut where `zone`'s offset changes, as `[from, to, offset]`; a stretch whose ends share an offset stays whole.
+const offsetSegments = (
+  from: number,
+  to: number,
+  zone: string
+): Array<[number, number, number]> => {
+  const offset = offsetAt(from, zone);
+  if (offset === offsetAt(to, zone)) {
+    return [[from, to, offset]];
+  }
+  let [before, after] = [from, to];
+  while (after - before > 1) {
+    const middle = Math.floor((before + after) / 2);
+    if (offsetAt(middle, zone) === offset) {
+      before = middle;
+    } else {
+      after = middle;
+    }
+  }
+  return [[from, after, offset], ...offsetSegments(after, to, zone)];
+};
+
 /** d3's time ticks at round wall-clock times in `zone`, as dense as d3's ticks over the same span in UTC. */
 export const timeTicks = (
   min: number,
@@ -94,13 +116,24 @@ export const timeTicks = (
   if (min === max) {
     return [min];
   }
-  const [low, high] = wallRange(min, max, zone);
-  if (!calendar(low, high)) {
+  if (!calendar(...wallRange(min, max, zone))) {
     return linearTicks(min, max, count);
   }
-  const ticks = scaleUtc()
-    .domain([low, high])
-    .ticks((count * (high - low)) / (max - min))
+  const ticks = offsetSegments(min, max, zone)
+    .flatMap(([from, to, offset], index, segments) => {
+      // A wall time the next offset skips lands that far later, so it can still fall inside `max`.
+      const skipped = Math.max(
+        0,
+        (segments[index + 1]?.[2] ?? offset) - offset
+      );
+      const low = clampEpoch(from + offset);
+      const high = clampEpoch(Math.min(max, to + skipped) + offset);
+      return high > low
+        ? scaleUtc()
+            .domain([low, high])
+            .ticks((count * (high - low)) / (max - min))
+        : [];
+    })
     .flatMap((tick) => fromWall(tick.getTime(), zone))
     .filter((tick) => tick >= min && tick <= max);
   return [...new Set(ticks)].sort((a, b) => a - b);
