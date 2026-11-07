@@ -388,6 +388,27 @@ describe('xy time axis over a non-date column', () => {
     expect(formatAxisValue(scene, scene.axes.x, at)).toMatch(/^Nov 6, 2026/);
     expect(scene.categories[0]!.label).toMatch(/^Nov 6, 2026/);
   });
+
+  it('keeps a format the x column states', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            {
+              id: 'x',
+              label: 'X',
+              type: 'date',
+              role: 'dimension',
+              format: { kind: 'text' },
+            },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [['2026-11-06T00:00:00Z', 1]],
+        },
+      })
+    );
+    expect(scene.categories[0]!.label).toBe('2026-11-06T00:00:00Z');
+  });
 });
 
 describe('xy summary', () => {

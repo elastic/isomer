@@ -235,9 +235,9 @@ export const resolveXy = (
   })();
   const columnFormat =
     xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
-  // A time axis over a column that is not a `date` column still prints dates.
+  // A time axis over a column with no format of its own prints dates.
   const xFormat: PortableFormat =
-    xScale === 'time' && columnFormat.kind !== 'date'
+    xScale === 'time' && xColumn?.format === undefined
       ? DEFAULT_FORMATS.date
       : columnFormat;
   const xText = (row: number) =>
