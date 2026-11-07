@@ -15,41 +15,58 @@ import { formatNumber, numberFormat, numberOptions } from './intl';
 
 type DurationFormat = Extract<PortableFormat, { kind: 'duration' }>;
 
-/** Milliseconds per unit. A month is 30 days and a year 365. */
-const MILLISECONDS: Record<DurationUnit, number> = {
-  picoseconds: 1e-9,
-  nanoseconds: 1e-6,
-  microseconds: 1e-3,
-  milliseconds: 1,
-  seconds: 1e3,
-  minutes: 6e4,
-  hours: 36e5,
-  days: 864e5,
-  weeks: 6048e5,
-  months: 2592e6,
-  years: 31536e6,
+/** Picoseconds per unit, each an exact integer. A month is 30 days and a year 365. */
+const PICOSECONDS: Record<DurationUnit, number> = {
+  picoseconds: 1,
+  nanoseconds: 1e3,
+  microseconds: 1e6,
+  milliseconds: 1e9,
+  seconds: 1e12,
+  minutes: 6e13,
+  hours: 3.6e15,
+  days: 8.64e16,
+  weeks: 6.048e17,
+  months: 2.592e18,
+  years: 3.1536e19,
 };
 
-const LARGEST_FIRST: readonly DurationOutputUnit[] = [
-  'years',
-  'months',
-  'weeks',
-  'days',
-  'hours',
-  'minutes',
-  'seconds',
-  'milliseconds',
-  'microseconds',
-  'nanoseconds',
-];
+// `Intl` names units in the singular: `hour`, not `hours`.
+const intlUnit = (unit: DurationOutputUnit) => unit.slice(0, -1);
 
-const isOutputUnit = (unit: DurationUnit): unit is DurationOutputUnit =>
+// Older engines name no `microsecond` or `nanosecond`.
+const NAMED_UNITS = new Set<string>(
+  typeof Intl.supportedValuesOf === 'function'
+    ? Intl.supportedValuesOf('unit')
+    : []
+);
+
+const LARGEST_FIRST: readonly DurationOutputUnit[] = (
+  [
+    'years',
+    'months',
+    'weeks',
+    'days',
+    'hours',
+    'minutes',
+    'seconds',
+    'milliseconds',
+    'microseconds',
+    'nanoseconds',
+  ] as const
+).filter(
+  (unit) =>
+    NAMED_UNITS.has(intlUnit(unit)) ||
+    (unit !== 'microseconds' && unit !== 'nanoseconds')
+);
+
+const isShown = (unit: DurationUnit): unit is DurationOutputUnit =>
   (LARGEST_FIRST as readonly string[]).includes(unit);
 
 /**
  * Formats a number of `format.input` units in `format.output`, or in the
  * largest unit it is at least one of, with `Intl.NumberFormat`'s unit names.
- * Zero stays in its input unit when that is one a duration displays in.
+ * Zero stays in its input unit when that is one a duration displays in. A
+ * unit the environment cannot name falls back to milliseconds.
  */
 export const formatDuration = (
   value: number,
@@ -57,21 +74,22 @@ export const formatDuration = (
   locale: string
 ): string => {
   const { input, output = 'auto', unitDisplay = 'long' } = format;
-  const inputScale = MILLISECONDS[input];
+  const magnitude = Math.abs(value) * PICOSECONDS[input];
   const unit =
     output === 'auto'
       ? (LARGEST_FIRST.find(
-          (candidate) => Math.abs(value) >= MILLISECONDS[candidate] / inputScale
-        ) ?? (value === 0 && isOutputUnit(input) ? input : 'nanoseconds'))
-      : output;
+          (candidate) => magnitude >= PICOSECONDS[candidate]
+        ) ?? (value === 0 && isShown(input) ? input : LARGEST_FIRST.at(-1)!))
+      : isShown(output)
+        ? output
+        : 'milliseconds';
   return formatNumber(
     numberFormat(locale, {
       style: 'unit',
-      // `Intl` names units in the singular: `hour`, not `hours`.
-      unit: unit.slice(0, -1),
+      unit: intlUnit(unit),
       unitDisplay,
       ...numberOptions(format),
     }),
-    value * (inputScale / MILLISECONDS[unit])
+    value * (PICOSECONDS[input] / PICOSECONDS[unit])
   );
 };

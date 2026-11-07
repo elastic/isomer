@@ -178,6 +178,12 @@ describe('duration', () => {
     expect(formatValue(0, { kind: 'duration', input: 'hours' })).toBe(
       '0 hours'
     );
+    expect(formatValue(1000, { kind: 'duration', input: 'nanoseconds' })).toBe(
+      '1 microsecond'
+    );
+    expect(formatValue(1000, { kind: 'duration', input: 'microseconds' })).toBe(
+      '1 millisecond'
+    );
     expect(formatValue(0, { kind: 'duration', input: 'picoseconds' })).toBe(
       '0 nanoseconds'
     );
