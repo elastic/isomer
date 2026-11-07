@@ -10,6 +10,7 @@
 // engine chooses ticks, domains, stacking and point density from the intent
 // each axis and series states, and formats only through `formatAxisValue`.
 
+import type { ChartGlyph } from '../glyphs';
 import type { Cell, ColumnRole, ColumnType } from '../schema/data';
 import type { ChartEvent, SelectTarget } from '../schema/events';
 import type { PortableFormat } from '../schema/format';
@@ -166,7 +167,7 @@ export interface MetricLayout {
   readonly valueSizing: 'auto' | 'fill';
   readonly secondaryAlignment: MetricAlignment;
   readonly icon?: {
-    readonly name: string;
+    readonly name: ChartGlyph;
     readonly alignment: 'left' | 'right';
   };
 }
@@ -366,7 +367,7 @@ export interface SceneReferenceLine {
   readonly label?: string;
   readonly color: SceneColor;
   readonly fill?: 'above' | 'below';
-  readonly icon?: string;
+  readonly icon?: ChartGlyph;
   readonly strokeWidth: number;
   readonly strokeDash: 'solid' | 'dashed' | 'dotted';
   readonly textPosition: 'auto' | 'left' | 'right';
@@ -380,7 +381,7 @@ export type SceneAnnotation =
       readonly label?: string;
       readonly text?: string;
       readonly color: SceneColor;
-      readonly icon?: string;
+      readonly icon?: ChartGlyph;
       readonly line?: {
         readonly width: number;
         readonly dash: 'solid' | 'dashed' | 'dotted';

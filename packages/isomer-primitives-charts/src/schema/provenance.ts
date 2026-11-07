@@ -9,27 +9,27 @@ import { requiredString, z } from '@elastic/isomer-sdk';
 
 const isoDateTimeSchema = z.iso.datetime({ offset: true });
 
-/** Where a node came from. Hosts use it to show capture time and to materialize again; it is never rendered. */
+/** Where a node came from. Hosts use it to show capture time and to build the node again; it is never rendered. */
 export const provenanceSchema = z
   .strictObject({
-    kind: z.literal('kibana'),
-    kibanaVersion: requiredString(),
-    materializer: requiredString().describe(
-      'The materializer that built the node, such as `lens`.'
+    host: requiredString().describe(
+      'The host that built the node, such as `kibana` or an agent.'
     ),
-    materializerVersion: z.int().min(1),
-    spaceId: z.string().min(1).optional(),
-    savedObjectType: z.string().min(1).optional(),
-    savedObjectId: z.string().min(1).optional(),
-    panelId: z.string().min(1).optional(),
+    hostVersion: z.string().min(1).optional(),
+    capturedAt: isoDateTimeSchema.describe('When the data was captured.'),
     timeRange: z
       .strictObject({ from: isoDateTimeSchema, to: isoDateTimeSchema })
       .optional()
       .describe('The absolute time range the data was queried for.'),
-    capturedAt: isoDateTimeSchema,
+    meta: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe(
+        'Host-defined and opaque to Isomer, never rendered: what the host needs to build the node again, such as the saved object and materializer it came from.'
+      ),
   })
   .describe(
-    'Where the node came from, so a host can show when it was captured and materialize it again. Never rendered.'
+    'Where the node came from, so a host can show when it was captured and build it again. Never rendered.'
   );
 
 /** Where a node came from. */

@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
 export type {
   ChartBrushEvent,
   ChartEvent,

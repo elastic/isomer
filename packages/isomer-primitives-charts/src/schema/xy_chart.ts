@@ -24,31 +24,13 @@ import {
   interactionsCoreShape,
 } from './events';
 import { portableFormatSchema } from './format';
+import { glyphSchema } from './icons';
 import {
   checkColumnReferences,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
 } from './references';
-
-// The marker icons Kibana's Lens API format accepts.
-const XY_MARKER_ICONS = [
-  'alert',
-  'asterisk',
-  'bell',
-  'bolt',
-  'bug',
-  'circle',
-  'editor_comment',
-  'flag',
-  'heart',
-  'map_marker',
-  'pin_filled',
-  'star_empty',
-  'star_filled',
-  'tag',
-  'triangle',
-] as const;
 
 // The per-series statistics the Lens API format's legend accepts.
 const XY_LEGEND_STATISTICS = [
@@ -152,7 +134,7 @@ const referenceLineSchema = z.strictObject({
   showText: z.boolean().optional(),
   color: colorValueSchema.optional(),
   fill: z.enum(['above', 'below']).optional(),
-  icon: z.enum(XY_MARKER_ICONS).optional(),
+  icon: glyphSchema.optional(),
   strokeWidth: z.number().min(1).max(10).optional(),
   strokeDash: strokeDashSchema.optional(),
   textPosition: z.enum(['auto', 'left', 'right']).optional(),
@@ -174,7 +156,7 @@ const annotationSchema = z.discriminatedUnion('kind', [
     label: z.string().optional(),
     text: z.string().optional().describe('Text drawn beside the marker.'),
     color: colorValueSchema.optional(),
-    icon: z.enum(XY_MARKER_ICONS).optional(),
+    icon: glyphSchema.optional(),
     line: z
       .strictObject({
         width: z.number().min(1).max(10),
@@ -337,7 +319,14 @@ const xyChartObjectSchema = z.object({
         .optional()
         .describe('How lines and areas cross missing values.'),
       points: z.enum(['auto', 'visible', 'hidden']).optional(),
-      areaOpacity: z.number().min(0).max(2).optional(),
+      areaOpacity: z
+        .number()
+        .min(0)
+        .max(1)
+        .optional()
+        .describe(
+          'The opacity of area fills, from 0 (transparent) to 1 (opaque). Absent means 0.3.'
+        ),
       areaFill: z.enum(['solid', 'gradient']).optional(),
       barMinimumHeight: z.number().min(0).optional(),
       barValueLabels: z.boolean().optional(),

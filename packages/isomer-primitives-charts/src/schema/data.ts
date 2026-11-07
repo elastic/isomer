@@ -119,6 +119,25 @@ const chartDataObjectSchema = z.strictObject({
     .describe(
       'Opaque table-level meta, never rendered, such as Kibana `Datatable` meta.'
     ),
+  missing: z
+    .strictObject({
+      null: z
+        .string()
+        .optional()
+        .describe('A missing (`null`) cell. Absent means `(null)`.'),
+      empty: z
+        .string()
+        .optional()
+        .describe('An empty string. Absent means `(blank)`.'),
+      nan: z
+        .string()
+        .optional()
+        .describe(
+          'A number-like value that is not a number. Absent means `NaN`.'
+        ),
+    })
+    .optional()
+    .describe('The text for cells a format cannot show.'),
   display: z
     .record(z.string(), z.array(z.string()))
     .optional()
