@@ -17,86 +17,15 @@ import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
+import {
+  forbiddenReachable,
+  matchesForbidden,
+  RULES,
+} from './module_graph_rules.js';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
 import { repoRoot, workspacePackages } from './workspace_packages.js';
 
-const MARKDOWN_PARSERS = [
-  'mdast-util-from-markdown',
-  'mdast-util-gfm',
-  'mdast-util-to-markdown',
-  'micromark-extension-gfm',
-];
-
-// The charts contracts carry no renderer or Markdown parser, and build on the SDK's `./schema` entry alone.
-const CHARTS_CONTRACT_FORBIDDEN = [
-  'react',
-  'react-dom',
-  '@elastic/charts',
-  '@elastic/isomer-runtime',
-  ...MARKDOWN_PARSERS,
-  { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
-];
-
-/**
- * Specifiers that must stay unreachable from an entry, by package and export key.
- * A forbidden specifier covers the package and every subpath under it.
- *
- * `react-dom/server` is the one worth guarding: it is the heavy server renderer,
- * and pulling it onto an entry a text-only or edge host imports costs that host
- * a dependency it never asked for. `./html` and `./react` reach it by design.
- *
- * Bare `react` is deliberately absent. `render/primitive_dispatch` uses
- * `cloneElement` and `isValidElement` to carry React renderers, so every surface
- * reaches it through the shared dispatcher — that is the design, not a leak.
- */
-const RULES = {
-  '@elastic/isomer-sdk': {
-    '.': ['react-dom', 'react-dom/server'],
-    './text': ['react-dom', 'react-dom/server'],
-    './markdown': ['react-dom', 'react-dom/server'],
-    './slack': ['react-dom', 'react-dom/server'],
-    './author': ['react-dom', 'react-dom/server'],
-    './schema': ['react', 'react-dom', ...MARKDOWN_PARSERS],
-  },
-  '@elastic/isomer-primitives-charts': Object.fromEntries(
-    ['./schema', './scene', './resolve'].map((entry) => [
-      entry,
-      CHARTS_CONTRACT_FORBIDDEN,
-    ])
-  ),
-};
-
-const coversPackage = (specifier, name) =>
-  specifier === name || specifier.startsWith(`${name}/`);
-
-/**
- * Matches `specifier` against a rule: a string covers the package and its
- * subpaths, `{ under, except }` the same minus one allowed specifier.
- */
-const matchesForbidden = (specifier, rule) =>
-  typeof rule === 'string'
-    ? coversPackage(specifier, rule)
-    : coversPackage(specifier, rule.under) && specifier !== rule.except;
-
 const specifiersIn = (file) => specifiersInSource(readFileSync(file, 'utf-8'));
-
-/** Every bare specifier reachable from `entryFile` through its relative imports. */
-const reachableBareSpecifiers = async (entryFile) => {
-  const { metafile } = await build({
-    entryPoints: [entryFile],
-    bundle: true,
-    write: false,
-    metafile: true,
-    packages: 'external',
-    platform: 'neutral',
-    logLevel: 'silent',
-  });
-  return new Set(
-    Object.values(metafile.inputs).flatMap(({ imports }) =>
-      imports.filter(({ external }) => external).map(({ path }) => path)
-    )
-  );
-};
 
 const manifests = new Map(
   workspacePackages().map((pkg) => [pkg.manifest.name, pkg])
@@ -118,15 +47,12 @@ for (const [packageName, entryRules] of Object.entries(RULES)) {
     }
 
     const entryFile = join(pkg.dir, target);
-    const reachable = await reachableBareSpecifiers(entryFile);
     checked += 1;
 
-    for (const specifier of reachable) {
-      if (forbidden.some((rule) => matchesForbidden(specifier, rule))) {
-        violations.push(
-          `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
-        );
-      }
+    for (const specifier of await forbiddenReachable(entryFile, forbidden)) {
+      violations.push(
+        `${packageName} "${exportKey}" (${relative(repoRoot, entryFile)}) reaches "${specifier}"`
+      );
     }
   }
 }
