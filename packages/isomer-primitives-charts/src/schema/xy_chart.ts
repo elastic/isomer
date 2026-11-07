@@ -79,7 +79,7 @@ export const XY_RULES = {
   sharedX:
     'Every data layer uses the same x column; absent means every row draws at one x position.',
   xCoordinate:
-    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear` or a valid date for `temporal`; a multivalue cell uses its first non-null value.',
+    'On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`; a multivalue cell uses its first non-null value.',
   rows: "A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.",
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',

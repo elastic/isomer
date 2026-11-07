@@ -25,7 +25,7 @@ A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the
 Rules:
 
 - Every column reference names a column in `data.columns`.
-- On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear` or a valid date for `temporal`; a multivalue cell uses its first non-null value.
+- On a continuous x scale, stated or inferred from the x column type, each non-missing x cell is a finite number for `linear`, or epoch milliseconds or an ISO 8601 date-time with a UTC offset for `temporal`; a multivalue cell uses its first non-null value.
 - A `y` column is a `number` column.
 - A layer's `rows` is a `[start, end)` range within `data.rows`, with `start` at most `end`.
 - Only `bar` and `area` layers stack.
