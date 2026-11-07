@@ -321,6 +321,75 @@ describe('xy rows without an x', () => {
   });
 });
 
+describe('xy partial buckets', () => {
+  it('measures each layer by its own spacing', () => {
+    const HOUR = 3_600_000;
+    const DAY = 24 * HOUR;
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'date', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [DAY, 1],
+            [DAY + HOUR, 2],
+            [0, 3],
+            [DAY, 4],
+          ],
+        },
+        layers: [
+          {
+            kind: 'data',
+            mark: 'line',
+            x: 'x',
+            y: [{ column: 'y' }],
+            rows: [0, 2],
+          },
+          {
+            kind: 'data',
+            mark: 'bar',
+            x: 'x',
+            y: [{ column: 'y' }],
+            rows: [2, 4],
+          },
+        ],
+        style: { partialBuckets: { from: 0, to: DAY + 12 * HOUR } },
+      })
+    );
+    const [hourly, daily] = seriesIn(scene);
+    expect(hourly!.marks.map(({ partial }) => partial ?? false)).toEqual([
+      false,
+      false,
+    ]);
+    expect(daily!.marks.map(({ partial }) => partial ?? false)).toEqual([
+      false,
+      true,
+    ]);
+  });
+});
+
+describe('xy time axis over a non-date column', () => {
+  it('prints dates on the axis and in category labels', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [[Date.UTC(2026, 10, 6), 1]],
+        },
+        axes: { x: { scale: 'temporal' } },
+      })
+    );
+    const at = Date.UTC(2026, 10, 6, 12);
+    expect(formatAxisValue(scene, scene.axes.x, at)).toMatch(/^Nov 6, 2026/);
+    expect(scene.categories[0]!.label).toMatch(/^Nov 6, 2026/);
+  });
+});
+
 describe('xy summary', () => {
   it('states a range only when every value is on one axis in one format', () => {
     const columns = [
@@ -348,6 +417,32 @@ describe('xy summary', () => {
       ).summary;
     expect(both('y')).toBe('A and B by X, from 1 to 2,000.');
     expect(both('y2')).toBe('A and B by X.');
+  });
+
+  it('names only the y columns a reader can see', () => {
+    const node = xy({
+      data: {
+        columns: [
+          { id: 'x', label: 'X', type: 'number', role: 'metric' },
+          { id: 'a', label: 'A', type: 'number', role: 'metric' },
+          { id: 'b', label: 'B', type: 'number', role: 'metric' },
+        ],
+        rows: [
+          [0, 1, 1000],
+          [1, 2, 2000],
+        ],
+      },
+      layers: [
+        {
+          kind: 'data',
+          mark: 'line',
+          x: 'x',
+          y: [{ column: 'a' }, { column: 'b' }],
+        },
+      ],
+      interactions: { initial: { hiddenSeries: ['b'] } },
+    });
+    expect(resolve(node).summary).toBe('A by X, from 1 to 2.');
   });
 });
 

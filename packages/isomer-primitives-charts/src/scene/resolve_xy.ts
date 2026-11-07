@@ -233,8 +233,18 @@ export const resolveXy = (
       (xColumn === undefined ? undefined : continuousScaleOf(xColumn.type));
     return scale === 'temporal' ? 'time' : (scale ?? 'ordinal');
   })();
+  const columnFormat =
+    xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
+  // A time axis over a column that is not a `date` column still prints dates.
+  const xFormat: PortableFormat =
+    xScale === 'time' && columnFormat.kind !== 'date'
+      ? DEFAULT_FORMATS.date
+      : columnFormat;
   const xText = (row: number) =>
-    xId === undefined ? '' : resolution.text(xId, row);
+    xId === undefined
+      ? ''
+      : (data.display?.[xId]?.[row] ??
+        resolution.formatAs(resolution.cell(xId, row), xFormat));
   const xOf = (row: number): number | string => {
     if (xId === undefined) {
       return xScale === 'ordinal' ? '' : 0;
@@ -374,18 +384,24 @@ export const resolveXy = (
   const numericXs = categoryKeys.filter(
     (x): x is number => typeof x === 'number'
   );
-  // The smallest x spacing, which decides whether a mark's bucket crosses the queried range's end.
-  const interval = numericXs.reduce<number | undefined>(
-    (smallest, x, index) => {
-      if (index === 0) {
-        return smallest;
-      }
-      const gap = bounded(x - numericXs[index - 1]!);
-      return gap > 0 && (smallest === undefined || gap < smallest)
-        ? gap
-        : smallest;
-    },
-    undefined
+  // Each layer's smallest x spacing, which decides whether a mark's bucket crosses the queried range's end.
+  const intervals = new Map(
+    dataLayers.map(({ layer, index }) => {
+      const xs = new Set(rowsOf(layer, data.rows.length).map(xOf));
+      const layerXs = numericXs.filter((x) => xs.has(x));
+      return [
+        index,
+        layerXs.reduce<number | undefined>((smallest, x, at) => {
+          if (at === 0) {
+            return smallest;
+          }
+          const gap = bounded(x - layerXs[at - 1]!);
+          return gap > 0 && (smallest === undefined || gap < smallest)
+            ? gap
+            : smallest;
+        }, undefined),
+      ] as const;
+    })
   );
 
   const partialRange = node.style?.partialBuckets
@@ -437,7 +453,7 @@ export const resolveXy = (
         typeof x === 'number' &&
         ((partialRange[0] !== undefined && x < partialRange[0]) ||
           (partialRange[1] !== undefined &&
-            x + (interval ?? 0) > partialRange[1]));
+            x + (intervals.get(draft.layerIndex) ?? 0) > partialRange[1]));
       const mark: XyMark = {
         source: { rows: [row], columns: [...dims, draft.yColumn] },
         x,
@@ -533,11 +549,15 @@ export const resolveXy = (
     };
   });
 
-  const xFormat: PortableFormat =
-    xId === undefined ? DEFAULT_FORMATS.number : resolution.format(xId);
   // Every y a data layer states, whether or not its rows produce a series.
-  const yEntries = dataLayers.flatMap(({ layer }) =>
-    layer.y.map(({ column, axis }) => ({ layer, column, axis: axis ?? 'y' }))
+  const yEntries = dataLayers.flatMap(({ layer, index }) =>
+    layer.y.map(({ column, axis }, yIndex) => ({
+      layer,
+      layerIndex: index,
+      yIndex,
+      column,
+      axis: axis ?? 'y',
+    }))
   );
   const percentageAxis = (axis: 'y' | 'y2') => {
     const onAxis = yEntries.filter((entry) => entry.axis === axis);
@@ -780,12 +800,20 @@ export const resolveXy = (
             : [{ value, column: yColumn, axis, row }];
         });
   });
+  // The summary names a y entry with a visible series, or with none at all.
+  const shown = yEntries.filter(({ layerIndex, yIndex }) => {
+    const own = drafts.filter(
+      (draft) => draft.layerIndex === layerIndex && draft.yIndex === yIndex
+    );
+    return own.length === 0 || own.some(({ key }) => !hidden.has(key));
+  });
+  const named = shown.length ? shown : yEntries;
   const yLabels = [
-    ...new Set(yEntries.map(({ column }) => resolution.column(column).label)),
+    ...new Set(named.map(({ column }) => resolution.column(column).label)),
   ];
   const splitLabels = [
     ...new Set(
-      dataLayers.flatMap(({ layer }) =>
+      named.flatMap(({ layer }) =>
         layer.splitBy === undefined
           ? []
           : [resolution.column(layer.splitBy).label]
