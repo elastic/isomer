@@ -172,4 +172,28 @@ describe('remote render with headless Elastic Charts', () => {
     expect(pdf).toMatch(/\/FontFile[23]?\b/);
     expect(pdf).toMatch(/\/BaseFont\s*\/[A-Z]{6}\+Inter/);
   });
+
+  it('draws the charts into the PDF: without their SVG it differs', async () => {
+    const pages = runtime.surfaces.snapshot.renderPages(
+      examples
+        .filter(({ type }) => type === 'metric' || type === 'xyChart')
+        .map(({ composition }) => composition)
+    );
+    const options = { metadata: { creationDate: '2026-01-01' } };
+    const pdf = (input: typeof pages) =>
+      takumi.pdf(input, options).then((bytes) => Buffer.from(bytes));
+    const [drawn, again, bare] = await Promise.all([
+      pdf(pages),
+      pdf(pages),
+      pdf({
+        ...pages,
+        pages: pages.pages.map((page) => ({
+          ...page,
+          html: withoutSvgs(page.html),
+        })),
+      }),
+    ]);
+    expect(drawn.equals(again)).toBe(true);
+    expect(drawn.equals(bare)).toBe(false);
+  });
 });
