@@ -9,7 +9,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 
 import type { StudioConfig } from '../config';
 
-/** `config` with its runtime's `snapshot` renders drawn in the frame {@link StudioConfig.snapshotFrame} names; a frame the caller passes wins. */
+/** `config` with its runtime's `snapshot` renders drawn in the frame {@link StudioConfig.snapshotFrame} names, and pages in the first one's; a frame the caller passes wins. */
 export const withSnapshotFrame = (config: StudioConfig): StudioConfig => {
   const { snapshotFrame, runtime } = config;
   const { snapshot } = runtime.surfaces;

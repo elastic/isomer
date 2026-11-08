@@ -28,7 +28,14 @@ const themeFor = (scheme: ColorScheme): ChartsFrameTheme => ({
   text: CHART_CHROME[scheme].text,
 });
 
-const { width, padding, gap, title } = CHARTS_THEME.frame;
+const { width, padding, gap, title, subtitle } = CHARTS_THEME.frame;
+
+/** One line at `size`, so the line is as tall as `estimateHeight` counts it. */
+const line = (size: number) => ({
+  margin: 0,
+  fontSize: size,
+  lineHeight: `${size}px`,
+});
 
 /** A content-sized page of charts. Register as `frames: { charts: chartsFrame }`. */
 export const chartsFrame: Frame<ChartsFrameTheme> = {
@@ -42,6 +49,7 @@ export const chartsFrame: Frame<ChartsFrameTheme> = {
     return (
       2 * padding +
       (composition.title ? title + gap : 0) +
+      (composition.subtitle ? subtitle + gap : 0) +
       nodes.reduce((total, height) => total + height, 0) +
       Math.max(0, nodes.length - 1) * gap
     );
@@ -58,9 +66,8 @@ export const chartsFrame: Frame<ChartsFrameTheme> = {
         background: theme.background,
         color: theme.text,
       }}>
-      {header.title && (
-        <h1 style={{ margin: 0, fontSize: title }}>{header.title}</h1>
-      )}
+      {header.title && <h1 style={line(title)}>{header.title}</h1>}
+      {header.subtitle && <p style={line(subtitle)}>{header.subtitle}</p>}
       {body}
     </div>
   ),

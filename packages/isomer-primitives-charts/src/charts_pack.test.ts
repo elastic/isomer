@@ -28,6 +28,7 @@ import type {
   ResolveSceneOptions,
 } from './render/context';
 import { gridSnapshotHeight } from './render/grid';
+import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
@@ -351,6 +352,34 @@ CLOSED`);
     );
   });
 
+  describe('nested in a narrow panel', () => {
+    const chart = gridExamples[0]!.node.panels[0]!.node;
+    const narrow = (node: PrimitiveNode): GridNode => ({
+      type: 'grid',
+      panels: [{ x: 0, y: 0, w: 12, h: 8, node }],
+    });
+    const inner = narrow(chart);
+    const columns = (out: string) =>
+      out.split('grid-template-columns:repeat(48').length - 1;
+
+    it('validates', () => {
+      expect(runtime.validate(view(narrow(narrow(inner)))).errors).toEqual([]);
+    });
+
+    it('keeps 48 columns, at any depth, without a host size', () => {
+      resolved.length = 0;
+      expect(columns(html(narrow(inner)))).toBe(2);
+      expect(resolved.at(-1)?.size).toBeDefined();
+      expect(columns(html(narrow(narrow(inner))))).toBe(3);
+    });
+
+    it('stacks in one column when a host size leaves its panel under 768 px', () => {
+      // (1200 − 47 × 8) × 12/48 + 11 × 8 = 294 px for the nested grid.
+      const out = html(narrow(inner), { size: { width: 1200, height: 800 } });
+      expect(columns(out)).toBe(1);
+    });
+  });
+
   it('gives each chart the box its panel leaves', () => {
     resolved.length = 0;
     const grid: GridNode = {
@@ -371,8 +400,10 @@ CLOSED`);
     expect(resolved[0]?.size).toEqual({ width: 480, height: 80 });
     resolved.length = 0;
     html(grid);
-    // Without a host width: the nominal 1,200 px, (1200 − 376) × 24/48 + 184.
-    expect(resolved[0]?.size).toEqual({ width: 596, height: 80 });
+    // Without a host width: the frame's content, 960 − 2 × 16 = 928 px, and
+    // (928 − 47 × 8) × 24/48 + 23 × 8 for a half-width panel.
+    expect(CHARTS_THEME.grid.nominalWidth).toBe(928);
+    expect(resolved[0]?.size).toEqual({ width: 460, height: 80 });
   });
 
   it('never gives a chart a negative height', () => {

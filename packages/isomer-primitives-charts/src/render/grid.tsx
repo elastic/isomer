@@ -21,6 +21,7 @@ import {
   slackContainer,
 } from '@elastic/isomer-sdk/slack';
 
+import type { SceneSize } from '../scene/types';
 import { gridCatalog } from '../schema/catalog';
 import { gridExamples } from '../schema/examples/grid';
 import {
@@ -92,6 +93,15 @@ const headerOf = ({
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
+/** Sizes laid out from `nominalWidth` rather than a host's width, which never switch a grid to one column. */
+const nominalSizes = new WeakSet<SceneSize>();
+
+/** The width the host gave this grid, directly or through its containers. */
+const hostWidth = (context: ChartsRenderContext | undefined) => {
+  const size = context?.size;
+  return size && !nominalSizes.has(size) ? size.width : undefined;
+};
+
 /** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
 const childContext = (
   context: ChartsRenderContext | undefined,
@@ -104,7 +114,10 @@ const childContext = (
     : (gridWidth - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
   const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
-  const size = { width, height };
+  const size: SceneSize = { width, height };
+  if (hostWidth(context) === undefined) {
+    nominalSizes.add(size);
+  }
   return context ? contextWith(context, 'size', size) : { size };
 };
 
@@ -238,7 +251,7 @@ const CollapsedAnchors = ({
 };
 
 const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
-  const width = env.context?.size?.width;
+  const width = hostWidth(env.context);
   const oneColumn = width !== undefined && width < GRID_SINGLE_COLUMN_BELOW;
   return (
     <div

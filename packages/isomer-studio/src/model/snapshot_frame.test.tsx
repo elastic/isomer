@@ -19,16 +19,21 @@ import { type CalloutNode, componentsPack } from '../fixtures/components_pack';
 
 import { withSnapshotFrame } from './snapshot_frame';
 
-const frameOf = (defaultWidth: number): Frame<unknown> => ({
+/** A frame that draws only `accepts` nodes. */
+const frameOf = (defaultWidth: number, accepts: string): Frame<unknown> => ({
   defaultWidth,
   theme: { light: undefined, dark: undefined },
   estimateHeight: () => 100,
+  validateBody: (body) =>
+    body
+      .filter(({ type }) => type !== accepts)
+      .map(({ type }) => `draws no ${type}`),
   wrap: (_header, body) => <div>{body}</div>,
 });
 
 const runtime = createIsomerRuntime<unknown, StyledRenderContext, unknown>({
   packs: [componentsPack],
-  frames: { card: frameOf(320), wide: frameOf(640) },
+  frames: { card: frameOf(320, 'callout'), wide: frameOf(640, 'divider') },
   defaultFrame: 'card',
 });
 
@@ -61,17 +66,16 @@ describe('withSnapshotFrame', () => {
   });
 
   it('lets a frame the caller passes win', () => {
-    expect(
+    expect(() =>
       wideDividers.runtime.surfaces.snapshot?.render(divider, { frame: 'card' })
-        .width
-    ).toBe(320);
+    ).toThrow(/frame "card" cannot draw/);
   });
 
-  it('draws pages in the frame the first composition names', () => {
-    const pages = wideDividers.runtime.surfaces.snapshot?.renderPages([
-      divider,
-      callout,
-    ]);
-    expect(pages?.width).toBe(640);
+  it('draws every page in the frame the first composition names', () => {
+    const { snapshot } = wideDividers.runtime.surfaces;
+    expect(snapshot?.renderPages([divider, divider]).width).toBe(640);
+    expect(() => snapshot?.renderPages([divider, callout])).toThrow(
+      /frame "wide" cannot draw page 2/
+    );
   });
 });

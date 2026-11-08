@@ -86,9 +86,28 @@ On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collect
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
-When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` from the host, the grid keeps 48 columns and sizes each panel's node for `CHARTS_THEME.grid.nominalWidth` (1,200 px), so a chart still fits its panel's height; a browser lays the grid out fluidly, and a host that wants one column on a narrow screen measures the grid and passes its `size`.
+When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` from the host, the grid keeps 48 columns and sizes each panel's node for `CHARTS_THEME.grid.nominalWidth`, the content width of `chartsFrame`, 928 px, so a chart still fits its panel's height and a grid on `snapshot` fits its page; a browser lays the grid out fluidly, and a host that wants one column on a narrow screen measures the grid and passes its `size`. A grid nested in a panel of such a grid keeps 48 columns too: only a width that comes from the host switches a grid to one column.
 
 On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the grid's header, the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
+
+## `chartsFrame`
+
+`chartsFrame` is a [frame](../runtime/frame.md) for drawing charts on `snapshot`. A host registers it with the runtime and names it per render, or makes it the `defaultFrame`:
+
+```ts
+import { chartsFrame, chartsPack } from '@elastic/isomer-primitives-charts';
+
+const runtime = createIsomerRuntime({
+  packs: [chartsPack],
+  frames: { charts: chartsFrame },
+});
+
+runtime.surfaces.snapshot.render(composition, { frame: 'charts', theme: 'dark' });
+```
+
+The page is 960 px wide with 16 px of padding, so its content is 928 px, the grid's nominal width. It draws the composition's title and subtitle, one line each at 20 px and 14 px, then each body node, in a column with 16 px between each. Its sizing is `content`: the image is as tall as the page lays out, and `estimateHeight` is the padding, the title and subtitle lines, each node's `metrics.snapshotHeight` and the gaps between them. Every length is in `CHARTS_THEME.frame`.
+
+Its theme, `ChartsFrameTheme`, is `{ scheme, background, text }` per mode: the scheme charts resolve for, and the page's background and text colors from the Scene's chrome for that scheme. [A runtime's frames share one theme type](../runtime/frame.md#a-runtime-is-homogeneous-in-its-theme), so a runtime that registers `chartsFrame` beside another frame gives that frame's theme these keys too.
 
 ## `unsupported`
 

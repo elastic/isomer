@@ -116,7 +116,7 @@ export interface StudioConfig {
   previewExample?: ((node: PrimitiveNode) => Composition) | undefined;
   /** Pages listed under the app in the nav. */
   apps?: readonly StudioApp[] | undefined;
-  /** The runtime frame a composition's `snapshot` preview, PNG and PDF are drawn in; `undefined` keeps the runtime's `defaultFrame`. */
+  /** The runtime frame a composition's `snapshot` preview and PNG are drawn in; `undefined` keeps the runtime's `defaultFrame`. A PDF draws every page in its first page's. */
   snapshotFrame?:
     ((composition: Composition) => string | undefined) | undefined;
   /** `false` turns off host PNGs and PDFs, so takumi and `imageFonts` never load; the `snapshot` surface's markup stays. */
