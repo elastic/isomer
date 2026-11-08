@@ -45,6 +45,19 @@ export interface HeadlessSvg {
   readonly debugState?: DebugState;
 }
 
+const escapeXml = (text: string): string =>
+  text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+
+/** Names the SVG by the Scene's `title` and describes it by its `summary`, as `Settings` does. */
+const withAccessibleText = (svg: string, { title, summary }: Scene): string =>
+  svg.replace(
+    /^<svg\b[^>]*>/,
+    (open) =>
+      `${open.slice(0, -1)} role="img">${
+        title === undefined ? '' : `<title>${escapeXml(title)}</title>`
+      }<desc>${escapeXml(summary)}</desc>`
+  );
+
 /** Draws a `metric` or `xy` Scene as SVG at the Scene's `size`. */
 export const renderSceneSvg = (
   scene: Scene,
@@ -70,7 +83,10 @@ export const renderSceneSvg = (
   const debugState = (drawn as { debugState?: DebugState | null } | undefined)
     ?.debugState;
   return {
-    svg: canvas.toSvg({ background: scene.chrome.background }),
+    svg: withAccessibleText(
+      canvas.toSvg({ background: scene.chrome.background }),
+      scene
+    ),
     width,
     height,
     ...(debugState ? { debugState } : {}),

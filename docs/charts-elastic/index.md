@@ -50,7 +50,7 @@ const imagePack = createChartsPack({
 | `measureTextWidth` | SVG `<text>`, laid out with this measure |
 | neither | SVG `<text>`, laid out with Elastic Charts' Helvetica metrics |
 
-`debugState` is what `<Chart debugState>` reports, when the Elastic Charts build returns it from a headless render; #2939 does not yet. Metric has no DebugState in Elastic Charts, so a metric is checked by the text in its SVG.
+The SVG is a `role="img"` named by the Scene's `title` as its `<title>` and described by its `summary` as its `<desc>`, as `Settings` takes them in a browser. `debugState` is what `<Chart debugState>` reports; the vendored build returns it from a headless render through a patch offered on #2939. Metric has no DebugState in Elastic Charts, so a metric is checked by the text in its SVG.
 
 Headless metrics differ from the browser's: values draw smaller and words can break mid-word. Those gaps are Elastic Charts', reported on #2939.
 

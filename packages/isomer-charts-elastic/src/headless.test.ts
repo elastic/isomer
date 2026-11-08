@@ -57,12 +57,15 @@ const metricCases = metricExamples.flatMap(({ name, node }) =>
   }))
 );
 
+const unescapeXml = (text: string): string =>
+  text.replace(/&#(\d+);/g, (_, code: string) =>
+    String.fromCharCode(Number(code))
+  );
+
 /** Every string the SVG draws as `<text>`, unescaped. */
 const svgTexts = (svg: string): string[] =>
   [...svg.matchAll(/<text\b[^>]*>([^<]*)<\/text>/g)].map(([, text]) =>
-    text!.replace(/&#(\d+);/g, (_, code: string) =>
-      String.fromCharCode(Number(code))
-    )
+    unescapeXml(text!)
   );
 
 // Elastic Charts may break a string across lines, even mid-word, and draws a
@@ -102,8 +105,8 @@ describe('renderSceneSvg', () => {
           expect(texts).toContain(title);
         }
       }
-      // DebugState lists what Elastic Charts drew on each axis, when the
-      // Elastic Charts build returns it from a headless render.
+      // DebugState lists what Elastic Charts drew on each axis.
+      expect(debugState).toBeDefined();
       const drawn = [
         ...(debugState?.axes?.x ?? []).map(
           (state) => [scene.axes.x, state] as const
@@ -112,17 +115,35 @@ describe('renderSceneSvg', () => {
           (state) => [scene.axes[state.id as 'y' | 'y2'], state] as const
         ),
       ];
+      expect(drawn.length).toBeGreaterThan(0);
+      let checked = 0;
       for (const [axis, { labels, values }] of drawn) {
         expect(axis).toBeDefined();
         labels.forEach((label, index) => {
           if (label !== '') {
             expect(label).toBe(sceneLabel(scene, axis!, values[index]));
             expect(texts).toContain(label);
+            checked += 1;
           }
         });
       }
+      expect(checked).toBeGreaterThan(0);
     }
   );
+
+  it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
+    ...xyCases,
+    ...metricCases,
+  ])('$name ($scheme) names the SVG by its title and summary', ({ scene }) => {
+    const { svg } = renderSceneSvg(scene);
+    const [, open, title, desc] =
+      /^(<svg\b[^>]*>)(?:<title>([^<]*)<\/title>)?<desc>([^<]*)<\/desc>/.exec(
+        svg
+      ) ?? [];
+    expect(open).toContain(' role="img"');
+    expect(title && unescapeXml(title)).toBe(scene.title);
+    expect(desc && unescapeXml(desc)).toBe(scene.summary);
+  });
 
   it.each(metricCases)(
     '$name ($scheme) draws each tile title and value',
@@ -144,6 +165,10 @@ describe('renderSceneSvg', () => {
     });
     expect(svg).not.toContain('<script>');
     expect(svgTexts(svg)).toContain(title);
+    const { svg: named } = renderSceneSvg({ ...scene, title, summary: title });
+    expect(named).not.toContain('<script>');
+    const [, drawnTitle] = /<title>([^<]*)<\/title>/.exec(named) ?? [];
+    expect(unescapeXml(drawnTitle!)).toBe(title);
   });
 
   it('refuses a Scene without a size', () => {
