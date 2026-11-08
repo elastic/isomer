@@ -21,6 +21,7 @@ import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { imagesProblem } from '../model/images';
+import { withSnapshotFrame } from '../model/snapshot_frame';
 
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
 import { importNative, moduleUrl } from './node_module.cjs';
@@ -270,7 +271,7 @@ export const studioConfigFrom = (
   if (config.apps?.length) {
     assertSingleEui(configPath);
   }
-  return config;
+  return withSnapshotFrame(config);
 };
 
 let registeredProject: string | undefined;
