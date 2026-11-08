@@ -123,10 +123,13 @@ const drawingScope = (svg: string): string => {
  * and their paths are identical too.
  */
 export const scopeSvgIds = (svg: string, scope: string): string =>
-  svg
-    .replace(/\bid="([^"]+)"/g, `id="${scope}-$1"`)
-    .replace(/url\(#([^)]+)\)/g, `url(#${scope}-$1)`)
-    .replace(/\bhref="#([^"]+)"/g, `href="#${scope}-$1"`);
+  // Only inside tags, so text such as a label reading `url(#clip0)` stays as drawn.
+  svg.replace(/<[^>]+>/g, (tag) =>
+    tag
+      .replace(/\bid="([^"]+)"/g, `id="${scope}-$1"`)
+      .replace(/url\(#([^)]+)\)/g, `url(#${scope}-$1)`)
+      .replace(/\bhref="#([^"]+)"/g, `href="#${scope}-$1"`)
+  );
 
 /**
  * A `SceneRenderer` drawing the chart's SVG inline in a `div`, so static

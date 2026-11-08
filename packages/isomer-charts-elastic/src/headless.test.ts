@@ -236,6 +236,15 @@ describe('scopeSvgIds', () => {
       '<svg><clipPath id="s-clip0"/><g clip-path="url(#s-clip0)"/><use href="#s-clip0"/></svg>'
     );
   });
+
+  it('leaves text that looks like a reference as drawn', () => {
+    expect(
+      scopeSvgIds(
+        '<svg><text clip-path="url(#c)">url(#c) id="c"</text></svg>',
+        's'
+      )
+    ).toBe('<svg><text clip-path="url(#s-c)">url(#c) id="c"</text></svg>');
+  });
 });
 
 describe('createElasticChartsHeadlessRenderer', () => {
