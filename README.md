@@ -124,6 +124,7 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Write primitives, a theme, or a frame | [`@elastic/isomer-sdk`](packages/isomer-sdk/README.md), then its [quick start](packages/isomer-sdk/docs/quick-start.md) |
 | Copy a working pack | [`@elastic/isomer-primitives-slides`](packages/isomer-primitives-slides/README.md), the in-repo reference pack |
 | Draw charts, dashboards and placeholders | [`@elastic/isomer-primitives-charts`](packages/isomer-primitives-charts/README.md) |
+| Draw chart Scenes in the browser as Kibana does | [`@elastic/isomer-charts-elastic`](packages/isomer-charts-elastic/README.md) |
 | Turn the `snapshot` surface into PNG, SVG, or PDF | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
 | Browse, check, and publish a pack's primitives | [`@elastic/isomer-studio`](packages/isomer-studio/README.md) |
