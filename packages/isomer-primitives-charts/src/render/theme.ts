@@ -20,6 +20,8 @@ export const CHARTS_THEME = {
     sectionGap: 16,
     /** Height of a panel header with a title, in pixels. */
     headerHeight: 24,
+    /** Height of a grid or panel description line, in pixels. */
+    descriptionHeight: 18,
   },
   type: {
     /** Panel and section title size, in pixels. */

@@ -34,7 +34,8 @@ import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
 import { CHARTS_THEME } from './theme';
 
-const { rowHeight, gap, sectionGap, headerHeight } = CHARTS_THEME.grid;
+const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
+  CHARTS_THEME.grid;
 
 const rowsHeight = (rows: number) =>
   rows === 0 ? 0 : rows * rowHeight + (rows - 1) * gap;
@@ -64,6 +65,15 @@ const blocksOf = (node: GridNode): Block[] => {
   ];
 };
 
+/** The height a title and description take. */
+const headerOf = ({
+  title,
+  description,
+}: {
+  readonly title?: string | undefined;
+  readonly description?: string | undefined;
+}) => (title ? headerHeight : 0) + (description ? descriptionHeight : 0);
+
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
@@ -81,28 +91,29 @@ const childContext = (
     ? size.width
     : (size.width - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
-  const height = Math.max(
-    0,
-    rowsHeight(panel.h) - (panel.title ? headerHeight : 0)
-  );
+  const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
   return contextWith(context, 'size', { width, height });
 };
 
+const oneLine = {
+  margin: 0,
+  overflow: 'hidden',
+  whiteSpace: 'nowrap',
+  textOverflow: 'ellipsis',
+} as const;
+
 const Heading = ({
   level,
-  title,
   children,
 }: {
-  level: 2 | 3;
-  title?: string | undefined;
+  level: 2 | 3 | 4;
   children: ReactNode;
 }) => {
-  const Tag = level === 2 ? 'h2' : 'h3';
+  const Tag = `h${level}` as const;
   return (
     <Tag
-      title={title}
       style={{
-        margin: 0,
+        ...oneLine,
         height: headerHeight,
         fontSize: CHARTS_THEME.type.title,
       }}>
@@ -110,6 +121,34 @@ const Heading = ({
     </Tag>
   );
 };
+
+const Description = ({ children }: { children: string }) => (
+  <p
+    title={children}
+    style={{
+      ...oneLine,
+      height: descriptionHeight,
+      fontSize: CHARTS_THEME.type.body,
+    }}>
+    {children}
+  </p>
+);
+
+const Header = ({
+  level,
+  title,
+  description,
+}: {
+  level: 2 | 4;
+  title?: string | undefined;
+  description?: string | undefined;
+}) =>
+  title || description ? (
+    <header>
+      {title && <Heading level={level}>{title}</Heading>}
+      {description && <Description>{description}</Description>}
+    </header>
+  ) : null;
 
 const Panel = ({
   entry: { panel },
@@ -133,20 +172,7 @@ const Panel = ({
             gridRow: `${panel.y + 1} / span ${panel.h}`,
           }),
     }}>
-    {panel.title && (
-      <h4
-        title={panel.description}
-        style={{
-          margin: 0,
-          height: headerHeight,
-          fontSize: CHARTS_THEME.type.title,
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          textOverflow: 'ellipsis',
-        }}>
-        {panel.title}
-      </h4>
-    )}
+    <Header level={4} title={panel.title} description={panel.description} />
     <div style={{ flex: 1, minHeight: 0 }}>
       {scope.renderReact(panel.node, childContext(context, panel, oneColumn))}
     </div>
@@ -216,11 +242,7 @@ const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
     <div
       {...nodeAnchor(env.context, node)}
       style={{ display: 'flex', flexDirection: 'column', gap: sectionGap }}>
-      {node.title && (
-        <Heading level={2} title={node.description}>
-          {node.title}
-        </Heading>
-      )}
+      <Header level={2} title={node.title} description={node.description} />
       {blocksOf(node).map((block, index) =>
         block.section ? (
           <section key={index} aria-label={block.section.title}>
@@ -294,7 +316,7 @@ const gridMarkdown = (
 /** The `snapshot` height of a grid laid out at full width. */
 export const gridSnapshotHeight = (node: GridNode): number =>
   [
-    ...(node.title ? [headerHeight] : []),
+    headerOf(node),
     ...blocksOf(node).map(({ section, entries }) => {
       const panels = rowsHeight(extent(entries.map(({ panel }) => panel)));
       if (!section) {

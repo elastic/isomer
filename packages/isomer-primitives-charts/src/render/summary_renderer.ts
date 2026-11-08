@@ -9,12 +9,12 @@ import { createElement, Fragment } from 'react';
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
 import { SCENE_KINDS } from '../scene/types';
-import { sceneNotes } from '../text/scene_text';
+import { described, sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';
 
 /**
- * Draws a Scene's summary sentence, emphasis notes and link. The pack's last
+ * Draws a Scene's summary sentence, description, emphasis notes and link. The pack's last
  * resort for every kind.
  */
 export const summarySceneRenderer: ReactSceneRenderer = {
@@ -28,6 +28,9 @@ export const summarySceneRenderer: ReactSceneRenderer = {
       Fragment,
       null,
       createElement('p', null, scene.summary),
+      ...described(scene).map((description) =>
+        createElement('p', null, description)
+      ),
       ...sceneNotes(scene).map((note) =>
         createElement('p', null, createElement('em', null, note))
       ),

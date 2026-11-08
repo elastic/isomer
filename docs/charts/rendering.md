@@ -69,15 +69,15 @@ Off native, the shim puts the renderer's output in one `div` that carries the [n
 
 ## Text and Markdown
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, each emphasis `note`, and its `link` as `label: href` (a Markdown link). The fallback renderer draws the same three. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description`, each emphasis `note`, and its `link` as `label: href` (a Markdown link). The fallback renderer draws the same four. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
 
 ## `grid`
 
-A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A panel's title is its header and its description is the header's tooltip; the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
+A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
 When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` the grid passes none on and keeps 48 columns: a browser lays it out fluidly, and a host that wants one column on a narrow screen measures the grid and passes its `size`.
 
-On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the rows, section headers and gaps at full width. Text and Markdown list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
+On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the grid's header, the rows, section headers and gaps at full width. Text and Markdown list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
 
 ## `unsupported`
 

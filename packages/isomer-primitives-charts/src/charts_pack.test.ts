@@ -127,6 +127,41 @@ describe('chartsPack', () => {
   });
 });
 
+describe('a Scene description', () => {
+  const described: Scene = {
+    ...metricSingleValueScene,
+    description: 'Requests the edge served',
+  };
+  const runtime = createIsomerRuntime<unknown, ChartsRenderContext>({
+    packs: [createChartsPack({ resolveScene: () => described })],
+  });
+  const metric = primitiveExamples(
+    chartsPack.primitives.find(({ type }) => type === 'metric')!
+  )[0]!.node;
+
+  it('follows the summary on text, Markdown and the summary renderer', () => {
+    expect(
+      runtime.surfaces.text.render(view(metric), { heading: false })
+    ).toContain(`${described.summary}\nRequests the edge served`);
+    expect(
+      runtime.surfaces.markdown.render(view(metric), { heading: false })
+    ).toContain(`${described.summary}\n\nRequests the edge served`);
+    const out = renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        runtime.surfaces.react.render(view(metric), {
+          heading: false,
+          context: { environment: 'node' },
+        })
+      )
+    );
+    expect(out).toContain(
+      `<p>${described.summary}</p><p>Requests the edge served</p>`
+    );
+  });
+});
+
 describe('unsupported', () => {
   const runtime = createIsomerRuntime({ packs: [chartsPack] });
 
@@ -414,6 +449,48 @@ CLOSED`);
     expect(resolved[0]?.size?.width).toBeLessThan(968);
   });
 
+  it('draws grid and panel descriptions as text on react, with or without a title', () => {
+    const out = html({
+      type: 'grid',
+      description: 'About the board',
+      panels: [
+        {
+          description: 'About the panel',
+          x: 0,
+          y: 0,
+          w: 48,
+          h: 4,
+          node: note('P'),
+        },
+      ],
+    });
+    expect(out).toMatch(/<p [^>]*>About the board<\/p>/);
+    expect(out).toMatch(/<p [^>]*>About the panel<\/p>/);
+  });
+
+  it('leaves a chart the box under its panel title and description', () => {
+    resolved.length = 0;
+    html(
+      {
+        type: 'grid',
+        panels: [
+          {
+            title: 'T',
+            description: 'D',
+            x: 0,
+            y: 0,
+            w: 48,
+            h: 4,
+            node: gridExamples[0]!.node.panels[0]!.node,
+          },
+        ],
+      },
+      { size: { width: 968, height: 400 } }
+    );
+    // 4 rows × 20 + 3 gaps × 8 − header 24 − description 18.
+    expect(resolved[0]?.size?.height).toBe(62);
+  });
+
   it('writes its description on text without a title', () => {
     const { title: _, ...untitled } = sectioned;
     const described: GridNode = { ...untitled, description: 'About the board' };
@@ -543,5 +620,11 @@ CLOSED`);
     expect(gridSnapshotHeight(sectioned)).toBe(
       24 + 160 + (24 + 8 + 76) + 24 + 3 * 16
     );
+  });
+
+  it('counts its description line in its snapshot height', () => {
+    expect(
+      gridSnapshotHeight({ ...sectioned, description: 'About the board' })
+    ).toBe(gridSnapshotHeight(sectioned) + 18);
   });
 });

@@ -11,24 +11,29 @@ import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
 
 import type { Scene } from '../scene/types';
 
+/** The authored description, when the node has one. */
+export const described = ({ description }: Scene): string[] =>
+  description ? [description] : [];
+
 /** The Scene's emphasis notes, in order. */
 export const sceneNotes = ({ interactions }: Scene): string[] =>
   interactions.emphasis.flatMap(({ note }) => (note ? [note] : []));
 
-/** The summary with each emphasis note on its own line, then the link as its own paragraph. */
+/** The summary, description and each emphasis note on its own line, then the link as its own paragraph. */
 export const sceneToText = (scene: Scene): string => {
   const { link } = scene.interactions;
   return [
-    [scene.summary, ...sceneNotes(scene)].join('\n'),
+    [scene.summary, ...described(scene), ...sceneNotes(scene)].join('\n'),
     ...(link ? [`${link.label}: ${link.href}`] : []),
   ].join('\n\n');
 };
 
-/** The summary, each emphasis note and the link, as paragraphs. */
+/** The summary, description, each emphasis note and the link, as paragraphs. */
 export const sceneToMarkdown = (scene: Scene): MarkdownContent => {
   const { link } = scene.interactions;
   return [
     md.paragraph(scene.summary),
+    ...described(scene).map((description) => md.paragraph(description)),
     ...sceneNotes(scene).map((note) => md.paragraph(md.emphasis(note))),
     ...(link ? [md.paragraph(md.link(link.label, link.href))] : []),
   ];
