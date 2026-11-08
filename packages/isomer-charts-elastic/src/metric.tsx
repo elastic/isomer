@@ -23,6 +23,7 @@ import type {
   SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
+import { ariaDescriptionOf } from './accessibility';
 import { metricHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
 import { chromeTheme, kibanaBaseTheme } from './theme';
@@ -130,7 +131,7 @@ export const metricSpecs = (
       locale={scene.locale}
       debugState={options.debugState ?? false}
       {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-      ariaDescription={scene.summary}
+      ariaDescription={ariaDescriptionOf(scene)}
       {...metricHandlers(scene, env)}
     />
     <Metric id="metric" data={metricGrid(scene)} />

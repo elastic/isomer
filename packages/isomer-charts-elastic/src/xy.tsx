@@ -50,6 +50,7 @@ import {
   type XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
 
+import { ariaDescriptionOf } from './accessibility';
 import {
   isXyDatum,
   legendSelect,
@@ -232,8 +233,10 @@ export const seriesData = (series: XySeries, index: number): XyDatum[] =>
 /**
  * Each mark's label by the value Elastic Charts passes a value-label formatter.
  * A percentage stack passes each mark's share, which prints through its axis, as Lens labels it.
+ * The formatter sees the value alone, so a value whose marks carry different
+ * labels prints none rather than another mark's.
  */
-const valueLabeler = (
+export const valueLabeler = (
   series: XySeries,
   scene: XyScene,
   axis: SceneAxis | undefined
@@ -242,10 +245,14 @@ const valueLabeler = (
     return (value: unknown) =>
       typeof value === 'number' ? formatAxisValue(scene, axis, value) : '';
   }
-  const labels = new Map<number, string>();
+  const labels = new Map<number, string | undefined>();
   for (const mark of series.marks) {
     if (mark.y !== null) {
-      labels.set(mark.y, mark.label);
+      const known = labels.has(mark.y);
+      labels.set(
+        mark.y,
+        !known || labels.get(mark.y) === mark.label ? mark.label : undefined
+      );
     }
   }
   return (value: unknown) =>
@@ -519,12 +526,16 @@ const legendProps = (legend: SceneLegend) => {
 };
 
 /**
- * The hovered marks as Lens lists them: the x position as the axis labels it,
- * then each series with its unstacked value.
+ * The hovered marks as Lens lists them: the x position as the Scene's category
+ * labels it (else as its axis labels it), then each series with its unstacked value.
  */
-const sceneTooltip = (scene: XyScene): CustomTooltip => {
+export const sceneTooltip = (scene: XyScene): CustomTooltip => {
   const series = seriesOf(scene);
-  const label = tickLabeler(scene.axes.x, scene);
+  const categories = new Map<number | string, string>(
+    scene.categories.map(({ x, label }) => [x, label])
+  );
+  const tick = tickLabeler(scene.axes.x, scene);
+  const label = (x: number | string) => categories.get(x) ?? tick(x);
   return ({ values }) => {
     const hovered = values.flatMap(({ datum }) => {
       const owner = isXyDatum(datum) ? series[datum.series] : undefined;
@@ -637,7 +648,7 @@ export const xySpecs = (
         {...(xDomain === undefined ? {} : { xDomain })}
         debugState={options.debugState ?? false}
         {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={scene.summary}
+        ariaDescription={ariaDescriptionOf(scene)}
         allowBrushingLastHistogramBin={continuous}
         {...legendProps(scene.legend)}
         {...(offersLegend

@@ -9,6 +9,7 @@ import { Children, isValidElement, type ReactNode } from 'react';
 import {
   formatAxisValue,
   metricSingleValueScene,
+  type Scene,
   xyInteractiveScene,
   type XyScene,
   xyTimeSeriesScene,
@@ -223,6 +224,57 @@ describe('sceneSpecs', () => {
     expect(label).not.toBe('');
     expect(label).toBe(formatAxisValue(scene, scene.axes.y!, 0.25));
   });
+
+  it('labels each value by its mark, and no value whose marks disagree', () => {
+    const [series] = seriesOf(xyInteractiveScene);
+    const mark = series!.marks[0]!;
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: xyInteractiveScene.layers.map((layer) =>
+        layer.kind === 'series' && layer.series === series
+          ? {
+              ...layer,
+              series: {
+                ...series,
+                valueLabels: true,
+                marks: [
+                  { ...mark, y: 10, label: 'ten (a)' },
+                  { ...mark, y: 10, label: 'ten (b)' },
+                  { ...mark, y: 20, label: 'twenty' },
+                  { ...mark, y: 20, label: 'twenty' },
+                  { ...mark, y: 30, label: 'thirty' },
+                ],
+              },
+            }
+          : layer
+      ),
+    };
+    const { displayValueSettings } = specProps(scene, 'series-0') as {
+      displayValueSettings: { valueFormatter: (value: unknown) => string };
+    };
+    expect([10, 20, 30].map(displayValueSettings.valueFormatter)).toEqual([
+      '',
+      'twenty',
+      'thirty',
+    ]);
+  });
+
+  it.each([
+    { kind: 'xy', scene: xyInteractiveScene },
+    { kind: 'metric', scene: metricSingleValueScene },
+  ] as const)(
+    '$kind: describes the chart by its summary, then its authored description',
+    ({ scene }) => {
+      const settings = (described: Scene) =>
+        specElements(sceneSpecs(described, { environment: 'browser' })).find(
+          (element) => 'ariaDescription' in element
+        )?.ariaDescription;
+      expect(settings(scene)).toBe(scene.summary);
+      expect(settings({ ...scene, description: 'Spikes are deploys.' })).toBe(
+        `${scene.summary} Spikes are deploys.`
+      );
+    }
+  );
 
   it('draws a range annotation outside the plot when its fill is outside', () => {
     const band = (fill: 'inside' | 'outside'): XyScene => ({

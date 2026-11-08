@@ -14,19 +14,23 @@
 
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { act as testUtilsAct } from 'react-dom/test-utils';
 import type { DebugState } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
+  type ChartEvent,
   formatAxisValue,
   metricSingleValueScene,
   type Scene,
   type SceneAxis,
+  type SceneRenderEnv,
   xyInteractiveScene,
   type XyScene,
   xyTimeSeriesScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
+  chartEventExamples,
   metricExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts/schema';
@@ -34,6 +38,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
 import { createElasticChartsRenderer } from './renderer';
+import { sceneTooltip } from './xy';
 
 // React 18.3 exports `act` from `react`; earlier 18.x only from `react-dom/test-utils`.
 const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
@@ -102,12 +107,15 @@ afterEach(() => {
   roots.splice(0).forEach((unmount) => unmount());
 });
 
-const draw = async (scene: Scene): Promise<HTMLElement> => {
+const draw = async (
+  scene: Scene,
+  env: SceneRenderEnv = { environment: 'browser' }
+): Promise<HTMLElement> => {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
   act(() => {
-    root.render(renderer.render(scene, { environment: 'browser' }) as never);
+    root.render(renderer.render(scene, env) as never);
   });
   await act(async () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -229,6 +237,97 @@ describe('elastic-charts renderer: xy', () => {
       '.echChartBackground'
     );
     expect(background?.style.backgroundColor).toBe('rgb(11, 22, 40)');
+  });
+});
+
+describe('elastic-charts renderer: xy legend actions', () => {
+  const filterOut = chartEventExamples.find(
+    ({ name }) => name === 'Filter out a legend item'
+  )!.event;
+  const { negate: _negate, ...filterFor } = filterOut as ChartEvent & {
+    negate?: boolean;
+  };
+
+  it.each([
+    { action: 'Filter for Other', event: filterFor },
+    { action: 'Filter out Other', event: filterOut },
+  ])('$action raises the legend item’s event', async ({ action, event }) => {
+    const events: ChartEvent[] = [];
+    const container = await draw(xyInteractiveScene, {
+      environment: 'browser',
+      nodeId: filterOut.node,
+      onEvent: (raised) => events.push(raised),
+    });
+    const button = container.querySelector<HTMLButtonElement>(
+      `button[aria-label="${action}"]`
+    );
+    expect(button).not.toBeNull();
+    act(() => button!.click());
+    expect(events).toEqual([event]);
+  });
+
+  it('offers no legend actions without onEvent', async () => {
+    const container = await draw(xyInteractiveScene);
+    expect(container.querySelector('button[aria-label^="Filter "]')).toBeNull();
+  });
+});
+
+describe('elastic-charts renderer: xy tooltip', () => {
+  const tooltip = (scene: XyScene, marks: readonly [number, number][]) => {
+    const series = seriesOf(scene);
+    const values = marks.map(([index, mark]) => ({
+      datum: { ...series[index]!.marks[mark]!, series: index, mark },
+    }));
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      React.createElement(sceneTooltip(scene), { values } as never)
+    );
+    return {
+      header: page.querySelector('.echTooltipHeader')?.textContent,
+      rows: [...page.querySelectorAll('[role="row"]')].map((row) =>
+        [
+          ...row.querySelectorAll(
+            '[role="gridcell"]:not(.echTooltip__colorCell)'
+          ),
+        ].map((cell) => cell.textContent)
+      ),
+      colors: [...page.querySelectorAll('.echTooltip__colorStrip[style]')].map(
+        (strip) => strip.getAttribute('style')
+      ),
+    };
+  };
+
+  it('heads with the hovered category’s Scene label, then lists each series’ name and mark label', () => {
+    const [first, second] = seriesOf(xyInteractiveScene);
+    const { header, rows } = tooltip(xyInteractiveScene, [
+      [0, 1],
+      [1, 1],
+    ]);
+    const category = xyInteractiveScene.categories.find(
+      ({ x }) => x === first!.marks[1]!.x
+    );
+    expect(header).toBe(category!.label);
+    expect(rows).toEqual([
+      [first!.label, first!.marks[1]!.label],
+      [second!.label, second!.marks[1]!.label],
+    ]);
+  });
+
+  it('keeps a category’s authored label on a continuous axis', () => {
+    const scene: XyScene = {
+      ...xyTimeSeriesScene,
+      categories: xyTimeSeriesScene.categories.map((category) => ({
+        ...category,
+        label: `bucket ${category.label}`,
+      })),
+    };
+    expect(tooltip(scene, [[0, 0]]).header).toBe(scene.categories[0]!.label);
+  });
+
+  it('colors each row with its series’ color', () => {
+    const { colors } = tooltip(xyInteractiveScene, [[0, 1]]);
+    expect(colors).toHaveLength(1);
+    expect(colors[0]).toContain(seriesOf(xyInteractiveScene)[0]!.color);
   });
 });
 
