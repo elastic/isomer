@@ -863,16 +863,43 @@ describe('dataTable', () => {
     expect(tableBlock?.rows[1]?.[1]?.text).toBe('6,310');
   });
 
-  it('sends the description and notes to Slack with the summary', () => {
-    const { node } = dataTableExamples.find(
-      ({ name }) => name === 'Chosen columns, widths and pre-rendered values'
-    )!;
-    const [section] = runtime.surfaces.slack.render(view(node), {
+  const chosen = dataTableExamples.find(
+    ({ name }) => name === 'Chosen columns, widths and pre-rendered values'
+  )!.node;
+  /** Every string a block list draws, in order. */
+  const slackTexts = (blocks: readonly unknown[]): string[] => {
+    const texts: string[] = [];
+    JSON.stringify(blocks, (key, value: unknown) => {
+      if (key === 'text' && typeof value === 'string') {
+        texts.push(value);
+      }
+      return value;
+    });
+    return texts;
+  };
+
+  it('sends the description and notes to Slack after the summary', () => {
+    const { blocks } = runtime.surfaces.slack.render(view(chosen), {
       heading: false,
-    }).blocks as { text?: { text: string } }[];
-    expect(section?.text?.text.split('\n').slice(1)).toEqual([
-      'The most requested URLs in the last 24 hours.',
-      '_Most requested_',
-    ]);
+    });
+    const texts = slackTexts(blocks);
+    const description = texts.indexOf(
+      'The most requested URLs in the last 24 hours.'
+    );
+    expect(description).toBeGreaterThan(0);
+    expect(texts.indexOf('Most requested')).toBeGreaterThan(description);
+  });
+
+  it('keeps a description longer than a Slack section, and every note after it', () => {
+    const description = 'word '.repeat(1_000).trim();
+    const long = { ...chosen, description };
+    const { blocks } = runtime.surfaces.slack.render(view(long), {
+      heading: false,
+    });
+    const texts = slackTexts(blocks);
+    expect(texts.join('').replace(/\s/g, '')).toContain(
+      description.replace(/\s/g, '')
+    );
+    expect(texts).toContain('Most requested');
   });
 });

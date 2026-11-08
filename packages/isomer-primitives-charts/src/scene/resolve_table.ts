@@ -110,13 +110,13 @@ const sortKeysOf = (
     }
   };
   return resolution.data.rows.map((_, row) => {
-    const text = display?.[row];
-    if (text !== undefined && (type === 'string' || type === 'boolean')) {
-      return [text];
-    }
     const cell = resolution.cell(id, row);
     if (isInvalid(cell)) {
       return undefined;
+    }
+    const text = display?.[row];
+    if (text !== undefined && (type === 'string' || type === 'boolean')) {
+      return [text];
     }
     return (Array.isArray(cell) ? cell : [cell]).map(keyOf);
   });

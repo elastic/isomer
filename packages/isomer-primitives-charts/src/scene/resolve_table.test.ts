@@ -349,6 +349,15 @@ describe('dataTable sorting', () => {
     expect(scene.orders.s).toEqual({ asc: [0, 2, 1], desc: [1, 2, 0] });
   });
 
+  it('keeps a missing cell last in either direction, whatever display text it has', () => {
+    const node = table([column('s', 'string')], [[null], ['z']]);
+    const scene = resolve({
+      ...node,
+      data: { ...node.data, display: { s: ['(null)', 'z'] } },
+    });
+    expect(scene.orders.s).toEqual({ asc: [1, 0], desc: [1, 0] });
+  });
+
   it('keeps a column named __proto__ as its own order through JSON', () => {
     const scene = resolve(table([column('__proto__', 'number')], [[2], [1]]));
     expect(Object.hasOwn(scene.orders, '__proto__')).toBe(true);

@@ -6,18 +6,17 @@
  */
 
 import {
-  escapeMrkdwn,
-  italic,
   link,
   SLACK_LIMITS,
   type SlackBlock,
+  type SlackRichTextSection,
 } from '@elastic/isomer-sdk/slack';
 
 import type { TableScene } from '../scene/types';
 
 import { described, sceneNotes } from './scene_text';
 
-/** A table Scene as Slack blocks: its summary, description and notes, then a native `table` block of its strings in starting order, without empty columns and within Slack's caps, then its link. */
+/** A table Scene as Slack blocks: its summary, description and notes as paragraphs, then a native `table` block of its strings in starting order, without empty columns and within Slack's caps, then its link. */
 export const tableSceneToSlack = (
   scene: TableScene,
   baseUrl?: string
@@ -26,16 +25,23 @@ export const tableSceneToSlack = (
     .map((column, index) => ({ column, index }))
     .filter(({ column }) => !column.empty)
     .slice(0, SLACK_LIMITS.tableColumns);
+  const paragraphs = [
+    ...[scene.summary, ...described(scene)].map((text) => ({ text })),
+    ...sceneNotes(scene).map((text) => ({ text, style: { italic: true } })),
+  ];
+  // Rich text, which the envelope splits past a section's limit rather than cutting.
   const blocks: SlackBlock[] = [
     {
-      type: 'section',
-      text: {
-        type: 'mrkdwn',
-        text: [
-          ...[scene.summary, ...described(scene)].map(escapeMrkdwn),
-          ...sceneNotes(scene).map(italic),
-        ].join('\n'),
-      },
+      type: 'rich_text',
+      elements: paragraphs.map((paragraph, index): SlackRichTextSection => ({
+        type: 'rich_text_section',
+        elements: [
+          { type: 'text', ...paragraph },
+          ...(index < paragraphs.length - 1
+            ? [{ type: 'text' as const, text: '\n' }]
+            : []),
+        ],
+      })),
     },
   ];
   if (shown.length > 0 && scene.rows.length > 0) {
