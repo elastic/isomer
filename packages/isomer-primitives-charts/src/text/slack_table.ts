@@ -7,6 +7,7 @@
 
 import {
   escapeMrkdwn,
+  italic,
   link,
   SLACK_LIMITS,
   type SlackBlock,
@@ -14,7 +15,9 @@ import {
 
 import type { TableScene } from '../scene/types';
 
-/** A table Scene as Slack blocks: its summary, then a native `table` block of its strings in starting order, without empty columns and within Slack's caps. */
+import { described, sceneNotes } from './scene_text';
+
+/** A table Scene as Slack blocks: its summary, description and notes, then a native `table` block of its strings in starting order, without empty columns and within Slack's caps, then its link. */
 export const tableSceneToSlack = (
   scene: TableScene,
   baseUrl?: string
@@ -26,7 +29,13 @@ export const tableSceneToSlack = (
   const blocks: SlackBlock[] = [
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: escapeMrkdwn(scene.summary) },
+      text: {
+        type: 'mrkdwn',
+        text: [
+          ...[scene.summary, ...described(scene)].map(escapeMrkdwn),
+          ...sceneNotes(scene).map(italic),
+        ].join('\n'),
+      },
     },
   ];
   if (shown.length > 0 && scene.rows.length > 0) {

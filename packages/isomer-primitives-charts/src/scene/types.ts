@@ -118,6 +118,8 @@ export interface SceneTable {
     /** Raw node data in matching column order, for constructing chart events without parsing display text. */
     readonly values: readonly Cell[];
   }[];
+  /** A summary row below the rows, one string per column, where the chart has one. */
+  readonly footer?: readonly string[];
 }
 
 /** A box in CSS pixels. */
@@ -529,6 +531,8 @@ export interface TableScene extends SceneBase {
   readonly emptyText: string;
   /** Header and footer fill. */
   readonly headerBackground: SceneColor;
+  /** The fill of an emphasized row. */
+  readonly emphasisBackground: SceneColor;
 }
 
 /** What a renderer draws: a {@link MetricScene}, an {@link XyScene} or a {@link TableScene}. */

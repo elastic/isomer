@@ -43,7 +43,7 @@ export const DATA_TABLE_RULES = {
 
 /** How a `byKey` color names a cell. */
 export const DATA_TABLE_KEY_RULE =
-  'A `byKey` key is a cell value as a string with each `\\` and `:` preceded by `\\`; an empty cell is never colored. A number inside a band takes the band’s color first.';
+  'A `byKey` key is a cell value as a string with each `\\` and `:` preceded by `\\`; a missing, blank or multivalue cell is never colored. A number inside a band takes the band’s color first.';
 
 const decorationColors = chartColorsSchema.describe(
   `Colors by value range (\`bands\`), or by cell value (\`byKey\`). ${DATA_TABLE_KEY_RULE}`

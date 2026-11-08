@@ -34,8 +34,25 @@ const table = (
   ...extra,
 });
 
-const resolve = (node: DataTableNode, scheme: 'light' | 'dark' = 'light') =>
-  resolveChart(node, { scheme });
+const resolve = (
+  node: DataTableNode,
+  scheme: 'light' | 'dark' = 'light',
+  locale?: string
+) => resolveChart(node, { scheme, locale });
+
+const background = (
+  rows: DataTableNode['data']['rows'],
+  byKey: Record<string, { light: string; dark: string }>,
+  kind: 'background' | 'badge' = 'background'
+) =>
+  resolve(
+    table([column('s', 'string')], rows, {
+      columns: [{ column: 's', decoration: { kind, colors: { byKey } } }],
+    })
+  ).rows.map(({ cells }) => cells[0]!);
+
+// More values than V8 takes as call arguments, within the pack's input budget.
+const LONG_COLUMN = 250_000;
 
 const ordered = (
   scene: ReturnType<typeof resolve>,
@@ -159,6 +176,36 @@ describe('dataTable cells', () => {
     expect(scene.rows[1]?.cells[0]?.background).toBeUndefined();
   });
 
+  it('leaves a cell named like an Object member undecorated', () => {
+    for (const cell of background([['constructor'], ['toString']], {})) {
+      expect(cell.background).toBeUndefined();
+    }
+  });
+
+  it.each(['background', 'badge'] as const)(
+    'judges a translucent %s over the table background',
+    (kind) => {
+      const [cell] = background(
+        [['clear']],
+        { clear: { light: '#00000000', dark: '#00000000' } },
+        kind
+      );
+      expect(cell?.color).toBe('#07101F');
+    }
+  );
+
+  it('fills emphasized rows with EUI backgroundBasePrimary', () => {
+    const node = table([column('s', 'string')], [['a'], ['b']], {
+      emphasis: [{ rows: [1] }],
+    });
+    expect(resolve(node).emphasisBackground).toBe('#F1F6FF');
+    expect(resolve(node, 'dark').emphasisBackground).toBe('#0A2342');
+    expect(resolve(node).rows.map(({ emphasis }) => emphasis)).toEqual([
+      undefined,
+      '',
+    ]);
+  });
+
   it('puts textGhost on a dark cell and textInk on a light one', () => {
     const scene = resolve(
       table([column('s', 'string')], [['dark'], ['light']], {
@@ -223,6 +270,36 @@ describe('dataTable bars', () => {
   it('uses euiColorVis2 when the column sets no color', () => {
     expect(bars([1])[0]?.color).toBe('#61A2FF');
   });
+
+  it('widens equal custom bounds too large to add one to', () => {
+    const [bar] = bars([1e20], { min: 1e20, max: 1e20 });
+    for (const end of [bar?.from, bar?.to]) {
+      expect(Number.isFinite(end)).toBe(true);
+      expect(end).toBeGreaterThanOrEqual(0);
+      expect(end).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('spans a column longer than a call takes arguments', () => {
+    const values = Array.from({ length: LONG_COLUMN }, (_, i) => i);
+    const scene = resolve(
+      table(
+        [column('n', 'number')],
+        values.map((value) => [value]),
+        {
+          columns: [
+            {
+              column: 'n',
+              decoration: { kind: 'bar' },
+              summary: { kind: 'max', label: '' },
+            },
+          ],
+        }
+      )
+    );
+    expect(scene.rows[LONG_COLUMN - 1]?.cells[0]?.bar?.to).toBe(1);
+    expect(scene.columns[0]?.footer).toBe('249,999');
+  });
 });
 
 describe('dataTable sorting', () => {
@@ -263,6 +340,23 @@ describe('dataTable sorting', () => {
     expect(scene.orders.d!.desc).toEqual([0, 3, 1, 2]);
   });
 
+  it('orders strings by the display text they show', () => {
+    const node = table([column('s', 'string')], [['a'], ['b'], ['c']]);
+    const scene = resolve({
+      ...node,
+      data: { ...node.data, display: { s: ['x', 'z', 'y'] } },
+    });
+    expect(scene.orders.s).toEqual({ asc: [0, 2, 1], desc: [1, 2, 0] });
+  });
+
+  it('keeps a column named __proto__ as its own order through JSON', () => {
+    const scene = resolve(table([column('__proto__', 'number')], [[2], [1]]));
+    expect(Object.hasOwn(scene.orders, '__proto__')).toBe(true);
+    const shipped = JSON.parse(JSON.stringify(scene)) as typeof scene;
+    expect(Object.hasOwn(shipped.orders, '__proto__')).toBe(true);
+    expect(shipped.orders['__proto__']).toEqual({ asc: [1, 0], desc: [0, 1] });
+  });
+
   it('starts in the persisted sort', () => {
     const scene = resolve(
       table([column('n', 'number')], [[2], [3], [1]], {
@@ -276,7 +370,8 @@ describe('dataTable sorting', () => {
 describe('dataTable summary row', () => {
   const footer = (
     summary: NonNullable<DataTableNode['columns']>[number]['summary'],
-    rows: DataTableNode['data']['rows']
+    rows: DataTableNode['data']['rows'],
+    locale?: string
   ) =>
     resolve(
       table(
@@ -295,7 +390,9 @@ describe('dataTable summary row', () => {
         {
           columns: [{ column: 'n', summary }],
         }
-      )
+      ),
+      'light',
+      locale
     ).columns[0]?.footer;
 
   it.each(['avg', 'sum', 'min', 'max'] as const)(
@@ -312,6 +409,58 @@ describe('dataTable summary row', () => {
 
   it('prefixes the default label', () => {
     expect(footer({ kind: 'count' }, [[1]])).toBe('Value count: 1');
+  });
+
+  it('leaves out nulls inside multivalue cells', () => {
+    const rows = [[[10, null, 20]]];
+    expect(footer({ kind: 'count', label: '' }, rows)).toBe('2');
+    expect(footer({ kind: 'avg', label: '' }, rows)).toBe('15.00');
+    expect(footer({ kind: 'min', label: '' }, rows)).toBe('10.00');
+  });
+
+  it.each(['avg', 'min', 'max'] as const)(
+    'shows %s of no value as a dash',
+    (kind) => {
+      expect(footer({ kind }, [[null]])).toMatch(/: -$/);
+      expect(footer({ kind, label: '' }, [])).toBe('-');
+    }
+  );
+
+  it('sums and counts no value as zero', () => {
+    expect(footer({ kind: 'sum', label: '' }, [[null]])).toBe('0.00');
+    expect(footer({ kind: 'count', label: '' }, [])).toBe('0');
+  });
+
+  it('formats in the locale the table resolves for', () => {
+    expect(footer({ kind: 'sum', label: '' }, [[1234.5]], 'de')).toBe(
+      '1.234,50'
+    );
+  });
+});
+
+describe('dataTable text', () => {
+  it('ends the text surfaces’ table with the footer row', () => {
+    const scene = resolve(
+      table(
+        [
+          column('host', 'string'),
+          column('n', 'number'),
+          column('e', 'string'),
+        ],
+        [
+          ['a', 2, null],
+          ['b', 3, null],
+        ],
+        {
+          columns: [
+            { column: 'host' },
+            { column: 'n', summary: { kind: 'sum' } },
+            { column: 'e' },
+          ],
+        }
+      )
+    );
+    expect(scene.table.footer).toEqual(['', 'Sum: 5', '']);
   });
 });
 

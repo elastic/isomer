@@ -32,7 +32,10 @@ import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
-import { dataTableTopHosts } from './schema/examples/data_table';
+import {
+  dataTableExamples,
+  dataTableTopHosts,
+} from './schema/examples/data_table';
 import { gridExamples } from './schema/examples/grid';
 import { unsupportedVega } from './schema/examples/unsupported';
 import type { GridNode } from './schema/grid';
@@ -858,5 +861,18 @@ describe('dataTable', () => {
       'Other',
     ]);
     expect(tableBlock?.rows[1]?.[1]?.text).toBe('6,310');
+  });
+
+  it('sends the description and notes to Slack with the summary', () => {
+    const { node } = dataTableExamples.find(
+      ({ name }) => name === 'Chosen columns, widths and pre-rendered values'
+    )!;
+    const [section] = runtime.surfaces.slack.render(view(node), {
+      heading: false,
+    }).blocks as { text?: { text: string } }[];
+    expect(section?.text?.text.split('\n').slice(1)).toEqual([
+      'The most requested URLs in the last 24 hours.',
+      '_Most requested_',
+    ]);
   });
 });

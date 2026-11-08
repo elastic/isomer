@@ -7,17 +7,37 @@
 
 // A table Scene as an HTML table, laid out as Lens's data grid: a shaded
 // header, rows split by horizontal lines, an optional shaded footer, and the
-// pager. It draws the first page in the Scene's starting order. Every color is
-// the Scene's; every length is `CHARTS_THEME.table`'s.
+// pager, under the title and description and above the notes and link. It
+// draws the first page in the Scene's starting order. Every color is the
+// Scene's; every length is `CHARTS_THEME`'s.
 
 import type { CSSProperties, ReactNode } from 'react';
+import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
 import type { TableCell, TableScene } from '../scene/types';
+import { sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';
 import { CHARTS_THEME } from './theme';
 
 const theme = CHARTS_THEME.table;
+
+const ellipsis: CSSProperties = {
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+};
+
+const linkOf = ({ interactions: { link } }: TableScene) => {
+  const href = link && sanitizeNavigationHref(link.href);
+  return link && href ? { href, label: link.label } : undefined;
+};
+
+/** The height of the lines around the table: title, description, notes and link. */
+const textHeight = (scene: TableScene) =>
+  (scene.title ? theme.titleHeight : 0) +
+  (scene.description ? theme.lineHeight : 0) +
+  (sceneNotes(scene).length + (linkOf(scene) ? 1 : 0)) * theme.lineHeight;
 
 /** The rows drawn on the first page, as positions into `scene.rows`. */
 const firstPage = (scene: TableScene): readonly number[] =>
@@ -30,27 +50,30 @@ const hasFooter = (scene: TableScene) =>
 const chromeRows = (scene: TableScene) =>
   1 + (hasFooter(scene) ? 1 : 0) + (scene.paging ? 1 : 0);
 
-/** The height a table draws at: the Scene's, else its first page's rows. */
+/** The height a table draws at: the Scene's, else its lines and first page's rows. */
 export const tableHeight = (scene: TableScene): number =>
   scene.size?.height ??
-  (chromeRows(scene) + Math.max(firstPage(scene).length, 1)) *
-    theme.density[scene.density].rowHeight;
+  textHeight(scene) +
+    (chromeRows(scene) + Math.max(firstPage(scene).length, 1)) *
+      theme.density[scene.density].rowHeight;
 
 /** The first page's rows that fit the height the table draws at. */
 const shownRows = (scene: TableScene): readonly number[] => {
   const { rowHeight } = theme.density[scene.density];
   const fits = Math.max(
     0,
-    Math.floor(tableHeight(scene) / rowHeight) - chromeRows(scene)
+    Math.floor((tableHeight(scene) - textHeight(scene)) / rowHeight) -
+      chromeRows(scene)
   );
   return firstPage(scene).slice(0, fits);
 };
 
-const ellipsis: CSSProperties = {
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-};
+const line = (height: number, fontSize: number): CSSProperties => ({
+  ...ellipsis,
+  height,
+  lineHeight: `${height}px`,
+  fontSize,
+});
 
 const Bar = ({
   bar,
@@ -148,13 +171,14 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
     boxSizing: 'border-box',
   });
   const gutters = scene.columns.map((_, index) =>
-    Math.max(
-      theme.barLabelMinChars,
-      ...shown.map(
-        (position) => scene.rows[position]!.cells[index]!.text.length
-      )
+    shown.reduce(
+      (widest, position) =>
+        Math.max(widest, scene.rows[position]!.cells[index]!.text.length),
+      theme.barLabelMinChars
     )
   );
+  const link = linkOf(scene);
+  const bodyLine = line(theme.lineHeight, CHARTS_THEME.type.body);
   const shaded: CSSProperties = { background: scene.headerBackground };
 
   return (
@@ -167,6 +191,22 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
         color: chrome.text,
         background: chrome.background,
       }}>
+      {scene.title && (
+        <div
+          data-part="title"
+          title={scene.title}
+          style={{
+            ...line(theme.titleHeight, CHARTS_THEME.type.title),
+            fontWeight: theme.headerWeight,
+          }}>
+          {scene.title}
+        </div>
+      )}
+      {scene.description && (
+        <div data-part="description" title={scene.description} style={bodyLine}>
+          {scene.description}
+        </div>
+      )}
       <table
         aria-label={scene.summary}
         style={{
@@ -212,19 +252,30 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
                 <tr
                   key={row.row}
                   data-row={row.row}
-                  data-row-header={scene.rowHeader}
-                  style={{ borderBottom: rule }}>
+                  {...(row.emphasis !== undefined && {
+                    'data-emphasis': row.emphasis,
+                  })}
+                  style={{
+                    borderBottom: rule,
+                    ...(row.emphasis !== undefined && {
+                      background: scene.emphasisBackground,
+                    }),
+                  }}>
                   {row.cells.map((cell, index) => {
                     const column = scene.columns[index]!;
+                    const header = column.id === scene.rowHeader;
+                    const CellTag = header ? 'th' : 'td';
                     return (
-                      <td
+                      <CellTag
                         key={column.id}
+                        {...(header && { scope: 'row' })}
                         data-row={cell.source.rows.join(' ')}
                         data-column={column.id}
                         data-empty={cell.empty}
                         title={cell.title ?? cell.text}
                         style={{
                           ...cellStyle(column.alignment),
+                          ...(header && { fontWeight: 'normal' }),
                           color: cell.color,
                           ...(cell.background && {
                             background: cell.background,
@@ -240,7 +291,7 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
                         ) : (
                           <CellText cell={cell} />
                         )}
-                      </td>
+                      </CellTag>
                     );
                   })}
                 </tr>
@@ -285,6 +336,18 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
               </span>
             ))}
           </span>
+        </div>
+      )}
+      {sceneNotes(scene).map((note, index) => (
+        <div key={index} data-part="note" title={note} style={bodyLine}>
+          <em>{note}</em>
+        </div>
+      ))}
+      {link && (
+        <div data-part="link" style={bodyLine}>
+          <a href={link.href} style={{ color: 'inherit' }}>
+            {link.label}
+          </a>
         </div>
       )}
     </div>

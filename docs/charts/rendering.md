@@ -70,7 +70,7 @@ The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/
 
 ## Text, Markdown and Slack
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description, notes and link. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description, notes and link. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
 
 ```text
 Requests over time: Count of records by @timestamp per hour, from 98 to 210.

@@ -64,6 +64,10 @@ export const CHARTS_THEME = {
     badgePadding: 4,
     badgeRadius: 3,
     pageGap: 12,
+    /** Height of the title line, in pixels. */
+    titleHeight: 24,
+    /** Height of a description, note or link line, in pixels. */
+    lineHeight: 18,
   },
   unsupported: {
     padding: 12,

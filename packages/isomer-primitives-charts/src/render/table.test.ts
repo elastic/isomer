@@ -36,6 +36,10 @@ const escaped = (text: string) =>
 const example = (name: string) =>
   dataTableExamples.find((entry) => entry.name === name)!.node;
 
+const { titleHeight, lineHeight } = CHARTS_THEME.table;
+
+const CHOSEN = 'Chosen columns, widths and pre-rendered values';
+
 const firstPage = (scene: TableScene) =>
   scene.paging ? scene.order.slice(0, scene.paging.pageSize) : scene.order;
 
@@ -115,22 +119,99 @@ describe('TableView', () => {
     expect(span?.[2]).toBe(escaped(scene.emptyText));
   });
 
-  it('is its header, first page, footer and pager tall without a size', () => {
+  it('is its title, header, first page, footer and pager tall without a size', () => {
     const scene = tableOf(example('Paged with a summary row'));
     const { rowHeight } = CHARTS_THEME.table.density[scene.density];
     expect(scene.paging).toBeDefined();
     expect(scene.columns.some(({ footer }) => footer)).toBe(true);
     expect(tableHeight(scene)).toBe(
-      (1 + scene.paging!.pageSize + 1 + 1) * rowHeight
+      titleHeight + (1 + scene.paging!.pageSize + 1 + 1) * rowHeight
+    );
+  });
+
+  it('counts the description, notes and link in its height', () => {
+    const scene = tableOf(example(CHOSEN));
+    const { rowHeight } = CHARTS_THEME.table.density[scene.density];
+    expect(tableHeight(scene)).toBe(
+      titleHeight + 3 * lineHeight + (1 + scene.rows.length) * rowHeight
     );
   });
 
   it('draws only the rows that fit a given size', () => {
     const scene = tableOf(example('Top hosts'));
     const { rowHeight } = CHARTS_THEME.table.density[scene.density];
-    const sized = { ...scene, size: { width: 300, height: 3 * rowHeight } };
-    expect(tableHeight(sized)).toBe(3 * rowHeight);
+    const height = titleHeight + 3 * rowHeight;
+    const sized = { ...scene, size: { width: 300, height } };
+    expect(tableHeight(sized)).toBe(height);
     expect(markup(sized).match(/<tr data-row=/g)).toHaveLength(2);
+  });
+
+  it('draws the title, description, notes and link', () => {
+    const scene = tableOf(example(CHOSEN));
+    const html = markup(scene);
+    const { link } = scene.interactions;
+    for (const part of ['title', 'description', 'note']) {
+      expect(html).toContain(`data-part="${part}"`);
+    }
+    for (const text of [scene.title, scene.description, 'Most requested']) {
+      expect(html).toMatch(
+        new RegExp(`>${escaped(text!).replace(/[[\]]/g, '\\$&')}<`)
+      );
+    }
+    expect(html).toContain(
+      `<a href="${escaped(link!.href)}" style="color:inherit">${escaped(link!.label)}</a>`
+    );
+  });
+
+  it('drops a link the navigation policy refuses', () => {
+    const scene = tableOf(example(CHOSEN));
+    const unsafe = {
+      ...scene,
+      interactions: {
+        ...scene.interactions,
+        link: { href: 'javascript:alert(1)', label: 'Open' },
+      },
+    };
+    expect(markup(unsafe)).not.toContain('javascript:');
+    expect(tableHeight(unsafe)).toBe(tableHeight(scene) - lineHeight);
+  });
+
+  it('fills emphasized rows with the Scene’s emphasis color', () => {
+    const scene = tableOf(example(CHOSEN), 'dark');
+    expect(markup(scene)).toMatch(
+      new RegExp(
+        `<tr data-row="0" data-emphasis="Most requested" style="[^"]*background:${scene.emphasisBackground}`
+      )
+    );
+  });
+
+  it('heads each row with its row header cell', () => {
+    const scene = tableOf(example('Top hosts'));
+    const html = markup(scene);
+    const headers = [
+      ...html.matchAll(
+        /<th scope="row" data-row="(\d+)" data-column="([^"]+)"/g
+      ),
+    ];
+    expect(headers.map(([, , id]) => id)).toEqual(
+      scene.rows.map(() => scene.rowHeader)
+    );
+    expect(html).not.toMatch(
+      new RegExp(`<td[^>]*data-column="${scene.rowHeader}"`)
+    );
+  });
+
+  it('sizes bar labels for a page longer than a call takes arguments', () => {
+    const rows = Array.from({ length: 250_000 }, (_, i) => [i]);
+    const scene = tableOf({
+      type: 'dataTable',
+      data: {
+        columns: [{ id: 'n', label: 'n', type: 'number', role: 'metric' }],
+        rows,
+      },
+      columns: [{ column: 'n', decoration: { kind: 'bar' } }],
+    });
+    expect(() => TableView({ scene })).not.toThrow();
   });
 });
 

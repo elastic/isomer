@@ -10,14 +10,9 @@
 // bar domains, the `@kbn/sort-predicates` orderings and the summary row.
 
 import { toEpoch } from '../format/date';
-import {
-  DEFAULT_FORMATS,
-  EMPTY_LABEL,
-  formatValue,
-  NULL_LABEL,
-} from '../format/format';
+import { DEFAULT_FORMATS, EMPTY_LABEL, NULL_LABEL } from '../format/format';
 import type { ChartColors } from '../schema/colors';
-import type { Cell, ColumnType, ScalarCell } from '../schema/data';
+import type { Cell, ScalarCell } from '../schema/data';
 import type {
   DataTableColumn,
   DataTableNode,
@@ -78,77 +73,84 @@ const isInvalid = (value: unknown): value is null | undefined =>
   value === undefined ||
   (typeof value === 'number' && Number.isNaN(value));
 
-const invalidOrder = (a: unknown, b: unknown): number | undefined => {
+/** What one element of a cell sorts by: a number, a time, or its text. */
+type SortKey = number | string | undefined;
+
+const compareKeys = (a: SortKey, b: SortKey, locale: string): number => {
   if (isInvalid(a)) {
     return isInvalid(b) ? 0 : -1;
   }
-  return isInvalid(b) ? 1 : undefined;
+  if (isInvalid(b)) {
+    return 1;
+  }
+  return typeof a === 'number' && typeof b === 'number'
+    ? a - b
+    : String(a).localeCompare(String(b), locale);
 };
 
-type Compare = (a: ScalarCell | undefined, b: ScalarCell | undefined) => number;
-
-const comparatorFor = (
-  type: ColumnType,
-  format: PortableFormat,
-  locale: string
-): Compare => {
-  switch (type) {
-    case 'number':
-      return (a, b) => invalidOrder(a, b) ?? (a as number) - (b as number);
-    case 'date':
-      return (a, b) => {
-        const x = isInvalid(a) ? undefined : toEpoch(a);
-        const y = isInvalid(b) ? undefined : toEpoch(b);
-        if (x === undefined) {
-          return y === undefined ? 0 : -1;
-        }
-        if (y === undefined) {
-          return 1;
-        }
-        return x === y ? 0 : x < y ? -1 : 1;
-      };
-    case 'string':
-    case 'boolean':
-      return (a, b) =>
-        invalidOrder(a, b) ??
-        formatValue(a ?? null, format).localeCompare(
-          formatValue(b ?? null, format),
-          locale
-        );
-  }
+/** Each row's sort keys in column `id`, element by element; `undefined` for a missing cell. */
+const sortKeysOf = (
+  resolution: Resolution,
+  id: string
+): (readonly SortKey[] | undefined)[] => {
+  const { type } = resolution.column(id);
+  const display = resolution.data.display?.[id];
+  const keyOf = (value: ScalarCell): SortKey => {
+    if (isInvalid(value)) {
+      return undefined;
+    }
+    switch (type) {
+      case 'number':
+        return value as number;
+      case 'date':
+        return toEpoch(value);
+      case 'string':
+      case 'boolean':
+        return resolution.valueText(id, value);
+    }
+  };
+  return resolution.data.rows.map((_, row) => {
+    const text = display?.[row];
+    if (text !== undefined && (type === 'string' || type === 'boolean')) {
+      return [text];
+    }
+    const cell = resolution.cell(id, row);
+    if (isInvalid(cell)) {
+      return undefined;
+    }
+    return (Array.isArray(cell) ? cell : [cell]).map(keyOf);
+  });
 };
 
 /** Rows in `direction`, as `getSortingCriteria` orders them; ties keep `data` order. */
 const sortRows = (
-  cells: readonly Cell[],
-  compare: Compare,
-  direction: Direction
+  keys: readonly (readonly SortKey[] | undefined)[],
+  direction: Direction,
+  locale: string
 ): number[] => {
   const factor = direction === 'asc' ? 1 : -1;
-  const rowCompare = (a: Cell, b: Cell): number => {
+  const rowCompare = (
+    a: readonly SortKey[] | undefined,
+    b: readonly SortKey[] | undefined
+  ): number => {
     // A missing cell is last in either direction.
-    if (isInvalid(a)) {
-      return isInvalid(b) ? 0 : 1;
+    if (a === undefined) {
+      return b === undefined ? 0 : 1;
     }
-    if (isInvalid(b)) {
+    if (b === undefined) {
       return -1;
     }
-    if (Array.isArray(a) || Array.isArray(b)) {
-      const left = Array.isArray(a) ? a : [a];
-      const right = Array.isArray(b) ? b : [b];
-      for (let i = 0; i < Math.max(left.length, right.length); i++) {
-        const result = compare(left[i], right[i]);
-        if (result !== 0) {
-          return factor * result;
-        }
+    for (let i = 0; i < Math.max(a.length, b.length); i++) {
+      const result = compareKeys(a[i], b[i], locale);
+      if (result !== 0) {
+        return factor * result;
       }
-      return 0;
     }
-    return factor * compare(a, b);
+    return 0;
   };
-  return cells
+  return keys
     .map((_, index) => index)
-    .sort((x, y) => rowCompare(cells[x]!, cells[y]!));
+    .sort((x, y) => rowCompare(keys[x], keys[y]));
 };
 
 const isEmptyCell = (cell: Cell | undefined) =>
@@ -171,7 +173,11 @@ const keyColor = (
       return resolveColor(band.color, scheme);
     }
   }
-  const byKey = colors.byKey?.[keyPart(value)];
+  const key = keyPart(value);
+  const byKey =
+    colors.byKey && Object.hasOwn(colors.byKey, key)
+      ? colors.byKey[key]
+      : undefined;
   return byKey ? resolveColor(byKey, scheme) : undefined;
 };
 
@@ -181,8 +187,8 @@ const barDomain = (
   values: readonly number[]
 ): [number, number] => {
   // Lens's `getFallbackDataBounds` when the column holds no number.
-  const low = values.length ? Math.min(...values) : 0;
-  const high = values.length ? Math.max(...values) : 100;
+  const low = values.length ? values.reduce((a, b) => Math.min(a, b)) : 0;
+  const high = values.length ? values.reduce((a, b) => Math.max(a, b)) : 100;
   const custom = decoration.min !== undefined || decoration.max !== undefined;
   let min = decoration.min ?? low;
   let max = decoration.max ?? high;
@@ -190,36 +196,49 @@ const barDomain = (
     [min, max] = [max, min];
   }
   if (min === max) {
+    // At least one unit, and at least one ulp where a unit is too small to add.
+    const step = Math.max(1, Math.abs(min) * Number.EPSILON);
     if (custom) {
-      max = min + 1;
+      max = min + step;
     } else if (min > 0) {
       min = 0;
     } else if (max < 0) {
       max = 0;
     } else {
-      max = min + 1;
+      max = min + step;
     }
   }
   return [min, max];
 };
 
-/** A summary over every non-null value, arrays flattened, as Lens's `computeFinalValue`. */
-const summarize = (kind: DataTableSummary, cells: readonly Cell[]): number => {
+/**
+ * A summary over every non-null value, arrays flattened, as Lens's
+ * `computeFinalValue`; `undefined` for an average, minimum or maximum of none.
+ */
+const summarize = (
+  kind: DataTableSummary,
+  cells: readonly Cell[]
+): number | undefined => {
   const values = cells
-    .filter((cell) => cell !== null && cell !== undefined)
-    .flat() as number[];
+    .flat()
+    .filter((value): value is number => typeof value === 'number');
   const sum = values.reduce((total, value) => total + value, 0);
+  if (kind === 'count') {
+    return values.length;
+  }
+  if (kind === 'sum') {
+    return sum;
+  }
+  if (values.length === 0) {
+    return undefined;
+  }
   switch (kind) {
-    case 'sum':
-      return sum;
-    case 'count':
-      return values.length;
     case 'avg':
       return sum / values.length;
     case 'min':
-      return Math.min(...values);
+      return values.reduce((a, b) => Math.min(a, b));
     case 'max':
-      return Math.max(...values);
+      return values.reduce((a, b) => Math.max(a, b));
   }
 };
 
@@ -232,10 +251,13 @@ const footerText = (
     summary.kind,
     resolution.data.rows.map((_, row) => resolution.cell(id, row))
   );
-  const text = formatValue(
-    value,
-    summary.kind === 'count' ? COUNT_FORMAT : resolution.format(id)
-  );
+  const text =
+    value === undefined
+      ? TABLE_MISSING_TEXT
+      : resolution.formatAs(
+          value,
+          summary.kind === 'count' ? COUNT_FORMAT : resolution.format(id)
+        );
   const label = summary.label ?? SUMMARY_LABELS[summary.kind];
   return label === '' ? text : `${label}: ${text}`;
 };
@@ -363,6 +385,7 @@ export const resolveTable = (
       };
     }
     const decoration = setting.decoration;
+    const canvas = emphasis.has(row) ? palette.emphasis : chrome.background;
     const scalar = Array.isArray(raw) ? undefined : raw;
     if (!decoration || scalar === undefined) {
       return { ...base, color: chrome.text };
@@ -402,10 +425,14 @@ export const resolveTable = (
         return {
           ...base,
           background: color,
-          color: contrastText(color, scheme),
+          color: contrastText(color, canvas, scheme),
         };
       case 'badge':
-        return { ...base, badge: color, color: contrastText(color, scheme) };
+        return {
+          ...base,
+          badge: color,
+          color: contrastText(color, canvas, scheme),
+        };
     }
   };
 
@@ -416,23 +443,24 @@ export const resolveTable = (
   }));
 
   const sort = node.interactions?.initial?.sort;
-  const orders: Record<string, TableOrder> = {};
-  for (const id of new Set([
-    ...settings.map(({ column }) => column),
-    ...(sort ? [sort.column] : []),
-  ])) {
-    const { type } = resolution.column(id);
-    const compare = comparatorFor(
-      type,
-      resolution.format(id),
-      resolution.locale
-    );
-    const cells = cellsOf(id);
-    orders[id] = {
-      asc: sortRows(cells, compare, 'asc'),
-      desc: sortRows(cells, compare, 'desc'),
-    };
-  }
+  // `fromEntries` keeps any column id, `__proto__` included, as an own key.
+  const orders: Record<string, TableOrder> = Object.fromEntries(
+    [
+      ...new Set([
+        ...settings.map(({ column }) => column),
+        ...(sort ? [sort.column] : []),
+      ]),
+    ].map((id) => {
+      const keys = sortKeysOf(resolution, id);
+      return [
+        id,
+        {
+          asc: sortRows(keys, 'asc', resolution.locale),
+          desc: sortRows(keys, 'desc', resolution.locale),
+        },
+      ];
+    })
+  );
   const order = sort
     ? orders[sort.column]![sort.direction]
     : rows.map((_, index) => index);
@@ -467,6 +495,9 @@ export const resolveTable = (
         cells: cells.map(({ text }) => text),
         values: columns.map(({ id }) => resolution.cell(id, row) ?? null),
       })),
+      ...(columns.some(({ footer }) => footer !== undefined)
+        ? { footer: columns.map(({ footer }) => footer ?? '') }
+        : {}),
     },
     summary: titled(node.title, sentence),
     interactions,
@@ -484,5 +515,6 @@ export const resolveTable = (
     density: node.density ?? 'default',
     emptyText: TABLE_EMPTY_TEXT,
     headerBackground: palette.header,
+    emphasisBackground: palette.emphasis,
   };
 };
