@@ -28,26 +28,59 @@ import { metricHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
+/**
+ * Without a badge, Elastic Charts recolors secondary-metric props to its
+ * contrast color, so the text is drawn as an element in the Scene's color.
+ */
+const plainSecondary = ({
+  text,
+  color,
+  label,
+  labelPlacement,
+}: NonNullable<MetricTile['secondary']>) => {
+  const PlainSecondary = () => (
+    <span
+      className="echSecondaryMetric"
+      style={{ color }}
+      {...(label !== undefined && labelPlacement === 'tooltip'
+        ? { title: label }
+        : {})}>
+      {label !== undefined && labelPlacement === 'before' ? (
+        <span className="echSecondaryMetric__label">{label} </span>
+      ) : null}
+      {label !== undefined && labelPlacement === 'tooltip' ? (
+        <span className="echScreenReaderOnly">{label} </span>
+      ) : null}
+      {text}
+      {label !== undefined && labelPlacement === 'after' ? (
+        <span className="echSecondaryMetric__label"> {label}</span>
+      ) : null}
+    </span>
+  );
+  return PlainSecondary;
+};
+
 const secondaryOf = ({
   secondary,
-}: MetricTile): SecondaryMetricProps | undefined =>
-  secondary === undefined
-    ? undefined
-    : {
-        value: secondary.text,
-        ...(secondary.badge?.icon === undefined
-          ? {}
-          : { icon: secondary.badge.icon }),
-        ...(secondary.label === undefined ? {} : { label: secondary.label }),
-        labelPosition: secondary.labelPlacement,
-        ...(secondary.badge === undefined
-          ? { style: { color: secondary.color } }
-          : {
-              badgeColor: secondary.badge.color,
-              badgeTextColor: secondary.color,
-            }),
-        badgeBorderColor: { mode: 'none' },
-      };
+}: MetricTile): MetricDatum['extra'] | undefined => {
+  if (secondary === undefined) {
+    return undefined;
+  }
+  const { badge } = secondary;
+  if (badge === undefined) {
+    return plainSecondary(secondary);
+  }
+  const props: SecondaryMetricProps = {
+    value: secondary.text,
+    ...(badge.icon === undefined ? {} : { icon: badge.icon }),
+    ...(secondary.label === undefined ? {} : { label: secondary.label }),
+    labelPosition: secondary.labelPlacement,
+    badgeColor: badge.color,
+    badgeTextColor: secondary.color,
+    badgeBorderColor: { mode: 'none' },
+  };
+  return props;
+};
 
 /** The Elastic Charts datum for a tile. Its value prints the Scene's text, whatever Elastic Charts passes. */
 export const metricDatum = (tile: MetricTile): MetricDatum => {

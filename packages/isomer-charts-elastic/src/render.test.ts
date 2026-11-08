@@ -21,12 +21,14 @@ import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ChartEvent,
   formatAxisValue,
+  type MetricScene,
   metricSingleValueScene,
   type Scene,
   type SceneAxis,
   type SceneRenderEnv,
   xyInteractiveScene,
   type XyScene,
+  type XySceneLayer,
   xyTimeSeriesScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
@@ -68,6 +70,8 @@ globalThis.ResizeObserver = FixedResizeObserver;
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
+/** Every fill and stroke color Elastic Charts sets, in paint order. */
+const paints: string[] = [];
 const context = new Proxy(
   {},
   {
@@ -85,7 +89,12 @@ const context = new Proxy(
           : typeof key === 'string' && key.startsWith('create')
             ? () => ({ addColorStop: () => undefined })
             : () => undefined,
-    set: () => true,
+    set: (_, key, value) => {
+      if (key === 'fillStyle' || key === 'strokeStyle') {
+        paints.push(String(value));
+      }
+      return true;
+    },
   }
 );
 HTMLCanvasElement.prototype.getContext = (() => context) as never;
@@ -240,6 +249,67 @@ describe('elastic-charts renderer: xy', () => {
   });
 });
 
+describe('elastic-charts renderer: xy layer order', () => {
+  const LINE = '#ff0000';
+  const RANGE = '#00ff00';
+  const rgba = (hex: string) =>
+    `rgba(${parseInt(hex.slice(1, 3), 16)}, ${parseInt(hex.slice(3, 5), 16)}, ${parseInt(hex.slice(5, 7), 16)}, 1)`;
+  const reference: XySceneLayer = {
+    kind: 'referenceLine',
+    line: {
+      axis: 'y',
+      value: 100,
+      color: LINE,
+      strokeWidth: 1,
+      strokeDash: 'solid',
+      textPosition: 'auto',
+    },
+  };
+  const range: XySceneLayer = {
+    kind: 'annotation',
+    annotation: {
+      kind: 'range',
+      fill: 'inside',
+      from: xyInteractiveScene.categories[0]!.x as number,
+      to: xyInteractiveScene.categories[1]!.x as number,
+      color: RANGE,
+      tooltip: { entries: [] },
+    },
+  };
+  const series = xyInteractiveScene.layers.filter(
+    ({ kind }) => kind === 'series'
+  );
+  const bar = seriesOf(xyInteractiveScene)[0]!.color;
+
+  /** Where Elastic Charts first paints each color. */
+  const paintOrder = async (layers: XyScene['layers']) => {
+    paints.length = 0;
+    await draw({ ...xyInteractiveScene, layers });
+    const first = (hex: string) => {
+      const at = paints.findIndex(
+        (paint) =>
+          paint.toLowerCase() === hex.toLowerCase() ||
+          paint.replace(/\s/g, '') === rgba(hex).replace(/\s/g, '')
+      );
+      expect(at, `${hex} painted`).toBeGreaterThanOrEqual(0);
+      return at;
+    };
+    return { line: first(LINE), range: first(RANGE), bar: first(bar) };
+  };
+
+  it('paints helper layers before the first series beneath the series', async () => {
+    const order = await paintOrder([reference, range, ...series]);
+    expect(order.line).toBeLessThan(order.bar);
+    expect(order.range).toBeLessThan(order.bar);
+  });
+
+  it('paints helper layers after a series above the series', async () => {
+    const order = await paintOrder([...series, range, reference]);
+    expect(order.bar).toBeLessThan(order.range);
+    expect(order.range).toBeLessThan(order.line);
+  });
+});
+
 describe('elastic-charts renderer: xy legend actions', () => {
   const filterOut = chartEventExamples.find(
     ({ name }) => name === 'Filter out a legend item'
@@ -338,6 +408,37 @@ describe('elastic-charts renderer: metric', () => {
     expect(container.textContent).toContain(tile!.title);
     expect(container.textContent).toContain(tile!.value.text);
   });
+
+  it.each([
+    { placement: 'before', text: 'last week +5%' },
+    { placement: 'after', text: '+5% last week' },
+    { placement: 'tooltip', text: 'last week +5%' },
+  ] as const)(
+    'draws unbadged secondary text in the Scene’s color, label $placement',
+    async ({ placement, text }) => {
+      const [tile] = metricSingleValueScene.tiles;
+      const scene: MetricScene = {
+        ...metricSingleValueScene,
+        tiles: [
+          {
+            ...tile!,
+            secondary: {
+              text: '+5%',
+              color: '#ff00ff',
+              label: 'last week',
+              labelPlacement: placement,
+            },
+          },
+        ],
+      };
+      const container = await draw(scene);
+      const secondary = container.querySelector<HTMLElement>(
+        '.echSecondaryMetric'
+      );
+      expect(secondary?.style.color).toBe('rgb(255, 0, 255)');
+      expect(secondary?.textContent?.replace(/\s+/g, ' ').trim()).toBe(text);
+    }
+  );
 });
 
 const SIZE = { width: 480, height: 240 };

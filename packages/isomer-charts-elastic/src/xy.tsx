@@ -392,7 +392,8 @@ const dashOf = (style: 'solid' | 'dashed' | 'dotted', width: number) =>
 
 const referenceLineElements = (
   line: SceneReferenceLine,
-  index: number
+  index: number,
+  zIndex: number
 ): ReactNode[] => {
   const onX = line.axis === 'x';
   const dash = dashOf(line.strokeDash, line.strokeWidth);
@@ -400,6 +401,7 @@ const referenceLineElements = (
     <LineAnnotation
       key={`reference-${index}`}
       id={`reference-${index}`}
+      zIndex={zIndex}
       domainType={
         onX ? AnnotationDomainType.XDomain : AnnotationDomainType.YDomain
       }
@@ -428,6 +430,7 @@ const referenceLineElements = (
       <RectAnnotation
         key={`reference-${index}-fill`}
         id={`reference-${index}-fill`}
+        zIndex={zIndex}
         {...(onX ? {} : { groupId: line.axis })}
         dataValues={[
           {
@@ -447,6 +450,7 @@ const OUTSIDE_RECT_WIDTH = 8;
 const annotationElement = (
   annotation: SceneAnnotation,
   index: number,
+  zIndex: number,
   scene: XyScene
 ): ReactNode => {
   const id = `annotation-${index}`;
@@ -455,6 +459,7 @@ const annotationElement = (
       <RectAnnotation
         key={id}
         id={id}
+        zIndex={zIndex}
         dataValues={[
           {
             coordinates: { x0: annotation.from, x1: annotation.to },
@@ -483,6 +488,7 @@ const annotationElement = (
     <LineAnnotation
       key={id}
       id={id}
+      zIndex={zIndex}
       domainType={AnnotationDomainType.XDomain}
       dataValues={[
         {
@@ -602,19 +608,42 @@ const legendAction =
   };
 
 /**
- * The Scene's layers in draw order. Each kind keeps its own index, so a
+ * Elastic Charts paints annotations with `zIndex <= 0` beneath every series
+ * and the rest above them, each band in spec order. A helper layer before the
+ * first series goes beneath; any later one goes above.
+ */
+export const layerZIndex = (scene: XyScene, position: number): number => {
+  const firstSeries = scene.layers.findIndex(({ kind }) => kind === 'series');
+  return firstSeries === -1 || position > firstSeries
+    ? position + 1
+    : position - scene.layers.length;
+};
+
+/**
+ * The Scene's layers in spec order. Each kind keeps its own index, so a
  * series' spec id is its position in {@link seriesOf}.
  */
 const layerElements = (scene: XyScene): ReactNode[] => {
   const next = { series: 0, referenceLine: 0, annotation: 0 };
-  return scene.layers.flatMap((layer) => {
+  return scene.layers.flatMap((layer, position) => {
     switch (layer.kind) {
       case 'series':
         return [seriesElement(layer.series, next.series++, scene)];
       case 'referenceLine':
-        return referenceLineElements(layer.line, next.referenceLine++);
+        return referenceLineElements(
+          layer.line,
+          next.referenceLine++,
+          layerZIndex(scene, position)
+        );
       case 'annotation':
-        return [annotationElement(layer.annotation, next.annotation++, scene)];
+        return [
+          annotationElement(
+            layer.annotation,
+            next.annotation++,
+            layerZIndex(scene, position),
+            scene
+          ),
+        ];
     }
   });
 };
