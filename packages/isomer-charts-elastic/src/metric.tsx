@@ -9,13 +9,15 @@
 // (`expression_metric/public/components/metric_vis.tsx`): one Elastic Charts
 // `Metric` with a tile per Scene tile, every string and color from the Scene.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import {
   Metric,
   type MetricDatum,
   type PartialTheme,
   type SecondaryMetricProps,
   Settings,
+  TooltipContainer,
+  TooltipHeader,
 } from '@elastic/charts';
 import type {
   MetricScene,
@@ -28,6 +30,61 @@ import { metricHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
+type PlainSecondaryProps = NonNullable<MetricTile['secondary']>;
+
+/**
+ * A tooltip label as Elastic Charts' secondary metric offers it: a focusable
+ * trigger whose label shows on hover or focus, and is read from the text.
+ */
+const TooltipLabelled = ({
+  label,
+  color,
+  children,
+}: {
+  label: string;
+  color: string;
+  children: ReactNode;
+}) => {
+  const [open, setOpen] = useState(false);
+  const show = () => setOpen(true);
+  const hide = () => setOpen(false);
+  return (
+    <span
+      className="echSecondaryMetric"
+      role="button"
+      tabIndex={0}
+      style={{ color, position: 'relative' }}
+      onPointerEnter={show}
+      onPointerLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          hide();
+        }
+      }}>
+      <span className="echScreenReaderOnly">{label} </span>
+      {children}
+      {open ? (
+        <span
+          aria-hidden="true"
+          className="echSecondaryMetric__tooltip"
+          style={{
+            position: 'absolute',
+            bottom: '100%',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 1,
+          }}>
+          <TooltipContainer>
+            <TooltipHeader>{label}</TooltipHeader>
+          </TooltipContainer>
+        </span>
+      ) : null}
+    </span>
+  );
+};
+
 /**
  * Without a badge, Elastic Charts recolors secondary-metric props to its
  * contrast color, so the text is drawn as an element in the Scene's color.
@@ -37,26 +94,23 @@ const plainSecondary = ({
   color,
   label,
   labelPlacement,
-}: NonNullable<MetricTile['secondary']>) => {
-  const PlainSecondary = () => (
-    <span
-      className="echSecondaryMetric"
-      style={{ color }}
-      {...(label !== undefined && labelPlacement === 'tooltip'
-        ? { title: label }
-        : {})}>
-      {label !== undefined && labelPlacement === 'before' ? (
-        <span className="echSecondaryMetric__label">{label} </span>
-      ) : null}
-      {label !== undefined && labelPlacement === 'tooltip' ? (
-        <span className="echScreenReaderOnly">{label} </span>
-      ) : null}
-      {text}
-      {label !== undefined && labelPlacement === 'after' ? (
-        <span className="echSecondaryMetric__label"> {label}</span>
-      ) : null}
-    </span>
-  );
+}: PlainSecondaryProps) => {
+  const PlainSecondary = () =>
+    label !== undefined && labelPlacement === 'tooltip' ? (
+      <TooltipLabelled label={label} color={color}>
+        {text}
+      </TooltipLabelled>
+    ) : (
+      <span className="echSecondaryMetric" style={{ color }}>
+        {label !== undefined && labelPlacement === 'before' ? (
+          <span className="echSecondaryMetric__label">{label} </span>
+        ) : null}
+        {text}
+        {label !== undefined && labelPlacement === 'after' ? (
+          <span className="echSecondaryMetric__label"> {label}</span>
+        ) : null}
+      </span>
+    );
   return PlainSecondary;
 };
 

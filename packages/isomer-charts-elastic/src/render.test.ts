@@ -402,6 +402,46 @@ describe('elastic-charts renderer: xy tooltip', () => {
 });
 
 describe('elastic-charts renderer: metric', () => {
+  it('shows a secondary tooltip label from the keyboard', async () => {
+    const [tile] = metricSingleValueScene.tiles;
+    const scene: MetricScene = {
+      ...metricSingleValueScene,
+      tiles: [
+        {
+          ...tile!,
+          secondary: {
+            text: '+5%',
+            color: '#ff00ff',
+            label: 'last week',
+            labelPlacement: 'tooltip',
+          },
+        },
+      ],
+    };
+    const container = await draw(scene);
+    const trigger = container.querySelector<HTMLElement>(
+      '.echSecondaryMetric[tabindex="0"]'
+    );
+    expect(trigger).not.toBeNull();
+    const tooltip = () =>
+      container.querySelector('.echSecondaryMetric__tooltip')?.textContent;
+    expect(tooltip()).toBeUndefined();
+    act(() => trigger!.focus());
+    expect(document.activeElement).toBe(trigger);
+    expect(tooltip()).toBe('last week');
+    act(() => {
+      trigger!.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })
+      );
+    });
+    expect(tooltip()).toBeUndefined();
+    act(() => trigger!.blur());
+    act(() => trigger!.focus());
+    expect(tooltip()).toBe('last week');
+    act(() => trigger!.blur());
+    expect(tooltip()).toBeUndefined();
+  });
+
   it('prints the Scene’s title and value', async () => {
     const container = await draw(metricSingleValueScene);
     const [tile] = metricSingleValueScene.tiles;
