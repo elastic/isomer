@@ -189,8 +189,14 @@ export const renderSceneNode = (
       'a',
       {
         href: link.href,
+        title: link.label,
         style: {
           display: 'block',
+          height: linkHeight,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          color: unsized.chrome.text,
           fontSize: CHARTS_THEME.type.body,
           lineHeight: `${linkHeight}px`,
         },

@@ -427,6 +427,25 @@ describe("a Scene's link and emphasis notes", () => {
     expect(links(after ?? '')).toEqual([link]);
   });
 
+  it('draw the link on one clipped line in the Scene’s text color', () => {
+    const chrome = { ...xyInteractiveScene.chrome, text: '#DFE5EF' };
+    const dark = createChartsPack({
+      resolveScene: (node, options) => ({
+        ...resolveInteractive(node, options),
+        chrome,
+      }),
+    });
+    const [, style] =
+      /<a\b[^>]*style="([^"]*)"/.exec(
+        react(dark, { environment: 'browser' })
+      ) ?? [];
+    expect(style).toContain(`color:${chrome.text}`);
+    expect(style).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
+    expect(style).toContain('overflow:hidden');
+    expect(style).toContain('white-space:nowrap');
+    expect(style).toContain('text-overflow:ellipsis');
+  });
+
   it('leave the link its line inside a host size', () => {
     sizes.length = 0;
     const size = { width: 320, height: 200 };
