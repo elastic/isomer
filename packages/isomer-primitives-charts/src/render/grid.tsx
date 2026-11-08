@@ -138,13 +138,16 @@ const Header = ({
   level,
   title,
   description,
+  maxHeight,
 }: {
   level: 2 | 4;
   title?: string | undefined;
   description?: string | undefined;
+  /** The panel's height, which the header is clipped to. */
+  maxHeight?: number;
 }) =>
   title || description ? (
-    <header>
+    <header style={{ flexShrink: 0, maxHeight, overflow: 'hidden' }}>
       {title && <Heading level={level}>{title}</Heading>}
       {description && <Description>{description}</Description>}
     </header>
@@ -172,7 +175,12 @@ const Panel = ({
             gridRow: `${panel.y + 1} / span ${panel.h}`,
           }),
     }}>
-    <Header level={4} title={panel.title} description={panel.description} />
+    <Header
+      level={4}
+      title={panel.title}
+      description={panel.description}
+      maxHeight={rowsHeight(panel.h)}
+    />
     <div style={{ flex: 1, minHeight: 0 }}>
       {scope.renderReact(panel.node, childContext(context, panel, oneColumn))}
     </div>

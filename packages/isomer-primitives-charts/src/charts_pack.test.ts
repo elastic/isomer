@@ -491,6 +491,27 @@ CLOSED`);
     expect(resolved[0]?.size?.height).toBe(62);
   });
 
+  it('clips a panel header to a panel too short for its title and description', () => {
+    const out = html({
+      type: 'grid',
+      panels: [
+        {
+          title: 'T',
+          description: 'D',
+          x: 0,
+          y: 0,
+          w: 48,
+          h: 1,
+          node: note('P'),
+        },
+      ],
+    });
+    // One row unit is 20 px; the title and description lines take 24 + 18.
+    expect(out).toContain(
+      '<header style="flex-shrink:0;max-height:20px;overflow:hidden">'
+    );
+  });
+
   it('writes its description on text without a title', () => {
     const { title: _, ...untitled } = sectioned;
     const described: GridNode = { ...untitled, description: 'About the board' };
