@@ -19,7 +19,7 @@ const renderer = createElasticChartsRenderer();
 renderer.render(scene, { environment: 'browser', nodeId: node.id, onEvent });
 ```
 
-The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.css` or `theme_dark.css`; without it a chart measures zero and draws nothing. Kibana always loads it.
+The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.css` or `theme_dark.css`; without it a chart measures zero and draws nothing. Kibana always loads it. A chart drawn in a shadow root needs the stylesheet inside that root, and on the document too: Elastic Charts portals its own xy tooltip to `document.body`, while this engine's secondary-metric tooltip stays in the chart's root.
 
 `@elastic/charts`, React and React DOM are peer dependencies, so a host shares its own copy: Kibana's pin is the version this engine is tested against (`ELASTIC_CHARTS_VERSION`).
 

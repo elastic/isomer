@@ -46,12 +46,26 @@ const TooltipLabelled = ({
   color: string;
   children: ReactNode;
 }) => {
-  // The tile clips its overflow, so the tooltip draws in a portal on the
-  // body, placed above the trigger.
-  const [anchor, setAnchor] = useState<DOMRect | undefined>();
-  const show = (event: { currentTarget: Element }) =>
-    setAnchor(event.currentTarget.getBoundingClientRect());
-  const hide = () => setAnchor(undefined);
+  // The tile clips its overflow, so the tooltip draws in a portal placed
+  // above the trigger: in the trigger's shadow root, whose stylesheets it
+  // needs, else on its own document's body.
+  const [open, setOpen] = useState<
+    { rect: DOMRect; container: Element | ShadowRoot } | undefined
+  >();
+  const show = ({ currentTarget }: { currentTarget: Element }) => {
+    const root = currentTarget.getRootNode();
+    // A shadow root is the one root that is a document fragment; checked by
+    // node type, since `instanceof` fails across frames.
+    const shadow =
+      root.nodeType === root.DOCUMENT_FRAGMENT_NODE
+        ? (root as ShadowRoot)
+        : undefined;
+    setOpen({
+      rect: currentTarget.getBoundingClientRect(),
+      container: shadow ?? currentTarget.ownerDocument.body,
+    });
+  };
+  const hide = () => setOpen(undefined);
   return (
     <span
       className="echSecondaryMetric"
@@ -69,15 +83,15 @@ const TooltipLabelled = ({
       }}>
       <span className="echScreenReaderOnly">{label} </span>
       {children}
-      {anchor
+      {open
         ? createPortal(
             <div
               aria-hidden="true"
               className="echSecondaryMetric__tooltip"
               style={{
                 position: 'fixed',
-                top: anchor.top,
-                left: anchor.left + anchor.width / 2,
+                top: open.rect.top,
+                left: open.rect.left + open.rect.width / 2,
                 transform: 'translate(-50%, -100%)',
                 zIndex: 10000,
                 pointerEvents: 'none',
@@ -86,7 +100,7 @@ const TooltipLabelled = ({
                 <TooltipHeader>{label}</TooltipHeader>
               </TooltipContainer>
             </div>,
-            document.body
+            open.container
           )
         : null}
     </span>
