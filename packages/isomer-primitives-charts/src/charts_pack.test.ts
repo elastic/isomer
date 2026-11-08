@@ -373,6 +373,20 @@ CLOSED`);
       expect(columns(html(narrow(narrow(inner))))).toBe(3);
     });
 
+    it('gives a panel narrower than its grid’s gaps the box CSS draws, never a negative width', () => {
+      const nested: GridNode = {
+        type: 'grid',
+        panels: [
+          { x: 0, y: 0, w: 1, h: 8, node: chart },
+          { x: 1, y: 0, w: 12, h: 8, node: chart },
+        ],
+      };
+      resolved.length = 0;
+      html(narrow(nested));
+      // The nested grid gets (928 − 47 × 8) × 12/48 + 11 × 8 = 226 px, under its 376 px of gaps.
+      expect(resolved.map(({ size }) => size?.width)).toEqual([0, 11 * 8]);
+    });
+
     it('stacks in one column when a host size leaves its panel under 768 px', () => {
       // (1200 − 47 × 8) × 12/48 + 11 × 8 = 294 px for the nested grid.
       const out = html(narrow(inner), { size: { width: 1200, height: 800 } });

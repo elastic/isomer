@@ -111,7 +111,9 @@ const childContext = (
   const gridWidth = context?.size?.width ?? nominalWidth;
   const width = oneColumn
     ? gridWidth
-    : (gridWidth - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
+    : // CSS floors the tracks at zero when the gaps alone overflow the grid.
+      Math.max(0, gridWidth - (GRID_COLUMNS - 1) * gap) *
+        (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
   const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
   const size: SceneSize = { width, height };
