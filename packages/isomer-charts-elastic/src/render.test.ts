@@ -12,8 +12,9 @@
 // the metric chart, which reports none). Every string and color must be the
 // Scene's: that is Gate B's content criterion for this renderer.
 
-import { act } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import type { DebugState } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
@@ -33,6 +34,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
 import { createElasticChartsRenderer } from './renderer';
+
+// React 18.3 exports `act` from `react`; earlier 18.x only from `react-dom/test-utils`.
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 
 // jsdom has no layout and no canvas: Elastic Charts learns its size from
 // ResizeObserver and measures text through a 2D context.
