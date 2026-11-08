@@ -26,7 +26,7 @@ Useful individual scripts:
 - `pnpm test` — unit tests
 - `pnpm lint` / `pnpm lint:fix` — ESLint (including Prettier) and markdownlint
 - `pnpm studio:dev` — the Studio for the root `isomer-studio.config.ts`, which gathers the in-repo packs, run from the Studio's TypeScript source so edits to the Studio and to the pack both hot-update without a reload. Extra flags pass through, for example `pnpm studio:dev --port 5180`. Run `pnpm build` once first; edits to the SDK or runtime need it again.
-- `pnpm test:browser` — the Studio's Playwright test of `dev` and a static build
+- `pnpm test:browser` — the Playwright tests in Chromium: the Studio's `dev` server and static build, and the charts pack's layout of chart sizes (`packages/isomer-primitives-charts/e2e`). Arguments filter both; a suite with no match is skipped, and the command fails only when neither matches
 - `pnpm check:studio-consumer` — installs the packed Studio with npm outside the workspace, then runs `check`, `build`, and the browser test against a consumer's own config
 - `pnpm build` — every package's ESM, CommonJS and declaration builds (see below)
 - `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it

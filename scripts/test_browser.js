@@ -6,17 +6,29 @@
  */
 
 import {
+  countPlaywright,
   requireChromium,
   runPlaywright,
-  runStudioSpec,
 } from './studio_spec.js';
+
+const SUITES = [
+  'packages/isomer-studio/e2e/playwright.config.ts',
+  'packages/isomer-primitives-charts/e2e/playwright.config.ts',
+];
 
 requireChromium();
 const args = process.argv.slice(2);
-const studio = runStudioSpec({ args });
-// Arguments may filter to a Studio spec, leaving the charts specs nothing to run.
-const charts = runPlaywright(
-  'packages/isomer-primitives-charts/e2e/playwright.config.ts',
-  { args: args.length > 0 ? [...args, '--pass-with-no-tests'] : [] }
+// Arguments may filter to one suite's specs, leaving the other nothing to run.
+const suites =
+  args.length > 0
+    ? SUITES.filter((config) => countPlaywright(config, args) > 0)
+    : SUITES;
+if (suites.length === 0) {
+  console.error(`No browser test matches: ${args.join(' ')}`);
+  process.exit(1);
+}
+process.exit(
+  suites
+    .map((config) => runPlaywright(config, { args }))
+    .find((status) => status !== 0) ?? 0
 );
-process.exit(studio || charts);

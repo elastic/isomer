@@ -40,6 +40,17 @@ export const runPlaywright = (
   return status ?? 1;
 };
 
+/** How many tests the Playwright specs of `config` hold that `args` select. */
+export const countPlaywright = (config, args = []) => {
+  const cli = createRequire(import.meta.url).resolve('@playwright/test/cli');
+  const { stdout } = spawnSync(
+    process.execPath,
+    [cli, 'test', '-c', join(repoRoot, config), '--list', ...args],
+    { cwd: repoRoot, encoding: 'utf8' }
+  );
+  return Number(/Total: (\d+) tests?/.exec(stdout ?? '')?.[1] ?? 0);
+};
+
 /** Runs the Studio's Playwright spec and returns its exit status. */
 export const runStudioSpec = (options) =>
   runPlaywright('packages/isomer-studio/e2e/playwright.config.ts', options);
