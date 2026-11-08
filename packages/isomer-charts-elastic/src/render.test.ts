@@ -487,6 +487,26 @@ describe('elastic-charts renderer: metric', () => {
     expect(drawn?.textContent).toBe('last week');
     expect(drawn?.parentNode).toBe(shadow);
     expect(document.querySelector('.echSecondaryMetric__tooltip')).toBeNull();
+
+    // Follows the trigger when a scroller inside the shadow root, or the page, scrolls.
+    const at = (top: number, left: number) =>
+      ({ top, left, width: 40, height: 10 }) as DOMRect;
+    trigger!.getBoundingClientRect = () => at(50, 100);
+    act(() => {
+      container.dispatchEvent(new Event('scroll'));
+    });
+    const style = () => {
+      const node = shadow.querySelector<HTMLElement>(
+        '.echSecondaryMetric__tooltip'
+      );
+      return [node?.style.top, node?.style.left];
+    };
+    expect(style()).toEqual(['50px', '120px']);
+    trigger!.getBoundingClientRect = () => at(10, 30);
+    act(() => {
+      document.dispatchEvent(new Event('scroll'));
+    });
+    expect(style()).toEqual(['10px', '50px']);
     act(() => trigger!.blur());
     expect(shadow.querySelector('.echSecondaryMetric__tooltip')).toBeNull();
   });

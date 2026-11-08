@@ -9,7 +9,7 @@
 // (`expression_metric/public/components/metric_vis.tsx`): one Elastic Charts
 // `Metric` with a tile per Scene tile, every string and color from the Scene.
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Metric,
@@ -66,8 +66,32 @@ const TooltipLabelled = ({
     });
   };
   const hide = () => setOpen(undefined);
+  const trigger = useRef<HTMLSpanElement>(null);
+  const isOpen = open !== undefined;
+  // Follows the trigger while open: scroll does not bubble, so it is captured
+  // on the trigger's root and, for a shadow root, its document as well.
+  useEffect(() => {
+    const target = trigger.current;
+    if (!isOpen || !target) {
+      return;
+    }
+    const follow = () =>
+      setOpen(
+        (current) =>
+          current && { ...current, rect: target.getBoundingClientRect() }
+      );
+    const owner = target.ownerDocument;
+    const roots = new Set<Node>([target.getRootNode(), owner]);
+    roots.forEach((root) => root.addEventListener('scroll', follow, true));
+    owner.defaultView?.addEventListener('resize', follow);
+    return () => {
+      roots.forEach((root) => root.removeEventListener('scroll', follow, true));
+      owner.defaultView?.removeEventListener('resize', follow);
+    };
+  }, [isOpen]);
   return (
     <span
+      ref={trigger}
       className="echSecondaryMetric"
       role="button"
       tabIndex={0}
