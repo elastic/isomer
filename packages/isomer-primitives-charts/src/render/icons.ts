@@ -33,6 +33,11 @@ export const xyChartIcon = chartsIcon(
   `<polyline points="3 3 3 13 13 13" stroke="${paint.fg}"/><polyline points="5 10.5 7.5 7.5 9.5 9 12.5 4.5" stroke="${paint.accent}"/>`
 );
 
+/** A shaded header row above rules. */
+export const dataTableIcon = chartsIcon(
+  `<rect x="3" y="3" width="10" height="3" rx="1" fill="${paint.accent}"/><path d="M3 8.5h10M3 11h10M3 13.5h10" stroke="${paint.fg}"/><path d="M7.5 7v6.5" stroke="${paint.muted}"/>`
+);
+
 /** Panels of different sizes on a dashboard. */
 export const gridIcon = chartsIcon(
   `<rect x="3" y="3" width="4" height="4" rx="1" fill="${paint.accent}"/><rect x="8.5" y="3" width="4.5" height="4" rx="1" fill="${paint.muted}"/><rect x="3" y="8.5" width="10" height="4.5" rx="1" fill="${paint.muted}"/>`
