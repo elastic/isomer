@@ -17,6 +17,7 @@ import { sceneToMarkdown, sceneToText } from '../text/scene_text';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
+import { metricIcon, xyChartIcon } from './icons';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
 
 // Surfaces without a render context resolve for the light scheme: their output
@@ -50,6 +51,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
   [
     definePrimitive({
       type: 'metric',
+      icon: metricIcon,
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
@@ -58,6 +60,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
     }),
     definePrimitive({
       type: 'xyChart',
+      icon: xyChartIcon,
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,

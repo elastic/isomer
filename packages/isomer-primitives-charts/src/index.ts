@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { type ChartsFrameTheme, chartsFrame } from './frame';
 export { type ChartGlyph, CHART_GLYPHS } from './glyphs';
 export {
   type ChartsPackOptions,

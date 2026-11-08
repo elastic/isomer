@@ -17,6 +17,7 @@ import {
   primitiveExamples,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -87,6 +88,13 @@ describe('chartsPack', () => {
       'unsupported',
       'xyChart',
     ]);
+  });
+
+  it('gives every primitive an icon within the SDK allowlist', () => {
+    expect(Object.keys(chartsPack.icons ?? {}).sort()).toEqual(
+      [...chartsPack.types].sort()
+    );
+    expect(() => assertPackIconsValid(chartsPack)).not.toThrow();
   });
 
   it.each(cases)('$type: $name validates through the runtime', ({ node }) => {

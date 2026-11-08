@@ -11,6 +11,14 @@
  * inherits the page's text color.
  */
 export const CHARTS_THEME = {
+  frame: {
+    /** The page width of `chartsFrame`, in pixels. */
+    width: 960,
+    padding: 16,
+    gap: 16,
+    /** The page title size, in pixels. */
+    title: 20,
+  },
   grid: {
     /** Height of one grid row unit, in pixels. */
     rowHeight: 20,

@@ -38,6 +38,7 @@ import {
 import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
 import { gridModule } from './grid_styles';
+import { gridIcon } from './icons';
 import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
 
@@ -374,6 +375,7 @@ export const gridSnapshotHeight = (node: GridNode): number =>
 /** Panels on a 48-column grid; one column, in reading order, below the threshold width. */
 export const gridPrimitive = definePrimitive<GridNode>({
   type: 'grid',
+  icon: gridIcon,
   schema: gridSchema,
   schemaFor: (bodyNode: z.ZodType<unknown>) => gridSchemaFor(bodyNode),
   catalog: gridCatalog,
