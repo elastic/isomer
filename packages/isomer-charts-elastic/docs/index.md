@@ -63,7 +63,7 @@ Headless metrics differ from the browser's: values draw smaller and words can br
 - cold start to the first PNG;
 - the median draw and rasterization time per chart.
 
-`--repeat <n>` draws the examples n times in each process. Peak memory that grows with `--repeat` while the held heap stays flat is V8 keeping freed memory, not a leak. `--json` prints every run.
+`--repeat <n>` draws the examples n times in each process. A held heap that stays flat as `--repeat` grows rules out a JavaScript leak, but not native growth: takumi and its buffers allocate outside the heap, and peak RSS is only a high-water mark. `--json` prints every run.
 
 ## What it takes from the Scene
 

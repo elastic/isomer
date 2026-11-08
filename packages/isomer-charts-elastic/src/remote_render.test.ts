@@ -85,6 +85,24 @@ const svgBackgrounds = (html: string): string[] =>
       return fill === undefined ? [] : [fill];
     });
 
+/** The HTML with every top-level `<svg>` element removed. */
+const withoutSvgs = (html: string): string => {
+  let out = '';
+  let depth = 0;
+  let index = 0;
+  const tag = /<svg[\s>]|<\/svg>/g;
+  for (let match = tag.exec(html); match; match = tag.exec(html)) {
+    const opens = match[0] !== '</svg>';
+    if (opens && depth++ === 0) {
+      out += html.slice(index, match.index);
+    }
+    if (!opens && --depth === 0) {
+      index = match.index + match[0].length;
+    }
+  }
+  return out + html.slice(index);
+};
+
 const OTHER: Record<ColorScheme, ColorScheme> = {
   light: 'dark',
   dark: 'light',
@@ -118,6 +136,14 @@ describe('remote render with headless Elastic Charts', () => {
             height: fitted.height,
           });
           expect(fitted.height).toBeGreaterThan(0);
+          if (svgBackgrounds(input.html).length > 0) {
+            // The charts reach the raster: without their SVG it differs.
+            const bare = await takumi.png({
+              ...fitted,
+              html: withoutSvgs(fitted.html),
+            });
+            expect(Buffer.from(bare).equals(Buffer.from(png))).toBe(false);
+          }
           return Buffer.from(png).toString('base64');
         })
       );
