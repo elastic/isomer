@@ -423,8 +423,12 @@ describe('elastic-charts renderer: metric', () => {
       '.echSecondaryMetric[tabindex="0"]'
     );
     expect(trigger).not.toBeNull();
-    const tooltip = () =>
-      container.querySelector('.echSecondaryMetric__tooltip')?.textContent;
+    const tooltip = () => {
+      const drawn = document.querySelector('.echSecondaryMetric__tooltip');
+      // Outside the chart, whose tiles clip their overflow.
+      expect(drawn?.closest('.echChart') ?? null).toBeNull();
+      return drawn?.textContent ?? undefined;
+    };
     expect(tooltip()).toBeUndefined();
     act(() => trigger!.focus());
     expect(document.activeElement).toBe(trigger);

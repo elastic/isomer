@@ -10,6 +10,7 @@
 // `Metric` with a tile per Scene tile, every string and color from the Scene.
 
 import { type ReactNode, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Metric,
   type MetricDatum,
@@ -45,15 +46,18 @@ const TooltipLabelled = ({
   color: string;
   children: ReactNode;
 }) => {
-  const [open, setOpen] = useState(false);
-  const show = () => setOpen(true);
-  const hide = () => setOpen(false);
+  // The tile clips its overflow, so the tooltip draws in a portal on the
+  // body, placed above the trigger.
+  const [anchor, setAnchor] = useState<DOMRect | undefined>();
+  const show = (event: { currentTarget: Element }) =>
+    setAnchor(event.currentTarget.getBoundingClientRect());
+  const hide = () => setAnchor(undefined);
   return (
     <span
       className="echSecondaryMetric"
       role="button"
       tabIndex={0}
-      style={{ color, position: 'relative' }}
+      style={{ color }}
       onPointerEnter={show}
       onPointerLeave={hide}
       onFocus={show}
@@ -65,22 +69,26 @@ const TooltipLabelled = ({
       }}>
       <span className="echScreenReaderOnly">{label} </span>
       {children}
-      {open ? (
-        <span
-          aria-hidden="true"
-          className="echSecondaryMetric__tooltip"
-          style={{
-            position: 'absolute',
-            bottom: '100%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 1,
-          }}>
-          <TooltipContainer>
-            <TooltipHeader>{label}</TooltipHeader>
-          </TooltipContainer>
-        </span>
-      ) : null}
+      {anchor
+        ? createPortal(
+            <div
+              aria-hidden="true"
+              className="echSecondaryMetric__tooltip"
+              style={{
+                position: 'fixed',
+                top: anchor.top,
+                left: anchor.left + anchor.width / 2,
+                transform: 'translate(-50%, -100%)',
+                zIndex: 10000,
+                pointerEvents: 'none',
+              }}>
+              <TooltipContainer>
+                <TooltipHeader>{label}</TooltipHeader>
+              </TooltipContainer>
+            </div>,
+            document.body
+          )
+        : null}
     </span>
   );
 };
