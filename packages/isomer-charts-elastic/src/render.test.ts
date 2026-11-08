@@ -303,10 +303,10 @@ describe('elastic-charts renderer: xy layer order', () => {
     expect(order.range).toBeLessThan(order.bar);
   });
 
-  it('paints helper layers after a series above the series', async () => {
+  it('paints a reference line after a series above it, and a range beneath it as Kibana does', async () => {
     const order = await paintOrder([...series, range, reference]);
-    expect(order.bar).toBeLessThan(order.range);
-    expect(order.range).toBeLessThan(order.line);
+    expect(order.range).toBeLessThan(order.bar);
+    expect(order.bar).toBeLessThan(order.line);
   });
 });
 

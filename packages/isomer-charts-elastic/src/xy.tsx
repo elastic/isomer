@@ -610,13 +610,17 @@ const legendAction =
 /**
  * Elastic Charts paints annotations with `zIndex <= 0` beneath every series
  * and the rest above them, each band in spec order. A helper layer before the
- * first series goes beneath; any later one goes above.
+ * first series goes beneath; any later one goes above, except a range, which
+ * Kibana's xy chart always paints beneath the data (`annotations.tsx` leaves
+ * its `RectAnnotation` at the default `zIndex`).
  */
 export const layerZIndex = (scene: XyScene, position: number): number => {
+  const layer = scene.layers[position];
   const firstSeries = scene.layers.findIndex(({ kind }) => kind === 'series');
-  return firstSeries === -1 || position > firstSeries
-    ? position + 1
-    : position - scene.layers.length;
+  const beneath =
+    (layer?.kind === 'annotation' && layer.annotation.kind === 'range') ||
+    (firstSeries !== -1 && position < firstSeries);
+  return beneath ? position - scene.layers.length : position + 1;
 };
 
 /**

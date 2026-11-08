@@ -46,7 +46,7 @@ Colors, text and series are the Scene's, and draw order is as far as Elastic Cha
 | Value labels | The mark's `label`; on a percentage stack, the mark's share through the y axis, as Lens prints it |
 | Tooltip | The hovered position's category `label` (else as its axis labels it), then each hovered series' name, color and mark `label` |
 | Legend position, layout, size, title and truncation | `legend` |
-| Reference lines and annotations | The `referenceLine` and `annotation` layers, styled as Kibana's xy chart styles them; a range with `fill: 'outside'` draws beside the axis. A layer before the first series gets a `zIndex` that paints it beneath every series; any later one paints above them |
+| Reference lines and annotations | The `referenceLine` and `annotation` layers, styled as Kibana's xy chart styles them; a range with `fill: 'outside'` draws beside the axis. A layer before the first series gets a `zIndex` that paints it beneath every series; any later one paints above them, except a range, which paints beneath the data wherever it sits, as Kibana's xy chart draws it |
 | Metric tiles, layout and alignment | `tiles` and `layout`, as Kibana's metric visualization sets them; the value prints the tile's `value.text`, a comparison badge's glyph is its `icon`, and secondary text without a badge draws in its `color` |
 | Accessible label and description | `title`; `summary`, then `description` when the node states one |
 
@@ -82,7 +82,7 @@ Content (strings, colors, order) is the Scene's. Where Elastic Charts cannot tak
 | xy | `interactions.emphasis` and `sync` are not drawn | No static highlight or synced cursor |
 | xy | No gesture raises the `series` select target; legend actions raise `legend` | A node offering `series` raises nothing for it |
 | xy | `partial` marks are not shaded | No end-zone shading |
-| xy | Elastic Charts paints in fixed bands: annotations beneath the series, then bars, areas and lines, then annotations above. A reference line or annotation between two series paints above both, and series of different marks paint bars first, then areas, then lines, whatever their order in `layers` | Overlap between layers can differ from the Scene's order |
+| xy | Elastic Charts paints in fixed bands: annotations beneath the series, then bars, areas and lines, then annotations above. A reference line or point annotation between two series paints above both, a range after a series paints beneath it, and series of different marks paint bars first, then areas, then lines, whatever their order in `layers` | Overlap between layers can differ from the Scene's order |
 | xy | A value label's formatter sees only the value, so where marks in one series share a value but carry different `label`s, none of them is labelled | Those value labels are missing rather than another mark's |
 | metric | `layout.icon` is not drawn: Elastic Charts takes an icon component, and this engine maps no `ChartGlyph` to one | No tile icon |
 | metric | `trend.xDomain` and `trend.yDomain` are not applied: Elastic Charts fits the trend to its points | Trend line scale may differ |
