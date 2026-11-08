@@ -6,6 +6,13 @@
  */
 
 export { type ChartGlyph, CHART_GLYPHS } from './glyphs';
+export { type ChartsPackOptions, chartsPack, createChartsPack } from './pack';
+export type {
+  ChartsRenderContext,
+  ReactSceneRenderer,
+  ResolveSceneOptions,
+  SceneResolver,
+} from './render/context';
 export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
@@ -15,6 +22,7 @@ export {
 } from './scene/examples';
 export { formatAxisValue } from './scene/format_axis';
 export { type ChartNode, resolveChart } from './scene/resolve';
+export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,

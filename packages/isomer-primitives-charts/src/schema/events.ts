@@ -128,6 +128,7 @@ export const emphasisSchema = z
     `Rows to highlight statically, such as what an agent is talking about. Drawn on every surface. ${INTERACTION_RULES.emphasisRows}`
   );
 
+/** A chart's parsed `emphasis`. */
 export type Emphasis = z.infer<typeof emphasisSchema>;
 
 /** The interaction fields every chart spreads into its schema beside the core. */
@@ -265,10 +266,13 @@ export const chartEventSchema = z
     'A gesture on a chart, as rows and columns of the node’s own `data`. Every renderer raises the same event for the same gesture.'
   );
 
+/** A `select` or `brush` gesture on a chart, in terms of the node's `data`. */
 export type ChartEvent = z.infer<typeof chartEventSchema>;
 
+/** The `select` member of {@link ChartEvent}. */
 export type ChartSelectEvent = Extract<ChartEvent, { kind: 'select' }>;
 
+/** The `brush` member of {@link ChartEvent}. */
 export type ChartBrushEvent = Extract<ChartEvent, { kind: 'brush' }>;
 
 /** Wraps a chart event as the `ActionEventRef` a host's `onEvent` receives. */
