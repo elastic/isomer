@@ -5,7 +5,18 @@
  * 2.0.
  */
 
-import { requireChromium, runStudioSpec } from './studio_spec.js';
+import {
+  requireChromium,
+  runPlaywright,
+  runStudioSpec,
+} from './studio_spec.js';
 
 requireChromium();
-process.exit(runStudioSpec({ args: process.argv.slice(2) }));
+const args = process.argv.slice(2);
+const studio = runStudioSpec({ args });
+// Arguments may filter to a Studio spec, leaving the charts specs nothing to run.
+const charts = runPlaywright(
+  'packages/isomer-primitives-charts/e2e/playwright.config.ts',
+  { args: args.length > 0 ? [...args, '--pass-with-no-tests'] : [] }
+);
+process.exit(studio || charts);

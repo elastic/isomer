@@ -11,7 +11,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef, Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { createChartsPack } from './pack';
+import { chartsPack, createChartsPack } from './pack';
 import type {
   ChartNode,
   ChartsRenderContext,
@@ -19,6 +19,7 @@ import type {
   ResolveSceneOptions,
 } from './render/context';
 import { chartSize, chartSizeSpec } from './render/size';
+import { CHARTS_THEME } from './render/theme';
 import {
   metricSingleValueScene,
   xyInteractiveScene,
@@ -26,6 +27,7 @@ import {
 } from './scene/examples';
 import { selectSceneRenderer } from './scene/select';
 import type { Scene, SceneRenderEnv } from './scene/types';
+import { dataTableTopHosts } from './schema/examples/data_table';
 import { chartEventExamples } from './schema/examples/events';
 import { metricSingleValue } from './schema/examples/metric';
 import { xyInteractive, xyTimeSeries } from './schema/examples/xy_chart';
@@ -114,6 +116,10 @@ describe('selectSceneRenderer', () => {
 describe('the charts pack', () => {
   const baseline = tagging('baseline', ['metric', 'xy']);
   const pack = createChartsPack({ resolveScene, sceneRenderers: [baseline] });
+  const fluidPack = createChartsPack({
+    resolveScene,
+    sceneRenderers: [{ ...tagging('fluid', ['metric', 'xy']), fluid: true }],
+  });
 
   it('draws every kind with the pack renderers when the host names none', () => {
     const html = draw(pack);
@@ -189,12 +195,30 @@ describe('the charts pack', () => {
       ]);
     });
 
-    it('gives each chart its spec as CSS in a browser, and resolves without a size', () => {
+    it('gives each chart its spec as CSS in a browser when the renderer fills it, and resolves without a size', () => {
       resolved.length = 0;
-      const html = draw(pack, { environment: 'browser' });
+      const html = draw(fluidPack, { environment: 'browser' });
       expect(sizes()).toEqual([]);
       expect(html).toContain('aspect-ratio:300 / 160;max-width:300px');
       expect(html).toContain('aspect-ratio:16 / 9;min-height:300px');
+    });
+
+    it('leaves the box to a renderer that sizes itself, such as the summary fallback', () => {
+      const html = renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          createIsomerRuntime<unknown, ChartsRenderContext>({
+            packs: [chartsPack],
+          }).surfaces.react.render(composition, {
+            context: { environment: 'browser' },
+            heading: false,
+          })
+        )
+      );
+      expect(html).toContain('<p>');
+      expect(html).not.toContain('aspect-ratio');
+      expect(html).not.toContain('min-height');
     });
 
     it('resolves for the spec box in a browser too when the renderer draws a fixed size', () => {
@@ -216,6 +240,41 @@ describe('the charts pack', () => {
       expect(html).not.toContain('aspect-ratio');
     });
 
+    it('resolves a table for the theme width and its rows when the renderer draws a fixed size', () => {
+      const seen: Scene[] = [];
+      const sized: ReactSceneRenderer = {
+        id: 'picture',
+        environments: ['browser', 'node'],
+        sized: true,
+        supports: (kind) => kind === 'table',
+        render: (scene) => {
+          seen.push(scene);
+          return null;
+        },
+      };
+      const tables = createChartsPack({ sceneRenderers: [sized] });
+      renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          createIsomerRuntime<unknown, ChartsRenderContext>({
+            packs: [tables],
+          }).surfaces.react.render(
+            { type: 'view', body: [dataTableTopHosts] },
+            { context: { environment: 'browser' }, heading: false }
+          )
+        )
+      );
+      const height = (
+        tables.primitives.find(({ type }) => type === 'dataTable')!.metrics
+          ?.snapshotHeight as (node: ChartNode) => number
+      )(dataTableTopHosts);
+      expect(height).toBeGreaterThan(0);
+      expect(seen.map(({ size }) => size)).toEqual([
+        { width: CHARTS_THEME.chart.width, height },
+      ]);
+    });
+
     it('reports the spec box height to snapshot frames', () => {
       const heightOf = (type: string, node: ChartNode) =>
         (
@@ -234,7 +293,7 @@ describe('the charts pack', () => {
   it('uses the host size over any size spec', () => {
     resolved.length = 0;
     const size = { width: 320, height: 200 };
-    const html = draw(pack, { environment: 'browser', size });
+    const html = draw(fluidPack, { environment: 'browser', size });
     expect(resolved.map((options) => options.size)).toEqual([size, size]);
     expect(html).not.toContain('aspect-ratio');
   });

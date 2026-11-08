@@ -124,6 +124,7 @@ describe('chartsFrame', () => {
     it('draws a chart on its own in the light scheme by default', () => {
       resolved.length = 0;
       runtime.surfaces.snapshot.render({ type: 'view', body: [chart] });
+      expect(resolved.length).toBeGreaterThan(0);
       expect(new Set(resolved.map(({ scheme }) => scheme))).toEqual(
         new Set(['light'])
       );

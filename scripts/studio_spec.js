@@ -26,19 +26,20 @@ export const requireChromium = () => {
   }
 };
 
-/** Runs the Studio's Playwright spec and returns its exit status. */
-export const runStudioSpec = ({ args = [], env = process.env } = {}) => {
+/** Runs the Playwright specs of `config`, relative to the repository root, and returns the exit status. */
+export const runPlaywright = (
+  config,
+  { args = [], env = process.env } = {}
+) => {
   const cli = createRequire(import.meta.url).resolve('@playwright/test/cli');
   const { status } = spawnSync(
     process.execPath,
-    [
-      cli,
-      'test',
-      '-c',
-      join(repoRoot, 'packages/isomer-studio/e2e/playwright.config.ts'),
-      ...args,
-    ],
+    [cli, 'test', '-c', join(repoRoot, config), ...args],
     { cwd: repoRoot, env, stdio: 'inherit' }
   );
   return status ?? 1;
 };
+
+/** Runs the Studio's Playwright spec and returns its exit status. */
+export const runStudioSpec = (options) =>
+  runPlaywright('packages/isomer-studio/e2e/playwright.config.ts', options);

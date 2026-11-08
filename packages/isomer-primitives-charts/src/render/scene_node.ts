@@ -28,6 +28,8 @@ import type {
   SceneResolver,
 } from './context';
 import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
+import { tableHeight } from './table';
+import { CHARTS_THEME } from './theme';
 
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
 export interface SceneShimConfig {
@@ -105,31 +107,47 @@ const renderEnv = (
   };
 };
 
+/** The box a chart resolves for without a host size; none where its container sizes it. */
+const fixedBox = (
+  scene: Scene,
+  environment: SceneEnvironment,
+  { sized }: ReactSceneRenderer
+): SceneSize | undefined => {
+  if (sized === true && scene.kind === 'table') {
+    return { width: CHARTS_THEME.chart.width, height: tableHeight(scene) };
+  }
+  const spec = chartSizeSpec(scene);
+  return spec && (environment === 'node' || sized === true)
+    ? chartSize(spec)
+    : undefined;
+};
+
 /**
  * Draws a chart node through the first renderer that runs here and supports
  * its kind, and throws when none does. Off native, the output sits in one
  * `div` that carries the node anchor; native output is the renderer's own.
  *
  * Without a host `size`, the chart takes its kind's size spec. On Node, or
- * for a `sized` renderer, it resolves for the spec's box; otherwise, in a
- * browser, the `div` takes the spec's shape and the renderer fills it.
+ * for a `sized` renderer, it resolves for the spec's box; in a browser, a
+ * `fluid` renderer's `div` takes the spec's shape and the renderer fills it.
  */
 export const renderSceneNode = (
   node: ChartNode,
-  env: Pick<ChartsReactEnv, 'context' | 'theme'>,
+  env: ChartsReactEnv,
   config: SceneShimConfig
 ): ReactNode => {
   const { context } = env;
   const environment = context?.environment ?? detectSceneEnvironment();
   const unsized = resolveForReact(node, env, config);
   const renderer = pickSceneRenderer(unsized, environment, context, config);
-  const spec = context?.size ? undefined : chartSizeSpec(unsized);
-  // A fixed box where nothing fills: on Node, or for a renderer that draws a fixed-size picture.
-  const fixed = spec && (environment === 'node' || renderer.sized === true);
-  const scene =
-    fixed && spec
-      ? resolveForReact(node, env, config, chartSize(spec))
-      : unsized;
+  const box = context?.size
+    ? undefined
+    : fixedBox(unsized, environment, renderer);
+  const scene = box ? resolveForReact(node, env, config, box) : unsized;
+  const spec =
+    !context?.size && !box && environment === 'browser' && renderer.fluid
+      ? chartSizeSpec(unsized)
+      : undefined;
   const drawn = renderer.render(scene, renderEnv(node, environment, context));
   return environment === 'native'
     ? drawn
@@ -137,9 +155,7 @@ export const renderSceneNode = (
         'div',
         {
           ...nodeAnchor(context, node),
-          ...(spec && !fixed && environment === 'browser'
-            ? { style: chartSizeStyle(spec) }
-            : {}),
+          ...(spec ? { style: chartSizeStyle(spec) } : {}),
         },
         drawn
       );
