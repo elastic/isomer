@@ -6,7 +6,7 @@
 <p align="center"><strong>isomer</strong> <i>n.</i> — one formula, many forms; the same composition rendered to every surface.</p>
 <!-- markdownlint-enable MD033 -->
 
-Chart primitives for Isomer on one shared core (`metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`), a `grid` that lays nodes out as a Kibana dashboard does, and an `unsupported` placeholder.
+Chart primitives for Isomer on one shared core (`metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`), a `grid` that lays nodes out as a Kibana dashboard does, and an `unsupported` placeholder.
 
 ```sh
 npm install @elastic/isomer-primitives-charts @elastic/isomer-sdk zod

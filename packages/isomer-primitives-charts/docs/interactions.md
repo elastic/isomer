@@ -29,6 +29,7 @@ interactions?: {
 | `partitionChart` | `slice` |
 | `heatmap` | `cell` |
 | `gauge` | None: only a `link` |
+| `tagCloud` | `tag` |
 
 `emphasis?: { rows: number[]; note?: string }[]` highlights rows statically, such as what an agent is talking about, on every surface.
 
@@ -58,7 +59,7 @@ type ChartEvent = {
     }
   | {
       kind: 'select';
-      target: 'category' | 'cell' | 'tile' | 'slice';
+      target: 'category' | 'cell' | 'tile' | 'slice' | 'tag';
       rows: number[];
       columns: string[];
       negate?: boolean;
@@ -78,6 +79,7 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 | `category` | Every row at that x | The x column |
 | `tile` | The tile's row | Its breakdown column, if any |
 | `cell` on a `heatmap` | Every row of the cell | Its `x` and `y` columns |
+| `tag` | The word's row | The `tags` column |
 | `slice` | Every row of the slice | The group columns on its path, outermost first |
 
 `negate` marks a "filter out" gesture. A brush `range` is in the x column's units: epoch milliseconds for a date.

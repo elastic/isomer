@@ -18,7 +18,7 @@ createIsomerRuntime({ packs: [chartsPack] });
 const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 ```
 
-`chartsPack` registers `metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
+`chartsPack` registers `metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
 The pack declares an [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
 
@@ -80,9 +80,10 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 | `partitionChart`                      | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
 | `heatmap`                             | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
 | `gauge`                               | Lens's spec for its shape, at its largest box: 3:1 up to 600 px wide for a horizontal bullet, 2:3 up to 400 px for a vertical one, 2:1.25, 1.1:1 and 1:1 up to 600 px for a semicircle, arc and circle |
+| `tagCloud`                            | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
 | `dataTable`                           | None: the table is its rows tall                                                                                                                                                                       |
 
-In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap` and `gauge` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
+In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
 ## Styling
 
@@ -123,7 +124,7 @@ Requests over time: Count of records by @timestamp per hour, from 98 to 210.
 01:00 | 98
 ```
 
-On Slack, `metric`, `xyChart`, `partitionChart`, `heatmap` and `gauge` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
+On Slack, `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ### Parity gates
 

@@ -17,6 +17,7 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | [`partitionChart`](partition-chart.md) | Parts of a whole as a pie, donut, treemap, mosaic or waffle, in up to three layers |
 | [`heatmap`](heatmap.md) | Cells by two dimensions, colored by value bands |
 | [`gauge`](gauge.md) | One value on a scale, as a bullet or a dial, with colored ranges and a goal |
+| [`tagCloud`](tag-cloud.md) | Words sized by value |
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 

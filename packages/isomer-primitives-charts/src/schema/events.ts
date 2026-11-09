@@ -34,6 +34,7 @@ export const SELECT_TARGETS = [
   'cell',
   'tile',
   'slice',
+  'tag',
 ] as const;
 
 /** What a selection lands on. Each chart states which it offers. */
@@ -266,7 +267,7 @@ const selectEventSchema = z.discriminatedUnion('target', [
   }),
   z.strictObject({
     ...selectEventShape,
-    target: z.enum(['category', 'cell', 'tile', 'slice']),
+    target: z.enum(['category', 'cell', 'tile', 'slice', 'tag']),
   }),
 ]);
 

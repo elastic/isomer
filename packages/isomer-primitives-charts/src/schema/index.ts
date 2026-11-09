@@ -13,6 +13,7 @@ export {
   heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './catalog';
@@ -72,6 +73,7 @@ export { gridExamples } from './examples/grid';
 export { heatmapExamples } from './examples/heatmap';
 export { metricExamples } from './examples/metric';
 export { partitionChartExamples } from './examples/partition_chart';
+export { tagCloudExamples } from './examples/tag_cloud';
 export { unsupportedExamples } from './examples/unsupported';
 export { xyChartExamples } from './examples/xy_chart';
 export {
@@ -119,5 +121,11 @@ export {
   provenanceSchema,
 } from './provenance';
 export { type ColumnReference, columnRefSchema } from './references';
+export {
+  type TagCloudNode,
+  TAG_CLOUD_KEY_RULE,
+  TAG_CLOUD_RULES,
+  tagCloudSchema,
+} from './tag_cloud';
 export { type UnsupportedNode, unsupportedSchema } from './unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';

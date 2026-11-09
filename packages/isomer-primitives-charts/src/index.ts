@@ -78,6 +78,8 @@ export {
   type TableOrder,
   type TableRow,
   type TableScene,
+  type TagCloudScene,
+  type TagCloudWord,
   type XyCategory,
   type XyMark,
   type XyScene,
@@ -91,6 +93,7 @@ export {
   heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './schema/catalog';
@@ -142,6 +145,7 @@ export { gridExamples } from './schema/examples/grid';
 export { heatmapExamples } from './schema/examples/heatmap';
 export { metricExamples } from './schema/examples/metric';
 export { partitionChartExamples } from './schema/examples/partition_chart';
+export { tagCloudExamples } from './schema/examples/tag_cloud';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
@@ -193,5 +197,11 @@ export {
   provenanceSchema,
 } from './schema/provenance';
 export { type ColumnReference, columnRefSchema } from './schema/references';
+export {
+  type TagCloudNode,
+  TAG_CLOUD_KEY_RULE,
+  TAG_CLOUD_RULES,
+  tagCloudSchema,
+} from './schema/tag_cloud';
 export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
