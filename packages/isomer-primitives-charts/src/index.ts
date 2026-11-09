@@ -5,6 +5,47 @@
  * 2.0.
  */
 
+export { brushEvent, selectEvent } from './scene/events';
+export {
+  metricSingleValueScene,
+  xyInteractiveScene,
+  xyTimeSeriesScene,
+} from './scene/examples';
+export {
+  type AxisId,
+  type ColorScheme,
+  type MetricAlignment,
+  type MetricLayout,
+  type MetricScene,
+  type MetricTile,
+  type Scene,
+  type SceneAnnotation,
+  type SceneAxis,
+  type SceneChrome,
+  type SceneColor,
+  type SceneColumn,
+  type SceneEnvironment,
+  type SceneInteractions,
+  type SceneKind,
+  type SceneLegend,
+  type SceneLegendItem,
+  type SceneReferenceLine,
+  type SceneRenderEnv,
+  type SceneRenderer,
+  type SceneSelection,
+  type SceneSize,
+  type SceneSource,
+  type SceneTable,
+  type SceneTick,
+  type SceneTooltip,
+  type SceneTooltipEntry,
+  type XyCategory,
+  type XyMark,
+  type XyScene,
+  type XySceneLayer,
+  type XySeries,
+  SCENE_KINDS,
+} from './scene/types';
 export {
   gridCatalog,
   metricCatalog,
@@ -29,6 +70,29 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
+export type {
+  ChartBrushEvent,
+  ChartEvent,
+  ChartSelectEvent,
+  SelectTarget,
+} from './schema/events';
+export {
+  type Emphasis,
+  CHART_EVENT_NAMES,
+  INTERACTION_RULES,
+  SELECT_TARGETS,
+  brushingInteractionsSchemaFor,
+  brushSchema,
+  chartEventSchema,
+  checkInteractions,
+  emphasisSchema,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  readChartEvent,
+  selectSchema,
+  toActionEvent,
+} from './schema/events';
+export { chartEventExamples } from './schema/examples/events';
 export { gridExamples } from './schema/examples/grid';
 export { metricExamples } from './schema/examples/metric';
 export { unsupportedExamples } from './schema/examples/unsupported';

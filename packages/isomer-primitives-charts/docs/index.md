@@ -16,13 +16,14 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 
-Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`.
+Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`, and declares its [interactions](interactions.md).
 
 ## Entries
 
 | Entry | Holds |
 | --- | --- |
 | `@elastic/isomer-primitives-charts/schema` | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer. |
+| `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, and the `SceneRenderer` interface. |
 | `@elastic/isomer-primitives-charts` | Everything above. |
 
 ```ts
@@ -34,6 +35,16 @@ import {
 ```
 
 The schemas are object schemas for `definePrimitive`, which adds `id` and `surfaces` and closes each node to unknown keys; `grid` is a container and is bound to a composition's body-node union through `gridSchemaFor`. Validate a node inside a composition with a runtime that registers the pack, so nested nodes are checked against every pack the composition holds.
+
+## Adding a field
+
+A chart node carries everything a faithful rendering needs, and drawing it is the engine's job. When a chart does not match its source, that is a gap in an engine, never missing information in the node. A field belongs on a primitive when:
+
+- **It says what it draws, in Isomer's terms.** Its description gives the values, units and effect a reader can check, never "as Lens does". A name borrowed from a source, such as an Elastic Charts fit or an EUI icon, is fine once the field defines it.
+- **It carries what a faithful rendering needs, even if one engine alone can draw it.** An engine that cannot draw a field documents its fallback; the field stays.
+- **An agent can choose it from the catalog alone**, without knowing the product a node may come from.
+- **Its default is Isomer's.** A materializer states its source's value rather than relying on the default to match.
+- **A renderer reads it.** What only a host acts on, such as a saved object id, belongs in opaque `source` meta.
 
 ## Rules
 
