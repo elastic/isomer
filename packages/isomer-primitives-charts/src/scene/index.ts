@@ -6,6 +6,7 @@
  */
 
 export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
+export { cls, createVarsModule, px, varStyle } from '../render/styles';
 export type {
   ChartBrushEvent,
   ChartEvent,
@@ -61,3 +62,4 @@ export {
   type XySeries,
   SCENE_KINDS,
 } from './types';
+export type { LocalVarGroup, StyleHandle } from '@elastic/distillate';

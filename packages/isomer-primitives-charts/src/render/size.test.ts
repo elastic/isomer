@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
 import type { MetricScene, XyScene } from '../scene/types';
 
-import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
+import { chartSize, chartSizeSpec, chartSizeVars } from './size';
 import { CHARTS_THEME } from './theme';
 
 const { chart } = CHARTS_THEME;
@@ -99,17 +99,15 @@ describe('chartSize', () => {
   });
 });
 
-describe('chartSizeStyle', () => {
+describe('chartSizeVars', () => {
   it('fills the width at the ratio, within the bounds', () => {
-    expect(chartSizeStyle(chartSizeSpec(xyTimeSeriesScene)!)).toEqual({
-      width: '100%',
+    expect(chartSizeVars(chartSizeSpec(xyTimeSeriesScene)!)).toEqual({
       aspectRatio: '16 / 9',
-      minHeight: 300,
+      minHeight: '300px',
     });
-    expect(chartSizeStyle(chartSizeSpec(metricSingleValueScene)!)).toEqual({
-      width: '100%',
+    expect(chartSizeVars(chartSizeSpec(metricSingleValueScene)!)).toEqual({
       aspectRatio: '300 / 160',
-      maxWidth: 300,
+      maxWidth: '300px',
     });
   });
 });

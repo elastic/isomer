@@ -18,6 +18,7 @@ import type {
   ReactSceneRenderer,
   ResolveSceneOptions,
 } from './render/context';
+import { sceneModule } from './render/scene_styles';
 import { chartSize, chartSizeSpec } from './render/size';
 import { CHARTS_THEME } from './render/theme';
 import {
@@ -199,8 +200,18 @@ describe('the charts pack', () => {
       resolved.length = 0;
       const html = draw(fluidPack, { environment: 'browser' });
       expect(sizes()).toEqual([]);
-      expect(html).toContain('aspect-ratio:300 / 160;max-width:300px');
-      expect(html).toContain('aspect-ratio:16 / 9;min-height:300px');
+      const { size } = sceneModule.vars;
+      expect(html).toContain(
+        `class="chartsScene-sized" style="${size.aspectRatio.propName}:300 / 160;${size.maxWidth.propName}:300px"`
+      );
+      expect(html).toContain(
+        `class="chartsScene-sized" style="${size.aspectRatio.propName}:16 / 9;${size.minHeight.propName}:300px"`
+      );
+      const [, rule] =
+        /\.chartsScene-sized\{([^}]*)\}/.exec(chartsStylesheet()) ?? [];
+      expect(rule).toContain(
+        `width:100%;aspect-ratio:var(${size.aspectRatio.propName});min-height:var(${size.minHeight.propName});max-width:var(${size.maxWidth.propName})`
+      );
     });
 
     it('leaves the box to a renderer that sizes itself, such as the summary fallback', () => {
@@ -422,8 +433,8 @@ describe("a Scene's link and emphasis notes", () => {
       /^<div><div([^>]*)><div([^>]*)><output>[^<]*<\/output><\/div>(.*)<\/div><\/div>$/.exec(
         html
       ) ?? [];
-    expect(anchor).not.toContain('aspect-ratio');
-    expect(box).toContain('aspect-ratio');
+    expect(anchor).not.toContain('chartsScene-sized');
+    expect(box).toContain('class="chartsScene-sized"');
     expect(links(after ?? '')).toEqual([link]);
   });
 
@@ -443,10 +454,16 @@ describe("a Scene's link and emphasis notes", () => {
       /<a\b[^>]*class="([^"]*)"[^>]*style="([^"]*)"/.exec(
         react(dark, { environment: 'browser' })
       ) ?? [];
-    expect(style).toBe(`color:${chrome.text};background:${chrome.background}`);
+    const { chrome: ink } = sceneModule.vars;
+    expect(style).toBe(
+      `${ink.ink.propName}:${chrome.text};${ink.fill.propName}:${chrome.background}`
+    );
     expect(className).toBe('chartsScene-link');
     const [, rule] =
       /\.chartsScene-link\{([^}]*)\}/.exec(chartsStylesheet()) ?? [];
+    expect(rule).toContain(
+      `color:var(${ink.ink.propName});background:var(${ink.fill.propName})`
+    );
     expect(rule).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
     expect(rule).toContain('overflow:hidden');
     expect(rule).toContain('white-space:nowrap');

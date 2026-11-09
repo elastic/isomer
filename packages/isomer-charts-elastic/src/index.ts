@@ -11,3 +11,4 @@ export {
   createElasticChartsRenderer,
 } from './renderer';
 export { sceneSpecs } from './specs';
+export { elasticChartsStylesheet } from './styles';
