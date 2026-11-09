@@ -91,26 +91,86 @@ const contrast = (a: string, b: string) => {
   return (high! + 0.05) / (low! + 0.05);
 };
 
+// A `#rrggbbaa` color drawn over an opaque `#rrggbb` canvas; any other color as is.
+const composite = (color: SceneColor, canvas: SceneColor): SceneColor => {
+  if (color.length !== 9) {
+    return color;
+  }
+  const alpha = parseInt(color.slice(7), 16) / 255;
+  return `#${[1, 3, 5]
+    .map((offset) =>
+      Math.round(
+        parseInt(color.slice(offset, offset + 2), 16) * alpha +
+          parseInt(canvas.slice(offset, offset + 2), 16) * (1 - alpha)
+      )
+        .toString(16)
+        .padStart(2, '0')
+    )
+    .join('')}`;
+};
+
 /** Text on `background`: whichever of the two schemes' text colors contrasts more. */
 export const textOn = (
   background: SceneColor,
   canvas: SceneColor
 ): SceneColor => {
-  if (background.length === 9) {
-    const alpha = parseInt(background.slice(7), 16) / 255;
-    background = `#${[1, 3, 5]
-      .map((offset) =>
-        Math.round(
-          parseInt(background.slice(offset, offset + 2), 16) * alpha +
-            parseInt(canvas.slice(offset, offset + 2), 16) * (1 - alpha)
-        )
-          .toString(16)
-          .padStart(2, '0')
-      )
-      .join('')}`;
-  }
+  const opaque = composite(background, canvas);
   const { light, dark } = CHART_CHROME;
-  return contrast(background, light.text) >= contrast(background, dark.text)
+  return contrast(opaque, light.text) >= contrast(opaque, dark.text)
     ? light.text
     : dark.text;
 };
+
+/**
+ * Table colors per scheme, EUI Borealis: `darkShade` for empty values,
+ * `lightShade` for a bar's track, `lightestShade` for the header and footer,
+ * `backgroundBasePrimary` for emphasized rows, and `textInk` and `textGhost`
+ * for text on a colored cell.
+ */
+export const TABLE_CHROME: Readonly<
+  Record<
+    ColorScheme,
+    {
+      readonly emptyValue: SceneColor;
+      readonly barTrack: SceneColor;
+      readonly header: SceneColor;
+      readonly emphasis: SceneColor;
+      readonly inkText: SceneColor;
+      readonly ghostText: SceneColor;
+    }
+  >
+> = {
+  light: {
+    emptyValue: '#5A6D8C',
+    barTrack: '#CAD3E2',
+    header: '#ECF1F9',
+    emphasis: '#F1F6FF',
+    inkText: '#07101F',
+    ghostText: '#FFFFFF',
+  },
+  dark: {
+    emptyValue: '#7186A8',
+    barTrack: '#243147',
+    header: '#172336',
+    emphasis: '#0A2342',
+    inkText: '#07101F',
+    ghostText: '#FFFFFF',
+  },
+};
+
+/** A table bar's fill when its column sets none: Lens's `DEFAULT_PROGRESS_BAR_COLOR`, `euiColorVis2`. */
+export const DEFAULT_TABLE_BAR_COLOR: SceneColor = CATEGORICAL_PALETTE[2]!;
+
+/**
+ * Text on a colored table cell, as Lens's `getContrastColor`: `textGhost` on a
+ * dark color (EUI `isColorDark`, relative luminance at most 0.179), else
+ * `textInk`. A translucent color is judged as drawn over `canvas`.
+ */
+export const contrastText = (
+  background: SceneColor,
+  canvas: SceneColor,
+  scheme: ColorScheme
+): SceneColor =>
+  luminance(composite(background, canvas)) <= 0.179
+    ? TABLE_CHROME[scheme].ghostText
+    : TABLE_CHROME[scheme].inkText;

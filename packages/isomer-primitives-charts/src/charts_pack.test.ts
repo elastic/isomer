@@ -32,6 +32,10 @@ import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
+import {
+  dataTableExamples,
+  dataTableTopHosts,
+} from './schema/examples/data_table';
 import { gridExamples } from './schema/examples/grid';
 import { unsupportedVega } from './schema/examples/unsupported';
 import type { GridNode } from './schema/grid';
@@ -82,8 +86,9 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
+      'dataTable',
       'grid',
       'metric',
       'unsupported',
@@ -137,6 +142,44 @@ describe('chartsPack', () => {
       resolveChart(metric!.node as ChartNode, { scheme: 'light' }).summary
     );
   });
+
+  // `react` skips validation, so its node may carry any href.
+  it.each(['metric', 'xyChart', 'dataTable'])(
+    '%s loses an unsafe href before the resolver sees the node',
+    (type) => {
+      const seen: ChartNode[] = [];
+      const spying = createIsomerRuntime({
+        packs: [
+          createChartsPack({
+            resolveScene: (node, options) => {
+              seen.push(node);
+              return resolveChart(node, options);
+            },
+          }),
+        ],
+      });
+      const { node } = cases.find((example) => example.type === type)!;
+      const unsafe = view({
+        ...node,
+        interactions: {
+          ...(node as ChartNode).interactions,
+          link: { label: 'Open', href: 'javascript:alert(1)' },
+        },
+      } as ChartNode);
+      const html = renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          spying.surfaces.react.render(unsafe, { heading: false })
+        )
+      );
+      expect(seen.length).toBeGreaterThan(0);
+      expect(seen.map(({ interactions }) => interactions?.link)).toEqual(
+        seen.map(() => undefined)
+      );
+      expect(html).not.toContain('javascript:');
+    }
+  );
 
   it.each(cases.filter(({ type }) => type === 'metric' || type === 'xyChart'))(
     '$type: $name draws its summary with no engine registered',
@@ -795,5 +838,68 @@ CLOSED`);
     expect(
       gridSnapshotHeight({ ...sectioned, description: 'About the board' })
     ).toBe(gridSnapshotHeight(sectioned) + 18);
+  });
+});
+
+describe('dataTable', () => {
+  const runtime = createIsomerRuntime({ packs: [chartsPack] });
+
+  it('sends a native Slack table in its starting order, not a picture', () => {
+    const { blocks, assets } = runtime.surfaces.slack.render(
+      view(dataTableTopHosts),
+      { heading: false, collectAssets: true }
+    );
+    expect(assets).toHaveLength(0);
+    const tableBlock = blocks.find(
+      (block) => (block as { type: string }).type === 'table'
+    ) as { rows: { text: string }[][] } | undefined;
+    expect(tableBlock?.rows.map((row) => row[0]?.text)).toEqual([
+      'host.name',
+      'web-02',
+      'web-01',
+      'db-01',
+      'Other',
+    ]);
+    expect(tableBlock?.rows[1]?.[1]?.text).toBe('6,310');
+  });
+
+  const chosen = dataTableExamples.find(
+    ({ name }) => name === 'Chosen columns, widths and pre-rendered values'
+  )!.node;
+  /** Every string a block list draws, in order. */
+  const slackTexts = (blocks: readonly unknown[]): string[] => {
+    const texts: string[] = [];
+    JSON.stringify(blocks, (key, value: unknown) => {
+      if (key === 'text' && typeof value === 'string') {
+        texts.push(value);
+      }
+      return value;
+    });
+    return texts;
+  };
+
+  it('sends the description and notes to Slack after the summary', () => {
+    const { blocks } = runtime.surfaces.slack.render(view(chosen), {
+      heading: false,
+    });
+    const texts = slackTexts(blocks);
+    const description = texts.indexOf(
+      'The most requested URLs in the last 24 hours.'
+    );
+    expect(description).toBeGreaterThan(0);
+    expect(texts.indexOf('Most requested')).toBeGreaterThan(description);
+  });
+
+  it('keeps a description longer than a Slack section, and every note after it', () => {
+    const description = 'word '.repeat(1_000).trim();
+    const long = { ...chosen, description };
+    const { blocks } = runtime.surfaces.slack.render(view(long), {
+      heading: false,
+    });
+    const texts = slackTexts(blocks);
+    expect(texts.join('').replace(/\s/g, '')).toContain(
+      description.replace(/\s/g, '')
+    );
+    expect(texts).toContain('Most requested');
   });
 });

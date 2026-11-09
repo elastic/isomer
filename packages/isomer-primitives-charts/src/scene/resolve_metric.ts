@@ -39,8 +39,8 @@ const TREND_ICONS = {
 } as const;
 const NOT_AVAILABLE = 'N/A';
 
-// The band `value` falls in: `from` inclusive, `to` exclusive except on the last band, as Lens's palette stops.
-const bandFor = (
+/** The band `value` falls in: `from` inclusive, `to` exclusive except on the last band, as Lens's palette stops. */
+export const bandFor = (
   bands: readonly ColorBand[],
   value: number
 ): ColorBand | undefined =>

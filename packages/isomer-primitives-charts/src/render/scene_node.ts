@@ -83,6 +83,9 @@ const renderEnv = (
     ...(context?.onEvent && {
       onEvent: (event) => context.onEvent?.(toActionEvent(event)),
     }),
+    ...(context?.resolveClassName && {
+      resolveClassName: context.resolveClassName,
+    }),
   };
 };
 

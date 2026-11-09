@@ -28,6 +28,12 @@ const DEFAULT_MISSING: MissingText = {
   nan: 'NaN',
 };
 
+/** What a missing value prints as. */
+export const NULL_LABEL = DEFAULT_MISSING.null;
+
+/** What an empty string prints as. */
+export const EMPTY_LABEL = DEFAULT_MISSING.empty;
+
 interface FormatContext {
   /** A BCP 47 locale, such as `en` or `fr-CA`. */
   readonly locale: string;

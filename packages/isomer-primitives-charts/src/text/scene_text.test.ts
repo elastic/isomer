@@ -84,6 +84,26 @@ describe('Scene text', () => {
     );
   });
 
+  it('writes the footer row last, without empty columns', () => {
+    const footed = {
+      ...withEmpty,
+      table: { ...withEmpty.table, footer: ['', 'Mean', 'Sum: 15'] },
+    };
+    expect(sceneToText(footed).split('\n').at(-1)).toBe(' | Sum: 15');
+    expect(serializeMarkdown(sceneToMarkdown(footed)).split('\n').at(-1)).toBe(
+      '| | Sum: 15 |'
+    );
+  });
+
+  it('writes no table for a footer without rows', () => {
+    expect(
+      sceneToText({
+        ...withEmpty,
+        table: { ...withEmpty.table, rows: [], footer: ['', '', 'Sum: 0'] },
+      })
+    ).toBe('Count by host.');
+  });
+
   it('carries every table string of a Scene', () => {
     const text = sceneToText(xyTimeSeriesScene);
     for (const { cells } of xyTimeSeriesScene.table.rows) {
