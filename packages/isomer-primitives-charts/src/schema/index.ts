@@ -9,6 +9,7 @@ export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
 export {
   dataTableCatalog,
   gridCatalog,
+  heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
   unsupportedCatalog,
@@ -51,6 +52,7 @@ export {
   INTERACTION_RULES,
   SELECT_TARGETS,
   brushingInteractionsSchemaFor,
+  brushInteractionsSchemaFor,
   brushSchema,
   chartEventSchema,
   checkInteractions,
@@ -64,6 +66,7 @@ export {
 export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
 export { gridExamples } from './examples/grid';
+export { heatmapExamples } from './examples/heatmap';
 export { metricExamples } from './examples/metric';
 export { partitionChartExamples } from './examples/partition_chart';
 export { unsupportedExamples } from './examples/unsupported';
@@ -87,6 +90,7 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './grid';
+export { type HeatmapNode, HEATMAP_RULES, heatmapSchema } from './heatmap';
 export { glyphSchema } from './icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
 export {

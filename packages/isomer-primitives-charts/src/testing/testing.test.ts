@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import type { ReactSceneRenderer } from '../render/context';
 import type { MetricScene, Scene, XyScene } from '../scene/types';
 import {
+  CHECKED_KINDS,
   coverageProblems,
   drawExamples,
   drawingProblems,
@@ -79,7 +80,7 @@ const fake: ReactSceneRenderer = {
   id: 'fake',
   environments: ['node'],
   sized: true,
-  supports: (kind) => kind !== 'table',
+  supports: (kind) => CHECKED_KINDS.includes(kind),
   render: (scene) => {
     const { texts, colors } = leaves(drawnParts(scene));
     return createElement(

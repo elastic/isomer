@@ -18,6 +18,7 @@ import {
 import {
   dataTableCatalog,
   gridCatalog,
+  heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
   unsupportedCatalog,
@@ -26,11 +27,13 @@ import {
 import { dataTableSchema } from './data_table';
 import { dataTableExamples } from './examples/data_table';
 import { gridExamples } from './examples/grid';
+import { heatmapExamples } from './examples/heatmap';
 import { metricExamples } from './examples/metric';
 import { partitionChartExamples } from './examples/partition_chart';
 import { unsupportedExamples } from './examples/unsupported';
 import { xyChartExamples } from './examples/xy_chart';
 import { type GridNode, gridSchema, gridSchemaFor } from './grid';
+import { heatmapSchema } from './heatmap';
 import { metricSchema } from './metric';
 import { partitionChartSchema } from './partition_chart';
 import { unsupportedSchema } from './unsupported';
@@ -70,6 +73,13 @@ export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
     schema: partitionChartSchema,
     catalog: partitionChartCatalog,
     examples: partitionChartExamples,
+    renderers,
+  }),
+  definePrimitive({
+    type: 'heatmap',
+    schema: heatmapSchema,
+    catalog: heatmapCatalog,
+    examples: heatmapExamples,
     renderers,
   }),
   definePrimitive<GridNode>({

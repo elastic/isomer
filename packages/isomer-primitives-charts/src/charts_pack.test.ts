@@ -87,10 +87,11 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, dataTable, partitionChart, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, partitionChart, heatmap, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
       'dataTable',
       'grid',
+      'heatmap',
       'metric',
       'partitionChart',
       'unsupported',
@@ -146,7 +147,7 @@ describe('chartsPack', () => {
   });
 
   // `react` skips validation, so its node may carry any href.
-  it.each(['metric', 'xyChart', 'dataTable', 'partitionChart'])(
+  it.each(['metric', 'xyChart', 'dataTable', 'partitionChart', 'heatmap'])(
     '%s loses an unsafe href before the resolver sees the node',
     (type) => {
       const seen: ChartNode[] = [];
@@ -185,7 +186,7 @@ describe('chartsPack', () => {
 
   it.each(
     cases.filter(({ type }) =>
-      ['metric', 'xyChart', 'partitionChart'].includes(type)
+      ['metric', 'xyChart', 'partitionChart', 'heatmap'].includes(type)
     )
   )('$type: $name draws its summary with no engine registered', ({ node }) => {
     const composition = view(node);

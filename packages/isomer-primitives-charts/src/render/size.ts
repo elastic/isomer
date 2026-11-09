@@ -38,6 +38,8 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
         : { aspectRatio: chart.xy.aspectRatio };
     case 'partition':
       return { aspectRatio: chart.partition.aspectRatio };
+    case 'heatmap':
+      return { aspectRatio: chart.heatmap.aspectRatio };
     case 'metric': {
       if (scene.tiles.length <= 1) {
         const { width, height } = chart.metric.single;

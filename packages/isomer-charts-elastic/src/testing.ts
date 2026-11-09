@@ -134,9 +134,14 @@ export const debugStateProblems = (
   if (!state) {
     return ['Elastic Charts reports no DebugState'];
   }
-  return scene.kind === 'xy'
-    ? xyProblems(scene, state)
-    : partitionProblems(scene, state);
+  switch (scene.kind) {
+    case 'xy':
+      return xyProblems(scene, state);
+    case 'partition':
+      return partitionProblems(scene, state);
+    default:
+      return [`no DebugState check for ${scene.kind} Scenes`];
+  }
 };
 
 /** What Elastic Charts reports it drew as text: axis titles and tick labels, legend names. */
