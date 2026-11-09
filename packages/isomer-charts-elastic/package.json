@@ -53,6 +53,7 @@
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "bench": "node scripts/bench_render.cjs",
+    "bench:check": "node scripts/bench_render.cjs --check",
     "studio": "isomer-studio dev",
     "studio:check": "isomer-studio check --png"
   },

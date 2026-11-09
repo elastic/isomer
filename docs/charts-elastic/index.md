@@ -66,14 +66,57 @@ In a browser, the renderer scales its SVG to the container at the drawing's aspe
 
 ### Measuring it
 
-`pnpm --filter @elastic/isomer-charts-elastic bench` draws every `metric` and `xyChart` example, light and dark, through the `snapshot` surface and takumi to PNG, as a render service does. Each run is a fresh Node process loading the CommonJS build, so run `pnpm build` first. It compares headless Elastic Charts with a baseline that has no chart engine, and reports:
+`pnpm --filter @elastic/isomer-charts-elastic bench` measures what a render service pays to draw charts: validation, the `snapshot` surface, headless Elastic Charts and takumi to PNG, on one shared backend with Inter Latin registered once. Each run is a fresh Node process loading the CommonJS build, so run `pnpm build` first. Scenarios:
 
-- peak RSS;
-- heap held after the run and a forced GC;
-- cold start to the first PNG;
-- the median draw and rasterization time per chart.
+| Scenario | What it draws |
+| --- | --- |
+| `baseline` | Every `metric` and `xyChart` example, light and dark, at 1×, with no chart engine (the pack's summary fallback) |
+| `headless` | The same, with headless Elastic Charts; the difference from `baseline` is the engine's |
+| `one` | One xy chart at 2×: the one-off PNG |
+| `budget-xy` | One xy line at the charts pack's whole input budget (250,000 values, about 83,000 points), at 2× |
+| `budget-grid` | 40 xy panels in a `grid` sharing that budget, the dashboard the budget was sized for, at 2× |
+| `burst-limited` | 16 xy charts at 2× requested at once, through the [limiter in takumi's docs](../image-takumi/index.md#memory-on-a-small-server), of 2 |
+| `burst-unlimited` | The same 16 with no limiter |
 
-`--repeat <n>` draws the examples n times in each process. A held heap that stays flat as `--repeat` grows rules out a JavaScript leak, but not native growth: takumi and its buffers allocate outside the heap, and peak RSS is only a high-water mark. `--json` prints every run.
+Each reports peak RSS; RSS once everything is loaded and the fonts registered; peak less loaded, which is what rendering adds; heap held after the run and a forced GC; cold start to the first PNG; the median validate-and-draw and rasterization time per chart; and the largest PNG. `--scenarios a,b` picks scenarios, `--runs n` sets runs per scenario, `--repeat <n>` draws a scenario's charts n times in one process, `--values <n>` replaces the input budget the `budget-*` scenarios fill, `--cache-max-bytes <n>` sets takumi's resource cache, and `--json` prints every run, as one JSON document even with `--check`, which then reports its bounds on stderr. A held heap that stays flat as `--repeat` grows rules out a JavaScript leak, but not native growth: takumi and its buffers allocate outside the heap, and peak RSS is only a high-water mark.
+
+`pnpm --filter @elastic/isomer-charts-elastic bench:check` (`pnpm check:memory` from the root, part of `pnpm verify` and CI) runs `headless`, `one`, both `budget-*` scenarios and `burst-limited` three times each, and fails when a scenario's median peak RSS or peak less loaded is over its bound in `scripts/bench_render.cjs`. A bound is about 1.5× the largest of what macOS arm64, Linux arm64 and Linux x64 (emulated on arm64) measured on Node 24, so a runner's variance passes and a doubling fails. The median of three runs, rather than the largest, keeps one slow garbage collection from failing a build. Lower a bound when a change makes rendering cheaper, so the gain is kept.
+
+Measured on Node 24, MB:
+
+| Scenario | Peak RSS, macOS arm64 | Peak RSS, Linux arm64 | Peak RSS, Linux x64 (emulated) | Peak less loaded, Linux arm64 | Validate and draw, Linux arm64 |
+| --- | --- | --- | --- | --- | --- |
+| `one` | 148–150 | 149 | 196–197 | 16 | 35–43 ms |
+| `headless` (42 charts) | 177–182 | 238–240 | 298 | 105–107 | 5 ms each |
+| `burst-limited` (16 at 2×) | 198–201 | 257–270 | 308–329 | 124–137 | 9–18 ms each |
+| `budget-grid` | 492–505 | 567–577 | 630–635 | 428–437 | 1.9–2.3 s |
+| `budget-xy` | 836–988 | 991–1065 | 1052–1092 | 852–926 | 3.3–3.8 s |
+
+Loaded RSS is about 130 MB on arm64, of which headless Elastic Charts is about 48 MB, and about 170 MB under x64 emulation, which adds its own overhead; the emulated column bounds what CI's x64 runners may see rather than measuring them. Inter Latin at four weights is about 1 MB. Linux pays more than macOS for the same work, so read the Linux column for a server.
+
+What a one-off chart PNG costs is small: about 16 MB over loaded for a typical xy chart, and 15 to 40 ms. What it costs grows with the data drawn: on Linux, about 185 MB over loaded at 25,000 input values, 250 MB at 50,000 and 900 MB at 250,000. The charts pack's input budget, sized for a 40-panel dashboard, admits a single chart whose render needs around 900 MB on Linux, which does not fit beside Kibana on a 1 GB instance. Two things make the large case expensive:
+
+- Through the `snapshot` surface, the charts pack resolves each chart's Scene five times: once for the frame's height estimate, then twice in each of its two React passes (styles, then markup), unsized and then at the chart's box. The engine draws the SVG twice. At 83,000 points, a resolve takes about 550 ms and builds a Scene of about 22 MB as JSON: 13 MB of layers, 5 MB of formatted `table` and 3 MB of categories. A host can pass `createChartsPack` a `resolveScene` memoized on the node and its options, and a renderer memoized on the Scene; measured on macOS, that took `budget-xy` from 836–988 MB to 665 MB and its draw from 3.2–4.1 s to 1.9 s.
+- Headless Elastic Charts keeps the selector state of its last two charts after drawing: about 130 MB of heap after a 40,000-point chart, released as later charts replace it. It is bounded, not a leak.
+
+So a PNG host on a small instance sets a lower input budget of its own (`createIsomerRuntime({ inputBudget: { values } })`), as well as the [limits takumi's docs describe](../image-takumi/index.md#memory-on-a-small-server). Those costs hold for one chart or a grid alike up to 50,000 values; past that, one chart costs about twice what a grid of the same values does.
+
+### Drawing text on a server
+
+The headless renderer draws text as SVG `<text>` unless it is given a `font`, and with no `measureTextWidth` it lays that text out with Helvetica metrics. takumi then draws the `<text>` in the registered Inter, which is narrower, so a layout measured for Helvetica leaves gaps in it: a metric's unit sits apart from its value (`1.1   TB`). Measured across the 21 `metric` and `xyChart` examples at 2×:
+
+| | `<text>`, Helvetica metrics (default) | Glyph outlines (`font`) | `<text>`, Inter advance widths (`measureTextWidth`) |
+| --- | --- | --- | --- |
+| Layout matches what is drawn | No | Yes | Yes |
+| Kerning | Yes, takumi's | No | Yes, takumi's |
+| `snapshot` markup, total | 132 KB | 946 KB | 132 KB |
+| PNG, total | 292 KB | 301 KB | 301 KB |
+| takumi PNG per chart, median | 4–6 ms | 5–7 ms | 5–7 ms |
+| PDF of 6 xy charts | 164 KB | 137 KB | 164 KB |
+| Chart text selectable in a PDF | No | No | No |
+| Font data held | None | Glyph table, about 3 MB of heap for four Latin weights | Advance widths |
+
+Glyph outlines lay text out correctly but drop kerning, grow the markup sevenfold, and cover only the glyphs extracted. Selection is no reason to choose either: in takumi's PDF, an inline SVG's `<text>` extracts as no text either. Keep `<text>`, and give the renderer a `measureTextWidth` from Inter's advance widths, the measure `createGlyphFont` builds from the same faces, so the layout is measured for the face takumi draws. The renderer's default is unchanged until that measure ships with this package.
 
 ## What it takes from the Scene
 
