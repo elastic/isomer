@@ -34,11 +34,13 @@ import {
 import {
   chartEventExamples,
   metricExamples,
+  partitionChartExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
+import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
 import { elasticModule } from './styles';
 import { sceneTooltip } from './xy';
@@ -139,8 +141,17 @@ const draw = async (
   return container;
 };
 
-const debugState = async (scene: XyScene): Promise<DebugState> => {
-  const container = await draw(scene);
+/** The legend Elastic Charts drew: each item's label and value. */
+const legendOf = (container: HTMLElement) =>
+  [...container.querySelectorAll('.echLegendItem')].map((item) => ({
+    label: item.querySelector('.echLegendItem__label')?.textContent ?? '',
+    value: item.querySelector('.echLegendItem__legendValue')?.textContent ?? '',
+  }));
+
+const debugState = async (scene: Scene): Promise<DebugState> =>
+  debugStateIn(await draw(scene));
+
+const debugStateIn = (container: HTMLElement): DebugState => {
   const status = container.querySelector('[data-ech-debug-state]');
   const raw = status?.getAttribute('data-ech-debug-state');
   if (!raw) {
@@ -626,12 +637,80 @@ describe('elastic-charts renderer: resolved metric examples', () => {
   });
 });
 
+describe('elastic-charts renderer: resolved partitionChart examples', () => {
+  it.each(resolvedCases(partitionChartExamples))(
+    '$name',
+    async ({ node, scheme }) => {
+      const scene = resolveChart(node, { scheme, size: SIZE });
+      if (scene.kind !== 'partition') {
+        throw new Error('expected a partition Scene');
+      }
+      if (scene.empty) {
+        const container = await draw(scene);
+        expect(container.textContent).toBe(scene.empty.text);
+        expect(container.querySelector('.echChart')).toBeNull();
+        return;
+      }
+      const container = await draw(scene);
+      const state = debugStateIn(container);
+      // Elastic Charts names each slice by its key; a waffle reports each square.
+      const drawn = [
+        ...new Map(
+          (state.partition?.[0]?.partitions ?? []).map(
+            ({ name, depth, color, value }) => [
+              name,
+              { key: name, depth, color, value },
+            ]
+          )
+        ).values(),
+      ];
+      const slices = slicesOf(scene.nodes).map(
+        ({ key, depth, color, value }) => ({ key, depth, color, value })
+      );
+      expect(drawn).toHaveLength(slices.length);
+      expect(drawn).toEqual(expect.arrayContaining(slices));
+      if (scene.legend.visible) {
+        expect(legendOf(container)).toEqual(
+          scene.legend.items.map(({ label, value }) => ({
+            label,
+            value: value ?? '',
+          }))
+        );
+      }
+    }
+  );
+});
+
+describe('elastic-charts renderer: partition order and text', () => {
+  const nested = partitionChartExamples.find(
+    ({ name }) => name === 'Nested pie with values'
+  )!.node;
+
+  it('lays slices out in the Scene’s order, as a nested legend lists them', async () => {
+    const scene = resolveChart(nested, { scheme: 'light', size: SIZE });
+    expect(legendOf(await draw(scene)).map(({ label }) => label)).toEqual(
+      slicesOf(scene.nodes).map(({ label }) => label)
+    );
+  });
+
+  it('labels each slice with its own value label, and legend values with their value text', () => {
+    const scene = resolveChart(nested, { scheme: 'light', size: SIZE });
+    const format = partitionValueFormatter(scene);
+    slicesOf(scene.nodes).forEach((slice, index) => {
+      expect(format(-1 - index)).toBe(slice.valueLabel);
+      expect(format(slice.value)).toBe(slice.valueText);
+    });
+  });
+});
+
 describe('elastic-charts renderer', () => {
-  it('draws metric and xy in the browser', () => {
+  it('draws metric, xy and partition in the browser', () => {
     expect(renderer.id).toBe('elastic-charts');
     expect(renderer.environments).toEqual(['browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
+    expect(renderer.supports('partition')).toBe(true);
+    expect(renderer.supports('table')).toBe(false);
   });
 
   it('fills its container, so the chart shim gives it the size spec’s box', () => {

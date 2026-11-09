@@ -16,9 +16,10 @@ import type {
 
 import { metricSpecs } from './metric';
 import type { ElasticChartsOptions } from './options';
+import { partitionSpecs } from './partition';
 import { xySpecs } from './xy';
 
-/** A metric or xy Scene as Elastic Charts spec elements; `null` for any other kind. */
+/** A metric, xy or partition Scene as Elastic Charts spec elements; `null` for any other kind, or an empty partition. */
 export const sceneSpecs = (
   scene: Scene,
   env: SceneRenderEnv,
@@ -26,6 +27,9 @@ export const sceneSpecs = (
 ): ReactNode => {
   if (scene.kind === 'metric') {
     return metricSpecs(scene, env, options);
+  }
+  if (scene.kind === 'partition') {
+    return partitionSpecs(scene, env, options);
   }
   return scene.kind === 'xy' ? xySpecs(scene, env, options) : null;
 };

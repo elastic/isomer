@@ -9,6 +9,7 @@ toc:
   - file: metric.md
   - file: xy-chart.md
   - file: data-table.md
+  - file: partition-chart.md
   - file: grid.md
   - file: unsupported.md
   - file: interactions.md

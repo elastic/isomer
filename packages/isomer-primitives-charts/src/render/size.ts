@@ -36,6 +36,8 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
             minHeight: chart.xy.timeMinHeight,
           }
         : { aspectRatio: chart.xy.aspectRatio };
+    case 'partition':
+      return { aspectRatio: chart.partition.aspectRatio };
     case 'metric': {
       if (scene.tiles.length <= 1) {
         const { width, height } = chart.metric.single;

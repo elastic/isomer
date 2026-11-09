@@ -14,6 +14,8 @@ import {
   brushEvent,
   type ChartEvent,
   type MetricScene,
+  type PartitionNode,
+  type PartitionScene,
   type SceneRenderEnv,
   selectEvent,
   type XyCategory,
@@ -186,4 +188,65 @@ export const metricHandlers = (scene: MetricScene, env: SceneRenderEnv) => {
       }
     },
   };
+};
+
+const sliceNamed = (
+  nodes: readonly PartitionNode[],
+  key: string
+): PartitionNode | undefined => {
+  for (const node of nodes) {
+    const found = node.key === key ? node : sliceNamed(node.children, key);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+};
+
+/** The handlers this engine passes Elastic Charts for a partition Scene; empty when the chart offers nothing. */
+export const partitionHandlers = (
+  scene: PartitionScene,
+  env: SceneRenderEnv
+) => {
+  if (
+    !listening(env) ||
+    !(scene.interactions.select as readonly string[]).includes('slice')
+  ) {
+    return {};
+  }
+  return {
+    /** The innermost slice of the first element: the one the reader hit, as Kibana's partition click takes it. */
+    onElementClick: (elements: readonly unknown[]) => {
+      const [first] = elements;
+      const [layers]: readonly unknown[] = Array.isArray(first)
+        ? (first as readonly unknown[])
+        : [];
+      const hit = Array.isArray(layers)
+        ? (layers as readonly { groupByRollup?: unknown }[]).at(-1)
+        : undefined;
+      const key = hit?.groupByRollup;
+      const selection =
+        typeof key === 'string'
+          ? sliceNamed(scene.nodes, key)?.selection
+          : undefined;
+      if (selection) {
+        raise(env, selectEvent(env.nodeId, selection));
+      }
+    },
+  };
+};
+
+/** Raises the `slice` selection of the legend item for the slice `key` names. */
+export const partitionLegendSelect = (
+  scene: PartitionScene,
+  env: SceneRenderEnv,
+  key: string,
+  negate: boolean
+): void => {
+  const selection = scene.legend.items.find(
+    (item) => item.key === key
+  )?.selection;
+  if (selection && listening(env)) {
+    raise(env, selectEvent(env.nodeId, selection, negate));
+  }
 };
