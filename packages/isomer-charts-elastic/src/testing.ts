@@ -239,16 +239,17 @@ const gaugeProblems = (scene: GaugeScene, state: DebugState): string[] => {
 /**
  * Where what Elastic Charts reports drawing for `scene` differs from it: an xy
  * chart's tick labels, series and legend items, a partition's slices, a heat
- * map's cells, positions and bands, a gauge's bullet. A metric
+ * map's cells, positions and bands, a gauge's bullet. A metric or tag cloud
  * has no `DebugState` in Elastic Charts, so it is checked by its text alone.
  */
 export const debugStateProblems = (
   scene: Scene,
   state: DebugState | undefined
 ): string[] => {
-  // A metric has no DebugState, and an empty chart draws its note alone.
+  // A metric or tag cloud has no DebugState, and an empty chart draws its note alone.
   if (
     scene.kind === 'metric' ||
+    scene.kind === 'tagCloud' ||
     scene.kind === 'table' ||
     ((scene.kind === 'partition' ||
       scene.kind === 'heatmap' ||

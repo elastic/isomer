@@ -17,6 +17,7 @@ export const EMPTY_LINE_HEIGHT = 20;
 export const emptyTextOf = (scene: Scene): string | undefined =>
   scene.kind === 'partition' ||
   scene.kind === 'heatmap' ||
-  scene.kind === 'gauge'
+  scene.kind === 'gauge' ||
+  scene.kind === 'tagCloud'
     ? scene.empty?.text
     : undefined;

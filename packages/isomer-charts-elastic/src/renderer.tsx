@@ -21,6 +21,7 @@ import { emptyTextOf } from './empty';
 import type { ElasticChartsOptions } from './options';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
+import { TagCloudChart } from './tag_cloud';
 
 /** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
 export const ELASTIC_CHARTS_VERSION = '73.3.2';
@@ -31,6 +32,7 @@ const KINDS: readonly SceneKind[] = [
   'partition',
   'heatmap',
   'gauge',
+  'tagCloud',
 ];
 
 /** Kibana's functional tests turn on `DebugState` through this global. */
@@ -86,6 +88,9 @@ export const createElasticChartsRenderer = (
     const empty = emptyTextOf(scene);
     if (empty !== undefined) {
       return <EmptyChart scene={scene} text={empty} env={env} />;
+    }
+    if (scene.kind === 'tagCloud') {
+      return <TagCloudChart scene={scene} env={env} options={resolved} />;
     }
     return (
       <Chart size={scene.size ?? { width: '100%', height: '100%' }}>

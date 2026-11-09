@@ -41,6 +41,7 @@ import {
   type HeatmapNode,
   metricExamples,
   partitionChartExamples,
+  tagCloudExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -56,6 +57,7 @@ import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
+import { tagCloudData } from './tag_cloud';
 import { sceneTooltip } from './xy';
 
 const { handles: elastic, vars } = elasticModule;
@@ -957,7 +959,7 @@ describe('elastic-charts renderer: partition order and text', () => {
 });
 
 describe('elastic-charts renderer', () => {
-  it('draws metric, xy, partition, heatmap and gauge in the browser', () => {
+  it('draws metric, xy, partition, heatmap, gauge and tagCloud in the browser', () => {
     expect(renderer.id).toBe('elastic-charts');
     expect(renderer.environments).toEqual(['browser']);
     expect(renderer.supports('metric')).toBe(true);
@@ -965,6 +967,7 @@ describe('elastic-charts renderer', () => {
     expect(renderer.supports('partition')).toBe(true);
     expect(renderer.supports('heatmap')).toBe(true);
     expect(renderer.supports('gauge')).toBe(true);
+    expect(renderer.supports('tagCloud')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -1186,5 +1189,59 @@ describe('elastic-charts renderer: gauge text and bands', () => {
       scene.bands[0]!.color,
       scene.bands[0]!.color,
     ]);
+  });
+});
+
+describe('elastic-charts renderer: tag cloud', () => {
+  // jsdom has no canvas for the word cloud to measure words with, so this
+  // reads the markup; Chromium draws the words in the look gate.
+  it.each(resolvedCases(tagCloudExamples))('$name', ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'tagCloud') {
+      throw new Error('expected a tag cloud Scene');
+    }
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      renderer.render(scene, { environment: 'browser' }) as React.ReactElement
+    );
+    if (scene.empty) {
+      expect(page.textContent).toBe(scene.empty.text);
+      expect(page.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    // The cloud above its label, at the Scene's size, the label in its text color.
+    const box = page.querySelector<HTMLElement>(
+      `.${elastic.tagCloud.readableName}`
+    )!;
+    expect(
+      [
+        vars.tagCloud.width,
+        vars.tagCloud.height,
+        vars.tagCloud.ink,
+        vars.tagCloud.fill,
+      ].map(({ propName }) => box.style.getPropertyValue(propName))
+    ).toEqual([
+      `${SIZE.width}px`,
+      `${SIZE.height}px`,
+      scene.chrome.text,
+      scene.chrome.background,
+    ]);
+    expect(
+      box.querySelector(`.${elastic.tagCloudCloud.readableName} .echChart`)
+    ).not.toBeNull();
+    const label = box.querySelector(`.${elastic.tagCloudLabel.readableName}`);
+    expect(label?.textContent ?? undefined).toBe(scene.label);
+  });
+
+  it('passes each word with its weight and color, naming it by index', () => {
+    const scene = resolveChart(tagCloudExamples[0]!.node, { scheme: 'dark' });
+    expect(tagCloudData(scene)).toEqual(
+      scene.words.map(({ text, weight, color }, index) => ({
+        text,
+        weight,
+        color,
+        index,
+      }))
+    );
   });
 });
