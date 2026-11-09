@@ -427,8 +427,12 @@ describe("a Scene's link and emphasis notes", () => {
     expect(links(after ?? '')).toEqual([link]);
   });
 
-  it('draw the link on one clipped line in the Scene’s text color', () => {
-    const chrome = { ...xyInteractiveScene.chrome, text: '#DFE5EF' };
+  it('draw the link on one clipped line in the Scene’s text and background colors', () => {
+    const chrome = {
+      ...xyInteractiveScene.chrome,
+      text: '#DFE5EF',
+      background: '#0B1628',
+    };
     const dark = createChartsPack({
       resolveScene: (node, options) => ({
         ...resolveInteractive(node, options),
@@ -440,6 +444,7 @@ describe("a Scene's link and emphasis notes", () => {
         react(dark, { environment: 'browser' })
       ) ?? [];
     expect(style).toContain(`color:${chrome.text}`);
+    expect(style).toContain(`background:${chrome.background}`);
     expect(style).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
     expect(style).toContain('overflow:hidden');
     expect(style).toContain('white-space:nowrap');

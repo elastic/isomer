@@ -62,7 +62,7 @@ A host that loads the charts pack without a style adapter names the runtime's ty
 
 When the context carries `onEvent`, the shim passes the renderer an `onEvent` that wraps each `ChartEvent` with `toActionEvent`. Without it the renderer gets none and the chart is not interactive.
 
-Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors), and draws the Scene's `link` below the chart in the Scene's text color, on one line `CHARTS_THEME.chart.linkHeight` pixels tall that clips a longer label, so every renderer gets it without drawing it. A host or grid panel `size` holds that line: the chart resolves for the height left above it. On native the shim returns the renderer's output unwrapped, since native has no `div`.
+Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors), and draws the Scene's `link` below the chart in the Scene's text and background colors, on one line `CHARTS_THEME.chart.linkHeight` pixels tall that clips a longer label, so every renderer gets it without drawing it. A host or grid panel `size` holds that line: the chart resolves for the height left above it. On native the shim returns the renderer's output unwrapped, since native has no `div`.
 
 ## Chart size
 

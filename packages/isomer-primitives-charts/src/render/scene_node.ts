@@ -197,6 +197,7 @@ export const renderSceneNode = (
           whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
           color: unsized.chrome.text,
+          background: unsized.chrome.background,
           fontSize: CHARTS_THEME.type.body,
           lineHeight: `${linkHeight}px`,
         },
