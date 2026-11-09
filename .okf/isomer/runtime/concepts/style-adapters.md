@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Style adapters
-description: The HTML surface runs the host adapter if supplied, otherwise the one pack adapter.
+description: The HTML surface runs the host adapter if supplied, otherwise each pack's own, composed.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
 tags: [isomer, runtime, css]
 status: stable
@@ -9,7 +9,7 @@ stale_after: 2027-03-18
 sources:
   - id: adapter
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
-    title: resolveStyleAdapter
+    title: resolveStyling
   - id: docs
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/docs/packs.md
     title: Runtime packs
@@ -17,12 +17,12 @@ sources:
 
 # Definition
 
-The HTML surface runs the host's style adapter if one was passed, otherwise the adapter of the one composed pack that declares one. See the package doc on packs.[^docs]
+The HTML and `snapshot` surfaces run the host's style adapter if one was passed, otherwise each pack's own. See the package doc on packs.[^docs]
 
-Two packs declaring an adapter throw `AMBIGUOUS_STYLE_ADAPTER` unless the host passes its own; there is no composite adapter, so a render context is the adapter's own object.[^adapter]
+Two or more pack adapters compose: each gets its own collector, a pack's `react` renderers read its own adapter's render context wherever they are nested, and the stylesheet joins theirs in pack order. A pack without an adapter is styled by the first pack that has one, and throws `AMBIGUOUS_STYLE_ADAPTER` if it declares `collectStyles`.[^adapter]
 
 Related: [pack composition](/runtime/concepts/packs.md), [rendering](/sdk/concepts/rendering.md).
 
-[^adapter]: resolveStyleAdapter
+[^adapter]: resolveStyling
 
 [^docs]: Runtime packs

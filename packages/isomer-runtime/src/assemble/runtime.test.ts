@@ -1174,7 +1174,7 @@ describe('createIsomerRuntime', () => {
     );
   });
 
-  describe('one styling pack per runtime', () => {
+  describe('styling packs', () => {
     const adapter = (css: string) => ({
       createCollector: () => ({ css }),
       createRenderContext: () => ({}),
@@ -1195,19 +1195,6 @@ describe('createIsomerRuntime', () => {
         styleAdapter: adapter('.two {}'),
       }),
     ];
-
-    it('throws when two packs each declare a styleAdapter', () => {
-      try {
-        createIsomerRuntime({ packs: styledPacks() });
-        expect.unreachable();
-      } catch (error) {
-        expect(error).toMatchObject({
-          name: 'IsomerError',
-          code: 'AMBIGUOUS_STYLE_ADAPTER',
-        });
-        expect((error as Error).message).toContain('"test.one", "test.two"');
-      }
-    });
 
     it('lets one host adapter replace both pack adapters', () => {
       const runtime = createIsomerRuntime({
@@ -1307,6 +1294,237 @@ describe('createIsomerRuntime', () => {
         });
         expect((error as Error).message).toContain(
           '"test.one"\'s styleAdapter'
+        );
+      }
+    });
+  });
+
+  describe('composed pack adapters', () => {
+    interface KeyCollector {
+      keys: Set<string>;
+    }
+
+    /** Names a handle `<prefix>-<key>` and emits one rule per collected key. */
+    const keyAdapter = (prefix: string) => ({
+      createCollector: (): KeyCollector => ({ keys: new Set() }),
+      createRenderContext: ({ keys }: KeyCollector) => ({
+        resolveClassName: (...handles: StyleHandle[]) =>
+          handles
+            .map(({ key }) => {
+              keys.add(key);
+              return `${prefix}-${key}`;
+            })
+            .join(' '),
+      }),
+      renderStyles: ({ keys }: KeyCollector) =>
+        [...keys].map((key) => `.${prefix}-${key}{}`).join(''),
+    });
+
+    /** `definition` drawn as a span whose class resolves its type through the context. */
+    const classed = <TNode extends PrimitiveNode & { text: string }>(
+      definition: AnyPrimitiveDefinition
+    ) =>
+      ({
+        ...definition,
+        renderers: {
+          ...definition.renderers,
+          react: (node: TNode, { context }: { context: StyledContext }) =>
+            createElement(
+              'span',
+              {
+                className: context.resolveClassName?.({
+                  key: node.type,
+                  readableName: node.type,
+                }),
+              },
+              node.text
+            ),
+        },
+      }) as AnyPrimitiveDefinition;
+
+    interface StyledContext {
+      resolveClassName?: (...handles: StyleHandle[]) => string;
+    }
+
+    const packWith = (
+      id: string,
+      primitives: readonly AnyPrimitiveDefinition[],
+      styleAdapter?: ReturnType<typeof keyAdapter>
+    ) =>
+      definePrimitivePack({
+        id,
+        surfaces: [],
+        primitives,
+        ...(styleAdapter && { styleAdapter }),
+      });
+
+    it("styles each pack's nodes with its own adapter, joining their CSS in pack order", () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith('test.one', [classed(notePrimitive)], keyAdapter('one')),
+          packWith('test.two', [classed(boldPrimitive)], keyAdapter('two')),
+        ],
+      });
+
+      const { body, css } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [
+          { type: 'bold', text: 'b' } as BoldNode,
+          { type: 'note', text: 'n' } as NoteNode,
+        ],
+      });
+      expect(body).toContain('<span class="two-bold">b</span>');
+      expect(body).toContain('<span class="one-note">n</span>');
+      expect(css).toBe('.one-note{}\n.two-bold{}');
+    });
+
+    it("draws a node in its own pack's context inside another pack's container", () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith(
+            'test.one',
+            [wrapPrimitive, classed(notePrimitive)],
+            keyAdapter('one')
+          ),
+          packWith('test.two', [classed(boldPrimitive)], keyAdapter('two')),
+        ],
+      });
+
+      const { body, css } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [
+          {
+            type: 'wrap',
+            items: [
+              { type: 'bold', text: 'b' },
+              { type: 'note', text: 'n' },
+            ],
+          } as WrapNode,
+        ],
+      });
+      expect(body).toContain('<span class="two-bold">b</span>');
+      expect(body).toContain('<span class="one-note">n</span>');
+      expect(css).toBe('.one-note{}\n.two-bold{}');
+    });
+
+    it('styles a pack without an adapter through the first pack that has one', () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith('test.one', [notePrimitive], keyAdapter('one')),
+          packWith('test.two', [boldPrimitive], keyAdapter('two')),
+          packWith('test.three', [classed(plainPrimitive)]),
+        ],
+      });
+
+      const { body, css } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [{ type: 'plain', text: 'p' } as PlainNode],
+      });
+      expect(body).toContain('<span class="one-plain">p</span>');
+      expect(css).toBe('.one-plain{}');
+    });
+
+    it("hands each collectStyles hook its own pack's collector", () => {
+      const hooked = (definition: AnyPrimitiveDefinition) =>
+        ({
+          ...definition,
+          collectStyles: (
+            node: PrimitiveNode,
+            { styles }: { styles: KeyCollector }
+          ) => {
+            styles.keys.add(`hook-${node.type}`);
+          },
+        }) as AnyPrimitiveDefinition;
+      const walking = (prefix: string) => ({
+        ...keyAdapter(prefix),
+        collectViewStyles: (
+          composition: Composition,
+          dispatcher: {
+            collectStyles: (
+              node: PrimitiveNode,
+              collector: KeyCollector,
+              context: { fluid: boolean }
+            ) => void;
+          },
+          collector: KeyCollector,
+          context: { fluid: boolean }
+        ) => {
+          for (const node of composition.body) {
+            dispatcher.collectStyles(node, collector, context);
+          }
+        },
+      });
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith('test.one', [hooked(notePrimitive)], walking('one')),
+          packWith('test.two', [hooked(boldPrimitive)], walking('two')),
+        ],
+      });
+
+      expect(
+        runtime.surfaces.html.render({
+          type: 'view',
+          body: [
+            { type: 'note', text: 'n' } as NoteNode,
+            { type: 'bold', text: 'b' } as BoldNode,
+          ],
+        }).css
+      ).toBe('.one-hook-note{}\n.two-hook-bold{}');
+    });
+
+    it('composes the snapshot stylesheet the same way', () => {
+      const drawing = (
+        id: string,
+        primitive: AnyPrimitiveDefinition,
+        prefix: string
+      ) =>
+        definePrimitivePack<string>({
+          id,
+          primitives: [classed(primitive)],
+          styleAdapter: keyAdapter(prefix),
+        });
+      const runtime = createIsomerRuntime({
+        packs: [
+          drawing('test.one', notePrimitive, 'one'),
+          drawing('test.two', boldPrimitive, 'two'),
+        ],
+        frames: { card: testFrame },
+      });
+
+      const { css, html } = runtime.surfaces.snapshot.render({
+        type: 'view',
+        body: [
+          { type: 'note', text: 'n' } as NoteNode,
+          { type: 'bold', text: 'b' } as BoldNode,
+        ],
+      });
+      expect(html).toContain('class="one-note"');
+      expect(html).toContain('class="two-bold"');
+      expect(css).toBe('.one-note{}\n.two-bold{}');
+    });
+
+    it('throws when a pack without an adapter collects styles beside two that have one', () => {
+      try {
+        createIsomerRuntime({
+          packs: [
+            packWith('test.one', [notePrimitive], keyAdapter('one')),
+            packWith('test.two', [boldPrimitive], keyAdapter('two')),
+            packWith('test.three', [
+              definePrimitive<PlainNode>({
+                ...plainPrimitive,
+                collectStyles: () => undefined,
+              }),
+            ]),
+          ],
+        });
+        expect.unreachable();
+      } catch (error) {
+        expect(error).toMatchObject({
+          name: 'IsomerError',
+          code: 'AMBIGUOUS_STYLE_ADAPTER',
+        });
+        expect((error as Error).message).toContain(
+          'pack "test.three" primitive "plain" collects styles, but packs "test.one", "test.two"'
         );
       }
     });

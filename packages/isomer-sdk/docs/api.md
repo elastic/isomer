@@ -49,6 +49,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `layoutRoom`, `LAYOUT_ROOM_ATTRIBUTE` | Props a renderer spreads on an element inside its node, such as a frame's body, so `checkLayout` measures the nodes nested in it against that element; rendered when `nodeAnchor` would be |
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
+| `contextWith` | `(context, key, value)`: a view of a context with one field replaced, keeping its getters, private state, methods and prototype; what a container passes a child it gives its own field, such as a size |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree |
 | `SURFACE_NAMES` | `['react','snapshot','text','markdown','slack']`, as const; `SurfaceName` is derived from it. The runtime's `html` surface wraps `react` in a document and is not a name here |
 

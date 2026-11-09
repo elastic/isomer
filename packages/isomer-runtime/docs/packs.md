@@ -17,7 +17,7 @@ Packs are built by `definePrimitivePack` in the SDK, not here — see [the pack 
 | `surfaces` | Which optional surfaces every primitive implements (only `slack`) |
 | `enhancements` | Progressive enhancements the HTML surface may apply, by id |
 | `slackAssetTypes` | Which node types are pictures, so Slack uploads them instead of approximating them |
-| `styleAdapter` | Optional. Its HTML CSS; at most one composed pack declares one |
+| `styleAdapter` | Optional. The HTML CSS for its own nodes |
 | `styleCollector` | Optional. The collector shape its `collectStyles` hooks expect |
 | `TTheme` | The palette its `snapshot` renderers require, as `definePrimitivePack<T>`'s type argument |
 
@@ -38,9 +38,9 @@ Vocabulary and document are independent. Splitting them makes a pack purely addi
 
 What replaced frame ownership is a type-level bound rather than a runtime check — a pack states the palette it needs, and the compiler pairs it with a frame that supplies one.
 
-## One styling pack
+## Styling packs
 
-A pack ships its own `styleAdapter`, and a runtime styles with one: the one composed pack's adapter serves every pack, so a pack without one is styled by it. Two packs declaring one throw `AMBIGUOUS_STYLE_ADAPTER`, naming both, and the host chooses by passing `styleAdapter` on the runtime.
+A pack ships its own `styleAdapter`, and each pack's adapter styles that pack's nodes: it gets its own collector, its renderers get its own render context wherever they are nested, and the stylesheet joins every adapter's in pack order. A pack without one is styled by the first pack that has one. Passing `styleAdapter` on the runtime replaces them all.
 
 A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
