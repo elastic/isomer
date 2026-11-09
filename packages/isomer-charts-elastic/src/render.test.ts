@@ -649,7 +649,22 @@ describe('elastic-charts renderer: resolved partitionChart examples', () => {
         const container = await draw(scene);
         expect(container.textContent).toBe(scene.empty.text);
         expect(container.querySelector('.echChart')).toBeNull();
-        const image = container.querySelector('[role="img"]')!;
+        const image = container.querySelector<HTMLElement>('[role="img"]')!;
+        // Its note in the Scene's subdued text, on its background, at its size.
+        expect(image.classList).toContain(elastic.empty.readableName);
+        expect(
+          [
+            vars.empty.ink,
+            vars.empty.fill,
+            vars.empty.width,
+            vars.empty.height,
+          ].map(({ propName }) => image.style.getPropertyValue(propName))
+        ).toEqual([
+          scene.chrome.textSubdued,
+          scene.chrome.background,
+          `${SIZE.width}px`,
+          `${SIZE.height}px`,
+        ]);
         expect(image.getAttribute('aria-label')).toBe(
           scene.title ?? scene.empty.text
         );

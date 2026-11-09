@@ -16,6 +16,8 @@ import {
   type StyleHandle,
 } from '@elastic/isomer-primitives-charts/scene';
 
+import { EMPTY_TEXT_SIZE } from './empty';
+
 /** Kibana's legend action gap, in pixels. */
 const LEGEND_ACTION_GAP = 2;
 
@@ -25,7 +27,12 @@ const TOOLTIP_Z_INDEX = 10000;
 interface ElasticStyles {
   readonly handles: Readonly<
     Record<
-      'secondary' | 'tooltip' | 'legendAction' | 'drawing' | 'fluidDrawing',
+      | 'secondary'
+      | 'tooltip'
+      | 'legendAction'
+      | 'drawing'
+      | 'fluidDrawing'
+      | 'empty',
       StyleHandle
     >
   >;
@@ -35,6 +42,7 @@ interface ElasticStyles {
     readonly box: LocalVarGroup<
       'width' | 'height' | 'maxWidth' | 'aspectRatio'
     >;
+    readonly empty: LocalVarGroup<'width' | 'height' | 'ink' | 'fill'>;
   };
   readonly stylesheet: () => string;
 }
@@ -50,8 +58,14 @@ export const elasticModule: ElasticStyles = createVarsModule(
       maxWidth: 'none',
       aspectRatio: 'auto',
     }),
+    empty: vars('empty', {
+      width: '100%',
+      height: '100%',
+      ink: 'currentColor',
+      fill: 'transparent',
+    }),
   }),
-  ({ css }, { ink, anchor, box }) => ({
+  ({ css }, { ink, anchor, box, empty }) => ({
     /** A metric's secondary text without a badge, in the Scene's color. */
     secondary: css`
       ${ink}
@@ -85,6 +99,18 @@ export const elasticModule: ElasticStyles = createVarsModule(
       width: 100%;
       max-width: ${box.maxWidth};
       aspect-ratio: ${box.aspectRatio};
+    `,
+    /** A Scene with nothing to draw: its note, centered on the chart's background. */
+    empty: css`
+      ${empty}
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: ${empty.width};
+      height: ${empty.height};
+      color: ${empty.ink};
+      background: ${empty.fill};
+      font-size: ${EMPTY_TEXT_SIZE}px;
     `,
   })
 );

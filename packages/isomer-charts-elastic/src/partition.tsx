@@ -31,15 +31,17 @@ import {
   TooltipTableColorCell,
   TooltipTableRow,
 } from '@elastic/charts';
-import type {
-  PartitionNode,
-  PartitionScene,
-  SceneRenderEnv,
+import {
+  cls,
+  type PartitionNode,
+  type PartitionScene,
+  type SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
 import { partitionHandlers, partitionLegendSelect } from './events';
 import type { ElasticChartsOptions } from './options';
+import { elasticModule } from './styles';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
 const LAYOUT = {
@@ -237,7 +239,7 @@ const legendAction =
       return null;
     }
     return (
-      <span style={{ display: 'inline-flex', gap: 2 }}>
+      <span className={cls(env, elasticModule.handles.legendAction)}>
         <button
           type="button"
           aria-label={`Filter for ${label}`}
