@@ -81,6 +81,7 @@ describe('chart engine imports', () => {
 
   it.each([
     'packages/isomer-charts-probe/src/engine.test.ts',
+    'packages/isomer-charts-probe/src/engine.fixtures.ts',
     'packages/isomer-runtime/src/probe.ts',
   ])('leaves %s alone', async (filePath) => {
     expect(
