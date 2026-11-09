@@ -36,6 +36,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 import {
   chartEventExamples,
+  heatmapExamples,
   metricExamples,
   partitionChartExamples,
   xyChartExamples,
@@ -43,6 +44,7 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
+import { heatmapTooltip, heatmapValueFormatter } from './heatmap';
 import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
 import { sceneSpecs } from './specs';
@@ -948,16 +950,103 @@ describe('elastic-charts renderer: partition order and text', () => {
 });
 
 describe('elastic-charts renderer', () => {
-  it('draws metric, xy and partition in the browser', () => {
+  it('draws metric, xy, partition and heatmap in the browser', () => {
     expect(renderer.id).toBe('elastic-charts');
     expect(renderer.environments).toEqual(['browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('partition')).toBe(true);
+    expect(renderer.supports('heatmap')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
   it('fills its container, so the chart shim gives it the size spec’s box', () => {
     expect(renderer.fluid).toBe(true);
+  });
+});
+
+describe('elastic-charts renderer: resolved heatmap examples', () => {
+  it.each(resolvedCases(heatmapExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'heatmap') {
+      throw new Error('expected a heatmap Scene');
+    }
+    const container = await draw(scene);
+    if (scene.empty) {
+      expect(container.textContent).toBe(scene.empty.text);
+      expect(container.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    const state = debugStateIn(container);
+    const cells = state.heatmap?.cells ?? [];
+    expect(cells).toHaveLength(scene.cells.length);
+    for (const { datum, formatted } of cells) {
+      const cell =
+        scene.cells[(datum as { originalIndex: number }).originalIndex]!;
+      expect(['', cell.valueText]).toContain(formatted);
+    }
+    expect(state.axes?.y?.[0]?.labels).toEqual(
+      scene.y.categories.map(({ label }) => label)
+    );
+    if (scene.legend.visible) {
+      expect(legendOf(container).map(({ label }) => label)).toEqual(
+        scene.bands.map(({ label }) => label)
+      );
+    }
+  });
+});
+
+describe('elastic-charts renderer: heatmap text', () => {
+  const scene = resolveChart(
+    heatmapExamples.find(({ name }) => name === 'Hourly by host')!.node,
+    { scheme: 'light', size: SIZE }
+  );
+  if (scene.kind !== 'heatmap') {
+    throw new Error('expected a heatmap Scene');
+  }
+
+  it('writes each cell its own value text, and none for a value two cells write differently', () => {
+    const format = heatmapValueFormatter(scene);
+    for (const { value, valueText } of scene.cells) {
+      expect(format(value)).toBe(valueText);
+    }
+    const [first] = scene.cells;
+    const clash = {
+      ...scene,
+      cells: [first!, { ...first!, y: 1, valueText: 'other' }],
+    };
+    expect(heatmapValueFormatter(clash)(first!.value)).toBe('');
+  });
+
+  it('shows a hovered cell’s positions and value, with its color', () => {
+    const cell = scene.cells[4]!;
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      React.createElement(heatmapTooltip(scene), {
+        values: [
+          {
+            datum: {
+              x: scene.x.categories[cell.x]!.x,
+              y: cell.y,
+              value: cell.value,
+            },
+          },
+        ],
+      } as never)
+    );
+    expect(
+      [...page.querySelectorAll('[role="row"]')].map((row) =>
+        [
+          ...row.querySelectorAll(
+            '[role="gridcell"]:not(.echTooltip__colorCell)'
+          ),
+        ].map((one) => one.textContent)
+      )
+    ).toEqual([
+      [scene.x.label, scene.x.categories[cell.x]!.label],
+      [scene.y.label, scene.y.categories[cell.y]!.label],
+      [scene.valueLabel, cell.valueText],
+    ]);
+    expect(page.innerHTML).toContain(cell.color);
   });
 });
