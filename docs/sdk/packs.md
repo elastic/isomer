@@ -23,7 +23,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
-| `styleAdapter`    | Optional. This pack's HTML CSS; a runtime runs one pack's adapter.             |
+| `styleAdapter`    | Optional. The HTML CSS for this pack's own nodes.                              |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
 | `authoring`       | Optional. `describe` and index `groups` for agents.                            |
 

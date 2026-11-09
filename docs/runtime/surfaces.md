@@ -140,15 +140,15 @@ A host adapter replaces the pack's.
 
 ## Two styled packs
 
-A runtime styles with one adapter. Two packs that each declare a `styleAdapter` throw `AMBIGUOUS_STYLE_ADAPTER`, naming both:
+Two packs that each declare a `styleAdapter` compose. Each adapter collects and styles its own pack's nodes, nested inside another pack's container or not, and the stylesheet is theirs joined in pack order:
 
 ```ts
 createIsomerRuntime({
-  packs: [chartsPack, calloutsPack], // both declare styleAdapter: throws
+  packs: [slidesPack, chartsPack], // each styled by its own adapter
 });
 ```
 
-Pass `styleAdapter` on `createIsomerRuntime` to choose the one adapter, and it serves every pack. A pack that declares no adapter is styled by whichever one the runtime runs.
+A pack that declares no adapter is styled by the first pack that does. One that also declares `collectStyles` throws `AMBIGUOUS_STYLE_ADAPTER`, since either adapter's collector could take its styles. Pass `styleAdapter` on `createIsomerRuntime` to replace them all with one that serves every pack.
 
 `styleCollector` is a second, independent check: if a pack declares one (naming the collector shape its `collectStyles` hooks expect) and the adapter the runtime runs creates a differently-tagged collector, construction throws `INCOMPATIBLE_STYLE_COLLECTOR` instead of corrupting the collector silently at render time. The fix is a `styleAdapter` every pack was written against.
 

@@ -90,9 +90,9 @@ export interface PrimitivePackInput {
    */
   slackAssetTypes?: readonly string[];
   /**
-   * Default HTML style adapter for this pack. A runtime that omits
-   * `styleAdapter` runs the one composed pack's adapter, and refuses packs
-   * that declare two. Pass `styleAdapter` on the runtime to replace it.
+   * Default HTML style adapter for this pack's nodes. A runtime that omits
+   * `styleAdapter` runs each pack's own and joins their stylesheets. Pass
+   * `styleAdapter` on the runtime to replace them all.
    */
   styleAdapter?: PackStyleAdapter;
   /**

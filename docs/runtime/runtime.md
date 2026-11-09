@@ -29,11 +29,11 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `snapshot` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
-`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and a runtime styles with one: it runs the one composed pack's adapter for every pack, and two packs declaring one throw `AMBIGUOUS_STYLE_ADAPTER`, naming both. `styleAdapter` replaces the packs' adapter, which is how a host chooses between two or supplies a no-op for a pack whose CSS it does not want; see [Surfaces](surfaces.md).
+`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and each styles its own pack's nodes; a pack without one is styled by the first pack that has one. `styleAdapter` replaces them all, which is how a host styles every pack with one engine or supplies a no-op for CSS it does not want; see [Surfaces](surfaces.md).
 
 A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
 
-A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the one adapter the runtime runs. Omitting the tag on either side opts out.
+A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the adapter that styles it. Omitting the tag on either side opts out.
 
 ## Typing the render context
 
@@ -83,7 +83,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | `defaultFrame` is one the runtime holds | `UNKNOWN_FRAME` | `defaultFrame "…" is not one of the supplied frames (…)` |
 | Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
 | A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
-| At most one pack declares a `styleAdapter`, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `packs … each declare a styleAdapter, but a runtime styles with one` |
+| A pack without a `styleAdapter` collects no styles beside two packs that declare one, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `pack "…" primitive "…" collects styles, but packs … each declare a styleAdapter` |
 | Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
 Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.

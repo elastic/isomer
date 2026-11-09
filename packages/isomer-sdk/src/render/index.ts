@@ -13,6 +13,7 @@ export {
   withNodeAnchors,
   withoutAnchors,
 } from './anchors';
+export { contextWith } from './context_view';
 export { formatDisplayValue } from './format_display_value';
 export {
   type LayoutBox,

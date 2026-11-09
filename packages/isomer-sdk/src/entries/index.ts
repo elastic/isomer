@@ -95,6 +95,7 @@ export {
   LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
   checkLayout,
+  contextWith,
   createPrimitiveDispatcher,
   formatDisplayValue,
   layoutRoom,

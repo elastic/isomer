@@ -62,7 +62,7 @@ import {
   applyRendererOverrides,
   type RuntimeRendererOverrides,
 } from './overrides';
-import { resolveStyleAdapter } from './style_adapter';
+import { resolveStyling } from './style_adapter';
 
 /** The frames a runtime can draw with, keyed by the name a render asks for. */
 export type FrameMap<TTheme> = Readonly<Record<string, Frame<TTheme>>>;
@@ -107,9 +107,10 @@ export interface IsomerRuntimeOptions<
   /**
    * The HTML surface's CSS and class-name strategy.
    *
-   * Defaults to the one pack adapter; two packs that each declare one throw
-   * `AMBIGUOUS_STYLE_ADAPTER` unless this is passed. Pass a no-op when a
-   * CSS-bearing pack should emit no CSS.
+   * Defaults to the packs' own adapters: each styles its own pack's nodes, and
+   * a pack without one is styled by the first pack that has one. Passing this
+   * replaces them all, such as a no-op when a CSS-bearing pack should emit no
+   * CSS.
    *
    * Required when any pack declares `collectStyles` and no pack (or this
    * option) supplies an adapter.
@@ -245,16 +246,15 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
 >(
   options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme>
 ): IsomerRuntime<THostContext, TRenderContext, TTheme> => {
-  const styleAdapter = resolveStyleAdapter(options.packs, options.styleAdapter);
+  const { adapter: styleAdapter, packs } = resolveStyling(
+    applyRendererOverrides(options.packs, options.rendererOverrides),
+    options.styleAdapter
+  );
   assertRuntimePacks(options.packs, styleAdapter);
   const frames = bindFrames(options.frames);
   const defaultFrame = resolveDefaultFrame(
     options.frames && frames,
     options.defaultFrame
-  );
-  const packs = applyRendererOverrides(
-    options.packs,
-    options.rendererOverrides
   );
   const { definitions, enhancements, slackAssetTypes } = composePacks(packs);
   const dispatcher = createPrimitiveDispatcher<
