@@ -295,7 +295,10 @@ export default tseslint.config(
   {
     // Chart engines draw a Scene; they never validate or resolve one, and format only through `formatAxisValue`.
     files: ['packages/isomer-charts-*/src/**/*.{ts,tsx}'],
-    ignores: ['packages/isomer-charts-*/src/**/*.test.{ts,tsx}'],
+    ignores: [
+      'packages/isomer-charts-*/src/**/*.test.{ts,tsx}',
+      'packages/isomer-charts-*/src/**/*.fixtures.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

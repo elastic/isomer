@@ -51,6 +51,8 @@
   },
   "devDependencies": {
     "@elastic/charts": "73.3.2",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
     "@types/react": "^18.3.31",
     "moment": "2.31.0",
     "moment-timezone": "^0.5.48",

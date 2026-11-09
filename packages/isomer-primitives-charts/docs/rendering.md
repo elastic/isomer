@@ -8,7 +8,10 @@ description: How the charts pack draws a chart node through a SceneRenderer, and
 Every chart primitive's `react` renderer is a shim. It resolves the node to a [Scene](scene.md), picks a `SceneRenderer`, and hands it the Scene. The shim draws nothing itself, so replacing how a chart is drawn is configuration: primitives, compositions and materializers stay the same.
 
 ```ts
-import { chartsPack, createChartsPack } from '@elastic/isomer-primitives-charts';
+import {
+  chartsPack,
+  createChartsPack,
+} from '@elastic/isomer-primitives-charts';
 
 createIsomerRuntime({ packs: [chartsPack] });
 
@@ -48,13 +51,13 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 
 `ChartsRenderContext` extends the SDK's render context. Every field is optional.
 
-| Field | Effect |
-| --- | --- |
-| `sceneRenderers` | Renderers tried before the pack's own |
-| `environment` | `browser` or `node`. Absent: detected from the global scope |
-| `scheme` | `light` or `dark`. Absent: the frame theme's `scheme` field on `snapshot`, else `light` |
+| Field                | Effect                                                                                                               |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `sceneRenderers`     | Renderers tried before the pack's own                                                                                |
+| `environment`        | `browser` or `node`. Absent: detected from the global scope                                                          |
+| `scheme`             | `light` or `dark`. Absent: the frame theme's `scheme` field on `snapshot`, else `light`                              |
 | `locale`, `timeZone` | Passed to the resolver. Absent: `resolveChart`'s defaults, `en` and `UTC`, for dates whose format names no time zone |
-| `size` | The box the chart draws in. Absent: the chart's [size spec](#chart-size) |
+| `size`               | The box the chart draws in. Absent: the chart's [size spec](#chart-size)                                             |
 
 A host that loads the charts pack without a style adapter names the runtime's type parameters to pass these fields, as [Runtime](../../isomer-runtime/docs/runtime.md#typing-the-render-context) shows.
 
@@ -66,13 +69,13 @@ The shim puts the renderer's output in one `div` that carries the [node anchor](
 
 A chart in a grid panel draws in the box the panel leaves it, and a host can pass any chart a `size`. Without either, a chart takes its kind's size spec, as Lens's chart size specs do. Every length comes from `CHARTS_THEME.chart`:
 
-| Kind | Spec |
-| --- | --- |
-| `xyChart` over time, drawn vertically | 16:9, at least 300 px tall |
-| Any other `xyChart` | 16:9. Lens fills its container instead; outside a sized container there is nothing to fill |
-| `metric` with one tile | 300:160, at most 300 px wide |
-| `metric` with several tiles | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
-| `dataTable` | None: the table is its rows tall |
+| Kind                                  | Spec                                                                                          |
+| ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `xyChart` over time, drawn vertically | 16:9, at least 300 px tall                                                                    |
+| Any other `xyChart`                   | 16:9. Lens fills its container instead; outside a sized container there is nothing to fill    |
+| `metric` with one tile                | 300:160, at most 300 px wide                                                                  |
+| `metric` with several tiles           | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
+| `dataTable`                           | None: the table is its rows tall                                                              |
 
 In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
@@ -96,6 +99,13 @@ Requests over time: Count of records by @timestamp per hour, from 98 to 210.
 
 On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
+### Parity gates
+
+Two gates hold the pack to its Scenes over every example, nested in a `grid` or not. They record each Scene where the pack resolves and draws it, so a new example or chart primitive is covered without changing them.
+
+- **Surface parity** (`src/surface_parity.test.ts`): on each surface, every chart node of the parsed composition the surface shows, nested in a grid or not but not in a collapsed section or left out by its `surfaces` hint, reaches a Scene or goes as a picture once per time it occurs, as many times as the surface reaches a lone chart of its type, so a surface that drops a chart, even one repeated elsewhere, fails rather than shrinking what is checked. Text writes each Scene's summary, description and notes in order, its table as the rows above, and its link. Markdown, read back with a GFM parser, holds the same sentences, the table as a GFM table cell for cell, and the link. Slack without pictures holds the sentences and a native table of the Scene's strings, in the order the chart shows them and within Slack's caps, and the link. With pictures, each asset type is an `image` whose alt text is the node's text, cut to Slack's limit, and every other chart is text as without pictures.
+- **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, and the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes.
+
 ## `grid`
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
@@ -116,7 +126,10 @@ const runtime = createIsomerRuntime({
   frames: { charts: chartsFrame },
 });
 
-runtime.surfaces.snapshot.render(composition, { frame: 'charts', theme: 'dark' });
+runtime.surfaces.snapshot.render(composition, {
+  frame: 'charts',
+  theme: 'dark',
+});
 ```
 
 The page is 960 px wide with 16 px of padding, so its content is 928 px, the grid's nominal width. It draws the composition's title and subtitle, one line each at 20 px and 14 px, then each body node, in a column with 16 px between each. Its sizing is `content`: the image is as tall as the page lays out, and `estimateHeight` is the padding, the title and subtitle lines, each node's `metrics.snapshotHeight` and the gaps between them. Every length is in `CHARTS_THEME.frame`.

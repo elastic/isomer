@@ -13,4 +13,4 @@ Source imports only `@elastic/isomer-primitives-charts/scene`: never the schemas
 
 ## Evidence required
 
-Draw the affected example Scenes, and every schema example through `resolveChart`, in jsdom and read Elastic Charts' `DebugState` (or the page, for the metric chart): strings and colors equal the Scene's, and tick labels equal `formatAxisValue`'s. Events from engine callbacks equal `chartEventExamples` or other expectations built from the node's data, not from this package.
+Draw the affected example Scenes, and every schema example through `resolveChart`, in jsdom and read Elastic Charts' `DebugState` (or the page, for the metric chart): strings and colors equal the Scene's, and tick labels equal `formatAxisValue`'s. Events from engine callbacks equal `chartEventExamples` or other expectations built from the node's data, not from this package. The event parity test (`src/parity.test.ts`) runs over every example, so a new gesture needs a case there.
