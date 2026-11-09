@@ -21,6 +21,7 @@ import {
   slackContainer,
 } from '@elastic/isomer-sdk/slack';
 
+import type { SceneSize } from '../scene/types';
 import { gridCatalog } from '../schema/catalog';
 import { gridExamples } from '../schema/examples/grid';
 import {
@@ -38,11 +39,18 @@ import {
 import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
 import { gridModule } from './grid_styles';
+import { gridIcon } from './icons';
 import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
 
-const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
-  CHARTS_THEME.grid;
+const {
+  rowHeight,
+  gap,
+  sectionGap,
+  headerHeight,
+  descriptionHeight,
+  nominalWidth,
+} = CHARTS_THEME.grid;
 const { handles: grid } = gridModule;
 
 const rowsHeight = (rows: number) =>
@@ -85,22 +93,34 @@ const headerOf = ({
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
-/** The context a panel's node renders with: the grid's own, with the panel's box when the grid knows its width. */
+/** Sizes laid out from `nominalWidth` rather than a host's width, which never switch a grid to one column. */
+const nominalSizes = new WeakSet<SceneSize>();
+
+/** The width the host gave this grid, directly or through its containers. */
+const hostWidth = (context: ChartsRenderContext | undefined) => {
+  const size = context?.size;
+  return size && !nominalSizes.has(size) ? size.width : undefined;
+};
+
+/** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
   oneColumn: boolean
-): ChartsRenderContext | undefined => {
-  const size = context?.size;
-  if (!context || !size) {
-    return context;
-  }
+): ChartsRenderContext => {
+  const gridWidth = context?.size?.width ?? nominalWidth;
   const width = oneColumn
-    ? size.width
-    : (size.width - (GRID_COLUMNS - 1) * gap) * (panel.w / GRID_COLUMNS) +
+    ? gridWidth
+    : // CSS floors the tracks at zero when the gaps alone overflow the grid.
+      Math.max(0, gridWidth - (GRID_COLUMNS - 1) * gap) *
+        (panel.w / GRID_COLUMNS) +
       (panel.w - 1) * gap;
   const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
-  return contextWith(context, 'size', { width, height });
+  const size: SceneSize = { width, height };
+  if (hostWidth(context) === undefined) {
+    nominalSizes.add(size);
+  }
+  return context ? contextWith(context, 'size', size) : { size };
 };
 
 type Context = ChartsReactEnv['context'];
@@ -233,7 +253,7 @@ const CollapsedAnchors = ({
 };
 
 const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
-  const width = env.context?.size?.width;
+  const width = hostWidth(env.context);
   const oneColumn = width !== undefined && width < GRID_SINGLE_COLUMN_BELOW;
   return (
     <div
@@ -370,6 +390,7 @@ export const gridSnapshotHeight = (node: GridNode): number =>
 /** Panels on a 48-column grid; one column, in reading order, below the threshold width. */
 export const gridPrimitive = definePrimitive<GridNode>({
   type: 'grid',
+  icon: gridIcon,
   schema: gridSchema,
   schemaFor: (bodyNode: z.ZodType<unknown>) => gridSchemaFor(bodyNode),
   catalog: gridCatalog,
