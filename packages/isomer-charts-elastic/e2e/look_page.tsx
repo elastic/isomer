@@ -16,12 +16,13 @@ import { createElasticChartsRenderer } from '../src/renderer';
 const renderer = createElasticChartsRenderer();
 let root: Root | undefined;
 
-/** Draws `scene` into `#browser` at its size, and resolves once Elastic Charts reports it rendered. */
+/**
+ * Draws `scene` into `#browser`, which takes the size `<Chart>` draws at,
+ * the Scene's, and resolves once Elastic Charts reports it rendered.
+ */
 const drawScene = async (scene: Scene): Promise<void> => {
   const host = document.getElementById('browser')!;
   root?.unmount();
-  host.style.width = `${scene.size!.width}px`;
-  host.style.height = `${scene.size!.height}px`;
   root = createRoot(host);
   root.render(renderer.render(scene, { environment: 'browser' }) as never);
   const deadline = performance.now() + 10_000;

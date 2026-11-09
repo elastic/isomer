@@ -13,6 +13,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { chartsStylesheet } from '@elastic/isomer-primitives-charts';
 import type {
   ColorScheme,
   Scene,
@@ -104,15 +105,19 @@ const bundle = async () => {
   return outputFiles[0]!.text;
 };
 
+/**
+ * Elastic Charts' stylesheet for `scheme`, and the charts pack's, which sizes
+ * the headless drawing's box and colors the elements the engine draws itself.
+ */
 const stylesheet = (scheme: ColorScheme) =>
-  readFileSync(
+  `${readFileSync(
     require.resolve(`@elastic/charts/dist/theme_${scheme}.css`),
     'utf8'
-  );
+  )}\n${chartsStylesheet()}`;
 
 type LookPage = Page & {
   draw: (scene: Scene) => Promise<Buffer>;
-  headless: (markup: string, scene: Scene) => Promise<Buffer>;
+  headless: (markup: string) => Promise<Buffer>;
   score: (a: Buffer, b: Buffer) => Promise<number>;
   pair: (
     width: number,
@@ -144,16 +149,10 @@ const openPage = async (
       );
       return page.locator('#browser').screenshot();
     },
-    headless: async (markup: string, scene: Scene) => {
-      await page.evaluate(
-        ([html, width, height]) => {
-          const host = document.getElementById('headless')!;
-          host.innerHTML = html;
-          host.style.width = `${width}px`;
-          host.style.height = `${height}px`;
-        },
-        [markup, scene.size!.width, scene.size!.height] as const
-      );
+    headless: async (markup: string) => {
+      await page.evaluate((html) => {
+        document.getElementById('headless')!.innerHTML = html;
+      }, markup);
       return page.locator('#headless').screenshot();
     },
     score: (a: Buffer, b: Buffer) =>
@@ -250,7 +249,7 @@ test.describe('renderer parity: look', () => {
         threshold,
         `a look tolerance for ${drawing.scene.kind}`
       ).toBeDefined();
-      const headless = await page.headless(drawing.markup, drawing.scene);
+      const headless = await page.headless(drawing.markup);
       const browser = await page.draw(drawing.scene);
       expect(await page.score(browser, headless)).toBeGreaterThanOrEqual(
         threshold!
@@ -272,7 +271,7 @@ test.describe('renderer parity: look', () => {
             const browser = await page.draw(drawing.scene);
             const unlike = await page.score(
               browser,
-              await page.headless(different.markup, different.scene)
+              await page.headless(different.markup)
             );
             expect(unlike).toBeLessThan(toleranceOf(drawing)!);
           });
