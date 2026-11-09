@@ -15,6 +15,7 @@ const SUITES = [
   'packages/isomer-studio/e2e/playwright.config.ts',
   'packages/isomer-primitives-charts/e2e/playwright.config.ts',
   'packages/isomer-charts-elastic/e2e/playwright.config.ts',
+  'packages/isomer-primitives-vega/e2e/playwright.config.ts',
 ];
 
 requireChromium();

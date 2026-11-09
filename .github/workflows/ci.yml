@@ -116,7 +116,7 @@ jobs:
       - uses: ./.github/actions/playwright-chromium
       - run: pnpm check:studio-consumer
 
-  # Peak RSS of server-side chart PNGs, bounded in `packages/isomer-charts-elastic/scripts/bench_render.cjs`.
+  # Peak RSS of server-side chart PNGs, bounded in `packages/isomer-charts-elastic/scripts/bench_render.cjs` and `packages/isomer-primitives-vega/scripts/bench_render.cjs`.
   memory:
     name: memory
     runs-on: ubuntu-latest

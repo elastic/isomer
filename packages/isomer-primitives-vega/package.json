@@ -1,0 +1,92 @@
+{
+  "name": "@elastic/isomer-primitives-vega",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Vega and Vega-Lite primitive pack for Isomer: a spec with inline data, drawn by the Vega runtime on every surface.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-primitives-vega"
+  },
+  "sideEffects": false,
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
+    },
+    "./schema": {
+      "types": "./lib/cjs/schema/index.d.ts",
+      "import": "./lib/esm/schema/index.js",
+      "require": "./lib/cjs/schema/index.js",
+      "default": "./lib/cjs/schema/index.js"
+    },
+    "./client": {
+      "types": "./lib/cjs/client.d.ts",
+      "import": "./lib/esm/client.js",
+      "require": "./lib/cjs/client.js",
+      "default": "./lib/cjs/client.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "schema": [
+        "./lib/cjs/schema/index.d.ts"
+      ],
+      "client": [
+        "./lib/cjs/client.d.ts"
+      ]
+    }
+  },
+  "files": [
+    "lib",
+    "!**/*.tsbuildinfo",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.test.tsx,**/*.fixtures.ts,**/*.d.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench": "node scripts/bench_render.cjs",
+    "bench:check": "node scripts/bench_render.cjs --check",
+    "studio": "isomer-studio dev",
+    "studio:check": "isomer-studio check --png"
+  },
+  "dependencies": {
+    "@elastic/distillate": "^0.2.0",
+    "@elastic/isomer-primitives-charts": "workspace:*",
+    "@elastic/isomer-sdk": "workspace:*",
+    "vega": "6.2.0",
+    "vega-interpreter": "2.2.1",
+    "vega-lite": "6.4.1",
+    "vega-tooltip": "1.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/eui-theme-borealis": "8.1.0",
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@elastic/isomer-studio": "workspace:*",
+    "@fontsource/inter": "^5.3.0",
+    "@types/react": "^18.2.14",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}
