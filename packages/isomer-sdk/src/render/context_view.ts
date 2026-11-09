@@ -11,9 +11,11 @@ export const isObjectLike = (value: unknown): value is object =>
 
 /**
  * A view of `context` that reads `key` as `value` and everything else from
- * `context`, with methods bound to it, so getters, private state, and
- * `instanceof` behave as before, and a callable context stays callable. A
- * context that is neither an object nor a function is returned as it is.
+ * `context`, with methods bound to it once, so getters, private state,
+ * `instanceof` and each method's identity behave as before, and a callable
+ * context stays callable. For a container giving a child its own field, such
+ * as a size. A context that is neither an object nor a function is returned
+ * as it is.
  */
 export const contextWith = <TContext>(
   context: TContext,
@@ -31,6 +33,13 @@ export const contextWith = <TContext>(
       ? Object.setPrototypeOf(() => undefined, prototype)
       : Object.create(prototype)
   ) as object;
+  const bound = new WeakMap<object, unknown>();
+  const bind = (method: (...args: unknown[]) => unknown): unknown => {
+    if (!bound.has(method)) {
+      bound.set(method, method.bind(original));
+    }
+    return bound.get(method);
+  };
   return new Proxy(standIn, {
     apply: (_, self, args: unknown[]) =>
       Reflect.apply(original as (...rest: unknown[]) => unknown, self, args),
@@ -40,7 +49,7 @@ export const contextWith = <TContext>(
       }
       const found: unknown = Reflect.get(original, read, original);
       return typeof found === 'function'
-        ? (found as (...args: unknown[]) => unknown).bind(original)
+        ? bind(found as (...args: unknown[]) => unknown)
         : found;
     },
     set: (_, write, next) => Reflect.set(original, write, next, original),

@@ -18,8 +18,10 @@ import type { PortableFormat } from '../schema/format';
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = ['metric', 'xy'] as const;
 
+/** One of {@link SCENE_KINDS}. */
 export type SceneKind = (typeof SCENE_KINDS)[number];
 
+/** The color scheme a Scene is resolved for. */
 export type ColorScheme = 'light' | 'dark';
 
 /** A concrete color for the Scene's scheme: `#rrggbb` or `#rrggbbaa`. */
@@ -36,12 +38,6 @@ export interface SceneSource {
   readonly columns: readonly string[];
 }
 
-/**
- * What selecting a part of the chart raises, decided by the resolver: the
- * `select` event without the node id and `negate`. `columns` are the dimension
- * columns that identify the target, and `values` their raw cells, which every
- * row in `rows` shares. Present only where the node offers `target`.
- */
 interface SceneSelectionBase {
   readonly rows: readonly number[];
   readonly columns: readonly string[];
@@ -49,6 +45,12 @@ interface SceneSelectionBase {
   readonly description: string;
 }
 
+/**
+ * What selecting a part of the chart raises, decided by the resolver: the
+ * `select` event without the node id and `negate`. `columns` are the dimension
+ * columns that identify the target, and `values` their raw cells, which every
+ * row in `rows` shares. Present only where the node offers `target`.
+ */
 export type SceneSelection =
   | (SceneSelectionBase & {
       readonly target: 'datum';
@@ -76,6 +78,7 @@ export interface SceneTooltipEntry {
   readonly color?: SceneColor;
 }
 
+/** A tooltip's header and entries, already formatted. */
 export interface SceneTooltip {
   readonly header?: string;
   readonly entries: readonly SceneTooltipEntry[];
@@ -91,6 +94,7 @@ export interface SceneChrome {
   readonly border: SceneColor;
 }
 
+/** One column of {@link SceneTable}, labelled for display. */
 export interface SceneColumn {
   readonly id: string;
   readonly label: string;
@@ -116,6 +120,7 @@ export interface SceneTable {
   }[];
 }
 
+/** A box in CSS pixels. */
 export interface SceneSize {
   readonly width: number;
   readonly height: number;
@@ -154,8 +159,10 @@ interface SceneBase {
   readonly interactions: SceneInteractions;
 }
 
+/** How a metric tile aligns its title and value. */
 export type MetricAlignment = 'left' | 'center' | 'right';
 
+/** How a metric Scene arranges its tiles. */
 export interface MetricLayout {
   /** Tiles per row. */
   readonly columns: number;
@@ -172,6 +179,7 @@ export interface MetricLayout {
   };
 }
 
+/** One tile of a metric Scene: one row of `data`, with its colors and text resolved. */
 export interface MetricTile {
   /** The tile's row and the columns it shows. */
   readonly source: SceneSource;
@@ -221,6 +229,7 @@ export interface MetricTile {
   readonly selection?: SceneSelection;
 }
 
+/** A Scene of metric tiles. */
 export interface MetricScene extends SceneBase {
   readonly kind: 'metric';
   readonly layout: MetricLayout;
@@ -228,6 +237,7 @@ export interface MetricScene extends SceneBase {
   readonly tiles: readonly MetricTile[];
 }
 
+/** An xy Scene's axis: the category axis, or the primary or secondary value axis. */
 export type AxisId = 'x' | 'y' | 'y2';
 
 /** Where a continuous axis's domain comes from. An engine computes it. */
@@ -241,6 +251,7 @@ export type SceneDomain =
     }
   | { readonly kind: 'custom'; readonly min: number; readonly max: number };
 
+/** One axis of an xy Scene, stated as intent: the engine chooses its ticks from `format` and `domain`. */
 export interface SceneAxis {
   readonly id: AxisId;
   readonly position: 'top' | 'bottom' | 'left' | 'right';
@@ -286,6 +297,7 @@ export interface XyCategory {
   readonly selection?: SceneSelection;
 }
 
+/** One drawn series of an xy Scene, with its mark, axis, color and stack group. */
 export interface XySeries {
   /** The source data layer and y entry, uniquely identifying this series in its node. */
   readonly series: {
@@ -329,6 +341,7 @@ export interface XySeries {
   readonly marks: readonly XyMark[];
 }
 
+/** One legend entry, in legend order. */
 export interface SceneLegendItem {
   /** The source data layer and y entry, uniquely identifying this series in its node. */
   readonly series: {
@@ -350,6 +363,7 @@ export interface SceneLegendItem {
   readonly selection?: SceneSelection;
 }
 
+/** An xy Scene's legend: placement, sizing and items. */
 export interface SceneLegend {
   readonly visible: boolean;
   readonly position: 'top' | 'bottom' | 'left' | 'right';
@@ -400,11 +414,13 @@ export type SceneAnnotation =
       readonly tooltip: SceneTooltip;
     };
 
+/** One entry in an xy Scene's draw order: a series, a reference line or an annotation. */
 export type XySceneLayer =
   | { readonly kind: 'series'; readonly series: XySeries }
   | { readonly kind: 'referenceLine'; readonly line: SceneReferenceLine }
   | { readonly kind: 'annotation'; readonly annotation: SceneAnnotation };
 
+/** A Scene of lines, areas and bars on shared axes. */
 export interface XyScene extends SceneBase {
   readonly kind: 'xy';
   readonly orientation: 'vertical' | 'horizontal';
@@ -423,8 +439,10 @@ export interface XyScene extends SceneBase {
   readonly currentTime?: number;
 }
 
+/** What a renderer draws: a {@link MetricScene} or an {@link XyScene}. */
 export type Scene = MetricScene | XyScene;
 
+/** Where a renderer draws: a browser DOM, or Node with no DOM. */
 export type SceneEnvironment = 'browser' | 'node';
 
 /** What a renderer is told about where it draws, beside the Scene itself. */
