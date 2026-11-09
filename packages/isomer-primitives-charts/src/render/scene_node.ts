@@ -28,6 +28,7 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
 import { cls, varStyle } from './styles';
@@ -40,6 +41,11 @@ export interface SceneShimConfig {
   readonly resolveScene: SceneResolver;
   /** Tried after the host's `sceneRenderers`. The last should support every kind. */
   readonly sceneRenderers: readonly ReactSceneRenderer[];
+}
+
+/** A pack's shim config with the cache its renders share. */
+export interface SceneShim extends SceneShimConfig {
+  readonly cache: SceneCache;
 }
 
 const { linkHeight } = CHARTS_THEME.chart;
@@ -72,15 +78,19 @@ const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
 const resolveForReact = (
   node: ChartNode,
   { context, theme }: Pick<ChartsReactEnv, 'context' | 'theme'>,
-  config: SceneShimConfig,
+  { cache, resolveScene }: SceneShim,
   size: SceneSize | undefined = context?.size
 ): Scene =>
-  config.resolveScene(node, {
-    scheme: context?.scheme ?? schemeOfTheme(theme) ?? 'light',
-    ...(size && { size }),
-    ...(context?.locale && { locale: context.locale }),
-    ...(context?.timeZone && { timeZone: context.timeZone }),
-  });
+  cache.resolve(
+    node,
+    {
+      scheme: context?.scheme ?? schemeOfTheme(theme) ?? 'light',
+      ...(size && { size }),
+      ...(context?.locale && { locale: context.locale }),
+      ...(context?.timeZone && { timeZone: context.timeZone }),
+    },
+    resolveScene
+  );
 
 const pickSceneRenderer = (
   scene: Scene,
@@ -139,7 +149,7 @@ const fixedBox = (
 export const renderSceneNode = (
   node: ChartNode,
   env: ChartsReactEnv,
-  config: SceneShimConfig
+  config: SceneShim
 ): ReactNode => {
   const { context } = env;
   const environment = context?.environment ?? detectSceneEnvironment();
@@ -157,7 +167,12 @@ export const renderSceneNode = (
     !context?.size && !box && environment === 'browser' && renderer.fluid
       ? chartSizeSpec(unsized)
       : undefined;
-  const drawn = renderer.render(scene, renderEnv(node, environment, context));
+  const drawn = config.cache.draw(
+    scene,
+    renderer,
+    renderEnv(node, environment, context),
+    context?.onEvent
+  );
   const sized = spec && {
     className: cls(context, sceneModule.handles.sized),
     style: varStyle(sceneModule.vars.size, chartSizeVars(spec)),
