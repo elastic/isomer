@@ -143,12 +143,10 @@ describe('renderer parity: the pack’s own renderers', () => {
     expect(ownRenderers.filter(({ id }) => !contentChecks[id])).toEqual([]);
   });
 
-  it('draws every kind it resolves', () => {
-    expect([...resolvedKinds].sort()).toEqual(
-      SCENE_KINDS.filter((kind) => resolvedKinds.has(kind)).sort()
-    );
+  it('resolves every Scene kind from the examples, and draws each', () => {
+    expect(resolvedKinds).toEqual(new Set(SCENE_KINDS));
     expect(new Set(drawn.map(({ scene }) => scene.kind))).toEqual(
-      resolvedKinds
+      new Set(SCENE_KINDS)
     );
     expect(new Set(drawn.map(({ renderer }) => renderer))).toEqual(
       new Set(ownRenderers.map(({ id }) => id))

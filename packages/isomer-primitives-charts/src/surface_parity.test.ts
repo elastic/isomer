@@ -25,8 +25,8 @@ import { gfm } from 'micromark-extension-gfm';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from './pack';
-import type { ChartNode, ResolveSceneOptions } from './render/context';
-import { resolveChart } from './scene/resolve';
+import type { ResolveSceneOptions } from './render/context';
+import { type ChartNode, resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
 
 const resolved: { node: ChartNode; scene: Scene }[] = [];
@@ -110,34 +110,89 @@ const expectInOrder = (haystack: string, needles: readonly string[]) => {
 // Slack may split a long paragraph where it has whitespace.
 const squash = (text: string) => text.replace(/\s+/g, '');
 
+// The primitives the pack resolves a Scene for, read from the resolver rather
+// than from any surface.
+const chartTypes = new Set(
+  examples
+    .flatMap(({ composition }) => composition.body)
+    .filter(
+      (node) =>
+        resolveChart(node as ChartNode, { scheme: 'light' }) !== undefined
+    )
+    .map(({ type }) => type)
+);
+
+/** `value` as JSON with its keys sorted, so key order does not tell nodes apart. */
+const canonical = (value: unknown): string =>
+  JSON.stringify(value, (_, entry: unknown) =>
+    typeof entry === 'object' && entry !== null && !Array.isArray(entry)
+      ? Object.fromEntries(
+          Object.entries(entry).sort(([a], [b]) => (a < b ? -1 : 1))
+        )
+      : entry
+  );
+
+/** Every chart node in `value`, nested in a grid or not, as {@link canonical} JSON. */
+const chartNodesOf = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.flatMap(chartNodesOf);
+  }
+  if (typeof value !== 'object' || value === null) {
+    return [];
+  }
+  const { type } = value as { type?: unknown };
+  if (typeof type === 'string' && chartTypes.has(type)) {
+    return [canonical(value)];
+  }
+  return Object.values(value).flatMap(chartNodesOf);
+};
+
+/**
+ * Every chart node of `composition`, as parsed, reached a Scene in `scenes`,
+ * or went in one of `pictured`, so a chart a surface drops cannot
+ * shrink the oracle below.
+ */
+const expectReached = (
+  composition: Composition,
+  scenes: readonly { node: ChartNode }[],
+  pictured: readonly string[] = []
+) => {
+  const { composition: parsed } = runtime.parse(composition);
+  const reached = new Set(scenes.map(({ node }) => canonical(node)));
+  const charts = chartNodesOf(parsed);
+  expect(charts.length).toBeGreaterThan(0);
+  for (const node of charts) {
+    expect(
+      reached.has(node) || pictured.some((picture) => picture.includes(node)),
+      `a Scene or picture for ${node.slice(0, 120)}`
+    ).toBe(true);
+  }
+};
+
 const chartCases = examples.map((example) => ({
   ...example,
-  scenes: recording(() => runtime.surfaces.text.render(example.composition))
-    .scenes,
+  charts: chartNodesOf(example.composition).length,
 }));
 
 describe('surface parity', () => {
-  it('reaches a Scene for every chart example, nested or not', () => {
-    const charted = new Set<string>(
-      chartCases.flatMap(({ scenes }) => scenes.map(({ node }) => node.type))
-    );
-    expect([...charted].sort()).toEqual(
+  it('finds a chart in every chart example, nested or not', () => {
+    expect([...chartTypes].sort()).toEqual(
       expect.arrayContaining(['dataTable', 'metric', 'xyChart'])
     );
-    for (const { type, scenes } of chartCases) {
-      if (charted.has(type)) {
-        expect(scenes.map(({ node }) => node.type)).toContain(type);
+    for (const { type, charts } of chartCases) {
+      if (chartTypes.has(type)) {
+        expect(charts).toBe(1);
       }
     }
     expect(chartCases.some(({ type }) => type === 'grid')).toBe(true);
     expect(
       chartCases
         .filter(({ type }) => type === 'grid')
-        .every(({ scenes }) => scenes.length > 0)
+        .every(({ charts }) => charts > 0)
     ).toBe(true);
   });
 
-  const cases = chartCases.filter(({ scenes }) => scenes.length > 0);
+  const cases = chartCases.filter(({ charts }) => charts > 0);
 
   it.each(cases)(
     'text: $type: $name writes each Scene’s sentences, table and link',
@@ -145,7 +200,7 @@ describe('surface parity', () => {
       const { output, scenes } = recording(() =>
         runtime.surfaces.text.render(composition)
       );
-      expect(scenes.length).toBeGreaterThan(0);
+      expectReached(composition, scenes);
       for (const { scene } of scenes) {
         expectInOrder(output, sentencesOf(scene));
         const table = tableOf(scene);
@@ -168,6 +223,7 @@ describe('surface parity', () => {
       const { output, scenes } = recording(() =>
         runtime.surfaces.markdown.render(composition)
       );
+      expectReached(composition, scenes);
       const tree = fromMarkdown(output, {
         extensions: [gfm()],
         mdastExtensions: [gfmFromMarkdown()],
@@ -211,6 +267,7 @@ describe('surface parity', () => {
         runtime.surfaces.slack.render(composition, { heading: false })
       );
       expect(output.assets).toEqual([]);
+      expectReached(composition, scenes);
       const read = readSlack(output.blocks);
       for (const { scene } of scenes) {
         expectInOrder(squash(read.text), sentencesOf(scene).map(squash));
@@ -236,6 +293,11 @@ describe('surface parity', () => {
         })
       );
       const pictured = output.assets.map(({ node }) => JSON.stringify(node));
+      expectReached(
+        composition,
+        scenes,
+        output.assets.map(({ node }) => canonical(node))
+      );
       const alts: string[] = [];
       JSON.stringify(output.blocks, (_, value: unknown) => {
         const image = value as { type?: unknown; alt_text?: unknown } | null;

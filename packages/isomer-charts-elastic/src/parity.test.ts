@@ -11,6 +11,16 @@
 // the Scene's own event. Look is compared in Chromium, in `e2e/`.
 
 import {
+  Children,
+  Fragment,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { Settings } from '@elastic/charts';
+import { createChartsPack } from '@elastic/isomer-primitives-charts';
+import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
+import {
   brushEvent,
   type ChartEvent,
   formatAxisValue,
@@ -19,19 +29,22 @@ import {
   SCENE_KINDS,
   type SceneAxis,
   type SceneKind,
+  type SceneRenderEnv,
   selectEvent,
   type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
+import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
+import { primitiveExamples } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { ariaDescriptionOf } from './accessibility';
-import { legendSelect, metricHandlers, seriesOf, xyHandlers } from './events';
+import { seriesOf, type XyDatum } from './events';
 import {
   createElasticChartsHeadlessRenderer,
   renderSceneSvg,
 } from './headless';
 import { drawExamples, type DrawnScene } from './parity.fixtures';
-import { seriesData } from './xy';
+import { sceneSpecs } from './specs';
 
 const headless = createElasticChartsHeadlessRenderer();
 const { drawn, resolved, examples } = drawExamples([headless]);
@@ -245,6 +258,36 @@ const listen = () => {
   };
 };
 
+type Props = Record<string, unknown>;
+type Callback = (...args: unknown[]) => unknown;
+
+/** `node` and every element beneath it, fragments and children included. */
+const elementsOf = (node: ReactNode): ReactElement<Props>[] =>
+  Children.toArray(node).flatMap((child) => {
+    if (!isValidElement<Props>(child)) {
+      return [];
+    }
+    const nested = elementsOf(child.props.children as ReactNode);
+    return child.type === Fragment ? nested : [child, ...nested];
+  });
+
+/**
+ * What the browser engine installs for `scene`: the `Settings` callbacks and
+ * each series spec's id and data, read from the specs `<Chart>` is given.
+ */
+const installed = (scene: Scene, env: SceneRenderEnv) => {
+  const elements = elementsOf(sceneSpecs(scene, env));
+  const settings = elements.find(({ type }) => type === Settings)?.props;
+  expect(settings, 'a Settings spec').toBeDefined();
+  const callback = (name: string) => settings![name] as Callback | undefined;
+  const series = elements.flatMap(({ props }) =>
+    typeof props.id === 'string' && /^series-\d+$/.test(props.id)
+      ? [{ id: props.id, data: props.data as readonly XyDatum[] }]
+      : []
+  );
+  return { callback, series };
+};
+
 const gestures = (
   scene: Scene
 ): { gesture: string; raise: () => ChartEvent[]; expected: ChartEvent[] }[] => {
@@ -256,7 +299,7 @@ const gestures = (
               gesture: `click tile ${index}`,
               raise: () => {
                 const { events, env } = listen();
-                metricHandlers(scene, env).onElementClick?.([
+                installed(scene, env).callback('onElementClick')?.([
                   {
                     type: 'metricElementEvent',
                     rowIndex: Math.floor(index / scene.layout.columns),
@@ -279,22 +322,29 @@ const gestures = (
   const categoryAt = (x: number | string) =>
     scene.categories.find((category) => category.x === x);
   const series = seriesOf(scene);
+  // Each Scene mark, and the datum at its x and y in its series' spec.
   const marks = series.flatMap((one, index) =>
-    seriesData(one, index).map((datum) => {
-      const mark = one.marks[datum.mark]!;
+    one.marks.map((mark) => {
       const selection = offers('datum')
         ? mark.selection
         : offers('category')
           ? categoryAt(mark.x)?.selection
           : undefined;
+      const gesture = `click ${one.label} at ${String(mark.x)}`;
       return {
-        gesture: `click ${one.label} at ${String(mark.x)}`,
+        gesture,
         raise: () => {
           const { events, env } = listen();
-          xyHandlers(scene, env).onElementClick?.([
+          const { callback, series: specs } = installed(scene, env);
+          const spec = specs.find(({ id }) => id === `series-${index}`);
+          const datum = spec?.data.find(
+            ({ x, y }) => x === mark.x && y === mark.y
+          );
+          expect(datum, `${gesture}: its datum`).toBeDefined();
+          callback('onElementClick')?.([
             [
-              { x: datum.x, y: datum.y, mark: null, accessor: 'y1', datum },
-              { specId: `series-${index}`, key: `series-${index}` },
+              { x: datum!.x, y: datum!.y, mark: null, accessor: 'y1', datum },
+              { specId: spec!.id, key: spec!.id },
             ],
           ]);
           return events;
@@ -307,7 +357,7 @@ const gestures = (
     gesture: `click the plot at ${category.label}`,
     raise: () => {
       const { events, env } = listen();
-      xyHandlers(scene, env).onProjectionClick?.({ x: category.x });
+      installed(scene, env).callback('onProjectionClick')?.({ x: category.x });
       return events;
     },
     expected:
@@ -315,17 +365,36 @@ const gestures = (
         ? [selectEvent(NODE, category.selection)]
         : [],
   }));
-  const legend = series.flatMap((one) =>
+  // The buttons the installed legend action draws for each series' item.
+  const legend = series.flatMap((one, index) =>
     [false, true].map((negate) => {
       const item = scene.legend.items.find(
         ({ key, series: { layer, y } }) =>
           key === one.key && layer === one.series.layer && y === one.series.y
       );
+      const gesture = `filter ${negate ? 'out' : 'for'} ${one.label}`;
       return {
-        gesture: `filter ${negate ? 'out' : 'for'} ${one.label}`,
+        gesture,
         raise: () => {
           const { events, env } = listen();
-          legendSelect(scene, env, one, negate);
+          const { callback, series: specs } = installed(scene, env);
+          const action = callback('legendAction');
+          if (action) {
+            const spec = specs.find(({ id }) => id === `series-${index}`);
+            const button = elementsOf(
+              action({
+                series: [{ specId: spec!.id }],
+                label: one.label,
+              }) as ReactNode
+            ).find(
+              ({ type, props }) =>
+                type === 'button' &&
+                props['aria-label'] ===
+                  `Filter ${negate ? 'out' : 'for'} ${one.label}`
+            );
+            expect(button, `${gesture}: its button`).toBeDefined();
+            (button!.props.onClick as Callback)();
+          }
           return events;
         },
         expected:
@@ -345,7 +414,7 @@ const gestures = (
             gesture: 'brush across the x axis',
             raise: () => {
               const { events, env } = listen();
-              xyHandlers(scene, env).onBrushEnd?.({
+              installed(scene, env).callback('onBrushEnd')?.({
                 x: [xs[0]!, xs.at(-1)!],
               });
               return events;
@@ -360,8 +429,21 @@ const gestures = (
 };
 
 describe('renderer parity: events from the browser engine', () => {
-  // Each scheme resolves the same selections, so one is enough.
-  const scenes = drawn.filter(({ scheme }) => scheme === 'light');
+  // Each scheme resolves the same selections, so one is enough. No metric
+  // example offers `tile`, so each is also resolved offering it.
+  const tiles = primitiveExamples(
+    createChartsPack().primitives.find(({ type }) => type === 'metric')!
+  ).map(({ name, node }) => ({
+    example: `metric: ${name ?? '(unnamed)'}, offering tile`,
+    scene: resolveChart(
+      { ...node, interactions: { select: ['tile'] } } as MetricNode,
+      { scheme: 'light' }
+    ),
+  }));
+  const scenes = [
+    ...drawn.filter(({ scheme }) => scheme === 'light'),
+    ...tiles,
+  ];
   const interactive = scenes.filter(
     ({ scene }) =>
       scene.interactions.select.length > 0 || scene.interactions.brush
@@ -372,7 +454,7 @@ describe('renderer parity: events from the browser engine', () => {
       interactive.flatMap(({ scene }) => scene.interactions.select)
     );
     expect([...offered].sort()).toEqual(
-      expect.arrayContaining(['category', 'datum', 'legend'])
+      expect.arrayContaining(['category', 'datum', 'legend', 'tile'])
     );
     expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
       true
