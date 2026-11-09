@@ -12,6 +12,7 @@ import {
   chartSize,
   chartSizeSpec,
   createChartsPack,
+  heatmapExamples,
   metricExamples,
   partitionChartExamples,
   xyChartExamples,
@@ -56,6 +57,16 @@ const xyCases = xyChartExamples.flatMap(({ name, node }) =>
   }))
 );
 const metricCases = metricExamples.flatMap(({ name, node }) =>
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
+);
+
+const heatmapCases = heatmapExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
@@ -122,6 +133,7 @@ describe('renderSceneSvg', () => {
     ...xyCases,
     ...metricCases,
     ...partitionCases,
+    ...heatmapCases,
   ])(
     '$name ($scheme) draws an SVG at the Scene size on its background',
     ({ scene }) => {
@@ -175,6 +187,7 @@ describe('renderSceneSvg', () => {
     ...xyCases,
     ...metricCases,
     ...partitionCases,
+    ...heatmapCases,
   ])(
     '$name ($scheme) names the SVG by its title and description',
     ({ scene }) => {
@@ -297,6 +310,13 @@ describe('renderSceneSvg', () => {
     expect((ys[0]! + ys.at(-1)!) / 2).toBeCloseTo(single!, 6);
   });
 
+  it.each(heatmapCases.filter(({ scene }) => scene.empty))(
+    '$name ($scheme) draws only its note',
+    ({ scene }) => {
+      expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
+    }
+  );
+
   it('escapes Scene strings in the SVG', () => {
     const { scene } = xyCases[0]!;
     const title = '<script>alert("x")</script> & co';
@@ -347,7 +367,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy and partition', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy, partition and heatmap', () => {
     expect(renderer.environments).toEqual(['node']);
     expect(renderer.sized).toBe(true);
     expect(
@@ -357,6 +377,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('partition')).toBe(true);
+    expect(renderer.supports('heatmap')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -452,6 +473,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ['metric', metricExamples[0]!.node],
     ['xyChart', xyChartExamples[0]!.node],
     ['partitionChart', partitionChartExamples[0]!.node],
+    ['heatmap', heatmapExamples[0]!.node],
   ] as const)(
     'draws a %s through the charts pack at its size spec box',
     (_, node) => {

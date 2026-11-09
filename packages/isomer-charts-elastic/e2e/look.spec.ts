@@ -40,6 +40,7 @@ const SAME_SCENE: Record<string, number> = {
   xy: 0.75,
   metric: 0.7,
   partition: 0.75,
+  heatmap: 0.75,
 };
 
 /**
@@ -99,6 +100,18 @@ const UNLIKE: Record<string, readonly (readonly [string, string])[]> = {
     [
       'partitionChart: Several metrics',
       'partitionChart: Donut with Other and missing buckets',
+    ],
+  ],
+  heatmap: [
+    [
+      'heatmap: Hourly by host',
+      'heatmap: Stated bands with Other and missing buckets',
+    ],
+    ['heatmap: Hourly by host', 'heatmap: One row, no y'],
+    ['heatmap: Percentage bands, sorted', 'heatmap: Every value the same'],
+    [
+      'heatmap: Selectable, brushable, pre-rendered and with provenance',
+      'heatmap: Huge, tiny and missing values',
     ],
   ],
 };

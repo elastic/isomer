@@ -24,6 +24,7 @@ import {
   brushEvent,
   type ChartEvent,
   formatAxisValue,
+  type HeatmapScene,
   type MetricScene,
   type PartitionScene,
   type Scene,
@@ -235,6 +236,90 @@ const contentChecks: Partial<Record<SceneKind, (drawing: DrawnScene) => void>> =
         }
       }
     },
+    heatmap: ({ scene, markup }) => {
+      const heatmap = scene as HeatmapScene;
+      const texts = svgTexts(markup);
+      if (heatmap.empty) {
+        expect(texts).toEqual([heatmap.empty.text]);
+        return;
+      }
+      // DebugState lists each cell Elastic Charts drew, by the datum it was given.
+      const { debugState } = renderSceneSvg(heatmap);
+      const cells = debugState?.heatmap?.cells ?? [];
+      expect(cells).toHaveLength(heatmap.cells.length);
+      for (const drawnCell of cells) {
+        const { datum, fill, formatted } = drawnCell;
+        // This Elastic Charts build reports it, though `CellDebug` does not declare it.
+        const { valueShown } = drawnCell as { valueShown?: boolean };
+        const cell =
+          heatmap.cells[(datum as { originalIndex: number }).originalIndex];
+        expect(cell).toBeDefined();
+        // A cell in no band is transparent, whatever channels it names.
+        const clear = /^#[\da-f]{6}00$/i.test(cell!.color);
+        expect(fill.endsWith(', 0)')).toBe(clear);
+        if (!clear) {
+          expect(rgbOf(fill)).toBe(rgbOf(cell!.color));
+        }
+        expect(['', cell!.valueText]).toContain(formatted);
+        expect(valueShown).toBe(heatmap.cellLabels);
+      }
+      const [xAxis] = debugState?.axes?.x ?? [];
+      const [yAxis] = debugState?.axes?.y ?? [];
+      xAxis?.labels.forEach((label, index) => {
+        const value = xAxis.values[index] as number;
+        expect(label).toBe(
+          heatmap.x.scale === 'time'
+            ? formatAxisValue(heatmap, heatmap.x, value)
+            : heatmap.x.categories[value]!.label
+        );
+      });
+      if (heatmap.x.scale === 'ordinal') {
+        expect(xAxis?.labels).toEqual(
+          heatmap.x.categories.map(({ label }) => label)
+        );
+      }
+      expect(yAxis?.labels).toEqual(
+        heatmap.y.categories.map(({ label }) => label)
+      );
+      expect(xAxis?.title).toBe(heatmap.x.title || undefined);
+      expect(yAxis?.title).toBe(heatmap.y.title || undefined);
+      if (heatmap.legend.visible) {
+        expect(
+          debugState?.legend?.items.map(({ name, color }) => ({ name, color }))
+        ).toEqual(
+          heatmap.bands.map(({ label, color }) => ({ name: label, color }))
+        );
+      }
+      // Every string drawn is a position, a band, a cell's value or a title.
+      const strings = new Set([
+        ...(heatmap.x.showLabels ? (xAxis?.labels ?? []) : []),
+        ...(heatmap.y.showLabels
+          ? heatmap.y.categories.map(({ label }) => label)
+          : []),
+        ...(heatmap.legend.visible
+          ? heatmap.bands.map(({ label }) => label)
+          : []),
+        ...(heatmap.cellLabels
+          ? heatmap.cells.map(({ valueText }) => valueText)
+          : []),
+        ...[heatmap.x.title, heatmap.y.title].flatMap((title) =>
+          title ? [title] : []
+        ),
+      ]);
+      for (const text of texts) {
+        expect(
+          [...strings].some((string) =>
+            squash(string).includes(squash(text).replace(/…$/, ''))
+          ),
+          text
+        ).toBe(true);
+      }
+      for (const label of heatmap.y.showLabels
+        ? heatmap.y.categories.map((category) => category.label)
+        : []) {
+        expectDrawn(texts, label);
+      }
+    },
     metric: ({ scene, markup }) => {
       const texts = svgTexts(markup);
       for (const tile of (scene as MetricScene).tiles) {
@@ -429,6 +514,62 @@ const gestures = (
     );
     return [...slices, ...legend];
   }
+  if (scene.kind === 'heatmap') {
+    const offersCells = scene.interactions.select.includes('cell');
+    const clicks = scene.cells.map((cell, index) => ({
+      gesture: `click ${cell.description}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            {
+              datum: {
+                x: cell.x,
+                y: cell.y,
+                value: cell.value,
+                originalIndex: index,
+              },
+              value: cell.value,
+              formatted: cell.valueText,
+            },
+            { specId: 'heatmap', key: 'spec{heatmap}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersCells && cell.selection
+          ? [selectEvent(NODE, cell.selection)]
+          : [],
+    }));
+    const xs = scene.x.categories
+      .map(({ x }) => x)
+      .filter((x): x is number => typeof x === 'number');
+    const brush =
+      scene.x.scale === 'time' && xs.length > 1
+        ? [
+            {
+              gesture: 'brush across the time axis',
+              raise: () => {
+                const { events, env } = listen();
+                installed(scene, env).callback('onBrushEnd')?.({
+                  x: [xs[0]!, xs.at(-1)! + scene.x.interval!],
+                  y: [],
+                  cells: [],
+                });
+                return events;
+              },
+              expected: [
+                brushEvent(scene, NODE, [
+                  xs[0]!,
+                  xs.at(-1)! + scene.x.interval!,
+                ]),
+              ].flatMap((event) => (event ? [event] : [])),
+            },
+          ]
+        : [];
+    return [...clicks, ...brush];
+  }
   if (scene.kind !== 'xy') {
     return [];
   }
@@ -569,7 +710,14 @@ describe('renderer parity: events from the browser engine', () => {
       interactive.flatMap(({ scene }) => scene.interactions.select)
     );
     expect([...offered].sort()).toEqual(
-      expect.arrayContaining(['category', 'datum', 'legend', 'slice', 'tile'])
+      expect.arrayContaining([
+        'category',
+        'cell',
+        'datum',
+        'legend',
+        'slice',
+        'tile',
+      ])
     );
     expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
       true
