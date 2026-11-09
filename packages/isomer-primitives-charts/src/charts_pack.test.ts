@@ -87,11 +87,12 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, dataTable, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, partitionChart, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
       'dataTable',
       'grid',
       'metric',
+      'partitionChart',
       'unsupported',
       'xyChart',
     ]);
@@ -145,7 +146,7 @@ describe('chartsPack', () => {
   });
 
   // `react` skips validation, so its node may carry any href.
-  it.each(['metric', 'xyChart', 'dataTable'])(
+  it.each(['metric', 'xyChart', 'dataTable', 'partitionChart'])(
     '%s loses an unsafe href before the resolver sees the node',
     (type) => {
       const seen: ChartNode[] = [];
@@ -182,26 +183,26 @@ describe('chartsPack', () => {
     }
   );
 
-  it.each(cases.filter(({ type }) => type === 'metric' || type === 'xyChart'))(
-    '$type: $name draws its summary with no engine registered',
-    ({ node }) => {
-      const composition = view(node);
-      const { summary } = resolveChart(node as ChartNode, { scheme: 'light' });
-      expect(
-        renderToStaticMarkup(
-          createElement(
-            'div',
-            null,
-            runtime.surfaces.react.render(composition, { heading: false })
-          )
+  it.each(
+    cases.filter(({ type }) =>
+      ['metric', 'xyChart', 'partitionChart'].includes(type)
+    )
+  )('$type: $name draws its summary with no engine registered', ({ node }) => {
+    const composition = view(node);
+    const { summary } = resolveChart(node as ChartNode, { scheme: 'light' });
+    expect(
+      renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          runtime.surfaces.react.render(composition, { heading: false })
         )
-      ).toContain(renderToStaticMarkup(createElement('p', null, summary)));
-      expect(
-        runtime.surfaces.slack.render(composition, { collectAssets: true })
-          .assets
-      ).toHaveLength(1);
-    }
-  );
+      )
+    ).toContain(renderToStaticMarkup(createElement('p', null, summary)));
+    expect(
+      runtime.surfaces.slack.render(composition, { collectAssets: true }).assets
+    ).toHaveLength(1);
+  });
 });
 
 describe('a Scene description', () => {

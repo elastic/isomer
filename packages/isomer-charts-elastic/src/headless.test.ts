@@ -13,6 +13,7 @@ import {
   chartSizeSpec,
   createChartsPack,
   metricExamples,
+  partitionChartExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
@@ -29,12 +30,14 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { ariaDescriptionOf } from './accessibility';
+import { EMPTY_LINE_HEIGHT } from './empty';
 import { seriesOf } from './events';
 import {
   createElasticChartsHeadlessRenderer,
   renderSceneSvg,
   scopeSvgIds,
 } from './headless';
+import { slicesOf } from './partition';
 import { elasticModule } from './styles';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
@@ -53,6 +56,16 @@ const xyCases = xyChartExamples.flatMap(({ name, node }) =>
   }))
 );
 const metricCases = metricExamples.flatMap(({ name, node }) =>
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
+);
+
+const partitionCases = partitionChartExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
@@ -108,6 +121,7 @@ describe('renderSceneSvg', () => {
   it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
     ...xyCases,
     ...metricCases,
+    ...partitionCases,
   ])(
     '$name ($scheme) draws an SVG at the Scene size on its background',
     ({ scene }) => {
@@ -160,6 +174,7 @@ describe('renderSceneSvg', () => {
   it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
     ...xyCases,
     ...metricCases,
+    ...partitionCases,
   ])(
     '$name ($scheme) names the SVG by its title and description',
     ({ scene }) => {
@@ -204,6 +219,83 @@ describe('renderSceneSvg', () => {
       }
     }
   );
+
+  it.each(partitionCases.filter(({ scene }) => !scene.empty))(
+    '$name ($scheme) draws every slice in its color, and only Scene text',
+    ({ scene }) => {
+      const { svg, debugState } = renderSceneSvg(scene);
+      // Elastic Charts names each slice by its key; a waffle reports each square.
+      const drawn = new Map(
+        (debugState?.partition?.[0]?.partitions ?? []).map(
+          ({ name, color, value }) => [name, { color, value }]
+        )
+      );
+      const slices = slicesOf(scene.nodes);
+      expect(drawn.size).toBe(slices.length);
+      for (const { key, color, value } of slices) {
+        expect(drawn.get(key)).toEqual({ color, value });
+      }
+      // Every word drawn is a slice's name or value label, or a legend item's text.
+      const words = new Set(
+        [
+          ...slices.flatMap(({ label, valueLabel }) => [label, valueLabel]),
+          ...scene.legend.items.flatMap(({ label, value }) => [
+            label,
+            value ?? '',
+          ]),
+        ].flatMap((text) => text.split(/\s+/))
+      );
+      const texts = svgTexts(svg).flatMap((text) => text.split(/\s+/));
+      expect(texts.length).toBeGreaterThan(0);
+      for (const text of texts.filter(Boolean)) {
+        expect(
+          [...words].some((word) => word.includes(text.replace(/…$/, ''))),
+          text
+        ).toBe(true);
+      }
+    }
+  );
+
+  it.each(partitionCases.filter(({ scene }) => scene.empty))(
+    '$name ($scheme) draws only its note',
+    ({ scene }) => {
+      expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
+    }
+  );
+
+  it('wraps an empty chart’s note to a narrow chart’s width, centred', () => {
+    const { scene } = partitionCases.find(
+      ({ scene: one }) => one.empty?.reason === 'negative'
+    )!;
+    const narrow = { ...scene, size: { width: 200, height: 160 } };
+    const charWidth = 8;
+    const { svg } = renderSceneSvg(narrow, {
+      measureTextWidth: (text) => text.length * charWidth,
+    });
+    const lines = svgTexts(svg);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.join(' ')).toBe(scene.empty!.text);
+    for (const line of lines) {
+      expect(line.length * charWidth).toBeLessThanOrEqual(200);
+    }
+    const ysOf = (drawn: string) =>
+      [...drawn.matchAll(/<text\b[^>]* y="([\d.]+)"/g)].map(([, y]) =>
+        Number(y)
+      );
+    const ys = ysOf(svg);
+    expect(ys).toHaveLength(lines.length);
+    ys.slice(1).forEach((y, index) => {
+      expect(y - ys[index]!).toBeCloseTo(EMPTY_LINE_HEIGHT, 6);
+    });
+    // Centred where one line of it would be, at the same height.
+    const [single] = ysOf(
+      renderSceneSvg(
+        { ...scene, size: { width: 2000, height: 160 } },
+        { measureTextWidth: (text) => text.length * charWidth }
+      ).svg
+    );
+    expect((ys[0]! + ys.at(-1)!) / 2).toBeCloseTo(single!, 6);
+  });
 
   it('escapes Scene strings in the SVG', () => {
     const { scene } = xyCases[0]!;
@@ -255,7 +347,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node unless told otherwise, draws a fixed size, for metric and xy', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy and partition', () => {
     expect(renderer.environments).toEqual(['node']);
     expect(renderer.sized).toBe(true);
     expect(
@@ -264,6 +356,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ).toEqual(['node', 'browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
+    expect(renderer.supports('partition')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -358,6 +451,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
   it.each([
     ['metric', metricExamples[0]!.node],
     ['xyChart', xyChartExamples[0]!.node],
+    ['partitionChart', partitionChartExamples[0]!.node],
   ] as const)(
     'draws a %s through the charts pack at its size spec box',
     (_, node) => {

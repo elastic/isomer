@@ -30,8 +30,10 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
+import { EMPTY_LINE_HEIGHT, EMPTY_TEXT_SIZE, emptyTextOf } from './empty';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
+import { kibanaBaseTheme } from './theme';
 
 /** How {@link renderSceneSvg} draws text. */
 export interface HeadlessSvgOptions {
@@ -65,7 +67,7 @@ const withAccessibleText = (svg: string, scene: Scene): string =>
       }<desc>${escapeXml(ariaDescriptionOf(scene))}</desc>`
   );
 
-/** Draws a `metric` or `xy` Scene as SVG at the Scene's `size`. */
+/** Draws a `metric`, `xy` or `partition` Scene as SVG at the Scene's `size`; an empty partition as its note. */
 export const renderSceneSvg = (
   scene: Scene,
   { font, measureTextWidth }: HeadlessSvgOptions = {}
@@ -80,13 +82,17 @@ export const renderSceneSvg = (
     ...(font ? { font } : {}),
     ...(measureTextWidth ? { measureTextWidth } : {}),
   });
-  const drawn: unknown = renderChart({
-    specs: collectSpecs(sceneSpecs(scene, { environment: 'node' })),
-    width,
-    height,
-    context: canvas.context,
-    Path2D: canvas.Path2D,
-  });
+  const empty = emptyTextOf(scene);
+  const drawn: unknown =
+    empty === undefined
+      ? renderChart({
+          specs: collectSpecs(sceneSpecs(scene, { environment: 'node' })),
+          width,
+          height,
+          context: canvas.context,
+          Path2D: canvas.Path2D,
+        })
+      : drawEmpty(canvas.context, scene, empty);
   const debugState = (drawn as { debugState?: DebugState | null } | undefined)
     ?.debugState;
   return {
@@ -100,6 +106,49 @@ export const renderSceneSvg = (
   };
 };
 
+/** `text` in lines no wider than `width` by `measure`, broken between words; a word wider alone keeps its own line. */
+const wrapText = (
+  text: string,
+  width: number,
+  measure: (line: string) => number
+): string[] => {
+  const lines: string[] = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = lines.at(-1);
+    if (last !== undefined && measure(`${last} ${word}`) <= width) {
+      lines[lines.length - 1] = `${last} ${word}`;
+    } else {
+      lines.push(word);
+    }
+  }
+  return lines;
+};
+
+// The note centred in the chart, as Lens's `VisualizationNoResults` draws it,
+// wrapped to the chart's width as the browser's note wraps.
+const drawEmpty = (
+  context: CanvasRenderingContext2D,
+  scene: Scene,
+  text: string
+): undefined => {
+  const { width, height } = scene.size!;
+  const family = kibanaBaseTheme(scene.scheme).axes.tickLabel.fontFamily;
+  context.font = `${EMPTY_TEXT_SIZE}px ${family}`;
+  context.fillStyle = scene.chrome.textSubdued;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  const lines = wrapText(
+    text,
+    width,
+    (line) => context.measureText(line).width
+  );
+  const top = height / 2 - ((lines.length - 1) * EMPTY_LINE_HEIGHT) / 2;
+  lines.forEach((line, index) => {
+    context.fillText(line, width / 2, top + index * EMPTY_LINE_HEIGHT);
+  });
+  return undefined;
+};
+
 /** What {@link createElasticChartsHeadlessRenderer} takes: text options and where it runs. */
 export interface HeadlessRendererOptions extends HeadlessSvgOptions {
   /**
@@ -109,7 +158,7 @@ export interface HeadlessRendererOptions extends HeadlessSvgOptions {
   readonly environments?: readonly SceneEnvironment[];
 }
 
-const KINDS: readonly SceneKind[] = ['metric', 'xy'];
+const KINDS: readonly SceneKind[] = ['metric', 'xy', 'partition'];
 
 /** A short, stable name for a drawing: the same SVG always gets the same one. */
 const drawingScope = (svg: string): string => {

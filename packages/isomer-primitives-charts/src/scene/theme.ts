@@ -174,3 +174,104 @@ export const contrastText = (
   luminance(composite(background, canvas)) <= 0.179
     ? TABLE_CHROME[scheme].ghostText
     : TABLE_CHROME[scheme].inkText;
+
+// CIE Lab under D65, as chroma-js converts it, which Kibana's palettes mix with.
+const LAB = {
+  Xn: 0.95047,
+  Yn: 1,
+  Zn: 1.08883,
+  t0: 0.137931034,
+  t1: 0.206896552,
+  t2: 0.12841855,
+  t3: 0.008856452,
+} as const;
+
+const toLinear = (channel: number) => {
+  const value = channel / 255;
+  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+};
+
+const fromLinear = (value: number) =>
+  255 * (value <= 0.00304 ? 12.92 * value : 1.055 * value ** (1 / 2.4) - 0.055);
+
+const xyzToLab = (t: number) =>
+  t > LAB.t3 ? Math.cbrt(t) : t / LAB.t2 + LAB.t0;
+
+const labToXyz = (t: number) =>
+  t > LAB.t1 ? t * t * t : LAB.t2 * (t - LAB.t0);
+
+/** A color's alpha, 0 to 255: 255 for `#rrggbb`. */
+const alphaOf = (hex: string): number => {
+  const full = resolveColor({ light: hex, dark: hex }, 'light');
+  return full.length === 9 ? parseInt(full.slice(7, 9), 16) : 255;
+};
+
+// `[lightness, chroma, hue]`; hue is NaN for a gray, which has none.
+const toLch = (hex: string): [number, number, number] => {
+  const full = resolveColor({ light: hex, dark: hex }, 'light');
+  const [r, g, b] = [1, 3, 5].map((offset) =>
+    toLinear(parseInt(full.slice(offset, offset + 2), 16))
+  ) as [number, number, number];
+  const x = xyzToLab((0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB.Xn);
+  const y = xyzToLab((0.2126729 * r + 0.7151522 * g + 0.072175 * b) / LAB.Yn);
+  const z = xyzToLab((0.0193339 * r + 0.119192 * g + 0.9503041 * b) / LAB.Zn);
+  const a = 500 * (x - y);
+  const bb = 200 * (y - z);
+  const c = Math.sqrt(a * a + bb * bb);
+  const h = (Math.atan2(bb, a) * (180 / Math.PI) + 360) % 360;
+  return [Math.max(0, 116 * y - 16), c, Math.round(c * 10000) === 0 ? NaN : h];
+};
+
+const fromLch = (
+  [l, c, h]: [number, number, number],
+  alpha = 255
+): SceneColor => {
+  const hue = ((Number.isNaN(h) ? 0 : h) * Math.PI) / 180;
+  const y0 = (l + 16) / 116;
+  const x = LAB.Xn * labToXyz(y0 + (Math.cos(hue) * c) / 500);
+  const y = LAB.Yn * labToXyz(y0);
+  const z = LAB.Zn * labToXyz(y0 - (Math.sin(hue) * c) / 200);
+  return `#${[
+    3.2404542 * x - 1.5371385 * y - 0.4985314 * z,
+    -0.969266 * x + 1.8760108 * y + 0.041556 * z,
+    0.0556434 * x - 0.2040259 * y + 1.0572252 * z,
+  ]
+    .map((linear) => Math.min(255, Math.max(0, Math.round(fromLinear(linear)))))
+    .concat(alpha === 255 ? [] : [alpha])
+    .map((channel) => channel.toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase()}`;
+};
+
+/**
+ * `color` mixed toward `toward` by `amount` (0 to 1) in LCH, as chroma-js's
+ * `mix(color, toward, amount, 'lch')`: the shorter way round the hue circle,
+ * and a gray takes the other color's hue. Alpha mixes linearly, and an
+ * opaque result is `#rrggbb`.
+ */
+export const mixLch = (
+  color: SceneColor,
+  toward: SceneColor,
+  amount: number
+): SceneColor => {
+  const [l0, c0, h0] = toLch(color);
+  const [l1, c1, h1] = toLch(toward);
+  let hue = NaN;
+  if (!Number.isNaN(h0) && !Number.isNaN(h1)) {
+    const turn = h1 - h0;
+    const delta = turn > 180 ? turn - 360 : turn < -180 ? turn + 360 : turn;
+    hue = h0 + amount * delta;
+  } else if (!Number.isNaN(h0)) {
+    hue = h0;
+  } else if (!Number.isNaN(h1)) {
+    hue = h1;
+  }
+  const [a0, a1] = [alphaOf(color), alphaOf(toward)];
+  return fromLch(
+    [l0 + amount * (l1 - l0), c0 + amount * (c1 - c0), hue],
+    Math.round(a0 + amount * (a1 - a0))
+  );
+};
+
+/** The fill of a mosaic's outer layer, which its inner slices cover: Lens's transparent white. */
+export const TRANSPARENT: SceneColor = '#FFFFFF00';

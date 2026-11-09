@@ -103,6 +103,9 @@ const withoutSvgs = (html: string): string => {
   return out + html.slice(index);
 };
 
+/** The primitives Elastic Charts draws. */
+const DRAWN = ['metric', 'xyChart', 'partitionChart'];
+
 const OTHER: Record<ColorScheme, ColorScheme> = {
   light: 'dark',
   dark: 'light',
@@ -111,7 +114,14 @@ const OTHER: Record<ColorScheme, ColorScheme> = {
 describe('remote render with headless Elastic Charts', () => {
   it('covers every primitive', () => {
     expect(new Set(examples.map(({ type }) => type))).toEqual(
-      new Set(['metric', 'xyChart', 'dataTable', 'grid', 'unsupported'])
+      new Set([
+        'metric',
+        'xyChart',
+        'dataTable',
+        'partitionChart',
+        'grid',
+        'unsupported',
+      ])
     );
   });
 
@@ -151,9 +161,9 @@ describe('remote render with headless Elastic Charts', () => {
     }
   );
 
-  it('draws every metric and xy chart as Elastic Charts SVG', () => {
+  it('draws every metric, xy and partition chart as Elastic Charts SVG', () => {
     for (const { type, composition } of examples) {
-      if (type === 'metric' || type === 'xyChart') {
+      if (DRAWN.includes(type)) {
         const { html } = runtime.surfaces.snapshot.render(composition, {
           theme: 'light',
         });
@@ -176,7 +186,7 @@ describe('remote render with headless Elastic Charts', () => {
   it('draws the charts into the PDF: without their SVG it differs', async () => {
     const pages = runtime.surfaces.snapshot.renderPages(
       examples
-        .filter(({ type }) => type === 'metric' || type === 'xyChart')
+        .filter(({ type }) => DRAWN.includes(type))
         .map(({ composition }) => composition)
     );
     const options = { metadata: { creationDate: '2026-01-01' } };
