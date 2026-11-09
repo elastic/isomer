@@ -26,6 +26,7 @@ import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { dataTableIcon, metricIcon, xyChartIcon } from './icons';
 import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import { chartSize, chartSizeSpec } from './size';
 import { tableHeight } from './table';
 
 // Surfaces without a render context resolve for the light scheme: their output
@@ -54,6 +55,14 @@ const sanitizeLink = <TNode extends ChartNode>(node: TNode): TNode => {
   };
 };
 
+/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws. */
+const snapshotHeight =
+  (config: SceneShimConfig) =>
+  (node: ChartNode): number => {
+    const spec = chartSizeSpec(resolveForText(node, config));
+    return spec ? chartSize(spec).height : 0;
+  };
+
 /** The chart primitives, each drawing through `config`. */
 export const defineChartPrimitives = (config: SceneShimConfig) =>
   [
@@ -64,6 +73,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       catalog: metricCatalog,
       examples: metricExamples,
       sanitize: sanitizeLink,
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
     definePrimitive({
@@ -93,6 +103,7 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       catalog: xyChartCatalog,
       examples: xyChartExamples,
       sanitize: sanitizeLink,
+      metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
   ] as const;
