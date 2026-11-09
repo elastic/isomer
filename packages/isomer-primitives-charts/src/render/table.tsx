@@ -7,13 +7,12 @@
 
 // A table Scene as an HTML table, laid out as Lens's data grid: a shaded
 // header, rows split by horizontal lines, an optional shaded footer, and the
-// pager, under the title and description and above the notes and link. It
+// pager, under the title and description and above the notes. It
 // draws the first page in the Scene's starting order. Every color is the
 // Scene's; every length is `CHARTS_THEME`'s.
 
 import type { CSSProperties, ReactNode } from 'react';
 import type { StyleHandle } from '@elastic/distillate';
-import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
 import type {
   SceneRenderEnv,
@@ -32,16 +31,11 @@ const theme = CHARTS_THEME.table;
 
 const { handles: table } = tableModule;
 
-const linkOf = ({ interactions: { link } }: TableScene) => {
-  const href = link && sanitizeNavigationHref(link.href);
-  return link && href ? { href, label: link.label } : undefined;
-};
-
-/** The height of the lines around the table: title, description, notes and link. */
+/** The height of the lines around the table: title, description and notes. */
 const textHeight = (scene: TableScene) =>
   (scene.title ? theme.titleHeight : 0) +
   (scene.description ? theme.lineHeight : 0) +
-  (sceneNotes(scene).length + (linkOf(scene) ? 1 : 0)) * theme.lineHeight;
+  sceneNotes(scene).length * theme.lineHeight;
 
 /** The rows drawn on the first page, as positions into `scene.rows`. */
 const firstPage = (scene: TableScene): readonly number[] =>
@@ -173,7 +167,6 @@ export const TableView = ({
       theme.barLabelMinChars
     )
   );
-  const link = linkOf(scene);
   const shaded: CSSProperties = { background: scene.headerBackground };
 
   return (
@@ -329,13 +322,6 @@ export const TableView = ({
           <em>{note}</em>
         </div>
       ))}
-      {link && (
-        <div data-part="link" className={cls(styles, table.line)}>
-          <a href={link.href} className={cls(styles, table.link)}>
-            {link.label}
-          </a>
-        </div>
-      )}
     </div>
   );
 };

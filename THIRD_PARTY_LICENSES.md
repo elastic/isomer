@@ -539,7 +539,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
 | `@dual-bundle/import-meta-resolve` | 4.2.1 | MIT | `node_modules/.pnpm/@dual-bundle+import-meta-resolve@4.2.1/node_modules/@dual-bundle/import-meta-resolve` |  |
-| `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
+| `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@file+vendor+elastic-charts+elastic-charts-73.3.2-pr2939-a87de627.tgz_@t_aee604108d02f006caca3332bd90feba/node_modules/@elastic/charts` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |

@@ -8,6 +8,7 @@ overrides:
   katex: ^0.18.2
   nwsapi: 2.2.2
   smol-toml: ^1.9.1
+  '@elastic/charts': file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz
 
 importers:
 
@@ -35,8 +36,8 @@ importers:
         specifier: ^19.8.1
         version: 19.8.1
       '@elastic/charts':
-        specifier: 73.3.2
-        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
+        specifier: file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz
+        version: file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
       '@elastic/isomer-agent-tools':
         specifier: workspace:*
         version: link:packages/isomer-agent-tools
@@ -182,6 +183,9 @@ importers:
 
   packages/isomer-charts-elastic:
     dependencies:
+      '@elastic/charts':
+        specifier: file:../../vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz
+        version: file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
       '@elastic/isomer-primitives-charts':
         specifier: workspace:*
         version: link:../isomer-primitives-charts
@@ -189,9 +193,12 @@ importers:
         specifier: ^4.5.4
         version: 4.6.5
     devDependencies:
-      '@elastic/charts':
-        specifier: 73.3.2
-        version: 73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
       '@types/react':
         specifier: ^18.3.31
         version: 18.3.31
@@ -1172,8 +1179,9 @@ packages:
   '@dual-bundle/import-meta-resolve@4.2.1':
     resolution: {integrity: sha512-id+7YRUgoUX6CgV0DtuhirQWodeeA7Lf4i2x71JS/vtA5pRb/hIGWlw+G6MeXvsM+MXrz0VAydTGElX1rAfgPg==}
 
-  '@elastic/charts@73.3.2':
-    resolution: {integrity: sha512-Wr2fA24QdRwYgUiOkNiTHFkMPlFkVcVp9fwhn4pyKhFbk5C+/63OUF4zXnAu3wgITdv9dJLD7vWAoNjtwbFjeQ==}
+  '@elastic/charts@file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz':
+    resolution: {integrity: sha512-s4x3MsxOCkE3LfOv1aVF83EHtDeO1kxpcV6793yl3JvW0dgtttkh22wg4H7J+kwYxP85zzLrZHU/kjmIK06Jbw==, tarball: file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz}
+    version: 73.3.2
     peerDependencies:
       moment: ^2.29.1
       moment-timezone: ^0.5.32
@@ -6348,7 +6356,7 @@ snapshots:
 
   '@dual-bundle/import-meta-resolve@4.2.1': {}
 
-  '@elastic/charts@73.3.2(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
+  '@elastic/charts@file:vendor/elastic-charts/elastic-charts-73.3.2-pr2939-a87de627.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
     dependencies:
       '@popperjs/core': 2.11.8
       '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)

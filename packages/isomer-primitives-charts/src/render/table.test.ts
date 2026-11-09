@@ -129,11 +129,11 @@ describe('TableView', () => {
     );
   });
 
-  it('counts the description, notes and link in its height', () => {
+  it('counts the description and notes in its height', () => {
     const scene = tableOf(example(CHOSEN));
     const { rowHeight } = CHARTS_THEME.table.density[scene.density];
     expect(tableHeight(scene)).toBe(
-      titleHeight + 3 * lineHeight + (1 + scene.rows.length) * rowHeight
+      titleHeight + 2 * lineHeight + (1 + scene.rows.length) * rowHeight
     );
   });
 
@@ -146,10 +146,9 @@ describe('TableView', () => {
     expect(markup(sized).match(/<tr data-row=/g)).toHaveLength(2);
   });
 
-  it('draws the title, description, notes and link', () => {
+  it('draws the title, description and notes', () => {
     const scene = tableOf(example(CHOSEN));
     const html = markup(scene);
-    const { link } = scene.interactions;
     for (const part of ['title', 'description', 'note']) {
       expect(html).toContain(`data-part="${part}"`);
     }
@@ -158,10 +157,6 @@ describe('TableView', () => {
         new RegExp(`>${escaped(text!).replace(/[[\]]/g, '\\$&')}<`)
       );
     }
-    expect(html).toContain(
-      `<a href="${escaped(link!.href)}" class="chartsTable-link">${escaped(link!.label)}</a>`
-    );
-    expect(chartsStylesheet()).toContain('.chartsTable-link{color:inherit}');
   });
 
   it.each(Object.entries(CHARTS_THEME.table.density))(
@@ -183,17 +178,10 @@ describe('TableView', () => {
     }
   );
 
-  it('drops a link the navigation policy refuses', () => {
+  it('leaves the link to the chart shim, which draws it below every renderer', () => {
     const scene = tableOf(example(CHOSEN));
-    const unsafe = {
-      ...scene,
-      interactions: {
-        ...scene.interactions,
-        link: { href: 'javascript:alert(1)', label: 'Open' },
-      },
-    };
-    expect(markup(unsafe)).not.toContain('javascript:');
-    expect(tableHeight(unsafe)).toBe(tableHeight(scene) - lineHeight);
+    expect(scene.interactions.link).toBeDefined();
+    expect(markup(scene)).not.toContain('<a ');
   });
 
   it('fills emphasized rows with the Scene’s emphasis color', () => {
@@ -279,6 +267,16 @@ describe('dataTable in the charts pack', () => {
     const snapshotHeight = table.metrics?.snapshotHeight as
       ((node: DataTableNode) => number) | undefined;
     expect(snapshotHeight?.(node)).toBe(tableHeight(tableOf(node)));
+    const linked: DataTableNode = {
+      ...node,
+      interactions: {
+        ...node.interactions,
+        link: { label: 'Open in Discover', href: 'https://example.com' },
+      },
+    };
+    expect(snapshotHeight?.(linked)).toBe(
+      tableHeight(tableOf(linked)) + CHARTS_THEME.chart.linkHeight
+    );
   });
 
   it('lets a pack engine that draws tables replace it', () => {

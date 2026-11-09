@@ -1,0 +1,50 @@
+From c25b7a0aec1744d95b1acf50f682f5a036d3ce41 Mon Sep 17 00:00:00 2001
+From: experiment <x@x>
+Date: Thu, 5 Nov 2026 17:06:22 -0500
+Subject: [PATCH 2/2] experiment: renderChart returns DebugState
+
+---
+ packages/charts/src/headless/render_chart.ts | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/packages/charts/src/headless/render_chart.ts b/packages/charts/src/headless/render_chart.ts
+index 8bf5a20a5..b3ea4ef21 100644
+--- a/packages/charts/src/headless/render_chart.ts
++++ b/packages/charts/src/headless/render_chart.ts
+@@ -22,7 +22,8 @@ import type { Spec } from '../specs/spec_type';
+ import { updateDevicePixelRatio, updateParentDimensions } from '../state/actions/chart_settings';
+ import { specParsed, upsertSpec } from '../state/actions/specs';
+ import { createChartStore } from '../state/chart_state';
+-import { chartSelectorsRegistry } from '../state/selectors/get_internal_chart_state';
++import type { DebugState } from '../state/types';
++import { chartSelectorsRegistry, getInternalChartStateSelector } from '../state/selectors/get_internal_chart_state';
+ import { getInternalIsInitializedSelector, InitStatus } from '../state/selectors/get_internal_is_intialized';
+ import { withTextMeasureContext } from '../utils/bbox/canvas_text_bbox_calculator';
+ 
+@@ -70,12 +71,12 @@ export function renderChart({
+   context,
+   Path2D: Path2DConstructor = globalThis.Path2D,
+   devicePixelRatio = 1,
+-}: RenderChartOptions): void {
++}: RenderChartOptions): { debugState: DebugState | null } {
+   // What <Chart> does when it is created.
+   chartSelectorsRegistry.setChartSelectors(chartTypeSelectors);
+   const store = createChartStore('headless');
+ 
+-  withTextMeasureContext(context, () =>
++  return withTextMeasureContext(context, () =>
+     withPath2D(Path2DConstructor, () => {
+       // What the spec components, <SpecsParser> and <ChartResizer> do once mounted.
+       specs.forEach((spec) => store.dispatch(upsertSpec(spec)));
+@@ -94,6 +95,8 @@ export function renderChart({
+       }
+       render(context, state);
+       renderLegend(context, state);
++      // Experiment: the DebugState `<Chart debugState>` writes to the DOM, for parity tests.
++      return { debugState: getInternalChartStateSelector(state)?.getDebugState(state) ?? null };
+     }),
+   );
+ }
+-- 
+2.56.0
+
