@@ -12,6 +12,7 @@ import { gaugeSemiCircle } from './examples/gauge';
 import { heatmapHourly } from './examples/heatmap';
 import { metricSingleValue } from './examples/metric';
 import { partitionPie } from './examples/partition_chart';
+import { tagCloudServices } from './examples/tag_cloud';
 import { unsupportedVega } from './examples/unsupported';
 import { xyTimeSeries } from './examples/xy_chart';
 
@@ -161,4 +162,22 @@ export const gaugeCatalog: PrimitiveCatalogEntry = {
     'The value changes over time: use `xyChart`.',
   ],
   example: gaugeSemiCircle,
+};
+
+/** What an agent reads to choose `tagCloud`: purpose, when to use it, and an example. */
+export const tagCloudCatalog: PrimitiveCatalogEntry = {
+  type: 'tagCloud',
+  name: 'Tag cloud',
+  purpose:
+    'Show which terms are most frequent or largest at a glance, as words sized by value.',
+  useWhen: [
+    'The point is which of many terms stand out, not their exact values.',
+    'A Lens tag cloud is shown.',
+  ],
+  avoidWhen: [
+    'Values are compared exactly, or ranked: use `xyChart` bars or `dataTable`.',
+    'Shares of a total: use `partitionChart`.',
+    'There are only a few terms: use `xyChart` bars.',
+  ],
+  example: tagCloudServices,
 };

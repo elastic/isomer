@@ -39,6 +39,7 @@ export const SELECT_TARGETS = [
   'slice',
   'mark',
   'region',
+  'tag',
 ] as const;
 
 /** What a selection lands on. Each chart states which it offers. */
@@ -272,9 +273,9 @@ const selectEventSchema = z.discriminatedUnion('target', [
   z.strictObject({
     ...selectEventShape,
     target: z
-      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region'])
+      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region', 'tag'])
       .describe(
-        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, or a map `region`.'
+        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, a map `region`, or a word cloud `tag`.'
       ),
   }),
 ]);

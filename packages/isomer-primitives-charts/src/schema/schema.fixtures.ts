@@ -22,6 +22,7 @@ import {
   heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './catalog';
@@ -32,6 +33,7 @@ import { gridExamples } from './examples/grid';
 import { heatmapExamples } from './examples/heatmap';
 import { metricExamples } from './examples/metric';
 import { partitionChartExamples } from './examples/partition_chart';
+import { tagCloudExamples } from './examples/tag_cloud';
 import { unsupportedExamples } from './examples/unsupported';
 import { xyChartExamples } from './examples/xy_chart';
 import { gaugeSchema } from './gauge';
@@ -39,6 +41,7 @@ import { type GridNode, gridSchema, gridSchemaFor } from './grid';
 import { heatmapSchema } from './heatmap';
 import { metricSchema } from './metric';
 import { partitionChartSchema } from './partition_chart';
+import { tagCloudSchema } from './tag_cloud';
 import { unsupportedSchema } from './unsupported';
 import { xyChartSchema } from './xy_chart';
 
@@ -90,6 +93,13 @@ export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
     schema: gaugeSchema,
     catalog: gaugeCatalog,
     examples: gaugeExamples,
+    renderers,
+  }),
+  definePrimitive({
+    type: 'tagCloud',
+    schema: tagCloudSchema,
+    catalog: tagCloudCatalog,
+    examples: tagCloudExamples,
     renderers,
   }),
   definePrimitive<GridNode>({

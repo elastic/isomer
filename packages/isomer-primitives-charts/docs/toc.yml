@@ -12,6 +12,7 @@ toc:
   - file: partition-chart.md
   - file: heatmap.md
   - file: gauge.md
+  - file: tag-cloud.md
   - file: grid.md
   - file: unsupported.md
   - file: interactions.md

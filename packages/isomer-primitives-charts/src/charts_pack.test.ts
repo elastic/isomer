@@ -87,7 +87,7 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, dataTable, partitionChart, heatmap, gauge, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, partitionChart, heatmap, gauge, tagCloud, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
       'dataTable',
       'gauge',
@@ -95,6 +95,7 @@ describe('chartsPack', () => {
       'heatmap',
       'metric',
       'partitionChart',
+      'tagCloud',
       'unsupported',
       'xyChart',
     ]);
@@ -155,6 +156,7 @@ describe('chartsPack', () => {
     'partitionChart',
     'heatmap',
     'gauge',
+    'tagCloud',
   ])('%s loses an unsafe href before the resolver sees the node', (type) => {
     const seen: ChartNode[] = [];
     const spying = createIsomerRuntime({
@@ -191,7 +193,14 @@ describe('chartsPack', () => {
 
   it.each(
     cases.filter(({ type }) =>
-      ['metric', 'xyChart', 'partitionChart', 'heatmap', 'gauge'].includes(type)
+      [
+        'metric',
+        'xyChart',
+        'partitionChart',
+        'heatmap',
+        'gauge',
+        'tagCloud',
+      ].includes(type)
     )
   )('$type: $name draws its summary with no engine registered', ({ node }) => {
     const composition = view(node);

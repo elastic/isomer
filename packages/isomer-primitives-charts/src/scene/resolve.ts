@@ -10,6 +10,7 @@ import type { GaugeNode } from '../schema/gauge';
 import type { HeatmapNode } from '../schema/heatmap';
 import type { MetricNode } from '../schema/metric';
 import type { PartitionChartNode } from '../schema/partition_chart';
+import type { TagCloudNode } from '../schema/tag_cloud';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import type { ResolveChartOptions } from './common';
@@ -18,6 +19,7 @@ import { resolveHeatmap } from './resolve_heatmap';
 import { resolveMetric } from './resolve_metric';
 import { resolvePartition } from './resolve_partition';
 import { resolveTable } from './resolve_table';
+import { resolveTagCloud } from './resolve_tag_cloud';
 import { resolveXy } from './resolve_xy';
 import type {
   GaugeScene,
@@ -26,6 +28,7 @@ import type {
   PartitionScene,
   Scene,
   TableScene,
+  TagCloudScene,
   XyScene,
 } from './types';
 
@@ -36,7 +39,8 @@ export type ChartNode =
   | DataTableNode
   | PartitionChartNode
   | HeatmapNode
-  | GaugeNode;
+  | GaugeNode
+  | TagCloudNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
@@ -73,6 +77,11 @@ export function resolveChart(
   node: GaugeNode,
   options: ResolveChartOptions
 ): GaugeScene;
+/** Resolves a `tagCloud` node to a {@link TagCloudScene}. */
+export function resolveChart(
+  node: TagCloudNode,
+  options: ResolveChartOptions
+): TagCloudScene;
 /** Resolves any chart node to its {@link Scene}. */
 export function resolveChart(
   node: ChartNode,
@@ -95,5 +104,7 @@ export function resolveChart(
       return resolveHeatmap(node, options);
     case 'gauge':
       return resolveGauge(node, options);
+    case 'tagCloud':
+      return resolveTagCloud(node, options);
   }
 }

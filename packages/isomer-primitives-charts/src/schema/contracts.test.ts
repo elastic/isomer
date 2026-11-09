@@ -41,6 +41,7 @@ describe('contract examples', () => {
         'partitionChart',
         'heatmap',
         'gauge',
+        'tagCloud',
         'grid',
         'unsupported',
       ])
@@ -82,6 +83,7 @@ describe('JSON Schema projection', () => {
     'partitionChart',
     'heatmap',
     'gauge',
+    'tagCloud',
     'grid',
     'unsupported',
   ])('projects %s', (type) => {

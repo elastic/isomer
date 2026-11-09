@@ -48,6 +48,13 @@ export const CHARTS_THEME = {
       arc: { aspectRatio: { x: 1.1, y: 1 }, maxWidth: 600 },
       circle: { aspectRatio: { x: 1, y: 1 }, maxWidth: 600 },
     },
+    tagCloud: {
+      /**
+       * Width to height. Lens gives a tag cloud no size spec and fills its
+       * container, so outside one it takes the xy chart's shape.
+       */
+      aspectRatio: { x: 16, y: 9 },
+    },
     heatmap: {
       /**
        * Width to height. Lens gives a heat map no size spec and fills its
