@@ -24,6 +24,11 @@ export { selectSceneRenderer } from './select';
 export {
   type AxisId,
   type ColorScheme,
+  type HeatmapAxis,
+  type HeatmapBand,
+  type HeatmapCategory,
+  type HeatmapCell,
+  type HeatmapScene,
   type MetricAlignment,
   type MetricLayout,
   type MetricScene,

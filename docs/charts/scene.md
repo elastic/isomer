@@ -18,7 +18,7 @@ import type {
 
 | Field                        | What it is                                                                                                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`                       | `metric`, `xy`, `table` or `partition`                                                                                                                                       |
+| `kind`                       | `metric`, `xy`, `table`, `partition` or `heatmap`                                                                                                                            |
 | `scheme`                     | `light` or `dark`. Always explicit: native targets have no CSS, so `light-dark()` is never the only source of a color                                                        |
 | `size`, `locale`, `timeZone` | What the Scene was resolved for                                                                                                                                              |
 | `chrome`                     | Text, axis, grid-line, background and border colors                                                                                                                          |
@@ -26,7 +26,7 @@ import type {
 | `table`                      | The node's data in `data` order. Formatted `cells` serve text surfaces; raw `values` are in matching column order so renderers can raise events without parsing display text |
 | `interactions`               | What the node offers, resolved: selection targets, brush column, sync, link and emphasis                                                                                     |
 
-A `MetricScene` has a `layout` and one tile per row. A `PartitionScene` has its `layers`, its slices as a tree in draw order (`nodes`), the `total`, its `labels`, `donutHole` and `legend`, and `empty` when there is nothing to draw ([how a partition chart resolves](partition-chart.md#how-it-resolves)). An `XyScene` has `axes` (scale, format and domain intent), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
+A `MetricScene` has a `layout` and one tile per row. A `PartitionScene` has its `layers`, its slices as a tree in draw order (`nodes`), the `total`, its `labels`, `donutHole` and `legend`, and `empty` when there is nothing to draw ([how a partition chart resolves](partition-chart.md#how-it-resolves)). A `HeatmapScene` has its `x` and `y` axes, each with its positions in order (`categories`), its `cells` with their colors, its ascending `bands`, which its legend lists, and `empty` when there is nothing to draw ([how a heat map resolves](heatmap.md#how-it-resolves)). An `XyScene` has `axes` (scale, format and domain intent), `categories` (every x position with data), `layers` in exact draw order, and a `legend`. Each layer is a resolved series, reference line or annotation; helper marks are interleaved with series in the order they appear in the chart.
 
 ## `resolveChart`
 
@@ -39,7 +39,7 @@ const scene = resolveChart(node, {
 });
 ```
 
-`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric`, `xyChart`, `dataTable` or `partitionChart` node into its Scene ([how a table resolves](data-table.md#how-it-resolves)). It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped; only tick labels are formatted where the engine runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
+`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric`, `xyChart`, `dataTable`, `partitionChart` or `heatmap` node into its Scene ([how a table resolves](data-table.md#how-it-resolves)). It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped; only tick labels are formatted where the engine runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
 
 What it decides:
 
@@ -90,7 +90,7 @@ type SceneSelection = {
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `tile`     | Each metric tile                                                                                                              |
 | `slice`    | Each partition slice and legend item                                                                                          |
-| `cell`     | Each `dimension` cell of a table                                                                                              |
+| `cell`     | Each `dimension` cell of a table, and each heat map cell                                                                      |
 | `datum`    | Each xy mark                                                                                                                  |
 | `series`   | Each xy series                                                                                                                |
 | `legend`   | Each legend item                                                                                                              |
@@ -101,7 +101,7 @@ type SceneSelection = {
 A renderer raises events with two helpers, so every renderer raises the same event for the same gesture:
 
 - `selectEvent(nodeId, selection, negate?)` returns the `chart.select` event for a selection.
-- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column, or `undefined` when the node offers no brush. Its description names each end by the nearest x position in `categories`; on an ordinal axis, whose positions are not numbers, it names only the column.
+- `brushEvent(scene, nodeId, [from, to])` returns the `chart.brush` event for a range along the brush column of an xy or heatmap Scene, or `undefined` when the node offers no brush. Its description names each end by the nearest x position in `categories` (a heat map's `x.categories`); on an ordinal axis, whose positions are not numbers, it names only the column.
 
 ## `SceneRenderer`
 

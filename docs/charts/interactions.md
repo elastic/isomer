@@ -14,7 +14,7 @@ Each chart declares what it offers, so every renderer and host agrees:
 ```ts
 interactions?: {
   select?: SelectTarget[];          // absent: nothing is selectable
-  brush?: { column: string };       // xyChart only: a date or number column
+  brush?: { column: string };       // xyChart: a date or number x column; heatmap: its date x column
   sync?: { cursor?: boolean; tooltips?: boolean };
   link?: { href: string; label: string }; // static, drawn on every surface
   initial?: { hiddenSeries?: string[] };  // xyChart only: series keys hidden at first
@@ -27,12 +27,13 @@ interactions?: {
 | `xyChart` | `datum`, `series`, `category`, `legend` |
 | `dataTable` | `cell` |
 | `partitionChart` | `slice` |
+| `heatmap` | `cell` |
 
 `emphasis?: { rows: number[]; note?: string }[]` highlights rows statically, such as what an agent is talking about, on every surface.
 
 Rules:
 
-- A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
+- A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer, on an `xyChart`; on a `heatmap`, it is the `x` column, and a `date` column.
 - Emphasis rows are indexes into `data.rows`.
 
 ## `ChartEvent`
@@ -75,6 +76,7 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 | `series`, `legend` | Every row of the series | Its split column |
 | `category` | Every row at that x | The x column |
 | `tile` | The tile's row | Its breakdown column, if any |
+| `cell` on a `heatmap` | Every row of the cell | Its `x` and `y` columns |
 | `slice` | Every row of the slice | The group columns on its path, outermost first |
 
 `negate` marks a "filter out" gesture. A brush `range` is in the x column's units: epoch milliseconds for a date.

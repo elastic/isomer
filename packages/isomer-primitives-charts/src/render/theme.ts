@@ -36,6 +36,13 @@ export const CHARTS_THEME = {
       /** The least height of a vertical time chart, in pixels. */
       timeMinHeight: 300,
     },
+    heatmap: {
+      /**
+       * Width to height. Lens gives a heat map no size spec and fills its
+       * container, so outside one it takes the xy chart's shape.
+       */
+      aspectRatio: { x: 16, y: 9 },
+    },
     partition: {
       /**
        * Width to height. Lens gives a partition chart no size spec and fills

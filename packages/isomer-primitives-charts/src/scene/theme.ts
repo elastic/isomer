@@ -275,3 +275,16 @@ export const mixLch = (
 
 /** The fill of a mosaic's outer layer, which its inner slices cover: Lens's transparent white. */
 export const TRANSPARENT: SceneColor = '#FFFFFF00';
+
+/**
+ * A heat map's colors when its node states no bands, lowest first: Lens's
+ * default `temperature` palette at its default five steps, EUI's
+ * `euiPaletteForTemperature(5)`, the same in both schemes.
+ */
+export const HEATMAP_PALETTE: readonly SceneColor[] = [
+  '#61A2FF',
+  '#CFE1FF',
+  '#F6F9FC',
+  '#FFD4CF',
+  '#F6726A',
+];
