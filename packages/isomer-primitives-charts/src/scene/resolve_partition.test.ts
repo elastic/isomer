@@ -133,6 +133,51 @@ describe('resolvePartition', () => {
     expect(outer!.children[0]!.color).toBe('#65D1CC99');
   });
 
+  it('keeps sums past the largest number finite, with their shares', () => {
+    const scene = resolve(
+      chart({
+        data: {
+          columns: [string('g'), number('v')],
+          rows: [
+            ['a', Number.MAX_VALUE],
+            ['a', Number.MAX_VALUE],
+            ['b', Number.MAX_VALUE],
+            ['b', Number.MAX_VALUE],
+            ['c', Number.MAX_VALUE],
+          ],
+        },
+      })
+    );
+    expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
+    expect(scene.total).toBe(Number.MAX_VALUE);
+    expect(
+      scene.nodes.map(({ label, value, share }) => [label, value, share])
+    ).toEqual([
+      ['a', Number.MAX_VALUE, 0.4],
+      ['b', Number.MAX_VALUE, 0.4],
+      ['c', Number.MAX_VALUE, 0.2],
+    ]);
+  });
+
+  it('orders thousands of metrics in metric order', () => {
+    const count = 5_000;
+    const ids = Array.from({ length: count }, (_, index) => `m${index}`);
+    const scene = resolve(
+      chart({
+        metrics: ids.map((column) => ({ column })),
+        groups: [],
+        data: {
+          columns: ids.map(number),
+          rows: [ids.map((_, index) => index + 1)],
+        },
+      })
+    );
+    expect(scene.nodes.map(({ metric }) => metric)).toEqual(ids);
+    expect(scene.legend.items.map(({ key }) => key)).toEqual(
+      scene.nodes.map(({ key }) => key)
+    );
+  });
+
   it('resolves a slice of every row at the input budget', () => {
     const rows = Array.from({ length: 125_000 }, (_, row) => ['a', row % 2]);
     const scene = resolve(
@@ -175,6 +220,33 @@ describe('resolvePartition', () => {
       'Firefox',
       'Chrome',
     ]);
+  });
+
+  it('colors one date category alike in every mosaic column, however it is written', () => {
+    const scene = resolve(
+      chart({
+        shape: 'mosaic',
+        groups: [{ column: 'g' }, { column: 'd' }],
+        data: {
+          columns: [
+            string('g'),
+            { id: 'd', label: 'd', type: 'date', role: 'dimension' },
+            number('v'),
+          ],
+          rows: [
+            ['a', '1970-01-02T00:00:00Z', 1],
+            ['a', 0, 1],
+            ['b', '1970-01-01T00:00:00Z', 1],
+          ],
+        },
+      })
+    );
+    const color = (column: number, at: number) =>
+      scene.nodes[column]!.children.find(({ source }) => source.rows[0] === at)!
+        .color;
+    expect(color(0, 1)).toBe(VIS[1]);
+    expect(color(1, 2)).toBe(color(0, 1));
+    expect(color(0, 0)).toBe(VIS[0]);
   });
 
   it('keeps a lone mosaic layer in row order', () => {

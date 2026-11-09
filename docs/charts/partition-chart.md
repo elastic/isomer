@@ -17,9 +17,9 @@ Parts of a whole, on the [chart core](core.md). Lens's pie, donut, treemap, mosa
 | `legend`                   | `visibility` (`auto` shows it on a waffle, and on a pie or donut with more than one layer), `position` (default `right`), `nested` (every layer, each slice under its parent), `maxLines` (default 1), `size`, `values` (each slice's value; default on a waffle) |
 | `interactions`, `emphasis` | Selectable `slice`s, a link and static highlights: [Interactions](interactions.md)                                                                                                                                                                                |
 
-A missing or non-number value counts as 0. Any negative value leaves the chart empty with Lens's note, "Pie chart can't render with negative values.", and a chart with no rows, or only zeros, says "No results found".
+A missing or non-number value counts as 0. Any negative value leaves the chart empty with Lens's note, "_Shape_ chart can't render with negative values.", naming the chart's shape (a donut says "Donut chart can't render with negative values."), and a chart with no rows, or only zeros, says "No results found".
 
-A `colors.byKey` key names a color category: the outermost group's cell, or on a `mosaic` with two groups the second group's cell; with no `groups`, a metric column id. Each is a key part, as the [chart core](core.md#colorvalue) encodes one: the missing bucket is `\null`. A category with no key takes the default categorical palette by where it first shows in the rows.
+A `colors.byKey` key names a color category: the outermost group's cell, or on a `mosaic` with two groups the second group's cell; with no `groups`, a metric column id. Each is a key part, as the [chart core](core.md#colorvalue) encodes one: the missing bucket is `\null`. A category with no key takes the default categorical palette by where it first shows in the rows; a date category is one instant however its cells write it, so it takes one color in every mosaic column.
 
 Rules:
 
@@ -36,7 +36,7 @@ Rules:
 
 The Scene's `kind` is `partition`. Expected values come from Lens's partition visualization:
 
-- **Slices** group rows by their group cells, a date by its instant; rows that share a path are one slice that keeps every row. Each slice's `value` is the sum of its leaves in draw order, as an engine sums them, so the two agree to the last bit.
+- **Slices** group rows by their group cells, a date by its instant; rows that share a path are one slice that keeps every row. Each slice's `value` is the sum of its leaves in draw order, as an engine sums them, so the two agree to the last bit. A sum past `Number.MAX_VALUE` is held at it, as are the Scene's `total`, and shares still come from the exact proportions.
 - **Order:** largest first, ties in row order. A mosaic's columns, and a lone mosaic layer, keep row order; the metric layer keeps metric order.
 - **Colors:** a category's `colors.byKey` entry, else the categorical palette by where it first shows. An inner layer takes its outermost slice's color mixed toward the background in LCH by a fifth per layer, at most four fifths, as Lens's `decreaseOpacity` does; a translucent color's alpha mixes too. A two-layer mosaic colors its inner slices by their own category and leaves its columns transparent.
 - **Text:** a slice's name is its group cell as displayed (its `display` string, else its format), or its metric's label. Its `valueText` is its value in its metric's format, or the first metric's above the metric layer; a one-row slice of one metric uses that cell's `display` string. Its `percentText` is its share of the whole as a percent with at most `percentDecimals` digits. `valueLabel` is whichever `labels.values` names, empty when names are hidden.

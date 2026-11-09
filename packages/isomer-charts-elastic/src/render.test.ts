@@ -16,13 +16,15 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act as testUtilsAct } from 'react-dom/test-utils';
-import type { DebugState } from '@elastic/charts';
+import { type CustomTooltip, type DebugState, Tooltip } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ChartEvent,
   formatAxisValue,
   type MetricScene,
   metricSingleValueScene,
+  type PartitionNode,
+  type PartitionScene,
   type Scene,
   type SceneAxis,
   type SceneRenderEnv,
@@ -42,6 +44,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { seriesOf } from './events';
 import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
+import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
 import { sceneTooltip } from './xy';
 
@@ -415,6 +418,75 @@ describe('elastic-charts renderer: xy tooltip', () => {
   });
 });
 
+describe('elastic-charts renderer: partition tooltip', () => {
+  const nested = resolveChart(
+    partitionChartExamples.find(
+      ({ name }) => name === 'Nested pie with values'
+    )!.node,
+    { scheme: 'light', size: SIZE }
+  );
+  if (nested.kind !== 'partition') {
+    throw new Error('expected a partition Scene');
+  }
+
+  /** The `customTooltip` the specs install, shown for the slices of `path`, outermost first, as Elastic Charts reports a hover. */
+  const hover = (scene: PartitionScene, path: readonly PartitionNode[]) => {
+    const tooltip = React.Children.toArray(
+      (
+        sceneSpecs(scene, { environment: 'browser' }) as React.ReactElement<{
+          children: React.ReactNode;
+        }>
+      ).props.children
+    ).find(
+      (child): child is React.ReactElement<{ customTooltip: CustomTooltip }> =>
+        React.isValidElement(child) && child.type === Tooltip
+    )?.props.customTooltip;
+    expect(tooltip, 'an installed custom tooltip').toBeDefined();
+    const values = path.map(({ key }) => ({
+      seriesIdentifier: { key, specId: 'partition' },
+    }));
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      React.createElement(tooltip!, { values } as never)
+    );
+    return {
+      rows: [...page.querySelectorAll('[role="row"]')].map((row) =>
+        [
+          ...row.querySelectorAll(
+            '[role="gridcell"]:not(.echTooltip__colorCell)'
+          ),
+        ].map((cell) => cell.textContent)
+      ),
+      colors: [...page.querySelectorAll('.echTooltip__colorStrip[style]')].map(
+        (strip) => strip.getAttribute('style')
+      ),
+    };
+  };
+
+  it('lists a nested slice and each slice it sits in, with their values, shares and colors', () => {
+    const outer = nested.nodes[0]!;
+    const inner = outer.children[0]!;
+    expect(inner).toBeDefined();
+    const { rows, colors } = hover(nested, [outer, inner]);
+    expect(rows).toEqual(
+      [outer, inner].map(({ label, valueText, percentText }) => [
+        label,
+        `${valueText}\u00A0(${percentText})`,
+      ])
+    );
+    expect(colors).toHaveLength(2);
+    expect(colors[0]).toContain(outer.color);
+    expect(colors[1]).toContain(inner.color);
+  });
+
+  it('shows the outermost slice alone when it is hovered', () => {
+    const outer = nested.nodes[1]!;
+    expect(hover(nested, [outer]).rows).toEqual([
+      [outer.label, `${outer.valueText}\u00A0(${outer.percentText})`],
+    ]);
+  });
+});
+
 describe('elastic-charts renderer: metric', () => {
   it('shows a secondary tooltip label from the keyboard', async () => {
     const [tile] = metricSingleValueScene.tiles;
@@ -725,6 +797,34 @@ describe('elastic-charts renderer: partition order and text', () => {
       expect(format(-1 - index)).toBe(slice.valueLabel);
       expect(format(slice.value)).toBe(slice.valueText);
     });
+  });
+
+  it('prints no legend value for a sum whose slices read differently', () => {
+    const scene = resolveChart(
+      {
+        type: 'partitionChart',
+        shape: 'pie',
+        metrics: [{ column: 'size' }, { column: 'count' }],
+        data: {
+          columns: [
+            {
+              id: 'size',
+              label: 'Size',
+              type: 'number',
+              role: 'metric',
+              format: { kind: 'bytes' },
+            },
+            { id: 'count', label: 'Count', type: 'number', role: 'metric' },
+          ],
+          rows: [[1024, 1024]],
+        },
+      },
+      { scheme: 'light', size: SIZE }
+    );
+    const [size, count] = slicesOf(scene.nodes);
+    expect(size!.value).toBe(count!.value);
+    expect(size!.valueText).not.toBe(count!.valueText);
+    expect(partitionValueFormatter(scene)(1024)).toBe('');
   });
 });
 

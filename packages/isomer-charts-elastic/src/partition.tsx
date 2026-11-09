@@ -177,17 +177,22 @@ export const partitionTooltip = (scene: PartitionScene): CustomTooltip => {
  * The value text Elastic Charts draws. Slice labels ask for it through
  * `valueGetter`, which hands over `-1 - index` of the slice in
  * {@link slicesOf}, so each draws its own `valueLabel`. Legend values ask
- * with the slice's sum, which the Scene's `value` equals.
+ * with the slice's sum alone, which the Scene's `value` equals, so a sum
+ * whose slices carry different `valueText`s prints none rather than another
+ * slice's.
  */
 export const partitionValueFormatter = (
   scene: PartitionScene
 ): ((value: number) => string) => {
   const slices = slicesOf(scene.nodes);
-  const byValue = new Map<number, string>();
+  const byValue = new Map<number, string | undefined>();
   for (const { value, valueText } of slices) {
-    if (!byValue.has(value)) {
-      byValue.set(value, valueText);
-    }
+    byValue.set(
+      value,
+      !byValue.has(value) || byValue.get(value) === valueText
+        ? valueText
+        : undefined
+    );
   }
   return (value) =>
     value < 0

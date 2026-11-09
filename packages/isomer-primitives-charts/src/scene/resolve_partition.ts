@@ -51,6 +51,8 @@ const METRIC_LAYER = 'Metric';
 const lighten = (depth: number) => Math.min(0.2 * (depth - 1), 0.8);
 
 interface Draft {
+  /** The cell's identity, as grouping matches it: a date by its instant. */
+  readonly identity: string;
   readonly part: string;
   readonly label: string;
   readonly depth: number;
@@ -60,16 +62,27 @@ interface Draft {
   readonly first: number;
   /** A leaf's own sum; 0 on an inner slice. */
   own: number;
+  /** `own` times {@link SCALE}, so a sum past `Number.MAX_VALUE` still has shares. */
+  scaled: number;
   readonly children: Map<string, Draft>;
 }
 
+/**
+ * A power of two small enough that no table's sum, scaled by it, overflows:
+ * every value is at most `Number.MAX_VALUE`, about 2^1024. Exact, since it
+ * only shifts the exponent.
+ */
+const SCALE = 2 ** -1000;
+
 const draft = (
+  identity: string,
   part: string,
   label: string,
   depth: number,
   first: number,
   metric?: string
 ): Draft => ({
+  identity,
   part,
   label,
   depth,
@@ -77,6 +90,7 @@ const draft = (
   rows: [],
   first,
   own: 0,
+  scaled: 0,
   children: new Map(),
 });
 
@@ -115,7 +129,7 @@ export const resolvePartition = (
   const metricLabels = metrics.map((id) => resolution.column(id).label);
 
   // Group rows into slices, outermost first, in the order they first show.
-  const root = draft('', '', 0, 0);
+  const root = draft('', '', '', 0, 0);
   let negative = false;
   let order = 0;
   data.rows.forEach((_, row) => {
@@ -128,6 +142,7 @@ export const resolvePartition = (
           identity: resolution.identity(column, row),
           make: () =>
             draft(
+              resolution.identity(column, row),
               keyPart(resolution.cell(column, row)),
               resolution.text(column, row),
               index + 1,
@@ -140,6 +155,7 @@ export const resolvePartition = (
                 identity: metric,
                 make: () =>
                   draft(
+                    metric,
                     keyPart(metric),
                     resolution.column(metric).label,
                     groups.length + 1,
@@ -163,6 +179,7 @@ export const resolvePartition = (
         parent = child;
       }
       parent.own += Math.max(0, value);
+      parent.scaled += Math.max(0, value) * SCALE;
       order += 1;
     });
   });
@@ -185,10 +202,11 @@ export const resolvePartition = (
     }
     return sum;
   };
+  const metricRank = new Map(metrics.map((metric, rank) => [metric, rank]));
   const sorted = (slices: Iterable<Draft>): Draft[] =>
     [...slices].sort((a, b) => {
       if (a.metric !== undefined && b.metric !== undefined) {
-        return metrics.indexOf(a.metric) - metrics.indexOf(b.metric);
+        return metricRank.get(a.metric)! - metricRank.get(b.metric)!;
       }
       if (shape === 'mosaic' && (a.depth === 1 || groups.length === 1)) {
         return a.first - b.first;
@@ -209,12 +227,17 @@ export const resolvePartition = (
   };
   collect(root.children.values());
   const total = leaves.reduce((sum, leaf) => sum + leaf.own, 0);
+  const scaledTotal = leaves.reduce((sum, leaf) => sum + leaf.scaled, 0);
   // Each slice's sum, adding its leaves in draw order as `total` does.
-  const sums = new Map<Draft, number>();
+  const sums = new Map<Draft, { own: number; scaled: number }>();
   const addLeaves = (slice: Draft, ancestors: readonly Draft[]) => {
     if (slice.children.size === 0) {
       for (const each of [...ancestors, slice]) {
-        sums.set(each, (sums.get(each) ?? 0) + slice.own);
+        const sum = sums.get(each) ?? { own: 0, scaled: 0 };
+        sums.set(each, {
+          own: sum.own + slice.own,
+          scaled: sum.scaled + slice.scaled,
+        });
       }
       return;
     }
@@ -243,8 +266,8 @@ export const resolvePartition = (
     for (const slice of slices) {
       if (slice.depth === colorDepth) {
         firstShown.set(
-          slice.part,
-          Math.min(firstShown.get(slice.part) ?? Infinity, slice.first)
+          slice.identity,
+          Math.min(firstShown.get(slice.identity) ?? Infinity, slice.first)
         );
       } else {
         visit(slice.children.values());
@@ -254,22 +277,23 @@ export const resolvePartition = (
   visit(root.children.values());
   [...firstShown]
     .sort(([, a], [, b]) => a - b)
-    .forEach(([part], rank) => ranks.set(part, rank));
+    .forEach(([identity], rank) => ranks.set(identity, rank));
 
-  const categoryColor = (part: string): SceneColor => {
+  // A stated color names the key part; the palette ranks the category itself.
+  const categoryColor = ({ part, identity }: Draft): SceneColor => {
     const colors = node.colors?.byKey;
     const stated =
       colors && Object.hasOwn(colors, part) ? colors[part] : undefined;
     return stated
       ? resolveColor(stated, scheme)
-      : categoricalColor(ranks.get(part) ?? 0);
+      : categoricalColor(ranks.get(identity) ?? 0);
   };
   const colorOf = (path: readonly Draft[]): SceneColor => {
     const slice = path[path.length - 1]!;
     if (colorDepth === 2) {
-      return slice.depth === 1 ? TRANSPARENT : categoryColor(slice.part);
+      return slice.depth === 1 ? TRANSPARENT : categoryColor(slice);
     }
-    const base = categoryColor(path[0]!.part);
+    const base = categoryColor(path[0]!);
     return layers.length > 1
       ? mixLch(base, chrome.background, lighten(slice.depth))
       : base;
@@ -281,7 +305,8 @@ export const resolvePartition = (
     path: readonly Draft[]
   ): PartitionNode => {
     const own = [...path, slice];
-    const value = sums.get(slice) ?? 0;
+    const sum = sums.get(slice) ?? { own: 0, scaled: 0 };
+    const value = Math.min(sum.own, Number.MAX_VALUE);
     const metric = slice.metric ?? metrics[0]!;
     const [onlyRow] = slice.rows;
     const display =
@@ -291,7 +316,12 @@ export const resolvePartition = (
         ? data.display?.[metric]?.[onlyRow]
         : undefined;
     const valueText = display ?? resolution.valueText(metric, value);
-    const share = total > 0 ? value / total : 0;
+    // Past `Number.MAX_VALUE` the sums are infinite; their scaled sums are not.
+    const share = !(total > 0)
+      ? 0
+      : Number.isFinite(total)
+        ? value / total
+        : sum.scaled / scaledTotal;
     const percentText = resolution.formatAs(share, percentFormat);
     const groupPath = own.filter(({ metric: part }) => part === undefined);
     const columns = groups.slice(0, groupPath.length);
@@ -382,11 +412,7 @@ export const resolvePartition = (
     slices.flatMap((slice) => [slice, ...flatten(slice.children)]);
   const legendNodes = nested
     ? flatten(nodes)
-    : [...nodes].sort(
-        (a, b) =>
-          a.source.rows[0]! - b.source.rows[0]! ||
-          nodes.indexOf(a) - nodes.indexOf(b)
-      );
+    : [...nodes].sort((a, b) => a.source.rows[0]! - b.source.rows[0]!);
   const items: PartitionLegendItem[] = legendNodes.map((slice) => ({
     key: slice.key,
     label: slice.label,
@@ -422,7 +448,7 @@ export const resolvePartition = (
     shape,
     layers,
     nodes,
-    total: empty ? 0 : total,
+    total: empty ? 0 : Math.min(total, Number.MAX_VALUE),
     labels: { categories, values },
     donutHole: shape === 'donut' ? (node.donutHole ?? DEFAULTS.donutHole) : 0,
     legend: {
