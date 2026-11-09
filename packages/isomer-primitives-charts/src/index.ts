@@ -19,6 +19,7 @@ export type {
   ResolveSceneOptions,
   SceneResolver,
 } from './render/context';
+export { type ChartSizeSpec, chartSize, chartSizeSpec } from './render/size';
 export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
