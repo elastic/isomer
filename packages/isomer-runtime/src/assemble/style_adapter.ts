@@ -13,6 +13,7 @@ import {
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveStyleCollector,
+  scopeScript,
 } from '@elastic/isomer-sdk';
 
 import type { HTMLStyleAdapter } from '../surfaces';
@@ -87,15 +88,20 @@ interface PackAdapter<TRenderContext> {
 }
 
 const COLLECTORS = Symbol.for('@elastic/isomer-runtime/pack-collectors');
-const PACK_CONTEXTS = Symbol.for('@elastic/isomer-runtime/pack-contexts');
+const COMPOSED = Symbol.for('@elastic/isomer-runtime/composed-context');
 
 type ComposedCollector = {
   readonly [COLLECTORS]: ReadonlyMap<string, PrimitiveStyleCollector>;
 };
 
-type ComposedContext = {
-  readonly [PACK_CONTEXTS]?: ReadonlyMap<string, unknown>;
-};
+/** Every pack's own render context, and the one a view reads its unlayered fields from. */
+interface Composed {
+  readonly source: object;
+  readonly contexts: ReadonlyMap<string, unknown>;
+}
+
+/** Fields only a surface sets, carried even when they equal the source's. */
+const SURFACE_FIELDS: readonly PropertyKey[] = ['enhancements', 'anchors'];
 
 const isObjectLike = (value: unknown): value is object =>
   (typeof value === 'object' && value !== null) || typeof value === 'function';
@@ -173,7 +179,7 @@ const composeAdapters = <TRenderContext>(
       }
     },
     createRenderContext: (collector, options) => {
-      const contexts = new Map(
+      const contexts = new Map<string, unknown>(
         owners.map((owner) => [
           owner.pack.id,
           owner.adapter.createRenderContext(
@@ -182,17 +188,17 @@ const composeAdapters = <TRenderContext>(
           ),
         ])
       );
-      const base = contexts.get(first.pack.id) as TRenderContext;
+      const base = contexts.get(first.pack.id);
       for (const pack of packs) {
         if (!contexts.has(pack.id)) {
           contexts.set(pack.id, base);
         }
       }
-      return contextWith(
-        (isObjectLike(base) ? base : {}) as TRenderContext,
-        PACK_CONTEXTS,
-        contexts
-      );
+      const source = isObjectLike(base) ? base : {};
+      return contextWith(source, COMPOSED, {
+        source,
+        contexts,
+      } satisfies Composed) as TRenderContext;
     },
     renderStyles: (collector, options) =>
       owners
@@ -208,6 +214,7 @@ const composeAdapters = <TRenderContext>(
             adapter.getScriptText?.(composition, options, scope) ?? ''
         )
         .filter(Boolean)
+        .map(scopeScript)
         .join('\n'),
   };
 };
@@ -228,21 +235,55 @@ const inPackContext = (
     renderers: {
       ...definition.renderers,
       react: (node: unknown, env: { context?: unknown }) => {
-        const own = (env.context as ComposedContext | undefined)?.[
-          PACK_CONTEXTS
-        ]?.get(packId);
-        if (!isObjectLike(env.context) || !isObjectLike(own)) {
+        const { context } = env;
+        const composed = isObjectLike(context)
+          ? (Reflect.get(context, COMPOSED) as Composed | undefined)
+          : undefined;
+        const own = composed?.contexts.get(packId);
+        if (
+          composed === undefined ||
+          !isObjectLike(own) ||
+          own === composed.source
+        ) {
           return react(node, env);
         }
-        const context = Object.entries(own).reduce<object>(
-          (view, [key, value]) => contextWith(view, key, value),
-          env.context
-        );
-        return react(node, { ...env, context });
+        return react(node, {
+          ...env,
+          context: rescope(context as object, composed, own),
+        });
       },
     },
   };
 };
+
+const differs = (
+  layered: PropertyDescriptor | undefined,
+  source: PropertyDescriptor | undefined
+): boolean =>
+  layered === undefined || source === undefined
+    ? layered !== source
+    : layered.value !== source.value || layered.get !== source.get;
+
+/** `own` with the fields a surface or container layered over `context`'s source. */
+const rescope = (
+  context: object,
+  { source, contexts }: Composed,
+  own: object
+): object =>
+  Reflect.ownKeys(context)
+    .filter(
+      (key) =>
+        key !== COMPOSED &&
+        (SURFACE_FIELDS.includes(key) ||
+          differs(
+            Reflect.getOwnPropertyDescriptor(context, key),
+            Reflect.getOwnPropertyDescriptor(source, key)
+          ))
+    )
+    .reduce<object>(
+      (view, key) => contextWith(view, key, Reflect.get(context, key)),
+      contextWith(own, COMPOSED, { source: own, contexts } satisfies Composed)
+    );
 
 /** Throws when an adapterless pack collects styles but two pack adapters could take them. */
 const assertRoutable = (

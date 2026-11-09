@@ -19,7 +19,7 @@ sources:
 
 The HTML and `snapshot` surfaces run the host's style adapter if one was passed, otherwise each pack's own. See the package doc on packs.[^docs]
 
-Two or more pack adapters compose: each gets its own collector, a pack's `react` renderers read its own adapter's render context wherever they are nested, and the stylesheet joins theirs in pack order. A pack without an adapter is styled by the first pack that has one, and throws `AMBIGUOUS_STYLE_ADAPTER` if it declares `collectStyles`.[^adapter]
+Two or more pack adapters compose: each gets its own collector, a pack's `react` renderers read its own adapter's render context wherever they are nested, with the fields a surface or container layered on carried over, and the stylesheet and each adapter's scoped script join theirs in pack order. A pack without an adapter is styled by the first pack that has one, and throws `AMBIGUOUS_STYLE_ADAPTER` if it declares `collectStyles`.[^adapter]
 
 Related: [pack composition](/runtime/concepts/packs.md), [rendering](/sdk/concepts/rendering.md).
 

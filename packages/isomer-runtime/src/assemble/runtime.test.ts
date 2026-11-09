@@ -15,6 +15,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   type AnyPrimitiveDefinition,
   type Composition,
+  contextWith,
   definePrimitive,
   definePrimitivePack,
   type Frame,
@@ -1501,6 +1502,188 @@ describe('createIsomerRuntime', () => {
       expect(html).toContain('class="one-note"');
       expect(html).toContain('class="two-bold"');
       expect(css).toBe('.one-note{}\n.two-bold{}');
+    });
+
+    /** Resolves handles through prototype methods and private state. */
+    class KeyContext {
+      readonly #keys: Set<string>;
+      readonly #prefix: string;
+      constructor(prefix: string, keys: Set<string>) {
+        this.#prefix = prefix;
+        this.#keys = keys;
+      }
+      resolveClassName(...handles: StyleHandle[]): string {
+        return handles
+          .map(({ key }) => {
+            this.#keys.add(key);
+            return `${this.#prefix}-${key}`;
+          })
+          .join(' ');
+      }
+    }
+
+    /** `definition` drawn as a span carrying what `read` takes from its context. */
+    const probing = (
+      definition: AnyPrimitiveDefinition,
+      read: (context: Record<string, unknown>) => string
+    ) =>
+      ({
+        ...definition,
+        renderers: {
+          ...definition.renderers,
+          react: (
+            node: PrimitiveNode & { text: string },
+            { context }: { context: Record<string, unknown> }
+          ) =>
+            createElement('span', { 'data-probe': read(context) }, node.text),
+        },
+      }) as AnyPrimitiveDefinition;
+
+    it("styles a pack whose adapter's context is a class instance", () => {
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith('test.one', [classed(notePrimitive)], keyAdapter('one')),
+          packWith('test.two', [classed(boldPrimitive)], {
+            ...keyAdapter('two'),
+            createRenderContext: ({ keys }: KeyCollector) =>
+              new KeyContext('two', keys),
+          }),
+        ],
+      });
+
+      const { body, css } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [
+          { type: 'note', text: 'n' } as NoteNode,
+          { type: 'bold', text: 'b' } as BoldNode,
+        ],
+      });
+      expect(body).toContain('<span class="two-bold">b</span>');
+      expect(css).toBe('.one-note{}\n.two-bold{}');
+    });
+
+    it("hands a pack its own context's fields under the surface's", () => {
+      const fielded = (prefix: string, fields: Record<string, unknown>) => ({
+        ...keyAdapter(prefix),
+        createRenderContext: (collector: KeyCollector) => ({
+          ...keyAdapter(prefix).createRenderContext(collector),
+          enhancements: new Set<string>(),
+          ...fields,
+        }),
+      });
+      const runtime = createIsomerRuntime({
+        packs: [
+          definePrimitivePack({
+            id: 'test.one',
+            surfaces: [],
+            primitives: [notePrimitive],
+            styleAdapter: fielded('one', { resolveCssVar: () => 'one' }),
+            enhancements: [{ id: 'noteCopy', appliesTo: () => true }],
+          }),
+          packWith(
+            'test.two',
+            [
+              probing(
+                boldPrimitive,
+                ({ resolveCssVar, enhancements }) =>
+                  `${typeof resolveCssVar}|${[...(enhancements as Set<string>)].join(',')}`
+              ),
+            ],
+            fielded('two', {})
+          ),
+        ],
+      });
+
+      const { body } = runtime.surfaces.html.render(
+        {
+          type: 'view',
+          body: [
+            { type: 'note', text: 'n' } as NoteNode,
+            { type: 'bold', text: 'b' } as BoldNode,
+          ],
+        },
+        { enhancements: ['noteCopy'] }
+      );
+      expect(body).toContain('data-probe="undefined|noteCopy"');
+    });
+
+    it("keeps a container's fields over its children's own contexts, either way round", () => {
+      const toned = (prefix: string) => ({
+        ...keyAdapter(prefix),
+        createRenderContext: (collector: KeyCollector) => ({
+          ...keyAdapter(prefix).createRenderContext(collector),
+          tone: 'quiet',
+        }),
+      });
+      const { react } = wrapPrimitive.renderers;
+      const loudWrap = {
+        ...wrapPrimitive,
+        renderers: {
+          ...wrapPrimitive.renderers,
+          react: (node, env) =>
+            react(node, {
+              ...env,
+              context: contextWith(env.context, 'tone', 'loud'),
+            }),
+        },
+      } as typeof wrapPrimitive;
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith('test.one', [classed(notePrimitive)], keyAdapter('one')),
+          packWith(
+            'test.two',
+            [
+              loudWrap,
+              probing(boldPrimitive, ({ tone }) => String(tone)),
+            ] as AnyPrimitiveDefinition[],
+            toned('two')
+          ),
+        ],
+      });
+
+      const { body } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [
+          {
+            type: 'wrap',
+            items: [
+              { type: 'bold', text: 'b' },
+              { type: 'note', text: 'n' },
+            ],
+          } as WrapNode,
+        ],
+      });
+      expect(body).toContain('<span data-probe="loud">b</span>');
+      expect(body).toContain('<span class="one-note">n</span>');
+    });
+
+    it("scopes each adapter's script on its own", () => {
+      const scripted = (prefix: string, script: string) => ({
+        ...keyAdapter(prefix),
+        getScriptText: () => script,
+      });
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith(
+            'test.one',
+            [notePrimitive],
+            scripted('one', 'const x = 1; root.one = x; return;')
+          ),
+          packWith(
+            'test.two',
+            [boldPrimitive],
+            scripted('two', 'const x = 2; root.two = x;')
+          ),
+        ],
+      });
+
+      const { js } = runtime.surfaces.html.render(view('n'), {
+        scripts: 'host',
+      });
+      const root: Record<string, number> = {};
+      // eslint-disable-next-line @typescript-eslint/no-implied-eval -- runs the body the way a script-running host does.
+      (new Function('root', js) as (root: object) => void)(root);
+      expect(root).toEqual({ one: 1, two: 2 });
     });
 
     it('throws when a pack without an adapter collects styles beside two that have one', () => {

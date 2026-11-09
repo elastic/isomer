@@ -40,7 +40,7 @@ What replaced frame ownership is a type-level bound rather than a runtime check 
 
 ## Styling packs
 
-A pack ships its own `styleAdapter`, and each pack's adapter styles that pack's nodes: it gets its own collector, its renderers get its own render context wherever they are nested, and the stylesheet joins every adapter's in pack order. A pack without one is styled by the first pack that has one. Passing `styleAdapter` on the runtime replaces them all.
+A pack ships its own `styleAdapter`, and each pack's adapter styles that pack's nodes: it gets its own collector, its renderers get its own render context wherever they are nested, with the fields a surface or container layered on carried over, and the stylesheet and scripts join every adapter's in pack order, each script scoped on its own. A pack without one is styled by the first pack that has one. Passing `styleAdapter` on the runtime replaces them all.
 
 A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
