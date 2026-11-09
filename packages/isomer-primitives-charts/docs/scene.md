@@ -112,7 +112,7 @@ interface SceneRenderer<TOutput = unknown> {
 }
 ```
 
-This interface describes a renderer; it does not provide renderer selection or a fallback. `TOutput` is what the renderer produces, such as a React node.
+This interface describes a renderer. `TOutput` is what the renderer produces, such as a React node. `selectSceneRenderer(preferences, kind, environment)` picks the first renderer in a preference list that runs in the current environment and supports the Scene's kind; [Rendering](rendering.md) covers where the pack takes the list from and its fallback.
 `SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction.
 
 `metricSingleValueScene`, `xyTimeSeriesScene` and `xyInteractiveScene` are hand-written Scenes for three schema examples, for building and testing a renderer without the resolver. `xyInteractiveScene`'s selections raise exactly the events in `chartEventExamples`.

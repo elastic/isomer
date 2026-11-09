@@ -13,3 +13,4 @@ toc:
   - file: interactions.md
   - file: format.md
   - file: scene.md
+  - file: rendering.md

@@ -25,7 +25,7 @@ Every chart primitive shares the [chart core](core.md): `title`, `description`, 
 | `@elastic/isomer-primitives-charts/schema` | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer. |
 | `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, the event helpers, `formatAxisValue` for tick labels, the [`CHART_GLYPHS`](core.md#glyphs) table, and the `SceneRenderer` interface. |
 | `@elastic/isomer-primitives-charts/resolve` | [`resolveChart`](scene.md#resolvechart), which builds a Scene from a node. |
-| `@elastic/isomer-primitives-charts` | Everything above. |
+| `@elastic/isomer-primitives-charts` | Everything above, plus the pack itself: `chartsPack`, [`createChartsPack`](rendering.md) and its render context types. It imports React. |
 
 ```ts
 import {
