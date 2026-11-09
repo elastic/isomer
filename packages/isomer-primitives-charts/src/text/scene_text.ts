@@ -25,26 +25,27 @@ const shownColumns = (table: SceneTable) =>
     .map((column, index) => ({ column, index }))
     .filter(({ column }) => !column.empty);
 
-// The Scene's table: a header row, then one row per data row, in `data` order.
-const sceneTableRows = (table: SceneTable): string[][] => {
+// The Scene's table: a header row, one row per data row in `data` order, then
+// the footer; or nothing when there is no row or no shown column.
+const tableOf = ({ table }: Scene): string[][] | undefined => {
   const columns = shownColumns(table);
+  if (table.rows.length === 0 || columns.length === 0) {
+    return undefined;
+  }
+  const { footer } = table;
   return [
     columns.map(({ column }) => column.label),
     ...table.rows.map(({ cells }) =>
       columns.map(({ index }) => cells[index] ?? '')
     ),
+    ...(footer ? [columns.map(({ index }) => footer[index] ?? '')] : []),
   ];
-};
-
-// The header and rows, or nothing when there is no row or no shown column.
-const tableOf = (scene: Scene): string[][] | undefined => {
-  const rows = sceneTableRows(scene.table);
-  return rows.length > 1 && rows[0]!.length > 0 ? rows : undefined;
 };
 
 /**
  * The summary, description and each emphasis note on its own line, then the
- * table with cells separated by ` | `, then the link, each as its own paragraph.
+ * table and its footer with cells separated by ` | `, then the link, each as
+ * its own paragraph.
  */
 export const sceneToText = (scene: Scene): string => {
   const { link } = scene.interactions;
@@ -56,7 +57,7 @@ export const sceneToText = (scene: Scene): string => {
   ].join('\n\n');
 };
 
-/** The summary, description, each emphasis note, the table as a GFM table, and the link. */
+/** The summary, description, each emphasis note, the table and its footer as a GFM table, and the link. */
 export const sceneToMarkdown = (scene: Scene): MarkdownContent => {
   const { link } = scene.interactions;
   const [header, ...rows] = tableOf(scene) ?? [];

@@ -18,7 +18,7 @@ import type {
 
 | Field                        | What it is                                                                                                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `kind`                       | `metric` or `xy`                                                                                                                                                             |
+| `kind`                       | `metric`, `xy` or `table`                                                                                                                                                    |
 | `scheme`                     | `light` or `dark`. Always explicit: native targets have no CSS, so `light-dark()` is never the only source of a color                                                        |
 | `size`, `locale`, `timeZone` | What the Scene was resolved for                                                                                                                                              |
 | `chrome`                     | Text, axis, grid-line, background and border colors                                                                                                                          |
@@ -39,7 +39,7 @@ const scene = resolveChart(node, {
 });
 ```
 
-`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric` or `xyChart` node into its Scene. It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped; only tick labels are formatted where the engine runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
+`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric`, `xyChart` or `dataTable` node into its Scene ([how a table resolves](data-table.md#how-it-resolves)). It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped; only tick labels are formatted where the engine runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
 
 What it decides:
 
@@ -89,6 +89,7 @@ type SceneSelection = {
 | Target     | Carried by                                                                                                                    |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `tile`     | Each metric tile                                                                                                              |
+| `cell`     | Each `dimension` cell of a table                                                                                              |
 | `datum`    | Each xy mark                                                                                                                  |
 | `series`   | Each xy series                                                                                                                |
 | `legend`   | Each legend item                                                                                                              |
@@ -113,6 +114,6 @@ interface SceneRenderer<TOutput = unknown> {
 ```
 
 This interface describes a renderer. `TOutput` is what the renderer produces, such as a React node. `selectSceneRenderer(preferences, kind, environment)` picks the first renderer in a preference list that runs in the current environment and supports the Scene's kind; [Rendering](rendering.md) covers where the pack takes the list from and its fallback.
-`SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction.
+`SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction. It also carries the render's `resolveClassName`, through which a renderer drawing with the pack's own styles, such as its table, resolves its classes.
 
 `metricSingleValueScene`, `xyTimeSeriesScene` and `xyInteractiveScene` are hand-written Scenes for three schema examples, for building and testing a renderer without the resolver. `xyInteractiveScene`'s selections raise exactly the events in `chartEventExamples`.

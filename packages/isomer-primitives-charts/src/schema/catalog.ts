@@ -7,6 +7,7 @@
 
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 
+import { dataTableTopHosts } from './examples/data_table';
 import { metricSingleValue } from './examples/metric';
 import { unsupportedVega } from './examples/unsupported';
 import { xyTimeSeries } from './examples/xy_chart';
@@ -82,4 +83,22 @@ export const unsupportedCatalog: PrimitiveCatalogEntry = {
     'The content can be shown, even partly: show it and record what was lost in `losses`.',
   ],
   example: unsupportedVega,
+};
+
+/** What an agent reads to choose `dataTable`: purpose, when to use it, and an example. */
+export const dataTableCatalog: PrimitiveCatalogEntry = {
+  type: 'dataTable',
+  name: 'Data table',
+  purpose:
+    'List rows of values to read and compare exactly, with formats, colored cells, bars, sorting, paging and a summary row.',
+  useWhen: [
+    'The reader needs exact values rather than a shape.',
+    'Several measures are wanted side by side for each of many categories.',
+    'A Lens data table or a Discover session is shown.',
+  ],
+  avoidWhen: [
+    'The point is a trend or a comparison of sizes: use `xyChart`.',
+    'There is one number to report: use `metric`.',
+  ],
+  example: dataTableTopHosts,
 };

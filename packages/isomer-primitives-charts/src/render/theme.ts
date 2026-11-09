@@ -46,6 +46,29 @@ export const CHARTS_THEME = {
     /** Description and reason size, in pixels. */
     body: 12,
   },
+  /** A `dataTable`, laid out as EUI's data grid. */
+  table: {
+    /** Type size, cell padding and row height per density, in pixels. */
+    density: {
+      compact: { font: 12, padding: 4, rowHeight: 24 },
+      default: { font: 14, padding: 6, rowHeight: 32 },
+      expanded: { font: 16, padding: 8, rowHeight: 40 },
+    },
+    lineWidth: 1,
+    headerWeight: 700,
+    /** A bar's thickness as a share of the row height. */
+    barThickness: 0.3,
+    barGap: 6,
+    /** The least width a bar's value takes, in `ch`. */
+    barLabelMinChars: 3,
+    badgePadding: 4,
+    badgeRadius: 3,
+    pageGap: 12,
+    /** Height of the title line, in pixels. */
+    titleHeight: 24,
+    /** Height of a description, note or link line, in pixels. */
+    lineHeight: 18,
+  },
   unsupported: {
     padding: 12,
     borderWidth: 1,
