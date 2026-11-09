@@ -24,6 +24,23 @@ const CHARTS_CONTRACT_FORBIDDEN = [
   { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
 ];
 
+// The Vega node's contract reaches no Vega, so a client that cannot load Vega, such as a React Native app, validates nodes with it.
+const VEGA_CONTRACT_FORBIDDEN = [
+  'vega',
+  'vega-interpreter',
+  'vega-lite',
+  'vega-tooltip',
+  'react',
+  'react-dom',
+  '@elastic/isomer-runtime',
+  ...MARKDOWN_PARSERS,
+  { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
+  {
+    under: '@elastic/isomer-primitives-charts',
+    except: '@elastic/isomer-primitives-charts/schema',
+  },
+];
+
 /**
  * Specifiers that must stay unreachable from an entry, by package and export key; each covers its package's subpaths.
  * The SDK's rendering entries may reach bare `react`, which carries React renderers through the shared dispatcher, but never `react-dom/server`; `./schema` and the charts entries reach neither.
@@ -47,6 +64,7 @@ export const RULES = {
     // The runtime and `react-dom/server` are `./testing`'s optional peers alone.
     '.': ['@elastic/isomer-runtime', 'react-dom/server'],
   },
+  '@elastic/isomer-primitives-vega': { './schema': VEGA_CONTRACT_FORBIDDEN },
 };
 
 const coversPackage = (specifier, name) =>
