@@ -16,7 +16,7 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-A runtime styles with one adapter. Loading this pack alongside another pack that declares a `styleAdapter` throws `AMBIGUOUS_STYLE_ADAPTER` unless the host passes its own `styleAdapter`; a pack with no adapter of its own is styled by this one.
+Loaded alongside another pack that declares a `styleAdapter`, each adapter styles its own pack's nodes and the runtime joins their stylesheets. A pack with no adapter of its own is styled by the first pack that has one, which is this one when it comes first.
 
 The adapter declares `styleCollector: 'distillate'`, and the pack takes that tag from it. No primitive here declares a `collectStyles` hook — every handle reaches the collector through `resolveClassName` — so the tag never refuses this pack. It names the collector the adapter builds, so a runtime refuses to let it serve another pack whose `collectStyles` hooks declare a different tag.
 
