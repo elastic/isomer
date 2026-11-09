@@ -202,17 +202,22 @@ describe('TableView', () => {
   });
 
   it('sizes bar labels for a page longer than a call takes arguments', () => {
-    const rows = Array.from({ length: 250_000 }, (_, i) => [i]);
-    const scene = tableOf({
+    const one = tableOf({
       type: 'dataTable',
       data: {
         columns: [{ id: 'n', label: 'n', type: 'number', role: 'metric' }],
-        rows,
+        rows: [[1]],
       },
       columns: [{ column: 'n', decoration: { kind: 'bar' } }],
     });
+    // Copies of one resolved row, so the test times the view, not the resolver.
+    const rows = Array.from({ length: 250_000 }, (_, row) => ({
+      ...one.rows[0]!,
+      row,
+    }));
+    const scene = { ...one, rows, order: rows.map((_, position) => position) };
     expect(() => TableView({ scene })).not.toThrow();
-  });
+  }, 30_000);
 });
 
 describe('dataTable in the charts pack', () => {

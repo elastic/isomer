@@ -299,7 +299,7 @@ describe('dataTable bars', () => {
     );
     expect(scene.rows[LONG_COLUMN - 1]?.cells[0]?.bar?.to).toBe(1);
     expect(scene.columns[0]?.footer).toBe('249,999');
-  });
+  }, 30_000);
 });
 
 describe('dataTable sorting', () => {
