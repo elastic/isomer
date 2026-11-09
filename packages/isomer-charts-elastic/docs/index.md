@@ -73,10 +73,10 @@ In a browser, the renderer scales its SVG to the container at the drawing's aspe
 | `one` | One xy chart at 2×: the one-off PNG |
 | `budget-xy` | One xy line at the charts pack's whole input budget (250,000 values, about 83,000 points), at 2× |
 | `budget-grid` | 40 xy panels in a `grid` sharing that budget, the dashboard the budget was sized for, at 2× |
-| `burst-limited` | 16 xy charts at 2× requested at once, through a limiter of 2 |
+| `burst-limited` | 16 xy charts at 2× requested at once, through the [limiter in takumi's docs](../../isomer-image-takumi/docs/index.md#memory-on-a-small-server), of 2 |
 | `burst-unlimited` | The same 16 with no limiter |
 
-Each reports peak RSS; RSS once everything is loaded and the fonts registered; peak less loaded, which is what rendering adds; heap held after the run and a forced GC; cold start to the first PNG; the median validate-and-draw and rasterization time per chart; and the largest PNG. `--scenarios a,b` picks scenarios, `--runs n` sets runs per scenario, `--repeat <n>` draws a scenario's charts n times in one process, `--values <n>` replaces the input budget the `budget-*` scenarios fill, `--cache-max-bytes <n>` sets takumi's resource cache, and `--json` prints every run. A held heap that stays flat as `--repeat` grows rules out a JavaScript leak, but not native growth: takumi and its buffers allocate outside the heap, and peak RSS is only a high-water mark.
+Each reports peak RSS; RSS once everything is loaded and the fonts registered; peak less loaded, which is what rendering adds; heap held after the run and a forced GC; cold start to the first PNG; the median validate-and-draw and rasterization time per chart; and the largest PNG. `--scenarios a,b` picks scenarios, `--runs n` sets runs per scenario, `--repeat <n>` draws a scenario's charts n times in one process, `--values <n>` replaces the input budget the `budget-*` scenarios fill, `--cache-max-bytes <n>` sets takumi's resource cache, and `--json` prints every run, as one JSON document even with `--check`, which then reports its bounds on stderr. A held heap that stays flat as `--repeat` grows rules out a JavaScript leak, but not native growth: takumi and its buffers allocate outside the heap, and peak RSS is only a high-water mark.
 
 `pnpm --filter @elastic/isomer-charts-elastic bench:check` (`pnpm check:memory` from the root, part of `pnpm verify` and CI) runs `headless`, `one`, both `budget-*` scenarios and `burst-limited` three times each, and fails when a scenario's median peak RSS or peak less loaded is over its bound in `scripts/bench_render.cjs`. A bound is about 1.5× the largest of what macOS arm64, Linux arm64 and Linux x64 (emulated on arm64) measured on Node 24, so a runner's variance passes and a doubling fails. The median of three runs, rather than the largest, keeps one slow garbage collection from failing a build. Lower a bound when a change makes rendering cheaper, so the gain is kept.
 
@@ -86,7 +86,7 @@ Measured on Node 24, MB:
 | --- | --- | --- | --- | --- | --- |
 | `one` | 148–150 | 149 | 196–197 | 16 | 35–43 ms |
 | `headless` (42 charts) | 177–182 | 238–240 | 298 | 105–107 | 5 ms each |
-| `burst-limited` (16 at 2×) | 199 | 248–266 | 308–329 | 116–133 | 9–18 ms each |
+| `burst-limited` (16 at 2×) | 198–201 | 257–270 | 308–329 | 124–137 | 9–18 ms each |
 | `budget-grid` | 492–505 | 567–577 | 630–635 | 428–437 | 1.9–2.3 s |
 | `budget-xy` | 836–988 | 991–1065 | 1052–1092 | 852–926 | 3.3–3.8 s |
 

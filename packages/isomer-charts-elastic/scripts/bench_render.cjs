@@ -15,8 +15,9 @@
 //   pnpm --filter @elastic/isomer-charts-elastic bench:check
 //
 // `--check` runs the bounded scenarios and fails when a run's median exceeds
-// its bound in BOUNDS. Run `pnpm build` first: this loads the built CommonJS
-// packages, as a Node host does.
+// its bound in BOUNDS; with `--json`, its report goes to stderr. Run
+// `pnpm build` first: this loads the built CommonJS packages, as a Node host
+// does.
 
 const { spawnSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
@@ -65,6 +66,64 @@ const BOUNDS = {
 };
 
 const mb = (bytes) => bytes / 1024 / 1024;
+
+const median = (list) => {
+  const sorted = [...list].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+};
+
+/**
+ * The limiter the image-takumi docs give hosts: at most `inFlight` renders at
+ * once, at most `queued` waiting, and past that a `busy` error. A finishing
+ * render hands its slot straight to the next waiting one, so a call that lands
+ * in between cannot take it too.
+ */
+const limit = (inFlight, queued) => {
+  let running = 0;
+  const waiting = [];
+  return async (render) => {
+    if (running < inFlight) {
+      running += 1;
+    } else {
+      if (waiting.length >= queued) {
+        throw new Error('busy');
+      }
+      await new Promise((resolve) => waiting.push(resolve));
+    }
+    try {
+      return await render();
+    } finally {
+      const next = waiting.shift();
+      if (next) {
+        next();
+      } else {
+        running -= 1;
+      }
+    }
+  };
+};
+
+/** Each bounded measure's median over the scenario's runs, against its bound. */
+const checkBounds = (results, scenarios, bounds = BOUNDS) =>
+  scenarios.flatMap((scenario) =>
+    Object.entries(bounds[scenario] ?? {}).map(([key, bound]) => {
+      const values = results
+        .filter((result) => result.scenario === scenario)
+        .map((result) => result[key]);
+      if (values.length === 0) {
+        throw new Error(`${scenario}: no runs to check`);
+      }
+      const value = median(values);
+      return {
+        scenario,
+        key,
+        median: value,
+        bound,
+        ok: value <= bound,
+        line: `${scenario} ${key}: median ${value.toFixed(0)} MB, bound ${bound} MB`,
+      };
+    })
+  );
 
 const child = async (scenario, repeat, cacheMaxBytes, budgetValues) => {
   const started = process.hrtime.bigint();
@@ -230,24 +289,14 @@ const child = async (scenario, repeat, cacheMaxBytes, budgetValues) => {
   if (scenario === 'burst-unlimited') {
     await Promise.all(all.map(render));
   } else if (scenario === 'burst-limited') {
-    // A host's limiter: at most two renders in flight, the rest queued.
-    let next = 0;
-    const worker = async () => {
-      while (next < all.length) {
-        await render(all[(next += 1) - 1]);
-      }
-    };
-    await Promise.all([worker(), worker()]);
+    const limited = limit(2, all.length);
+    await Promise.all(all.map((job) => limited(() => render(job))));
   } else {
     for (const job of all) {
       await render(job);
     }
   }
 
-  const median = (list) => {
-    const sorted = [...list].sort((a, b) => a - b);
-    return sorted[Math.floor(sorted.length / 2)];
-  };
   // `maxRSS` is in kilobytes.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
   global.gc();
@@ -315,12 +364,9 @@ const parent = () => {
   );
   const of = (scenario, key) =>
     results.filter((result) => result.scenario === scenario).map((r) => r[key]);
-  const median = (list) => {
-    const sorted = [...list].sort((a, b) => a - b);
-    return sorted[Math.floor(sorted.length / 2)];
-  };
+  const json = args.includes('--json');
 
-  if (args.includes('--json')) {
+  if (json) {
     process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
   } else {
     const range = (scenario, key, digits) => {
@@ -362,33 +408,39 @@ const parent = () => {
   }
 
   if (check) {
-    const failures = scenarios.flatMap((scenario) =>
-      Object.entries(BOUNDS[scenario] ?? {}).flatMap(([key, bound]) => {
-        const value = median(of(scenario, key));
-        const line = `${scenario} ${key}: median ${value.toFixed(0)} MB, bound ${bound} MB`;
-        process.stdout.write(`${value > bound ? '✗' : '✓'} ${line}\n`);
-        return value > bound ? [line] : [];
-      })
-    );
+    const checks = checkBounds(results, scenarios);
+    // With `--json`, stdout stays one JSON document.
+    const report = json ? process.stderr : process.stdout;
+    for (const { ok, line } of checks) {
+      report.write(`${ok ? '✓' : '✗'} ${line}\n`);
+    }
+    const failures = checks.filter(({ ok }) => !ok);
     if (failures.length > 0) {
-      process.stderr.write(`Over the memory budget:\n${failures.join('\n')}\n`);
+      process.stderr.write(
+        `Over the memory budget:\n${failures.map(({ line }) => line).join('\n')}\n`
+      );
       process.exitCode = 1;
     }
   }
 };
 
-if (process.argv[2] === '--child') {
-  const [scenario, repeat, cacheMaxBytes, budgetValues] = process.argv.slice(3);
-  const number = (arg) => (arg ? Number(arg) : undefined);
-  child(
-    scenario,
-    Number(repeat),
-    number(cacheMaxBytes),
-    number(budgetValues)
-  ).catch((error) => {
-    process.stderr.write(`${error.stack}\n`);
-    process.exit(1);
-  });
-} else {
-  parent();
+module.exports = { BOUNDS, checkBounds, limit };
+
+if (require.main === module) {
+  if (process.argv[2] === '--child') {
+    const [scenario, repeat, cacheMaxBytes, budgetValues] =
+      process.argv.slice(3);
+    const number = (arg) => (arg ? Number(arg) : undefined);
+    child(
+      scenario,
+      Number(repeat),
+      number(cacheMaxBytes),
+      number(budgetValues)
+    ).catch((error) => {
+      process.stderr.write(`${error.stack}\n`);
+      process.exit(1);
+    });
+  } else {
+    parent();
+  }
 }

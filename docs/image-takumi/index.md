@@ -102,36 +102,47 @@ A `FontLoader` string is a URL takumi fetches on demand, not a filesystem path �
 
 A host that draws PNGs in its own process, such as Kibana on a 1 GB serverless instance, pays once to load this package and the fonts, then for each render in flight. What the charts pack costs to draw is measured in the [Elastic Charts engine's benchmark](../charts-elastic/index.md#measuring-it): about 130 MB of RSS loaded with headless Elastic Charts, and about 16 MB more for a typical one-off chart PNG at 2×. These are the defaults that keep it there:
 
-- **Load on first use.** Import this package, and the chart engine with it, the first time a host draws an image, not when it starts, so a process that never draws one never pays. `@takumi-rs/core` is a native binary loaded on import.
+- **Load on first use.** Load this package, and the chart engine with it, the first time a host draws an image, not when it starts, so a process that never draws one never pays. `@takumi-rs/core` is a native binary loaded on import. Node loads the CommonJS build with `require`; the ESM build is for bundlers, so a native `import()` of it fails in an unbundled Node host. An ES module host makes its `require` with `createRequire`:
 
   ```ts
-  let backend: Promise<TakumiBackend> | undefined;
+  import { createRequire } from 'node:module';
+  import type { TakumiBackend } from '@elastic/isomer-image-takumi';
+
+  const require = createRequire(import.meta.url);
+  let backend: TakumiBackend | undefined;
   const takumi = () =>
-    (backend ??= import('@elastic/isomer-image-takumi').then(
-      ({ createTakumiImageBackend }) => createTakumiImageBackend({ fonts })
-    ));
+    (backend ??= (
+      require('@elastic/isomer-image-takumi') as typeof import('@elastic/isomer-image-takumi')
+    ).createTakumiImageBackend({ fonts }));
   ```
 
 - **One backend per process.** Fonts register once per backend, before its first render. Inter Latin at the four weights a pack draws with is four `@fontsource/inter` woff2 files of about 24 KB each, and costs about 1 MB of RSS registered. Register only the scripts the host's locales need: one weight of a CJK face is 10 to 20 MB.
-- **At most two renders in flight.** takumi rasterizes on the libuv thread pool, so its own parallelism is bounded, but every render queued behind it holds its markup, and the composition and Scene that made it, until its PNG is done. Queue the rest, and refuse past a queue length, so a burst waits rather than growing the heap. Measured on Linux, 16 charts requested at once through a limiter of two peaked at 248–266 MB.
+- **At most two renders in flight.** takumi rasterizes on the libuv thread pool, so its own parallelism is bounded, but every render queued behind it holds its markup, and the composition and Scene that made it, until its PNG is done. Queue the rest, and refuse past a queue length, so a burst waits rather than growing the heap. Measured on Linux, 16 charts requested at once through the limiter below peaked at 257–270 MB.
 
   ```ts
   const limit = (inFlight: number, queued: number) => {
     let running = 0;
     const waiting: (() => void)[] = [];
     return async <T>(render: () => Promise<T>): Promise<T> => {
-      if (running >= inFlight) {
+      if (running < inFlight) {
+        running += 1;
+      } else {
         if (waiting.length >= queued) {
           throw new Error('busy');
         }
         await new Promise<void>((resolve) => waiting.push(resolve));
       }
-      running += 1;
       try {
         return await render();
       } finally {
-        running -= 1;
-        waiting.shift()?.();
+        // Hand the slot straight to the next waiting render, so a call that
+        // lands before it resumes cannot take the slot too.
+        const next = waiting.shift();
+        if (next) {
+          next();
+        } else {
+          running -= 1;
+        }
       }
     };
   };

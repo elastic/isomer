@@ -25,6 +25,7 @@ export default defineConfig({
           environment: 'node',
           include: [
             'packages/*/src/**/*.test.ts',
+            'packages/*/scripts/**/*.test.mjs',
             'packages/isomer-primitives-slides/studio/**/*.test.ts',
             'scripts/**/*.test.js',
           ],
