@@ -11,7 +11,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { chartsPack, createChartsPack } from '../pack';
+import { chartsPack, chartsStylesheet, createChartsPack } from '../pack';
 import { resolveChart } from '../scene/resolve';
 import type { ColorScheme, TableScene } from '../scene/types';
 import type { DataTableNode } from '../schema/data_table';
@@ -159,9 +159,29 @@ describe('TableView', () => {
       );
     }
     expect(html).toContain(
-      `<a href="${escaped(link!.href)}" style="color:inherit">${escaped(link!.label)}</a>`
+      `<a href="${escaped(link!.href)}" class="chartsTable-link">${escaped(link!.label)}</a>`
     );
+    expect(chartsStylesheet()).toContain('.chartsTable-link{color:inherit}');
   });
+
+  it.each(Object.entries(CHARTS_THEME.table.density))(
+    'lays out %s rows with its density class',
+    (density, { rowHeight, padding, font }) => {
+      const scene = {
+        ...tableOf(example(CHOSEN)),
+        density: density as TableScene['density'],
+      };
+      const html = markup(scene);
+      expect(html).toContain(`chartsTable-font-${density}`);
+      expect(html).toContain(`chartsTable-row-${density}`);
+      expect(chartsStylesheet()).toContain(
+        `.chartsTable-row-${density}{height:${rowHeight}px;padding:0 ${padding}px}`
+      );
+      expect(chartsStylesheet()).toContain(
+        `.chartsTable-font-${density}{font-size:${font}px}`
+      );
+    }
+  );
 
   it('drops a link the navigation policy refuses', () => {
     const scene = tableOf(example(CHOSEN));
@@ -239,6 +259,16 @@ describe('dataTable in the charts pack', () => {
 
   it('draws a table with no engine registered', () => {
     expect(react()).toContain('<table');
+  });
+
+  it("styles the table through the pack's adapter, emitting the rules it draws", () => {
+    const { body, css } = createIsomerRuntime({
+      packs: [chartsPack],
+    }).surfaces.html.render(view(example('Top hosts')));
+    expect(body).toContain('class="chartsTable-table"');
+    expect(css).toContain('.chartsTable-table{');
+    expect(css).toContain('table-layout:fixed');
+    expect(css).not.toContain('chartsTable-pager');
   });
 
   it('gives snapshot the height the table draws at', () => {

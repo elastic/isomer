@@ -12,21 +12,25 @@
 // Scene's; every length is `CHARTS_THEME`'s.
 
 import type { CSSProperties, ReactNode } from 'react';
+import type { StyleHandle } from '@elastic/distillate';
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
-import type { TableCell, TableScene } from '../scene/types';
+import type {
+  SceneRenderEnv,
+  TableAlignment,
+  TableCell,
+  TableScene,
+} from '../scene/types';
 import { sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';
+import { cls } from './styles';
+import { tableModule } from './table_styles';
 import { CHARTS_THEME } from './theme';
 
 const theme = CHARTS_THEME.table;
 
-const ellipsis: CSSProperties = {
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-};
+const { handles: table } = tableModule;
 
 const linkOf = ({ interactions: { link } }: TableScene) => {
   const href = link && sanitizeNavigationHref(link.href);
@@ -68,57 +72,37 @@ const shownRows = (scene: TableScene): readonly number[] => {
   return firstPage(scene).slice(0, fits);
 };
 
-const line = (height: number, fontSize: number): CSSProperties => ({
-  ...ellipsis,
-  height,
-  lineHeight: `${height}px`,
-  fontSize,
-});
+type Classes = Pick<SceneRenderEnv, 'resolveClassName'> | undefined;
 
 const Bar = ({
   bar,
-  rowHeight,
+  density,
+  styles,
 }: {
   bar: NonNullable<TableCell['bar']>;
-  rowHeight: number;
-}) => {
-  const thickness = rowHeight * theme.barThickness;
-  const shape = { height: thickness, borderRadius: thickness / 2 };
-  return (
+  density: TableScene['density'];
+  styles: Classes;
+}) => (
+  <span
+    data-part="bar"
+    className={cls(styles, table.bar, table.barShape[density])}
+    style={{ background: bar.track }}>
     <span
-      data-part="bar"
+      className={cls(styles, table.barFill, table.barShape[density])}
       style={{
-        ...shape,
-        position: 'relative',
-        flex: 1,
-        background: bar.track,
-      }}>
-      <span
-        style={{
-          ...shape,
-          position: 'absolute',
-          top: 0,
-          left: `${bar.from * 100}%`,
-          width: `${(bar.to - bar.from) * 100}%`,
-          background: bar.color,
-        }}
-      />
-    </span>
-  );
-};
+        left: `${bar.from * 100}%`,
+        width: `${(bar.to - bar.from) * 100}%`,
+        background: bar.color,
+      }}
+    />
+  </span>
+);
 
-const CellText = ({ cell }: { cell: TableCell }) =>
+const CellText = ({ cell, styles }: { cell: TableCell; styles: Classes }) =>
   cell.badge ? (
     <span
-      style={{
-        ...ellipsis,
-        display: 'inline-block',
-        maxWidth: '100%',
-        padding: `0 ${theme.badgePadding}px`,
-        borderRadius: theme.badgeRadius,
-        background: cell.badge,
-        verticalAlign: 'middle',
-      }}>
+      className={cls(styles, table.badge)}
+      style={{ background: cell.badge }}>
       {cell.text}
     </span>
   ) : (
@@ -131,45 +115,57 @@ const BarCell = ({
   cell,
   trailing,
   gutter,
-  rowHeight,
+  density,
+  styles,
 }: {
   cell: TableCell;
   trailing: boolean;
   gutter: number;
-  rowHeight: number;
+  density: TableScene['density'];
+  styles: Classes;
 }) => {
   const value = (
     <span
-      style={{
-        ...ellipsis,
-        flex: `0 0 ${gutter}ch`,
-        textAlign: trailing ? 'left' : 'right',
-      }}>
-      <CellText cell={cell} />
+      className={cls(
+        styles,
+        table.barValue,
+        table.align[trailing ? 'left' : 'right']
+      )}
+      style={{ flex: `0 0 ${gutter}ch` }}>
+      <CellText {...{ cell, styles }} />
     </span>
   );
-  const bar = cell.bar && <Bar bar={cell.bar} rowHeight={rowHeight} />;
+  const bar = cell.bar && <Bar bar={cell.bar} {...{ density, styles }} />;
   return (
-    <span style={{ display: 'flex', alignItems: 'center', gap: theme.barGap }}>
+    <span className={cls(styles, table.barCell)}>
       {trailing ? bar : value}
       {trailing ? value : bar}
     </span>
   );
 };
 
-/** Draws a table Scene as an HTML table, in the browser and on `snapshot`. */
-export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
-  const { rowHeight, font, padding } = theme.density[scene.density];
-  const { chrome } = scene;
+/**
+ * Draws a table Scene as an HTML table, in the browser and on `snapshot`.
+ * `styles` resolves its classes; absent, they are their readable names.
+ */
+export const TableView = ({
+  scene,
+  styles,
+}: {
+  scene: TableScene;
+  styles?: Classes;
+}): ReactNode => {
+  const { density, chrome } = scene;
   const rule = `${theme.lineWidth}px solid ${chrome.gridLine}`;
   const shown = shownRows(scene);
-  const cellStyle = (alignment: CSSProperties['textAlign']): CSSProperties => ({
-    ...ellipsis,
-    height: rowHeight,
-    padding: `0 ${padding}px`,
-    textAlign: alignment,
-    boxSizing: 'border-box',
-  });
+  const cell = (alignment: TableAlignment, ...more: StyleHandle[]) =>
+    cls(
+      styles,
+      table.cell,
+      table.row[density],
+      table.align[alignment],
+      ...more
+    );
   const gutters = scene.columns.map((_, index) =>
     shown.reduce(
       (widest, position) =>
@@ -178,16 +174,14 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
     )
   );
   const link = linkOf(scene);
-  const bodyLine = line(theme.lineHeight, CHARTS_THEME.type.body);
   const shaded: CSSProperties = { background: scene.headerBackground };
 
   return (
     <div
+      className={cls(styles, table.root, table.font[density])}
       style={{
         width: scene.size?.width ?? '100%',
         height: tableHeight(scene),
-        overflow: 'hidden',
-        fontSize: font,
         color: chrome.text,
         background: chrome.background,
       }}>
@@ -195,28 +189,22 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
         <div
           data-part="title"
           title={scene.title}
-          style={{
-            ...line(theme.titleHeight, CHARTS_THEME.type.title),
-            fontWeight: theme.headerWeight,
-          }}>
+          className={cls(styles, table.title)}>
           {scene.title}
         </div>
       )}
       {scene.description && (
-        <div data-part="description" title={scene.description} style={bodyLine}>
+        <div
+          data-part="description"
+          title={scene.description}
+          className={cls(styles, table.line)}>
           {scene.description}
         </div>
       )}
-      <table
-        aria-label={scene.summary}
-        style={{
-          width: '100%',
-          tableLayout: 'fixed',
-          borderCollapse: 'collapse',
-        }}>
+      <table aria-label={scene.summary} className={cls(styles, table.table)}>
         <colgroup>
           {scene.columns.map(({ id, width }) => (
-            <col key={id} style={width === undefined ? {} : { width }} />
+            <col key={id} {...(width !== undefined && { style: { width } })} />
           ))}
         </colgroup>
         <thead data-part="header">
@@ -227,10 +215,7 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
                 data-column={column.id}
                 scope="col"
                 title={column.label}
-                style={{
-                  ...cellStyle(column.alignment),
-                  fontWeight: theme.headerWeight,
-                }}>
+                className={cell(column.alignment, table.heading)}>
                 {column.label}
               </th>
             ))}
@@ -241,7 +226,8 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
             <tr style={{ borderBottom: rule }}>
               <td
                 colSpan={scene.columns.length}
-                style={{ ...cellStyle('center'), color: chrome.textSubdued }}>
+                className={cell('center')}
+                style={{ color: chrome.textSubdued }}>
                 {scene.emptyText}
               </td>
             </tr>
@@ -261,7 +247,7 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
                       background: scene.emphasisBackground,
                     }),
                   }}>
-                  {row.cells.map((cell, index) => {
+                  {row.cells.map((tableCell, index) => {
                     const column = scene.columns[index]!;
                     const header = column.id === scene.rowHeader;
                     const CellTag = header ? 'th' : 'td';
@@ -269,27 +255,30 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
                       <CellTag
                         key={column.id}
                         {...(header && { scope: 'row' })}
-                        data-row={cell.source.rows.join(' ')}
+                        data-row={tableCell.source.rows.join(' ')}
                         data-column={column.id}
-                        data-empty={cell.empty}
-                        title={cell.title ?? cell.text}
+                        data-empty={tableCell.empty}
+                        title={tableCell.title ?? tableCell.text}
+                        className={
+                          header
+                            ? cell(column.alignment, table.rowHeading)
+                            : cell(column.alignment)
+                        }
                         style={{
-                          ...cellStyle(column.alignment),
-                          ...(header && { fontWeight: 'normal' }),
-                          color: cell.color,
-                          ...(cell.background && {
-                            background: cell.background,
+                          color: tableCell.color,
+                          ...(tableCell.background && {
+                            background: tableCell.background,
                           }),
                         }}>
-                        {cell.bar ? (
+                        {tableCell.bar ? (
                           <BarCell
-                            cell={cell}
+                            cell={tableCell}
                             trailing={column.alignment === 'right'}
                             gutter={gutters[index]!}
-                            rowHeight={rowHeight}
+                            {...{ density, styles }}
                           />
                         ) : (
-                          <CellText cell={cell} />
+                          <CellText cell={tableCell} styles={styles} />
                         )}
                       </CellTag>
                     );
@@ -303,7 +292,7 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
           <tfoot data-part="footer">
             <tr style={shaded}>
               {scene.columns.map((column) => (
-                <td key={column.id} style={cellStyle(column.alignment)}>
+                <td key={column.id} className={cell(column.alignment)}>
                   {column.footer}
                 </td>
               ))}
@@ -314,38 +303,35 @@ export const TableView = ({ scene }: { scene: TableScene }): ReactNode => {
       {scene.paging && (
         <div
           data-part="pager"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            height: rowHeight,
-            padding: `0 ${padding}px`,
-            boxSizing: 'border-box',
-          }}>
+          className={cls(styles, table.pager, table.row[density])}>
           <span>{scene.paging.rowsPerPage}</span>
-          <span style={{ display: 'flex', gap: theme.pageGap }}>
-            {scene.paging.pageLabels.map((label, page) => (
-              <span
-                key={label}
-                style={
-                  page === 0
-                    ? { fontWeight: theme.headerWeight }
-                    : { color: chrome.textSubdued }
-                }>
-                {label}
-              </span>
-            ))}
+          <span className={cls(styles, table.pages)}>
+            {scene.paging.pageLabels.map((label, page) =>
+              page === 0 ? (
+                <span key={label} className={cls(styles, table.page)}>
+                  {label}
+                </span>
+              ) : (
+                <span key={label} style={{ color: chrome.textSubdued }}>
+                  {label}
+                </span>
+              )
+            )}
           </span>
         </div>
       )}
       {sceneNotes(scene).map((note, index) => (
-        <div key={index} data-part="note" title={note} style={bodyLine}>
+        <div
+          key={index}
+          data-part="note"
+          title={note}
+          className={cls(styles, table.line)}>
           <em>{note}</em>
         </div>
       ))}
       {link && (
-        <div data-part="link" style={bodyLine}>
-          <a href={link.href} style={{ color: 'inherit' }}>
+        <div data-part="link" className={cls(styles, table.line)}>
+          <a href={link.href} className={cls(styles, table.link)}>
             {link.label}
           </a>
         </div>
@@ -362,6 +348,6 @@ export const tableSceneRenderer: ReactSceneRenderer = {
   id: 'charts-table',
   environments: ['browser', 'node'],
   supports: (kind) => kind === 'table',
-  render: (scene) =>
-    scene.kind === 'table' ? <TableView scene={scene} /> : null,
+  render: (scene, env) =>
+    scene.kind === 'table' ? <TableView scene={scene} styles={env} /> : null,
 };

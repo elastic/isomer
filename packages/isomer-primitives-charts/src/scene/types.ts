@@ -548,6 +548,10 @@ export interface SceneRenderEnv {
   readonly nodeId?: string;
   /** Receives every raised event. Absent means the chart offers no interaction. */
   readonly onEvent?: (event: ChartEvent) => void;
+  /** Resolves the pack's own style handles to class names, for a renderer that draws with the pack's styles. */
+  readonly resolveClassName?: (
+    ...handles: { readonly key: string; readonly readableName: string }[]
+  ) => string;
 }
 
 /**
