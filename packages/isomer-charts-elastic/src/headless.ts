@@ -26,6 +26,7 @@ import type {
   SceneRenderer,
 } from '@elastic/isomer-primitives-charts/scene';
 
+import { ariaDescriptionOf } from './accessibility';
 import { sceneSpecs } from './specs';
 
 /** How {@link renderSceneSvg} draws text. */
@@ -48,14 +49,16 @@ export interface HeadlessSvg {
 const escapeXml = (text: string): string =>
   text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 
-/** Names the SVG by the Scene's `title` and describes it by its `summary`, as `Settings` does. */
-const withAccessibleText = (svg: string, { title, summary }: Scene): string =>
+/** Names the SVG by the Scene's `title` and describes it as `Settings` does in a browser. */
+const withAccessibleText = (svg: string, scene: Scene): string =>
   svg.replace(
     /^<svg\b[^>]*>/,
     (open) =>
       `${open.slice(0, -1)} role="img">${
-        title === undefined ? '' : `<title>${escapeXml(title)}</title>`
-      }<desc>${escapeXml(summary)}</desc>`
+        scene.title === undefined
+          ? ''
+          : `<title>${escapeXml(scene.title)}</title>`
+      }<desc>${escapeXml(ariaDescriptionOf(scene))}</desc>`
   );
 
 /** Draws a `metric` or `xy` Scene as SVG at the Scene's `size`. */

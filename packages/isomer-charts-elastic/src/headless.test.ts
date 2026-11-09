@@ -7,6 +7,7 @@
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { SvgFont } from '@elastic/charts/dist/headless';
 import {
   chartSize,
   chartSizeSpec,
@@ -27,6 +28,8 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
+import { ariaDescriptionOf } from './accessibility';
+import { seriesOf } from './events';
 import {
   createElasticChartsHeadlessRenderer,
   renderSceneSvg,
@@ -77,6 +80,27 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
   (axis.scale === 'ordinal'
     ? scene.categories.find(({ x }) => x === value)?.label
     : undefined) ?? formatAxisValue(scene, axis, value as number);
+
+/** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
+const rgbOf = (color: string): string => {
+  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
+  return hex
+    ? hex
+        .slice(1, 4)
+        .map((pair) => parseInt(pair, 16))
+        .join(',')
+    : (/^rgba?\(([^)]*)\)/.exec(color)?.[1] ?? color)
+        .split(',')
+        .slice(0, 3)
+        .map((channel) => Number(channel.trim()))
+        .join(',');
+};
+
+/** The SVG's opening tag, `<title>` and `<desc>`. */
+const namedBy = (svg: string) =>
+  /^(<svg\b[^>]*>)(?:<title>([^<]*)<\/title>)?<desc>([^<]*)<\/desc>/.exec(
+    svg
+  ) ?? [];
 
 describe('renderSceneSvg', () => {
   it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
@@ -134,16 +158,39 @@ describe('renderSceneSvg', () => {
   it.each<{ name: string; scheme: ColorScheme; scene: Scene }>([
     ...xyCases,
     ...metricCases,
-  ])('$name ($scheme) names the SVG by its title and summary', ({ scene }) => {
-    const { svg } = renderSceneSvg(scene);
-    const [, open, title, desc] =
-      /^(<svg\b[^>]*>)(?:<title>([^<]*)<\/title>)?<desc>([^<]*)<\/desc>/.exec(
-        svg
-      ) ?? [];
-    expect(open).toContain(' role="img"');
-    expect(title && unescapeXml(title)).toBe(scene.title);
-    expect(desc && unescapeXml(desc)).toBe(scene.summary);
+  ])(
+    '$name ($scheme) names the SVG by its title and description',
+    ({ scene }) => {
+      const { svg } = renderSceneSvg(scene);
+      const [, open, title, desc] = namedBy(svg);
+      expect(open).toContain(' role="img"');
+      expect(title && unescapeXml(title)).toBe(scene.title);
+      expect(desc && unescapeXml(desc)).toBe(ariaDescriptionOf(scene));
+    }
+  );
+
+  it('describes the SVG by its summary, then its authored description', () => {
+    const { scene } = xyCases[0]!;
+    const description = 'Requests per minute, from the edge proxies.';
+    const [, , , desc] = namedBy(renderSceneSvg({ ...scene, description }).svg);
+    expect(unescapeXml(desc!)).toBe(`${scene.summary} ${description}`);
   });
+
+  it.each(xyCases)(
+    '$name ($scheme) draws every series’ marks in its color',
+    ({ scene }) => {
+      const painted = new Set(
+        [
+          ...renderSceneSvg(scene).svg.matchAll(
+            /<path\b[^>]*\b(?:fill|stroke)="([^"]+)"/g
+          ),
+        ].map(([, color]) => rgbOf(color!))
+      );
+      for (const { color } of seriesOf(scene)) {
+        expect(painted).toContain(rgbOf(color));
+      }
+    }
+  );
 
   it.each(metricCases)(
     '$name ($scheme) draws each tile title and value',
@@ -194,6 +241,44 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
+  });
+
+  const markup = (node: unknown) =>
+    renderToStaticMarkup(createElement('div', null, node as never));
+
+  it('measures text with a given measure', () => {
+    const { scene } = xyCases[0]!;
+    const measured: string[] = [];
+    const measuring = createElasticChartsHeadlessRenderer({
+      measureTextWidth: (text) => {
+        measured.push(text);
+        return text.length * 7;
+      },
+    });
+    const svg = markup(measuring.render(scene, { environment: 'node' }));
+    expect(measured.length).toBeGreaterThan(0);
+    expect(measured).toEqual(expect.arrayContaining(svgTexts(svg)));
+  });
+
+  it('draws text as a given font’s outlines, with no SVG text', () => {
+    const { scene } = xyCases[0]!;
+    const outlined: string[] = [];
+    const font: SvgFont = {
+      family: 'Outline',
+      measure: (text) => text.length * 7,
+      toPath: (text, _font, x, y) => {
+        outlined.push(text);
+        return `M${x} ${y}h1`;
+      },
+    };
+    const svg = markup(
+      createElasticChartsHeadlessRenderer({ font }).render(scene, {
+        environment: 'node',
+      })
+    );
+    expect(outlined.length).toBeGreaterThan(0);
+    expect(svgTexts(svg)).toEqual([]);
+    expect(svg).toMatch(/<path\b[^>]* d="M[^"]*h1"/);
   });
 
   it.each([
