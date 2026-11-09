@@ -25,9 +25,12 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
    */
   version?: 1;
   /**
-   * The packs, and their versions, the composition was written for: one
-   * positive integer per pack id. Only a runtime's `stamp` writes it; an author
-   * never does, and the authoring schema omits it.
+   * The vocabulary version each pack's nodes were written in: one positive
+   * integer per pack id. The only source of a stored document's version;
+   * nothing is inferred from its shape. A runtime writes it; an author never
+   * does, so the authoring schema omits it, the JSX root drops it, and the
+   * printer never prints it. Entries for packs a runtime does not hold pass
+   * through untouched.
    */
   packs?: PackVersions;
   title?: string;

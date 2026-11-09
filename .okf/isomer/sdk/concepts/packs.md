@@ -31,6 +31,8 @@ The SDK ships no adapter for any CSS engine and does not depend on `@elastic/dis
 
 A pack exposes `icons`, each primitive's `icon` by type for the primitives that declare one, and `composePacks` merges them across packs. Both are frozen null-prototype dictionaries, so a type named `__proto__` is an ordinary key and an absent type such as `constructor` reads `undefined`.[^pack]
 
+A pack carries a vocabulary `version`, the `migrations` that carry a stored document forward from each earlier version, and the pack `contract` it was built for. It owns every type its migrations name as well as the ones it registers, and `composePacks` refuses overlapping owners. See the package doc on the pack contract.[^docs]
+
 Composing packs into a runtime is the runtime's job. See [runtime packs](/runtime/concepts/packs.md).
 
 Related: [primitives](/sdk/concepts/primitives.md), [define a pack](/sdk/playbooks/define-a-pack.md).

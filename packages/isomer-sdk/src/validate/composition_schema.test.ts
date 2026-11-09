@@ -139,3 +139,37 @@ describe('composition version', () => {
     ).toBe(false);
   });
 });
+
+describe('the pack stamp', () => {
+  const schema = buildCompositionSchemaFromDefinitions([leaf('metric')]);
+  const stamped = (packs: unknown) =>
+    schema.safeParse({ type: 'view', packs, body: [{ type: 'metric' }] })
+      .success;
+
+  it('accepts one positive integer per pack, including packs not held', () => {
+    expect(stamped({ slides: 2, obs: 1 })).toBe(true);
+    expect(stamped({})).toBe(true);
+  });
+
+  it.each([
+    ['zero', { obs: 0 }],
+    ['negative', { obs: -1 }],
+    ['fractional', { obs: 1.5 }],
+    ['string', { obs: '2' }],
+    ['empty id', { '': 1 }],
+    ['array', [1]],
+  ])('rejects a %s entry', (_, packs) => {
+    expect(stamped(packs)).toBe(false);
+  });
+
+  it('keeps the envelope strict', () => {
+    expect(
+      schema.safeParse({
+        type: 'view',
+        packs: { obs: 1 },
+        stamp: { obs: 1 },
+        body: [{ type: 'metric' }],
+      }).success
+    ).toBe(false);
+  });
+});

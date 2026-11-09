@@ -173,6 +173,18 @@ const metricPrimitive = define({
 });
 
 describe('buildAuthoringJsonSchema', () => {
+  it('never shows an author the pack stamp, which the validator accepts', () => {
+    const properties = (schema: object) =>
+      Object.keys((schema as { properties: object }).properties);
+
+    expect(properties(buildCompositionJsonSchema([metricPrimitive]))).toContain(
+      'packs'
+    );
+    expect(
+      properties(buildAuthoringJsonSchema([metricPrimitive]))
+    ).not.toContain('packs');
+  });
+
   it('names shared SDK value schemas and keeps bodyNode', () => {
     const projected = buildAuthoringJsonSchema([metricPrimitive]);
     const defs = collectDefs(projected);

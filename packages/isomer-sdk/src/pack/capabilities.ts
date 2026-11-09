@@ -13,8 +13,8 @@
 import type { PackVersions } from '../composition/composition';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
+import { packVersionsOf } from './migrations';
 import type { AnyPrimitivePack } from './primitive_pack';
-import { packVersionsOf } from './versions';
 
 /** `native` renders through the primitive's own renderer, `fallback` through another surface's (Slack via markdown). */
 export type SurfaceSupport = 'native' | 'fallback';

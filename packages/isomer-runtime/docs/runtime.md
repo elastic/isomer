@@ -63,10 +63,7 @@ runtime.surfaces.react.render(composition, { context: { resolveClassName } });
 | `validate(composition)` | The input budget, the schema, then the semantic passes, all on one plain copy; returns errors, warnings, and that copy |
 | `parse(value)` | Schema only, for untrusted input; returns a composition or errors |
 | `getAuthoringContext()` | Authoring schema, catalog, and live view summaries for an agent |
-| `getCapabilities()` | The primitive types, surfaces, formats, per-primitive surface support, enhancements, and pack versions this host supports |
-| `packVersions` | Each pack's [version](../../isomer-sdk/docs/packs.md#version) by id |
-| `stamp(composition)` | Records `packVersions` in the composition's `packs`, keeping entries for packs this runtime does not hold. Stamp a composition when it is written |
-| `checkPackVersions(composition)` | How the composition's stamp differs from this runtime's packs: a pack stamped `newer` or `older` than held, a stamped pack that is `unknown` here, or a held pack whose types appear `unstamped`. A host drawing compositions written elsewhere refuses any mismatch |
+| `getCapabilities()` | The primitive types, surfaces, formats, per-primitive surface support, enhancements, and each pack's [version](../../isomer-sdk/docs/packs.md#version-and-migrations) this host supports |
 | `getCompositionSchema()` | The same schema `validate` / `parse` use internally |
 
 ## What it refuses, and when
@@ -80,6 +77,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | `defaultFrame` is given only with `frames` | `UNKNOWN_FRAME` | `defaultFrame "…" was given but no frames were supplied` |
 | No two packs share an `id` | `DUPLICATE_PACK_ID` | `"components" names more than one pack; pack ids must be unique` |
 | No node type owned by two packs | `DUPLICATE_PRIMITIVE_TYPE` | `primitive type "table" registered by "components" and "charts"` |
+| No pack built for another pack contract | `INCOMPATIBLE_PACK_CONTRACT` | `primitive pack "charts" was built for pack contract 2; this SDK runs contract 1` |
 | No enhancement id owned by two packs | `DUPLICATE_ENHANCEMENT` | `enhancement "tableSort" registered by "components" and "charts"` |
 | An override names a registered type | `UNKNOWN_PRIMITIVE_TYPE` | `renderer override targets unregistered primitive type "…"` |
 | An override names a real surface key | `UNKNOWN_SURFACE` | `renderer override for "table" targets unknown surface "…"` |

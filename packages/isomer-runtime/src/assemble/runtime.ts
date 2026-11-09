@@ -11,7 +11,6 @@ import {
   bindFrame,
   type BoundFrame,
   type CheckedValidationResult,
-  comparePackVersions,
   composePacks,
   type Composition,
   createCompositionParser,
@@ -23,15 +22,11 @@ import {
   getCompositionSchemaForDefinitions,
   type InputBudget,
   IsomerError,
-  type PackVersionMismatch,
-  type PackVersions,
-  packVersionsOf,
   type ParsedComposition,
   type PrimitiveNode,
   type PrimitivePack,
   type PrimitiveRenderContext,
   type PrimitiveStyleCollector,
-  stampPackVersions,
 } from '@elastic/isomer-sdk';
 import type { ZodObject } from 'zod';
 
@@ -186,26 +181,8 @@ export interface IsomerRuntime<
   readonly surfaces: RuntimeSurfaces<TRenderContext, TSnapshot>;
   /** Builds fresh authoring material (schema, declarations, catalog, views) for this runtime. */
   getAuthoringContext(): RuntimeAuthoringContext;
-  /** Reports the primitive types, surfaces, formats and pack versions this runtime supports. */
+  /** Reports the primitive types, surfaces, and formats this runtime supports. */
   getCapabilities(): HostCapabilities;
-  /** Each pack's version by id: what {@link IsomerRuntime.stamp} records. */
-  readonly packVersions: PackVersions;
-  /**
-   * Records this runtime's pack versions on a composition, keeping stamp
-   * entries for packs it does not hold. Stamp a composition when it is
-   * written, so whoever draws it later can tell which vocabulary it was
-   * written for.
-   */
-  stamp<TComposition extends Composition>(
-    composition: TComposition
-  ): TComposition;
-  /**
-   * How a composition's pack stamp differs from this runtime's packs: a pack
-   * stamped newer or older than held, a stamped pack not held, or a held pack
-   * whose node types appear without a stamp. Empty means it matches. A host
-   * drawing compositions written elsewhere refuses one with any mismatch.
-   */
-  checkPackVersions(composition: Composition): PackVersionMismatch[];
   /**
    * Validates a composition against this runtime's primitives: the input
    * budget, the schema, then the semantic passes. `composition` on the result
@@ -338,7 +315,6 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
             styleAdapter
           ),
   };
-  const packVersions = packVersionsOf(packs);
   const sources = {
     surfaces: Object.entries(surfaces)
       .filter(([, surface]) => surface !== undefined)
@@ -354,9 +330,6 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     surfaces,
     getAuthoringContext,
     getCapabilities: () => describeCapabilities(packs, sources),
-    packVersions,
-    stamp: (composition) => stampPackVersions(composition, packVersions),
-    checkPackVersions: (composition) => comparePackVersions(composition, packs),
     validate,
     parse,
     getCompositionSchema: () => getCompositionSchemaForDefinitions(definitions),
