@@ -649,6 +649,16 @@ describe('elastic-charts renderer: resolved partitionChart examples', () => {
         const container = await draw(scene);
         expect(container.textContent).toBe(scene.empty.text);
         expect(container.querySelector('.echChart')).toBeNull();
+        const image = container.querySelector('[role="img"]')!;
+        expect(image.getAttribute('aria-label')).toBe(
+          scene.title ?? scene.empty.text
+        );
+        if (scene.title !== undefined) {
+          const described = image.getAttribute('aria-describedby');
+          expect(
+            described && container.ownerDocument.getElementById(described)
+          ).toHaveProperty('textContent', scene.empty.text);
+        }
         return;
       }
       const container = await draw(scene);

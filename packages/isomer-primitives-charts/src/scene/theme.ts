@@ -200,6 +200,12 @@ const xyzToLab = (t: number) =>
 const labToXyz = (t: number) =>
   t > LAB.t1 ? t * t * t : LAB.t2 * (t - LAB.t0);
 
+/** A color's alpha, 0 to 255: 255 for `#rrggbb`. */
+const alphaOf = (hex: string): number => {
+  const full = resolveColor({ light: hex, dark: hex }, 'light');
+  return full.length === 9 ? parseInt(full.slice(7, 9), 16) : 255;
+};
+
 // `[lightness, chroma, hue]`; hue is NaN for a gray, which has none.
 const toLch = (hex: string): [number, number, number] => {
   const full = resolveColor({ light: hex, dark: hex }, 'light');
@@ -216,7 +222,10 @@ const toLch = (hex: string): [number, number, number] => {
   return [Math.max(0, 116 * y - 16), c, Math.round(c * 10000) === 0 ? NaN : h];
 };
 
-const fromLch = ([l, c, h]: [number, number, number]): SceneColor => {
+const fromLch = (
+  [l, c, h]: [number, number, number],
+  alpha = 255
+): SceneColor => {
   const hue = ((Number.isNaN(h) ? 0 : h) * Math.PI) / 180;
   const y0 = (l + 16) / 116;
   const x = LAB.Xn * labToXyz(y0 + (Math.cos(hue) * c) / 500);
@@ -227,11 +236,9 @@ const fromLch = ([l, c, h]: [number, number, number]): SceneColor => {
     -0.969266 * x + 1.8760108 * y + 0.041556 * z,
     0.0556434 * x - 0.2040259 * y + 1.0572252 * z,
   ]
-    .map((linear) =>
-      Math.min(255, Math.max(0, Math.round(fromLinear(linear))))
-        .toString(16)
-        .padStart(2, '0')
-    )
+    .map((linear) => Math.min(255, Math.max(0, Math.round(fromLinear(linear)))))
+    .concat(alpha === 255 ? [] : [alpha])
+    .map((channel) => channel.toString(16).padStart(2, '0'))
     .join('')
     .toUpperCase()}`;
 };
@@ -239,7 +246,8 @@ const fromLch = ([l, c, h]: [number, number, number]): SceneColor => {
 /**
  * `color` mixed toward `toward` by `amount` (0 to 1) in LCH, as chroma-js's
  * `mix(color, toward, amount, 'lch')`: the shorter way round the hue circle,
- * and a gray takes the other color's hue. Both are opaque.
+ * and a gray takes the other color's hue. Alpha mixes linearly, and an
+ * opaque result is `#rrggbb`.
  */
 export const mixLch = (
   color: SceneColor,
@@ -258,7 +266,11 @@ export const mixLch = (
   } else if (!Number.isNaN(h1)) {
     hue = h1;
   }
-  return fromLch([l0 + amount * (l1 - l0), c0 + amount * (c1 - c0), hue]);
+  const [a0, a1] = [alphaOf(color), alphaOf(toward)];
+  return fromLch(
+    [l0 + amount * (l1 - l0), c0 + amount * (c1 - c0), hue],
+    Math.round(a0 + amount * (a1 - a0))
+  );
 };
 
 /** The fill of a mosaic's outer layer, which its inner slices cover: Lens's transparent white. */

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Chart } from '@elastic/charts';
 import type {
   Scene,
@@ -27,6 +27,32 @@ const debugFlag = (): boolean =>
   (globalThis as { _echDebugStateFlag?: boolean })._echDebugStateFlag ?? false;
 
 /**
+ * A Scene with nothing to draw, as its note. A title names the image, and the
+ * note, which says why it is empty, describes it.
+ */
+const EmptyChart = ({ scene, text }: { scene: Scene; text: string }) => {
+  const id = useId();
+  return (
+    <div
+      role="img"
+      aria-label={scene.title ?? text}
+      {...(scene.title === undefined ? {} : { 'aria-describedby': id })}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: scene.size?.width ?? '100%',
+        height: scene.size?.height ?? '100%',
+        color: scene.chrome.textSubdued,
+        background: scene.chrome.background,
+        fontSize: EMPTY_TEXT_SIZE,
+      }}>
+      <span id={id}>{text}</span>
+    </div>
+  );
+};
+
+/**
  * A `SceneRenderer` drawing Scenes with Elastic Charts, in the browser. The
  * page needs Elastic Charts' stylesheet for the Scene's scheme
  * (`@elastic/charts/dist/theme_light.css` or `theme_dark.css`); Kibana loads it.
@@ -42,23 +68,7 @@ export const createElasticChartsRenderer = (
     const resolved = { debugState: options.debugState ?? debugFlag() };
     const empty = emptyTextOf(scene);
     if (empty !== undefined) {
-      return (
-        <div
-          role="img"
-          aria-label={scene.title ?? empty}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: scene.size?.width ?? '100%',
-            height: scene.size?.height ?? '100%',
-            color: scene.chrome.textSubdued,
-            background: scene.chrome.background,
-            fontSize: EMPTY_TEXT_SIZE,
-          }}>
-          {empty}
-        </div>
-      );
+      return <EmptyChart scene={scene} text={empty} />;
     }
     return (
       <Chart size={scene.size ?? { width: '100%', height: '100%' }}>

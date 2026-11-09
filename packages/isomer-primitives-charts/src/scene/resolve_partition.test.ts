@@ -96,6 +96,53 @@ describe('resolvePartition', () => {
     expect(color('US')).toBe('#16C5C0');
   });
 
+  it('colors a category named like an inherited member from the palette', () => {
+    const scene = resolve(
+      chart({
+        data: {
+          columns: [string('g'), number('v')],
+          rows: [
+            ['constructor', 3],
+            ['toString', 2],
+            ['__proto__', 1],
+          ],
+        },
+        colors: { byKey: { toString: { light: '#000000', dark: '#000000' } } },
+      })
+    );
+    expect(scene.nodes.map(({ label, color }) => [label, color])).toEqual([
+      ['constructor', VIS[0]],
+      ['toString', '#000000'],
+      ['__proto__', VIS[2]],
+    ]);
+  });
+
+  it('keeps a translucent stated color translucent on every layer', () => {
+    const scene = resolve(
+      chart({
+        groups: [{ column: 'g' }, { column: 'h' }],
+        data: {
+          columns: [string('g'), string('h'), number('v')],
+          rows: [['a', 'x', 1]],
+        },
+        colors: { byKey: { a: { light: '#16C5C080', dark: '#16C5C080' } } },
+      })
+    );
+    const [outer] = scene.nodes;
+    expect(outer!.color).toBe('#16C5C080');
+    expect(outer!.children[0]!.color).toBe('#65D1CC99');
+  });
+
+  it('resolves a slice of every row at the input budget', () => {
+    const rows = Array.from({ length: 125_000 }, (_, row) => ['a', row % 2]);
+    const scene = resolve(
+      chart({ data: { columns: [string('g'), number('v')], rows } })
+    );
+    expect(scene.nodes).toHaveLength(1);
+    expect(scene.nodes[0]!.source.rows).toHaveLength(125_000);
+    expect(scene.nodes[0]!.value).toBe(62_500);
+  });
+
   it('lightens inner layers toward the background, by scheme', () => {
     const node = named('Nested pie with values');
     const light = resolve(node);

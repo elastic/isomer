@@ -7,15 +7,15 @@ description: Parts of a whole as a pie, donut, treemap, mosaic or waffle, as Len
 
 Parts of a whole, on the [chart core](core.md). Lens's pie, donut, treemap, mosaic and waffle charts materialize into it. Each `groups` column is one layer of slices, outermost first, and a slice's size is the sum of its rows' `metrics` values.
 
-| Field | What it is |
-| --- | --- |
-| `shape` | `pie` and `donut`: rings of sectors, one ring per layer. `treemap`: nested rectangles. `mosaic`: columns by the first group, each split by the second. `waffle`: a 10 × 10 grid of squares |
-| `metrics` | `[{ column }]`: what sizes the slices. Several metrics add one more, innermost, layer with a slice per metric, named by its column label |
-| `groups` | `[{ column }]`: the layers, outermost first. Absent or empty means one slice per metric |
-| `labels` | `categories` (`auto`, `inside` or `hidden`; default `auto`, which lets a pie or donut draw a name outside a slice too small for it), `values` (`percent`, `value` or `hidden`; default `percent`), `percentDecimals` (0 to 10; default 2, trailing zeros dropped) |
-| `donutHole` | The hole's radius as a share of the donut's, strictly between 0 and 1. Default 0.3 |
-| `legend` | `visibility` (`auto` shows it on a waffle, and on a pie or donut with more than one layer), `position` (default `right`), `nested` (every layer, each slice under its parent), `maxLines` (default 1), `size`, `values` (each slice's value; default on a waffle) |
-| `interactions`, `emphasis` | Selectable `slice`s, a link and static highlights: [Interactions](interactions.md) |
+| Field                      | What it is                                                                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shape`                    | `pie` and `donut`: rings of sectors, one ring per layer. `treemap`: nested rectangles. `mosaic`: columns by the first group, each split by the second. `waffle`: a 10 × 10 grid of squares                                                                        |
+| `metrics`                  | `[{ column }]`: what sizes the slices. Several metrics add one more, innermost, layer with a slice per metric, named by its column label                                                                                                                          |
+| `groups`                   | `[{ column }]`: the layers, outermost first. Absent or empty means one slice per metric                                                                                                                                                                           |
+| `labels`                   | `categories` (`auto`, `inside` or `hidden`; default `auto`, which lets a pie or donut draw a name outside a slice too small for it), `values` (`percent`, `value` or `hidden`; default `percent`), `percentDecimals` (0 to 10; default 2, trailing zeros dropped) |
+| `donutHole`                | The hole's radius as a share of the donut's, strictly between 0 and 1. Default 0.3                                                                                                                                                                                |
+| `legend`                   | `visibility` (`auto` shows it on a waffle, and on a pie or donut with more than one layer), `position` (default `right`), `nested` (every layer, each slice under its parent), `maxLines` (default 1), `size`, `values` (each slice's value; default on a waffle) |
+| `interactions`, `emphasis` | Selectable `slice`s, a link and static highlights: [Interactions](interactions.md)                                                                                                                                                                                |
 
 A missing or non-number value counts as 0. Any negative value leaves the chart empty with Lens's note, "Pie chart can't render with negative values.", and a chart with no rows, or only zeros, says "No results found".
 
@@ -38,7 +38,7 @@ The Scene's `kind` is `partition`. Expected values come from Lens's partition vi
 
 - **Slices** group rows by their group cells, a date by its instant; rows that share a path are one slice that keeps every row. Each slice's `value` is the sum of its leaves in draw order, as an engine sums them, so the two agree to the last bit.
 - **Order:** largest first, ties in row order. A mosaic's columns, and a lone mosaic layer, keep row order; the metric layer keeps metric order.
-- **Colors:** a category's `colors.byKey` entry, else the categorical palette by where it first shows. An inner layer takes its outermost slice's color mixed toward the background in LCH by a fifth per layer, at most four fifths, as Lens's `decreaseOpacity` does. A two-layer mosaic colors its inner slices by their own category and leaves its columns transparent.
+- **Colors:** a category's `colors.byKey` entry, else the categorical palette by where it first shows. An inner layer takes its outermost slice's color mixed toward the background in LCH by a fifth per layer, at most four fifths, as Lens's `decreaseOpacity` does; a translucent color's alpha mixes too. A two-layer mosaic colors its inner slices by their own category and leaves its columns transparent.
 - **Text:** a slice's name is its group cell as displayed (its `display` string, else its format), or its metric's label. Its `valueText` is its value in its metric's format, or the first metric's above the metric layer; a one-row slice of one metric uses that cell's `display` string. Its `percentText` is its share of the whole as a percent with at most `percentDecimals` digits. `valueLabel` is whichever `labels.values` names, empty when names are hidden.
 - **Legend:** flat, the outermost slices in the order their rows first show them; nested, every slice depth first in draw order.
 - **Selections:** each slice and legend item carries a `slice` selection when the node offers it: the slice's rows, the group columns on its path and their cells.

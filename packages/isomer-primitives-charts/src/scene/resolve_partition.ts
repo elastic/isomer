@@ -156,7 +156,8 @@ export const resolvePartition = (
           child = make();
           parent.children.set(identity, child);
         }
-        if (!child.rows.includes(row)) {
+        // Rows arrive in order, so a slice holds this row only if it was last.
+        if (child.rows.at(-1) !== row) {
           child.rows.push(row);
         }
         parent = child;
@@ -169,13 +170,21 @@ export const resolvePartition = (
   // Draw order within a layer, as Lens sorts: a mosaic's columns, and a lone
   // mosaic layer, keep row order; the metric layer keeps metric order; every
   // other layer runs largest first, ties in row order.
-  const sumOf = (slice: Draft): number =>
-    slice.children.size === 0
-      ? slice.own
-      : [...slice.children.values()].reduce(
-          (sum, child) => sum + sumOf(child),
-          0
-        );
+  const sumsOf = new Map<Draft, number>();
+  const sumOf = (slice: Draft): number => {
+    let sum = sumsOf.get(slice);
+    if (sum === undefined) {
+      sum =
+        slice.children.size === 0
+          ? slice.own
+          : [...slice.children.values()].reduce(
+              (total, child) => total + sumOf(child),
+              0
+            );
+      sumsOf.set(slice, sum);
+    }
+    return sum;
+  };
   const sorted = (slices: Iterable<Draft>): Draft[] =>
     [...slices].sort((a, b) => {
       if (a.metric !== undefined && b.metric !== undefined) {
@@ -200,6 +209,22 @@ export const resolvePartition = (
   };
   collect(root.children.values());
   const total = leaves.reduce((sum, leaf) => sum + leaf.own, 0);
+  // Each slice's sum, adding its leaves in draw order as `total` does.
+  const sums = new Map<Draft, number>();
+  const addLeaves = (slice: Draft, ancestors: readonly Draft[]) => {
+    if (slice.children.size === 0) {
+      for (const each of [...ancestors, slice]) {
+        sums.set(each, (sums.get(each) ?? 0) + slice.own);
+      }
+      return;
+    }
+    for (const child of sorted(slice.children.values())) {
+      addLeaves(child, [...ancestors, slice]);
+    }
+  };
+  for (const slice of sorted(root.children.values())) {
+    addLeaves(slice, []);
+  }
   const empty = negative
     ? {
         reason: 'negative' as const,
@@ -232,7 +257,9 @@ export const resolvePartition = (
     .forEach(([part], rank) => ranks.set(part, rank));
 
   const categoryColor = (part: string): SceneColor => {
-    const stated = node.colors?.byKey?.[part];
+    const colors = node.colors?.byKey;
+    const stated =
+      colors && Object.hasOwn(colors, part) ? colors[part] : undefined;
     return stated
       ? resolveColor(stated, scheme)
       : categoricalColor(ranks.get(part) ?? 0);
@@ -254,9 +281,7 @@ export const resolvePartition = (
     path: readonly Draft[]
   ): PartitionNode => {
     const own = [...path, slice];
-    const value = leaves
-      .filter((leaf) => isWithin(leaf, slice))
-      .reduce((sum, leaf) => sum + leaf.own, 0);
+    const value = sums.get(slice) ?? 0;
     const metric = slice.metric ?? metrics[0]!;
     const [onlyRow] = slice.rows;
     const display =
@@ -359,7 +384,7 @@ export const resolvePartition = (
     ? flatten(nodes)
     : [...nodes].sort(
         (a, b) =>
-          Math.min(...a.source.rows) - Math.min(...b.source.rows) ||
+          a.source.rows[0]! - b.source.rows[0]! ||
           nodes.indexOf(a) - nodes.indexOf(b)
       );
   const items: PartitionLegendItem[] = legendNodes.map((slice) => ({
@@ -417,8 +442,3 @@ export const resolvePartition = (
     ...(empty ? { empty } : {}),
   };
 };
-
-// Whether `leaf` is `slice` or sits inside it.
-const isWithin = (leaf: Draft, slice: Draft): boolean =>
-  leaf === slice ||
-  [...slice.children.values()].some((child) => isWithin(leaf, child));

@@ -56,6 +56,9 @@ describe('mixLch', () => {
     ['#CAD3E2', '#FFFFFF', 0.2, '#D5DCE8'],
     ['#808080', '#111C2C', 0.4, '#52555D'],
     ['#F6726A', '#FFFFFF', 0.8, '#FFE3E0'],
+    ['#16C5C080', '#FFFFFF', 0.2, '#65D1CC99'],
+    ['#16C5C080', '#FFFFFF', 0, '#16C5C080'],
+    ['#EE72A6', '#111C2C80', 0.4, '#82538ACC'],
   ])(
     'mixes %s toward %s by %s as chroma-js does',
     (color, toward, amount, mixed) => {
