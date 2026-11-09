@@ -40,6 +40,9 @@ type PlainSecondaryProps = NonNullable<MetricTile['secondary']>;
 /** Resolves this engine's style handles: the render's adapter, else their readable names. */
 type Styles = Pick<SceneRenderEnv, 'resolveClassName'> | undefined;
 
+/** Where a datum draws, and how its elements resolve their classes. */
+type DatumEnv = Pick<SceneRenderEnv, 'environment' | 'resolveClassName'>;
+
 const { handles: elastic, vars } = elasticModule;
 
 /** The secondary text's class names: Elastic Charts' own, then the Scene's color. */
@@ -173,14 +176,23 @@ const plainSecondary = (
 
 const secondaryOf = (
   { secondary }: MetricTile,
-  styles: Styles
+  env: DatumEnv
 ): MetricDatum['extra'] | undefined => {
   if (secondary === undefined) {
     return undefined;
   }
   const { badge } = secondary;
+  // Headless Elastic Charts draws props, never an element, so off the browser
+  // plain secondary text goes as props, in Elastic Charts' contrast color.
+  if (badge === undefined && env.environment === 'browser') {
+    return plainSecondary(secondary, env);
+  }
   if (badge === undefined) {
-    return plainSecondary(secondary, styles);
+    return {
+      value: secondary.text,
+      ...(secondary.label === undefined ? {} : { label: secondary.label }),
+      labelPosition: secondary.labelPlacement,
+    } satisfies SecondaryMetricProps;
   }
   const props: SecondaryMetricProps = {
     value: secondary.text,
@@ -195,10 +207,13 @@ const secondaryOf = (
 };
 
 /** The Elastic Charts datum for a tile. Its value prints the Scene's text, whatever Elastic Charts passes. */
-export const metricDatum = (tile: MetricTile, styles?: Styles): MetricDatum => {
+export const metricDatum = (
+  tile: MetricTile,
+  env: DatumEnv = { environment: 'browser' }
+): MetricDatum => {
   const { progress, trend, value } = tile;
   const text = () => value.text;
-  const extra = secondaryOf(tile, styles);
+  const extra = secondaryOf(tile, env);
   const base = {
     title: tile.title,
     ...(tile.subtitle === undefined ? {} : { subtitle: tile.subtitle }),
@@ -233,15 +248,13 @@ export const metricDatum = (tile: MetricTile, styles?: Styles): MetricDatum => {
 /** Tiles in rows of `layout.columns`, as Kibana slices them. */
 export const metricGrid = (
   scene: MetricScene,
-  styles?: Styles
+  env: DatumEnv = { environment: 'browser' }
 ): (MetricDatum | undefined)[][] => {
   const { columns } = scene.layout;
   const grid: (MetricDatum | undefined)[][] = [];
   for (let at = 0; at < scene.tiles.length; at += columns) {
     grid.push(
-      scene.tiles
-        .slice(at, at + columns)
-        .map((tile) => metricDatum(tile, styles))
+      scene.tiles.slice(at, at + columns).map((tile) => metricDatum(tile, env))
     );
   }
   return grid;
