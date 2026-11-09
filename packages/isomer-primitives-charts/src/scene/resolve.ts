@@ -7,16 +7,25 @@
 
 import type { DataTableNode } from '../schema/data_table';
 import type { MetricNode } from '../schema/metric';
+import type { PartitionChartNode } from '../schema/partition_chart';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import type { ResolveChartOptions } from './common';
 import { resolveMetric } from './resolve_metric';
+import { resolvePartition } from './resolve_partition';
 import { resolveTable } from './resolve_table';
 import { resolveXy } from './resolve_xy';
-import type { MetricScene, Scene, TableScene, XyScene } from './types';
+import type {
+  MetricScene,
+  PartitionScene,
+  Scene,
+  TableScene,
+  XyScene,
+} from './types';
 
 /** A chart node the resolver draws. */
-export type ChartNode = MetricNode | XyChartNode | DataTableNode;
+export type ChartNode =
+  MetricNode | XyChartNode | DataTableNode | PartitionChartNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
@@ -38,6 +47,11 @@ export function resolveChart(
   node: DataTableNode,
   options: ResolveChartOptions
 ): TableScene;
+/** Resolves a `partitionChart` node to a {@link PartitionScene}. */
+export function resolveChart(
+  node: PartitionChartNode,
+  options: ResolveChartOptions
+): PartitionScene;
 /** Resolves any chart node to its {@link Scene}. */
 export function resolveChart(
   node: ChartNode,
@@ -54,5 +68,7 @@ export function resolveChart(
       return resolveXy(node, options);
     case 'dataTable':
       return resolveTable(node, options);
+    case 'partitionChart':
+      return resolvePartition(node, options);
   }
 }

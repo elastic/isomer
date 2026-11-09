@@ -5,25 +5,63 @@
  * 2.0.
  */
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Chart } from '@elastic/charts';
-import type {
-  Scene,
-  SceneKind,
-  SceneRenderer,
+import {
+  cls,
+  px,
+  type Scene,
+  type SceneKind,
+  type SceneRenderEnv,
+  type SceneRenderer,
+  varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
+import { emptyTextOf } from './empty';
 import type { ElasticChartsOptions } from './options';
 import { sceneSpecs } from './specs';
+import { elasticModule } from './styles';
 
 /** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
 export const ELASTIC_CHARTS_VERSION = '73.3.2';
 
-const KINDS: readonly SceneKind[] = ['metric', 'xy'];
+const KINDS: readonly SceneKind[] = ['metric', 'xy', 'partition'];
 
 /** Kibana's functional tests turn on `DebugState` through this global. */
 const debugFlag = (): boolean =>
   (globalThis as { _echDebugStateFlag?: boolean })._echDebugStateFlag ?? false;
+
+/**
+ * A Scene with nothing to draw, as its note. A title names the image, and the
+ * note, which says why it is empty, describes it.
+ */
+const EmptyChart = ({
+  scene,
+  text,
+  env,
+}: {
+  scene: Scene;
+  text: string;
+  env: SceneRenderEnv;
+}) => {
+  const id = useId();
+  const { size, chrome } = scene;
+  return (
+    <div
+      role="img"
+      aria-label={scene.title ?? text}
+      {...(scene.title === undefined ? {} : { 'aria-describedby': id })}
+      className={cls(env, elasticModule.handles.empty)}
+      style={varStyle(elasticModule.vars.empty, {
+        width: size && px(size.width),
+        height: size && px(size.height),
+        ink: chrome.textSubdued,
+        fill: chrome.background,
+      })}>
+      <span id={id}>{text}</span>
+    </div>
+  );
+};
 
 /**
  * A `SceneRenderer` drawing Scenes with Elastic Charts, in the browser. The
@@ -39,6 +77,10 @@ export const createElasticChartsRenderer = (
   supports: (kind) => KINDS.includes(kind),
   render: (scene: Scene, env) => {
     const resolved = { debugState: options.debugState ?? debugFlag() };
+    const empty = emptyTextOf(scene);
+    if (empty !== undefined) {
+      return <EmptyChart scene={scene} text={empty} env={env} />;
+    }
     return (
       <Chart size={scene.size ?? { width: '100%', height: '100%' }}>
         {sceneSpecs(scene, env, resolved)}

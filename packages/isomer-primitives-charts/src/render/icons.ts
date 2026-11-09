@@ -33,6 +33,11 @@ export const xyChartIcon = chartsIcon(
   `<polyline points="3 3 3 13 13 13" stroke="${paint.fg}"/><polyline points="5 10.5 7.5 7.5 9.5 9 12.5 4.5" stroke="${paint.accent}"/>`
 );
 
+/** A pie with one slice pulled out. */
+export const partitionChartIcon = chartsIcon(
+  `<path d="M7.5 3.5a5 5 0 1 0 5 5h-5z" fill="${paint.muted}"/><path d="M9 2v5h5a5 5 0 0 0-5-5z" fill="${paint.accent}"/><path d="M7.5 3.5a5 5 0 1 0 5 5" stroke="${paint.fg}"/>`
+);
+
 /** A shaded header row above rules. */
 export const dataTableIcon = chartsIcon(
   `<rect x="3" y="3" width="10" height="3" rx="1" fill="${paint.accent}"/><path d="M3 8.5h10M3 11h10M3 13.5h10" stroke="${paint.fg}"/><path d="M7.5 7v6.5" stroke="${paint.muted}"/>`

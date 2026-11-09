@@ -25,6 +25,8 @@ interactions?: {
 | --- | --- |
 | `metric` | `tile` |
 | `xyChart` | `datum`, `series`, `category`, `legend` |
+| `dataTable` | `cell` |
+| `partitionChart` | `slice` |
 
 `emphasis?: { rows: number[]; note?: string }[]` highlights rows statically, such as what an agent is talking about, on every surface.
 
@@ -54,7 +56,7 @@ type ChartEvent = {
     }
   | {
       kind: 'select';
-      target: 'category' | 'cell' | 'tile';
+      target: 'category' | 'cell' | 'tile' | 'slice';
       rows: number[];
       columns: string[];
       negate?: boolean;
@@ -73,6 +75,7 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 | `series`, `legend` | Every row of the series | Its split column |
 | `category` | Every row at that x | The x column |
 | `tile` | The tile's row | Its breakdown column, if any |
+| `slice` | Every row of the slice | The group columns on its path, outermost first |
 
 `negate` marks a "filter out" gesture. A brush `range` is in the x column's units: epoch milliseconds for a date.
 

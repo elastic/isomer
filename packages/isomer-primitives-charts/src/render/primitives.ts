@@ -11,20 +11,28 @@ import type { Scene, TableScene } from '../scene/types';
 import {
   dataTableCatalog,
   metricCatalog,
+  partitionChartCatalog,
   xyChartCatalog,
 } from '../schema/catalog';
 import { type DataTableNode, dataTableSchema } from '../schema/data_table';
 import { dataTableExamples } from '../schema/examples/data_table';
 import { metricExamples } from '../schema/examples/metric';
+import { partitionChartExamples } from '../schema/examples/partition_chart';
 import { xyChartExamples } from '../schema/examples/xy_chart';
 import { metricSchema } from '../schema/metric';
+import { partitionChartSchema } from '../schema/partition_chart';
 import { xyChartSchema } from '../schema/xy_chart';
 import { sceneToMarkdown, sceneToText } from '../text/scene_text';
 import { tableSceneToSlack } from '../text/slack_table';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
-import { dataTableIcon, metricIcon, xyChartIcon } from './icons';
+import {
+  dataTableIcon,
+  metricIcon,
+  partitionChartIcon,
+  xyChartIcon,
+} from './icons';
 import {
   linkLineHeight,
   renderSceneNode,
@@ -109,6 +117,16 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: xyChartSchema,
       catalog: xyChartCatalog,
       examples: xyChartExamples,
+      sanitize: sanitizeLink,
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'partitionChart',
+      icon: partitionChartIcon,
+      schema: partitionChartSchema,
+      catalog: partitionChartCatalog,
+      examples: partitionChartExamples,
       sanitize: sanitizeLink,
       metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),

@@ -37,6 +37,12 @@ export {
   type MetricLayout,
   type MetricScene,
   type MetricTile,
+  type PartitionLayer,
+  type PartitionLegend,
+  type PartitionLegendItem,
+  type PartitionNode,
+  type PartitionScene,
+  type PartitionSceneShape,
   type Scene,
   type SceneAnnotation,
   type SceneAxis,
@@ -74,6 +80,7 @@ export {
 export {
   gridCatalog,
   metricCatalog,
+  partitionChartCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './schema/catalog';
@@ -120,6 +127,7 @@ export {
 export { chartEventExamples } from './schema/examples/events';
 export { gridExamples } from './schema/examples/grid';
 export { metricExamples } from './schema/examples/metric';
+export { partitionChartExamples } from './schema/examples/partition_chart';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
@@ -143,6 +151,15 @@ export {
 } from './schema/grid';
 export { glyphSchema } from './schema/icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
+export {
+  type PartitionChartNode,
+  type PartitionShape,
+  PARTITION_KEY_RULE,
+  PARTITION_MAX_GROUPS,
+  PARTITION_RULES,
+  PARTITION_SHAPES,
+  partitionChartSchema,
+} from './schema/partition_chart';
 export {
   type Loss,
   type Provenance,

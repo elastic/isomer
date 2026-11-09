@@ -8,6 +8,7 @@
 import { chartsStylesheet } from '@elastic/isomer-primitives-charts';
 import { describe, expect, it } from 'vitest';
 
+import { EMPTY_LINE_HEIGHT } from './empty';
 import { elasticChartsStylesheet, elasticModule } from './styles';
 
 const { handles, vars } = elasticModule;
@@ -47,6 +48,12 @@ describe('elastic-charts styles', () => {
       'pointer-events:none'
     );
     declares(handles.legendAction, 'display:inline-flex', 'gap:2px');
+    declares(
+      handles.empty,
+      'display:flex',
+      `line-height:${EMPTY_LINE_HEIGHT}px`,
+      'text-align:center'
+    );
   });
 
   it('ships its own rules alone, as the pack’s stylesheet writes them', () => {

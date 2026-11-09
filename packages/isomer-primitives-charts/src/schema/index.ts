@@ -10,6 +10,7 @@ export {
   dataTableCatalog,
   gridCatalog,
   metricCatalog,
+  partitionChartCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './catalog';
@@ -64,6 +65,7 @@ export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
 export { gridExamples } from './examples/grid';
 export { metricExamples } from './examples/metric';
+export { partitionChartExamples } from './examples/partition_chart';
 export { unsupportedExamples } from './examples/unsupported';
 export { xyChartExamples } from './examples/xy_chart';
 export {
@@ -87,6 +89,15 @@ export {
 } from './grid';
 export { glyphSchema } from './icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
+export {
+  type PartitionChartNode,
+  type PartitionShape,
+  PARTITION_KEY_RULE,
+  PARTITION_MAX_GROUPS,
+  PARTITION_RULES,
+  PARTITION_SHAPES,
+  partitionChartSchema,
+} from './partition_chart';
 export {
   type Loss,
   type Provenance,

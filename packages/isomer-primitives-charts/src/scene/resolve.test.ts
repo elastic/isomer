@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { dataTableExamples } from '../schema/examples/data_table';
 import { chartEventExamples } from '../schema/examples/events';
 import { metricExamples } from '../schema/examples/metric';
+import { partitionChartExamples } from '../schema/examples/partition_chart';
 import { xyChartExamples, xyInteractive } from '../schema/examples/xy_chart';
 import type { MetricNode } from '../schema/metric';
 import type { XyChartNode } from '../schema/xy_chart';
@@ -18,7 +19,7 @@ import { brushEvent, selectEvent } from './events';
 import { xyInteractiveScene } from './examples';
 import { formatAxisValue } from './format_axis';
 import { resolveChart } from './resolve';
-import type { MetricScene, Scene, XyScene } from './types';
+import type { MetricScene, PartitionNode, Scene, XyScene } from './types';
 
 const SIZE = { width: 480, height: 240 };
 
@@ -30,6 +31,9 @@ const seriesIn = (scene: XyScene) =>
   scene.layers.flatMap((layer) =>
     layer.kind === 'series' ? [layer.series] : []
   );
+
+const slicesIn = (nodes: readonly PartitionNode[]): PartitionNode[] =>
+  nodes.flatMap((node) => [node, ...slicesIn(node.children)]);
 
 const deepFreeze = <T>(value: T): T => {
   if (value && typeof value === 'object') {
@@ -50,6 +54,10 @@ const nodes = [
   })),
   ...dataTableExamples.map(({ name, node }) => ({
     name: `dataTable: ${name}`,
+    node,
+  })),
+  ...partitionChartExamples.map(({ name, node }) => ({
+    name: `partitionChart: ${name}`,
     node,
   })),
 ];
@@ -112,10 +120,12 @@ describe('resolveChart on every example', () => {
             ? scene.rows.flatMap(({ cells }) =>
                 cells.map(({ source }) => source)
               )
-            : seriesIn(scene).flatMap((series) => [
-                series.source,
-                ...series.marks.map(({ source }) => source),
-              ]);
+            : scene.kind === 'partition'
+              ? slicesIn(scene.nodes).map(({ source }) => source)
+              : seriesIn(scene).flatMap((series) => [
+                  series.source,
+                  ...series.marks.map(({ source }) => source),
+                ]);
       for (const { rows, columns } of sources) {
         for (const row of rows) {
           expect(row).toBeLessThan(node.data.rows.length);

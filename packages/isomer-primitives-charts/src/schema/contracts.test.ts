@@ -34,7 +34,14 @@ const cases = contractDefinitions.flatMap((definition) =>
 describe('contract examples', () => {
   it('cover every primitive', () => {
     expect(new Set(cases.map(({ type }) => type))).toEqual(
-      new Set(['metric', 'xyChart', 'dataTable', 'grid', 'unsupported'])
+      new Set([
+        'metric',
+        'xyChart',
+        'dataTable',
+        'partitionChart',
+        'grid',
+        'unsupported',
+      ])
     );
   });
 
@@ -66,12 +73,16 @@ describe('JSON Schema projection', () => {
     $defs?: Record<string, unknown>;
   };
 
-  it.each(['metric', 'xyChart', 'dataTable', 'grid', 'unsupported'])(
-    'projects %s',
-    (type) => {
-      expect(schema.$defs?.[type]).toBeDefined();
-    }
-  );
+  it.each([
+    'metric',
+    'xyChart',
+    'dataTable',
+    'partitionChart',
+    'grid',
+    'unsupported',
+  ])('projects %s', (type) => {
+    expect(schema.$defs?.[type]).toBeDefined();
+  });
 });
 
 describe('grid nesting', () => {

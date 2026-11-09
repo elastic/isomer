@@ -27,6 +27,7 @@ import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   brushEvent,
   type ChartEvent,
+  type PartitionScene,
   type Scene,
   type SceneRenderEnv,
   selectEvent,
@@ -152,6 +153,75 @@ const gestures = (
           ]
         : []
     );
+  }
+  if (scene.kind === 'partition') {
+    const offersSlices = scene.interactions.select.includes('slice');
+    const paths = (
+      nodes: PartitionScene['nodes'],
+      keys: readonly string[]
+    ): { keys: string[]; node: PartitionScene['nodes'][number] }[] =>
+      nodes.flatMap((node) => [
+        { keys: [...keys, node.key], node },
+        ...paths(node.children, [...keys, node.key]),
+      ]);
+    const slices = paths(scene.nodes, []).map(({ keys, node }) => ({
+      gesture: `click ${node.label}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            keys.map((key, depth) => ({
+              groupByRollup: key,
+              value: node.value,
+              depth: depth + 1,
+              sortIndex: 0,
+              path: [],
+              smAccessorValue: '',
+            })),
+            { specId: 'partition', key: 'spec{partition}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersSlices && node.selection
+          ? [selectEvent(NODE, node.selection)]
+          : [],
+    }));
+    // The buttons the installed legend action draws for each legend item.
+    const legend = scene.legend.items.flatMap((item) =>
+      [false, true].map((negate) => {
+        const gesture = `filter ${negate ? 'out' : 'for'} ${item.label}`;
+        return {
+          gesture,
+          raise: () => {
+            const { events, env } = listen();
+            const action = installed(scene, env).callback('legendAction');
+            if (action) {
+              const button = elementsOf(
+                action({
+                  series: [{ key: item.key }],
+                  label: item.label,
+                }) as ReactNode
+              ).find(
+                ({ type, props }) =>
+                  type === 'button' &&
+                  props['aria-label'] ===
+                    `Filter ${negate ? 'out' : 'for'} ${item.label}`
+              );
+              expect(button, `${gesture}: its button`).toBeDefined();
+              (button!.props.onClick as Callback)();
+            }
+            return events;
+          },
+          expected:
+            offersSlices && item.selection
+              ? [selectEvent(NODE, item.selection, negate)]
+              : [],
+        };
+      })
+    );
+    return [...slices, ...legend];
   }
   if (scene.kind !== 'xy') {
     return [];
@@ -290,7 +360,7 @@ describe('event parity over every example', () => {
       interactive.flatMap(({ scene }) => scene.interactions.select)
     );
     expect([...offered].sort()).toEqual(
-      expect.arrayContaining(['category', 'datum', 'legend', 'tile'])
+      expect.arrayContaining(['category', 'datum', 'legend', 'slice', 'tile'])
     );
     expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
       true
