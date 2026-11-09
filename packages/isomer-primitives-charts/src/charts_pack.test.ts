@@ -360,7 +360,7 @@ CLOSED`);
     });
     const inner = narrow(chart);
     const columns = (out: string) =>
-      out.split('grid-template-columns:repeat(48').length - 1;
+      out.split('class="chartsGrid-panels"').length - 1;
 
     it('validates', () => {
       expect(runtime.validate(view(narrow(narrow(inner)))).errors).toEqual([]);

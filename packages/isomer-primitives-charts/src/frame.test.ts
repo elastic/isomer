@@ -112,7 +112,10 @@ describe('chartsFrame', () => {
       expect(width).toBe(960);
       expect(html).toContain('Last 24 hours');
       // 960 − 2 × 16 padding; half of it is (928 − 47 × 8) × 24/48 + 23 × 8.
-      expect(resolved.map(({ size }) => size?.width)).toEqual([928, 460]);
+      // The style collection pass resolves the same Scenes the drawn page does.
+      expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
+        928, 460,
+      ]);
       expect(new Set(resolved.map(({ scheme }) => scheme))).toEqual(
         new Set(['dark'])
       );
@@ -121,7 +124,9 @@ describe('chartsFrame', () => {
     it('draws a chart on its own in the light scheme by default', () => {
       resolved.length = 0;
       runtime.surfaces.snapshot.render({ type: 'view', body: [chart] });
-      expect(resolved.map(({ scheme }) => scheme)).toEqual(['light']);
+      expect(new Set(resolved.map(({ scheme }) => scheme))).toEqual(
+        new Set(['light'])
+      );
     });
   });
 });
