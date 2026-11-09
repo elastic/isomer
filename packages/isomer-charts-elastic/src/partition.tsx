@@ -81,21 +81,44 @@ export const slicesOf = (
 ): readonly PartitionNode[] =>
   nodes.flatMap((node) => [node, ...slicesOf(node.children)]);
 
-/** The Scene's leaves, depth first in draw order: the data Elastic Charts sums. */
+/**
+ * The Scene's leaves, depth first in draw order: the data Elastic Charts sums.
+ * Each weighs its `value`, or its `share` where the values' sum is past
+ * `Number.MAX_VALUE`, so Elastic Charts lays slices out in the Scene's
+ * proportions either way.
+ */
 export const partitionData = (scene: PartitionScene): PartitionDatum[] => {
-  const data: PartitionDatum[] = [];
+  const leaves: { keys: string[]; node: PartitionNode }[] = [];
   const walk = (nodes: readonly PartitionNode[], keys: readonly string[]) => {
     for (const node of nodes) {
       const path = [...keys, node.key];
       if (node.children.length === 0) {
-        data.push({ keys: path, value: node.value });
+        leaves.push({ keys: path, node });
       } else {
         walk(node.children, path);
       }
     }
   };
   walk(scene.nodes, []);
-  return data;
+  const byShare = !Number.isFinite(
+    leaves.reduce((sum, { node }) => sum + node.value, 0)
+  );
+  return leaves.map(({ keys, node }) => ({
+    keys,
+    value: byShare ? node.share : node.value,
+  }));
+};
+
+/** Each slice's sum as Elastic Charts adds it from {@link partitionData}, by key. */
+export const engineSums = (scene: PartitionScene): Map<string, number> => {
+  const sums = new Map<string, number>();
+  for (const { keys, value } of partitionData(scene)) {
+    keys.forEach((_, depth) => {
+      const key = keys[depth]!;
+      sums.set(key, (sums.get(key) ?? 0) + value);
+    });
+  }
+  return sums;
 };
 
 /** The Scene slice an Elastic Charts key names. */
@@ -109,8 +132,8 @@ export const sliceByKey = (
  * whole shrinks by 5% for each, at most 20%, to make room for outside labels.
  */
 export const outerSizeRatio = (scene: PartitionScene): number => {
-  const small = partitionData(scene).filter(
-    ({ value }) => scene.total > 0 && value / scene.total < 0.02
+  const small = slicesOf(scene.nodes).filter(
+    ({ children, share }) => children.length === 0 && share < 0.02
   ).length;
   return small ? 1 / (1 + Math.min(small * 0.05, 0.2)) : 1;
 };
@@ -177,16 +200,21 @@ export const partitionTooltip = (scene: PartitionScene): CustomTooltip => {
  * The value text Elastic Charts draws. Slice labels ask for it through
  * `valueGetter`, which hands over `-1 - index` of the slice in
  * {@link slicesOf}, so each draws its own `valueLabel`. Legend values ask
- * with the slice's sum alone, which the Scene's `value` equals, so a sum
- * whose slices carry different `valueText`s prints none rather than another
- * slice's.
+ * with the slice's {@link engineSums} sum alone, so a sum two legend items
+ * share with different `valueText`s prints none rather than another's.
  */
 export const partitionValueFormatter = (
   scene: PartitionScene
 ): ((value: number) => string) => {
   const slices = slicesOf(scene.nodes);
+  const sums = engineSums(scene);
+  const listed = new Set(scene.legend.items.map(({ key }) => key));
   const byValue = new Map<number, string | undefined>();
-  for (const { value, valueText } of slices) {
+  for (const { key, valueText } of slices) {
+    const value = sums.get(key);
+    if (!listed.has(key) || value === undefined) {
+      continue;
+    }
     byValue.set(
       value,
       !byValue.has(value) || byValue.get(value) === valueText

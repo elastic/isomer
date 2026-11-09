@@ -826,6 +826,85 @@ describe('elastic-charts renderer: partition order and text', () => {
     expect(size!.valueText).not.toBe(count!.valueText);
     expect(partitionValueFormatter(scene)(1024)).toBe('');
   });
+
+  it('reads legend values only among the slices the legend lists', () => {
+    const scene = resolveChart(
+      {
+        type: 'partitionChart',
+        shape: 'pie',
+        groups: [{ column: 'g' }, { column: 'h' }],
+        metrics: [{ column: 'v' }],
+        legend: { values: true },
+        data: {
+          columns: [
+            { id: 'g', label: 'g', type: 'string', role: 'dimension' },
+            { id: 'h', label: 'h', type: 'string', role: 'dimension' },
+            { id: 'v', label: 'v', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            ['a', 'x', 5],
+            ['a', 'y', 0],
+          ],
+          display: { v: ['five', '0'] },
+        },
+      },
+      { scheme: 'light', size: SIZE }
+    );
+    if (scene.kind !== 'partition') {
+      throw new Error('expected a partition Scene');
+    }
+    const [parent] = scene.nodes;
+    const child = parent!.children.find(({ label }) => label === 'x')!;
+    expect(scene.legend.items.map(({ key }) => key)).toEqual([parent!.key]);
+    expect(child.value).toBe(parent!.value);
+    expect(child.valueText).not.toBe(parent!.valueText);
+    expect(partitionValueFormatter(scene)(parent!.value)).toBe(
+      parent!.valueText
+    );
+  });
+
+  it('lays out sums past the largest number in their shares, with their legend values', async () => {
+    const scene = resolveChart(
+      {
+        type: 'partitionChart',
+        shape: 'pie',
+        groups: [{ column: 'g' }],
+        metrics: [{ column: 'v' }],
+        legend: { values: true, visibility: 'visible' },
+        data: {
+          columns: [
+            { id: 'g', label: 'g', type: 'string', role: 'dimension' },
+            { id: 'v', label: 'v', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            ['a', Number.MAX_VALUE],
+            ['a', Number.MAX_VALUE],
+            ['b', Number.MAX_VALUE],
+            ['b', Number.MAX_VALUE],
+            ['c', Number.MAX_VALUE],
+          ],
+        },
+      },
+      { scheme: 'light', size: SIZE }
+    );
+    if (scene.kind !== 'partition') {
+      throw new Error('expected a partition Scene');
+    }
+    const container = await draw(scene);
+    const drawn = new Map(
+      (debugStateIn(container).partition?.[0]?.partitions ?? []).map(
+        ({ name, value }) => [name, value]
+      )
+    );
+    const total = [...drawn.values()].reduce((sum, value) => sum + value, 0);
+    expect(Number.isFinite(total)).toBe(true);
+    for (const { key, share } of scene.nodes) {
+      expect(drawn.get(key)! / total).toBeCloseTo(share, 12);
+    }
+    expect(legendOf(container).map(({ value }) => value)).toEqual(
+      scene.legend.items.map(({ value }) => value)
+    );
+  });
 });
 
 describe('elastic-charts renderer', () => {

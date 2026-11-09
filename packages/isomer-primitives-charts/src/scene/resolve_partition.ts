@@ -260,8 +260,10 @@ export const resolvePartition = (
   // The layer colors are picked by: the second on a two-layer mosaic, else the first.
   const colorDepth = shape === 'mosaic' && groups.length === 2 ? 2 : 1;
   const ranks = new Map<string, number>();
-  // Rank by where each category first shows across the whole table.
+  // Rank by where each category first shows across the whole table, and
+  // take its stated color from the first of its key parts that has one.
   const firstShown = new Map<string, number>();
+  const parts = new Map<string, { part: string; first: number }[]>();
   const visit = (slices: Iterable<Draft>) => {
     for (const slice of slices) {
       if (slice.depth === colorDepth) {
@@ -269,6 +271,9 @@ export const resolvePartition = (
           slice.identity,
           Math.min(firstShown.get(slice.identity) ?? Infinity, slice.first)
         );
+        const written = parts.get(slice.identity) ?? [];
+        written.push({ part: slice.part, first: slice.first });
+        parts.set(slice.identity, written);
       } else {
         visit(slice.children.values());
       }
@@ -279,11 +284,20 @@ export const resolvePartition = (
     .sort(([, a], [, b]) => a - b)
     .forEach(([identity], rank) => ranks.set(identity, rank));
 
-  // A stated color names the key part; the palette ranks the category itself.
+  const colors = node.colors?.byKey;
+  const statedColors = new Map(
+    [...parts].map(([identity, written]) => [
+      identity,
+      written
+        .sort((a, b) => a.first - b.first)
+        .find(({ part }) => colors && Object.hasOwn(colors, part))?.part,
+    ])
+  );
+  // A stated color names a key part; the category takes it in every column.
   const categoryColor = ({ part, identity }: Draft): SceneColor => {
-    const colors = node.colors?.byKey;
+    const named = statedColors.get(identity) ?? part;
     const stated =
-      colors && Object.hasOwn(colors, part) ? colors[part] : undefined;
+      colors && Object.hasOwn(colors, named) ? colors[named] : undefined;
     return stated
       ? resolveColor(stated, scheme)
       : categoricalColor(ranks.get(identity) ?? 0);

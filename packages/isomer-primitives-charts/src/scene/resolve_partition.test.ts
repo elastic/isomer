@@ -249,6 +249,39 @@ describe('resolvePartition', () => {
     expect(color(0, 0)).toBe(VIS[0]);
   });
 
+  it('gives one date category its stated color in every mosaic column, however it is written', () => {
+    const scene = resolve(
+      chart({
+        shape: 'mosaic',
+        groups: [{ column: 'g' }, { column: 'd' }],
+        colors: { byKey: { '0': { light: '#000000', dark: '#000000' } } },
+        data: {
+          columns: [
+            string('g'),
+            { id: 'd', label: 'd', type: 'date', role: 'dimension' },
+            number('v'),
+          ],
+          rows: [
+            ['a', 0, 1],
+            ['b', '1970-01-01T00:00:00Z', 1],
+            ['b', '1970-01-02T00:00:00Z', 1],
+          ],
+        },
+      })
+    );
+    expect(
+      scene.nodes.flatMap(({ children }) =>
+        children.map(({ source, color }) => [source.rows[0], color])
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        [0, '#000000'],
+        [1, '#000000'],
+        [2, VIS[1]],
+      ])
+    );
+  });
+
   it('keeps a lone mosaic layer in row order', () => {
     expect(
       resolve(chart({ shape: 'mosaic' })).nodes.map(({ label }) => label)
