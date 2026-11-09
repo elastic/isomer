@@ -43,6 +43,7 @@ export const createChartsPack = ({
 }: ChartsPackOptions = {}): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
+    slackAssetTypes: ['metric', 'xyChart'],
     primitives: [
       ...defineChartPrimitives({
         resolveScene,

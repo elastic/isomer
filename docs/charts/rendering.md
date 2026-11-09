@@ -69,9 +69,19 @@ The shim puts the renderer's output in one `div` that carries the [node anchor](
 
 The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/) and ships its own style adapter, so the `html` and `snapshot` surfaces style its nodes with no host setup, beside another pack's adapter too. Its renderers resolve class names through the render context's `resolveClassName`. Without one, as on the `react` surface, they write Distillate's readable names, and the host ships `chartsStylesheet()`, every rule the pack draws with. Every class name starts with `charts`, so none collides with another library's. What a node or a Scene carries, such as a panel's place on the grid, stays an inline style.
 
-## Text and Markdown
+## Text, Markdown and Slack
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description`, each emphasis `note`, and its `link` as `label: href` (a Markdown link). The fallback renderer draws the same four. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels and one row per data row, in `data` order. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description, notes and link. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
+
+```text
+Requests over time: Count of records by @timestamp per hour, from 98 to 210.
+
+@timestamp per hour | Count of records
+00:00 | 120
+01:00 | 98
+```
+
+On Slack, `metric` and `xyChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ## `grid`
 
@@ -79,7 +89,7 @@ A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEM
 
 When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` the grid passes none on and keeps 48 columns: a browser lays it out fluidly, and a host that wants one column on a narrow screen measures the grid and passes its `size`.
 
-On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the grid's header, the rows, section headers and gaps at full width. Text and Markdown list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
+On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the grid's header, the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
 
 ## `unsupported`
 

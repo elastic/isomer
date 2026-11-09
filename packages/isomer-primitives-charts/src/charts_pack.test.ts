@@ -652,6 +652,59 @@ CLOSED`);
     expect(page).not.toContain('<output>light</output>');
   });
 
+  it('sends nested charts to Slack as pictures under panel and section titles', () => {
+    const { blocks, assets } = runtime.surfaces.slack.render(
+      view(gridExamples[0]!.node),
+      { heading: false, collectAssets: true }
+    );
+    expect(assets.map(({ node }) => node.type)).toEqual(['metric', 'xyChart']);
+    const json = JSON.stringify(blocks);
+    for (const title of [
+      '[Logs] Web Traffic',
+      'Requests',
+      'Requests over time',
+      'Visitors by OS',
+    ]) {
+      expect(json).toContain(`"text":"${title}"`);
+    }
+    expect(json).toContain('Hourly request count.');
+    expect(
+      blocks.filter((block) => (block as { type: string }).type === 'image')
+    ).toHaveLength(2);
+    const sections = JSON.stringify(
+      runtime.surfaces.slack.render(view(sectioned), { heading: false }).blocks
+    );
+    expect(sections).toContain('Open');
+    expect(sections).toContain('Closed');
+    expect(sections).toContain('I reason');
+    expect(sections).not.toContain('H reason');
+  });
+
+  it('keeps a chart hidden from snapshot as its Markdown on Slack', () => {
+    const chart = gridExamples[0]!.node.panels[0]!.node;
+    const { blocks, assets } = runtime.surfaces.slack.render(
+      view({ ...chart, surfaces: ['text', 'markdown', 'slack'] }),
+      { heading: false, collectAssets: true }
+    );
+    expect(assets).toEqual([]);
+    expect(JSON.stringify(blocks)).toContain(metricSingleValueScene.summary);
+  });
+
+  it('writes the grid and panel descriptions on Slack', () => {
+    const described: GridNode = {
+      ...gridExamples[0]!.node,
+      description: 'About the board',
+    };
+    const json = JSON.stringify(
+      runtime.surfaces.slack.render(view(described), {
+        heading: false,
+        collectAssets: true,
+      }).blocks
+    );
+    expect(json).toContain('About the board');
+    expect(json).toContain('Hourly request count.');
+  });
+
   it('estimates its snapshot height from its rows and sections', () => {
     // Title 24; top panels 6 rows: 6×20 + 5×8 = 160; open section: header 24
     // + 8 + 3 rows (3×20 + 2×8 = 76); closed section: header 24; 3 gaps × 16.
