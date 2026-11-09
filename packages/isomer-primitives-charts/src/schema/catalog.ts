@@ -8,6 +8,7 @@
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 
 import { dataTableTopHosts } from './examples/data_table';
+import { gaugeSemiCircle } from './examples/gauge';
 import { heatmapHourly } from './examples/heatmap';
 import { metricSingleValue } from './examples/metric';
 import { partitionPie } from './examples/partition_chart';
@@ -141,4 +142,23 @@ export const heatmapCatalog: PrimitiveCatalogEntry = {
     'Shares of a total: use `partitionChart`.',
   ],
   example: heatmapHourly,
+};
+
+/** What an agent reads to choose `gauge`: purpose, when to use it, and an example. */
+export const gaugeCatalog: PrimitiveCatalogEntry = {
+  type: 'gauge',
+  name: 'Gauge',
+  purpose:
+    'Show one value against a scale from a minimum to a maximum, as a bullet or a dial, with colored ranges and an optional goal.',
+  useWhen: [
+    'The point is where one value sits within known bounds, such as utilization against capacity.',
+    'Ranges of the scale mean something, such as healthy, warning and critical.',
+    'A Lens gauge is shown.',
+  ],
+  avoidWhen: [
+    'The value has no meaningful bounds: use `metric`.',
+    'Several values are compared: use `xyChart` bars or `metric` tiles.',
+    'The value changes over time: use `xyChart`.',
+  ],
+  example: gaugeSemiCircle,
 };

@@ -40,6 +40,7 @@ describe('contract examples', () => {
         'dataTable',
         'partitionChart',
         'heatmap',
+        'gauge',
         'grid',
         'unsupported',
       ])
@@ -80,6 +81,7 @@ describe('JSON Schema projection', () => {
     'dataTable',
     'partitionChart',
     'heatmap',
+    'gauge',
     'grid',
     'unsupported',
   ])('projects %s', (type) => {

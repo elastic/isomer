@@ -6,18 +6,21 @@
  */
 
 import type { DataTableNode } from '../schema/data_table';
+import type { GaugeNode } from '../schema/gauge';
 import type { HeatmapNode } from '../schema/heatmap';
 import type { MetricNode } from '../schema/metric';
 import type { PartitionChartNode } from '../schema/partition_chart';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import type { ResolveChartOptions } from './common';
+import { resolveGauge } from './resolve_gauge';
 import { resolveHeatmap } from './resolve_heatmap';
 import { resolveMetric } from './resolve_metric';
 import { resolvePartition } from './resolve_partition';
 import { resolveTable } from './resolve_table';
 import { resolveXy } from './resolve_xy';
 import type {
+  GaugeScene,
   HeatmapScene,
   MetricScene,
   PartitionScene,
@@ -28,7 +31,12 @@ import type {
 
 /** A chart node the resolver draws. */
 export type ChartNode =
-  MetricNode | XyChartNode | DataTableNode | PartitionChartNode | HeatmapNode;
+  | MetricNode
+  | XyChartNode
+  | DataTableNode
+  | PartitionChartNode
+  | HeatmapNode
+  | GaugeNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
@@ -60,6 +68,11 @@ export function resolveChart(
   node: HeatmapNode,
   options: ResolveChartOptions
 ): HeatmapScene;
+/** Resolves a `gauge` node to a {@link GaugeScene}. */
+export function resolveChart(
+  node: GaugeNode,
+  options: ResolveChartOptions
+): GaugeScene;
 /** Resolves any chart node to its {@link Scene}. */
 export function resolveChart(
   node: ChartNode,
@@ -80,5 +93,7 @@ export function resolveChart(
       return resolvePartition(node, options);
     case 'heatmap':
       return resolveHeatmap(node, options);
+    case 'gauge':
+      return resolveGauge(node, options);
   }
 }

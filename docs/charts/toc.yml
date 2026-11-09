@@ -11,6 +11,7 @@ toc:
   - file: data-table.md
   - file: partition-chart.md
   - file: heatmap.md
+  - file: gauge.md
   - file: grid.md
   - file: unsupported.md
   - file: interactions.md

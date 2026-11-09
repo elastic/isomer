@@ -38,6 +38,8 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
         : { aspectRatio: chart.xy.aspectRatio };
     case 'partition':
       return { aspectRatio: chart.partition.aspectRatio };
+    case 'gauge':
+      return chart.gauge[scene.shape];
     case 'heatmap':
       return { aspectRatio: chart.heatmap.aspectRatio };
     case 'metric': {

@@ -28,6 +28,7 @@ interactions?: {
 | `dataTable` | `cell` |
 | `partitionChart` | `slice` |
 | `heatmap` | `cell` |
+| `gauge` | None: only a `link` |
 
 `mark` and `region` are for packs that build on the chart core: `mark` for a chart a grammar draws, such as the Vega pack's, and `region` for a map region, such as Kibana's maps pack's.
 

@@ -22,6 +22,7 @@ export const SCENE_KINDS = [
   'table',
   'partition',
   'heatmap',
+  'gauge',
 ] as const;
 
 /** One of {@link SCENE_KINDS}. */
@@ -733,9 +734,60 @@ export interface HeatmapScene extends SceneBase {
   };
 }
 
-/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene}, a {@link PartitionScene} or a {@link HeatmapScene}. */
+/** The shapes a {@link GaugeScene} draws. */
+export type GaugeSceneShape =
+  'horizontalBullet' | 'verticalBullet' | 'semiCircle' | 'arc' | 'circle';
+
+/** One colored stretch of a {@link GaugeScene}'s scale, from `start` to `end`. */
+export interface GaugeBand {
+  readonly start: number;
+  readonly end: number;
+  /** Transparent (`#FFFFFF00`) where no band of the node covers it. */
+  readonly color: SceneColor;
+}
+
+/** A Scene of one value on a scale: a bullet or a round dial. */
+export interface GaugeScene extends SceneBase {
+  readonly kind: 'gauge';
+  readonly shape: GaugeSceneShape;
+  /** Absent when `empty`. */
+  readonly value?: number;
+  /** `value` as displayed. */
+  readonly valueText: string;
+  /** The scale, `min` below `max`. */
+  readonly min: number;
+  readonly max: number;
+  /** How a value on the scale prints, through `formatAxisValue`. */
+  readonly format: PortableFormat;
+  /** The goal marker, present only where it falls on the scale. */
+  readonly goal?: { readonly value: number; readonly text: string };
+  /** Drawn on the gauge: the title (empty for none) and the subtitle. */
+  readonly labels: { readonly major: string; readonly minor?: string };
+  /** What a tooltip calls the hovered value, the value and the goal. */
+  readonly tooltipLabels: {
+    readonly active: string;
+    readonly value: string;
+    readonly goal: string;
+  };
+  /** Contiguous, ascending, from `min` to `max`. */
+  readonly bands: readonly GaugeBand[];
+  /** Where ticks go, ascending; absent lets the engine choose; empty draws none. */
+  readonly ticks?: readonly number[];
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: {
+    readonly reason: 'noResults' | 'equalBounds' | 'invertedBounds';
+    readonly text: string;
+  };
+}
+
+/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene}, a {@link PartitionScene}, a {@link HeatmapScene} or a {@link GaugeScene}. */
 export type Scene =
-  MetricScene | XyScene | TableScene | PartitionScene | HeatmapScene;
+  | MetricScene
+  | XyScene
+  | TableScene
+  | PartitionScene
+  | HeatmapScene
+  | GaugeScene;
 
 /** Where a renderer draws: a browser DOM, or Node with no DOM. */
 export type SceneEnvironment = 'browser' | 'node';
