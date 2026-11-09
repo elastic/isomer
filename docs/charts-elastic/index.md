@@ -54,6 +54,14 @@ The SVG is a `role="img"` named by the Scene's `title` as its `<title>` and desc
 
 Headless metrics differ from the browser's: values draw smaller and words can break mid-word. Those gaps are Elastic Charts', reported on #2939.
 
+### In the Studio
+
+The repository Studio (`pnpm studio:dev`) draws charts with the headless renderer in the browser and on its server alike. Its previews are static markup, which a live `<Chart>` can't draw into.
+
+`pnpm --filter @elastic/isomer-charts-elastic studio` opens the charts as a render service would draw them. The Studio's Node server draws each chart with headless Elastic Charts and rasterizes it with takumi to PNG and PDF, with Inter as the image font. `studio:check` renders every example on every surface, PNG included.
+
+In a browser, the renderer scales its SVG to the container at the drawing's aspect ratio, never past the size it was drawn at, so a grid laid out fluidly still fits. Each SVG's ids are prefixed by a hash of the drawing, so several charts inline in one page keep their own clip paths. A host drawing in a browser passes `measureTextWidth`, backed by a canvas, so text is laid out as the browser will draw it.
+
 ### Measuring it
 
 `pnpm --filter @elastic/isomer-charts-elastic bench` draws every `metric` and `xyChart` example, light and dark, through the `snapshot` surface and takumi to PNG, as a render service does. Each run is a fresh Node process loading the CommonJS build, so run `pnpm build` first. It compares headless Elastic Charts with a baseline that has no chart engine, and reports:

@@ -2089,3 +2089,68 @@ test.describe('browser-only', () => {
     }
   });
 });
+
+test.describe('charts in a fluid grid', () => {
+  // The repository config draws charts with headless Elastic Charts in the browser.
+  test.skip(
+    process.env.STUDIO_CONFIG !== undefined,
+    'needs the repository config'
+  );
+  let dir: string;
+  let site: StaticServer;
+
+  test.beforeAll(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'isomer-studio-charts-'));
+    const out = join(dir, 'site');
+    await runCli([
+      'build',
+      '--config',
+      join(repoRoot, 'isomer-studio.config.ts'),
+      '--out',
+      out,
+      '--base',
+      BASE,
+    ]);
+    site = await serveStatic(out, BASE);
+  });
+
+  test.afterAll(async () => {
+    await site?.close();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  test('fits each chart inside its panel at the drawing’s aspect ratio', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${site.url}#/docs/grid/0`);
+    const preview = reactPreview(page).first();
+    await expect(preview.locator('section svg').first()).toBeVisible();
+    const measure = () =>
+      preview.locator('section:has(svg)').evaluateAll((sections) =>
+        sections.map((section) => {
+          const svg = section.querySelector('svg')!;
+          const box = section.getBoundingClientRect();
+          const drawn = svg.getBoundingClientRect();
+          const { width, height } = svg.viewBox.baseVal;
+          return {
+            inside:
+              drawn.left >= box.left - 0.5 &&
+              drawn.right <= box.right + 0.5 &&
+              drawn.bottom <= box.bottom + 0.5,
+            ratio: drawn.width / drawn.height,
+            drawnRatio: width / height,
+          };
+        })
+      );
+    // The preview settles its own layout after the first paint.
+    await expect
+      .poll(async () => (await measure()).every(({ inside }) => inside))
+      .toBe(true);
+    const panels = await measure();
+    expect(panels.length).toBeGreaterThan(1);
+    for (const { ratio, drawnRatio } of panels) {
+      expect(ratio).toBeCloseTo(drawnRatio, 1);
+    }
+  });
+});
