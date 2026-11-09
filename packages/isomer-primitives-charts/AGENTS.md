@@ -25,4 +25,4 @@ Expected values (formats, colors, orderings) come from this package's documented
 
 ## Evidence required
 
-Every example validates through the SDK in a composition. A new rule has a failing case at its path and is stated in the authoring schema.
+Every example validates through the SDK in a composition. A new rule has a failing case at its path and is stated in the authoring schema. A new chart primitive or example passes the [parity gates](docs/rendering.md#parity-gates) (`src/surface_parity.test.ts`, `src/renderer_parity.test.ts`) and the engine's.
