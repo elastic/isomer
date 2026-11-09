@@ -29,8 +29,8 @@ import type {
   SceneResolver,
 } from './context';
 import { sceneModule } from './scene_styles';
-import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
-import { cls } from './styles';
+import { chartSize, chartSizeSpec, chartSizeVars } from './size';
+import { cls, varStyle } from './styles';
 import { tableHeight } from './table';
 import { CHARTS_THEME } from './theme';
 
@@ -175,28 +175,31 @@ export const renderSceneNode = (
   if (environment === 'native') {
     return drawn;
   }
-  const style = spec && chartSizeStyle(spec);
+  const sized = spec && {
+    className: cls(context, sceneModule.handles.sized),
+    style: varStyle(sceneModule.vars.size, chartSizeVars(spec)),
+  };
   if (!link) {
     return createElement(
       'div',
-      { ...nodeAnchor(context, node), ...(style && { style }) },
+      { ...nodeAnchor(context, node), ...sized },
       drawn
     );
   }
   return createElement(
     'div',
     nodeAnchor(context, node),
-    createElement('div', style && { style }, drawn),
+    createElement('div', sized ?? null, drawn),
     createElement(
       'a',
       {
         href: link.href,
         title: link.label,
         className: cls(context, sceneModule.handles.link),
-        style: {
-          color: unsized.chrome.text,
-          background: unsized.chrome.background,
-        },
+        style: varStyle(sceneModule.vars.chrome, {
+          ink: unsized.chrome.text,
+          fill: unsized.chrome.background,
+        }),
       },
       link.label
     )

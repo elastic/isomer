@@ -19,15 +19,19 @@ import {
   type SvgFont,
   type SvgTextWidthMeasure,
 } from '@elastic/charts/dist/headless';
-import type {
-  Scene,
-  SceneEnvironment,
-  SceneKind,
-  SceneRenderer,
+import {
+  cls,
+  px,
+  type Scene,
+  type SceneEnvironment,
+  type SceneKind,
+  type SceneRenderer,
+  varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
 import { sceneSpecs } from './specs';
+import { elasticModule } from './styles';
 
 /** How {@link renderSceneSvg} draws text. */
 export interface HeadlessSvgOptions {
@@ -145,25 +149,26 @@ export const createElasticChartsHeadlessRenderer = ({
   environments,
   sized: true,
   supports: (kind) => KINDS.includes(kind),
-  render: (scene, { environment }) => {
+  render: (scene, env) => {
     const drawn = renderSceneSvg(scene, options);
     const { width, height } = drawn;
     const svg = scopeSvgIds(drawn.svg, drawingScope(drawn.svg));
-    if (environment === 'node') {
+    const { handles, vars } = elasticModule;
+    if (env.environment === 'node') {
       return createElement('div', {
-        style: { display: 'flex', width, height },
+        className: cls(env, handles.drawing),
+        style: varStyle(vars.box, { width: px(width), height: px(height) }),
         dangerouslySetInnerHTML: { __html: svg },
       });
     }
     // A browser lays the page out fluidly, so the drawing scales to its
     // container at its own aspect ratio, never past the size it was drawn at.
     return createElement('div', {
-      style: {
-        display: 'flex',
-        width: '100%',
-        maxWidth: width,
+      className: cls(env, handles.fluidDrawing),
+      style: varStyle(vars.box, {
+        maxWidth: px(width),
         aspectRatio: `${width} / ${height}`,
-      },
+      }),
       dangerouslySetInnerHTML: {
         __html: svg.replace(
           /^<svg\b([^>]*?) width="[^"]*" height="[^"]*"/,
@@ -173,3 +178,5 @@ export const createElasticChartsHeadlessRenderer = ({
     });
   },
 });
+
+export { elasticChartsStylesheet } from './styles';

@@ -35,6 +35,7 @@ import {
   renderSceneSvg,
   scopeSvgIds,
 } from './headless';
+import { elasticModule } from './styles';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 
@@ -308,7 +309,10 @@ describe('createElasticChartsHeadlessRenderer', () => {
     const { scene } = xyCases[0]!;
     const { width, height } = scene.size!;
     const node = markup(renderer.render(scene, { environment: 'node' }));
-    expect(node).toContain(`width:${width}px;height:${height}px`);
+    const { handles, vars } = elasticModule;
+    expect(node).toContain(
+      `class="${handles.drawing.readableName}" style="${vars.box.width.propName}:${width}px;${vars.box.height.propName}:${height}px"`
+    );
     expect(node).toContain(
       `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"`
     );
@@ -319,7 +323,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
       )
     );
     expect(browser).toContain(
-      `width:100%;max-width:${width}px;aspect-ratio:${width} / ${height}`
+      `class="${handles.fluidDrawing.readableName}" style="${vars.box.maxWidth.propName}:${width}px;${vars.box.aspectRatio.propName}:${width} / ${height}"`
     );
     expect(browser).toContain('width="100%" height="100%"');
   });

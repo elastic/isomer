@@ -28,6 +28,7 @@ import type {
   ResolveSceneOptions,
 } from './render/context';
 import { gridSnapshotHeight } from './render/grid';
+import { gridModule } from './render/grid_styles';
 import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
@@ -372,7 +373,13 @@ CLOSED`);
     expect(rule('chartsGrid-panels')).toContain(
       'grid-template-columns:repeat(48,minmax(0,1fr))'
     );
-    expect(out).toContain('grid-column:25 / span 24;grid-row:1 / span 4');
+    const { place } = gridModule.vars;
+    expect(out).toContain(
+      `class="chartsGrid-panel chartsGrid-placed" style="${place.column.propName}:25 / span 24;${place.row.propName}:1 / span 4"`
+    );
+    expect(rule('chartsGrid-placed')).toContain(
+      `grid-column:var(${place.column.propName});grid-row:var(${place.row.propName})`
+    );
     expect(out.indexOf('L reason')).toBeLessThan(out.indexOf('R reason'));
     expect(out).not.toContain('H reason');
   });
@@ -382,6 +389,18 @@ CLOSED`);
     expect(out).toContain('class="chartsGrid-column"');
     expect(out).not.toContain('chartsGrid-panels');
     expect(rule('chartsGrid-column')).toContain('flex-direction:column');
+    // Each stacked panel is as tall as its rows, through the place var.
+    const { place } = gridModule.vars;
+    const { rowHeight, gap } = CHARTS_THEME.grid;
+    for (const rows of [4, 2]) {
+      expect(out).toContain(
+        `class="chartsGrid-panel chartsGrid-stacked" style="${place.height.propName}:${rows * rowHeight + (rows - 1) * gap}px"`
+      );
+    }
+    expect(out).not.toContain('chartsGrid-placed');
+    expect(rule('chartsGrid-stacked')).toContain(
+      `height:var(${place.height.propName})`
+    );
     expect(
       ['L reason', 'R reason', 'B reason', 'I reason'].map((text) =>
         out.indexOf(text)
@@ -644,8 +663,12 @@ CLOSED`);
       ],
     });
     // One row unit is 20 px; the title and description lines take 24 + 18.
+    const { clip } = gridModule.vars;
     expect(out).toContain(
-      '<header class="chartsGrid-header" style="max-height:20px">'
+      `<header class="chartsGrid-header chartsGrid-clipped" style="${clip.maxHeight.propName}:20px">`
+    );
+    expect(rule('chartsGrid-clipped')).toContain(
+      `max-height:var(${clip.maxHeight.propName})`
     );
     expect(rule('chartsGrid-header')).toContain('overflow:hidden');
   });

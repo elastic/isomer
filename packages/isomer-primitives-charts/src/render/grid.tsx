@@ -40,7 +40,7 @@ import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
 import { gridModule } from './grid_styles';
 import { gridIcon } from './icons';
-import { cls } from './styles';
+import { cls, px, varStyle } from './styles';
 import { CHARTS_THEME } from './theme';
 
 const {
@@ -51,7 +51,7 @@ const {
   descriptionHeight,
   nominalWidth,
 } = CHARTS_THEME.grid;
-const { handles: grid } = gridModule;
+const { handles: grid, vars } = gridModule;
 
 const rowsHeight = (rows: number) =>
   rows === 0 ? 0 : rows * rowHeight + (rows - 1) * gap;
@@ -166,8 +166,14 @@ const Header = ({
 }) =>
   title || description ? (
     <header
-      className={cls(context, grid.header)}
-      {...(maxHeight !== undefined && { style: { maxHeight } })}>
+      className={cls(
+        context,
+        grid.header,
+        maxHeight !== undefined && grid.clipped
+      )}
+      {...(maxHeight !== undefined && {
+        style: varStyle(vars.clip, { maxHeight: px(maxHeight) }),
+      })}>
       {title && <Heading {...{ level, context }}>{title}</Heading>}
       {description && <Description {...{ context }}>{description}</Description>}
     </header>
@@ -184,15 +190,16 @@ const Panel = ({
 }) => (
   <section
     aria-label={panel.title}
-    className={cls(context, grid.panel)}
-    style={
+    className={cls(context, grid.panel, oneColumn ? grid.stacked : grid.placed)}
+    style={varStyle(
+      vars.place,
       oneColumn
-        ? { height: rowsHeight(panel.h) }
+        ? { height: px(rowsHeight(panel.h)) }
         : {
-            gridColumn: `${panel.x + 1} / span ${panel.w}`,
-            gridRow: `${panel.y + 1} / span ${panel.h}`,
+            column: `${panel.x + 1} / span ${panel.w}`,
+            row: `${panel.y + 1} / span ${panel.h}`,
           }
-    }>
+    )}>
     <Header
       level={4}
       context={context}

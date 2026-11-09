@@ -5,7 +5,10 @@
  * 2.0.
  */
 
-import { createElasticChartsHeadlessRenderer } from '@elastic/isomer-charts-elastic/headless';
+import {
+  createElasticChartsHeadlessRenderer,
+  elasticChartsStylesheet,
+} from '@elastic/isomer-charts-elastic/headless';
 import {
   chartsFrame,
   type ChartsFrameTheme,
@@ -67,7 +70,8 @@ export default defineStudioConfig({
     frames: { slide: slideFrame, charts: chartsFrame },
     defaultFrame: 'slide',
   }),
-  stylesheet: () => `${slideStylesheet()}\n${chartsStylesheet()}`,
+  stylesheet: () =>
+    `${slideStylesheet()}\n${chartsStylesheet()}\n${elasticChartsStylesheet()}`,
   // Slides preview inside a slide; charts preview on their own.
   previewExample: (node) =>
     chartsPack.types.has(node.type)

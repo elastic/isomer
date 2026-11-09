@@ -9,7 +9,7 @@ import { variants } from '@elastic/distillate';
 
 import type { TableAlignment, TableScene } from '../scene/types';
 
-import { chartsDistillery } from './styles';
+import { createVarsModule } from './styles';
 import { CHARTS_THEME } from './theme';
 
 const theme = CHARTS_THEME.table;
@@ -23,11 +23,62 @@ const ellipsis = `
   white-space: nowrap;
 `;
 
-export const tableModule = chartsDistillery.createStyleModule(
+/**
+ * The table's handles, and the vars a Scene's colors and sizes reach them
+ * through. Each handle that reads a var declares its default, so the vars are
+ * set on the element that reads them.
+ */
+export const tableModule = createVarsModule(
   'chartsTable',
-  ({ css }) => ({
+  (vars) => ({
+    box: vars('box', {
+      width: '100%',
+      height: 'auto',
+      ink: 'currentColor',
+      fill: 'transparent',
+    }),
+    column: vars('column', { width: 'auto' }),
+    rule: vars('rule', { color: 'currentColor' }),
+    shade: vars('shade', { fill: 'transparent' }),
+    ink: vars('ink', { color: 'currentColor' }),
+    cell: vars('cell', { fill: 'transparent' }),
+    bar: vars('bar', {
+      track: 'transparent',
+      fill: 'transparent',
+      from: '0%',
+      span: '0%',
+    }),
+    badge: vars('badge', { fill: 'transparent' }),
+    gutter: vars('gutter', { basis: 'auto' }),
+  }),
+  ({ css }, { box, column, rule, shade, ink, cell, bar, badge, gutter }) => ({
     root: css`
+      ${box}
       overflow: hidden;
+      width: ${box.width};
+      height: ${box.height};
+      color: ${box.ink};
+      background: ${box.fill};
+    `,
+    column: css`
+      ${column}
+      width: ${column.width};
+    `,
+    ruled: css`
+      ${rule}
+      border-bottom: ${theme.lineWidth}px solid ${rule.color};
+    `,
+    shaded: css`
+      ${shade}
+      background: ${shade.fill};
+    `,
+    ink: css`
+      ${ink}
+      color: ${ink.color};
+    `,
+    filled: css`
+      ${cell}
+      background: ${cell.fill};
     `,
     font: variants(
       DENSITIES,
@@ -83,14 +134,22 @@ export const tableModule = chartsDistillery.createStyleModule(
     `,
     barValue: css`
       ${ellipsis}
+      ${gutter}
+      flex: 0 0 ${gutter.basis};
     `,
     bar: css`
+      ${bar}
       position: relative;
       flex: 1;
+      background: ${bar.track};
     `,
     barFill: css`
+      ${bar}
       position: absolute;
       top: 0;
+      left: ${bar.from};
+      width: ${bar.span};
+      background: ${bar.fill};
     `,
     barShape: variants(
       DENSITIES,
@@ -108,6 +167,8 @@ export const tableModule = chartsDistillery.createStyleModule(
       padding: 0 ${theme.badgePadding}px;
       border-radius: ${theme.badgeRadius}px;
       vertical-align: middle;
+      ${badge}
+      background: ${badge.fill};
     `,
     pager: css`
       display: flex;
