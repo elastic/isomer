@@ -26,7 +26,11 @@ const drawScene = async (scene: Scene): Promise<void> => {
   root = createRoot(host);
   root.render(renderer.render(scene, { environment: 'browser' }) as never);
   const deadline = performance.now() + 10_000;
-  while (!host.querySelector('[data-ech-render-complete="true"]')) {
+  // An empty Scene draws its note, not a chart, so nothing reports.
+  const drawn = () =>
+    (host.firstElementChild && !host.querySelector('.echChart')) ||
+    host.querySelector('[data-ech-render-complete="true"]');
+  while (!drawn()) {
     if (performance.now() >= deadline) {
       throw new Error(
         `Elastic Charts did not report rendering the ${scene.kind} Scene within 10 s`

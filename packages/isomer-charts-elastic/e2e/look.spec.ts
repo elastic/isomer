@@ -36,7 +36,11 @@ const SCALE = 1 / 8;
  * Scene, by kind. Both draw from `sceneSpecs`; what remains is the engines'
  * text layout and the gaps the docs' tolerance table lists.
  */
-const SAME_SCENE: Record<string, number> = { xy: 0.75, metric: 0.7 };
+const SAME_SCENE: Record<string, number> = {
+  xy: 0.75,
+  metric: 0.7,
+  partition: 0.75,
+};
 
 /**
  * Examples a gap in the docs' tolerance table holds to a looser tolerance:
@@ -49,7 +53,7 @@ const LOOSER: Record<string, number> = {
 
 /**
  * The known-failing controls, by kind: pairs of examples whose drawings
- * differ in layout (tiles, bars, marks, axes), not only in text. Each one's
+ * differ in layout (tiles, slices, bars, marks, axes), not only in text. Each one's
  * browser drawing scores below its tolerance against the other's headless
  * drawing. Two Scenes with different data may draw alike, a metric's number
  * most of all, so other data alone is no control.
@@ -82,6 +86,19 @@ const UNLIKE: Record<string, readonly (readonly [string, string])[]> = {
     [
       'xyChart: Long labels and legend statistics',
       'xyChart: Stacked bars with Other and missing buckets',
+    ],
+  ],
+  partition: [
+    [
+      'partitionChart: Pie',
+      'partitionChart: Donut with Other and missing buckets',
+    ],
+    ['partitionChart: Pie', 'partitionChart: Treemap'],
+    ['partitionChart: Nested pie with values', 'partitionChart: Mosaic'],
+    ['partitionChart: Waffle by day', 'partitionChart: Treemap'],
+    [
+      'partitionChart: Several metrics',
+      'partitionChart: Donut with Other and missing buckets',
     ],
   ],
 };

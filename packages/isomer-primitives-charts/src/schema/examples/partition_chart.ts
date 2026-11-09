@@ -223,11 +223,11 @@ export const partitionChartExamples: PrimitiveExample<PartitionChartNode>[] = [
   {
     name: 'Several metrics',
     description:
-      'Two metrics and no groups: one slice per metric, named by its column, colored by its column id.',
+      'A waffle of two metrics and no groups: one slice per metric, named by its column, colored by its column id, with values in the legend.',
     node: {
       type: 'partitionChart',
       title: 'Memory',
-      shape: 'donut',
+      shape: 'waffle',
       data: {
         columns: [
           {

@@ -25,6 +25,7 @@ import {
   type ChartEvent,
   formatAxisValue,
   type MetricScene,
+  type PartitionScene,
   type Scene,
   SCENE_KINDS,
   type SceneAxis,
@@ -44,6 +45,7 @@ import {
   renderSceneSvg,
 } from './headless';
 import { drawExamples, type DrawnScene } from './parity.fixtures';
+import { slicesOf } from './partition';
 import { sceneSpecs } from './specs';
 
 const headless = createElasticChartsHeadlessRenderer();
@@ -189,6 +191,50 @@ const contentChecks: Partial<Record<SceneKind, (drawing: DrawnScene) => void>> =
         );
       }
     },
+    partition: ({ scene, markup }) => {
+      const partition = scene as PartitionScene;
+      const texts = svgTexts(markup);
+      if (partition.empty) {
+        expect(texts).toEqual([partition.empty.text]);
+        return;
+      }
+      // DebugState names each slice by its key; a waffle reports each square.
+      const { debugState } = renderSceneSvg(partition);
+      const drawnSlices = new Map(
+        (debugState?.partition?.[0]?.partitions ?? []).map(
+          ({ name, color, value }) => [name, { color, value }]
+        )
+      );
+      const slices = slicesOf(partition.nodes);
+      expect(drawnSlices.size).toBe(slices.length);
+      for (const { key, color, value } of slices) {
+        expect(drawnSlices.get(key), key).toEqual({ color, value });
+      }
+      // Every word drawn is a slice's name or value label, or a legend item's.
+      const words = [
+        ...slices.flatMap(({ label, valueLabel }) => [label, valueLabel]),
+        ...partition.legend.items.flatMap(({ label, value }) => [
+          label,
+          value ?? '',
+        ]),
+      ].flatMap((text) => text.split(/\s+/));
+      for (const text of texts.flatMap((one) => one.split(/\s+/))) {
+        if (text) {
+          expect(
+            words.some((word) => word.includes(text.replace(/…$/, ''))),
+            text
+          ).toBe(true);
+        }
+      }
+      for (const { label, value } of partition.legend.visible
+        ? partition.legend.items
+        : []) {
+        expectDrawn(texts, label);
+        if (value) {
+          expectDrawn(texts, value);
+        }
+      }
+    },
     metric: ({ scene, markup }) => {
       const texts = svgTexts(markup);
       for (const tile of (scene as MetricScene).tiles) {
@@ -313,6 +359,75 @@ const gestures = (
           ]
         : []
     );
+  }
+  if (scene.kind === 'partition') {
+    const offersSlices = scene.interactions.select.includes('slice');
+    const paths = (
+      nodes: PartitionScene['nodes'],
+      keys: readonly string[]
+    ): { keys: string[]; node: PartitionScene['nodes'][number] }[] =>
+      nodes.flatMap((node) => [
+        { keys: [...keys, node.key], node },
+        ...paths(node.children, [...keys, node.key]),
+      ]);
+    const slices = paths(scene.nodes, []).map(({ keys, node }) => ({
+      gesture: `click ${node.label}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            keys.map((key, depth) => ({
+              groupByRollup: key,
+              value: node.value,
+              depth: depth + 1,
+              sortIndex: 0,
+              path: [],
+              smAccessorValue: '',
+            })),
+            { specId: 'partition', key: 'spec{partition}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersSlices && node.selection
+          ? [selectEvent(NODE, node.selection)]
+          : [],
+    }));
+    // The buttons the installed legend action draws for each legend item.
+    const legend = scene.legend.items.flatMap((item) =>
+      [false, true].map((negate) => {
+        const gesture = `filter ${negate ? 'out' : 'for'} ${item.label}`;
+        return {
+          gesture,
+          raise: () => {
+            const { events, env } = listen();
+            const action = installed(scene, env).callback('legendAction');
+            if (action) {
+              const button = elementsOf(
+                action({
+                  series: [{ key: item.key }],
+                  label: item.label,
+                }) as ReactNode
+              ).find(
+                ({ type, props }) =>
+                  type === 'button' &&
+                  props['aria-label'] ===
+                    `Filter ${negate ? 'out' : 'for'} ${item.label}`
+              );
+              expect(button, `${gesture}: its button`).toBeDefined();
+              (button!.props.onClick as Callback)();
+            }
+            return events;
+          },
+          expected:
+            offersSlices && item.selection
+              ? [selectEvent(NODE, item.selection, negate)]
+              : [],
+        };
+      })
+    );
+    return [...slices, ...legend];
   }
   if (scene.kind !== 'xy') {
     return [];
@@ -454,7 +569,7 @@ describe('renderer parity: events from the browser engine', () => {
       interactive.flatMap(({ scene }) => scene.interactions.select)
     );
     expect([...offered].sort()).toEqual(
-      expect.arrayContaining(['category', 'datum', 'legend', 'tile'])
+      expect.arrayContaining(['category', 'datum', 'legend', 'slice', 'tile'])
     );
     expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
       true
