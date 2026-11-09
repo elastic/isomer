@@ -159,6 +159,24 @@ describe('resolvePartition', () => {
     ]);
   });
 
+  it('orders sums past the largest number largest first', () => {
+    const scene = resolve(
+      chart({
+        data: {
+          columns: [string('g'), number('v')],
+          rows: [
+            ['small', Number.MAX_VALUE],
+            ['small', Number.MAX_VALUE],
+            ['large', Number.MAX_VALUE],
+            ['large', Number.MAX_VALUE],
+            ['large', Number.MAX_VALUE],
+          ],
+        },
+      })
+    );
+    expect(scene.nodes.map(({ label }) => label)).toEqual(['large', 'small']);
+  });
+
   it('orders thousands of metrics in metric order', () => {
     const count = 5_000;
     const ids = Array.from({ length: count }, (_, index) => `m${index}`);

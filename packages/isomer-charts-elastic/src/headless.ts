@@ -30,7 +30,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
-import { EMPTY_TEXT_SIZE, emptyTextOf } from './empty';
+import { EMPTY_LINE_HEIGHT, EMPTY_TEXT_SIZE, emptyTextOf } from './empty';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
 import { kibanaBaseTheme } from './theme';
@@ -106,7 +106,26 @@ export const renderSceneSvg = (
   };
 };
 
-// The note centred in the chart, as Lens's `VisualizationNoResults` draws it.
+/** `text` in lines no wider than `width` by `measure`, broken between words; a word wider alone keeps its own line. */
+const wrapText = (
+  text: string,
+  width: number,
+  measure: (line: string) => number
+): string[] => {
+  const lines: string[] = [];
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    const last = lines.at(-1);
+    if (last !== undefined && measure(`${last} ${word}`) <= width) {
+      lines[lines.length - 1] = `${last} ${word}`;
+    } else {
+      lines.push(word);
+    }
+  }
+  return lines;
+};
+
+// The note centred in the chart, as Lens's `VisualizationNoResults` draws it,
+// wrapped to the chart's width as the browser's note wraps.
 const drawEmpty = (
   context: CanvasRenderingContext2D,
   scene: Scene,
@@ -118,7 +137,15 @@ const drawEmpty = (
   context.fillStyle = scene.chrome.textSubdued;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(text, width / 2, height / 2);
+  const lines = wrapText(
+    text,
+    width,
+    (line) => context.measureText(line).width
+  );
+  const top = height / 2 - ((lines.length - 1) * EMPTY_LINE_HEIGHT) / 2;
+  lines.forEach((line, index) => {
+    context.fillText(line, width / 2, top + index * EMPTY_LINE_HEIGHT);
+  });
   return undefined;
 };
 

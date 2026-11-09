@@ -16,7 +16,7 @@ import {
   type StyleHandle,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { EMPTY_TEXT_SIZE } from './empty';
+import { EMPTY_LINE_HEIGHT, EMPTY_TEXT_SIZE } from './empty';
 
 /** Kibana's legend action gap, in pixels. */
 const LEGEND_ACTION_GAP = 2;
@@ -111,6 +111,8 @@ export const elasticModule: ElasticStyles = createVarsModule(
       color: ${empty.ink};
       background: ${empty.fill};
       font-size: ${EMPTY_TEXT_SIZE}px;
+      line-height: ${EMPTY_LINE_HEIGHT}px;
+      text-align: center;
     `,
   })
 );

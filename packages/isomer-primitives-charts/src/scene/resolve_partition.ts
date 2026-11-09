@@ -187,20 +187,32 @@ export const resolvePartition = (
   // Draw order within a layer, as Lens sorts: a mosaic's columns, and a lone
   // mosaic layer, keep row order; the metric layer keeps metric order; every
   // other layer runs largest first, ties in row order.
-  const sumsOf = new Map<Draft, number>();
-  const sumOf = (slice: Draft): number => {
+  const sumsOf = new Map<Draft, { own: number; scaled: number }>();
+  const sumOf = (slice: Draft): { own: number; scaled: number } => {
     let sum = sumsOf.get(slice);
     if (sum === undefined) {
       sum =
         slice.children.size === 0
-          ? slice.own
+          ? { own: slice.own, scaled: slice.scaled }
           : [...slice.children.values()].reduce(
-              (total, child) => total + sumOf(child),
-              0
+              (total, child) => {
+                const each = sumOf(child);
+                return {
+                  own: total.own + each.own,
+                  scaled: total.scaled + each.scaled,
+                };
+              },
+              { own: 0, scaled: 0 }
             );
       sumsOf.set(slice, sum);
     }
     return sum;
+  };
+  /** How much larger `b` is than `a`; by scaled sums where both are past `Number.MAX_VALUE`. */
+  const larger = (a: Draft, b: Draft): number => {
+    const [x, y] = [sumOf(a), sumOf(b)];
+    const difference = y.own - x.own;
+    return Number.isNaN(difference) ? y.scaled - x.scaled : difference;
   };
   const metricRank = new Map(metrics.map((metric, rank) => [metric, rank]));
   const sorted = (slices: Iterable<Draft>): Draft[] =>
@@ -211,7 +223,7 @@ export const resolvePartition = (
       if (shape === 'mosaic' && (a.depth === 1 || groups.length === 1)) {
         return a.first - b.first;
       }
-      return sumOf(b) - sumOf(a) || a.first - b.first;
+      return larger(a, b) || a.first - b.first;
     });
 
   // Leaves in draw order, depth first: what an engine sums, in this order.

@@ -15,6 +15,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
+import { EMPTY_LINE_HEIGHT } from './empty';
 import { createElasticChartsHeadlessRenderer } from './headless';
 import { elasticChartsStylesheet, elasticModule } from './styles';
 
@@ -61,6 +62,12 @@ describe('elastic-charts styles', () => {
     declares(handles.legendAction, 'display:inline-flex', 'gap:2px');
     declares(handles.drawing, 'display:flex');
     declares(handles.fluidDrawing, 'display:flex', 'width:100%');
+    declares(
+      handles.empty,
+      'display:flex',
+      `line-height:${EMPTY_LINE_HEIGHT}px`,
+      'text-align:center'
+    );
   });
 
   it('ships its own rules alone, as the pack’s stylesheet writes them', () => {

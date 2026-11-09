@@ -30,6 +30,7 @@ import type { Composition, PrimitiveNode } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { ariaDescriptionOf } from './accessibility';
+import { EMPTY_LINE_HEIGHT } from './empty';
 import { seriesOf } from './events';
 import {
   createElasticChartsHeadlessRenderer,
@@ -261,6 +262,40 @@ describe('renderSceneSvg', () => {
       expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
     }
   );
+
+  it('wraps an empty chart’s note to a narrow chart’s width, centred', () => {
+    const { scene } = partitionCases.find(
+      ({ scene: one }) => one.empty?.reason === 'negative'
+    )!;
+    const narrow = { ...scene, size: { width: 200, height: 160 } };
+    const charWidth = 8;
+    const { svg } = renderSceneSvg(narrow, {
+      measureTextWidth: (text) => text.length * charWidth,
+    });
+    const lines = svgTexts(svg);
+    expect(lines.length).toBeGreaterThan(1);
+    expect(lines.join(' ')).toBe(scene.empty!.text);
+    for (const line of lines) {
+      expect(line.length * charWidth).toBeLessThanOrEqual(200);
+    }
+    const ysOf = (drawn: string) =>
+      [...drawn.matchAll(/<text\b[^>]* y="([\d.]+)"/g)].map(([, y]) =>
+        Number(y)
+      );
+    const ys = ysOf(svg);
+    expect(ys).toHaveLength(lines.length);
+    ys.slice(1).forEach((y, index) => {
+      expect(y - ys[index]!).toBeCloseTo(EMPTY_LINE_HEIGHT, 6);
+    });
+    // Centred where one line of it would be, at the same height.
+    const [single] = ysOf(
+      renderSceneSvg(
+        { ...scene, size: { width: 2000, height: 160 } },
+        { measureTextWidth: (text) => text.length * charWidth }
+      ).svg
+    );
+    expect((ys[0]! + ys.at(-1)!) / 2).toBeCloseTo(single!, 6);
+  });
 
   it('escapes Scene strings in the SVG', () => {
     const { scene } = xyCases[0]!;
