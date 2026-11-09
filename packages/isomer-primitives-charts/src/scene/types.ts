@@ -24,6 +24,7 @@ export const SCENE_KINDS = [
   'heatmap',
   'gauge',
   'tagCloud',
+  'legacyMetric',
 ] as const;
 
 /** One of {@link SCENE_KINDS}. */
@@ -822,7 +823,56 @@ export interface TagCloudScene extends SceneBase {
   readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }
 
-/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene}, a {@link PartitionScene}, a {@link HeatmapScene}, a {@link GaugeScene} or a {@link TagCloudScene}. */
+/** One tile of a {@link LegacyMetricScene}: one value of one row, its type sized to fit the chart. */
+export interface LegacyMetricTile {
+  /** The tile's row, and its breakdown and value columns. */
+  readonly source: SceneSource;
+  readonly label: string;
+  readonly value: {
+    readonly text: string;
+    readonly raw: Cell;
+    readonly color: SceneColor;
+  };
+  readonly labelColor: SceneColor;
+  /** The tile's own background, when a band colors it and it does not fill the chart. */
+  readonly background?: SceneColor;
+  /**
+   * Lengths in pixels, already shrunk to fit the Scene's `size` as Lens's
+   * auto scale shrinks them: the value's and label's font sizes, and the
+   * padding around them.
+   */
+  readonly type: {
+    readonly value: number;
+    readonly label: number;
+    readonly padding: number;
+  };
+  /** The tile's box at those lengths, from estimated text widths. */
+  readonly box: SceneSize;
+  /** What a selection of the tile describes, such as "host.name: web-01 · Count: 12". */
+  readonly description: string;
+  /** The `tile` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** A Scene of large values with labels, as Lens's legacy metric draws them. */
+export interface LegacyMetricScene extends SceneBase {
+  readonly kind: 'legacyMetric';
+  /** In tile order: every row of the first metric column, then of the next. */
+  readonly tiles: readonly LegacyMetricTile[];
+  readonly labelPosition: 'top' | 'bottom';
+  /** How a tile's value and label align with each other. */
+  readonly textAlign: MetricAlignment;
+  readonly showLabels: boolean;
+  /** Line height as a multiple of the font size. */
+  readonly lineHeight: number;
+  readonly valueWeight: number;
+  /** The whole chart's background: a lone tile's band color, else the chrome background. */
+  readonly background: SceneColor;
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
+}
+
+/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene}, a {@link PartitionScene}, a {@link HeatmapScene}, a {@link GaugeScene}, a {@link TagCloudScene} or a {@link LegacyMetricScene}. */
 export type Scene =
   | MetricScene
   | XyScene
@@ -830,7 +880,8 @@ export type Scene =
   | PartitionScene
   | HeatmapScene
   | GaugeScene
-  | TagCloudScene;
+  | TagCloudScene
+  | LegacyMetricScene;
 
 /** Where a renderer draws: a browser DOM, or Node with no DOM. */
 export type SceneEnvironment = 'browser' | 'node';

@@ -41,6 +41,8 @@ export {
   type HeatmapCategory,
   type HeatmapCell,
   type HeatmapScene,
+  type LegacyMetricScene,
+  type LegacyMetricTile,
   type MetricAlignment,
   type MetricLayout,
   type MetricScene,
@@ -91,6 +93,7 @@ export {
   gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
   tagCloudCatalog,
@@ -143,6 +146,7 @@ export { chartEventExamples } from './schema/examples/events';
 export { gaugeExamples } from './schema/examples/gauge';
 export { gridExamples } from './schema/examples/grid';
 export { heatmapExamples } from './schema/examples/heatmap';
+export { legacyMetricExamples } from './schema/examples/legacy_metric';
 export { metricExamples } from './schema/examples/metric';
 export { partitionChartExamples } from './schema/examples/partition_chart';
 export { tagCloudExamples } from './schema/examples/tag_cloud';
@@ -180,6 +184,12 @@ export {
   heatmapSchema,
 } from './schema/heatmap';
 export { glyphSchema } from './schema/icons';
+export {
+  type LegacyMetricNode,
+  LEGACY_METRIC_RULES,
+  LEGACY_METRIC_SIZES,
+  legacyMetricSchema,
+} from './schema/legacy_metric';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type PartitionChartNode,

@@ -32,6 +32,8 @@ export {
   type HeatmapCategory,
   type HeatmapCell,
   type HeatmapScene,
+  type LegacyMetricScene,
+  type LegacyMetricTile,
   type MetricAlignment,
   type MetricLayout,
   type MetricScene,

@@ -87,12 +87,13 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, dataTable, partitionChart, heatmap, gauge, tagCloud, grid and unsupported', () => {
+  it('registers metric, legacyMetric, xyChart, dataTable, partitionChart, heatmap, gauge, tagCloud, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
       'dataTable',
       'gauge',
       'grid',
       'heatmap',
+      'legacyMetric',
       'metric',
       'partitionChart',
       'tagCloud',
@@ -151,6 +152,7 @@ describe('chartsPack', () => {
   // `react` skips validation, so its node may carry any href.
   it.each([
     'metric',
+    'legacyMetric',
     'xyChart',
     'dataTable',
     'partitionChart',
@@ -218,6 +220,45 @@ describe('chartsPack', () => {
       runtime.surfaces.slack.render(composition, { collectAssets: true }).assets
     ).toHaveLength(1);
   });
+});
+
+describe('legacyMetric', () => {
+  const runtime = createIsomerRuntime({ packs: [chartsPack] });
+  const cases = primitiveExamples(
+    chartsPack.primitives.find(({ type }) => type === 'legacyMetric')!
+  );
+  it.each(cases)(
+    '$name: the pack draws its tiles with no engine registered, and Slack sends a picture',
+    ({ node }) => {
+      const composition = view(node);
+      const scene = resolveChart(node as ChartNode, { scheme: 'light' });
+      if (scene.kind !== 'legacyMetric') {
+        throw new Error(`resolved a ${scene.kind} Scene`);
+      }
+      const html = renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          runtime.surfaces.react.render(composition, { heading: false })
+        )
+      );
+      expect(html).not.toContain(
+        renderToStaticMarkup(createElement('p', null, scene.summary))
+      );
+      for (const tile of scene.tiles) {
+        expect(html).toContain(
+          renderToStaticMarkup(createElement('b', null, tile.value.text)).slice(
+            3,
+            -4
+          )
+        );
+      }
+      expect(
+        runtime.surfaces.slack.render(composition, { collectAssets: true })
+          .assets
+      ).toHaveLength(1);
+    }
+  );
 });
 
 describe('a Scene description', () => {

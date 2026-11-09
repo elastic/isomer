@@ -10,6 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { dataTableTopHosts } from './examples/data_table';
 import { gaugeSemiCircle } from './examples/gauge';
 import { heatmapHourly } from './examples/heatmap';
+import { legacyMetricSingleValue } from './examples/legacy_metric';
 import { metricSingleValue } from './examples/metric';
 import { partitionPie } from './examples/partition_chart';
 import { tagCloudServices } from './examples/tag_cloud';
@@ -30,8 +31,26 @@ export const metricCatalog: PrimitiveCatalogEntry = {
   avoidWhen: [
     'The reader needs to see how values change over time or compare many categories: use `xyChart`.',
     'There are more categories than fit as tiles: use `xyChart` bars.',
+    'A Lens legacy metric or an aggregation-based metric visualization is shown: use `legacyMetric`.',
   ],
   example: metricSingleValue,
+};
+
+/** What an agent reads to choose `legacyMetric`: purpose, when to use it, and an example. */
+export const legacyMetricCatalog: PrimitiveCatalogEntry = {
+  type: 'legacyMetric',
+  name: 'Legacy metric',
+  purpose:
+    'Show one or more large values with a label above or below each, optionally colored by value range, as Lens’s legacy metric draws them.',
+  useWhen: [
+    'A Lens legacy metric or an aggregation-based metric visualization is shown.',
+    'A few plain values are wanted large, each with its label, and no tile frame.',
+  ],
+  avoidWhen: [
+    'A value needs a comparison, progress bar, trend or icon: use `metric`.',
+    'Values are compared across many categories: use `xyChart` bars or `dataTable`.',
+  ],
+  example: legacyMetricSingleValue,
 };
 
 /** What an agent reads to choose `xyChart`: purpose, when to use it, and an example. */

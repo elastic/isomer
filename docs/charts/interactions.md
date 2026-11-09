@@ -24,6 +24,7 @@ interactions?: {
 | Chart | `select` targets |
 | --- | --- |
 | `metric` | `tile` |
+| `legacyMetric` | `tile` |
 | `xyChart` | `datum`, `series`, `category`, `legend` |
 | `dataTable` | `cell` |
 | `partitionChart` | `slice` |
