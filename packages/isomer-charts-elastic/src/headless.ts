@@ -33,6 +33,7 @@ import { ariaDescriptionOf } from './accessibility';
 import { EMPTY_LINE_HEIGHT, EMPTY_TEXT_SIZE, emptyTextOf } from './empty';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
+import { TAG_CLOUD_LABEL } from './tag_cloud_label';
 import { kibanaBaseTheme } from './theme';
 
 /** How {@link renderSceneSvg} draws text. */
@@ -67,7 +68,7 @@ const withAccessibleText = (svg: string, scene: Scene): string =>
       }<desc>${escapeXml(ariaDescriptionOf(scene))}</desc>`
   );
 
-/** Draws a `metric`, `xy`, `partition`, `heatmap` or `gauge` Scene as SVG at the Scene's `size`; an empty one as its note. */
+/** Draws a `metric`, `xy`, `partition`, `heatmap`, `gauge` or `tagCloud` Scene as SVG at the Scene's `size`; an empty one as its note. */
 export const renderSceneSvg = (
   scene: Scene,
   { font, measureTextWidth }: HeadlessSvgOptions = {}
@@ -83,16 +84,23 @@ export const renderSceneSvg = (
     ...(measureTextWidth ? { measureTextWidth } : {}),
   });
   const empty = emptyTextOf(scene);
+  // A tag cloud's label takes a line under the cloud, as in a browser.
+  const label =
+    scene.kind === 'tagCloud' && empty === undefined ? scene.label : undefined;
   const drawn: unknown =
     empty === undefined
       ? renderChart({
           specs: collectSpecs(sceneSpecs(scene, { environment: 'node' })),
           width,
-          height,
+          height:
+            label === undefined ? height : height - TAG_CLOUD_LABEL.lineHeight,
           context: canvas.context,
           Path2D: canvas.Path2D,
         })
       : drawEmpty(canvas.context, scene, empty);
+  if (label !== undefined) {
+    drawLabel(canvas.context, scene, label);
+  }
   const debugState = (drawn as { debugState?: DebugState | null } | undefined)
     ?.debugState;
   return {
@@ -149,6 +157,22 @@ const drawEmpty = (
   return undefined;
 };
 
+// A tag cloud's label, centred on the line under the cloud in the Scene's
+// text color, as the browser draws it.
+const drawLabel = (
+  context: CanvasRenderingContext2D,
+  scene: Scene,
+  text: string
+): void => {
+  const { width, height } = scene.size!;
+  const family = kibanaBaseTheme(scene.scheme).axes.tickLabel.fontFamily;
+  context.font = `${TAG_CLOUD_LABEL.weight} ${TAG_CLOUD_LABEL.size}px ${family}`;
+  context.fillStyle = scene.chrome.text;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.fillText(text, width / 2, height - TAG_CLOUD_LABEL.lineHeight / 2);
+};
+
 /** What {@link createElasticChartsHeadlessRenderer} takes: text options and where it runs. */
 export interface HeadlessRendererOptions extends HeadlessSvgOptions {
   /**
@@ -164,6 +188,7 @@ const KINDS: readonly SceneKind[] = [
   'partition',
   'heatmap',
   'gauge',
+  'tagCloud',
 ];
 
 /** A short, stable name for a drawing: the same SVG always gets the same one. */

@@ -34,6 +34,7 @@ import {
   type SceneKind,
   type SceneRenderEnv,
   selectEvent,
+  type TagCloudScene,
   type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
@@ -236,6 +237,39 @@ const contentChecks: Partial<Record<SceneKind, (drawing: DrawnScene) => void>> =
           expectDrawn(texts, value);
         }
       }
+    },
+    tagCloud: ({ scene, markup }) => {
+      const cloud = scene as TagCloudScene;
+      const texts = svgTexts(markup);
+      if (cloud.empty) {
+        expect(texts).toEqual([cloud.empty.text]);
+        return;
+      }
+      // Each word drawn is a Scene word in its color; the label in the text color.
+      const drawnWords = [
+        ...markup.matchAll(
+          /<text\b[^>]*\bfill="([^"]+)"[^>]*>([^<]*)<\/text>/g
+        ),
+      ].map(([, fill, text]) => ({ fill: fill!, text: unescapeXml(text!) }));
+      expect(drawnWords.length).toBeGreaterThan(0);
+      for (const { fill, text } of drawnWords) {
+        if (text === cloud.label) {
+          expect(rgbOf(fill)).toBe(rgbOf(cloud.chrome.text));
+          continue;
+        }
+        expect(
+          cloud.words
+            .filter((word) => word.text === text)
+            .map(({ color }) => rgbOf(color)),
+          text
+        ).toContain(rgbOf(fill));
+      }
+      if (cloud.label !== undefined) {
+        expect(texts).toContain(cloud.label);
+      }
+      // The heaviest word always fits: the cloud places words largest first.
+      const heaviest = [...cloud.words].sort((a, b) => b.weight - a.weight)[0]!;
+      expect(texts).toContain(heaviest.text);
     },
     gauge: ({ scene, markup }) => {
       const gauge = scene as GaugeScene;
@@ -572,6 +606,24 @@ const gestures = (
     );
     return [...slices, ...legend];
   }
+  if (scene.kind === 'tagCloud') {
+    const offersTags = scene.interactions.select.includes('tag');
+    return scene.words.map((word, index) => ({
+      gesture: `click ${word.text}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            { text: word.text, weight: word.weight, color: word.color, index },
+            { specId: 'tagCloud', key: 'tagCloud' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersTags && word.selection ? [selectEvent(NODE, word.selection)] : [],
+    }));
+  }
   if (scene.kind === 'heatmap') {
     const offersCells = scene.interactions.select.includes('cell');
     const clicks = scene.cells.map((cell, index) => ({
@@ -774,6 +826,7 @@ describe('renderer parity: events from the browser engine', () => {
         'datum',
         'legend',
         'slice',
+        'tag',
         'tile',
       ])
     );

@@ -144,4 +144,60 @@ const pair = (
   return [draw(false), draw(true)];
 };
 
-Object.assign(window, { drawScene, score, pair });
+/** A picture's pixels at full size, as `[r, g, b]` per pixel. */
+const pixels = async (png: string) => {
+  const image = new Image();
+  image.src = `data:image/png;base64,${png}`;
+  await image.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = image.width;
+  canvas.height = image.height;
+  const context = canvas.getContext('2d')!;
+  context.drawImage(image, 0, 0);
+  return context.getImageData(0, 0, image.width, image.height).data;
+};
+
+/** Bits kept per channel when pixels are binned by color. */
+const COLOR_BITS = 3;
+
+/** Pixels per color bin, binned by `COLOR_BITS` bits per channel, without the picture's commonest bin: its background. */
+const colorMass = async (png: string): Promise<Map<number, number>> => {
+  const data = await pixels(png);
+  const bins = new Map<number, number>();
+  const shift = 8 - COLOR_BITS;
+  for (let at = 0; at < data.length; at += 4) {
+    const bin =
+      ((data[at]! >> shift) << (2 * COLOR_BITS)) |
+      ((data[at + 1]! >> shift) << COLOR_BITS) |
+      (data[at + 2]! >> shift);
+    bins.set(bin, (bins.get(bin) ?? 0) + 1);
+  }
+  let background = -1;
+  let most = -1;
+  for (const [bin, count] of bins) {
+    if (count > most) {
+      [background, most] = [bin, count];
+    }
+  }
+  bins.delete(background);
+  return bins;
+};
+
+/**
+ * How alike two pictures' colors are, wherever they are drawn: the
+ * intersection of their color masses over their union, 1 when every color
+ * covers as many pixels in both, near 0 when they share none. For charts whose
+ * engines place the same marks differently, such as a word cloud.
+ */
+const colorScore = async (a: string, b: string): Promise<number> => {
+  const [x, y] = await Promise.all([colorMass(a), colorMass(b)]);
+  let shared = 0;
+  let either = 0;
+  for (const bin of new Set([...x.keys(), ...y.keys()])) {
+    shared += Math.min(x.get(bin) ?? 0, y.get(bin) ?? 0);
+    either += Math.max(x.get(bin) ?? 0, y.get(bin) ?? 0);
+  }
+  return either === 0 ? 1 : shared / either;
+};
+
+Object.assign(window, { drawScene, score, colorScore, pair });

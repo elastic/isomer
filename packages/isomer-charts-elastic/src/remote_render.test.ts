@@ -104,7 +104,14 @@ const withoutSvgs = (html: string): string => {
 };
 
 /** The primitives Elastic Charts draws. */
-const DRAWN = ['metric', 'xyChart', 'partitionChart', 'heatmap', 'gauge'];
+const DRAWN = [
+  'metric',
+  'xyChart',
+  'partitionChart',
+  'heatmap',
+  'gauge',
+  'tagCloud',
+];
 
 const OTHER: Record<ColorScheme, ColorScheme> = {
   light: 'dark',
@@ -121,6 +128,7 @@ describe('remote render with headless Elastic Charts', () => {
         'partitionChart',
         'heatmap',
         'gauge',
+        'tagCloud',
         'grid',
         'unsupported',
       ])
@@ -163,7 +171,7 @@ describe('remote render with headless Elastic Charts', () => {
     }
   );
 
-  it('draws every metric, xy, partition, heatmap and gauge chart as Elastic Charts SVG', () => {
+  it('draws every metric, xy, partition, heatmap, gauge and tag cloud chart as Elastic Charts SVG', () => {
     for (const { type, composition } of examples) {
       if (DRAWN.includes(type)) {
         const { html } = runtime.surfaces.snapshot.render(composition, {

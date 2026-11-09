@@ -44,15 +44,29 @@ const SAME_SCENE: Record<string, number> = {
   // Both engines draw a gauge's arcs and text alike, and two round gauges
   // can score 0.71 against each other, so a gauge is held closer.
   gauge: 0.9,
+  // Scored by color mass (`PLACEMENT_FREE`): the same Scene scores 0.92 and
+  // more, and other words, sizes or colors 0.39 and less.
+  tagCloud: 0.8,
 };
+
+/**
+ * Kinds whose engines place the same marks in different places, which the
+ * docs' tolerance table lists: a word cloud lays words out by pixel sprites
+ * each engine measures its own way. They are scored by their colors' mass
+ * wherever it is drawn (`colorScore`), not by SSIM, so the same words in the
+ * same sizes and colors score alike, and other words, sizes or colors do not.
+ */
+const PLACEMENT_FREE: ReadonlySet<string> = new Set(['tagCloud']);
 
 /**
  * Examples a gap in the docs' tolerance table holds to a looser tolerance:
  * where a metric title wraps, the engines break it at different words and fit
- * the value to what is left.
+ * the value to what is left; where many small words are turned, the engines
+ * fit different ones (0.74 on Linux, against 0.24 for another cloud).
  */
 const LOOSER: Record<string, number> = {
   'metric: Long title and subtitle': 0.5,
+  'tagCloud: Many angles on a log scale': 0.6,
 };
 
 /**
@@ -129,6 +143,21 @@ const UNLIKE: Record<string, readonly (readonly [string, string])[]> = {
     ],
     ['gauge: Circle, pre-rendered and with provenance', 'gauge: Huge value'],
   ],
+  tagCloud: [
+    ['tagCloud: Services by volume', 'tagCloud: Many angles on a log scale'],
+    [
+      'tagCloud: Services by volume',
+      'tagCloud: Right-angled with stated colors, Other and missing buckets',
+    ],
+    [
+      'tagCloud: One tag',
+      'tagCloud: Selectable, pre-rendered and with provenance',
+    ],
+    [
+      'tagCloud: Numbers as tags, with missing values',
+      'tagCloud: Services by volume',
+    ],
+  ],
 };
 
 /** A PNG's width and height, from its header. */
@@ -169,7 +198,7 @@ const stylesheet = (scheme: ColorScheme) =>
 type LookPage = Page & {
   draw: (scene: Scene) => Promise<Buffer>;
   headless: (markup: string) => Promise<Buffer>;
-  score: (a: Buffer, b: Buffer) => Promise<number>;
+  score: (a: Buffer, b: Buffer, kind?: string) => Promise<number>;
   pair: (
     width: number,
     height: number,
@@ -206,15 +235,23 @@ const openPage = async (
       }, markup);
       return page.locator('#headless').screenshot();
     },
-    score: (a: Buffer, b: Buffer) =>
+    score: (a: Buffer, b: Buffer, kind?: string) =>
       page.evaluate(
-        ([x, y, scale]) =>
-          (
-            window as unknown as {
-              score: (a: string, b: string, s: number) => Promise<number>;
-            }
-          ).score(x, y, scale),
-        [a.toString('base64'), b.toString('base64'), SCALE] as const
+        ([x, y, scale, byColor]) => {
+          const scorers = window as unknown as {
+            score: (a: string, b: string, s: number) => Promise<number>;
+            colorScore: (a: string, b: string) => Promise<number>;
+          };
+          return byColor
+            ? scorers.colorScore(x, y)
+            : scorers.score(x, y, scale);
+        },
+        [
+          a.toString('base64'),
+          b.toString('base64'),
+          SCALE,
+          kind !== undefined && PLACEMENT_FREE.has(kind),
+        ] as const
       ),
     pair: async (
       width: number,
@@ -272,6 +309,19 @@ test.describe('renderer parity: look', () => {
     );
   });
 
+  test('scores color wherever it is drawn, for kinds placed differently', async () => {
+    const page = pages.get('light')!;
+    // The same stripes with a black block in the corner, or without it.
+    const [plain, blocked] = await page.pair(300, 160, { left: 200, top: 100 });
+    for (const kind of PLACEMENT_FREE) {
+      expect(await page.score(plain, plain, kind)).toBe(1);
+      expect(await page.score(blocked, blocked, kind)).toBe(1);
+      expect(await page.score(plain, blocked, kind)).toBeLessThan(
+        SAME_SCENE[kind]!
+      );
+    }
+  });
+
   test('has known-failing controls for every kind it scores', () => {
     for (const kind of new Set(drawn.map(({ scene }) => scene.kind))) {
       expect(UNLIKE[kind]?.length ?? 0, kind).toBeGreaterThan(0);
@@ -304,9 +354,9 @@ test.describe('renderer parity: look', () => {
       const browser = await page.draw(drawing.scene);
       // The score reads only where both overlap, so neither may be cut short.
       expect(sizeOf(browser)).toEqual(sizeOf(headless));
-      expect(await page.score(browser, headless)).toBeGreaterThanOrEqual(
-        threshold!
-      );
+      expect(
+        await page.score(browser, headless, drawing.scene.kind)
+      ).toBeGreaterThanOrEqual(threshold!);
     });
   });
 
@@ -324,7 +374,8 @@ test.describe('renderer parity: look', () => {
             const browser = await page.draw(drawing.scene);
             const unlike = await page.score(
               browser,
-              await page.headless(different.markup)
+              await page.headless(different.markup),
+              drawing.scene.kind
             );
             expect(unlike).toBeLessThan(toleranceOf(drawing)!);
           });

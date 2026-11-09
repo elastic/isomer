@@ -16,6 +16,7 @@ import {
   heatmapExamples,
   metricExamples,
   partitionChartExamples,
+  tagCloudExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
@@ -42,6 +43,7 @@ import {
 } from './headless';
 import { slicesOf } from './partition';
 import { elasticModule } from './styles';
+import { TAG_CLOUD_LABEL } from './tag_cloud_label';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 
@@ -69,6 +71,16 @@ const metricCases = metricExamples.flatMap(({ name, node }) =>
 );
 
 const gaugeCases = gaugeExamples.flatMap(({ name, node }) =>
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
+);
+
+const tagCloudCases = tagCloudExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
@@ -147,6 +159,7 @@ describe('renderSceneSvg', () => {
     ...partitionCases,
     ...heatmapCases,
     ...gaugeCases,
+    ...tagCloudCases,
   ])(
     '$name ($scheme) draws an SVG at the Scene size on its background',
     ({ scene }) => {
@@ -202,6 +215,7 @@ describe('renderSceneSvg', () => {
     ...partitionCases,
     ...heatmapCases,
     ...gaugeCases,
+    ...tagCloudCases,
   ])(
     '$name ($scheme) names the SVG by its title and description',
     ({ scene }) => {
@@ -324,12 +338,31 @@ describe('renderSceneSvg', () => {
     expect((ys[0]! + ys.at(-1)!) / 2).toBeCloseTo(single!, 6);
   });
 
-  it.each([...heatmapCases, ...gaugeCases].filter(({ scene }) => scene.empty))(
-    '$name ($scheme) draws only its note',
-    ({ scene }) => {
-      expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
+  it.each(
+    [...heatmapCases, ...gaugeCases, ...tagCloudCases].filter(
+      ({ scene }) => scene.empty
+    )
+  )('$name ($scheme) draws only its note', ({ scene }) => {
+    expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
+  });
+
+  it('draws a tag cloud’s label on the line under the cloud, in the Scene’s text color', () => {
+    const { scene } = tagCloudCases.find(
+      ({ scene: one }) => one.kind === 'tagCloud' && one.label !== undefined
+    )!;
+    if (scene.kind !== 'tagCloud') {
+      throw new Error('expected a tag cloud Scene');
     }
-  );
+    const { svg } = renderSceneSvg(scene);
+    const [, attributes] =
+      new RegExp(`<text\\b([^>]*)>${scene.label}</text>`).exec(svg) ?? [];
+    expect(attributes).toContain(`fill="${scene.chrome.text}"`);
+    expect(attributes).toContain(`x="${scene.size!.width / 2}"`);
+    // Its baseline sits on the line the cloud leaves under it.
+    const y = Number(/ y="([\d.]+)"/.exec(attributes!)?.[1]);
+    expect(y).toBeGreaterThan(scene.size!.height - TAG_CLOUD_LABEL.lineHeight);
+    expect(y).toBeLessThanOrEqual(scene.size!.height);
+  });
 
   it('escapes Scene strings in the SVG', () => {
     const { scene } = xyCases[0]!;
@@ -381,7 +414,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy, partition, heatmap and gauge', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy, partition, heatmap, gauge and tagCloud', () => {
     expect(renderer.environments).toEqual(['node']);
     expect(renderer.sized).toBe(true);
     expect(
@@ -393,6 +426,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('partition')).toBe(true);
     expect(renderer.supports('heatmap')).toBe(true);
     expect(renderer.supports('gauge')).toBe(true);
+    expect(renderer.supports('tagCloud')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -490,6 +524,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ['partitionChart', partitionChartExamples[0]!.node],
     ['heatmap', heatmapExamples[0]!.node],
     ['gauge', gaugeExamples[0]!.node],
+    ['tagCloud', tagCloudExamples[0]!.node],
   ] as const)(
     'draws a %s through the charts pack at its size spec box',
     (_, node) => {

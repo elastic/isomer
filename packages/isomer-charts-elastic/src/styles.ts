@@ -17,6 +17,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { EMPTY_LINE_HEIGHT, EMPTY_TEXT_SIZE } from './empty';
+import { TAG_CLOUD_LABEL } from './tag_cloud_label';
 
 /** Kibana's legend action gap, in pixels. */
 const LEGEND_ACTION_GAP = 2;
@@ -32,7 +33,10 @@ interface ElasticStyles {
       | 'legendAction'
       | 'drawing'
       | 'fluidDrawing'
-      | 'empty',
+      | 'empty'
+      | 'tagCloud'
+      | 'tagCloudCloud'
+      | 'tagCloudLabel',
       StyleHandle
     >
   >;
@@ -43,6 +47,7 @@ interface ElasticStyles {
       'width' | 'height' | 'maxWidth' | 'aspectRatio'
     >;
     readonly empty: LocalVarGroup<'width' | 'height' | 'ink' | 'fill'>;
+    readonly tagCloud: LocalVarGroup<'width' | 'height' | 'ink' | 'fill'>;
   };
   readonly stylesheet: () => string;
 }
@@ -64,8 +69,14 @@ export const elasticModule: ElasticStyles = createVarsModule(
       ink: 'currentColor',
       fill: 'transparent',
     }),
+    tagCloud: vars('tagCloud', {
+      width: '100%',
+      height: '100%',
+      ink: 'currentColor',
+      fill: 'transparent',
+    }),
   }),
-  ({ css }, { ink, anchor, box, empty }) => ({
+  ({ css }, { ink, anchor, box, empty, tagCloud }) => ({
     /** A metric's secondary text without a badge, in the Scene's color. */
     secondary: css`
       ${ink}
@@ -113,6 +124,31 @@ export const elasticModule: ElasticStyles = createVarsModule(
       font-size: ${EMPTY_TEXT_SIZE}px;
       line-height: ${EMPTY_LINE_HEIGHT}px;
       text-align: center;
+    `,
+    /** A tag cloud: the cloud above its label, at the Scene's size, on its background, which Elastic Charts' word cloud does not paint. */
+    tagCloud: css`
+      ${tagCloud}
+      display: flex;
+      flex-direction: column;
+      width: ${tagCloud.width};
+      height: ${tagCloud.height};
+      background: ${tagCloud.fill};
+    `,
+    /** The cloud, in the height the label leaves it. */
+    tagCloudCloud: css`
+      flex: 1 1 0;
+      min-height: 0;
+    `,
+    /** The label under a tag cloud, centered in the Scene's text color, as Kibana draws it. */
+    tagCloudLabel: css`
+      color: ${tagCloud.ink};
+      font-size: ${TAG_CLOUD_LABEL.size}px;
+      line-height: ${TAG_CLOUD_LABEL.lineHeight}px;
+      font-weight: ${TAG_CLOUD_LABEL.weight};
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     `,
   })
 );
