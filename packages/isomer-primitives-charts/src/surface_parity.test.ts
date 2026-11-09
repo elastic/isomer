@@ -14,8 +14,10 @@
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
+  isVisibleOnSurface,
   primitiveExamples,
   type PrimitiveNode,
+  type SurfaceName,
 } from '@elastic/isomer-sdk';
 import { SLACK_LIMITS } from '@elastic/isomer-sdk/slack';
 import type { Nodes, Table } from 'mdast';
@@ -132,26 +134,45 @@ const canonical = (value: unknown): string =>
       : entry
   );
 
-/** Every chart node in `value`, nested in a grid or not, as {@link canonical} JSON. */
-const chartNodesOf = (value: unknown): string[] => {
+/**
+ * Every chart node in `value`, nested in a grid or not, as {@link canonical}
+ * JSON. Given a `surface`, only those it shows: not in a collapsed section,
+ * which shows its title alone, nor under a `surfaces` hint that leaves it out.
+ */
+const chartNodesOf = (value: unknown, surface?: SurfaceName): string[] => {
   if (Array.isArray(value)) {
-    return value.flatMap(chartNodesOf);
+    return value.flatMap((entry) => chartNodesOf(entry, surface));
   }
   if (typeof value !== 'object' || value === null) {
     return [];
   }
-  const { type } = value as { type?: unknown };
+  const { type, collapsed, panels } = value as {
+    type?: unknown;
+    collapsed?: unknown;
+    panels?: unknown;
+  };
+  if (surface !== undefined) {
+    if (collapsed === true && Array.isArray(panels)) {
+      return [];
+    }
+    if (typeof type === 'string' && !isVisibleOnSurface(value, surface)) {
+      return [];
+    }
+  }
   if (typeof type === 'string' && chartTypes.has(type)) {
     return [canonical(value)];
   }
-  return Object.values(value).flatMap(chartNodesOf);
+  return Object.values(value).flatMap((entry) => chartNodesOf(entry, surface));
 };
 
 /** A surface's render of a composition: the Scenes it resolved, and the nodes it sent as pictures. */
-type Reach = (composition: Composition) => {
-  scenes: readonly { node: ChartNode }[];
-  pictured?: readonly unknown[];
-};
+interface Reach {
+  readonly surface: SurfaceName;
+  readonly render: (composition: Composition) => {
+    scenes: readonly { node: ChartNode }[];
+    pictured?: readonly unknown[];
+  };
+}
 
 /** How many times each string occurs in `values`. */
 const tally = (values: readonly string[]): Map<string, number> => {
@@ -164,7 +185,7 @@ const tally = (values: readonly string[]): Map<string, number> => {
 
 /** The chart nodes `reach` resolved or pictured, as {@link canonical} JSON. */
 const reachedBy = (reach: Reach, composition: Composition) => {
-  const { scenes, pictured = [] } = reach(composition);
+  const { scenes, pictured = [] } = reach.render(composition);
   return [
     ...scenes.map(({ node }) => canonical(node)),
     ...chartNodesOf(pictured),
@@ -197,8 +218,7 @@ const expectReached = (
   counts: Map<string, number>
 ) => {
   const { composition: parsed } = runtime.parse(composition);
-  const charts = chartNodesOf(parsed);
-  expect(charts.length).toBeGreaterThan(0);
+  const charts = chartNodesOf(parsed, reach.surface);
   const expected = new Map(
     [...tally(charts)].map(([node, occurrences]) => {
       const { type } = JSON.parse(node) as { type: string };
@@ -208,22 +228,34 @@ const expectReached = (
   expect(tally(reachedBy(reach, composition))).toEqual(expected);
 };
 
-const reachText: Reach = (composition) =>
-  recording(() => runtime.surfaces.text.render(composition));
-const reachMarkdown: Reach = (composition) =>
-  recording(() => runtime.surfaces.markdown.render(composition));
-const reachSlack: Reach = (composition) =>
-  recording(() =>
-    runtime.surfaces.slack.render(composition, { heading: false })
-  );
-const reachSlackPictures: Reach = (composition) => {
-  const { output, scenes } = recording(() =>
-    runtime.surfaces.slack.render(composition, {
-      heading: false,
-      collectAssets: true,
-    })
-  );
-  return { scenes, pictured: output.assets.map(({ node }) => node) };
+const reachText: Reach = {
+  surface: 'text',
+  render: (composition) =>
+    recording(() => runtime.surfaces.text.render(composition)),
+};
+const reachMarkdown: Reach = {
+  surface: 'markdown',
+  render: (composition) =>
+    recording(() => runtime.surfaces.markdown.render(composition)),
+};
+const reachSlack: Reach = {
+  surface: 'slack',
+  render: (composition) =>
+    recording(() =>
+      runtime.surfaces.slack.render(composition, { heading: false })
+    ),
+};
+const reachSlackPictures: Reach = {
+  surface: 'slack',
+  render: (composition) => {
+    const { output, scenes } = recording(() =>
+      runtime.surfaces.slack.render(composition, {
+        heading: false,
+        collectAssets: true,
+      })
+    );
+    return { scenes, pictured: output.assets.map(({ node }) => node) };
+  },
 };
 
 const chartCases = examples.map((example) => ({
@@ -266,6 +298,59 @@ describe('surface parity', () => {
       for (const { composition } of cases) {
         expectReached(reach, composition, counts);
       }
+    }
+  );
+
+  it.each([
+    ['text', reachText],
+    ['Markdown', reachMarkdown],
+    ['Slack without pictures', reachSlack],
+    ['Slack with pictures', reachSlackPictures],
+  ] as const)(
+    '%s expects no chart in a collapsed section, or hidden from it',
+    (_, reach) => {
+      const metric = examples.find(({ type }) => type === 'metric')!.composition
+        .body[0] as PrimitiveNode;
+      const shown = { ...metric, title: 'Shown' };
+      const composition: Composition = {
+        type: 'view',
+        body: [
+          {
+            type: 'grid',
+            panels: [{ x: 0, y: 0, w: 24, h: 8, node: shown }],
+            sections: [
+              {
+                title: 'Archive',
+                collapsed: true,
+                y: 8,
+                panels: [
+                  {
+                    x: 0,
+                    y: 0,
+                    w: 24,
+                    h: 8,
+                    node: { ...metric, title: 'Collapsed' },
+                  },
+                ],
+              },
+            ],
+          } as PrimitiveNode,
+          {
+            ...metric,
+            title: 'Hidden',
+            surfaces: ['react', 'snapshot'],
+          } as PrimitiveNode,
+        ],
+      };
+      const { composition: parsed, errors } = runtime.parse(composition);
+      expect(errors).toEqual([]);
+      expect(chartNodesOf(parsed, reach.surface)).toEqual([
+        canonical(
+          (parsed!.body[0] as unknown as { panels: { node: unknown }[] })
+            .panels[0]!.node
+        ),
+      ]);
+      expectReached(reach, composition, perChart(reach));
     }
   );
 

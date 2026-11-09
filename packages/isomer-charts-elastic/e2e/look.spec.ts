@@ -86,6 +86,12 @@ const UNLIKE: Record<string, readonly (readonly [string, string])[]> = {
   ],
 };
 
+/** A PNG's width and height, from its header. */
+const sizeOf = (png: Buffer) => ({
+  width: png.readUInt32BE(16),
+  height: png.readUInt32BE(20),
+});
+
 const toleranceOf = ({ example, scene }: DrawnScene): number | undefined =>
   LOOSER[example] ?? SAME_SCENE[scene.kind];
 
@@ -251,6 +257,8 @@ test.describe('renderer parity: look', () => {
       ).toBeDefined();
       const headless = await page.headless(drawing.markup);
       const browser = await page.draw(drawing.scene);
+      // The score reads only where both overlap, so neither may be cut short.
+      expect(sizeOf(browser)).toEqual(sizeOf(headless));
       expect(await page.score(browser, headless)).toBeGreaterThanOrEqual(
         threshold!
       );
