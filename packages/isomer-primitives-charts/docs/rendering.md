@@ -82,6 +82,18 @@ In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `
 
 The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/) and ships its own style adapter, so the `html` and `snapshot` surfaces style its nodes with no host setup, beside another pack's adapter too. Its renderers resolve class names through the render context's `resolveClassName`. Without one, as on the `react` surface, they write Distillate's readable names, and the host ships `chartsStylesheet()`, every rule the pack draws with. Every class name starts with `charts`, so none collides with another library's. What a node or a Scene carries, such as a panel's place on the grid, stays an inline style.
 
+## Images and PDF
+
+`chartsFrame` is a content-sized page for the `snapshot` surface: the body in a column on the scheme's background, `CHARTS_THEME.frame.width` (960 px) wide. Its theme carries `scheme`, so every chart, nested in a grid or not, resolves for the scheme the render asks for.
+
+```ts
+const imagePack = createChartsPack({ sceneRenderers: [createElasticChartsHeadlessRenderer()] });
+const runtime = createIsomerRuntime({ packs: [imagePack], frames: { charts: chartsFrame } });
+const png = await takumi.png(await takumi.fit(runtime.surfaces.snapshot.render(composition, { theme: 'dark' })));
+```
+
+The [Elastic Charts engine's](../../isomer-charts-elastic/docs/index.md#headless-on-node) `remote_render.test.ts` draws every example of the pack this way with no browser: to PNG in both schemes, and to one PDF with its fonts embedded.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description and notes, and the shim draws the link below it. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
