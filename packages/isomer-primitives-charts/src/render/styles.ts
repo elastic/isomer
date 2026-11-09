@@ -56,9 +56,10 @@ type Authoring = Parameters<
 
 /**
  * Authors a charts style module whose rules read module-local `vars`, and
- * returns the var groups beside its handles. A rule declares each var's
- * default with `${group}`; a renderer writes a value only a Scene knows, such
- * as a series color or a box's size, with {@link varStyle}.
+ * returns the var groups beside its handles, and `stylesheet()`, the module's
+ * own rules. A rule declares each var's default with `${group}`; a renderer
+ * writes a value only a Scene knows, such as a series color or a box's size,
+ * with {@link varStyle}.
  */
 export const createVarsModule = <TVars, TStyles extends StylesObject>(
   name: string,
@@ -70,7 +71,16 @@ export const createVarsModule = <TVars, TStyles extends StylesObject>(
     groups = vars(api.vars);
     return styles(api, groups);
   });
-  return { handles, vars: groups as TVars };
+  return {
+    handles,
+    vars: groups as TVars,
+    /** Every rule this module draws with, whatever else is loaded. */
+    stylesheet: (): string => {
+      const collector = chartsDistillery.artifactCollector('readable');
+      collector.useHandles(Object.values(handles) as readonly StyleHandle[]);
+      return chartsDistillery.renderStyles(collector);
+    },
+  };
 };
 
 /**

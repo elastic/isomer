@@ -16,7 +16,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { createElasticChartsHeadlessRenderer } from './headless';
-import { elasticModule } from './styles';
+import { elasticChartsStylesheet, elasticModule } from './styles';
 
 const { handles, vars } = elasticModule;
 
@@ -61,6 +61,18 @@ describe('elastic-charts styles', () => {
     declares(handles.legendAction, 'display:inline-flex', 'gap:2px');
     declares(handles.drawing, 'display:flex');
     declares(handles.fluidDrawing, 'display:flex', 'width:100%');
+  });
+
+  it('ships its own rules alone, as the pack’s stylesheet writes them', () => {
+    const own = elasticChartsStylesheet();
+    for (const handle of Object.values(handles)) {
+      expect(rule(handle.readableName, own)).toBe(rule(handle.readableName));
+    }
+    expect(
+      own
+        .match(/\.[\w-]+\{/g)
+        ?.every((selector) => selector.startsWith('.chartsElastic-'))
+    ).toBe(true);
   });
 
   it('reaches the html and snapshot surfaces when the engine draws', () => {

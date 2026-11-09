@@ -6,8 +6,9 @@
  */
 
 // The few elements this engine draws beside Elastic Charts' own, authored in
-// the charts pack's distillery so the pack's style adapter emits their rules,
-// and `chartsStylesheet()` carries them for a host that ships the CSS itself.
+// the charts pack's distillery so the pack's style adapter emits their rules.
+// A host that ships the CSS itself ships `elasticChartsStylesheet()`, which
+// holds them whatever has loaded.
 
 import {
   createVarsModule,
@@ -35,6 +36,7 @@ interface ElasticStyles {
       'width' | 'height' | 'maxWidth' | 'aspectRatio'
     >;
   };
+  readonly stylesheet: () => string;
 }
 
 export const elasticModule: ElasticStyles = createVarsModule(
@@ -86,3 +88,11 @@ export const elasticModule: ElasticStyles = createVarsModule(
     `,
   })
 );
+
+/**
+ * Every rule this engine draws its own elements with, for a host that draws
+ * the `react` surface and ships the CSS itself, beside the pack's
+ * `chartsStylesheet()`. It holds them whether or not the engine had loaded
+ * when the host built its stylesheet.
+ */
+export const elasticChartsStylesheet = (): string => elasticModule.stylesheet();

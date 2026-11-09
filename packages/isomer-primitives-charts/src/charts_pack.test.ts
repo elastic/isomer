@@ -389,6 +389,18 @@ CLOSED`);
     expect(out).toContain('class="chartsGrid-column"');
     expect(out).not.toContain('chartsGrid-panels');
     expect(rule('chartsGrid-column')).toContain('flex-direction:column');
+    // Each stacked panel is as tall as its rows, through the place var.
+    const { place } = gridModule.vars;
+    const { rowHeight, gap } = CHARTS_THEME.grid;
+    for (const rows of [4, 2]) {
+      expect(out).toContain(
+        `class="chartsGrid-panel chartsGrid-stacked" style="${place.height.propName}:${rows * rowHeight + (rows - 1) * gap}px"`
+      );
+    }
+    expect(out).not.toContain('chartsGrid-placed');
+    expect(rule('chartsGrid-stacked')).toContain(
+      `height:var(${place.height.propName})`
+    );
     expect(
       ['L reason', 'R reason', 'B reason', 'I reason'].map((text) =>
         out.indexOf(text)
