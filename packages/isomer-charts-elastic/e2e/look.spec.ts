@@ -41,6 +41,9 @@ const SAME_SCENE: Record<string, number> = {
   metric: 0.7,
   partition: 0.75,
   heatmap: 0.75,
+  // Both engines draw a gauge's arcs and text alike, and two round gauges
+  // can score 0.71 against each other, so a gauge is held closer.
+  gauge: 0.9,
 };
 
 /**
@@ -113,6 +116,18 @@ const UNLIKE: Record<string, readonly (readonly [string, string])[]> = {
       'heatmap: Selectable, brushable, pre-rendered and with provenance',
       'heatmap: Huge, tiny and missing values',
     ],
+  ],
+  gauge: [
+    ['gauge: Semicircle with bands and a goal', 'gauge: Horizontal bullet'],
+    [
+      'gauge: Semicircle with bands and a goal',
+      'gauge: Arc with gaps between bands',
+    ],
+    [
+      'gauge: Vertical bullet with percentage bands',
+      'gauge: Horizontal bullet',
+    ],
+    ['gauge: Circle, pre-rendered and with provenance', 'gauge: Huge value'],
   ],
 };
 

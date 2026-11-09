@@ -67,7 +67,7 @@ const withAccessibleText = (svg: string, scene: Scene): string =>
       }<desc>${escapeXml(ariaDescriptionOf(scene))}</desc>`
   );
 
-/** Draws a `metric`, `xy`, `partition` or `heatmap` Scene as SVG at the Scene's `size`; an empty one as its note. */
+/** Draws a `metric`, `xy`, `partition`, `heatmap` or `gauge` Scene as SVG at the Scene's `size`; an empty one as its note. */
 export const renderSceneSvg = (
   scene: Scene,
   { font, measureTextWidth }: HeadlessSvgOptions = {}
@@ -158,7 +158,13 @@ export interface HeadlessRendererOptions extends HeadlessSvgOptions {
   readonly environments?: readonly SceneEnvironment[];
 }
 
-const KINDS: readonly SceneKind[] = ['metric', 'xy', 'partition', 'heatmap'];
+const KINDS: readonly SceneKind[] = [
+  'metric',
+  'xy',
+  'partition',
+  'heatmap',
+  'gauge',
+];
 
 /** A short, stable name for a drawing: the same SVG always gets the same one. */
 const drawingScope = (svg: string): string => {

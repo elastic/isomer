@@ -36,6 +36,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 import {
   chartEventExamples,
+  gaugeExamples,
   heatmapExamples,
   metricExamples,
   partitionChartExamples,
@@ -44,6 +45,7 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
+import { gaugeColorBands, gaugeValueFormatter } from './gauge';
 import { heatmapTooltip, heatmapValueFormatter } from './heatmap';
 import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
@@ -950,13 +952,14 @@ describe('elastic-charts renderer: partition order and text', () => {
 });
 
 describe('elastic-charts renderer', () => {
-  it('draws metric, xy, partition and heatmap in the browser', () => {
+  it('draws metric, xy, partition, heatmap and gauge in the browser', () => {
     expect(renderer.id).toBe('elastic-charts');
     expect(renderer.environments).toEqual(['browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('partition')).toBe(true);
     expect(renderer.supports('heatmap')).toBe(true);
+    expect(renderer.supports('gauge')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -1048,5 +1051,59 @@ describe('elastic-charts renderer: heatmap text', () => {
       [scene.valueLabel, cell.valueText],
     ]);
     expect(page.innerHTML).toContain(cell.color);
+  });
+});
+
+describe('elastic-charts renderer: resolved gauge examples', () => {
+  it.each(resolvedCases(gaugeExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'gauge') {
+      throw new Error('expected a gauge Scene');
+    }
+    const container = await draw(scene);
+    if (scene.empty) {
+      expect(container.textContent).toBe(scene.empty.text);
+      expect(container.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    const [drawn] = debugStateIn(container).bullet?.rows?.[0] ?? [];
+    expect(drawn).toMatchObject({
+      title: scene.labels.major,
+      value: scene.value,
+      domain: [scene.min, scene.max],
+    });
+    expect(drawn?.target).toBe(scene.goal?.value);
+    if (scene.ticks) {
+      expect(drawn?.ticks).toEqual(scene.ticks);
+    }
+  });
+});
+
+describe('elastic-charts renderer: gauge text and bands', () => {
+  const scene = resolveChart(gaugeExamples[0]!.node, {
+    scheme: 'light',
+    size: SIZE,
+  });
+  if (scene.kind !== 'gauge') {
+    throw new Error('expected a gauge Scene');
+  }
+
+  it('writes the value and goal as the Scene does, and any other value as the scale prints it', () => {
+    const format = gaugeValueFormatter(scene);
+    expect(format(scene.value!)).toBe(scene.valueText);
+    expect(format(scene.goal!.value)).toBe(scene.goal!.text);
+    expect(format(50)).toBe(formatAxisValue(scene, scene, 50));
+  });
+
+  it('passes each band’s edges and color, and a lone band as one color', () => {
+    expect(gaugeColorBands(scene)).toEqual({
+      steps: [0, 60, 85, 100],
+      colors: scene.bands.map(({ color }) => color),
+    });
+    const lone = { ...scene, bands: [scene.bands[0]!] };
+    expect(gaugeColorBands(lone)).toEqual([
+      scene.bands[0]!.color,
+      scene.bands[0]!.color,
+    ]);
   });
 });

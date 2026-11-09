@@ -24,6 +24,7 @@ import {
   brushEvent,
   type ChartEvent,
   formatAxisValue,
+  type GaugeScene,
   type HeatmapScene,
   type MetricScene,
   type PartitionScene,
@@ -233,6 +234,63 @@ const contentChecks: Partial<Record<SceneKind, (drawing: DrawnScene) => void>> =
         expectDrawn(texts, label);
         if (value) {
           expectDrawn(texts, value);
+        }
+      }
+    },
+    gauge: ({ scene, markup }) => {
+      const gauge = scene as GaugeScene;
+      const texts = svgTexts(markup);
+      if (gauge.empty) {
+        expect(texts).toEqual([gauge.empty.text]);
+        return;
+      }
+      // DebugState lists the bullet Elastic Charts drew, with its bands' colors.
+      const { debugState } = renderSceneSvg(gauge);
+      const [drawnGauge] = debugState?.bullet?.rows?.[0] ?? [];
+      expect(drawnGauge).toMatchObject({
+        title: gauge.labels.major,
+        value: gauge.value,
+        domain: [gauge.min, gauge.max],
+      });
+      expect(drawnGauge?.subtitle).toBe(gauge.labels.minor);
+      expect(drawnGauge?.target).toBe(gauge.goal?.value);
+      const colors = (drawnGauge?.colorBands ?? []).map((color) =>
+        color.toUpperCase()
+      );
+      expect(gauge.bands.length === 1 ? [...new Set(colors)] : colors).toEqual(
+        gauge.bands.map(({ color }) => color.toUpperCase())
+      );
+      const ticks = drawnGauge?.ticks ?? [];
+      if (gauge.ticks) {
+        expect(ticks).toEqual(gauge.ticks);
+      }
+      // Every string drawn is a label, the value, the goal or a tick's label.
+      const strings = [
+        gauge.labels.major,
+        gauge.labels.minor ?? '',
+        gauge.valueText,
+        gauge.goal ? `/ ${gauge.goal.text}` : '',
+        ...ticks.map((tick) => formatAxisValue(gauge, gauge, tick)),
+      ].filter(Boolean);
+      for (const text of texts) {
+        expect(
+          strings.some((string) =>
+            squash(string).includes(squash(text).replace(/…$/, ''))
+          ),
+          text
+        ).toBe(true);
+      }
+      expectDrawn(texts, gauge.valueText);
+      if (gauge.labels.major) {
+        expectDrawn(texts, gauge.labels.major);
+      }
+      if (gauge.goal) {
+        expectDrawn(texts, gauge.goal.text);
+      }
+      // A circle's last tick lies on its first, and Elastic Charts drops it.
+      for (const tick of ticks) {
+        if (!(gauge.shape === 'circle' && tick === gauge.max)) {
+          expectDrawn(texts, formatAxisValue(gauge, gauge, tick));
         }
       }
     },

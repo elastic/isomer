@@ -25,7 +25,13 @@ import { elasticModule } from './styles';
 /** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
 export const ELASTIC_CHARTS_VERSION = '73.3.2';
 
-const KINDS: readonly SceneKind[] = ['metric', 'xy', 'partition', 'heatmap'];
+const KINDS: readonly SceneKind[] = [
+  'metric',
+  'xy',
+  'partition',
+  'heatmap',
+  'gauge',
+];
 
 /** Kibana's functional tests turn on `DebugState` through this global. */
 const debugFlag = (): boolean =>

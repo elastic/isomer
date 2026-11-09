@@ -12,6 +12,7 @@ import {
   chartSize,
   chartSizeSpec,
   createChartsPack,
+  gaugeExamples,
   heatmapExamples,
   metricExamples,
   partitionChartExamples,
@@ -58,6 +59,16 @@ const xyCases = xyChartExamples.flatMap(({ name, node }) =>
   }))
 );
 const metricCases = metricExamples.flatMap(({ name, node }) =>
+  SCHEMES.map((scheme) => ({
+    name,
+    scheme,
+    scene: sized((size) =>
+      resolveChart(node, { scheme, ...(size && { size }) })
+    ),
+  }))
+);
+
+const gaugeCases = gaugeExamples.flatMap(({ name, node }) =>
   SCHEMES.map((scheme) => ({
     name,
     scheme,
@@ -135,6 +146,7 @@ describe('renderSceneSvg', () => {
     ...metricCases,
     ...partitionCases,
     ...heatmapCases,
+    ...gaugeCases,
   ])(
     '$name ($scheme) draws an SVG at the Scene size on its background',
     ({ scene }) => {
@@ -189,6 +201,7 @@ describe('renderSceneSvg', () => {
     ...metricCases,
     ...partitionCases,
     ...heatmapCases,
+    ...gaugeCases,
   ])(
     '$name ($scheme) names the SVG by its title and description',
     ({ scene }) => {
@@ -311,7 +324,7 @@ describe('renderSceneSvg', () => {
     expect((ys[0]! + ys.at(-1)!) / 2).toBeCloseTo(single!, 6);
   });
 
-  it.each(heatmapCases.filter(({ scene }) => scene.empty))(
+  it.each([...heatmapCases, ...gaugeCases].filter(({ scene }) => scene.empty))(
     '$name ($scheme) draws only its note',
     ({ scene }) => {
       expect(svgTexts(renderSceneSvg(scene).svg)).toEqual([scene.empty!.text]);
@@ -368,7 +381,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     body: [node],
   });
 
-  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy, partition and heatmap', () => {
+  it('runs on Node unless told otherwise, draws a fixed size, for metric, xy, partition, heatmap and gauge', () => {
     expect(renderer.environments).toEqual(['node']);
     expect(renderer.sized).toBe(true);
     expect(
@@ -379,6 +392,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('partition')).toBe(true);
     expect(renderer.supports('heatmap')).toBe(true);
+    expect(renderer.supports('gauge')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
   });
 
@@ -475,6 +489,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     ['xyChart', xyChartExamples[0]!.node],
     ['partitionChart', partitionChartExamples[0]!.node],
     ['heatmap', heatmapExamples[0]!.node],
+    ['gauge', gaugeExamples[0]!.node],
   ] as const)(
     'draws a %s through the charts pack at its size spec box',
     (_, node) => {
