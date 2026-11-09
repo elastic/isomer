@@ -41,7 +41,7 @@ A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `com
 
 ## `slackAssetTypes`
 
-Which of your node types are self-contained pictures. A channel that cannot draw them inline uploads an image instead: the Slack dispatcher swaps such a node for an `image` block and an upload request, so a chart arrives as a PNG rather than as a markdown approximation of one.
+Which of your node types are self-contained pictures. A channel that cannot draw them inline uploads an image instead: the Slack dispatcher swaps such a node for an `image` block and an upload request, so a chart arrives as a PNG rather than as a markdown approximation of one. A node hidden from `snapshot`, which draws the picture, keeps its Markdown instead.
 
 It is declared here because it is a fact about the vocabulary. A host composing packs it did not write cannot be expected to know which of your types are charts.
 
