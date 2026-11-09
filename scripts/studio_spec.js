@@ -40,15 +40,49 @@ export const runPlaywright = (
   return status ?? 1;
 };
 
-/** How many tests the Playwright specs of `config` hold that `args` select. */
+const NO_TESTS = /^Error: No tests found\b/;
+
+/** `args` without a `--reporter`, which would change what `--list` prints. */
+const withoutReporter = (args) =>
+  args.filter(
+    (arg, index) =>
+      !arg.startsWith('--reporter=') &&
+      arg !== '--reporter' &&
+      args[index - 1] !== '--reporter'
+  );
+
+/** How many tests the Playwright specs of `config` hold that `args` select; throws when Playwright cannot list them. */
 export const countPlaywright = (config, args = []) => {
   const cli = createRequire(import.meta.url).resolve('@playwright/test/cli');
-  const { stdout } = spawnSync(
+  const { status, stdout, stderr } = spawnSync(
     process.execPath,
-    [cli, 'test', '-c', join(repoRoot, config), '--list', ...args],
+    [
+      cli,
+      'test',
+      '-c',
+      join(repoRoot, config),
+      '--list',
+      ...withoutReporter(args),
+      '--reporter=json',
+    ],
     { cwd: repoRoot, encoding: 'utf8' }
   );
-  return Number(/Total: (\d+) tests?/.exec(stdout ?? '')?.[1] ?? 0);
+  let report;
+  try {
+    report = JSON.parse(stdout);
+  } catch {
+    throw new Error(`Could not list ${config}:\n${stderr || stdout}`);
+  }
+  const errors = report.errors.filter(({ message }) => !NO_TESTS.test(message));
+  if (errors.length > 0 || (status !== 0 && report.errors.length === 0)) {
+    throw new Error(
+      `Could not list ${config}:\n${errors.map(({ message }) => message).join('\n') || stderr}`
+    );
+  }
+  const count = ({ specs = [], suites = [] }) =>
+    specs.reduce((total, { tests }) => total + tests.length, 0) +
+    suites.reduce((total, suite) => total + count(suite), 0);
+  return report.suites.reduce((total, suite) => total + count(suite), 0);
 };
 
 /** Runs the Studio's Playwright spec and returns its exit status. */

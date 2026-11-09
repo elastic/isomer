@@ -19,10 +19,15 @@ const SUITES = [
 requireChromium();
 const args = process.argv.slice(2);
 // Arguments may filter to one suite's specs, leaving the other nothing to run.
-const suites =
-  args.length > 0
-    ? SUITES.filter((config) => countPlaywright(config, args) > 0)
-    : SUITES;
+let suites = SUITES;
+if (args.length > 0) {
+  try {
+    suites = SUITES.filter((config) => countPlaywright(config, args) > 0);
+  } catch (error) {
+    console.error(error.message);
+    process.exit(1);
+  }
+}
 if (suites.length === 0) {
   console.error(`No browser test matches: ${args.join(' ')}`);
   process.exit(1);
