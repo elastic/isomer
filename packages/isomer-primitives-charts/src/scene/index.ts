@@ -24,6 +24,9 @@ export { selectSceneRenderer } from './select';
 export {
   type AxisId,
   type ColorScheme,
+  type GaugeBand,
+  type GaugeScene,
+  type GaugeSceneShape,
   type HeatmapAxis,
   type HeatmapBand,
   type HeatmapCategory,

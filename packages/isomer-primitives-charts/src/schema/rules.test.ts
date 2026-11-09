@@ -12,6 +12,7 @@ import { DATA_RULES } from './data';
 import { DATA_TABLE_RULES } from './data_table';
 import { INTERACTION_RULES } from './events';
 import { FORMAT_RULES } from './format';
+import { GAUGE_RULES } from './gauge';
 import { GRID_RULES } from './grid';
 import { HEATMAP_RULES } from './heatmap';
 import { METRIC_RULES } from './metric';
@@ -1237,5 +1238,88 @@ describe('heatmap', () => {
       INTERACTION_RULES.emphasisRows,
       'emphasis.0.rows.0'
     );
+  });
+});
+
+describe('gauge', () => {
+  const gauge = (overrides: Record<string, unknown> = {}) => ({
+    type: 'gauge',
+    shape: 'arc',
+    data: {
+      columns: [number('v'), number('m'), string('s')],
+      rows: [[1, 10, 'x']],
+    },
+    value: { column: 'v' },
+    ...overrides,
+  });
+
+  it('accepts the minimal gauge, and one with bounds and a goal', () => {
+    expect(issuesOf('gauge', gauge())).toEqual([]);
+    expect(
+      issuesOf('gauge', gauge({ max: { column: 'm' }, goal: { column: 'm' } }))
+    ).toEqual([]);
+  });
+
+  it('rejects a reference to a missing column', () => {
+    expectRule(
+      'gauge',
+      gauge({ goal: { column: 'nope' } }),
+      COLUMN_REF_RULE,
+      'goal.column'
+    );
+  });
+
+  it.each(['value', 'min', 'max', 'goal'])(
+    'rejects a %s column that is not a number',
+    (field) => {
+      expectRule(
+        'gauge',
+        gauge({ [field]: { column: 's' } }),
+        GAUGE_RULES.numberColumns,
+        `${field}.column`
+      );
+    }
+  );
+
+  it('rejects a multivalue value', () => {
+    expectRule(
+      'gauge',
+      gauge({
+        data: {
+          columns: [{ ...number('v'), multivalue: true }],
+          rows: [[[1]]],
+        },
+      }),
+      GAUGE_RULES.numberColumns,
+      'value.column'
+    );
+  });
+
+  it('takes a bandsRange only with bands', () => {
+    expectRule(
+      'gauge',
+      gauge({ bandsRange: 'percentage' }),
+      GAUGE_RULES.bandsRange,
+      'bandsRange'
+    );
+    expect(
+      issuesOf(
+        'gauge',
+        gauge({
+          bandsRange: 'percentage',
+          colors: {
+            bands: [{ from: 0, color: { light: '#000', dark: '#fff' } }],
+          },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it('offers nothing to select', () => {
+    expect(
+      issuesOf('gauge', gauge({ interactions: { select: ['tile'] } })).map(
+        ({ path }) => path
+      )
+    ).toEqual(['interactions']);
   });
 });

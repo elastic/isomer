@@ -46,7 +46,8 @@ export const INTERACTION_RULES = {
   emphasisRows: 'Emphasis rows are indexes into `data.rows`.',
 } as const;
 
-const linkSchema = z
+/** A static link a chart draws on every surface. */
+export const linkSchema = z
   .strictObject({ href: navigationHrefSchema, label: requiredString() })
   .describe(
     'A static link, such as "Open in Kibana", drawn on every surface including images and text.'

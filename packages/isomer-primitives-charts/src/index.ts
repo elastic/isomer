@@ -33,6 +33,9 @@ export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,
+  type GaugeBand,
+  type GaugeScene,
+  type GaugeSceneShape,
   type HeatmapAxis,
   type HeatmapBand,
   type HeatmapCategory,
@@ -83,6 +86,7 @@ export {
   SCENE_KINDS,
 } from './scene/types';
 export {
+  gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
   metricCatalog,
@@ -127,11 +131,13 @@ export {
   emphasisSchema,
   interactionsCoreShape,
   interactionsSchemaFor,
+  linkSchema,
   readChartEvent,
   selectSchema,
   toActionEvent,
 } from './schema/events';
 export { chartEventExamples } from './schema/examples/events';
+export { gaugeExamples } from './schema/examples/gauge';
 export { gridExamples } from './schema/examples/grid';
 export { heatmapExamples } from './schema/examples/heatmap';
 export { metricExamples } from './schema/examples/metric';
@@ -145,6 +151,13 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
+export {
+  type GaugeNode,
+  type GaugeShape,
+  GAUGE_RULES,
+  GAUGE_SHAPES,
+  gaugeSchema,
+} from './schema/gauge';
 export {
   type GridNode,
   type GridPanel,

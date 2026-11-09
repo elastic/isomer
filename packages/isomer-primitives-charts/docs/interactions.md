@@ -28,6 +28,7 @@ interactions?: {
 | `dataTable` | `cell` |
 | `partitionChart` | `slice` |
 | `heatmap` | `cell` |
+| `gauge` | None: only a `link` |
 
 `emphasis?: { rows: number[]; note?: string }[]` highlights rows statically, such as what an agent is talking about, on every surface.
 

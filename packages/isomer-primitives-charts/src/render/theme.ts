@@ -36,6 +36,18 @@ export const CHARTS_THEME = {
       /** The least height of a vertical time chart, in pixels. */
       timeMinHeight: 300,
     },
+    gauge: {
+      /**
+       * Lens's gauge size specs by shape (`useGaugeSizeByType`): width to
+       * height, and the greatest width. A bullet takes the box of its largest
+       * size, which Lens fills.
+       */
+      horizontalBullet: { aspectRatio: { x: 3, y: 1 }, maxWidth: 600 },
+      verticalBullet: { aspectRatio: { x: 2, y: 3 }, maxWidth: 400 },
+      semiCircle: { aspectRatio: { x: 2, y: 1.25 }, maxWidth: 600 },
+      arc: { aspectRatio: { x: 1.1, y: 1 }, maxWidth: 600 },
+      circle: { aspectRatio: { x: 1, y: 1 }, maxWidth: 600 },
+    },
     heatmap: {
       /**
        * Width to height. Lens gives a heat map no size spec and fills its

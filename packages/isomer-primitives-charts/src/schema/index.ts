@@ -8,6 +8,7 @@
 export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
 export {
   dataTableCatalog,
+  gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
   metricCatalog,
@@ -59,12 +60,14 @@ export {
   emphasisSchema,
   interactionsCoreShape,
   interactionsSchemaFor,
+  linkSchema,
   readChartEvent,
   selectSchema,
   toActionEvent,
 } from './events';
 export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
+export { gaugeExamples } from './examples/gauge';
 export { gridExamples } from './examples/grid';
 export { heatmapExamples } from './examples/heatmap';
 export { metricExamples } from './examples/metric';
@@ -78,6 +81,13 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './format';
+export {
+  type GaugeNode,
+  type GaugeShape,
+  GAUGE_RULES,
+  GAUGE_SHAPES,
+  gaugeSchema,
+} from './gauge';
 export {
   type GridNode,
   type GridPanel,
