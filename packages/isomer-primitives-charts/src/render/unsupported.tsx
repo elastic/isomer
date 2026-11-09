@@ -13,9 +13,12 @@ import { unsupportedExamples } from '../schema/examples/unsupported';
 import { unsupportedSchema } from '../schema/unsupported';
 
 import { definePrimitive } from './define';
+import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
+import { unsupportedModule } from './unsupported_styles';
 
-const { padding, borderWidth, height } = CHARTS_THEME.unsupported;
+const { height } = CHARTS_THEME.unsupported;
+const { handles: note } = unsupportedModule;
 
 /** A visible placeholder: title, reason, and a link where there is one. */
 export const unsupportedPrimitive = definePrimitive({
@@ -38,19 +41,11 @@ export const unsupportedPrimitive = definePrimitive({
       <div
         {...nodeAnchor(context, node)}
         role="note"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: padding / 2,
-          padding,
-          border: `${borderWidth}px dashed currentColor`,
-        }}>
-        <strong style={{ fontSize: CHARTS_THEME.type.title }}>
-          {node.title}
-        </strong>
-        <span style={{ fontSize: CHARTS_THEME.type.body }}>{node.reason}</span>
+        className={cls(context, note.root)}>
+        <strong className={cls(context, note.title)}>{node.title}</strong>
+        <span className={cls(context, note.body)}>{node.reason}</span>
         {node.link && (
-          <a href={node.link.href} style={{ fontSize: CHARTS_THEME.type.body }}>
+          <a href={node.link.href} className={cls(context, note.body)}>
             {node.link.label}
           </a>
         )}

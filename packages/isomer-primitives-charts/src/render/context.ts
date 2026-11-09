@@ -8,7 +8,7 @@
 import type { ReactNode } from 'react';
 import type {
   DefaultPackTypes,
-  PrimitiveRenderContext,
+  StyledRenderContext,
   SurfaceMap,
 } from '@elastic/isomer-sdk';
 
@@ -46,7 +46,7 @@ export type ReactSceneRenderer = SceneRenderer<ReactNode>;
  * The render context the pack's `react` renderers read. Every field is
  * optional; hosts set only what they choose.
  */
-export interface ChartsRenderContext extends PrimitiveRenderContext {
+export interface ChartsRenderContext extends StyledRenderContext {
   /**
    * Preferred renderers, first choice first. They are tried before the pack's
    * own, and the first that runs in `environment` and supports the Scene's

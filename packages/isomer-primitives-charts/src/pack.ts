@@ -14,6 +14,7 @@ import type {
 } from './render/context';
 import { gridPrimitive } from './render/grid';
 import { defineChartPrimitives } from './render/primitives';
+import { chartsDistillery, chartsStyleAdapter } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
 import { unsupportedPrimitive } from './render/unsupported';
 
@@ -50,6 +51,7 @@ export const createChartsPack = ({
       gridPrimitive,
       unsupportedPrimitive,
     ],
+    styleAdapter: chartsStyleAdapter,
   });
 
 /**
@@ -57,3 +59,7 @@ export const createChartsPack = ({
  * node needs a `resolveScene`, given through {@link createChartsPack}.
  */
 export const chartsPack: PrimitivePack = createChartsPack();
+
+/** Every rule the pack draws with, for a host that draws the `react` surface and ships the CSS itself. */
+export const chartsStylesheet = (): string =>
+  chartsDistillery.renderStyles(chartsDistillery.stylesheetCollector());

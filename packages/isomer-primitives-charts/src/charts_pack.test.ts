@@ -20,7 +20,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { chartsPack, createChartsPack } from './pack';
+import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import type {
   ChartNode,
   ChartsRenderContext,
@@ -189,6 +189,14 @@ describe('unsupported', () => {
     expect(html).toContain(`href="${unsupportedVega.link?.href}"`);
   });
 
+  it('styles through its own adapter, emitting only the rules it draws', () => {
+    const { body, css } = runtime.surfaces.html.render(view(unsupportedVega));
+    expect(body).toContain('class="chartsUnsupported-root"');
+    expect(css).toContain('.chartsUnsupported-root{');
+    expect(css).toContain('border:1px dashed currentColor');
+    expect(css).not.toContain('chartsGrid');
+  });
+
   // `react` skips validation, so its node may carry any href.
   it('drops a link that fails the navigation policy', () => {
     const node: UnsupportedNode = {
@@ -228,6 +236,9 @@ describe('grid', () => {
   const runtime = createIsomerRuntime<unknown, ChartsRenderContext>({
     packs: [pack],
   });
+  /** The declarations of the stylesheet's rule for `className`. */
+  const rule = (className: string) =>
+    new RegExp(`\\.${className}\\{([^}]*)\\}`).exec(chartsStylesheet())?.[1];
   const html = (node: GridNode, context: ChartsRenderContext = {}) =>
     renderToStaticMarkup(
       createElement(
@@ -281,7 +292,10 @@ CLOSED`);
 
   it('places panels on 48 columns at full width', () => {
     const out = html(sectioned, { size: { width: 1200, height: 800 } });
-    expect(out).toContain('grid-template-columns:repeat(48, minmax(0, 1fr))');
+    expect(out).toContain('class="chartsGrid-panels"');
+    expect(rule('chartsGrid-panels')).toContain(
+      'grid-template-columns:repeat(48,minmax(0,1fr))'
+    );
     expect(out).toContain('grid-column:25 / span 24;grid-row:1 / span 4');
     expect(out.indexOf('L reason')).toBeLessThan(out.indexOf('R reason'));
     expect(out).not.toContain('H reason');
@@ -289,7 +303,9 @@ CLOSED`);
 
   it('stacks panels in one column below 768 px', () => {
     const out = html(sectioned, { size: { width: 767, height: 800 } });
-    expect(out).not.toContain('grid-template-columns');
+    expect(out).toContain('class="chartsGrid-column"');
+    expect(out).not.toContain('chartsGrid-panels');
+    expect(rule('chartsGrid-column')).toContain('flex-direction:column');
     expect(
       ['L reason', 'R reason', 'B reason', 'I reason'].map((text) =>
         out.indexOf(text)
@@ -508,8 +524,9 @@ CLOSED`);
     });
     // One row unit is 20 px; the title and description lines take 24 + 18.
     expect(out).toContain(
-      '<header style="flex-shrink:0;max-height:20px;overflow:hidden">'
+      '<header class="chartsGrid-header" style="max-height:20px">'
     );
+    expect(rule('chartsGrid-header')).toContain('overflow:hidden');
   });
 
   it('writes its description on text without a title', () => {

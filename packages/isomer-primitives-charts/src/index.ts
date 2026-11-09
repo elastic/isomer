@@ -6,7 +6,12 @@
  */
 
 export { type ChartGlyph, CHART_GLYPHS } from './glyphs';
-export { type ChartsPackOptions, chartsPack, createChartsPack } from './pack';
+export {
+  type ChartsPackOptions,
+  chartsPack,
+  chartsStylesheet,
+  createChartsPack,
+} from './pack';
 export type {
   ChartsRenderContext,
   ReactSceneRenderer,

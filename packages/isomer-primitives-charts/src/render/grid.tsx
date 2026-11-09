@@ -32,10 +32,13 @@ import {
 
 import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
+import { gridModule } from './grid_styles';
+import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
 
 const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
   CHARTS_THEME.grid;
+const { handles: grid } = gridModule;
 
 const rowsHeight = (rows: number) =>
   rows === 0 ? 0 : rows * rowHeight + (rows - 1) * gap;
@@ -95,61 +98,53 @@ const childContext = (
   return contextWith(context, 'size', { width, height });
 };
 
-const oneLine = {
-  margin: 0,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
-} as const;
+type Context = ChartsReactEnv['context'];
 
 const Heading = ({
   level,
+  context,
   children,
 }: {
   level: 2 | 3 | 4;
+  context: Context;
   children: ReactNode;
 }) => {
   const Tag = `h${level}` as const;
-  return (
-    <Tag
-      style={{
-        ...oneLine,
-        height: headerHeight,
-        fontSize: CHARTS_THEME.type.title,
-      }}>
-      {children}
-    </Tag>
-  );
+  return <Tag className={cls(context, grid.heading)}>{children}</Tag>;
 };
 
-const Description = ({ children }: { children: string }) => (
-  <p
-    title={children}
-    style={{
-      ...oneLine,
-      height: descriptionHeight,
-      fontSize: CHARTS_THEME.type.body,
-    }}>
+const Description = ({
+  context,
+  children,
+}: {
+  context: Context;
+  children: string;
+}) => (
+  <p title={children} className={cls(context, grid.description)}>
     {children}
   </p>
 );
 
 const Header = ({
   level,
+  context,
   title,
   description,
   maxHeight,
 }: {
   level: 2 | 4;
+  context: Context;
   title?: string | undefined;
   description?: string | undefined;
   /** The panel's height, which the header is clipped to. */
   maxHeight?: number;
 }) =>
   title || description ? (
-    <header style={{ flexShrink: 0, maxHeight, overflow: 'hidden' }}>
-      {title && <Heading level={level}>{title}</Heading>}
-      {description && <Description>{description}</Description>}
+    <header
+      className={cls(context, grid.header)}
+      {...(maxHeight !== undefined && { style: { maxHeight } })}>
+      {title && <Heading {...{ level, context }}>{title}</Heading>}
+      {description && <Description {...{ context }}>{description}</Description>}
     </header>
   ) : null;
 
@@ -164,24 +159,23 @@ const Panel = ({
 }) => (
   <section
     aria-label={panel.title}
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      minWidth: 0,
-      ...(oneColumn
+    className={cls(context, grid.panel)}
+    style={
+      oneColumn
         ? { height: rowsHeight(panel.h) }
         : {
             gridColumn: `${panel.x + 1} / span ${panel.w}`,
             gridRow: `${panel.y + 1} / span ${panel.h}`,
-          }),
-    }}>
+          }
+    }>
     <Header
       level={4}
+      context={context}
       title={panel.title}
       description={panel.description}
       maxHeight={rowsHeight(panel.h)}
     />
-    <div style={{ flex: 1, minHeight: 0 }}>
+    <div className={cls(context, grid.body)}>
       {scope.renderReact(panel.node, childContext(context, panel, oneColumn))}
     </div>
   </section>
@@ -196,17 +190,7 @@ const Panels = ({
   env: ChartsReactEnv;
   oneColumn: boolean;
 }) => (
-  <div
-    style={
-      oneColumn
-        ? { display: 'flex', flexDirection: 'column', gap }
-        : {
-            display: 'grid',
-            gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))`,
-            gridAutoRows: rowHeight,
-            gap,
-          }
-    }>
+  <div className={cls(env.context, oneColumn ? grid.column : grid.panels)}>
     {entries.map((entry) => (
       <Panel key={entry.path} entry={entry} env={env} oneColumn={oneColumn} />
     ))}
@@ -237,7 +221,7 @@ const CollapsedAnchors = ({
       <div
         key={index}
         hidden
-        style={{ display: 'none' }}
+        className={cls(context, grid.collapsed)}
         {...nodeAnchor(context, node)}
       />
     ));
@@ -249,17 +233,24 @@ const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
   return (
     <div
       {...nodeAnchor(env.context, node)}
-      style={{ display: 'flex', flexDirection: 'column', gap: sectionGap }}>
-      <Header level={2} title={node.title} description={node.description} />
+      className={cls(env.context, grid.root)}>
+      <Header
+        level={2}
+        context={env.context}
+        title={node.title}
+        description={node.description}
+      />
       {blocksOf(node).map((block, index) =>
         block.section ? (
           <section key={index} aria-label={block.section.title}>
-            <Heading level={3}>{block.section.title}</Heading>
+            <Heading level={3} context={env.context}>
+              {block.section.title}
+            </Heading>
             {block.section.collapsed ? (
               <CollapsedAnchors entries={block.entries} env={env} />
             ) : (
               <>
-                <div style={{ height: sectionGap / 2 }} />
+                <div className={cls(env.context, grid.sectionGap)} />
                 <Panels
                   entries={block.entries}
                   env={env}

@@ -260,6 +260,9 @@ importers:
 
   packages/isomer-primitives-charts:
     dependencies:
+      '@elastic/distillate':
+        specifier: ^0.2.0
+        version: 0.2.0
       '@elastic/isomer-sdk':
         specifier: workspace:*
         version: link:../isomer-sdk

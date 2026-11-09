@@ -67,6 +67,10 @@ When the context carries `onEvent`, the shim passes the renderer an `onEvent` th
 
 Off native, the shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors). On native it returns the renderer's output unwrapped, since native has no `div`.
 
+## Styling
+
+The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/) and ships its own style adapter, so the `html` and `snapshot` surfaces style its nodes with no host setup, beside another pack's adapter too. Its renderers resolve class names through the render context's `resolveClassName`. Without one, as on the `react` surface, they write Distillate's readable names, and the host ships `chartsStylesheet()`, every rule the pack draws with. Every class name starts with `charts`, so none collides with another library's. What a node or a Scene carries, such as a panel's place on the grid, stays an inline style.
+
 ## Text and Markdown
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description`, each emphasis `note`, and its `link` as `label: href` (a Markdown link). The fallback renderer draws the same four. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
