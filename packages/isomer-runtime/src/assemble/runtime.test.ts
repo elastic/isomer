@@ -1607,26 +1607,29 @@ describe('createIsomerRuntime', () => {
       expect(body).toContain('data-probe="undefined|noteCopy"');
     });
 
+    /** A `keyAdapter` whose context defaults `tone`. */
+    const toned = (prefix: string, tone: string) => ({
+      ...keyAdapter(prefix),
+      createRenderContext: (collector: KeyCollector) => ({
+        ...keyAdapter(prefix).createRenderContext(collector),
+        tone,
+      }),
+    });
+
+    /** A `wrap` that sets `tone` to `'loud'` for its items. */
+    const loudWrap = {
+      ...wrapPrimitive,
+      renderers: {
+        ...wrapPrimitive.renderers,
+        react: (node, env) =>
+          wrapPrimitive.renderers.react(node, {
+            ...env,
+            context: contextWith(env.context, 'tone', 'loud'),
+          }),
+      },
+    } as typeof wrapPrimitive;
+
     it("keeps a container's fields over its children's own contexts, either way round", () => {
-      const toned = (prefix: string) => ({
-        ...keyAdapter(prefix),
-        createRenderContext: (collector: KeyCollector) => ({
-          ...keyAdapter(prefix).createRenderContext(collector),
-          tone: 'quiet',
-        }),
-      });
-      const { react } = wrapPrimitive.renderers;
-      const loudWrap = {
-        ...wrapPrimitive,
-        renderers: {
-          ...wrapPrimitive.renderers,
-          react: (node, env) =>
-            react(node, {
-              ...env,
-              context: contextWith(env.context, 'tone', 'loud'),
-            }),
-        },
-      } as typeof wrapPrimitive;
       const runtime = createIsomerRuntime({
         packs: [
           packWith('test.one', [classed(notePrimitive)], keyAdapter('one')),
@@ -1636,7 +1639,7 @@ describe('createIsomerRuntime', () => {
               loudWrap,
               probing(boldPrimitive, ({ tone }) => String(tone)),
             ] as AnyPrimitiveDefinition[],
-            toned('two')
+            toned('two', 'quiet')
           ),
         ],
       });
@@ -1655,6 +1658,47 @@ describe('createIsomerRuntime', () => {
       });
       expect(body).toContain('<span data-probe="loud">b</span>');
       expect(body).toContain('<span class="one-note">n</span>');
+    });
+
+    it("keeps a container's field through another pack's container that defaults it the same", () => {
+      const boxPrimitive = {
+        ...wrapPrimitive,
+        type: 'box',
+        catalog: {
+          ...wrapPrimitive.catalog,
+          type: 'box',
+          example: { type: 'box', items: [] },
+        },
+        examples: [],
+        schema: z.object({
+          type: z.literal('box'),
+          items: z.array(z.looseObject({ type: z.string() })),
+        }),
+      } as AnyPrimitiveDefinition;
+      const runtime = createIsomerRuntime({
+        packs: [
+          packWith(
+            'test.one',
+            [
+              loudWrap,
+              probing(notePrimitive, ({ tone }) => String(tone)),
+            ] as AnyPrimitiveDefinition[],
+            keyAdapter('one')
+          ),
+          packWith('test.two', [boxPrimitive], toned('two', 'loud')),
+        ],
+      });
+
+      const { body } = runtime.surfaces.html.render({
+        type: 'view',
+        body: [
+          {
+            type: 'wrap',
+            items: [{ type: 'box', items: [{ type: 'note', text: 'n' }] }],
+          } as WrapNode,
+        ],
+      });
+      expect(body).toContain('<span data-probe="loud">n</span>');
     });
 
     it("scopes each adapter's script on its own", () => {
