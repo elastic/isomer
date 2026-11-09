@@ -11,7 +11,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef, Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { chartsPack, createChartsPack } from './pack';
+import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import type {
   ChartNode,
   ChartsRenderContext,
@@ -439,16 +439,18 @@ describe("a Scene's link and emphasis notes", () => {
         chrome,
       }),
     });
-    const [, style] =
-      /<a\b[^>]*style="([^"]*)"/.exec(
+    const [, className, style] =
+      /<a\b[^>]*class="([^"]*)"[^>]*style="([^"]*)"/.exec(
         react(dark, { environment: 'browser' })
       ) ?? [];
-    expect(style).toContain(`color:${chrome.text}`);
-    expect(style).toContain(`background:${chrome.background}`);
-    expect(style).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
-    expect(style).toContain('overflow:hidden');
-    expect(style).toContain('white-space:nowrap');
-    expect(style).toContain('text-overflow:ellipsis');
+    expect(style).toBe(`color:${chrome.text};background:${chrome.background}`);
+    expect(className).toBe('chartsScene-link');
+    const [, rule] =
+      /\.chartsScene-link\{([^}]*)\}/.exec(chartsStylesheet()) ?? [];
+    expect(rule).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
+    expect(rule).toContain('overflow:hidden');
+    expect(rule).toContain('white-space:nowrap');
+    expect(rule).toContain('text-overflow:ellipsis');
   });
 
   it('leave the link its line inside a host size', () => {

@@ -28,7 +28,9 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
+import { cls } from './styles';
 import { tableHeight } from './table';
 import { CHARTS_THEME } from './theme';
 
@@ -190,16 +192,10 @@ export const renderSceneNode = (
       {
         href: link.href,
         title: link.label,
+        className: cls(context, sceneModule.handles.link),
         style: {
-          display: 'block',
-          height: linkHeight,
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          textOverflow: 'ellipsis',
           color: unsized.chrome.text,
           background: unsized.chrome.background,
-          fontSize: CHARTS_THEME.type.body,
-          lineHeight: `${linkHeight}px`,
         },
       },
       link.label
