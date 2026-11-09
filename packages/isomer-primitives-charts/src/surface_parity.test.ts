@@ -147,26 +147,83 @@ const chartNodesOf = (value: unknown): string[] => {
   return Object.values(value).flatMap(chartNodesOf);
 };
 
+/** A surface's render of a composition: the Scenes it resolved, and the nodes it sent as pictures. */
+type Reach = (composition: Composition) => {
+  scenes: readonly { node: ChartNode }[];
+  pictured?: readonly unknown[];
+};
+
+/** How many times each string occurs in `values`. */
+const tally = (values: readonly string[]): Map<string, number> => {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    counts.set(value, (counts.get(value) ?? 0) + 1);
+  }
+  return counts;
+};
+
+/** The chart nodes `reach` resolved or pictured, as {@link canonical} JSON. */
+const reachedBy = (reach: Reach, composition: Composition) => {
+  const { scenes, pictured = [] } = reach(composition);
+  return [
+    ...scenes.map(({ node }) => canonical(node)),
+    ...chartNodesOf(pictured),
+  ];
+};
+
 /**
- * Every chart node of `composition`, as parsed, reached a Scene in `scenes`,
- * or went in one of `pictured`, so a chart a surface drops cannot
- * shrink the oracle below.
+ * How many times `reach` resolves or pictures one chart of each type, drawn
+ * alone: a surface may resolve a chart more than once, as Slack does.
+ */
+const perChart = (reach: Reach): Map<string, number> =>
+  new Map(
+    [...chartTypes].map((type) => {
+      const { composition } = examples.find(
+        (example) => example.type === type
+      )!;
+      return [type, reachedBy(reach, composition).length];
+    })
+  );
+
+/**
+ * Each chart node of `composition`, as parsed, is resolved or pictured as
+ * many times per occurrence as the surface does a lone chart of its type, so
+ * a chart a surface drops, even one repeated elsewhere, cannot shrink the
+ * oracle below.
  */
 const expectReached = (
+  reach: Reach,
   composition: Composition,
-  scenes: readonly { node: ChartNode }[],
-  pictured: readonly string[] = []
+  counts: Map<string, number>
 ) => {
   const { composition: parsed } = runtime.parse(composition);
-  const reached = new Set(scenes.map(({ node }) => canonical(node)));
   const charts = chartNodesOf(parsed);
   expect(charts.length).toBeGreaterThan(0);
-  for (const node of charts) {
-    expect(
-      reached.has(node) || pictured.some((picture) => picture.includes(node)),
-      `a Scene or picture for ${node.slice(0, 120)}`
-    ).toBe(true);
-  }
+  const expected = new Map(
+    [...tally(charts)].map(([node, occurrences]) => {
+      const { type } = JSON.parse(node) as { type: string };
+      return [node, occurrences * counts.get(type)!];
+    })
+  );
+  expect(tally(reachedBy(reach, composition))).toEqual(expected);
+};
+
+const reachText: Reach = (composition) =>
+  recording(() => runtime.surfaces.text.render(composition));
+const reachMarkdown: Reach = (composition) =>
+  recording(() => runtime.surfaces.markdown.render(composition));
+const reachSlack: Reach = (composition) =>
+  recording(() =>
+    runtime.surfaces.slack.render(composition, { heading: false })
+  );
+const reachSlackPictures: Reach = (composition) => {
+  const { output, scenes } = recording(() =>
+    runtime.surfaces.slack.render(composition, {
+      heading: false,
+      collectAssets: true,
+    })
+  );
+  return { scenes, pictured: output.assets.map(({ node }) => node) };
 };
 
 const chartCases = examples.map((example) => ({
@@ -194,13 +251,30 @@ describe('surface parity', () => {
 
   const cases = chartCases.filter(({ charts }) => charts > 0);
 
+  it.each([
+    ['text', reachText],
+    ['Markdown', reachMarkdown],
+    ['Slack without pictures', reachSlack],
+    ['Slack with pictures', reachSlackPictures],
+  ] as const)(
+    '%s reaches every chart of every example, once per time it occurs',
+    (_, reach) => {
+      const counts = perChart(reach);
+      for (const count of counts.values()) {
+        expect(count).toBeGreaterThan(0);
+      }
+      for (const { composition } of cases) {
+        expectReached(reach, composition, counts);
+      }
+    }
+  );
+
   it.each(cases)(
     'text: $type: $name writes each Scene’s sentences, table and link',
     ({ composition }) => {
       const { output, scenes } = recording(() =>
         runtime.surfaces.text.render(composition)
       );
-      expectReached(composition, scenes);
       for (const { scene } of scenes) {
         expectInOrder(output, sentencesOf(scene));
         const table = tableOf(scene);
@@ -223,7 +297,6 @@ describe('surface parity', () => {
       const { output, scenes } = recording(() =>
         runtime.surfaces.markdown.render(composition)
       );
-      expectReached(composition, scenes);
       const tree = fromMarkdown(output, {
         extensions: [gfm()],
         mdastExtensions: [gfmFromMarkdown()],
@@ -267,7 +340,6 @@ describe('surface parity', () => {
         runtime.surfaces.slack.render(composition, { heading: false })
       );
       expect(output.assets).toEqual([]);
-      expectReached(composition, scenes);
       const read = readSlack(output.blocks);
       for (const { scene } of scenes) {
         expectInOrder(squash(read.text), sentencesOf(scene).map(squash));
@@ -293,11 +365,6 @@ describe('surface parity', () => {
         })
       );
       const pictured = output.assets.map(({ node }) => JSON.stringify(node));
-      expectReached(
-        composition,
-        scenes,
-        output.assets.map(({ node }) => canonical(node))
-      );
       const alts: string[] = [];
       JSON.stringify(output.blocks, (_, value: unknown) => {
         const image = value as { type?: unknown; alt_text?: unknown } | null;
