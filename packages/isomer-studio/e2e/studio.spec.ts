@@ -1827,6 +1827,122 @@ test.describe('dev server reload', () => {
   });
 });
 
+test.describe('snapshot frames', () => {
+  test.skip(
+    SKIP_DEV || Boolean(process.env.STUDIO_CONFIG),
+    'needs the repository fixture pack'
+  );
+
+  let dir: string;
+  let dev: StartedDev;
+
+  const writeOptions = async (dividerFrame: string) => {
+    // Vite ignores another write to the same file within its 50ms watcher debounce.
+    await delay(100);
+    writeFileSync(
+      join(dir, 'options.ts'),
+      `export const dividerFrame = ${JSON.stringify(dividerFrame)};\n`
+    );
+  };
+
+  test.beforeAll(async () => {
+    const artifacts = join(packageDir, '.artifacts');
+    mkdirSync(artifacts, { recursive: true });
+    dir = mkdtempSync(join(artifacts, 'isomer-studio-frames-'));
+    writeFileSync(
+      join(dir, 'package.json'),
+      JSON.stringify({ type: 'commonjs' })
+    );
+    await writeOptions('rule');
+    writeFileSync(
+      join(dir, 'frames_app.ts'),
+      [
+        "import { createElement } from 'react';",
+        '',
+        'const previews = [',
+        "  ['Callout', { type: 'callout', body: 'Framed callout.' }],",
+        "  ['Divider', { type: 'divider' }],",
+        '] as const;',
+        '',
+        'const FramesApp = ({ Surface }: { Surface: (props: object) => unknown }) =>',
+        "  createElement('div', null, ...previews.map(([label, node]) =>",
+        "    createElement('section', { key: label, 'aria-label': label },",
+        "      createElement(Surface, { surface: 'snapshot', composition: { type: 'view', body: [node] } }))));",
+        '',
+        'export default FramesApp;',
+        '',
+      ].join('\n')
+    );
+    writeFileSync(
+      join(dir, 'isomer-studio.config.ts'),
+      [
+        "import { createElement } from 'react';",
+        "import { createIsomerRuntime } from '@elastic/isomer-runtime';",
+        `import { componentsPack } from ${JSON.stringify(join(packageDir, 'src/fixtures/components_pack'))};`,
+        "import { dividerFrame } from './options';",
+        '',
+        '// Each frame draws one node type alone, so a node drawn in the wrong frame fails.',
+        'const frameOf = (name: string, accepts: string) => ({',
+        '  defaultWidth: 320,',
+        '  theme: { light: undefined, dark: undefined },',
+        '  estimateHeight: () => 100,',
+        '  validateBody: (body: readonly { type: string }[]) =>',
+        '    body.filter(({ type }) => type !== accepts).map(({ type }) => `draws no ${type}`),',
+        "  wrap: (_header: unknown, body: unknown) => createElement('div', { 'data-frame': name }, body),",
+        '});',
+        '',
+        'export default {',
+        "  title: 'Frames',",
+        '  images: false,',
+        "  apps: [{ id: 'frames', title: 'Frames', load: () => import('./frames_app') }],",
+        '  runtime: createIsomerRuntime({',
+        '    packs: [componentsPack],',
+        "    frames: { card: frameOf('card', 'callout'), rule: frameOf('rule', 'divider'), ruleAlt: frameOf('ruleAlt', 'divider') },",
+        "    defaultFrame: 'card',",
+        '  }),',
+        '  snapshotFrame: ({ body }: { body: readonly { type: string }[] }) =>',
+        "    body.every(({ type }) => type === 'divider') ? dividerFrame : undefined,",
+        '};',
+        '',
+      ].join('\n')
+    );
+    dev = await startDev(join(dir, 'isomer-studio.config.ts'));
+  });
+
+  test.afterAll(() => {
+    dev.child.removeAllListeners('close');
+    dev.child.kill('SIGTERM');
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  /** The `data-frame` the snapshot preview in the `label` section was drawn in. */
+  const frameIn = (page: Page, label: string) =>
+    page
+      .getByRole('region', { name: label })
+      .locator('iframe[title="Snapshot preview"]')
+      .contentFrame()
+      .locator('[data-frame]')
+      .getAttribute('data-frame');
+
+  test('draws each snapshot preview in the frame snapshotFrame names, and follows a changed selector', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    await page.goto(`${dev.url}#/app/frames/`);
+    await expect.poll(() => frameIn(page, 'Callout')).toBe('card');
+    await expect.poll(() => frameIn(page, 'Divider')).toBe('rule');
+
+    await writeOptions('ruleAlt');
+
+    await expect
+      .poll(() => frameIn(page, 'Divider'), { timeout: 60_000 })
+      .toBe('ruleAlt');
+    await expect.poll(() => frameIn(page, 'Callout')).toBe('card');
+    await expect(page.getByText(/cannot draw/)).toHaveCount(0);
+    expect(problems).toEqual([]);
+  });
+});
+
 test.describe('browser-only', () => {
   let dir: string;
   // Beside `CONFIG`, so it resolves packages the same way; the fonts module must never load.

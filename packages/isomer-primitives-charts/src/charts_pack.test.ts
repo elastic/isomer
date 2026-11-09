@@ -17,6 +17,7 @@ import {
   primitiveExamples,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
+import { assertPackIconsValid } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
@@ -27,7 +28,9 @@ import type {
   ResolveSceneOptions,
 } from './render/context';
 import { gridSnapshotHeight } from './render/grid';
+import { CHARTS_THEME } from './render/theme';
 import { metricSingleValueScene } from './scene/examples';
+import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
 import { gridExamples } from './schema/examples/grid';
 import { unsupportedVega } from './schema/examples/unsupported';
@@ -88,6 +91,13 @@ describe('chartsPack', () => {
     ]);
   });
 
+  it('gives every primitive an icon within the SDK allowlist', () => {
+    expect(Object.keys(chartsPack.icons ?? {}).sort()).toEqual(
+      [...chartsPack.types].sort()
+    );
+    expect(() => assertPackIconsValid(chartsPack)).not.toThrow();
+  });
+
   it.each(cases)('$type: $name validates through the runtime', ({ node }) => {
     expect(runtime.validate(view(node)).errors).toEqual([]);
   });
@@ -112,7 +122,7 @@ describe('chartsPack', () => {
     );
   });
 
-  it('draws unsupported nodes and refuses to draw a chart without a resolver', () => {
+  it('draws unsupported nodes, and charts through resolveChart', () => {
     expect(
       runtime.surfaces.text.render(view(unsupportedVega), { heading: false })
     ).toBe(
@@ -121,10 +131,33 @@ describe('chartsPack', () => {
     const [metric] = primitiveExamples(
       chartsPack.primitives.find(({ type }) => type === 'metric')!
     );
-    expect(() =>
+    expect(
       runtime.surfaces.text.render(view(metric!.node), { heading: false })
-    ).toThrow(/without a Scene resolver/);
+    ).toContain(
+      resolveChart(metric!.node as ChartNode, { scheme: 'light' }).summary
+    );
   });
+
+  it.each(cases.filter(({ type }) => type === 'metric' || type === 'xyChart'))(
+    '$type: $name draws its summary with no engine registered',
+    ({ node }) => {
+      const composition = view(node);
+      const { summary } = resolveChart(node as ChartNode, { scheme: 'light' });
+      expect(
+        renderToStaticMarkup(
+          createElement(
+            'div',
+            null,
+            runtime.surfaces.react.render(composition, { heading: false })
+          )
+        )
+      ).toContain(renderToStaticMarkup(createElement('p', null, summary)));
+      expect(
+        runtime.surfaces.slack.render(composition, { collectAssets: true })
+          .assets
+      ).toHaveLength(1);
+    }
+  );
 });
 
 describe('a Scene description', () => {
@@ -319,7 +352,49 @@ CLOSED`);
     );
   });
 
-  it('gives each chart the box its panel leaves, when the grid knows its width', () => {
+  describe('nested in a narrow panel', () => {
+    const chart = gridExamples[0]!.node.panels[0]!.node;
+    const narrow = (node: PrimitiveNode): GridNode => ({
+      type: 'grid',
+      panels: [{ x: 0, y: 0, w: 12, h: 8, node }],
+    });
+    const inner = narrow(chart);
+    const columns = (out: string) =>
+      out.split('class="chartsGrid-panels"').length - 1;
+
+    it('validates', () => {
+      expect(runtime.validate(view(narrow(narrow(inner)))).errors).toEqual([]);
+    });
+
+    it('keeps 48 columns, at any depth, without a host size', () => {
+      resolved.length = 0;
+      expect(columns(html(narrow(inner)))).toBe(2);
+      expect(resolved.at(-1)?.size).toBeDefined();
+      expect(columns(html(narrow(narrow(inner))))).toBe(3);
+    });
+
+    it('gives a panel narrower than its grid’s gaps the box CSS draws, never a negative width', () => {
+      const nested: GridNode = {
+        type: 'grid',
+        panels: [
+          { x: 0, y: 0, w: 1, h: 8, node: chart },
+          { x: 1, y: 0, w: 12, h: 8, node: chart },
+        ],
+      };
+      resolved.length = 0;
+      html(narrow(nested));
+      // The nested grid gets (928 − 47 × 8) × 12/48 + 11 × 8 = 226 px, under its 376 px of gaps.
+      expect(resolved.map(({ size }) => size?.width)).toEqual([0, 11 * 8]);
+    });
+
+    it('stacks in one column when a host size leaves its panel under 768 px', () => {
+      // (1200 − 47 × 8) × 12/48 + 11 × 8 = 294 px for the nested grid.
+      const out = html(narrow(inner), { size: { width: 1200, height: 800 } });
+      expect(columns(out)).toBe(1);
+    });
+  });
+
+  it('gives each chart the box its panel leaves', () => {
     resolved.length = 0;
     const grid: GridNode = {
       type: 'grid',
@@ -339,7 +414,10 @@ CLOSED`);
     expect(resolved[0]?.size).toEqual({ width: 480, height: 80 });
     resolved.length = 0;
     html(grid);
-    expect(resolved[0]?.size).toBeUndefined();
+    // Without a host width: the frame's content, 960 − 2 × 16 = 928 px, and
+    // (928 − 47 × 8) × 24/48 + 23 × 8 for a half-width panel.
+    expect(CHARTS_THEME.grid.nominalWidth).toBe(928);
+    expect(resolved[0]?.size).toEqual({ width: 460, height: 80 });
   });
 
   it('never gives a chart a negative height', () => {
