@@ -20,18 +20,31 @@ import {
   TooltipContainer,
   TooltipHeader,
 } from '@elastic/charts';
-import type {
-  MetricScene,
-  MetricTile,
-  SceneRenderEnv,
+import {
+  cls,
+  type MetricScene,
+  type MetricTile,
+  px,
+  type SceneRenderEnv,
+  varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
 import { metricHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
+import { elasticModule } from './styles';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
 type PlainSecondaryProps = NonNullable<MetricTile['secondary']>;
+
+/** Resolves this engine's style handles: the render's adapter, else their readable names. */
+type Styles = Pick<SceneRenderEnv, 'resolveClassName'> | undefined;
+
+const { handles: elastic, vars } = elasticModule;
+
+/** The secondary text's class names: Elastic Charts' own, then the Scene's color. */
+const secondaryClass = (styles: Styles) =>
+  `echSecondaryMetric ${cls(styles, elastic.secondary)}`;
 
 /**
  * A tooltip label as Elastic Charts' secondary metric offers it: a focusable
@@ -40,10 +53,12 @@ type PlainSecondaryProps = NonNullable<MetricTile['secondary']>;
 const TooltipLabelled = ({
   label,
   color,
+  styles,
   children,
 }: {
   label: string;
   color: string;
+  styles: Styles;
   children: ReactNode;
 }) => {
   // The tile clips its overflow, so the tooltip draws in a portal placed
@@ -92,10 +107,10 @@ const TooltipLabelled = ({
   return (
     <span
       ref={trigger}
-      className="echSecondaryMetric"
+      className={secondaryClass(styles)}
       role="button"
       tabIndex={0}
-      style={{ color }}
+      style={varStyle(vars.ink, { color })}
       onPointerEnter={show}
       onPointerLeave={hide}
       onFocus={show}
@@ -111,15 +126,11 @@ const TooltipLabelled = ({
         ? createPortal(
             <div
               aria-hidden="true"
-              className="echSecondaryMetric__tooltip"
-              style={{
-                position: 'fixed',
-                top: open.rect.top,
-                left: open.rect.left + open.rect.width / 2,
-                transform: 'translate(-50%, -100%)',
-                zIndex: 10000,
-                pointerEvents: 'none',
-              }}>
+              className={`echSecondaryMetric__tooltip ${cls(styles, elastic.tooltip)}`}
+              style={varStyle(vars.anchor, {
+                top: px(open.rect.top),
+                left: px(open.rect.left + open.rect.width / 2),
+              })}>
               <TooltipContainer>
                 <TooltipHeader>{label}</TooltipHeader>
               </TooltipContainer>
@@ -135,19 +146,19 @@ const TooltipLabelled = ({
  * Without a badge, Elastic Charts recolors secondary-metric props to its
  * contrast color, so the text is drawn as an element in the Scene's color.
  */
-const plainSecondary = ({
-  text,
-  color,
-  label,
-  labelPlacement,
-}: PlainSecondaryProps) => {
+const plainSecondary = (
+  { text, color, label, labelPlacement }: PlainSecondaryProps,
+  styles: Styles
+) => {
   const PlainSecondary = () =>
     label !== undefined && labelPlacement === 'tooltip' ? (
-      <TooltipLabelled label={label} color={color}>
+      <TooltipLabelled label={label} color={color} styles={styles}>
         {text}
       </TooltipLabelled>
     ) : (
-      <span className="echSecondaryMetric" style={{ color }}>
+      <span
+        className={secondaryClass(styles)}
+        style={varStyle(vars.ink, { color })}>
         {label !== undefined && labelPlacement === 'before' ? (
           <span className="echSecondaryMetric__label">{label} </span>
         ) : null}
@@ -160,15 +171,16 @@ const plainSecondary = ({
   return PlainSecondary;
 };
 
-const secondaryOf = ({
-  secondary,
-}: MetricTile): MetricDatum['extra'] | undefined => {
+const secondaryOf = (
+  { secondary }: MetricTile,
+  styles: Styles
+): MetricDatum['extra'] | undefined => {
   if (secondary === undefined) {
     return undefined;
   }
   const { badge } = secondary;
   if (badge === undefined) {
-    return plainSecondary(secondary);
+    return plainSecondary(secondary, styles);
   }
   const props: SecondaryMetricProps = {
     value: secondary.text,
@@ -183,10 +195,10 @@ const secondaryOf = ({
 };
 
 /** The Elastic Charts datum for a tile. Its value prints the Scene's text, whatever Elastic Charts passes. */
-export const metricDatum = (tile: MetricTile): MetricDatum => {
+export const metricDatum = (tile: MetricTile, styles?: Styles): MetricDatum => {
   const { progress, trend, value } = tile;
   const text = () => value.text;
-  const extra = secondaryOf(tile);
+  const extra = secondaryOf(tile, styles);
   const base = {
     title: tile.title,
     ...(tile.subtitle === undefined ? {} : { subtitle: tile.subtitle }),
@@ -220,12 +232,17 @@ export const metricDatum = (tile: MetricTile): MetricDatum => {
 
 /** Tiles in rows of `layout.columns`, as Kibana slices them. */
 export const metricGrid = (
-  scene: MetricScene
+  scene: MetricScene,
+  styles?: Styles
 ): (MetricDatum | undefined)[][] => {
   const { columns } = scene.layout;
   const grid: (MetricDatum | undefined)[][] = [];
   for (let at = 0; at < scene.tiles.length; at += columns) {
-    grid.push(scene.tiles.slice(at, at + columns).map(metricDatum));
+    grid.push(
+      scene.tiles
+        .slice(at, at + columns)
+        .map((tile) => metricDatum(tile, styles))
+    );
   }
   return grid;
 };
@@ -267,6 +284,6 @@ export const metricSpecs = (
       ariaDescription={ariaDescriptionOf(scene)}
       {...metricHandlers(scene, env)}
     />
-    <Metric id="metric" data={metricGrid(scene)} />
+    <Metric id="metric" data={metricGrid(scene, env)} />
   </>
 );

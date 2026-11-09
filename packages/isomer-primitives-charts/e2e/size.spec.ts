@@ -15,7 +15,7 @@ import type { Composition } from '@elastic/isomer-sdk';
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
-import { chartsPack, createChartsPack } from '../src/pack';
+import { chartsPack, chartsStylesheet, createChartsPack } from '../src/pack';
 import type {
   ChartsRenderContext,
   ReactSceneRenderer,
@@ -40,7 +40,7 @@ const composition: Composition = {
   body: [metricSingleValue, xyTimeSeries],
 };
 
-/** Draws `composition` with `pack` as a browser host would, in a column `width` wide. */
+/** Draws `composition` with `pack` as a browser host would, shipping the pack's stylesheet, in a column `width` wide. */
 const show = async (
   page: Page,
   pack: typeof chartsPack,
@@ -58,7 +58,9 @@ const show = async (
       })
     )
   );
-  await page.setContent(`<!doctype html><body style="margin:0">${html}`);
+  await page.setContent(
+    `<!doctype html><style>${chartsStylesheet()}</style><body style="margin:0">${html}`
+  );
 };
 
 const box = async (page: Page, selector: string) => {

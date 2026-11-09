@@ -19,6 +19,7 @@ import { dataTableExamples } from '../schema/examples/data_table';
 
 import type { ReactSceneRenderer } from './context';
 import { tableHeight, TableView } from './table';
+import { tableModule } from './table_styles';
 import { CHARTS_THEME } from './theme';
 
 const tableOf = (
@@ -37,6 +38,16 @@ const example = (name: string) =>
   dataTableExamples.find((entry) => entry.name === name)!.node;
 
 const { titleHeight, lineHeight } = CHARTS_THEME.table;
+
+const { vars } = tableModule;
+
+/** `ref` set to `value` in an element's `style`. */
+const sets = (ref: { readonly propName: string }, value: string) =>
+  `${ref.propName}:${value}`;
+
+/** The declarations of the stylesheet's rule for `className`. */
+const rule = (className: string) =>
+  new RegExp(`\\.${className}\\{([^}]*)\\}`).exec(chartsStylesheet())?.[1];
 
 const CHOSEN = 'Chosen columns, widths and pre-rendered values';
 
@@ -87,23 +98,52 @@ describe('TableView', () => {
 
   it.each(cases)('$name ($scheme) uses the Scene colors', ({ scene }) => {
     const html = markup(scene);
-    expect(html).toContain(`background:${scene.headerBackground}`);
-    expect(html).toContain(`background:${scene.chrome.background}`);
+    expect(html).toContain(sets(vars.shade.fill, scene.headerBackground));
+    expect(html).toContain(sets(vars.box.fill, scene.chrome.background));
+    expect(html).toContain(sets(vars.box.ink, scene.chrome.text));
+    expect(html).toContain(sets(vars.rule.color, scene.chrome.gridLine));
     for (const position of firstPage(scene)) {
       for (const cell of scene.rows[position]!.cells) {
-        expect(html).toContain(`color:${cell.color}`);
-        for (const color of [
-          cell.background,
-          cell.badge,
-          cell.bar?.color,
-          cell.bar?.track,
-        ]) {
+        expect(html).toContain(sets(vars.ink.color, cell.color));
+        for (const [ref, color] of [
+          [vars.cell.fill, cell.background],
+          [vars.badge.fill, cell.badge],
+          [vars.bar.fill, cell.bar?.color],
+          [vars.bar.track, cell.bar?.track],
+        ] as const) {
           if (color) {
-            expect(html).toContain(`background:${color}`);
+            expect(html).toContain(sets(ref, color));
           }
         }
       }
     }
+  });
+
+  it('reads each value a Scene sets in the property it draws', () => {
+    const reads = (
+      className: string,
+      property: string,
+      ref: { propName: string }
+    ) => expect(rule(className)).toContain(`${property}:var(${ref.propName})`);
+    reads('chartsTable-root', 'width', vars.box.width);
+    reads('chartsTable-root', 'height', vars.box.height);
+    reads('chartsTable-root', 'color', vars.box.ink);
+    reads('chartsTable-root', 'background', vars.box.fill);
+    reads('chartsTable-column', 'width', vars.column.width);
+    reads('chartsTable-shaded', 'background', vars.shade.fill);
+    reads('chartsTable-ink', 'color', vars.ink.color);
+    reads('chartsTable-filled', 'background', vars.cell.fill);
+    reads('chartsTable-bar', 'background', vars.bar.track);
+    reads('chartsTable-barFill', 'left', vars.bar.from);
+    reads('chartsTable-barFill', 'width', vars.bar.span);
+    reads('chartsTable-barFill', 'background', vars.bar.fill);
+    reads('chartsTable-badge', 'background', vars.badge.fill);
+    expect(rule('chartsTable-barValue')).toContain(
+      `flex:0 0 var(${vars.gutter.basis.propName})`
+    );
+    expect(rule('chartsTable-ruled')).toContain(
+      `border-bottom:${CHARTS_THEME.table.lineWidth}px solid var(${vars.rule.color.propName})`
+    );
   });
 
   it('marks missing and blank cells', () => {
@@ -188,7 +228,7 @@ describe('TableView', () => {
     const scene = tableOf(example(CHOSEN), 'dark');
     expect(markup(scene)).toMatch(
       new RegExp(
-        `<tr data-row="0" data-emphasis="Most requested" style="[^"]*background:${scene.emphasisBackground}`
+        `<tr data-row="0" data-emphasis="Most requested" class="chartsTable-ruled chartsTable-shaded" style="[^"]*${vars.shade.fill.propName}:${scene.emphasisBackground}`
       )
     );
   });

@@ -10,8 +10,6 @@
 // `CHARTS_THEME.chart`. A browser applies a spec as CSS; Node, which has no
 // container to fill, turns it into a box at the theme's width.
 
-import type { CSSProperties } from 'react';
-
 import type { Scene, SceneSize } from '../scene/types';
 
 import { CHARTS_THEME } from './theme';
@@ -69,14 +67,13 @@ export const chartSize = (
   };
 };
 
-/** A spec as the CSS of the box a browser draws the chart in. */
-export const chartSizeStyle = ({
+/** A spec as the values of the `chartsScene` size vars, for the box a browser draws the chart in. */
+export const chartSizeVars = ({
   aspectRatio,
   minHeight,
   maxWidth,
-}: ChartSizeSpec): CSSProperties => ({
-  width: '100%',
+}: ChartSizeSpec) => ({
   aspectRatio: `${aspectRatio.x} / ${aspectRatio.y}`,
-  ...(minHeight === undefined ? {} : { minHeight }),
-  ...(maxWidth === undefined ? {} : { maxWidth }),
+  ...(minHeight === undefined ? {} : { minHeight: `${minHeight}px` }),
+  ...(maxWidth === undefined ? {} : { maxWidth: `${maxWidth}px` }),
 });

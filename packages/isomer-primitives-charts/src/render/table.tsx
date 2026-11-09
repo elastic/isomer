@@ -11,7 +11,7 @@
 // draws the first page in the Scene's starting order. Every color is the
 // Scene's; every length is `CHARTS_THEME`'s.
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import type { StyleHandle } from '@elastic/distillate';
 
 import type {
@@ -23,13 +23,13 @@ import type {
 import { sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';
-import { cls } from './styles';
+import { cls, px, varStyle } from './styles';
 import { tableModule } from './table_styles';
 import { CHARTS_THEME } from './theme';
 
 const theme = CHARTS_THEME.table;
 
-const { handles: table } = tableModule;
+const { handles: table, vars } = tableModule;
 
 /** The height of the lines around the table: title, description and notes. */
 const textHeight = (scene: TableScene) =>
@@ -80,14 +80,14 @@ const Bar = ({
   <span
     data-part="bar"
     className={cls(styles, table.bar, table.barShape[density])}
-    style={{ background: bar.track }}>
+    style={varStyle(vars.bar, { track: bar.track })}>
     <span
       className={cls(styles, table.barFill, table.barShape[density])}
-      style={{
-        left: `${bar.from * 100}%`,
-        width: `${(bar.to - bar.from) * 100}%`,
-        background: bar.color,
-      }}
+      style={varStyle(vars.bar, {
+        from: `${bar.from * 100}%`,
+        span: `${(bar.to - bar.from) * 100}%`,
+        fill: bar.color,
+      })}
     />
   </span>
 );
@@ -96,7 +96,7 @@ const CellText = ({ cell, styles }: { cell: TableCell; styles: Classes }) =>
   cell.badge ? (
     <span
       className={cls(styles, table.badge)}
-      style={{ background: cell.badge }}>
+      style={varStyle(vars.badge, { fill: cell.badge })}>
       {cell.text}
     </span>
   ) : (
@@ -125,7 +125,7 @@ const BarCell = ({
         table.barValue,
         table.align[trailing ? 'left' : 'right']
       )}
-      style={{ flex: `0 0 ${gutter}ch` }}>
+      style={varStyle(vars.gutter, { basis: `${gutter}ch` })}>
       <CellText {...{ cell, styles }} />
     </span>
   );
@@ -150,7 +150,6 @@ export const TableView = ({
   styles?: Classes;
 }): ReactNode => {
   const { density, chrome } = scene;
-  const rule = `${theme.lineWidth}px solid ${chrome.gridLine}`;
   const shown = shownRows(scene);
   const cell = (alignment: TableAlignment, ...more: StyleHandle[]) =>
     cls(
@@ -167,17 +166,25 @@ export const TableView = ({
       theme.barLabelMinChars
     )
   );
-  const shaded: CSSProperties = { background: scene.headerBackground };
+  const rule = varStyle(vars.rule, { color: chrome.gridLine });
+  const subdued = varStyle(vars.ink, { color: chrome.textSubdued });
+  const header = {
+    className: cls(styles, table.ruled, table.shaded),
+    style: {
+      ...rule,
+      ...varStyle(vars.shade, { fill: scene.headerBackground }),
+    },
+  };
 
   return (
     <div
       className={cls(styles, table.root, table.font[density])}
-      style={{
-        width: scene.size?.width ?? '100%',
-        height: tableHeight(scene),
-        color: chrome.text,
-        background: chrome.background,
-      }}>
+      style={varStyle(vars.box, {
+        width: scene.size && px(scene.size.width),
+        height: px(tableHeight(scene)),
+        ink: chrome.text,
+        fill: chrome.background,
+      })}>
       {scene.title && (
         <div
           data-part="title"
@@ -197,11 +204,17 @@ export const TableView = ({
       <table aria-label={scene.summary} className={cls(styles, table.table)}>
         <colgroup>
           {scene.columns.map(({ id, width }) => (
-            <col key={id} {...(width !== undefined && { style: { width } })} />
+            <col
+              key={id}
+              {...(width !== undefined && {
+                className: cls(styles, table.column),
+                style: varStyle(vars.column, { width: px(width) }),
+              })}
+            />
           ))}
         </colgroup>
         <thead data-part="header">
-          <tr style={{ ...shaded, borderBottom: rule }}>
+          <tr {...header}>
             {scene.columns.map((column) => (
               <th
                 key={column.id}
@@ -216,11 +229,11 @@ export const TableView = ({
         </thead>
         <tbody>
           {scene.rows.length === 0 ? (
-            <tr style={{ borderBottom: rule }}>
+            <tr className={cls(styles, table.ruled)} style={rule}>
               <td
                 colSpan={scene.columns.length}
-                className={cell('center')}
-                style={{ color: chrome.textSubdued }}>
+                className={cell('center', table.ink)}
+                style={subdued}>
                 {scene.emptyText}
               </td>
             </tr>
@@ -234,33 +247,40 @@ export const TableView = ({
                   {...(row.emphasis !== undefined && {
                     'data-emphasis': row.emphasis,
                   })}
+                  className={cls(
+                    styles,
+                    table.ruled,
+                    row.emphasis !== undefined && table.shaded
+                  )}
                   style={{
-                    borderBottom: rule,
-                    ...(row.emphasis !== undefined && {
-                      background: scene.emphasisBackground,
-                    }),
+                    ...rule,
+                    ...(row.emphasis !== undefined &&
+                      varStyle(vars.shade, {
+                        fill: scene.emphasisBackground,
+                      })),
                   }}>
                   {row.cells.map((tableCell, index) => {
                     const column = scene.columns[index]!;
-                    const header = column.id === scene.rowHeader;
-                    const CellTag = header ? 'th' : 'td';
+                    const rowHeading = column.id === scene.rowHeader;
+                    const CellTag = rowHeading ? 'th' : 'td';
                     return (
                       <CellTag
                         key={column.id}
-                        {...(header && { scope: 'row' })}
+                        {...(rowHeading && { scope: 'row' })}
                         data-row={tableCell.source.rows.join(' ')}
                         data-column={column.id}
                         data-empty={tableCell.empty}
                         title={tableCell.title ?? tableCell.text}
-                        className={
-                          header
-                            ? cell(column.alignment, table.rowHeading)
-                            : cell(column.alignment)
-                        }
+                        className={cell(
+                          column.alignment,
+                          table.ink,
+                          ...(rowHeading ? [table.rowHeading] : []),
+                          ...(tableCell.background ? [table.filled] : [])
+                        )}
                         style={{
-                          color: tableCell.color,
-                          ...(tableCell.background && {
-                            background: tableCell.background,
+                          ...varStyle(vars.ink, { color: tableCell.color }),
+                          ...varStyle(vars.cell, {
+                            fill: tableCell.background,
                           }),
                         }}>
                         {tableCell.bar ? (
@@ -283,7 +303,9 @@ export const TableView = ({
         </tbody>
         {hasFooter(scene) && (
           <tfoot data-part="footer">
-            <tr style={shaded}>
+            <tr
+              className={cls(styles, table.shaded)}
+              style={varStyle(vars.shade, { fill: scene.headerBackground })}>
               {scene.columns.map((column) => (
                 <td key={column.id} className={cell(column.alignment)}>
                   {column.footer}
@@ -305,7 +327,10 @@ export const TableView = ({
                   {label}
                 </span>
               ) : (
-                <span key={label} style={{ color: chrome.textSubdued }}>
+                <span
+                  key={label}
+                  className={cls(styles, table.ink)}
+                  style={subdued}>
                   {label}
                 </span>
               )

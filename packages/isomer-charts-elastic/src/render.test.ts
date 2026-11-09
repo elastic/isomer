@@ -40,7 +40,10 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
 import { createElasticChartsRenderer } from './renderer';
+import { elasticModule } from './styles';
 import { sceneTooltip } from './xy';
+
+const { handles: elastic, vars } = elasticModule;
 
 // React 18.3 exports `act` from `react`; earlier 18.x only from `react-dom/test-utils`.
 const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
@@ -499,7 +502,11 @@ describe('elastic-charts renderer: metric', () => {
       const node = shadow.querySelector<HTMLElement>(
         '.echSecondaryMetric__tooltip'
       );
-      return [node?.style.top, node?.style.left];
+      expect(node?.classList).toContain(elastic.tooltip.readableName);
+      return [
+        node?.style.getPropertyValue(vars.anchor.top.propName),
+        node?.style.getPropertyValue(vars.anchor.left.propName),
+      ];
     };
     expect(style()).toEqual(['50px', '120px']);
     trigger!.getBoundingClientRect = () => at(10, 30);
@@ -544,7 +551,10 @@ describe('elastic-charts renderer: metric', () => {
       const secondary = container.querySelector<HTMLElement>(
         '.echSecondaryMetric'
       );
-      expect(secondary?.style.color).toBe('rgb(255, 0, 255)');
+      expect(secondary?.classList).toContain(elastic.secondary.readableName);
+      expect(secondary?.style.getPropertyValue(vars.ink.color.propName)).toBe(
+        '#ff00ff'
+      );
       expect(secondary?.textContent?.replace(/\s+/g, ' ').trim()).toBe(text);
     }
   );

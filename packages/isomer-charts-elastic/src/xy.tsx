@@ -40,6 +40,7 @@ import {
   TooltipTableRow,
 } from '@elastic/charts';
 import {
+  cls,
   formatAxisValue,
   type SceneAnnotation,
   type SceneAxis,
@@ -59,6 +60,7 @@ import {
   xyHandlers,
 } from './events';
 import type { ElasticChartsOptions } from './options';
+import { elasticModule } from './styles';
 import { chromeTheme, kibanaBaseTheme } from './theme';
 
 const POSITION = {
@@ -590,7 +592,7 @@ const legendAction =
       return null;
     }
     return (
-      <span style={{ display: 'inline-flex', gap: 2 }}>
+      <span className={cls(env, elasticModule.handles.legendAction)}>
         <button
           type="button"
           aria-label={`Filter for ${label}`}

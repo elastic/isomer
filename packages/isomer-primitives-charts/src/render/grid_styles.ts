@@ -7,7 +7,7 @@
 
 import { GRID_COLUMNS } from '../schema/grid';
 
-import { chartsDistillery } from './styles';
+import { createVarsModule } from './styles';
 import { CHARTS_THEME } from './theme';
 
 const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
@@ -20,9 +20,13 @@ const oneLine = `
   text-overflow: ellipsis;
 `;
 
-export const gridModule = chartsDistillery.createStyleModule(
+export const gridModule = createVarsModule(
   'chartsGrid',
-  ({ css }) => ({
+  (vars) => ({
+    clip: vars('clip', { maxHeight: 'none' }),
+    place: vars('place', { column: 'auto', row: 'auto', height: 'auto' }),
+  }),
+  ({ css }, { clip, place }) => ({
     root: css`
       display: flex;
       flex-direction: column;
@@ -31,6 +35,11 @@ export const gridModule = chartsDistillery.createStyleModule(
     header: css`
       flex-shrink: 0;
       overflow: hidden;
+    `,
+    /** A panel's header, clipped to the panel's height. */
+    clipped: css`
+      ${clip}
+      max-height: ${clip.maxHeight};
     `,
     heading: css`
       ${oneLine}
@@ -60,6 +69,17 @@ export const gridModule = chartsDistillery.createStyleModule(
       display: flex;
       flex-direction: column;
       min-width: 0;
+    `,
+    /** A panel at its place on the grid's tracks. */
+    placed: css`
+      ${place}
+      grid-column: ${place.column};
+      grid-row: ${place.row};
+    `,
+    /** A panel in the one-column layout, as tall as its rows. */
+    stacked: css`
+      ${place}
+      height: ${place.height};
     `,
     body: css`
       flex: 1;
