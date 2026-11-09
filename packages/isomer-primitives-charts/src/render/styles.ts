@@ -67,17 +67,17 @@ export const createVarsModule = <TVars, TStyles extends StylesObject>(
   styles: (api: Authoring, vars: TVars) => TStyles
 ) => {
   let groups: TVars | undefined;
-  const { handles } = chartsDistillery.createStyleModule(name, (api) => {
+  const module = chartsDistillery.createStyleModule(name, (api) => {
     groups = vars(api.vars);
     return styles(api, groups);
   });
   return {
-    handles,
+    handles: module.handles,
     vars: groups as TVars,
-    /** Every rule this module draws with, whatever else is loaded. */
+    /** Every rule this module draws with, variants included, whatever else is loaded. */
     stylesheet: (): string => {
       const collector = chartsDistillery.artifactCollector('readable');
-      collector.useHandles(Object.values(handles) as readonly StyleHandle[]);
+      collector.useAllEntries(module);
       return chartsDistillery.renderStyles(collector);
     },
   };

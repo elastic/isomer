@@ -146,6 +146,16 @@ describe('TableView', () => {
     );
   });
 
+  it('ships its own rules, variants included, as the pack’s stylesheet writes them', () => {
+    const rules = (css: string) =>
+      (css.match(/\.chartsTable-[\w-]+\{[^}]*\}/g) ?? []).sort();
+    const own = tableModule.stylesheet();
+    expect(rules(own)).toEqual(rules(chartsStylesheet()));
+    for (const variant of ['font', 'row', 'align', 'barShape']) {
+      expect(own).toContain(`.chartsTable-${variant}-`);
+    }
+  });
+
   it('marks missing and blank cells', () => {
     const html = markup(tableOf(example('Missing, blank and empty')));
     expect(html).toContain('data-empty="missing"');
