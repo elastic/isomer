@@ -28,6 +28,7 @@ import {
   type Scene,
   type SceneAxis,
   type SceneRenderEnv,
+  selectEvent,
   xyInteractiveScene,
   type XyScene,
   type XySceneLayer,
@@ -355,6 +356,45 @@ describe('elastic-charts renderer: xy legend actions', () => {
 
   it('offers no legend actions without onEvent', async () => {
     const container = await draw(xyInteractiveScene);
+    expect(container.querySelector('button[aria-label^="Filter "]')).toBeNull();
+  });
+});
+
+describe('elastic-charts renderer: partition legend actions', () => {
+  const selectable = partitionChartExamples.find(
+    ({ name }) => name === 'Selectable, pre-rendered and with provenance'
+  )!.node;
+  const scene = resolveChart(
+    { ...selectable, legend: { ...selectable.legend, visibility: 'visible' } },
+    { scheme: 'light', size: SIZE }
+  );
+  if (scene.kind !== 'partition') {
+    throw new Error('expected a partition Scene');
+  }
+
+  it('draws Filter for and Filter out on each legend item, raising its slice’s event', async () => {
+    expect(scene.legend.items.length).toBeGreaterThan(1);
+    for (const item of scene.legend.items) {
+      expect(item.selection).toBeDefined();
+      for (const negate of [false, true]) {
+        const events: ChartEvent[] = [];
+        const container = await draw(scene, {
+          environment: 'browser',
+          nodeId: 'pie',
+          onEvent: (raised) => events.push(raised),
+        });
+        const button = container.querySelector<HTMLButtonElement>(
+          `button[aria-label="Filter ${negate ? 'out' : 'for'} ${item.label}"]`
+        );
+        expect(button, `${item.label}, negate ${negate}`).not.toBeNull();
+        act(() => button!.click());
+        expect(events).toEqual([selectEvent('pie', item.selection!, negate)]);
+      }
+    }
+  });
+
+  it('offers no legend actions without onEvent', async () => {
+    const container = await draw(scene);
     expect(container.querySelector('button[aria-label^="Filter "]')).toBeNull();
   });
 });
