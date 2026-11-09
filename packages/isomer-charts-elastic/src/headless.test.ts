@@ -428,6 +428,7 @@ describe('createElasticChartsHeadlessRenderer', () => {
     expect(renderer.supports('gauge')).toBe(true);
     expect(renderer.supports('tagCloud')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
+    expect(renderer.supports('legacyMetric')).toBe(false);
   });
 
   const markup = (node: unknown) =>

@@ -5,7 +5,7 @@ description: A SceneRenderer that draws chart Scenes with Elastic Charts in the 
 
 # Elastic Charts engine
 
-`@elastic/isomer-charts-elastic` draws [chart Scenes](../charts/scene.md) with [Elastic Charts](https://github.com/elastic/elastic-charts), the library Kibana draws its panels with, so a chart in a browser host looks like the Kibana panel it came from. It is a `SceneRenderer` for the browser and supports the `metric`, `xy`, `partition`, `heatmap`, `gauge` and `tagCloud` kinds.
+`@elastic/isomer-charts-elastic` draws [chart Scenes](../charts/scene.md) with [Elastic Charts](https://github.com/elastic/elastic-charts), the library Kibana draws its panels with, so a chart in a browser host looks like the Kibana panel it came from. It is a `SceneRenderer` for the browser and supports the `metric`, `xy`, `partition`, `heatmap`, `gauge` and `tagCloud` kinds. Kibana draws a [`legacyMetric`](../charts/legacy-metric.md) without Elastic Charts, so the charts pack draws that kind itself, as it does a table.
 
 ```sh
 npm install @elastic/isomer-charts-elastic @elastic/charts moment moment-timezone react react-dom zod

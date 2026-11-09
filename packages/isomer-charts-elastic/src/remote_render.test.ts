@@ -123,6 +123,7 @@ describe('remote render with headless Elastic Charts', () => {
     expect(new Set(examples.map(({ type }) => type))).toEqual(
       new Set([
         'metric',
+        'legacyMetric',
         'xyChart',
         'dataTable',
         'partitionChart',
@@ -179,6 +180,18 @@ describe('remote render with headless Elastic Charts', () => {
         });
         expect(svgBackgrounds(html).length).toBeGreaterThan(0);
       }
+    }
+  });
+
+  it('draws every legacy metric with the pack’s own tiles, not Elastic Charts', () => {
+    const legacy = examples.filter(({ type }) => type === 'legacyMetric');
+    expect(legacy.length).toBeGreaterThan(0);
+    for (const { composition } of legacy) {
+      const { html } = runtime.surfaces.snapshot.render(composition, {
+        theme: 'light',
+      });
+      expect(html).not.toContain('<svg');
+      expect(html).toMatch(/data-part="(value|empty)"/);
     }
   });
 
