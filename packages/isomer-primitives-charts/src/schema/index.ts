@@ -11,6 +11,7 @@ export {
   gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
   tagCloudCatalog,
@@ -71,6 +72,7 @@ export { chartEventExamples } from './examples/events';
 export { gaugeExamples } from './examples/gauge';
 export { gridExamples } from './examples/grid';
 export { heatmapExamples } from './examples/heatmap';
+export { legacyMetricExamples } from './examples/legacy_metric';
 export { metricExamples } from './examples/metric';
 export { partitionChartExamples } from './examples/partition_chart';
 export { tagCloudExamples } from './examples/tag_cloud';
@@ -104,6 +106,12 @@ export {
 } from './grid';
 export { type HeatmapNode, HEATMAP_RULES, heatmapSchema } from './heatmap';
 export { glyphSchema } from './icons';
+export {
+  type LegacyMetricNode,
+  LEGACY_METRIC_RULES,
+  LEGACY_METRIC_SIZES,
+  legacyMetricSchema,
+} from './legacy_metric';
 export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
 export {
   type PartitionChartNode,

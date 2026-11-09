@@ -18,7 +18,7 @@ createIsomerRuntime({ packs: [chartsPack] });
 const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 ```
 
-`chartsPack` registers `metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
+`chartsPack` registers `metric`, `legacyMetric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
 The pack declares an [input budget](../../isomer-sdk/docs/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
 
@@ -28,7 +28,7 @@ For each chart node, the shim tries renderers in this order and takes the first 
 
 1. `context.sceneRenderers`, the host's preference for this render;
 2. the pack's `sceneRenderers`, given to `createChartsPack`;
-3. the pack's own renderers: its table renderer for `table` Scenes (see [`dataTable`](data-table.md#surfaces)), then the fallback, which draws the Scene's summary sentence for every kind in a browser and on Node.
+3. the pack's own renderers: its table renderer for `table` Scenes (see [`dataTable`](data-table.md#surfaces)), its legacy metric renderer for `legacyMetric` Scenes (see [`legacyMetric`](legacy-metric.md#surfaces)), then the fallback, which draws the Scene's summary sentence for every kind in a browser and on Node.
 
 Native has no fallback: a host drawing on React Native passes a native renderer, and a chart with no renderer for its environment throws, naming the kind and the environment.
 
@@ -81,9 +81,10 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 | `heatmap`                             | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
 | `gauge`                               | Lens's spec for its shape, at its largest box: 3:1 up to 600 px wide for a horizontal bullet, 2:3 up to 400 px for a vertical one, 2:1.25, 1.1:1 and 1:1 up to 600 px for a semicircle, arc and circle |
 | `tagCloud`                            | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
+| `legacyMetric`                        | 16:9, at least as tall as its tiles' estimated boxes wrapped into rows at the chart's width. Lens fills its container instead, as for an `xyChart`                                                     |
 | `dataTable`                           | None: the table is its rows tall                                                                                                                                                                       |
 
-In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
+In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` and `legacyMetric` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
 ## Styling
 
@@ -124,14 +125,14 @@ Requests over time: Count of records by @timestamp per hour, from 98 to 210.
 01:00 | 98
 ```
 
-On Slack, `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
+On Slack, `metric`, `legacyMetric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ### Parity gates
 
 Two gates hold the pack to its Scenes over every example, nested in a `grid` or not. They record each Scene where the pack resolves and draws it, so a new example or chart primitive is covered without changing them.
 
 - **Surface parity** (`src/surface_parity.test.ts`): on each surface, every chart node of the parsed composition the surface shows, nested in a grid or not but not in a collapsed section or left out by its `surfaces` hint, reaches a Scene or goes as a picture once per time it occurs, as many times as the surface reaches a lone chart of its type, so a surface that drops a chart, even one repeated elsewhere, fails rather than shrinking what is checked. Text writes each Scene's summary, description and notes in order, its table as the rows above, and its link. Markdown, read back with a GFM parser, holds the same sentences, the table as a GFM table cell for cell, and the link. Slack without pictures holds the sentences and a native table of the Scene's strings, in the order the chart shows them and within Slack's caps, and the link. With pictures, each asset type is an `image` whose alt text is the node's text, cut to Slack's limit, and every other chart is text as without pictures.
-- **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, and the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes.
+- **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes, and the legacy metric renderer its summary as its label, each tile's value and, when shown, label in tile order, or its empty text.
 
 The chart engines have [their own](../../isomer-charts-elastic/docs/index.md#parity-gates), for content, events and look.
 

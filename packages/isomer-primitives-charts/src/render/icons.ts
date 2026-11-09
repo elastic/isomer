@@ -28,6 +28,11 @@ export const metricIcon = chartsIcon(
   `<path d="M4 4.5h4" stroke="${paint.muted}"/><rect x="4" y="6.5" width="8" height="3" rx="1" fill="${paint.accent}"/><polyline points="4 12 6.5 11 9 11.5 12 10" stroke="${paint.fg}"/>`
 );
 
+/** A large value, centered, over its label. */
+export const legacyMetricIcon = chartsIcon(
+  `<rect x="4" y="4.5" width="8" height="4" rx="1" fill="${paint.accent}"/><path d="M5.5 11.5h5" stroke="${paint.fg}"/>`
+);
+
 /** Axes and a rising line through its points. */
 export const xyChartIcon = chartsIcon(
   `<polyline points="3 3 3 13 13 13" stroke="${paint.fg}"/><polyline points="5 10.5 7.5 7.5 9.5 9 12.5 4.5" stroke="${paint.accent}"/>`

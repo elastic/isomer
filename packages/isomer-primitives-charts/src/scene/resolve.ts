@@ -8,6 +8,7 @@
 import type { DataTableNode } from '../schema/data_table';
 import type { GaugeNode } from '../schema/gauge';
 import type { HeatmapNode } from '../schema/heatmap';
+import type { LegacyMetricNode } from '../schema/legacy_metric';
 import type { MetricNode } from '../schema/metric';
 import type { PartitionChartNode } from '../schema/partition_chart';
 import type { TagCloudNode } from '../schema/tag_cloud';
@@ -16,6 +17,7 @@ import type { XyChartNode } from '../schema/xy_chart';
 import type { ResolveChartOptions } from './common';
 import { resolveGauge } from './resolve_gauge';
 import { resolveHeatmap } from './resolve_heatmap';
+import { resolveLegacyMetric } from './resolve_legacy_metric';
 import { resolveMetric } from './resolve_metric';
 import { resolvePartition } from './resolve_partition';
 import { resolveTable } from './resolve_table';
@@ -24,6 +26,7 @@ import { resolveXy } from './resolve_xy';
 import type {
   GaugeScene,
   HeatmapScene,
+  LegacyMetricScene,
   MetricScene,
   PartitionScene,
   Scene,
@@ -40,7 +43,8 @@ export type ChartNode =
   | PartitionChartNode
   | HeatmapNode
   | GaugeNode
-  | TagCloudNode;
+  | TagCloudNode
+  | LegacyMetricNode;
 
 /**
  * Resolves a chart node to the Scene every renderer draws: colors for
@@ -82,6 +86,11 @@ export function resolveChart(
   node: TagCloudNode,
   options: ResolveChartOptions
 ): TagCloudScene;
+/** Resolves a `legacyMetric` node to a {@link LegacyMetricScene}. */
+export function resolveChart(
+  node: LegacyMetricNode,
+  options: ResolveChartOptions
+): LegacyMetricScene;
 /** Resolves any chart node to its {@link Scene}. */
 export function resolveChart(
   node: ChartNode,
@@ -106,5 +115,7 @@ export function resolveChart(
       return resolveGauge(node, options);
     case 'tagCloud':
       return resolveTagCloud(node, options);
+    case 'legacyMetric':
+      return resolveLegacyMetric(node, options);
   }
 }

@@ -26,6 +26,27 @@ export interface ChartSizeSpec {
 
 const { chart } = CHARTS_THEME;
 
+/** The height of boxes wrapped into rows `width` wide, as a centered flex row wraps them. */
+export const wrappedHeight = (
+  boxes: readonly SceneSize[],
+  width: number
+): number => {
+  let height = 0;
+  let rowWidth = 0;
+  let rowHeight = 0;
+  for (const box of boxes) {
+    const fitted = Math.min(box.width, width);
+    if (rowWidth > 0 && rowWidth + fitted > width) {
+      height += rowHeight;
+      rowWidth = 0;
+      rowHeight = 0;
+    }
+    rowWidth += fitted;
+    rowHeight = Math.max(rowHeight, box.height);
+  }
+  return Math.ceil(height + rowHeight);
+};
+
 /** The size spec of a Scene's kind; none for a kind that sizes itself, such as a table. */
 export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
   switch (scene.kind) {
@@ -44,6 +65,14 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
       return { aspectRatio: chart.tagCloud.aspectRatio };
     case 'heatmap':
       return { aspectRatio: chart.heatmap.aspectRatio };
+    case 'legacyMetric':
+      return {
+        aspectRatio: chart.legacyMetric.aspectRatio,
+        minHeight: wrappedHeight(
+          scene.tiles.map(({ box }) => box),
+          chart.width
+        ),
+      };
     case 'metric': {
       if (scene.tiles.length <= 1) {
         const { width, height } = chart.metric.single;

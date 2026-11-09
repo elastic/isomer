@@ -12,6 +12,7 @@ import {
   dataTableCatalog,
   gaugeCatalog,
   heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
   tagCloudCatalog,
@@ -21,12 +22,14 @@ import { type DataTableNode, dataTableSchema } from '../schema/data_table';
 import { dataTableExamples } from '../schema/examples/data_table';
 import { gaugeExamples } from '../schema/examples/gauge';
 import { heatmapExamples } from '../schema/examples/heatmap';
+import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
 import { tagCloudExamples } from '../schema/examples/tag_cloud';
 import { xyChartExamples } from '../schema/examples/xy_chart';
 import { gaugeSchema } from '../schema/gauge';
 import { heatmapSchema } from '../schema/heatmap';
+import { legacyMetricSchema } from '../schema/legacy_metric';
 import { metricSchema } from '../schema/metric';
 import { partitionChartSchema } from '../schema/partition_chart';
 import { tagCloudSchema } from '../schema/tag_cloud';
@@ -40,6 +43,7 @@ import {
   dataTableIcon,
   gaugeIcon,
   heatmapIcon,
+  legacyMetricIcon,
   metricIcon,
   partitionChartIcon,
   tagCloudIcon,
@@ -97,6 +101,16 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       schema: metricSchema,
       catalog: metricCatalog,
       examples: metricExamples,
+      sanitize: sanitizeLink,
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'legacyMetric',
+      icon: legacyMetricIcon,
+      schema: legacyMetricSchema,
+      catalog: legacyMetricCatalog,
+      examples: legacyMetricExamples,
       sanitize: sanitizeLink,
       metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),

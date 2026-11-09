@@ -7,6 +7,8 @@ description: One headline value, or one tile per row, with an optional secondary
 
 One headline value, or one tile per row of `data`, on the [chart core](core.md).
 
+Lens's metric materializes into it; its legacy metric materializes into [`legacyMetric`](legacy-metric.md).
+
 | Field | What it is |
 | --- | --- |
 | `value` | `column`, `subtitle?`, `color?` (a `ColorValue`, or `bands` to color by `colors.bands`), `bandsRange?` (`absolute`, or `percentage` from 0 to the bar's `max`, across the range of tiles, or from 0 to twice a lone value), `applyColorTo?` (`value` or `background`) |
