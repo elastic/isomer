@@ -9,6 +9,7 @@ import {
   chartsFrame,
   type ChartsFrameTheme,
   chartsPack,
+  chartsStylesheet,
 } from '@elastic/isomer-primitives-charts';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Frame } from '@elastic/isomer-sdk';
@@ -20,6 +21,7 @@ import {
   slideDeckFrame,
   type SlideFrameTheme,
   slidesPack,
+  slideStylesheet,
 } from './packages/isomer-primitives-slides/src/index';
 
 // One runtime's frames share a theme: the slide deck's carries the charts keys too.
@@ -39,6 +41,7 @@ export default defineStudioConfig({
     frames: { slide: slideFrame, charts: chartsFrame },
     defaultFrame: 'slide',
   }),
+  stylesheet: () => `${slideStylesheet()}\n${chartsStylesheet()}`,
   // Slides preview inside a slide; charts preview on their own.
   previewExample: (node) =>
     chartsPack.types.has(node.type)
