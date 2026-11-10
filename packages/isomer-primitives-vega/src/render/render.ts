@@ -9,6 +9,7 @@ import type { ChartData } from '@elastic/isomer-primitives-charts/schema';
 import { logger, parse, renderModule, resetSVGDefIds, View, Warn } from 'vega';
 import { compile, type TopLevelSpec } from 'vega-lite';
 
+import { MAX_DRAWN_ITEMS } from '../schema/node';
 import {
   newReadRecord,
   pruneToReads,
@@ -256,6 +257,36 @@ export interface VegaSvg {
   log: VegaLog;
 }
 
+/** Marks whose items draw together as one SVG path. */
+const ONE_PATH_MARKS = new Set(['line', 'area', 'trail']);
+
+/**
+ * The SVG elements a scene draws: one per item, but one per line, area and
+ * trail, whose items are the vertices of one path. Stops counting past the cap.
+ */
+const countDrawn = (root: unknown): number => {
+  let count = 0;
+  const stack: unknown[] = [root];
+  while (stack.length > 0 && count <= MAX_DRAWN_ITEMS) {
+    const node = stack.pop() as {
+      marktype?: string;
+      items?: unknown[];
+    } | null;
+    count += 1;
+    if (!node || !Array.isArray(node.items)) {
+      continue;
+    }
+    if (node.marktype !== undefined && ONE_PATH_MARKS.has(node.marktype)) {
+      count += node.items.length > 0 ? 1 : 0;
+      continue;
+    }
+    for (const item of node.items) {
+      stack.push(item);
+    }
+  }
+  return count;
+};
+
 /** Runs `view` to completion and draws its scene as an SVG string, scrubbed of anything that fetches. */
 const drawView = (view: View, log: VegaLog): string => {
   resetSVGDefIds();
@@ -265,6 +296,12 @@ const drawView = (view: View, log: VegaLog): string => {
     throw new VegaRenderError(`vega: ${failure}`);
   }
   const scene = view.scenegraph() as unknown as { root: unknown };
+  const items = countDrawn(scene.root);
+  if (items > MAX_DRAWN_ITEMS) {
+    throw new VegaRenderError(
+      `vega: the chart draws ${items} marks, more than the ${MAX_DRAWN_ITEMS} an image can afford`
+    );
+  }
   scrubScene(scene.root);
   const internals = view as unknown as ViewInternals;
   const padding = view.padding() as {

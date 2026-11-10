@@ -88,18 +88,27 @@ Vega is ESM only. A CommonJS host `require`s it, which Node allows for an ES mod
 
 `vega`, `vega-lite`, `vega-interpreter` and `vega-tooltip` are Kibana's versions, and the root `pnpm.overrides` pins every `vega-*` sub-package to what Kibana resolves, so one copy of each loads.
 
+## Limits
+
+What an image costs follows the SVG elements it draws, not the size of its data: takumi rasterizes each element, at about 0.4 ms per symbol at 2×. A line, area or trail is one path however many points it has: a line through 30,000 points rasterizes in under half a second, while 31,000 points as symbols took 22 s and 877 MB. A spec's size cannot bound this, since a few transforms can generate thousands of marks, so the pack counts what a chart draws and draws its fallback note past 5,000 elements: the worst image then takes about 2 s at 2× and stays under the memory the Elastic Charts engine's examples use.
+
+The size limits bound the rest, parsing and memory: 250,000 characters of spec, about 12,000 rows of two numbers inline; 250,000 characters of results after pruning; 10,000 rows of `data`, within a 5,000-element drawing for any spec that aggregates or draws a line.
+
 ## Measuring it
 
-`scripts/bench_render.cjs` draws Vega charts as a render service does: validation, which parses each spec, `snapshot` on `chartsFrame`, and takumi to PNG, in a fresh Node process under `--disallow-code-generation-from-strings`. On macOS arm64, Node 22, two runs each:
+`scripts/bench_render.cjs` draws Vega charts as a render service does: validation, which parses each spec, `snapshot` on `chartsFrame`, and takumi to PNG, in a fresh Node process under `--disallow-code-generation-from-strings`. On macOS arm64, Node 22, the median of three runs:
 
-| Measure | every example, light and dark, 1× | one cold PNG at 2× | a spec at the 1,000,000-character limit (about 31,000 points), 2× | 16 PNGs at 2× through a limiter of 2 |
+| Scenario | Peak RSS (MB) | Peak less loaded (MB) | Validate and draw (ms) | takumi PNG (ms) |
 | --- | --- | --- | --- | --- |
-| Peak RSS (MB) | 212 | 137 | 884 | 231 |
-| Peak RSS less loaded (MB) | 93 | 18 | 764 | 113 |
-| Validate and draw per chart, median (ms) | 14 | 45 | 1,996 | 15 |
-| takumi PNG per chart, median (ms) | 3.5 | 5.6 | 23,668 | 18 |
+| Every example, light and dark, 1× | 213 | 93 | 12 | 3.2 |
+| One cold PNG, 2× | 135 | 17 | 40 | 5.3 |
+| `budget-marks`: a scatter plot at the 5,000-element cap, 2× | 241 | 50 | 143 | 2,080 |
+| `budget-spec`: a line through a spec at 250,000 characters, 2× | 188 | 67 | 280 | 310 |
+| `budget-data`: a line through 10,000 rows of `data`, 2× | 183 | 63 | 226 | 16 |
+| `over-marks`: a 250,000-character scatter plot past the cap, drawn as a note | 176 | 56 | 255 | 3.7 |
+| 16 PNGs at 2× through a limiter of 2 | 233 | 113 | 14 | 18 |
 
-Vega itself is cheap; a spec at the size limit is not, because takumi rasterizes one SVG element per mark. A render service runs each render under its own time limit.
+`budget-marks` finds its point count by drawing, so its loaded RSS includes those draws. A render service still runs each render under its own time limit.
 
 `pnpm --filter @elastic/isomer-primitives-vega bench:check`, part of `pnpm check:memory`, runs every scenario three times and fails when a median is over its bound in the script.
 
