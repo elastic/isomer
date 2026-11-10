@@ -31,7 +31,9 @@ import {
   type SceneAxis,
   type SceneKind,
   type SceneRenderEnv,
+  type SceneTimeTicks,
   selectEvent,
+  timeTicksAt,
   type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
@@ -117,6 +119,61 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
     ? scene.categories.find(({ x }) => x === value)?.label
     : undefined) ?? formatAxisValue(scene, axis, value as number);
 
+/**
+ * The plot's width in a headless drawing: the widest clip rectangle, which
+ * Elastic Charts draws series in, less the pixel its half-pixel alignment adds.
+ */
+const plotWidthOf = (markup: string): number =>
+  Math.max(
+    0,
+    ...[
+      ...markup.matchAll(
+        /<clipPath\b[^>]*><path d="M([\d.-]+) [\d.-]+L([\d.-]+) /g
+      ),
+    ].map(([, left, right]) => Number(right) - Number(left) - 1)
+  );
+
+/**
+ * Elastic Charts drew the labeled ticks of the Scene's band for the plot's
+ * width: every one it drew is the band's, and it drew all but those its label
+ * measurement may drop, each layer's first and last. Widths a pixel either
+ * side are tried, as the plot width is read from the drawing.
+ */
+const expectTimeTicks = (
+  timeTicks: SceneTimeTicks,
+  markup: string,
+  labels: readonly string[],
+  values: readonly unknown[]
+) => {
+  const drawn = new Set(
+    labels.map((label, index) => `${String(values[index])} ${label}`)
+  );
+  const width = plotWidthOf(markup);
+  expect(width).toBeGreaterThan(0);
+  const matches = [width - 1, width, width + 1].some((candidate) => {
+    const { layers } = timeTicksAt(timeTicks, candidate);
+    const labeled = layers.filter(({ labeled }) => labeled);
+    const all = new Set(
+      labeled.flatMap(({ ticks }) =>
+        ticks.map(({ at, label }) => `${at} ${label}`)
+      )
+    );
+    const required = labeled.flatMap(({ ticks }) =>
+      ticks.slice(1, -1).map(({ at, label }) => `${at} ${label}`)
+    );
+    return (
+      [...drawn].every((tick) => all.has(tick)) &&
+      required.every((tick) => drawn.has(tick))
+    );
+  });
+  expect(
+    matches,
+    `${JSON.stringify([...drawn])} is the band at ${width}px: ${JSON.stringify(
+      timeTicksAt(timeTicks, width).layers
+    )}`
+  ).toBe(true);
+};
+
 /** What every drawing of a Scene carries: its size, background, name and description. */
 const expectChrome = ({ scene, markup }: DrawnScene) => {
   const [, open, title, desc] =
@@ -158,6 +215,11 @@ const contentChecks: Partial<Record<SceneKind, (drawing: DrawnScene) => void>> =
       expect(ticks.length).toBeGreaterThan(0);
       for (const [axis, { labels, values }] of ticks) {
         expect(axis).toBeDefined();
+        if (axis!.timeTicks) {
+          expectTimeTicks(axis!.timeTicks, markup, labels, values);
+          labels.forEach((label) => expect(texts).toContain(label));
+          continue;
+        }
         labels.forEach((label, index) => {
           if (label !== '') {
             expect(label).toBe(sceneLabel(xy, axis!, values[index]));

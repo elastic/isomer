@@ -46,6 +46,64 @@ const countColumn: ChartColumn = {
 
 const vis = (hex: string) => ({ light: hex, dark: hex });
 
+const MINUTE = 60_000;
+const DAY = 24 * HOUR;
+
+/** The first of the month `index` months after `start`'s, UTC. */
+const monthStart = (start: number, index: number) => {
+  const date = new Date(start);
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + index, 1);
+};
+
+/**
+ * A count over regular buckets in a time zone, for the time-axis examples: its
+ * x column prints dates in that zone, and its interval is the bucket.
+ */
+const timeAxisExample = ({
+  title,
+  start,
+  count,
+  step,
+  timeZone,
+  mark,
+}: {
+  title: string;
+  start: number;
+  count: number;
+  step: number | 'month';
+  timeZone: string;
+  mark: 'line' | 'bar' | 'area';
+}): XyChartNode => ({
+  type: 'xyChart',
+  title,
+  data: {
+    columns: [
+      {
+        id: 'time',
+        label: '@timestamp',
+        type: 'date',
+        role: 'dimension',
+        format: {
+          kind: 'date',
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone,
+        },
+      },
+      countColumn,
+    ],
+    rows: Array.from({ length: count }, (_, index) => [
+      step === 'month' ? monthStart(start, index) : start + index * step,
+      Math.round(400 + 250 * Math.sin(index / 5) + ((index * 37) % 60)),
+    ]),
+  },
+  layers: [{ kind: 'data', mark, x: 'time', y: [{ column: 'count' }] }],
+  // Months differ in length, so a monthly series states no interval.
+  axes: {
+    x: { scale: 'temporal', ...(step === 'month' ? {} : { interval: step }) },
+  },
+});
+
 /** One line over a time axis. The catalog's example. */
 export const xyTimeSeries: XyChartNode = {
   type: 'xyChart',
@@ -573,5 +631,57 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
         y: { ticks: true, grid: true, scale: 'log' },
       },
     },
+  },
+  {
+    name: 'Time axis by the minute',
+    description:
+      'A two-hour line in one-minute buckets across midnight: minutes beside the plot, the day below them.',
+    node: timeAxisExample({
+      title: 'Events per minute',
+      start: Date.UTC(2026, 10, 3, 23, 10),
+      count: 120,
+      step: MINUTE,
+      timeZone: 'UTC',
+      mark: 'line',
+    }),
+  },
+  {
+    name: 'Time axis by the hour across a daylight saving change',
+    description:
+      'Hourly bars over three days in New York, where 01:00 repeats on November 1: hours or six-hour steps beside the plot, each day below.',
+    node: timeAxisExample({
+      title: 'Requests per hour',
+      start: Date.UTC(2026, 9, 31, 4),
+      count: 72,
+      step: HOUR,
+      timeZone: 'America/New_York',
+      mark: 'bar',
+    }),
+  },
+  {
+    name: 'Time axis by the day',
+    description:
+      'Daily bars over two months in Berlin, across the end of daylight saving: days beside the plot, each month below.',
+    node: timeAxisExample({
+      title: 'Orders per day',
+      start: Date.UTC(2026, 8, 30, 22),
+      count: 61,
+      step: DAY,
+      timeZone: 'Europe/Berlin',
+      mark: 'bar',
+    }),
+  },
+  {
+    name: 'Time axis by the month',
+    description:
+      'A monthly area over three years: months beside the plot, each year below.',
+    node: timeAxisExample({
+      title: 'Active users per month',
+      start: Date.UTC(2024, 0, 1),
+      count: 36,
+      step: 'month',
+      timeZone: 'UTC',
+      mark: 'area',
+    }),
   },
 ];

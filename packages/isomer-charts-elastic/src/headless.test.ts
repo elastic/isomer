@@ -96,6 +96,14 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
     ? scene.categories.find(({ x }) => x === value)?.label
     : undefined) ?? formatAxisValue(scene, axis, value as number);
 
+/** Every label the Scene gives a time tick at `value`, in any band. */
+const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
+  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
+    layers.flatMap(({ ticks }) =>
+      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
+    )
+  );
+
 /** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
 const rgbOf = (color: string): string => {
   const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
@@ -161,7 +169,11 @@ describe('renderSceneSvg', () => {
         expect(axis).toBeDefined();
         labels.forEach((label, index) => {
           if (label !== '') {
-            expect(label).toBe(sceneLabel(scene, axis!, values[index]));
+            if (axis!.timeTicks) {
+              expect(timeLabels(axis!, values[index])).toContain(label);
+            } else {
+              expect(label).toBe(sceneLabel(scene, axis!, values[index]));
+            }
             expect(texts).toContain(label);
             checked += 1;
           }
@@ -374,7 +386,10 @@ describe('createElasticChartsHeadlessRenderer', () => {
     });
     const svg = markup(measuring.render(scene, { environment: 'node' }));
     expect(measured.length).toBeGreaterThan(0);
-    expect(measured).toEqual(expect.arrayContaining(svgTexts(svg)));
+    // Elastic Charts draws an unlabeled time tick's empty label unmeasured.
+    expect(measured).toEqual(
+      expect.arrayContaining(svgTexts(svg).filter((text) => text !== ''))
+    );
   });
 
   it('draws text as a given font’s outlines, with no SVG text', () => {

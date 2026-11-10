@@ -39,3 +39,16 @@ Rules:
 - A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.
 - A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.
+
+## Time axis
+
+On a vertical chart with a `temporal` x scale, the x axis draws as Lens's does: minor labels beside the plot (`14:00`, `3rd`, `Nov`) over major labels that name each day, month or year (`November 3, 2026`). The resolver decides those ticks and labels with Elastic Charts' multi-layer time-axis rules, and the Scene carries them ([Time axes](scene.md#time-axes)). They come from four things the node and the resolve options state, and nothing else. A materializer reproducing a Lens panel states them as Lens hands them to Elastic Charts (`expression_xy/public/components/xy_chart.tsx` and `x_domain.tsx`):
+
+| What | State it as | From Lens |
+| --- | --- | --- |
+| A time axis | `axes.x.scale: 'temporal'`, and `orientation: 'vertical'` | Lens's x scale is `time` (`isTimeChart`: a date histogram x). A date x that Lens draws on an `ordinal` scale states `ordinal`. Horizontal bars (`orientation: 'horizontal'`) get no multi-layer axis, in Lens or here: their ticks print in the x column's format, to which the materializer maps Lens's x formatter (`dateFormat:scaled`) |
+| The domain | `axes.x.domain: { kind: 'custom', min, max }` | `getXDomain`'s `extendedDomain` (`Settings.xDomain`), unchanged: with lines and areas, `max` is already one bucket past the last; with bars it is not, and the resolver adds the bucket as Elastic Charts does. Without a domain, the resolver spans the drawn x values, as Elastic Charts does when Lens passes `NaN` bounds |
+| The bucket | `axes.x.interval`, in milliseconds | `extendedDomain.minInterval`: for calendar units (`d`, `w`, `M`, `y`), `getAdjustedInterval`'s value, not the nominal one. A stated interval wider than the data's smallest spacing yields to that spacing, as `minInterval` does |
+| The zone and language | The x column format's `timeZone`, else `resolveChart`'s `timeZone`; and `resolveChart`'s `locale` | `dateFormat:tz`, resolved to an IANA zone (`Browser` becomes the viewer's zone), which Lens gives each series as `timeZone`; and `i18n.getLocale()`, which Lens gives `Settings.locale` |
+
+The x column's own date format does not change the axis labels, nor do `dateFormat:scaled` or `dateFormat:dow`: Elastic Charts labels a multi-layer axis with its own `Intl` formats, and Lens passes no `dow`, so weeks start on Monday. The column's format still prints table cells, tooltips and selections.
