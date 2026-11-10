@@ -75,7 +75,8 @@ The package is `"private": true` while the charts pack is, and depends on it.
 - With `data`, the spec reads it as the dataset named `table`: a Vega spec declares `{ "name": "table" }` in `data` with no `values`, `url` or `source`, and a Vega-Lite spec reads `"data": { "name": "table" }` and declares no `datasets.table`. The pack fills it with one object per row keyed by column id, dates as epoch milliseconds.
 - `interactions.select` and `interactions.brush` need `data`, and a `brush` column is a `date` or `number` column of `data`.
 - The spec compiles and parses: Vega-Lite compiles, and Vega parses it with the expression interpreter, so an unknown function, such as Kibana's `kibanaAddFilter`, fails at `spec`.
-- A spec is at most 1,000,000 characters of JSON, and `results` at most 16 entries and 1,000,000 characters. A basemap is at most 16 inline PNG, JPEG or WebP `data:` tiles. The pack declares the charts pack's [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters.
+- A spec is at most 250,000 characters of JSON, `data` at most 10,000 rows, and `results` at most 16 entries and 250,000 characters. A basemap is at most 16 inline PNG, JPEG or WebP `data:` tiles.
+- A chart draws at most 5,000 SVG elements, axes and legends included: one per mark item, and one per line, area or trail, which draw as one path. Past that it draws its fallback note. Validation does not run the dataflow, so this is checked when the chart draws; [Rendering](rendering.md#limits) says why. The pack declares the charts pack's [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters.
 
 ## Interactions
 

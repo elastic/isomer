@@ -22,9 +22,19 @@ const { readFileSync } = require('node:fs');
 const SCENARIOS = {
   examples: { about: 'every Vega example, light and dark, at 1×' },
   one: { about: 'one cold Vega-Lite PNG at 2×, the one-off case' },
-  'budget-spec': {
+  'budget-marks': {
     about:
-      'one scatter plot whose spec is at the 1,000,000-character limit, at 2×',
+      'the worst image the pack draws: a scatter plot at the drawn-mark cap, at 2×',
+  },
+  'budget-spec': {
+    about: 'one line through a spec at the character limit, at 2×',
+  },
+  'budget-data': {
+    about: 'one line through `data` at the row limit, at 2×',
+  },
+  'over-marks': {
+    about:
+      'a scatter plot at the character limit, past the mark cap: drawn as a note',
   },
   'burst-limited': {
     about: '16 example PNGs at 2× requested at once, through a limiter of 2',
@@ -40,7 +50,10 @@ const SCENARIOS = {
 const BOUNDS = {
   examples: { peakRssMb: 320, renderRssMb: 140 },
   one: { peakRssMb: 210, renderRssMb: 40 },
-  'budget-spec': { peakRssMb: 1350, renderRssMb: 1150 },
+  'budget-marks': { peakRssMb: 360, renderRssMb: 80 },
+  'budget-spec': { peakRssMb: 280, renderRssMb: 100 },
+  'budget-data': { peakRssMb: 280, renderRssMb: 100 },
+  'over-marks': { peakRssMb: 265, renderRssMb: 90 },
   'burst-limited': { peakRssMb: 350, renderRssMb: 170 },
 };
 
@@ -81,7 +94,12 @@ const child = async (scenario) => {
   const { createIsomerRuntime } = require('@elastic/isomer-runtime');
   const { chartsFrame } = require('@elastic/isomer-primitives-charts');
   const {
+    MAX_DATA_ROWS,
+    MAX_DRAWN_ITEMS,
     MAX_SPEC_CHARS,
+    renderVegaSvg,
+    toVegaSpec,
+    VEGA_THEMES,
     vegaExamples,
     vegaPack,
   } = require('@elastic/isomer-primitives-vega');
@@ -105,30 +123,85 @@ const child = async (scenario) => {
     formats: takumi.formats,
   });
 
-  /** A scatter plot of as many points as fit in the spec limit. */
-  const atSpecLimit = () => {
-    const spec = (values) => ({
-      data: { values },
-      mark: 'point',
-      encoding: {
-        x: { field: 'x', type: 'quantitative' },
-        y: { field: 'y', type: 'quantitative' },
-      },
-    });
-    const point = (index) => ({
-      x: (index * 7919) % 10007,
-      y: Math.round(5000 + 4000 * Math.sin(index / 50)),
-    });
+  const point = (index) => ({
+    x: (index * 7919) % 10007,
+    y: Math.round(5000 + 4000 * Math.sin(index / 50)),
+  });
+  const xy = (mark, values) => ({
+    data: { values },
+    mark,
+    encoding: {
+      x: { field: 'x', type: 'quantitative' },
+      y: { field: 'y', type: 'quantitative' },
+    },
+  });
+  /** As many points as fit in the spec limit. */
+  const atSpecLimit = (mark) => {
     const perPoint = JSON.stringify(point(12345)).length + 1;
-    const base = JSON.stringify(spec([])).length;
+    const base = JSON.stringify(xy(mark, [])).length;
     const count = Math.floor((MAX_SPEC_CHARS - base) / perPoint) - 100;
     return {
       type: 'vega',
       mode: 'vega-lite',
       description: `${count} points.`,
-      spec: spec(Array.from({ length: count }, (_, index) => point(index))),
+      spec: xy(
+        mark,
+        Array.from({ length: count }, (_, index) => point(index))
+      ),
     };
   };
+  /** The most points that draw: the cap, less the root mark, its group, the point mark, and the axes. */
+  const atMarkLimit = () => {
+    const probe = (count) => {
+      const input = {
+        mode: 'vega-lite',
+        spec: xy(
+          'point',
+          Array.from({ length: count }, (_, i) => point(i))
+        ),
+        width: 480,
+        height: 270,
+      };
+      try {
+        renderVegaSvg(toVegaSpec(input, VEGA_THEMES.light), input);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    let low = 0;
+    let high = MAX_DRAWN_ITEMS;
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2);
+      if (probe(mid)) {
+        low = mid;
+      } else {
+        high = mid - 1;
+      }
+    }
+    return {
+      type: 'vega',
+      mode: 'vega-lite',
+      description: `${low} points.`,
+      spec: xy(
+        'point',
+        Array.from({ length: low }, (_, index) => point(index))
+      ),
+    };
+  };
+  const atRowLimit = () => ({
+    type: 'vega',
+    mode: 'vega-lite',
+    description: `${MAX_DATA_ROWS} rows.`,
+    data: {
+      columns: [
+        { id: 'x', label: 'x', type: 'number', role: 'dimension' },
+        { id: 'y', label: 'y', type: 'number', role: 'metric' },
+      ],
+      rows: Array.from({ length: MAX_DATA_ROWS }, (_, i) => [i, point(i).y]),
+    },
+    spec: { ...xy('line', []), data: { name: 'table' } },
+  });
 
   const examples = () =>
     vegaExamples.flatMap(({ node }) =>
@@ -144,7 +217,14 @@ const child = async (scenario) => {
   const jobs = {
     examples,
     one: () => atScale2(1),
-    'budget-spec': () => [{ node: atSpecLimit(), theme: 'light', scale: 2 }],
+    'budget-marks': () => [{ node: atMarkLimit(), theme: 'light', scale: 2 }],
+    'budget-spec': () => [
+      { node: atSpecLimit('line'), theme: 'light', scale: 2 },
+    ],
+    'budget-data': () => [{ node: atRowLimit(), theme: 'light', scale: 2 }],
+    'over-marks': () => [
+      { node: atSpecLimit('point'), theme: 'light', scale: 2 },
+    ],
     'burst-limited': () => atScale2(16),
   }[scenario]();
 

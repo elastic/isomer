@@ -28,7 +28,14 @@ import {
   vegaExamples,
   vegaGrammarExample,
 } from './schema/examples';
-import { MAX_CHART_SIDE, VEGA_RULES, type VegaNode } from './schema/node';
+import {
+  MAX_CHART_SIDE,
+  MAX_DATA_ROWS,
+  MAX_DRAWN_ITEMS,
+  MAX_SPEC_CHARS,
+  VEGA_RULES,
+  type VegaNode,
+} from './schema/node';
 import { TABLE_RULE } from './schema/table';
 
 const runtime = createIsomerRuntime({
@@ -174,6 +181,36 @@ describe('vega schema', () => {
         interactions: { brush: { column: 'day', signal: 'range' } },
       })
     ).toEqual([`body[0].interactions.brush.column: ${VEGA_RULES.brushColumn}`]);
+  });
+
+  it('bounds the spec’s characters and the rows of `data`', () => {
+    const padded = (length: number) =>
+      withSpec(vegaGrammarExample, {
+        ...vegaGrammarExample.spec,
+        description: 'x'.repeat(
+          length -
+            JSON.stringify({ ...vegaGrammarExample.spec, description: '' })
+              .length
+        ),
+      });
+    expect(errors(padded(MAX_SPEC_CHARS))).toEqual([]);
+    expect(errors(padded(MAX_SPEC_CHARS + 1))).toEqual([
+      `body[0].spec: ${VEGA_RULES.size}`,
+    ]);
+    const rows = (count: number) => ({
+      ...vegaExample,
+      data: {
+        ...vegaExample.data!,
+        rows: Array.from({ length: count }, (_, index) => [`d${index}`, index]),
+      },
+      spec: { ...vegaExample.spec, mark: 'tick' },
+    });
+    expect(errors(rows(MAX_DATA_ROWS + 1))).toContain(
+      `body[0].data.rows: ${VEGA_RULES.dataRows}`
+    );
+    expect(
+      errors(rows(MAX_DATA_ROWS)).filter((e) => e.includes('data.rows'))
+    ).toEqual([]);
   });
 
   it('accepts only an inline raster tile, so a basemap cannot fetch', () => {
@@ -347,6 +384,46 @@ describe('vega rendering', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it('draws a note instead of more marks than an image can afford', () => {
+    const points = (count: number) =>
+      withSpec(vegaGrammarExample, {
+        data: [
+          {
+            name: 'table',
+            values: Array.from({ length: count }, (_, x) => ({ x })),
+          },
+        ],
+        marks: [
+          {
+            type: 'symbol',
+            from: { data: 'table' },
+            encode: { enter: { x: { field: 'x' } } },
+          },
+        ],
+      });
+    const drawn = (node: VegaNode) =>
+      markupOf(runtime.surfaces.react.renderNode(node));
+    // The root mark, its group, the symbol mark, and one item per point.
+    expect(drawn(points(MAX_DRAWN_ITEMS - 3))).not.toContain(
+      'data-isomer-vega-error'
+    );
+    const over = drawn(points(MAX_DRAWN_ITEMS - 2));
+    expect(over).toContain('data-isomer-vega-error');
+    expect(over).toContain(`more than the ${MAX_DRAWN_ITEMS}`);
+    // A line draws one path, however many points it has.
+    const line = withSpec(points(MAX_DRAWN_ITEMS * 2), {
+      ...points(MAX_DRAWN_ITEMS * 2).spec,
+      marks: [
+        {
+          type: 'line',
+          from: { data: 'table' },
+          encode: { enter: { x: { field: 'x' } } },
+        },
+      ],
+    });
+    expect(drawn(line)).not.toContain('data-isomer-vega-error');
   });
 
   it('draws a note in the chart’s box when Vega cannot draw the spec', () => {

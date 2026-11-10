@@ -28,10 +28,23 @@ import { isResultUrl, resultIssues } from './results';
 import { isSpecObject, specIssues } from './spec';
 import { TABLE_RULE, tableBindingIssue } from './table';
 
-/** Past this many characters of JSON, a spec is carrying a dataset, not a chart. */
-export const MAX_SPEC_CHARS = 1_000_000;
+/**
+ * Past this many characters of JSON, a spec is carrying a dataset, not a
+ * chart: about 12,000 rows of two numbers. Rendering cost follows the marks
+ * drawn, which {@link MAX_DRAWN_ITEMS} bounds; this bounds parsing and memory.
+ */
+export const MAX_SPEC_CHARS = 250_000;
 /** A host's query results, pruned to what the drawing reads; more is a dataset, not a chart's. */
-export const MAX_RESULTS_CHARS = 1_000_000;
+export const MAX_RESULTS_CHARS = 250_000;
+/** Rows of `data`. */
+export const MAX_DATA_ROWS = 10_000;
+/**
+ * SVG elements a chart may draw, axes and legends included: one per mark
+ * item, and one per line, area or trail, which draw as one path. takumi
+ * rasterizes each element, so this bounds an image's time: 5,000 symbols take
+ * about 2 s to a 2× PNG. A chart past it draws its fallback note.
+ */
+export const MAX_DRAWN_ITEMS = 5_000;
 export const MAX_RESULTS = 16;
 /** At most a 4 by 4 grid, as Kibana's map mode loads for one panel. */
 export const MAX_BASEMAP_TILES = 16;
@@ -47,6 +60,8 @@ export const VEGA_RULES = {
   needsData: '`interactions.select` and `interactions.brush` need `data`.',
   brushColumn: 'A `brush` column is a `date` or `number` column of `data`.',
   size: `A spec is at most ${MAX_SPEC_CHARS.toLocaleString('en')} characters of JSON.`,
+  dataRows: `\`data\` has at most ${MAX_DATA_ROWS.toLocaleString('en')} rows.`,
+  drawnItems: `A chart draws at most ${MAX_DRAWN_ITEMS.toLocaleString('en')} marks, axes and legends included, a line, area or trail counting once; past that it draws a note instead.`,
   resultsSize: `Results are at most ${MAX_RESULTS_CHARS.toLocaleString('en')} characters of JSON.`,
   resultUrl:
     'A data source keeps its `url` only where a `results` entry replaces it.',
@@ -71,7 +86,7 @@ const specSchema = z
     }
   })
   .describe(
-    `The Vega or Vega-Lite spec. Data is inline, under \`values\` or Vega-Lite \`datasets\`, or a host result replaces a source's \`url\`; nothing loads by URL, marks cannot link, and Kibana map mode (\`config.kibana.type: "map"\`) is refused. ${VEGA_RULES.size} ${VEGA_RULES.resultUrl}`
+    `The Vega or Vega-Lite spec. Data is inline, under \`values\` or Vega-Lite \`datasets\`, or a host result replaces a source's \`url\`; nothing loads by URL, marks cannot link, and Kibana map mode (\`config.kibana.type: "map"\`) is refused. ${VEGA_RULES.size} ${VEGA_RULES.drawnItems} ${VEGA_RULES.resultUrl}`
   );
 
 const resultsSchema = z
@@ -166,7 +181,7 @@ const vegaObjectSchema = z.object({
   data: chartDataSchema
     .optional()
     .describe(
-      `A typed table the chart draws, the table text surfaces show, and selections refer to. ${VEGA_RULES.table}`
+      `A typed table the chart draws, the table text surfaces show, and selections refer to. ${VEGA_RULES.table} ${VEGA_RULES.dataRows}`
     ),
   width: side('width'),
   height: side('height'),
@@ -196,6 +211,13 @@ const crossFieldIssues = (node: VegaObject, ctx: z.core.$RefinementCtx) => {
     });
   }
   const { data, interactions } = node;
+  if (data && data.rows.length > MAX_DATA_ROWS) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['data', 'rows'],
+      message: VEGA_RULES.dataRows,
+    });
+  }
   if (data) {
     const issue = tableBindingIssue(node.mode, node.spec);
     if (issue) {
