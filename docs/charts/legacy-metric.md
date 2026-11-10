@@ -21,7 +21,7 @@ It is its own primitive, not a [`metric`](metric.md) variant. Kibana draws it wi
 | `bandsRange` | `absolute` (default): band bounds are values. `percentage`: they are percentages of the range a column's values span, as Kibana's `getLegacyMetricDataBounds` gives it: its least to its greatest, or for a lone value from 0 to twice it (twice it to 0 when negative, and -50 to 100 for 0) |
 | `interactions`, `emphasis` | Selectable `tile`s, a link and static highlights: [Interactions](interactions.md) |
 
-With `colors.bands`, a tile of a `number` column is colored by the band its value falls in; a tile of any other column, or with no value, is not, as Lens colors only numbers. A lone tile's background color fills the whole chart, as Lens's `colorFullBackground` does; several tiles each fill their own box. On a colored background the value and label are white on a dark color and ink on a light one, by EUI's `isColorDark`, which is what Kibana's `needsLightText` intends. `colors.byKey` is not read. A chart with no rows says "No results found".
+With `colors.bands`, a tile of a `number` column is colored by the band its value falls in; a tile of any other column, or with no value, is not, as Lens colors only numbers. A lone tile's background color fills the whole chart, as Lens's `colorFullBackground` does; several tiles each fill their own box. On a colored background the value and label are in the panel's text color, as Kibana leaves them, unless EUI's `isColorDark` finds the color dark, as Kibana's `needsLightText` does: then they are in EUI's `emptyShade`, the chrome background (white in light, and `#111C2C` in dark, as Kibana writes it). `colors.byKey` is not read. A chart with no rows says "No results found".
 
 Rules:
 

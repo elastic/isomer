@@ -22,7 +22,7 @@ import {
   toNumber,
 } from './common';
 import { bandFor } from './resolve_metric';
-import { contrastText, resolveColor } from './theme';
+import { isColorDark, resolveColor } from './theme';
 import type {
   LegacyMetricScene,
   LegacyMetricTile,
@@ -215,11 +215,15 @@ export const resolveLegacyMetric = (
       selection,
     }): LegacyMetricTile => {
       const own = color !== undefined && onBackground ? color : undefined;
-      const under = own ?? fill ?? chrome.background;
+      // Kibana's `MetricVisValue` leaves text in the panel's `euiTextColor`,
+      // unless `needsLightText` finds the tile's color dark: then the
+      // container's `--light` class writes it in `emptyShade`, which is
+      // `backgroundBasePlain` in both schemes (#FFFFFF, and #111C2C in dark).
+      const under = own ?? fill;
       const ink =
-        own === undefined && fill === undefined
-          ? chrome.text
-          : contrastText(under, chrome.background, scheme);
+        under !== undefined && isColorDark(under)
+          ? chrome.background
+          : chrome.text;
       const { width, height } = natural(label, text);
       const scale = box
         ? Math.max(

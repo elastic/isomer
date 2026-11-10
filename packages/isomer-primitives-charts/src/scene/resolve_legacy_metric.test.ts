@@ -17,7 +17,7 @@ import type { LegacyMetricNode } from '../schema/legacy_metric';
 
 import { resolveChart } from './resolve';
 import { estimateTextWidth } from './resolve_legacy_metric';
-import { CHART_CHROME, TABLE_CHROME } from './theme';
+import { CHART_CHROME } from './theme';
 
 const RED = { light: '#CC5642', dark: '#AA3322' };
 const GREEN = { light: '#209280', dark: '#107060' };
@@ -119,16 +119,44 @@ describe('resolveLegacyMetric', () => {
     }
   );
 
-  it('fills the chart with a lone tile’s band color, its text light on a dark color', () => {
+  // Kibana's `.legacyMtrVis__container--light` writes text in
+  // `euiTheme.colors.emptyShade`: #FFFFFF in Borealis light, #111C2C in dark.
+  it('fills the chart with a lone tile’s band color, its text emptyShade on a dark color', () => {
     const scene = resolveChart(legacy([[null, 70, 0]], { colors: bands }), {
       scheme: 'dark',
     });
-    const ink = TABLE_CHROME.dark.ghostText;
+    const ink = '#111C2C';
     expect(scene.background).toBe(RED.dark);
     expect(scene.tiles[0]!.background).toBeUndefined();
     expect(scene.tiles[0]!.value.color).toBe(ink);
     expect(scene.tiles[0]!.labelColor).toBe(ink);
   });
+
+  // Gate A: Kibana draws a light band's text in the panel's `euiTextColor`,
+  // #384861 in light and #B4C1D5 in dark, not EUI's `textInk` (#07101F).
+  it.each([
+    ['light', '#384861', '#FFFFFF'],
+    ['dark', '#B4C1D5', '#111C2C'],
+  ] as const)(
+    'writes %s text in euiTextColor on a light band and emptyShade on a dark one',
+    (scheme, text, emptyShade) => {
+      const tile = (color: string) =>
+        resolveChart(
+          legacy([[null, 120, 0]], {
+            colors: { bands: [{ color: { light: color, dark: color } }] },
+          }),
+          { scheme }
+        ).tiles[0]!;
+      expect(tile('#54B399')).toMatchObject({
+        value: { color: text },
+        labelColor: text,
+      });
+      expect(tile('#1750BA')).toMatchObject({
+        value: { color: emptyShade },
+        labelColor: emptyShade,
+      });
+    }
+  );
 
   it('colors each of several tiles’ own background, or their values', () => {
     const rows = [
@@ -144,14 +172,15 @@ describe('resolveLegacyMetric', () => {
       GREEN.light,
       RED.light,
     ]);
-    // Text is dark on a light color, as Kibana's `needsLightText` decides.
+    // Text keeps the panel's `euiTextColor` on a light color: Kibana's
+    // `needsLightText` is false, so no class or style changes it.
     const pale = resolveChart(
       legacy([[null, 10, 0]], {
         colors: { bands: [{ color: { light: '#F1D86F', dark: '#F1D86F' } }] },
       }),
       { scheme: 'light' }
     );
-    expect(pale.tiles[0]!.labelColor).toBe(TABLE_CHROME.light.inkText);
+    expect(pale.tiles[0]!.labelColor).toBe(light.text);
     const value = resolveChart(
       legacy(rows, {
         colors: bands,
