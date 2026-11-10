@@ -189,19 +189,43 @@ describe('resolveHeatmap: positions', () => {
     expect(scene.x.categories.map(({ label }) => label)).toEqual([
       'b',
       'a',
-      '(null)',
       'c',
     ]);
     expect(scene.y.categories.map(({ label }) => label)).toEqual(['q', 'p']);
     expect(scene.x.scale).toBe('ordinal');
   });
 
-  it('sorts by text, a missing cell last, and numbers by value', () => {
+  // Elastic Charts' `getHeatmapTableSelector` skips a datum whose x or y is
+  // not a non-null primitive, so Lens's heat map has no `(null)` row or column.
+  it('draws no row whose x or y cell is missing, nor its position', () => {
+    const scene = resolve(
+      node([
+        ['a', 'p', 1],
+        ['a', null, 9],
+        [null, 'q', 5],
+        ['b', 'q', 2],
+      ])
+    );
+    expect(scene.x.categories.map(({ label }) => label)).toEqual(['a', 'b']);
+    expect(scene.y.categories.map(({ label }) => label)).toEqual(['p', 'q']);
+    expect(
+      scene.cells.map(({ value, source }) => [value, source.rows])
+    ).toEqual([
+      [1, [0]],
+      [2, [3]],
+    ]);
+    expect(scene.summary).toBe('Value by x and y, from 1 to 2.');
+    // Lens's bands span the whole value column (`findMinMaxByColumnId`).
+    expect(scene.bands[0]?.start).toBe(1);
+    expect(scene.bands.at(-2)?.end).toBeCloseTo(1 + (8 * 4) / 5);
+  });
+
+  it('sorts by text and numbers by value', () => {
     expect(
       resolve(
         node(rows, { x: { column: 'x', sort: 'desc' } })
       ).x.categories.map(({ label }) => label)
-    ).toEqual(['c', 'b', 'a', '(null)']);
+    ).toEqual(['c', 'b', 'a']);
     const numbers = resolve({
       ...node([
         [9, 'p', 1],
@@ -256,6 +280,121 @@ describe('resolveHeatmap: positions', () => {
       T0 + 3 * HOUR,
     ]);
     expect(scene.cells.map(({ x }) => x)).toEqual([2, 0, 1]);
+  });
+
+  describe('time zone', () => {
+    const DAY = 24 * HOUR;
+    // Midnight in Toronto, EST (UTC-5) through November 2026.
+    const TORONTO = Array.from(
+      { length: 3 },
+      (_, day) => T0 + 5 * HOUR + day * DAY
+    );
+    const daily = (
+      instants: readonly number[],
+      formatZone: string | undefined,
+      overrides: Partial<HeatmapNode> = {}
+    ): HeatmapNode => ({
+      ...node([]),
+      data: {
+        columns: [
+          {
+            id: 'x',
+            label: 'day',
+            type: 'date',
+            role: 'dimension',
+            format: {
+              kind: 'date',
+              day: 'numeric',
+              ...(formatZone ? { timeZone: formatZone } : {}),
+            },
+          },
+          string('y'),
+          value,
+        ],
+        rows: instants.map((instant, index) => [instant, 'p', index + 1]),
+      },
+      x: { column: 'x', interval: DAY },
+      ...overrides,
+    });
+
+    it('is the x format’s zone when the buckets start on its round times', () => {
+      const scene = resolveChart(daily(TORONTO, 'America/Toronto'), {
+        scheme: 'light',
+      });
+      expect(scene).toMatchObject({
+        x: { scale: 'time', timeZone: 'America/Toronto', interval: DAY },
+      });
+    });
+
+    // Kibana formats dates in UTC for `dateFormat:tz: Browser` while ES|QL
+    // buckets in the request's zone: the grid is the zone the buckets fit.
+    it('is the chart’s zone when the buckets fit it and not the format’s', () => {
+      const scene = resolveChart(daily(TORONTO, 'UTC'), {
+        scheme: 'light',
+        timeZone: 'America/Toronto',
+      });
+      expect(scene).toMatchObject({
+        x: { scale: 'time', timeZone: 'America/Toronto' },
+      });
+    });
+
+    it('is UTC when only UTC fits', () => {
+      const scene = resolveChart(
+        daily([T0, T0 + DAY, T0 + 2 * DAY], 'America/Toronto'),
+        { scheme: 'light', timeZone: 'Europe/Berlin' }
+      );
+      expect(scene).toMatchObject({ x: { scale: 'time', timeZone: 'UTC' } });
+    });
+
+    it('fits a zone across a daylight saving change', () => {
+      // New York midnights from Oct 31 to Nov 2, 2026: EDT, then EST.
+      const instants = [
+        Date.UTC(2026, 9, 31, 4),
+        Date.UTC(2026, 10, 1, 4),
+        Date.UTC(2026, 10, 2, 5),
+      ];
+      const scene = resolveChart(
+        daily(instants, 'America/New_York', {
+          x: { column: 'x', interval: DAY },
+        }),
+        { scheme: 'light' }
+      );
+      expect(scene).toMatchObject({
+        x: { scale: 'time', timeZone: 'America/New_York' },
+      });
+    });
+
+    it('is an ordinal axis when no zone’s grid holds every bucket', () => {
+      const scene = resolveChart(
+        daily([T0 + HOUR, T0 + 4 * HOUR], 'UTC', {
+          x: { column: 'x', interval: 3 * HOUR },
+        }),
+        { scheme: 'light' }
+      );
+      expect(scene.kind === 'heatmap' && scene.x).toMatchObject({
+        scale: 'ordinal',
+      });
+      expect(scene.kind === 'heatmap' && scene.x.timeZone).toBeUndefined();
+      expect(scene.kind === 'heatmap' && scene.cells).toHaveLength(2);
+    });
+
+    it('states a custom domain on a time axis, as Lens’s `xDomain`', () => {
+      const domain = { min: T0 - 2 * DAY, max: T0 + 5 * DAY };
+      const scene = resolveChart(
+        daily([T0, T0 + DAY], 'UTC', {
+          axes: { x: { domain: { kind: 'custom', ...domain } } },
+        }),
+        { scheme: 'light' }
+      );
+      expect(scene.kind === 'heatmap' && scene.x.domain).toEqual(domain);
+      const fit = resolveChart(
+        daily([T0, T0 + DAY], 'UTC', {
+          axes: { x: { domain: { kind: 'fit' } } },
+        }),
+        { scheme: 'light' }
+      );
+      expect(fit.kind === 'heatmap' && fit.x.domain).toBeUndefined();
+    });
   });
 
   it('draws one instant with no interval as one ordinal position', () => {

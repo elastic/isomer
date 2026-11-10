@@ -70,14 +70,18 @@ interface Position {
   readonly instant?: number;
 }
 
-/** Each distinct cell of `column`, in the order rows first show it. */
+/** Each distinct cell of `column` in the `drawn` rows, in the order rows first show it; -1 for a row not drawn. */
 const positionsOf = (
   resolution: Resolution,
-  column: string | undefined
+  column: string | undefined,
+  drawn: readonly boolean[]
 ): { positions: Position[]; byRow: number[] } => {
   const positions: Position[] = [];
   const index = new Map<string, number>();
   const byRow = resolution.data.rows.map((_, row) => {
+    if (!drawn[row]) {
+      return -1;
+    }
     const identity = column ? resolution.identity(column, row) : '';
     let at = index.get(identity);
     if (at === undefined) {
@@ -101,7 +105,7 @@ const positionsOf = (
   return { positions, byRow };
 };
 
-/** Positions in axis order: by `sort` if stated, numbers by value and anything else by label, a missing cell last. */
+/** Positions in axis order: by `sort` if stated, numbers by value and anything else by label. */
 const ordered = (
   positions: readonly Position[],
   sort: 'asc' | 'desc' | undefined,
@@ -116,9 +120,6 @@ const ordered = (
   }
   const sign = sort === 'asc' ? 1 : -1;
   return [...positions].sort((a, b) => {
-    if (a.cell === null || b.cell === null) {
-      return (a.cell === null ? 1 : 0) - (b.cell === null ? 1 : 0);
-    }
     const byValue =
       typeof a.cell === 'number' && typeof b.cell === 'number'
         ? a.cell - b.cell
@@ -126,6 +127,53 @@ const ordered = (
     return sign * byValue || a.first - b.first;
   });
 };
+
+const OFFSET = /^GMT(?:([+-])(\d{1,2}):?(\d{2})?(?::?(\d{2}))?)?$/;
+const offsetFormats = new Map<string, Intl.DateTimeFormat>();
+
+/** `zone`'s offset from UTC at `instant`, in milliseconds. */
+const offsetAt = (instant: number, zone: string): number => {
+  let format = offsetFormats.get(zone);
+  if (!format) {
+    format = new Intl.DateTimeFormat('en-US', {
+      timeZone: zone,
+      timeZoneName: 'longOffset',
+    });
+    offsetFormats.set(zone, format);
+  }
+  const name = format
+    .formatToParts(instant)
+    .find(({ type }) => type === 'timeZoneName')?.value;
+  const [, sign, hours = '0', minutes = '0', seconds = '0'] =
+    OFFSET.exec(name ?? '') ?? [];
+  const size =
+    (Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds)) * 1000;
+  return sign === '-' ? -size : size;
+};
+
+/**
+ * The first of `zones` whose round times every instant falls on, `interval`
+ * apart: where a date histogram in that zone starts its buckets, and where
+ * Elastic Charts lays a time grid out in it (`esFixedIntervalSnap`). A cell
+ * off that grid has no column, so with no zone that fits there is no time axis.
+ */
+const gridZone = (
+  instants: readonly number[],
+  interval: number,
+  ...zones: string[]
+): string | undefined =>
+  [...new Set([...zones, 'UTC'])].find((zone) => {
+    try {
+      return instants.every(
+        (instant) =>
+          (((instant + offsetAt(instant, zone)) % interval) + interval) %
+            interval ===
+          0
+      );
+    } catch {
+      return false;
+    }
+  });
 
 /** The Scene of a `heatmap` node. */
 export const resolveHeatmap = (
@@ -141,9 +189,22 @@ export const resolveHeatmap = (
   const valueColumn = node.value.column;
   const valueLabel = resolution.column(valueColumn).label;
 
-  const x = positionsOf(resolution, xColumn);
-  const y = positionsOf(resolution, yColumn);
+  // Elastic Charts' heat map draws no row whose x or y cell is missing
+  // (`getHeatmapTableSelector`), so Lens shows neither the row nor its position.
+  const present = (column: string | undefined, row: number) => {
+    if (column === undefined) {
+      return true;
+    }
+    const cell = resolution.cell(column, row);
+    return cell !== null && cell !== undefined;
+  };
+  const drawn = data.rows.map(
+    (_, row) => present(xColumn, row) && present(yColumn, row)
+  );
+  const x = positionsOf(resolution, xColumn, drawn);
+  const y = positionsOf(resolution, yColumn, drawn);
   const isDate = resolution.column(xColumn).type === 'date';
+  const xFormat = resolution.format(xColumn);
   const instants = [
     ...new Set(
       x.positions.flatMap(({ instant }) =>
@@ -161,9 +222,18 @@ export const resolveHeatmap = (
       undefined
     );
   const interval = node.x.interval ?? smallest;
+  const timeZone =
+    isDate && interval !== undefined
+      ? gridZone(
+          instants,
+          interval,
+          (xFormat.kind === 'date' ? xFormat.timeZone : undefined) ??
+            resolution.timeZone,
+          resolution.timeZone
+        )
+      : undefined;
   const time =
-    isDate &&
-    interval !== undefined &&
+    timeZone !== undefined &&
     x.positions.every(({ instant }) => instant !== undefined);
   const xOrder = ordered(x.positions, node.x.sort, locale, time);
   const yOrder = ordered(y.positions, node.y?.sort, locale, false);
@@ -178,7 +248,7 @@ export const resolveHeatmap = (
     label: position.label,
   });
   const axisConfig = node.axes;
-  const xFormat = resolution.format(xColumn);
+  const xDomain = axisConfig?.x?.domain;
   const xAxis: HeatmapAxis = {
     column: xColumn,
     label: resolution.column(xColumn).label,
@@ -187,12 +257,13 @@ export const resolveHeatmap = (
       : { title: axisConfig.x.title }),
     scale: time ? 'time' : 'ordinal',
     format: xFormat,
-    ...(time
+    ...(time && timeZone !== undefined && interval !== undefined
       ? {
-          timeZone:
-            (xFormat.kind === 'date' ? xFormat.timeZone : undefined) ??
-            resolution.timeZone,
-          interval: interval,
+          timeZone,
+          interval,
+          ...(xDomain?.kind === 'custom'
+            ? { domain: { min: xDomain.min, max: xDomain.max } }
+            : {}),
         }
       : {}),
     showLabels: axisConfig?.x?.labels ?? true,
@@ -214,7 +285,8 @@ export const resolveHeatmap = (
   };
 
   // Cells: one per x and y pair, from the first row with a value. Rows that
-  // share the pair (date-times for one instant) belong to it.
+  // share the pair (date-times for one instant) belong to it. Bands span every
+  // row's value, drawn or not, as Lens's `findMinMaxByColumnId` reads the table.
   const values = data.rows.map((_, row) =>
     toNumber(resolution.cell(valueColumn, row))
   );
@@ -266,6 +338,9 @@ export const resolveHeatmap = (
 
   const pairs = new Map<string, number[]>();
   data.rows.forEach((_, row) => {
+    if (!drawn[row]) {
+      return;
+    }
     const key = `${x.byRow[row]}:${y.byRow[row]}`;
     const rows = pairs.get(key) ?? [];
     rows.push(row);
@@ -331,8 +406,14 @@ export const resolveHeatmap = (
     cells.length === 0
       ? { reason: 'noResults' as const, text: NO_RESULTS }
       : undefined;
-  const lowest = cells.find(({ value }) => value === min);
-  const highest = cells.find(({ value }) => value === max);
+  const lowest = cells.reduce<HeatmapCell | undefined>(
+    (least, cell) => (least && least.value <= cell.value ? least : cell),
+    undefined
+  );
+  const highest = cells.reduce<HeatmapCell | undefined>(
+    (most, cell) => (most && most.value >= cell.value ? most : cell),
+    undefined
+  );
   const by = [
     xAxis.label,
     ...(yColumn === undefined ? [] : [yAxis.label]),

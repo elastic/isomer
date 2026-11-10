@@ -1144,6 +1144,33 @@ describe('heatmap', () => {
     );
   });
 
+  it('takes an x domain only on a date x, a custom one ascending', () => {
+    expect(
+      issuesOf(
+        'heatmap',
+        heatmap({
+          axes: { x: { domain: { kind: 'custom', min: 0, max: 1 } } },
+        })
+      )
+    ).toEqual([]);
+    expectRule(
+      'heatmap',
+      heatmap({
+        x: { column: 's' },
+        y: undefined,
+        axes: { x: { domain: { kind: 'fit' } } },
+      }),
+      HEATMAP_RULES.domain,
+      'axes.x.domain'
+    );
+    expectRule(
+      'heatmap',
+      heatmap({ axes: { x: { domain: { kind: 'custom', min: 1, max: 1 } } } }),
+      HEATMAP_RULES.domain,
+      'axes.x.domain'
+    );
+  });
+
   it('brushes only along a date x', () => {
     expect(
       issuesOf(
