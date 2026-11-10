@@ -227,6 +227,7 @@ export const heatmapSpecs = (
         debugState={options.debugState ?? false}
         {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
         ariaDescription={ariaDescriptionOf(scene)}
+        {...(x.scale === 'time' && x.domain ? { xDomain: x.domain } : {})}
         showLegend={legend.visible}
         legendPosition={POSITION[legend.position]}
         {...(size === undefined ? {} : { legendSize: size })}

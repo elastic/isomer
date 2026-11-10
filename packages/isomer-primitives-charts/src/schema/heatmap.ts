@@ -30,12 +30,14 @@ export const HEATMAP_RULES = {
   distinct: 'The `x`, `y` and `value` columns are three different columns.',
   uniqueCells: 'No two rows hold the same `x` cell and the same `y` cell.',
   interval: 'Only a `date` `x` column has an `x.interval`.',
+  domain:
+    'Only a `date` `x` column has an `axes.x.domain`, and a `custom` one has `min` below `max`.',
   brushColumn: 'A `brush` column is the `x` column, and a `date` column.',
   bandsRange: 'A `bandsRange` needs `colors.bands`.',
 } as const;
 
 const HEATMAP_DESCRIPTION = [
-  'A grid of cells colored by value, as Lens’s heat map draws it: one column per distinct `x` cell, one row per distinct `y` cell, and each cell colored by the `colors.bands` band its `value` falls in. A cell whose value is missing is left empty; a value in no band is drawn transparent. With no `colors.bands`, values take five temperature colors in equal steps from the smallest value to the largest, the last open above, as Lens’s default palette does. `colors.byKey` does not apply.',
+  'A grid of cells colored by value, as Lens’s heat map draws it: one column per distinct `x` cell, one row per distinct `y` cell, and each cell colored by the `colors.bands` band its `value` falls in. A cell whose value is missing is left empty, and a row whose `x` or `y` cell is missing is not drawn, nor its position; a value in no band is drawn transparent. With no `colors.bands`, values take five temperature colors in equal steps from the smallest value to the largest, the last open above, as Lens’s default palette does. `colors.byKey` does not apply.',
   ...Object.values(HEATMAP_RULES),
 ].join(' ');
 
@@ -43,7 +45,7 @@ const sortSchema = z
   .enum(['asc', 'desc'])
   .optional()
   .describe(
-    'Order positions by their cells: numbers by value, anything else alphabetically by its text, a missing cell last. Absent means the order the rows first show them. A `date` `x` axis is always in time order.'
+    'Order positions by their cells: numbers by value, anything else alphabetically by its text. Absent means the order the rows first show them. A `date` `x` axis is always in time order.'
   );
 
 const orientationSchema = z
@@ -123,7 +125,29 @@ const heatmapObjectSchema = z.object({
   axes: z
     .strictObject({
       x: z
-        .strictObject({ ...axisShape, labelOrientation: orientationSchema })
+        .strictObject({
+          ...axisShape,
+          labelOrientation: orientationSchema,
+          domain: z
+            .discriminatedUnion('kind', [
+              z
+                .strictObject({ kind: z.literal('fit') })
+                .describe('From the data alone.'),
+              z
+                .strictObject({
+                  kind: z.literal('custom'),
+                  min: z.number(),
+                  max: z.number(),
+                })
+                .describe(
+                  'At least `min` to `max`, in epoch milliseconds, such as Lens’s time range: buckets with no row in it are drawn as empty columns.'
+                ),
+            ])
+            .optional()
+            .describe(
+              `The instants a time axis spans. Absent means \`fit\`. ${HEATMAP_RULES.domain}`
+            ),
+        })
         .optional(),
       y: z.strictObject(axisShape).optional(),
     })
@@ -211,6 +235,18 @@ export const heatmapSchema = heatmapObjectSchema
             message: HEATMAP_RULES.interval,
           });
         }
+        const domain = node.axes?.x?.domain;
+        if (
+          domain !== undefined &&
+          (xType !== 'date' ||
+            (domain.kind === 'custom' && !(domain.min < domain.max)))
+        ) {
+          context.addIssue({
+            code: 'custom',
+            path: ['axes', 'x', 'domain'],
+            message: HEATMAP_RULES.domain,
+          });
+        }
         if (xIndex >= 0 && (!node.y || yIndex >= 0)) {
           const cells = new Map<string, number>();
           node.data.rows.forEach((row, index) => {
@@ -250,6 +286,7 @@ export const heatmapSchema = heatmapObjectSchema
         HEATMAP_RULES.distinct,
         HEATMAP_RULES.uniqueCells,
         HEATMAP_RULES.interval,
+        HEATMAP_RULES.domain,
         HEATMAP_RULES.brushColumn,
         HEATMAP_RULES.bandsRange,
         INTERACTION_RULES.emphasisRows,

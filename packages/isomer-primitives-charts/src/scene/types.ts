@@ -664,6 +664,8 @@ export interface HeatmapAxis {
   readonly timeZone?: string;
   /** On a time axis, each position's width in milliseconds. */
   readonly interval?: number;
+  /** On a time axis, the instants it spans at least, positions or not: the node's `custom` domain. */
+  readonly domain?: { readonly min: number; readonly max: number };
   readonly showLabels: boolean;
   /** Label rotation in degrees. */
   readonly labelRotation: 0 | -45 | -90;

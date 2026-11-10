@@ -71,7 +71,7 @@ export const heatmapExamples: PrimitiveExample<HeatmapNode>[] = [
   {
     name: 'Stated bands with Other and missing buckets',
     description:
-      'Categories on both axes, including the Other bucket and a missing (null) bucket, colored by absolute bands for both schemes, with values written in the cells and the legend below.',
+      'Categories on both axes, including the Other bucket, colored by absolute bands for both schemes, with values written in the cells and the legend below. Rows with a missing (null) position are not drawn, as in Lens.',
     node: {
       type: 'heatmap',
       title: 'Errors by service and region',
