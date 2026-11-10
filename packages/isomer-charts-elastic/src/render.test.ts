@@ -164,7 +164,15 @@ const debugStateIn = (container: HTMLElement): DebugState => {
   return JSON.parse(raw) as DebugState;
 };
 
-/** Each drawn label is the category's label, or the value through `formatAxisValue`. */
+/** Every label the Scene gives a time tick at `value`, in any band. */
+const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
+  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
+    layers.flatMap(({ ticks }) =>
+      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
+    )
+  );
+
+/** Each drawn label is the category's label, a Scene time tick's, or the value through `formatAxisValue`. */
 const expectLabelsFromScene = (
   drawn: { labels: string[]; values: unknown[] } | undefined,
   axis: SceneAxis,
@@ -181,6 +189,10 @@ const expectLabelsFromScene = (
   );
   expect(shown.length).toBeGreaterThan(0);
   for (const [value, label] of shown) {
+    if (axis.timeTicks) {
+      expect(timeLabels(axis, value)).toContain(label);
+      continue;
+    }
     expect(label).toBe(
       categories.get(value) ?? formatAxisValue(scene, axis, value as number)
     );

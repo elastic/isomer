@@ -27,6 +27,14 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
     ? scene.categories.find(({ x }) => x === value)?.label
     : undefined) ?? formatAxisValue(scene, axis, value as number);
 
+/** Every label the Scene gives a time tick at `value`, in any band. */
+const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
+  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
+    layers.flatMap(({ ticks }) =>
+      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
+    )
+  );
+
 const sorted = (entries: readonly string[]) => [...entries].sort();
 
 const sameList = (
@@ -52,6 +60,14 @@ const xyProblems = (scene: XyScene, state: DebugState): string[] => {
       continue;
     }
     labels.forEach((label, index) => {
+      if (axis.timeTicks) {
+        if (label !== '' && !timeLabels(axis, values[index]).includes(label)) {
+          problems.push(
+            `axis "${id}" labels ${String(values[index])} "${label}", which no time tick of the Scene's has`
+          );
+        }
+        return;
+      }
       const expected = sceneLabel(scene, axis, values[index]);
       if (label !== '' && label !== expected) {
         problems.push(
