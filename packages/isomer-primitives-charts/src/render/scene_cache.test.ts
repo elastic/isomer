@@ -10,10 +10,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
+  definePrimitive,
+  definePrimitivePack,
   primitiveExamples,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import { chartsFrame } from '../frame';
 import { createChartsPack } from '../pack';
@@ -102,16 +105,13 @@ const repeated = () => {
 describe('scene cache', () => {
   it.each(examples)(
     'resolves each chart once per options and draws it once per snapshot render: $label',
-    ({ label, composition }) => {
+    ({ composition }) => {
       for (const theme of ['light', 'dark'] as const) {
         reset();
         runtime.surfaces.snapshot.render(composition, { theme });
         expect(repeated()).toEqual([]);
         // Every Scene a render resolved at its drawn size is drawn once.
-        // A grid's panels draw once more under the style resolver the
-        // markup pass supplies, which is another style scope.
-        const scopes = label.startsWith('grid ') ? 2 : 1;
-        expect(draws.length).toBeLessThanOrEqual(new Set(draws).size * scopes);
+        expect(draws).toHaveLength(new Set(draws).size);
         // A light render reuses its height estimate's Scene: two resolves
         // (the unsized Scene and the drawn one) per chart.
         if (theme === 'light') {
@@ -131,6 +131,55 @@ describe('scene cache', () => {
       runtime.surfaces.snapshot.render(composition);
       expect(draws).toHaveLength(1);
       expect(resolves.length).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it('draws once per chart wherever the render context is wrapped in a view', () => {
+    const { composition } = examples.find(({ label }) =>
+      label.startsWith('xyChart ')
+    )!;
+    const composed = createIsomerRuntime({
+      packs: [
+        pack,
+        definePrimitivePack({
+          id: 'styled',
+          primitives: [
+            definePrimitive({
+              type: 'styledNote',
+              schema: z.object({ type: z.literal('styledNote') }),
+              catalog: {
+                type: 'styledNote',
+                purpose: 'A note.',
+                useWhen: [],
+                avoidWhen: [],
+                example: { type: 'styledNote' },
+              },
+              examples: [{ type: 'styledNote' }],
+              renderers: {
+                react: () => null,
+                text: () => '',
+                markdown: () => [],
+              },
+            }),
+          ],
+          styleAdapter: {
+            createCollector: () => ({}),
+            createRenderContext: () => ({ resolveClassName: () => '' }),
+            renderStyles: () => '',
+          },
+        }),
+      ],
+      frames: { charts: chartsFrame },
+    });
+    for (const render of [
+      () => runtime.surfaces.html.render(composition),
+      () => runtime.surfaces.snapshot.render(composition, { anchors: true }),
+      () => composed.surfaces.html.render(composition),
+      () => composed.surfaces.snapshot.render(composition),
+    ]) {
+      reset();
+      render();
+      expect(draws).toHaveLength(1);
     }
   });
 

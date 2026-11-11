@@ -31,23 +31,29 @@ export interface SceneCache {
     options: ResolveSceneOptions,
     resolveScene: SceneResolver
   ) => Scene;
-  /** `renderer.render(scene, env)`, once per Scene, renderer, environment, style resolver and event receiver. */
+  /** `renderer.render(scene, env)`, once per Scene, renderer, environment, style scope and event receiver. */
   readonly draw: (
     scene: Scene,
     renderer: ReactSceneRenderer,
     env: SceneRenderEnv,
-    eventReceiver: object | undefined
+    receivers: DrawingReceivers
   ) => ReactNode;
   /** `derive()`, once per `source` content. */
   readonly share: <T extends object>(source: T, derive: () => T) => T;
 }
 
-interface Drawing {
+/** What a drawing's classes and events reach, beyond its env. */
+export interface DrawingReceivers {
+  /** The collector `env.resolveClassName` records into, or the resolver itself when that is unknown. */
+  readonly styles: unknown;
+  /** The context `env.onEvent` calls, when it is set. */
+  readonly events: object | undefined;
+}
+
+interface Drawing extends DrawingReceivers {
   readonly renderer: ReactSceneRenderer;
   readonly environment: SceneRenderEnv['environment'];
   readonly nodeId: string | undefined;
-  readonly resolveClassName: SceneRenderEnv['resolveClassName'];
-  readonly eventReceiver: object | undefined;
   readonly drawn: ReactNode;
 }
 
@@ -95,8 +101,7 @@ const optionsKey = ({
  * `snapshot` and `html` draw the copy of a node they validated, so their
  * entries are that render's alone; a host's own node on `react` is cached for
  * the task it renders in. A drawing is shared across a render's style passes,
- * which share a style resolver; a different resolver or event receiver draws
- * afresh.
+ * which share a collector; another collector or event receiver draws afresh.
  */
 export const createSceneCache = (): SceneCache => {
   let turn: Turn | undefined;
@@ -131,7 +136,7 @@ export const createSceneCache = (): SceneCache => {
       byOptions.set(key, { fingerprint, value: scene });
       return scene;
     },
-    draw: (scene, renderer, env, eventReceiver) => {
+    draw: (scene, renderer, env, { styles, events }) => {
       const { drawings } = current();
       let drawn = drawings.get(scene);
       if (!drawn) {
@@ -143,8 +148,8 @@ export const createSceneCache = (): SceneCache => {
           drawing.renderer === renderer &&
           drawing.environment === env.environment &&
           drawing.nodeId === env.nodeId &&
-          drawing.resolveClassName === env.resolveClassName &&
-          drawing.eventReceiver === eventReceiver
+          drawing.styles === styles &&
+          drawing.events === events
       );
       if (hit) {
         return hit.drawn;
@@ -154,8 +159,8 @@ export const createSceneCache = (): SceneCache => {
         renderer,
         environment: env.environment,
         nodeId: env.nodeId,
-        resolveClassName: env.resolveClassName,
-        eventReceiver,
+        styles,
+        events,
         drawn: output,
       });
       return output;
