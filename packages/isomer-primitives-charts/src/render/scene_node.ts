@@ -31,7 +31,7 @@ import type {
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
-import { cls, varStyle } from './styles';
+import { cls, styleScopeOf, varStyle } from './styles';
 import { tableHeight } from './table';
 import { CHARTS_THEME } from './theme';
 
@@ -185,7 +185,10 @@ export const renderSceneNode = (
     scene,
     renderer,
     renderEnv(node, environment, context),
-    context?.onEvent && context
+    {
+      styles: styleScopeOf(context) ?? context?.resolveClassName,
+      events: context?.onEvent && context,
+    }
   );
   if (environment === 'native') {
     return drawn;

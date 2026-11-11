@@ -33,23 +33,14 @@ export const chartsDistillery = createDistillery({
   theme: {},
 });
 
-// One resolver per collector, so a render's passes share an identity that caches key on.
-const resolvers = new WeakMap<
-  StylesCollector,
-  NonNullable<StyledRenderContext['resolveClassName']>
->();
-const resolverOf = (collector: StylesCollector) => {
-  let resolver = resolvers.get(collector);
-  if (!resolver) {
-    resolver = (...handles) => {
-      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
-      collector.useHandles(handles as unknown as readonly StyleHandle[]);
-      return handles.map(({ readableName }) => readableName).join(' ');
-    };
-    resolvers.set(collector, resolver);
-  }
-  return resolver;
-};
+// A value, not a method, so `contextWith` views pass it through unchanged.
+const STYLE_SCOPE = Symbol.for('isomer.charts.styleScope');
+
+/** The collector a render context's classes record into, for a context the pack's adapter made. */
+export const styleScopeOf = (context: unknown): object | undefined =>
+  typeof context === 'object' && context !== null
+    ? (Reflect.get(context, STYLE_SCOPE) as object | undefined)
+    : undefined;
 
 /** The pack's HTML style adapter: records the handles a render resolves and emits their rules. */
 export const chartsStyleAdapter: HTMLStyleAdapter<
@@ -59,7 +50,12 @@ export const chartsStyleAdapter: HTMLStyleAdapter<
   styleCollector: 'distillate',
   createCollector: () => chartsDistillery.artifactCollector('readable'),
   createRenderContext: (collector) => ({
-    resolveClassName: resolverOf(collector),
+    resolveClassName: (...handles) => {
+      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
+      collector.useHandles(handles as unknown as readonly StyleHandle[]);
+      return handles.map(({ readableName }) => readableName).join(' ');
+    },
+    [STYLE_SCOPE]: collector,
   }),
   renderStyles: (collector) => chartsDistillery.renderStyles(collector),
 };
