@@ -10,7 +10,7 @@ import type {
   StyleHandle,
   StylesCollector,
 } from '@elastic/distillate';
-import type { PrimitiveNode } from '@elastic/isomer-sdk';
+import type { PrimitiveNode, StyledRenderContext } from '@elastic/isomer-sdk';
 import type { HTMLStyleAdapter } from '@elastic/isomer-sdk/html';
 
 /** The `styleCollector` tag of a pack whose `collectStyles` hooks mutate a Distillate collector. */
@@ -20,6 +20,24 @@ type StyleEngine = Pick<
   Distillery,
   'artifactCollector' | 'environment' | 'registry' | 'renderStyles'
 >;
+
+// One resolver per collector, so a render's passes share an identity that caches key on.
+const resolvers = new WeakMap<
+  StylesCollector,
+  NonNullable<StyledRenderContext['resolveClassName']>
+>();
+const resolverOf = (collector: StylesCollector) => {
+  let resolver = resolvers.get(collector);
+  if (!resolver) {
+    resolver = (...handles) => {
+      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
+      collector.useHandles(handles as unknown as readonly StyleHandle[]);
+      return handles.map(({ readableName }) => readableName).join(' ');
+    };
+    resolvers.set(collector, resolver);
+  }
+  return resolver;
+};
 
 /**
  * HTML style adapter for `distillery`: records handles during render and emits their stylesheet.
@@ -32,11 +50,7 @@ export const createDistillateStyleAdapter = (
   styleCollector: DISTILLATE_STYLE_COLLECTOR,
   createCollector: () => distillery.artifactCollector('readable'),
   createRenderContext: (collector) => ({
-    resolveClassName: (...handles) => {
-      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
-      collector.useHandles(handles as unknown as readonly StyleHandle[]);
-      return handles.map(({ readableName }) => readableName).join(' ');
-    },
+    resolveClassName: resolverOf(collector),
   }),
   renderStyles: (collector, { scheme }) => {
     if (!scheme) {

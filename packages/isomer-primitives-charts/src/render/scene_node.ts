@@ -171,7 +171,7 @@ export const renderSceneNode = (
     scene,
     renderer,
     renderEnv(node, environment, context),
-    context?.onEvent
+    context?.onEvent && context
   );
   const sized = spec && {
     className: cls(context, sceneModule.handles.sized),
