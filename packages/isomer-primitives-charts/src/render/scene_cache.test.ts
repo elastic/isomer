@@ -72,7 +72,11 @@ const examples = pack.primitives.flatMap((definition) =>
 /** Draws `node` on the `react` surface, as a host's React render does. */
 const drawReact = (
   node: PrimitiveNode,
-  context: { environment: 'node'; onEvent?: () => void }
+  context: {
+    environment: 'node';
+    onEvent?: () => void;
+    resolveClassName?: () => string;
+  }
 ) =>
   renderToStaticMarkup(
     createElement(() => runtime.surfaces.react.renderNode(node, { context }))
@@ -98,13 +102,16 @@ const repeated = () => {
 describe('scene cache', () => {
   it.each(examples)(
     'resolves each chart once per options and draws it once per snapshot render: $label',
-    ({ composition }) => {
+    ({ label, composition }) => {
       for (const theme of ['light', 'dark'] as const) {
         reset();
         runtime.surfaces.snapshot.render(composition, { theme });
         expect(repeated()).toEqual([]);
         // Every Scene a render resolved at its drawn size is drawn once.
-        expect(new Set(draws).size).toBe(draws.length);
+        // A grid's panels draw once more under the style resolver the
+        // markup pass supplies, which is another style scope.
+        const scopes = label.startsWith('grid ') ? 2 : 1;
+        expect(draws.length).toBeLessThanOrEqual(new Set(draws).size * scopes);
         // A light render reuses its height estimate's Scene: two resolves
         // (the unsized Scene and the drawn one) per chart.
         if (theme === 'light') {
@@ -168,5 +175,37 @@ describe('scene cache', () => {
     drawReact(node, { environment: 'node', onEvent: () => undefined });
     expect(draws).toHaveLength(2);
     expect(repeated()).toEqual([]);
+  });
+
+  it('resolves a changed node afresh within one task', () => {
+    const node = structuredClone(
+      examples.find(({ label }) => label.startsWith('metric '))!.composition
+        .body[0]!
+    ) as PrimitiveNode & { title?: string };
+    const context = { environment: 'node' as const };
+    reset();
+    drawReact(node, context);
+    node.title = 'Changed';
+    drawReact(node, context);
+    expect(draws).toHaveLength(2);
+  });
+
+  it('draws afresh for another style resolver or render context', () => {
+    const node = examples.find(({ label }) => label.startsWith('xyChart '))!
+      .composition.body[0]!;
+    const environment = 'node' as const;
+    reset();
+    drawReact(node, { environment, resolveClassName: () => 'a' });
+    drawReact(node, { environment, resolveClassName: () => 'b' });
+    expect(draws).toHaveLength(2);
+    reset();
+    const onEvent = () => undefined;
+    drawReact(node, { environment, onEvent });
+    drawReact(node, { environment, onEvent });
+    expect(draws).toHaveLength(2);
+    reset();
+    drawReact(node, { environment });
+    drawReact(node, { environment });
+    expect(draws).toHaveLength(1);
   });
 });

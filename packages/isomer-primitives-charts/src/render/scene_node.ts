@@ -185,7 +185,7 @@ export const renderSceneNode = (
     scene,
     renderer,
     renderEnv(node, environment, context),
-    context?.onEvent
+    context?.onEvent && context
   );
   if (environment === 'native') {
     return drawn;

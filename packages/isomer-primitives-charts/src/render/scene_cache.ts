@@ -9,7 +9,8 @@
 // estimate, then a style-collecting pass and the drawn pass, each resolving
 // the Scene and drawing it. Every read happens in one synchronous call, so a
 // cache that lives until the current task ends serves them all, and holds
-// nothing once the render returns.
+// nothing once the render returns. A node hit is served only while its
+// content is unchanged.
 
 import type { ReactNode } from 'react';
 
@@ -30,14 +31,14 @@ export interface SceneCache {
     options: ResolveSceneOptions,
     resolveScene: SceneResolver
   ) => Scene;
-  /** `renderer.render(scene, env)`, once per Scene, renderer, environment and event handler. */
+  /** `renderer.render(scene, env)`, once per Scene, renderer, environment, style resolver and event receiver. */
   readonly draw: (
     scene: Scene,
     renderer: ReactSceneRenderer,
     env: SceneRenderEnv,
-    onEvent: unknown
+    eventReceiver: object | undefined
   ) => ReactNode;
-  /** `derive()`, once per `source`. */
+  /** `derive()`, once per `source` content. */
   readonly share: <T extends object>(source: T, derive: () => T) => T;
 }
 
@@ -45,17 +46,32 @@ interface Drawing {
   readonly renderer: ReactSceneRenderer;
   readonly environment: SceneRenderEnv['environment'];
   readonly nodeId: string | undefined;
-  readonly onEvent: unknown;
+  readonly resolveClassName: SceneRenderEnv['resolveClassName'];
+  readonly eventReceiver: object | undefined;
   readonly drawn: ReactNode;
 }
 
 interface Turn {
   // Keyed weakly, so a node or Scene a render has let go of is freed even
   // before the task ends.
-  readonly scenes: WeakMap<ChartNode, Map<string, Scene>>;
+  readonly scenes: WeakMap<ChartNode, Map<string, Fingerprinted<Scene>>>;
   readonly drawings: WeakMap<Scene, Drawing[]>;
-  readonly shared: WeakMap<object, object>;
+  readonly shared: WeakMap<object, Fingerprinted<object>>;
 }
+
+interface Fingerprinted<T> {
+  readonly fingerprint: string | undefined;
+  readonly value: T;
+}
+
+// `undefined` for content that does not serialize, which is never reused.
+const fingerprintOf = (source: object): string | undefined => {
+  try {
+    return JSON.stringify(source);
+  } catch {
+    return undefined;
+  }
+};
 
 const afterTask = (callback: () => void): void => {
   if (typeof queueMicrotask === 'function') {
@@ -79,8 +95,8 @@ const optionsKey = ({
  * `snapshot` and `html` draw the copy of a node they validated, so their
  * entries are that render's alone; a host's own node on `react` is cached for
  * the task it renders in. A drawing is shared across a render's style passes,
- * whose contexts come from one collector and so resolve class names alike; a
- * different event handler draws afresh.
+ * which share a style resolver; a different resolver or event receiver draws
+ * afresh.
  */
 export const createSceneCache = (): SceneCache => {
   let turn: Turn | undefined;
@@ -106,14 +122,16 @@ export const createSceneCache = (): SceneCache => {
         scenes.set(node, byOptions);
       }
       const key = optionsKey(options);
-      let scene = byOptions.get(key);
-      if (!scene) {
-        scene = resolveScene(node, options);
-        byOptions.set(key, scene);
+      const fingerprint = fingerprintOf(node);
+      const hit = byOptions.get(key);
+      if (hit && fingerprint !== undefined && hit.fingerprint === fingerprint) {
+        return hit.value;
       }
+      const scene = resolveScene(node, options);
+      byOptions.set(key, { fingerprint, value: scene });
       return scene;
     },
-    draw: (scene, renderer, env, onEvent) => {
+    draw: (scene, renderer, env, eventReceiver) => {
       const { drawings } = current();
       let drawn = drawings.get(scene);
       if (!drawn) {
@@ -125,7 +143,8 @@ export const createSceneCache = (): SceneCache => {
           drawing.renderer === renderer &&
           drawing.environment === env.environment &&
           drawing.nodeId === env.nodeId &&
-          drawing.onEvent === onEvent
+          drawing.resolveClassName === env.resolveClassName &&
+          drawing.eventReceiver === eventReceiver
       );
       if (hit) {
         return hit.drawn;
@@ -135,18 +154,21 @@ export const createSceneCache = (): SceneCache => {
         renderer,
         environment: env.environment,
         nodeId: env.nodeId,
-        onEvent,
+        resolveClassName: env.resolveClassName,
+        eventReceiver,
         drawn: output,
       });
       return output;
     },
     share: (source, derive) => {
       const { shared } = current();
-      let derived = shared.get(source) as typeof source | undefined;
-      if (!derived) {
-        derived = derive();
-        shared.set(source, derived);
+      const fingerprint = fingerprintOf(source);
+      const hit = shared.get(source);
+      if (hit && fingerprint !== undefined && hit.fingerprint === fingerprint) {
+        return hit.value as typeof source;
       }
+      const derived = derive();
+      shared.set(source, { fingerprint, value: derived });
       return derived;
     },
   };
