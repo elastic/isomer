@@ -225,7 +225,7 @@ describe('sceneSpecs', () => {
     expect(label).toBe(formatAxisValue(scene, scene.axes.y!, 0.25));
   });
 
-  it('labels each value by its mark, and no value whose marks disagree', () => {
+  it('labels each value by its mark, and a value whose marks disagree through the y axis', () => {
     const [series] = seriesOf(xyInteractiveScene);
     const mark = series!.marks[0]!;
     const scene: XyScene = {
@@ -252,8 +252,10 @@ describe('sceneSpecs', () => {
     const { displayValueSettings } = specProps(scene, 'series-0') as {
       displayValueSettings: { valueFormatter: (value: unknown) => string };
     };
+    const tenThroughAxis = formatAxisValue(scene, scene.axes.y!, 10);
+    expect(tenThroughAxis).not.toMatch(/^$|ten/);
     expect([10, 20, 30].map(displayValueSettings.valueFormatter)).toEqual([
-      '',
+      tenThroughAxis,
       'twenty',
       'thirty',
     ]);
