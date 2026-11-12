@@ -137,7 +137,7 @@ export interface SceneInteractions {
 
 interface SceneBase {
   readonly kind: SceneKind;
-  /** The scheme every color in the Scene is for. Always explicit: native targets have no CSS. */
+  /** The scheme every color in the Scene is for. Always explicit, so a renderer draws every color without CSS. */
   readonly scheme: ColorScheme;
   /** The size ticks and layout were chosen for. Absent when resolved without one. */
   readonly size?: SceneSize;
@@ -413,7 +413,7 @@ export interface XyScene extends SceneBase {
 
 export type Scene = MetricScene | XyScene;
 
-export type SceneEnvironment = 'browser' | 'node' | 'native';
+export type SceneEnvironment = 'browser' | 'node';
 
 /** What a renderer is told about where it draws, beside the Scene itself. */
 export interface SceneRenderEnv {

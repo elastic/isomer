@@ -19,7 +19,7 @@ import type {
 | Field                        | What it is                                                                                                                                                                   |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `kind`                       | `metric` or `xy`                                                                                                                                                             |
-| `scheme`                     | `light` or `dark`. Always explicit: native targets have no CSS, so `light-dark()` is never the only source of a color                                                        |
+| `scheme`                     | `light` or `dark`. Always explicit, so a renderer draws every color without CSS: `light-dark()` is never the only source of a color                                          |
 | `size`, `locale`, `timeZone` | What the Scene was resolved for                                                                                                                                              |
 | `chrome`                     | Text, axis, grid-line, background and border colors                                                                                                                          |
 | `summary`                    | One sentence on what the chart shows                                                                                                                                         |
@@ -76,7 +76,7 @@ A renderer raises events with two helpers, so every renderer raises the same eve
 ```ts
 interface SceneRenderer<TOutput = unknown> {
   id: string; // 'elastic-charts', 'isomer-svg', 'echarts', …
-  environments: Array<'browser' | 'node' | 'native'>;
+  environments: Array<'browser' | 'node'>;
   supports(kind: SceneKind): boolean;
   render(scene: Scene, env: SceneRenderEnv): TOutput;
 }
