@@ -611,6 +611,18 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@jridgewell/sourcemap-codec` | 1.6.0 | MIT | `node_modules/.pnpm/@jridgewell+sourcemap-codec@1.6.0/node_modules/@jridgewell/sourcemap-codec` |  |
 | `@jridgewell/trace-mapping` | 0.3.31 | MIT | `node_modules/.pnpm/@jridgewell+trace-mapping@0.3.31/node_modules/@jridgewell/trace-mapping` |  |
 | `@mapbox/hast-util-table-cell-style` | 0.2.1 | BSD-2-Clause | `node_modules/.pnpm/@mapbox+hast-util-table-cell-style@0.2.1/node_modules/@mapbox/hast-util-table-cell-style` |  |
+| `@napi-rs/canvas` | 1.0.11 | MIT | `node_modules/.pnpm/@napi-rs+canvas@1.0.11/node_modules/@napi-rs/canvas` | `@napi-rs/canvas-android-arm64`, `@napi-rs/canvas-darwin-arm64`, `@napi-rs/canvas-darwin-x64`, `@napi-rs/canvas-linux-arm-gnueabihf`, `@napi-rs/canvas-linux-arm64-gnu`, `@napi-rs/canvas-linux-arm64-musl`, `@napi-rs/canvas-linux-riscv64-gnu`, `@napi-rs/canvas-linux-x64-gnu`, `@napi-rs/canvas-linux-x64-musl`, `@napi-rs/canvas-win32-arm64-msvc`, `@napi-rs/canvas-win32-x64-msvc` |
+| `@napi-rs/canvas-android-arm64` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-darwin-arm64` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-darwin-x64` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-arm-gnueabihf` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-arm64-gnu` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-arm64-musl` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-riscv64-gnu` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-x64-gnu` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-linux-x64-musl` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-win32-arm64-msvc` | 1.0.11 | MIT | `declared optional dependency` |  |
+| `@napi-rs/canvas-win32-x64-msvc` | 1.0.11 | MIT | `declared optional dependency` |  |
 | `@nicolo-ribaudo/chokidar-2` | 2.1.8-no-fsevents.3 | MIT | `node_modules/.pnpm/@nicolo-ribaudo+chokidar-2@2.1.8-no-fsevents.3/node_modules/@nicolo-ribaudo/chokidar-2` |  |
 | `@nodelib/fs.scandir` | 2.1.5 | MIT | `node_modules/.pnpm/@nodelib+fs.scandir@2.1.5/node_modules/@nodelib/fs.scandir` |  |
 | `@nodelib/fs.stat` | 2.0.5 | MIT | `node_modules/.pnpm/@nodelib+fs.stat@2.0.5/node_modules/@nodelib/fs.stat` |  |
@@ -698,6 +710,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
 | `@types/hast` | 2.3.10 | MIT | `node_modules/.pnpm/@types+hast@2.3.10/node_modules/@types/hast` |  |
 | `@types/hoist-non-react-statics` | 3.3.7 | MIT | `node_modules/.pnpm/@types+hoist-non-react-statics@3.3.7_@types+react@18.3.31/node_modules/@types/hoist-non-react-statics` |  |
+| `@types/jsdom` | 20.0.1 | MIT | `node_modules/.pnpm/@types+jsdom@20.0.1/node_modules/@types/jsdom` |  |
 | `@types/json-schema` | 7.0.15 | MIT | `node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema` |  |
 | `@types/katex` | 0.16.8 | MIT | `node_modules/.pnpm/@types+katex@0.16.8/node_modules/@types/katex` |  |
 | `@types/lodash` | 4.17.26 | MIT | `node_modules/.pnpm/@types+lodash@4.17.26/node_modules/@types/lodash` |  |
@@ -715,6 +728,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/react-dom` | 18.3.7 | MIT | `node_modules/.pnpm/@types+react-dom@18.3.7_@types+react@18.3.31/node_modules/@types/react-dom` |  |
 | `@types/react-window` | 1.8.8 | MIT | `node_modules/.pnpm/@types+react-window@1.8.8/node_modules/@types/react-window` |  |
 | `@types/refractor` | 3.4.1 | MIT | `node_modules/.pnpm/@types+refractor@3.4.1/node_modules/@types/refractor` |  |
+| `@types/tough-cookie` | 4.0.5 | MIT | `node_modules/.pnpm/@types+tough-cookie@4.0.5/node_modules/@types/tough-cookie` |  |
 | `@types/unist` | 2.0.11 | MIT | `node_modules/.pnpm/@types+unist@2.0.11/node_modules/@types/unist` |  |
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |

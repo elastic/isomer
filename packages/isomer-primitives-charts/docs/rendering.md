@@ -86,6 +86,27 @@ The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/
 
 Every declaration is in a style module. What only a node or a Scene knows, such as a cell's color, a bar's extent or a panel's place on the grid, reaches its rule through a module-local Distillate var: the rule declares the var's default and reads it, and the renderer sets the value on the same element with `varStyle` (a length through `px`, since a custom property takes no unitless length), so an element's `style` holds only custom properties its classes declare. `createVarsModule` authors such a module, returning its `StyleHandle`s, `LocalVarGroup`s and `stylesheet()` (every rule it authors, variants included), and `cls` resolves its handles; all four helpers are on `./scene`, so a chart engine styles the few elements it draws itself, such as the Elastic Charts engine's secondary-metric text, with the pack's distillery, and `chartsStylesheet()` carries those rules once the engine is loaded; a module's own `stylesheet()` returns its rules whatever has loaded, which is what the engine's `elasticChartsStylesheet()` ships. The one exception is `chartsFrame`: a frame's `wrap` gets no class-name resolution, so the frame draws its surround with inline styles.
 
+## Images and PDF
+
+`chartsFrame` is a content-sized page for the `snapshot` surface: the body in a column on the scheme's background, `CHARTS_THEME.frame.width` (960 px) wide. Its theme carries `scheme`, so every chart, nested in a grid or not, resolves for the scheme the render asks for.
+
+```ts
+const imagePack = createChartsPack({
+  sceneRenderers: [createElasticChartsStaticRenderer()],
+});
+const runtime = createIsomerRuntime({
+  packs: [imagePack],
+  frames: { charts: chartsFrame },
+});
+const png = await takumi.png(
+  await takumi.fit(
+    runtime.surfaces.snapshot.render(composition, { theme: 'dark' })
+  )
+);
+```
+
+Without a static engine, the `snapshot` surface draws each chart as its summary fallback. [Static Elastic Charts](../../isomer-charts-elastic-static/docs/index.md) draws them with Elastic Charts on Node.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description and notes, and the shim draws the link below it. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
