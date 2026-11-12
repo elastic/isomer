@@ -194,6 +194,42 @@ describe('dataTable cells', () => {
     }
   );
 
+  // Lens's `BadgeCell` (`cell_value_helpers.tsx`) styles the `EuiBadge` with
+  // `getContrastColor(badgeColor, isDarkMode)` (`coloring/utils.ts`):
+  // `euiColorTextInk`, #07101F in Borealis light and dark, on a light badge,
+  // and `euiColorTextGhost` on a dark one. The grid cell around the badge
+  // keeps `euiTextColor`, which a badge cell's `color` does not describe.
+  it.each(['light', 'dark'] as const)(
+    'writes a %s scheme badge in Lens’s badge text, not the grid’s',
+    (scheme) => {
+      const scene = resolve(
+        table([column('s', 'string')], [['light'], ['dark']], {
+          columns: [
+            {
+              column: 's',
+              decoration: {
+                kind: 'badge',
+                colors: {
+                  byKey: {
+                    light: { light: '#A6EDEA', dark: '#A6EDEA' },
+                    dark: { light: '#1750BA', dark: '#1750BA' },
+                  },
+                },
+              },
+            },
+          ],
+        }),
+        scheme
+      );
+      expect(
+        scene.rows.map(({ cells }) => [cells[0]!.badge, cells[0]!.color])
+      ).toEqual([
+        ['#A6EDEA', '#07101F'],
+        ['#1750BA', '#FFFFFF'],
+      ]);
+    }
+  );
+
   it('fills emphasized rows with EUI backgroundBasePrimary', () => {
     const node = table([column('s', 'string')], [['a'], ['b']], {
       emphasis: [{ rows: [1] }],

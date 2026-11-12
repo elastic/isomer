@@ -25,7 +25,10 @@ import {
   columnRefSchema,
 } from './references';
 
-/** Every part of a chart a reader can select. */
+/**
+ * Every part of a chart a reader can select. `mark` is a mark of a chart a
+ * grammar draws, such as Vega's; `region` is a map region joined to a row.
+ */
 export const SELECT_TARGETS = [
   'datum',
   'series',
@@ -34,6 +37,8 @@ export const SELECT_TARGETS = [
   'cell',
   'tile',
   'slice',
+  'mark',
+  'region',
 ] as const;
 
 /** What a selection lands on. Each chart states which it offers. */
@@ -244,7 +249,11 @@ const selectEventSchema = z.discriminatedUnion('target', [
   }),
   z.strictObject({
     ...selectEventShape,
-    target: z.enum(['category', 'cell', 'tile', 'slice']),
+    target: z
+      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region'])
+      .describe(
+        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, or a map `region`.'
+      ),
   }),
 ]);
 

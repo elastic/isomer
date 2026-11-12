@@ -28,6 +28,8 @@ interactions?: {
 | `dataTable` | `cell` |
 | `partitionChart` | `slice` |
 
+`mark` and `region` are for packs that build on the chart core: `mark` for a chart a grammar draws, such as the Vega pack's, and `region` for a map region, such as Kibana's maps pack's.
+
 `emphasis?: { rows: number[]; note?: string }[]` highlights rows statically, such as what an agent is talking about, on every surface.
 
 Rules:
@@ -56,7 +58,7 @@ type ChartEvent = {
     }
   | {
       kind: 'select';
-      target: 'category' | 'cell' | 'tile' | 'slice';
+      target: 'category' | 'cell' | 'tile' | 'slice' | 'mark' | 'region';
       rows: number[];
       columns: string[];
       negate?: boolean;
@@ -76,6 +78,8 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 | `category` | Every row at that x | The x column |
 | `tile` | The tile's row | Its breakdown column, if any |
 | `slice` | Every row of the slice | The group columns on its path, outermost first |
+| `mark` | Every row holding the mark's datum's values in those columns | The dimension columns the mark's datum carries |
+| `region` | The rows joined to the region | The region's join column |
 
 `negate` marks a "filter out" gesture. A brush `range` is in the x column's units: epoch milliseconds for a date.
 

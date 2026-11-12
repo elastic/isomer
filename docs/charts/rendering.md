@@ -20,6 +20,8 @@ const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 
 `chartsPack` registers `metric`, `xyChart`, `dataTable`, `partitionChart`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
+A `snapshot` or `html` render reads each chart node several times: its height estimate, then a pass that collects styles and the pass that draws. The pack resolves a node once for each set of options and draws each Scene once per renderer, and keeps neither past the task the render runs in. A `resolveScene` and a renderer are therefore pure: the same input gives the same output. A different `context.onEvent` draws afresh.
+
 The pack declares an [input budget](../sdk/packs.md#inputbudget), 250,000 values and 10,000,000 characters, because chart nodes carry their data inline. A runtime that registers it validates compositions up to that size unless the host sets a budget of its own.
 
 ## Choosing a renderer
