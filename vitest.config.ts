@@ -10,7 +10,10 @@ import { configDefaults, defineConfig } from 'vitest/config';
 import { sourceAliases } from './scripts/source_aliases.js';
 
 /** Packages with their own Vitest project, which the root project leaves alone. */
-const OWN_PROJECTS = ['packages/isomer-studio'];
+const OWN_PROJECTS = [
+  'packages/isomer-charts-elastic-static',
+  'packages/isomer-studio',
+];
 
 export default defineConfig({
   resolve: { alias: sourceAliases() },

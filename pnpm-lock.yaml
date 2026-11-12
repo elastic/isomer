@@ -217,6 +217,55 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
 
+  packages/isomer-charts-elastic-static:
+    dependencies:
+      '@elastic/charts':
+        specifier: file:vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz
+        version: file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
+      '@elastic/isomer-charts-elastic':
+        specifier: workspace:*
+        version: file:packages/isomer-charts-elastic(@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@4.6.5)
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
+      zod:
+        specifier: ^4.5.4
+        version: 4.6.5
+    dependenciesMeta:
+      '@elastic/isomer-charts-elastic':
+        injected: true
+    devDependencies:
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../isomer-image-takumi
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
+      '@elastic/isomer-studio':
+        specifier: workspace:*
+        version: link:../isomer-studio
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
+      moment-timezone:
+        specifier: ^0.5.48
+        version: 0.5.48
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+
   packages/isomer-evals:
     dependencies:
       '@elastic/isomer-sdk':
@@ -1201,6 +1250,15 @@ packages:
       react: ^18.0
       react-dom: ^18.0
 
+  '@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz':
+    resolution: {integrity: sha512-xZb9Zl22P6nfMsxxTghgAZNjBJJBiuJKzmW2wSi/ymvr6Qe4OY+82RosVwoQoIUAg29mrfBRm1mSqB1vD4HsSA==, tarball: file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz}
+    version: 73.3.2
+    peerDependencies:
+      moment: ^2.29.1
+      moment-timezone: ^0.5.32
+      react: ^18.0
+      react-dom: ^18.0
+
   '@elastic/datemath@5.0.3':
     resolution: {integrity: sha512-8Hbr1Uyjm5OcYBfEB60K7sCP6U3IXuWDaLaQmYv3UxgI4jqBWbakoemwWvsqPVUvnwEjuX6z7ghPZbefs8xiaA==}
     peerDependencies:
@@ -1237,6 +1295,14 @@ packages:
       react: ^17.0 || ^18.0
       react-dom: ^17.0 || ^18.0
       typescript: ~4.5.3 || ^5
+
+  '@elastic/isomer-charts-elastic@file:packages/isomer-charts-elastic':
+    resolution: {directory: packages/isomer-charts-elastic, type: directory}
+    peerDependencies:
+      '@elastic/charts': ^73.3.0
+      react: ^18.0.0
+      react-dom: ^18.0.0
+      zod: ^4.5.4
 
   '@elastic/prismjs-esql@4.31.0':
     resolution: {integrity: sha512-2Y8abeUm4OJs5kz+nwcadxz4Xh86eOOWa2ZMIs8xFy4Xere9xgBo1ybHBFHbucq+3a2AUH8Lf/Yfu0PnBIEfRA==}
@@ -6399,6 +6465,36 @@ snapshots:
       - redux
       - reselect
 
+  '@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)':
+    dependencies:
+      '@popperjs/core': 2.11.8
+      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)
+      bezier-easing: 2.1.0
+      chroma-js: 2.6.0
+      classnames: 2.5.1
+      d3-array: 1.2.4
+      d3-cloud: 1.2.9
+      d3-collection: 1.0.7
+      d3-interpolate: 3.0.2
+      d3-scale: 3.3.0
+      d3-shape: 2.1.0
+      immer: 11.1.8
+      luxon: 1.28.1
+      moment: 2.31.0
+      moment-timezone: 0.5.48
+      prop-types: 15.8.1
+      re-reselect: 4.0.1(reselect@5.3.0)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1)
+      ts-debounce: 4.0.0
+      utility-types: 3.11.0
+      uuid: 14.0.3
+    transitivePeerDependencies:
+      - '@types/react'
+      - redux
+      - reselect
+
   '@elastic/datemath@5.0.3(moment@2.31.0)':
     dependencies:
       moment: 2.31.0
@@ -6478,6 +6574,14 @@ snapshots:
       vfile: 4.2.1
     transitivePeerDependencies:
       - react-native
+
+  '@elastic/isomer-charts-elastic@file:packages/isomer-charts-elastic(@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@4.6.5)':
+    dependencies:
+      '@elastic/charts': file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-pr2939-aa07e20b.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@5.0.1)(reselect@5.3.0)
+      '@elastic/isomer-primitives-charts': link:packages/isomer-primitives-charts
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      zod: 4.6.5
 
   '@elastic/prismjs-esql@4.31.0':
     dependencies:

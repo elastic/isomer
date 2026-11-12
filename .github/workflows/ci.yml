@@ -41,7 +41,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        project: [node, studio]
+        project: [node, studio, charts-elastic-static]
     steps:
       - uses: actions/checkout@v5
       - uses: ./.github/actions/setup-workspace
@@ -153,7 +153,7 @@ jobs:
       - run: node scripts/apply_peer_target.js ${{ matrix.target }}
       - run: pnpm install --no-frozen-lockfile
       - run: pnpm --filter './packages/*' --filter '!@elastic/isomer-studio' typecheck
-      - run: pnpm vitest run --project node
+      - run: pnpm vitest run --project node --project charts-elastic-static
       - run: pnpm check:pack-consumer
 
   # The one check branch protection requires for the jobs `pnpm verify` is split into.

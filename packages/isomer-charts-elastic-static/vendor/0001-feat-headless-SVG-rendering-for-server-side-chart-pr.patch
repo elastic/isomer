@@ -1,0 +1,4813 @@
+From 4d5081d065e7d4e913d3aa6a58f475eabfa9f5dd Mon Sep 17 00:00:00 2001
+From: Robert Jaszczurek <robert.jaszczurek@elastic.co>
+Date: Wed, 4 Nov 2026 11:53:52 +0100
+Subject: [PATCH 1/3] feat: headless SVG rendering for server-side chart
+ previews
+
+Adds `renderChart`, which renders a chart's specs to an SVG string without a
+browser. XY, partition, heatmap, goal, bullet, metric and wordcloud charts are
+supported, with legends. Text can be drawn as glyph outlines so the output does
+not depend on the fonts installed on the server.
+---
+ packages/charts/package.json                  |  30 +
+ .../renderer/svg/connected_component.tsx      |   3 +-
+ .../charts/src/components/chart_resizer.tsx   |   7 +-
+ .../charts/src/headless/collect_specs.tsx     |  35 +
+ .../charts/src/headless/glyph_font.test.ts    |  61 ++
+ packages/charts/src/headless/glyph_font.ts    |  99 ++
+ packages/charts/src/headless/index.ts         |  17 +
+ packages/charts/src/headless/legend.test.tsx  | 150 +++
+ packages/charts/src/headless/legend.ts        | 423 +++++++++
+ packages/charts/src/headless/painter.ts       |  17 +
+ .../src/headless/render_bullet.test.tsx       | 109 +++
+ packages/charts/src/headless/render_bullet.ts |  37 +
+ .../charts/src/headless/render_chart.test.tsx | 140 +++
+ packages/charts/src/headless/render_chart.ts  |  99 ++
+ .../charts/src/headless/render_goal.test.tsx  |  71 ++
+ packages/charts/src/headless/render_goal.ts   |  23 +
+ .../src/headless/render_heatmap.test.tsx      | 150 +++
+ .../charts/src/headless/render_heatmap.ts     |  65 ++
+ .../src/headless/render_metric.test.tsx       | 222 +++++
+ packages/charts/src/headless/render_metric.ts | 861 ++++++++++++++++++
+ .../src/headless/render_partition.test.tsx    | 182 ++++
+ .../charts/src/headless/render_partition.ts   |  53 ++
+ .../src/headless/render_wordcloud.test.tsx    | 236 +++++
+ .../charts/src/headless/render_wordcloud.ts   | 427 +++++++++
+ packages/charts/src/headless/render_xy.ts     |  93 ++
+ packages/charts/src/headless/svg_canvas.ts    | 733 +++++++++++++++
+ packages/charts/src/headless/types.ts         |  16 +
+ .../charts/src/renderers/canvas/painter.ts    |  14 +-
+ .../charts/src/renderers/canvas/path2d.ts     |  30 +
+ packages/charts/src/state/spec_factory.ts     |  11 +-
+ .../utils/bbox/canvas_text_bbox_calculator.ts |  18 +
+ scripts/setup_tests.ts                        |   5 +
+ 32 files changed, 4428 insertions(+), 9 deletions(-)
+ create mode 100644 packages/charts/src/headless/collect_specs.tsx
+ create mode 100644 packages/charts/src/headless/glyph_font.test.ts
+ create mode 100644 packages/charts/src/headless/glyph_font.ts
+ create mode 100644 packages/charts/src/headless/index.ts
+ create mode 100644 packages/charts/src/headless/legend.test.tsx
+ create mode 100644 packages/charts/src/headless/legend.ts
+ create mode 100644 packages/charts/src/headless/painter.ts
+ create mode 100644 packages/charts/src/headless/render_bullet.test.tsx
+ create mode 100644 packages/charts/src/headless/render_bullet.ts
+ create mode 100644 packages/charts/src/headless/render_chart.test.tsx
+ create mode 100644 packages/charts/src/headless/render_chart.ts
+ create mode 100644 packages/charts/src/headless/render_goal.test.tsx
+ create mode 100644 packages/charts/src/headless/render_goal.ts
+ create mode 100644 packages/charts/src/headless/render_heatmap.test.tsx
+ create mode 100644 packages/charts/src/headless/render_heatmap.ts
+ create mode 100644 packages/charts/src/headless/render_metric.test.tsx
+ create mode 100644 packages/charts/src/headless/render_metric.ts
+ create mode 100644 packages/charts/src/headless/render_partition.test.tsx
+ create mode 100644 packages/charts/src/headless/render_partition.ts
+ create mode 100644 packages/charts/src/headless/render_wordcloud.test.tsx
+ create mode 100644 packages/charts/src/headless/render_wordcloud.ts
+ create mode 100644 packages/charts/src/headless/render_xy.ts
+ create mode 100644 packages/charts/src/headless/svg_canvas.ts
+ create mode 100644 packages/charts/src/headless/types.ts
+ create mode 100644 packages/charts/src/renderers/canvas/path2d.ts
+
+diff --git a/packages/charts/package.json b/packages/charts/package.json
+index fc34d7fc7..d4aeca156 100644
+--- a/packages/charts/package.json
++++ b/packages/charts/package.json
+@@ -7,6 +7,16 @@
+   "main": "./dist/cjs/index.js",
+   "module": "./dist/esm/index.mjs",
+   "types": "./dist/cjs/index.d.ts",
++  "typesVersions": {
++    "*": {
++      "headless": [
++        "./dist/cjs/headless/index.d.ts"
++      ],
++      "dist/headless": [
++        "./dist/cjs/headless/index.d.ts"
++      ]
++    }
++  },
+   "repository": "git@github.com:elastic/elastic-charts.git",
+   "publishConfig": {
+     "access": "public"
+@@ -29,6 +39,26 @@
+         "default": "./dist/cjs/index.js"
+       }
+     },
++    "./headless": {
++      "import": {
++        "types": "./dist/esm/headless/index.d.mts",
++        "default": "./dist/esm/headless/index.mjs"
++      },
++      "require": {
++        "types": "./dist/cjs/headless/index.d.ts",
++        "default": "./dist/cjs/headless/index.js"
++      }
++    },
++    "./dist/headless": {
++      "import": {
++        "types": "./dist/esm/headless/index.d.mts",
++        "default": "./dist/esm/headless/index.mjs"
++      },
++      "require": {
++        "types": "./dist/cjs/headless/index.d.ts",
++        "default": "./dist/cjs/headless/index.js"
++      }
++    },
+     "./package.json": "./package.json",
+     "./theme_light.css": "./dist/theme_light.css",
+     "./theme_dark.css": "./dist/theme_dark.css",
+diff --git a/packages/charts/src/chart_types/wordcloud/renderer/svg/connected_component.tsx b/packages/charts/src/chart_types/wordcloud/renderer/svg/connected_component.tsx
+index d23389db3..5a229cdac 100644
+--- a/packages/charts/src/chart_types/wordcloud/renderer/svg/connected_component.tsx
++++ b/packages/charts/src/chart_types/wordcloud/renderer/svg/connected_component.tsx
+@@ -77,7 +77,8 @@ function log(minFontSize: number, maxFontSize: number, _exponent: number, weight
+ 
+ const weightFnLookup = { linear, exponential, log, squareRoot };
+ 
+-function layoutMaker({ data, ...viewModel }: WordcloudViewModel, chartSize: Size) {
++/** @internal */
++export function layoutMaker({ data, ...viewModel }: WordcloudViewModel, chartSize: Size) {
+   const { height, width } = chartSize;
+   const words = data.map<Word>((d) => {
+     const weightFn = weightFnLookup[viewModel.weightFn];
+diff --git a/packages/charts/src/components/chart_resizer.tsx b/packages/charts/src/components/chart_resizer.tsx
+index 58c24ae17..c860789c7 100644
+--- a/packages/charts/src/components/chart_resizer.tsx
++++ b/packages/charts/src/components/chart_resizer.tsx
+@@ -31,22 +31,23 @@ type ResizeFn = (entries: ResizeObserverEntry[]) => void;
+ class Resizer extends React.Component<ResizerProps> {
+   private readonly containerRef: RefObject<HTMLDivElement>;
+ 
+-  private ro: ResizeObserver;
++  private ro?: ResizeObserver;
+ 
+   constructor(props: ResizerProps) {
+     super(props);
+     this.containerRef = React.createRef();
+-    this.ro = new ResizeObserver(this.onResize);
+   }
+ 
+   componentDidMount() {
++    // Created on mount rather than in the constructor, which also runs during server-side rendering.
++    this.ro = new ResizeObserver(this.onResize);
+     if (this.containerRef.current) {
+       this.ro.observe(this.containerRef.current as Element);
+     }
+   }
+ 
+   componentWillUnmount() {
+-    this.ro.disconnect();
++    this.ro?.disconnect();
+   }
+ 
+   onResize: ResizeFn = (entries) => {
+diff --git a/packages/charts/src/headless/collect_specs.tsx b/packages/charts/src/headless/collect_specs.tsx
+new file mode 100644
+index 000000000..72677c655
+--- /dev/null
++++ b/packages/charts/src/headless/collect_specs.tsx
+@@ -0,0 +1,35 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import type { ReactNode } from 'react';
++import React from 'react';
++import { renderToStaticMarkup } from 'react-dom/server';
++import { Provider } from 'react-redux';
++
++import type { Spec } from '../specs/spec_type';
++import { createChartStore } from '../state/chart_state';
++import { SpecCollectorContext } from '../state/spec_factory';
++
++/**
++ * Collects the specs that `element` declares (`<Settings>`, `<Axis>`, `<LineSeries>`, ...), with
++ * their defaults applied, by rendering it on the server. `element` can be bare spec components or
++ * a component that renders a `<Chart>`; nothing is mounted and no DOM is needed.
++ * @public
++ */
++export function collectSpecs(element: ReactNode): Spec[] {
++  const specs = new Map<string, Spec>();
++  const collect = (spec: Spec) => specs.set(spec.id, spec);
++  // Spec components need a chart store in context even though nothing is dispatched to it here.
++  const store = createChartStore('headless-specs');
++  renderToStaticMarkup(
++    <Provider store={store}>
++      <SpecCollectorContext.Provider value={collect}>{element}</SpecCollectorContext.Provider>
++    </Provider>,
++  );
++  return [...specs.values()];
++}
+diff --git a/packages/charts/src/headless/glyph_font.test.ts b/packages/charts/src/headless/glyph_font.test.ts
+new file mode 100644
+index 000000000..0460fbf32
+--- /dev/null
++++ b/packages/charts/src/headless/glyph_font.test.ts
+@@ -0,0 +1,61 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { createGlyphFont, measureHelveticaTextWidth, SvgCanvas } from '.';
++
++// Two 1000-unit faces: a square "A" and a 500-unit "i" bar, at weights 400 and 700.
++const face = (weight: number, advance: number) => ({
++  weight,
++  unitsPerEm: 1000,
++  ascender: 800,
++  descender: -200,
++  glyphs: {
++    A: [advance, 'M0 0H600V700H0Z'] as [number, string],
++    i: [500, 'M100 0 100 500 200 500 200 0Z'] as [number, string],
++    ' ': [250, ''] as [number, string],
++  },
++});
++const font = createGlyphFont({ family: 'Test', faces: [face(400, 600), face(700, 800)] });
++
++describe('createGlyphFont', () => {
++  it('measures with the nearest weight', () => {
++    expect(font.measure('Ai', '10px Test')).toBe(11);
++    expect(font.measure('Ai', 'bold 10px Test')).toBe(13);
++    expect(font.measure('Ai', '600 10px Test')).toBe(13);
++  });
++
++  it('falls back to Helvetica metrics for characters it lacks', () => {
++    expect(font.measure('Az', '10px Test')).toBe(measureHelveticaTextWidth('Az', '10px Test'));
++    expect(font.toPath('Az', '10px Test', 0, 0)).toBeUndefined();
++  });
++
++  it('scales, flips and advances glyph outlines', () => {
++    expect(font.toPath('A i', '10px Test', 5, 20)).toBe('M 5 20 H 11 V 13 H 5 Z M 14.5 20 14.5 15 15.5 15 15.5 20 Z');
++  });
++
++  it('makes SvgCanvas draw text as paths aligned like canvas text', () => {
++    const svg = new SvgCanvas(100, 50, { font });
++    const ctx = svg.context;
++    ctx.font = '10px Test';
++    ctx.fillStyle = '#123456';
++    ctx.textAlign = 'end';
++    ctx.textBaseline = 'alphabetic';
++    ctx.fillText('A', 50, 20);
++    expect(ctx.measureText('AA').width).toBe(12);
++    const markup = svg.toSvg();
++    expect(markup).toContain('d="M 44 20 H 50 V 13 H 44 Z" fill="#123456"/>');
++    expect(markup).not.toContain('<text');
++  });
++
++  it('keeps drawing SVG text for characters the font lacks', () => {
++    const svg = new SvgCanvas(100, 50, { font });
++    svg.context.font = '10px Test';
++    svg.context.fillText('Az', 0, 20);
++    expect(svg.toSvg()).toContain('>Az</text>');
++  });
++});
+diff --git a/packages/charts/src/headless/glyph_font.ts b/packages/charts/src/headless/glyph_font.ts
+new file mode 100644
+index 000000000..a2c3d8b5f
+--- /dev/null
++++ b/packages/charts/src/headless/glyph_font.ts
+@@ -0,0 +1,99 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { measureHelveticaTextWidth, parseFont } from './svg_canvas';
++import type { SvgFont } from './svg_canvas';
++
++/**
++ * One weight of a font: advance widths and outlines per character, in font units with y up.
++ * Outlines are SVG path data with absolute commands.
++ * @public
++ */
++export interface GlyphFontFace {
++  weight: number;
++  unitsPerEm: number;
++  ascender: number;
++  descender: number;
++  glyphs: Record<string, [advance: number, path: string]>;
++}
++
++/**
++ * Glyph data of a font family, e.g. extracted from the font files the browser uses.
++ * @public
++ */
++export interface GlyphFontData {
++  family: string;
++  faces: GlyphFontFace[];
++}
++
++const COMMAND_ARGUMENTS: Record<string, number> = { M: 2, L: 2, T: 2, Q: 4, S: 4, C: 6, H: 1, V: 1, Z: 0 };
++const TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:e[+-]?\d+)?/g;
++
++const round = (value: number) => Number(value.toFixed(2));
++
++/** Moves and scales absolute path data from font units (y up) to pixels (y down). */
++const transformPath = (path: string, scale: number, dx: number, dy: number) => {
++  const out: string[] = [];
++  let command = '';
++  let index = 0;
++  for (const token of path.match(TOKEN) ?? []) {
++    if (/[A-Za-z]/.test(token)) {
++      command = token.toUpperCase();
++      index = 0;
++      out.push(command);
++      continue;
++    }
++    const value = Number(token);
++    // H takes x values and V takes y values; every other command alternates x and y.
++    const isX = command === 'H' || (command !== 'V' && index % 2 === 0);
++    out.push(String(round(isX ? dx + value * scale : dy - value * scale)));
++    index = (index + 1) % Math.max(COMMAND_ARGUMENTS[command] ?? 2, 1);
++  }
++  return out.join(' ');
++};
++
++const hasGlyphs = (face: GlyphFontFace, text: string) => [...text].every((char) => char in face.glyphs);
++
++/**
++ * Creates an {@link SvgFont} from glyph data, so text is measured with the real font metrics and
++ * drawn as outlines that look the same whatever fonts the SVG rasterizer has. The nearest weight
++ * is used; text with characters the font lacks is measured with Helvetica metrics and drawn as text.
++ * Kerning is not applied.
++ * @public
++ */
++export function createGlyphFont({ family, faces }: GlyphFontData): SvgFont {
++  const sorted = [...faces].sort((a, b) => a.weight - b.weight);
++  const getFace = (weight: number) =>
++    sorted.reduce((best, face) => (Math.abs(face.weight - weight) < Math.abs(best.weight - weight) ? face : best));
++
++  return {
++    family,
++    measure: (text, font) => {
++      const { size, weight } = parseFont(font);
++      const face = getFace(weight);
++      if (!hasGlyphs(face, text)) return measureHelveticaTextWidth(text, font);
++      let units = 0;
++      for (const char of text) units += face.glyphs[char]?.[0] ?? 0;
++      return (units / face.unitsPerEm) * size;
++    },
++    toPath: (text, font, x, baselineY) => {
++      const { size, weight } = parseFont(font);
++      const face = getFace(weight);
++      if (!hasGlyphs(face, text)) return undefined;
++      const scale = size / face.unitsPerEm;
++      let penX = x;
++      const parts: string[] = [];
++      for (const char of text) {
++        const [advance, path] = face.glyphs[char] ?? [0, ''];
++        if (path) parts.push(transformPath(path, scale, penX, baselineY));
++        penX += advance * scale;
++      }
++      return parts.join(' ');
++    },
++  };
++}
+diff --git a/packages/charts/src/headless/index.ts b/packages/charts/src/headless/index.ts
+new file mode 100644
+index 000000000..cdf5afad8
+--- /dev/null
++++ b/packages/charts/src/headless/index.ts
+@@ -0,0 +1,17 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++// Headless rendering lives in its own entry point (`@elastic/charts/dist/headless`) so browser
++// bundles that import `@elastic/charts` do not pull in `react-dom/server`.
++export { renderChart } from './render_chart';
++export type { RenderChartOptions } from './render_chart';
++export { collectSpecs } from './collect_specs';
++export { SvgCanvas, measureHelveticaTextWidth } from './svg_canvas';
++export type { SvgCanvasOptions, SvgFont, SvgOutputOptions, SvgTextWidthMeasure } from './svg_canvas';
++export { createGlyphFont } from './glyph_font';
++export type { GlyphFontData, GlyphFontFace } from './glyph_font';
+diff --git a/packages/charts/src/headless/legend.test.tsx b/packages/charts/src/headless/legend.test.tsx
+new file mode 100644
+index 000000000..790a26617
+--- /dev/null
++++ b/packages/charts/src/headless/legend.test.tsx
+@@ -0,0 +1,150 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import { AnnotationDomainType } from '../chart_types/specs';
++import { LegendValue } from '../common/legend';
++import { ScaleType } from '../scales/constants';
++import type { SettingsProps } from '../specs';
++import { BarSeries, LineAnnotation, Settings } from '../specs';
++import { LayoutDirection, Position } from '../utils/common';
++import type { PartialTheme } from '../utils/themes/theme';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const services = ['checkout', 'cart', 'payments', 'search', 'recommendations'];
++const data = services.flatMap((service, index) => [0, 1, 2].map((x) => ({ x, service, y: 10 + index + x })));
++
++const renderToSvg = (settings: Partial<SettingsProps>, theme: PartialTheme = {}, children: React.ReactNode = null) => {
++  const svg = new SvgCanvas(WIDTH, HEIGHT, { measureTextWidth: (text) => text.length * 6 });
++  const specs = collectSpecs(
++    <>
++      <Settings showLegend theme={theme} {...settings} />
++      <BarSeries
++        id="bars"
++        data={data}
++        xScaleType={ScaleType.Linear}
++        xAccessor="x"
++        yAccessors={['y']}
++        splitSeriesAccessors={['service']}
++      />
++      {children}
++    </>,
++  );
++  renderChart({ specs, width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D });
++  return svg.toSvg();
++};
++
++interface Point {
++  x: number;
++  y: number;
++}
++
++// The position of each text drawn without a transform (legend text is drawn untransformed).
++const textPosition = (svg: string, text: string): Point => {
++  const [, x = 'NaN', y = 'NaN'] =
++    new RegExp(`matrix\\(1 0 0 1 0 0\\)" x="(-?[\\d.]+)" y="(-?[\\d.]+)"[^>]*>${text}<`).exec(svg) ?? [];
++  return { x: Number(x), y: Number(y) };
++};
++const textContents = (svg: string) => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text]) => text);
++
++describe('Headless legend', () => {
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it('lays a bottom legend out as a grid of columns at least `verticalWidth` wide', () => {
++    const svg = renderToSvg({ legendPosition: Position.Bottom });
++    const [checkout, cart, payments, search] = ['checkout', 'cart', 'payments', 'search'].map((service) =>
++      textPosition(svg, service),
++    ) as [Point, Point, Point, Point];
++
++    // 600px fit two 200px columns with a 24px gap: items fill rows of two, 26px apart.
++    expect(cart.x - checkout.x).toBe((WIDTH - 24) / 2 + 24);
++    expect(cart.y).toBe(checkout.y);
++    expect(payments.x).toBe(checkout.x);
++    expect(payments.y - checkout.y).toBeCloseTo(26);
++    expect(search.y).toBe(payments.y);
++  });
++
++  it('shows titled legend values inline in the horizontal list layout', () => {
++    const svg = renderToSvg({
++      legendPosition: Position.Bottom,
++      legendLayout: 'list',
++      legendValues: [LegendValue.Max],
++    });
++
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['checkout', 'MAX:', ' 12']));
++    expect(textPosition(svg, 'MAX:').x).toBeGreaterThan(textPosition(svg, 'checkout').x);
++  });
++
++  it('wraps labels to `maxLines` lines', () => {
++    const legend = { legendPosition: Position.Right, legendSize: 90 };
++    const wrapped = renderToSvg(legend, { legend: { labelOptions: { maxLines: 2 } } });
++    const truncated = renderToSvg(legend, { legend: { labelOptions: { maxLines: 1 } } });
++
++    expect(textContents(truncated)).toContainEqual(expect.stringMatching(/^recommend\w*…$/));
++    expect(textContents(wrapped)).toEqual(expect.arrayContaining(['recommendat', 'ions']));
++    expect(textPosition(wrapped, 'ions').y - textPosition(wrapped, 'recommendat').y).toBeCloseTo(18);
++  });
++
++  it('floats an inside legend in a corner of the plot area, in columns', () => {
++    const svg = renderToSvg({
++      legendPosition: {
++        vAlign: Position.Top,
++        hAlign: Position.Left,
++        direction: LayoutDirection.Vertical,
++        floating: true,
++        floatingColumns: 2,
++      },
++    });
++    const [checkout, cart, payments] = ['checkout', 'cart', 'payments'].map((service) =>
++      textPosition(svg, service),
++    ) as [Point, Point, Point];
++
++    // The plot area keeps the whole width, and the first column starts 10px inside it.
++    expect(checkout.x).toBe(10 + 4 + 16 + 4);
++    expect(cart.y).toBe(checkout.y);
++    expect(cart.x).toBeGreaterThan(checkout.x);
++    expect(payments.x).toBe(checkout.x);
++    expect(payments.y - checkout.y).toBeCloseTo(26);
++  });
++
++  it('shows the legend title in the table header', () => {
++    const svg = renderToSvg({
++      legendPosition: Position.Right,
++      legendValues: [LegendValue.Max],
++      legendTitle: 'Service',
++    });
++
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['Service', 'Max', 'checkout']));
++  });
++
++  it('draws text line annotation markers next to the plot', () => {
++    const svg = renderToSvg(
++      { showLegend: false },
++      {},
++      <LineAnnotation
++        id="target"
++        domainType={AnnotationDomainType.YDomain}
++        dataValues={[{ dataValue: 12 }]}
++        marker="Target"
++        markerPosition={Position.Top}
++      />,
++    );
++
++    expect(textContents(svg)).toContain('Target');
++  });
++});
+diff --git a/packages/charts/src/headless/legend.ts b/packages/charts/src/headless/legend.ts
+new file mode 100644
+index 000000000..2e3f12b15
+--- /dev/null
++++ b/packages/charts/src/headless/legend.ts
+@@ -0,0 +1,423 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { DEFAULT_FONT_FAMILY } from '../common/default_theme_attributes';
++import type { LegendItem } from '../common/legend';
++import { LegendValue, legendValueTitlesMap, shouldDisplayTable } from '../common/legend';
++import { LEGEND_HIERARCHY_MARGIN } from '../components/legend/constants';
++import { getLegendPositionConfig } from '../components/legend/position_style';
++import { withContext } from '../renderers/canvas';
++import type { GlobalChartState } from '../state/chart_state';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++import { getInternalMainProjectionAreaSelector } from '../state/selectors/get_internal_main_projection_area';
++import { getLegendConfigSelector } from '../state/selectors/get_legend_config_selector';
++import { getLegendItemsSelector } from '../state/selectors/get_legend_items';
++import type { LegendSizing } from '../state/selectors/get_legend_size';
++import { getLegendSizeSelector, MARKER_WIDTH, TOP_MARGIN } from '../state/selectors/get_legend_size';
++import { LayoutDirection, Position } from '../utils/common';
++
++// Mirrors the sizes the legend size selector assumes for the HTML legend.
++const FONT_SIZE = 12;
++const FONT = `${FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
++const ROW_HEIGHT = FONT_SIZE * 1.5 + 8;
++const MARKER_RADIUS = 4;
++const LABEL_GAP = 4;
++const ELLIPSIS = '…';
++
++// Mirrors the HTML legend table: 12px text at 1.34 line height, 4px by 8px cell padding, a 10px
++// color column and a bottom border on every cell.
++const HEADER_FONT = `600 ${FONT}`;
++const CELL_PADDING = { height: 4, width: 8 };
++const TABLE_ROW_HEIGHT = Math.ceil(FONT_SIZE * 1.34) + CELL_PADDING.height * 2 + 1;
++const COLOR_COLUMN_WIDTH = 10;
++const TABLE_BORDER_COLOR = '#D3DAE6';
++
++// Mirrors `_legend_item.scss`, `_legend_grid_list.scss`, `_legend_list.scss` and `style_utils.ts`:
++// 18px label lines, a 4px margin before each item part, the horizontal grid list (24px column gap,
++// 8px row gap and margins), the horizontal list layout (24px rows) and the 10px inset of a
++// floating legend.
++const LINE_HEIGHT = FONT_SIZE * 1.5;
++const ITEM_MARGIN = 4;
++const GRID_COLUMN_GAP = 24;
++const LEGEND_ROW_GAP = 8;
++const LIST_ROW_HEIGHT = 16 + LEGEND_ROW_GAP;
++const LIST_VALUE_GAP = 8;
++const FLOATING_INSET = 10;
++const LIST_VALUE_TITLE_FONT = `bold ${FONT}`;
++
++const fitLabel = (ctx: CanvasRenderingContext2D, label: string, maxWidth: number) => {
++  if (ctx.measureText(label).width <= maxWidth) return label;
++  let end = label.length;
++  while (end > 0 && ctx.measureText(`${label.slice(0, end)}${ELLIPSIS}`).width > maxWidth) end--;
++  return `${label.slice(0, end)}${ELLIPSIS}`;
++};
++
++/**
++ * Splits a label into the lines the HTML legend shows: one truncated line for `maxLines` 1, else
++ * words wrapped to `maxWidth` (long words broken), clamped to `maxLines` lines unless it is 0.
++ */
++const wrapLabel = (ctx: CanvasRenderingContext2D, label: string, maxWidth: number, maxLines: number) => {
++  if (maxLines === 1) return [fitLabel(ctx, label, maxWidth)];
++  const fits = (text: string) => ctx.measureText(text).width <= maxWidth;
++  const lines: string[] = [];
++  let line = '';
++  label.split(/(?<=\s)/).forEach((word) => {
++    if (fits(`${line}${word}`.trimEnd())) {
++      line = `${line}${word}`;
++      return;
++    }
++    if (line) lines.push(line.trimEnd());
++    line = '';
++    [...word].forEach((char) => {
++      if (line && !fits(`${line}${char}`.trimEnd())) {
++        lines.push(line);
++        line = '';
++      }
++      line = `${line}${char}`;
++    });
++  });
++  if (line.trim() || lines.length === 0) lines.push(line.trimEnd());
++  if (maxLines <= 0 || lines.length <= maxLines) return lines;
++  // A line clamp ends the last visible line with an ellipsis.
++  const last = `${lines[maxLines - 1]} ${lines[maxLines]}`;
++  return [...lines.slice(0, maxLines - 1), fitLabel(ctx, last, maxWidth)];
++};
++
++const getLabelMaxLines = (state: GlobalChartState) =>
++  Math.abs(getChartThemeSelector(state).legend.labelOptions.maxLines);
++
++/** Draws one legend item whose first label line is centered on `cy`; returns its label line count. */
++const drawItem = (
++  ctx: CanvasRenderingContext2D,
++  { color, label, isSeriesHidden }: LegendItem,
++  x: number,
++  cy: number,
++  maxLabelWidth: number,
++  labelColor: string,
++  value = '',
++  indent = 0,
++  maxLines = 1,
++) => {
++  let lineCount = 1;
++  withContext(ctx, () => {
++    ctx.globalAlpha = isSeriesHidden ? 0.4 : 1;
++    ctx.beginPath();
++    ctx.arc(x + indent + MARKER_WIDTH / 2, cy, MARKER_RADIUS, 0, Math.PI * 2);
++    ctx.fillStyle = color;
++    ctx.fill();
++    ctx.font = FONT;
++    ctx.fillStyle = labelColor;
++    ctx.textAlign = 'left';
++    ctx.textBaseline = 'middle';
++    const valueWidth = value ? ctx.measureText(value).width + LABEL_GAP : 0;
++    const lines = wrapLabel(ctx, label, maxLabelWidth - indent - valueWidth, maxLines);
++    lines.forEach((line, index) => ctx.fillText(line, x + indent + MARKER_WIDTH + LABEL_GAP, cy + index * LINE_HEIGHT));
++    lineCount = lines.length;
++    if (value) {
++      // The value sits at the end of the item, like the HTML legend's value column.
++      ctx.textAlign = 'right';
++      ctx.fillText(value, x + MARKER_WIDTH + LABEL_GAP + maxLabelWidth, cy);
++    }
++  });
++  return lineCount;
++};
++
++// The value a list legend shows after the label; only `LegendValue.Value` (partition charts) is drawn.
++const getItemValue = ({ values }: LegendItem, legendValues: LegendValue[]) =>
++  legendValues.includes(LegendValue.Value) ? values.find(({ type }) => type === LegendValue.Value)?.label ?? '' : '';
++
++const drawTableRow = (
++  ctx: CanvasRenderingContext2D,
++  cells: { color?: string; label: string; values: string[] },
++  x: number,
++  y: number,
++  labelWidth: number,
++  valueWidths: number[],
++  textColor: string,
++) => {
++  const textY = y + TABLE_ROW_HEIGHT / 2;
++  if (cells.color) {
++    ctx.beginPath();
++    ctx.arc(x + COLOR_COLUMN_WIDTH / 2, textY, MARKER_RADIUS, 0, Math.PI * 2);
++    ctx.fillStyle = cells.color;
++    ctx.fill();
++  }
++  ctx.fillStyle = TABLE_BORDER_COLOR;
++  ctx.fillRect(
++    x,
++    y + TABLE_ROW_HEIGHT - 1,
++    COLOR_COLUMN_WIDTH + labelWidth + valueWidths.reduce((a, b) => a + b, 0),
++    1,
++  );
++  ctx.fillStyle = textColor;
++  ctx.textBaseline = 'middle';
++  ctx.textAlign = 'left';
++  const labelX = x + COLOR_COLUMN_WIDTH + CELL_PADDING.width;
++  ctx.fillText(fitLabel(ctx, cells.label, labelWidth - CELL_PADDING.width * 2), labelX, textY);
++  ctx.textAlign = 'right';
++  let right = x + COLOR_COLUMN_WIDTH + labelWidth;
++  cells.values.forEach((value, index) => {
++    right += valueWidths[index] ?? 0;
++    ctx.fillText(value, right - CELL_PADDING.width, textY);
++  });
++};
++
++/** Draws the legend table, with a header row, that the HTML legend shows for legend values. */
++function renderLegendTable(
++  ctx: CanvasRenderingContext2D,
++  state: GlobalChartState,
++  size: LegendSizing,
++  items: LegendItem[],
++  labelColor: string,
++) {
++  const { legendValues, legendTitle = '' } = getLegendConfigSelector(state);
++  const { width, height } = state.parentDimensions;
++  const { direction, vAlign, hAlign, floating } = getLegendPositionConfig(size.position);
++  const isVertical = direction === LayoutDirection.Vertical;
++  let left = isVertical && hAlign !== Position.Left ? width - size.width : 0;
++  let top = isVertical ? TOP_MARGIN : vAlign === Position.Top ? 0 : height - size.height;
++  const tableWidth = isVertical ? size.width : width;
++  let bottom = isVertical ? height : top + size.height;
++  const titles = legendValues.map((value) => legendValueTitlesMap[value]);
++
++  withContext(ctx, () => {
++    ctx.font = HEADER_FONT;
++    const titleWidths = titles.map((title) => ctx.measureText(title).width);
++    ctx.font = FONT;
++    const valueWidths = titleWidths.map((titleWidth, index) =>
++      Math.ceil(
++        items.reduce(
++          (widest, { values }) => Math.max(widest, ctx.measureText(values[index]?.label ?? '').width),
++          titleWidth,
++        ) +
++          CELL_PADDING.width * 2,
++      ),
++    );
++    const valuesWidth = valueWidths.reduce((a, b) => a + b, 0);
++    // A horizontal table gives the series column at least half the width, like its CSS grid.
++    let labelWidth = Math.max(tableWidth - COLOR_COLUMN_WIDTH - valuesWidth, isVertical ? 0 : tableWidth / 2);
++    if (floating) {
++      // A floating table takes its content width in a corner of the plot area, 10px inside it.
++      const area = getInternalMainProjectionAreaSelector(state);
++      const widestLabel = items.reduce((widest, item) => Math.max(widest, ctx.measureText(item.label).width), 0);
++      ctx.font = HEADER_FONT;
++      labelWidth = Math.ceil(Math.max(widestLabel, ctx.measureText(legendTitle).width)) + CELL_PADDING.width * 2;
++      ctx.font = FONT;
++      const floatingWidth = COLOR_COLUMN_WIDTH + labelWidth + valuesWidth;
++      const floatingHeight = (items.length + 1) * TABLE_ROW_HEIGHT;
++      left =
++        hAlign === Position.Left ? area.left + FLOATING_INSET : area.left + area.width - FLOATING_INSET - floatingWidth;
++      top = vAlign === Position.Bottom ? area.top + area.height - floatingHeight : area.top;
++      bottom = area.top + area.height;
++    }
++    const rows = [
++      { label: legendTitle, values: titles, font: HEADER_FONT },
++      ...items.map(({ color, label, values, isSeriesHidden }) => ({
++        color,
++        label,
++        values: legendValues.map((_, index) => values[index]?.label ?? ''),
++        font: FONT,
++        alpha: isSeriesHidden ? 0.4 : 1,
++      })),
++    ];
++    rows.forEach((row, index) => {
++      const y = top + index * TABLE_ROW_HEIGHT;
++      if (y + TABLE_ROW_HEIGHT > bottom) return;
++      withContext(ctx, () => {
++        ctx.font = row.font;
++        ctx.globalAlpha = 'alpha' in row ? row.alpha : 1;
++        drawTableRow(ctx, row, left, y, labelWidth, valueWidths, labelColor);
++      });
++    });
++  });
++}
++
++/**
++ * Draws the legend in the space the chart layout reserved for the HTML legend: a table when
++ * it shows legend values, a list otherwise. Legend actions are not drawn.
++ * @internal
++ */
++export function renderLegend(ctx: CanvasRenderingContext2D, state: GlobalChartState) {
++  const size = getLegendSizeSelector(state);
++  if (size.width <= 0 || size.height <= 0) return;
++
++  const items = getLegendItemsSelector(state).filter(({ isItemHidden }) => !isItemHidden);
++  const { width, height } = state.parentDimensions;
++  const labelColor = getChartThemeSelector(state).axes.axisTitle.fill;
++  const { legendValues, legendPosition, legendLayout, flatLegend } = getLegendConfigSelector(state);
++  if (shouldDisplayTable(legendValues, legendPosition, legendLayout)) {
++    renderLegendTable(ctx, state, size, items, labelColor);
++    return;
++  }
++  const { direction, vAlign, hAlign, floating } = getLegendPositionConfig(size.position);
++  const maxLines = getLabelMaxLines(state);
++  const { chartMargins } = getChartThemeSelector(state);
++
++  withContext(ctx, () => {
++    ctx.font = FONT;
++    if (floating) {
++      renderFloatingLegend(ctx, state, items, labelColor);
++      return;
++    }
++    if (direction === LayoutDirection.Vertical) {
++      const x = hAlign === Position.Left ? 0 : width - size.width;
++      const maxLabelWidth = size.width - MARKER_WIDTH - LABEL_GAP;
++      // The list starts below the chart's top margin, like its padding in the HTML legend.
++      let y = TOP_MARGIN + chartMargins.top;
++      items.forEach((item) => {
++        // A hierarchical (partition) legend indents nested items like the HTML legend.
++        const indent = flatLegend ? 0 : LEGEND_HIERARCHY_MARGIN * (item.depth ?? 0);
++        const value = getItemValue(item, legendValues);
++        if (y + ROW_HEIGHT > height) return;
++        const lines = drawItem(ctx, item, x, y + ROW_HEIGHT / 2, maxLabelWidth, labelColor, value, indent, maxLines);
++        y += ROW_HEIGHT + (lines - 1) * LINE_HEIGHT;
++      });
++      return;
++    }
++
++    const top = vAlign === Position.Top ? 0 : height - size.height;
++    if (legendLayout === 'list') {
++      renderHorizontalList(ctx, state, items, labelColor, top, top + size.height);
++      return;
++    }
++    // The default horizontal legend is a grid of equal columns at least `verticalWidth` wide.
++    const { verticalWidth } = getChartThemeSelector(state).legend;
++    const available = width - chartMargins.left - chartMargins.right;
++    const columns =
++      items.length === 1
++        ? 1
++        : Math.max(1, Math.floor((available + GRID_COLUMN_GAP) / (verticalWidth + GRID_COLUMN_GAP)));
++    const columnWidth = (available - GRID_COLUMN_GAP * (columns - 1)) / columns;
++    const maxLabelWidth = columnWidth - ITEM_MARGIN * 2 - MARKER_WIDTH - LABEL_GAP;
++    let rowTop = top + LEGEND_ROW_GAP;
++    for (let start = 0; start < items.length; start += columns) {
++      if (rowTop + LINE_HEIGHT > top + size.height) break;
++      const rowCenterY = rowTop + LINE_HEIGHT / 2;
++      const rowLines = items.slice(start, start + columns).map((item, column) => {
++        const x = chartMargins.left + column * (columnWidth + GRID_COLUMN_GAP) + ITEM_MARGIN;
++        const value = getItemValue(item, legendValues);
++        return drawItem(ctx, item, x, rowCenterY, maxLabelWidth, labelColor, value, 0, maxLines);
++      });
++      rowTop += Math.max(...rowLines) * LINE_HEIGHT + LEGEND_ROW_GAP;
++    }
++  });
++}
++
++/** The values a horizontal list legend shows after each label, as `TITLE:` and value pairs. */
++const getListValues = ({ values }: LegendItem, legendValues: LegendValue[]) =>
++  legendValues.flatMap((type) => {
++    const label = values.find((value) => value.type === type)?.label ?? '';
++    const shown = label || (type === LegendValue.CurrentAndLastValue ? '—' : '');
++    return shown ? [{ title: `${legendValueTitlesMap[type].toUpperCase()}:`, label: ` ${shown}` }] : [];
++  });
++
++/** Draws the horizontal list layout: items inline in 24px rows, labels cut at the width limit. */
++function renderHorizontalList(
++  ctx: CanvasRenderingContext2D,
++  state: GlobalChartState,
++  items: LegendItem[],
++  labelColor: string,
++  top: number,
++  bottom: number,
++) {
++  const { legendValues } = getLegendConfigSelector(state);
++  const {
++    chartMargins,
++    legend: { labelOptions },
++  } = getChartThemeSelector(state);
++  const { width } = state.parentDimensions;
++  const right = width - chartMargins.right;
++  const widthLimit = Math.abs(labelOptions.widthLimit);
++  let x = chartMargins.left;
++  let rowTop = top + LEGEND_ROW_GAP;
++  items.forEach((item) => {
++    const values = getListValues(item, legendValues);
++    const measure = (text: string, font: string) => {
++      ctx.font = font;
++      return ctx.measureText(text).width;
++    };
++    const labelWidth = Math.min(
++      measure(item.label, FONT),
++      widthLimit > 0 ? widthLimit : Infinity,
++      right - chartMargins.left - ITEM_MARGIN - MARKER_WIDTH - LABEL_GAP,
++    );
++    const valueWidths = values.map(
++      ({ title, label }) => LIST_VALUE_GAP + measure(title, LIST_VALUE_TITLE_FONT) + measure(label, FONT),
++    );
++    const itemWidth =
++      ITEM_MARGIN +
++      MARKER_WIDTH +
++      LABEL_GAP +
++      labelWidth +
++      valueWidths.reduce((sum, w) => sum + w, 0) +
++      (values.length ? 0 : ITEM_MARGIN);
++    if (x > chartMargins.left && x + itemWidth > right) {
++      x = chartMargins.left;
++      rowTop += LIST_ROW_HEIGHT;
++    }
++    if (rowTop + LIST_ROW_HEIGHT > bottom) return;
++    const cy = rowTop + LIST_ROW_HEIGHT / 2;
++    ctx.font = FONT;
++    drawItem(ctx, item, x + ITEM_MARGIN, cy, labelWidth, labelColor);
++    let valueX = x + ITEM_MARGIN + MARKER_WIDTH + LABEL_GAP + labelWidth;
++    values.forEach(({ title, label }, index) =>
++      withContext(ctx, () => {
++        ctx.globalAlpha = item.isSeriesHidden ? 0.4 : 1;
++        ctx.fillStyle = labelColor;
++        ctx.textAlign = 'left';
++        ctx.textBaseline = 'middle';
++        ctx.font = LIST_VALUE_TITLE_FONT;
++        const titleX = valueX + LIST_VALUE_GAP;
++        ctx.fillText(title, titleX, cy);
++        const titleWidth = ctx.measureText(title).width;
++        ctx.font = FONT;
++        ctx.fillText(label, titleX + titleWidth, cy);
++        valueX += valueWidths[index] ?? 0;
++      }),
++    );
++    x += itemWidth;
++  });
++}
++
++/**
++ * Draws a floating legend inside the plot area, 10px from its side: a grid of `floatingColumns`
++ * columns as wide as their items, below the chart's top margin.
++ */
++function renderFloatingLegend(
++  ctx: CanvasRenderingContext2D,
++  state: GlobalChartState,
++  items: LegendItem[],
++  labelColor: string,
++) {
++  const { legendValues, legendPosition } = getLegendConfigSelector(state);
++  const { vAlign, hAlign, floatingColumns = 1 } = legendPosition;
++  const { chartMargins } = getChartThemeSelector(state);
++  const area = getInternalMainProjectionAreaSelector(state);
++  const columns = Math.min(Math.max(floatingColumns, 1), Math.max(items.length, 1));
++  const itemWidths = items.map((item) => {
++    const value = getItemValue(item, legendValues);
++    const valueWidth = value ? ctx.measureText(value).width + LABEL_GAP : 0;
++    return ITEM_MARGIN * 2 + MARKER_WIDTH + LABEL_GAP + ctx.measureText(item.label).width + valueWidth;
++  });
++  const columnWidths = Array.from({ length: columns }, (_, column) =>
++    Math.max(0, ...itemWidths.filter((_w, index) => index % columns === column)),
++  );
++  const legendWidth = columnWidths.reduce((sum, w) => sum + w, 0);
++  const rowCount = Math.ceil(items.length / columns);
++  const legendHeight = chartMargins.top + rowCount * ROW_HEIGHT + chartMargins.bottom;
++  const left =
++    hAlign === Position.Left ? area.left + FLOATING_INSET : area.left + area.width - FLOATING_INSET - legendWidth;
++  const top = vAlign === Position.Bottom ? area.top + area.height - legendHeight : area.top;
++  items.forEach((item, index) => {
++    const column = index % columns;
++    const x = left + columnWidths.slice(0, column).reduce((sum, w) => sum + w, 0) + ITEM_MARGIN;
++    const y = top + chartMargins.top + Math.floor(index / columns) * ROW_HEIGHT;
++    const maxLabelWidth = (columnWidths[column] ?? 0) - ITEM_MARGIN * 2 - MARKER_WIDTH - LABEL_GAP;
++    drawItem(ctx, item, x, y + ROW_HEIGHT / 2, maxLabelWidth, labelColor, getItemValue(item, legendValues));
++  });
++}
+diff --git a/packages/charts/src/headless/painter.ts b/packages/charts/src/headless/painter.ts
+new file mode 100644
+index 000000000..2d845e13d
+--- /dev/null
++++ b/packages/charts/src/headless/painter.ts
+@@ -0,0 +1,17 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { CanvasPainter } from '../renderers/canvas/painter';
++
++/**
++ * A painter over `ctx` that draws one frame at final values and textured fills as their plain fill,
++ * so headless rendering creates no DOM elements.
++ * @internal
++ */
++export const headlessPainter = (ctx: CanvasRenderingContext2D) =>
++  new CanvasPainter(ctx, { animates: false, textures: false });
+diff --git a/packages/charts/src/headless/render_bullet.test.tsx b/packages/charts/src/headless/render_bullet.test.tsx
+new file mode 100644
+index 000000000..da77f708d
+--- /dev/null
++++ b/packages/charts/src/headless/render_bullet.test.tsx
+@@ -0,0 +1,109 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import type { BulletDatum } from '../chart_types/bullet_graph/spec';
++import { Bullet, BulletSubtype } from '../chart_types/bullet_graph/spec';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const datum: BulletDatum = {
++  title: 'Average bytes',
++  subtitle: 'last 7 days',
++  value: 5724,
++  target: 8000,
++  domain: [0, 10000],
++  ticks: () => [0, 2500, 5000, 7500, 10000],
++  valueFormatter: (value) => `${value}`,
++  tickFormatter: (value) => `${value / 1000}k`,
++};
++
++const renderBulletToSvg = (subtype: BulletSubtype, data = datum, width = WIDTH, height = HEIGHT) => {
++  const svg = new SvgCanvas(width, height);
++  renderChart({
++    specs: collectSpecs(
++      <Bullet
++        id="bullet"
++        subtype={subtype}
++        data={[[data]]}
++        colorBands={{ steps: [0, 5000, 10000], colors: ['#24c292', '#fcd883'] }}
++      />,
++    ),
++    width,
++    height,
++    context: svg.context,
++    Path2D: svg.Path2D,
++  });
++  return svg.toSvg();
++};
++
++const textContents = (svg: string) => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text]) => text);
++
++describe('Headless Bullet rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it.each([BulletSubtype.horizontal, BulletSubtype.vertical])(
++    'draws a %s bullet with header, ticks and bands',
++    (subtype) => {
++      const svg = renderBulletToSvg(subtype);
++
++      expect(textContents(svg)).toEqual(
++        expect.arrayContaining(['Average bytes', 'last 7 days', '5724 ', '/ 8000', '0k', '5k', '10k']),
++      );
++      // The value keeps its trailing space before the target, as on a canvas.
++      expect(svg).toMatch(/xml:space="preserve">5724 </);
++      // Both color bands are drawn.
++      expect(svg).toMatch(/fill="#24c292"/i);
++      expect(svg).toMatch(/fill="#fcd883"/i);
++    },
++  );
++
++  it.each([BulletSubtype.halfCircle, BulletSubtype.twoThirdsCircle, BulletSubtype.circle])(
++    'draws a %s bullet as arcs',
++    (subtype) => {
++      const svg = renderBulletToSvg(subtype);
++
++      expect(textContents(svg)).toEqual(expect.arrayContaining(['Average bytes', '5724 ', '/ 8000']));
++      expect(svg).toMatch(/stroke="#24c292"/i);
++      expect(svg).toMatch(/stroke="#fcd883"/i);
++      expect(svg).toMatch(/<path [^>]*d="[^"]*A/);
++    },
++  );
++
++  // The tallest header: a title wrapping to two lines and a subtitle push the value below them.
++  const tallHeaderDatum: BulletDatum = {
++    ...datum,
++    title: 'Average number of bytes transferred per request across all hosts and all data centers',
++    subtitle: 'over the last seven days, compared with the goal for the current quarter',
++  };
++
++  it.each(Object.values(BulletSubtype))(
++    'draws a %s bullet, not the DOM metric fallback, at the 720x360 size of Kibana previews',
++    (subtype) => {
++      const svg = renderBulletToSvg(subtype, tallHeaderDatum, 720, 360);
++
++      expect(textContents(svg)).toEqual(expect.arrayContaining(['5724 ', '/ 8000']));
++    },
++  );
++
++  it('leaves a panel blank where Elastic Charts would draw the DOM metric fallback', () => {
++    const svg = renderBulletToSvg(BulletSubtype.circle, tallHeaderDatum, 720, 180);
++
++    expect(textContents(svg)).toEqual([]);
++  });
++});
+diff --git a/packages/charts/src/headless/render_bullet.ts b/packages/charts/src/headless/render_bullet.ts
+new file mode 100644
+index 000000000..bedde382b
+--- /dev/null
++++ b/packages/charts/src/headless/render_bullet.ts
+@@ -0,0 +1,37 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { headlessPainter } from './painter';
++import type { HeadlessRenderer } from './types';
++import { renderBullet } from '../chart_types/bullet_graph/renderer/bullet';
++import { getActiveValues } from '../chart_types/bullet_graph/selectors/get_active_values';
++import { getBulletSpec } from '../chart_types/bullet_graph/selectors/get_bullet_spec';
++import { getPanelDimensions } from '../chart_types/bullet_graph/selectors/get_panel_dimensions';
++import { getA11ySettingsSelector } from '../state/selectors/get_accessibility_config';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++import { getResolvedBackgroundColorSelector } from '../state/selectors/get_resolved_background_color';
++import { getSettingsSpecSelector } from '../state/selectors/get_settings_spec';
++
++/**
++ * Draws Bullet graphs with the same canvas code and props as `BulletRenderer`. Elastic Charts draws a
++ * panel as a DOM metric instead when it is at most 140px wide (128px for arcs) or at most the header
++ * (up to ~92px) plus the graph's minimum height (50px horizontal, 100px vertical, up to 128px for
++ * arcs) tall; such panels are left blank here.
++ * @internal
++ */
++export const renderBulletChart: HeadlessRenderer = (ctx, state) => {
++  renderBullet(headlessPainter(ctx), {
++    debug: getSettingsSpecSelector(state).debug,
++    spec: getBulletSpec(state),
++    a11y: getA11ySettingsSelector(state),
++    dimensions: getPanelDimensions(state),
++    activeValues: getActiveValues(state),
++    style: getChartThemeSelector(state).bulletGraph,
++    backgroundColor: getResolvedBackgroundColorSelector(state),
++  });
++};
+diff --git a/packages/charts/src/headless/render_chart.test.tsx b/packages/charts/src/headless/render_chart.test.tsx
+new file mode 100644
+index 000000000..ebf4ca731
+--- /dev/null
++++ b/packages/charts/src/headless/render_chart.test.tsx
+@@ -0,0 +1,140 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import { ChartType } from '../chart_types';
++import { SeriesType } from '../chart_types/xy_chart/utils/specs';
++import { Chart } from '../components/chart';
++import { ScaleType } from '../scales/constants';
++import { Axis, BarSeries, LineSeries, Settings } from '../specs';
++import { SpecType } from '../specs/spec_type';
++import { Position } from '../utils/common';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const latency = ['checkout', 'cart'].flatMap((service, index) =>
++  [0, 1, 2, 3].map((hour) => ({ hour, service, p95: 100 + index * 50 + hour * 10 })),
++);
++
++const latencyChart = (
++  <>
++    <Settings showLegend legendPosition={Position.Right} />
++    <Axis id="hour" position={Position.Bottom} title="Hour" />
++    <Axis id="p95" position={Position.Left} title="p95 (ms)" />
++    <LineSeries
++      id="latency"
++      data={latency}
++      xScaleType={ScaleType.Linear}
++      yScaleType={ScaleType.Linear}
++      xAccessor="hour"
++      yAccessors={['p95']}
++      splitSeriesAccessors={['service']}
++    />
++  </>
++);
++
++const renderToSvg = (element: React.ReactElement) => {
++  const svg = new SvgCanvas(WIDTH, HEIGHT);
++  renderChart({ specs: collectSpecs(element), width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D });
++  return svg.toSvg();
++};
++
++const textContents = (svg: string) => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text]) => text);
++
++// The horizontal position of the bottom axis title, which is centered on the plot area.
++const bottomTitleX = (svg: string) => {
++  const [, offsetX = 'NaN', x = 'NaN'] = /matrix\(1 0 0 1 ([\d.]+) [\d.]+\)" x="(-?[\d.]+)"[^>]*>Hour</.exec(svg) ?? [];
++  return Number(offsetX) + Number(x);
++};
++
++describe('Headless rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  describe('collectSpecs', () => {
++    it('collects spec components with their defaults applied', () => {
++      const specs = collectSpecs(latencyChart);
++
++      expect(specs.map(({ id }) => id)).toEqual(expect.arrayContaining(['hour', 'p95', 'latency']));
++      expect(specs.find(({ id }) => id === 'latency')).toMatchObject({
++        chartType: ChartType.XYAxis,
++        specType: SpecType.Series,
++        seriesType: SeriesType.Line,
++        groupId: '__global__',
++      });
++    });
++
++    it('collects the specs inside a component that renders a Chart', () => {
++      const MyChart = () => <Chart>{latencyChart}</Chart>;
++
++      expect(collectSpecs(<MyChart />).map(({ id }) => id)).toEqual(expect.arrayContaining(['hour', 'p95', 'latency']));
++    });
++  });
++
++  describe('renderChart', () => {
++    it('draws series, axes and the legend as SVG', () => {
++      const svg = renderToSvg(latencyChart);
++      const texts = textContents(svg);
++
++      expect(svg.startsWith('<svg')).toBe(true);
++      expect(texts).toEqual(expect.arrayContaining(['Hour', 'p95 (ms)', 'checkout', 'cart']));
++      expect(svg.match(/<path [^>]*stroke=/g)?.length).toBeGreaterThan(2);
++    });
++
++    it('measures text with the given context to lay out the axes', () => {
++      const wideFont = new SvgCanvas(WIDTH, HEIGHT, { measureTextWidth: (text) => text.length * 40 });
++      const narrowFont = new SvgCanvas(WIDTH, HEIGHT, { measureTextWidth: (text) => text.length * 2 });
++      const specs = collectSpecs(latencyChart);
++      [wideFont, narrowFont].forEach((svg) =>
++        renderChart({ specs, width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D }),
++      );
++
++      // Wider labels resize the axes and the legend, so the plot area and its centered axis title move.
++      expect(bottomTitleX(wideFont.toSvg())).toBeFinite();
++      expect(bottomTitleX(wideFont.toSvg())).not.toBe(bottomTitleX(narrowFont.toSvg()));
++    });
++
++    it('draws textured bars with their plain fill', () => {
++      const svg = renderToSvg(
++        <>
++          <BarSeries
++            id="bars"
++            data={[
++              { x: 'a', y: 2 },
++              { x: 'b', y: 3 },
++            ]}
++            xAccessor="x"
++            yAccessors={['y']}
++            xScaleType={ScaleType.Ordinal}
++            barSeriesStyle={{ rect: { texture: { shape: 'circle' } } } as any}
++          />
++        </>,
++      );
++
++      expect(svg.match(/<path [^>]*fill="(?!none)/g)?.length).toBeGreaterThanOrEqual(2);
++    });
++
++    it('rejects chart types it cannot draw yet', () => {
++      const specs = [{ id: 'timeslip', chartType: ChartType.Timeslip, specType: SpecType.Series }];
++      const svg = new SvgCanvas(WIDTH, HEIGHT);
++
++      expect(() =>
++        renderChart({ specs, width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D }),
++      ).toThrow('Headless rendering does not support the "timeslip" chart type yet');
++    });
++  });
++});
+diff --git a/packages/charts/src/headless/render_chart.ts b/packages/charts/src/headless/render_chart.ts
+new file mode 100644
+index 000000000..8bf5a20a5
+--- /dev/null
++++ b/packages/charts/src/headless/render_chart.ts
+@@ -0,0 +1,99 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { renderLegend } from './legend';
++import { renderBulletChart } from './render_bullet';
++import { renderGoalChart } from './render_goal';
++import { renderHeatmapChart } from './render_heatmap';
++import { renderMetricChart } from './render_metric';
++import { renderPartitionChart } from './render_partition';
++import { renderWordcloudChart } from './render_wordcloud';
++import { renderXYChart } from './render_xy';
++import type { HeadlessRenderer } from './types';
++import { ChartType } from '../chart_types';
++import { chartTypeSelectors } from '../chart_types/chart_type_selectors';
++import { withPath2D } from '../renderers/canvas/path2d';
++import type { Spec } from '../specs/spec_type';
++import { updateDevicePixelRatio, updateParentDimensions } from '../state/actions/chart_settings';
++import { specParsed, upsertSpec } from '../state/actions/specs';
++import { createChartStore } from '../state/chart_state';
++import { chartSelectorsRegistry } from '../state/selectors/get_internal_chart_state';
++import { getInternalIsInitializedSelector, InitStatus } from '../state/selectors/get_internal_is_intialized';
++import { withTextMeasureContext } from '../utils/bbox/canvas_text_bbox_calculator';
++
++/**
++ * Options for {@link renderChart}.
++ * @public
++ */
++export interface RenderChartOptions {
++  /** The chart's specs, as returned by `collectSpecs`. */
++  specs: Spec[];
++  /** Chart width in CSS pixels. */
++  width: number;
++  /** Chart height in CSS pixels. */
++  height: number;
++  /**
++   * Where the chart is drawn: a browser canvas, a Node canvas library, or `SvgCanvas.context`.
++   * It also measures the text the layout depends on.
++   */
++  context: CanvasRenderingContext2D;
++  /** The Path2D implementation `context` accepts. Defaults to the global `Path2D`. */
++  Path2D?: typeof Path2D;
++  /** Pixel density of `context`. Defaults to 1. */
++  devicePixelRatio?: number;
++}
++
++const HEADLESS_RENDERERS: Partial<Record<ChartType, HeadlessRenderer>> = {
++  [ChartType.XYAxis]: renderXYChart,
++  [ChartType.Partition]: renderPartitionChart,
++  [ChartType.Heatmap]: renderHeatmapChart,
++  [ChartType.Goal]: renderGoalChart,
++  [ChartType.Bullet]: renderBulletChart,
++  [ChartType.Metric]: renderMetricChart,
++  [ChartType.Wordcloud]: renderWordcloudChart,
++};
++
++/**
++ * Lays out and draws a chart onto `context` without React, a DOM or a browser, e.g. on a server.
++ * Supports XY charts. The legend is drawn as a plain list; tooltips and interactions do not apply.
++ * @public
++ */
++export function renderChart({
++  specs,
++  width,
++  height,
++  context,
++  Path2D: Path2DConstructor = globalThis.Path2D,
++  devicePixelRatio = 1,
++}: RenderChartOptions): void {
++  // What <Chart> does when it is created.
++  chartSelectorsRegistry.setChartSelectors(chartTypeSelectors);
++  const store = createChartStore('headless');
++
++  withTextMeasureContext(context, () =>
++    withPath2D(Path2DConstructor, () => {
++      // What the spec components, <SpecsParser> and <ChartResizer> do once mounted.
++      specs.forEach((spec) => store.dispatch(upsertSpec(spec)));
++      store.dispatch(specParsed());
++      store.dispatch(updateParentDimensions({ width, height, top: 0, left: 0 }));
++      store.dispatch(updateDevicePixelRatio(devicePixelRatio));
++
++      const state = store.getState();
++      const status = getInternalIsInitializedSelector(state);
++      if (status !== InitStatus.Initialized) {
++        throw new Error(`The chart cannot be rendered: ${status}`);
++      }
++      const render = state.chartType ? HEADLESS_RENDERERS[state.chartType] : undefined;
++      if (!render) {
++        throw new Error(`Headless rendering does not support the "${state.chartType}" chart type yet`);
++      }
++      render(context, state);
++      renderLegend(context, state);
++    }),
++  );
++}
+diff --git a/packages/charts/src/headless/render_goal.test.tsx b/packages/charts/src/headless/render_goal.test.tsx
+new file mode 100644
+index 000000000..3c1af0423
+--- /dev/null
++++ b/packages/charts/src/headless/render_goal.test.tsx
+@@ -0,0 +1,71 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import { Goal, GoalSubtype } from '../chart_types/goal_chart/specs';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const BAND_COLORS = ['#24c292', '#fcd883', '#ee72a6'];
++
++const renderGoalToSvg = (subtype: GoalSubtype) => {
++  const svg = new SvgCanvas(WIDTH, HEIGHT);
++  renderChart({
++    specs: collectSpecs(
++      <Goal
++        id="goal"
++        subtype={subtype}
++        base={0}
++        target={260}
++        actual={170}
++        domain={{ min: 0, max: 300 }}
++        bands={[100, 200, 300]}
++        ticks={[0, 100, 200, 300]}
++        bandFillColor={({ index }) => BAND_COLORS[index] ?? 'gray'}
++        tickValueFormatter={({ value }) => `${value} ms`}
++        labelMajor="Latency"
++        labelMinor="p95"
++        centralMajor="170"
++        centralMinor=""
++        angleStart={Math.PI}
++        angleEnd={0}
++      />,
++    ),
++    width: WIDTH,
++    height: HEIGHT,
++    context: svg.context,
++    Path2D: svg.Path2D,
++  });
++  return svg.toSvg();
++};
++
++const textContents = (svg: string) => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text]) => text);
++
++describe('Headless Goal rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it.each([GoalSubtype.Goal, GoalSubtype.HorizontalBullet, GoalSubtype.VerticalBullet])(
++    'draws a %s chart with bands, ticks and labels',
++    (subtype) => {
++      const svg = renderGoalToSvg(subtype);
++
++      expect(textContents(svg)).toEqual(expect.arrayContaining(['Latency', 'p95', '0 ms', '300 ms']));
++      BAND_COLORS.forEach((color) => expect(svg.toLowerCase()).toContain(color));
++    },
++  );
++});
+diff --git a/packages/charts/src/headless/render_goal.ts b/packages/charts/src/headless/render_goal.ts
+new file mode 100644
+index 000000000..f2cf60897
+--- /dev/null
++++ b/packages/charts/src/headless/render_goal.ts
+@@ -0,0 +1,23 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { headlessPainter } from './painter';
++import type { HeadlessRenderer } from './types';
++import { renderGoal } from '../chart_types/goal_chart/renderer/renderers';
++import { getPrimitiveGeoms } from '../chart_types/goal_chart/state/selectors/geometries';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++
++/**
++ * Draws Goal charts with the same canvas code and props as the `Goal` component.
++ * @internal
++ */
++export const renderGoalChart: HeadlessRenderer = (ctx, state) => {
++  const { width, height } = state.parentDimensions;
++  if (width === 0 || height === 0) return;
++  renderGoal(headlessPainter(ctx), getPrimitiveGeoms(state), getChartThemeSelector(state).background.color);
++};
+diff --git a/packages/charts/src/headless/render_heatmap.test.tsx b/packages/charts/src/headless/render_heatmap.test.tsx
+new file mode 100644
+index 000000000..23247bf0f
+--- /dev/null
++++ b/packages/charts/src/headless/render_heatmap.test.tsx
+@@ -0,0 +1,150 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import { Heatmap } from '../chart_types/heatmap/specs';
++import { ScaleType } from '../scales/constants';
++import { Settings } from '../specs';
++import { Position } from '../utils/common';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const RED = '#f6726a';
++const BLUE = '#61a2ff';
++// The cell renderer normalizes colors to rgb().
++const RED_CELL = 'rgb(246,114,106)';
++const BLUE_CELL = 'rgb(97,162,255)';
++
++const data = ['checkout', 'cart'].flatMap((service, index) =>
++  ['a', 'b', 'c'].map((host, hostIndex) => ({ host, service, count: index * 3 + hostIndex })),
++);
++
++const heatmap = (legendPosition: Position = Position.Right) => (
++  <>
++    <Settings showLegend legendPosition={legendPosition} theme={{ heatmap: { cell: { label: { visible: true } } } }} />
++    <Heatmap
++      id="heatmap"
++      data={data}
++      xAccessor="host"
++      yAccessor="service"
++      valueAccessor="count"
++      xScale={{ type: ScaleType.Ordinal }}
++      xAxisTitle="Host"
++      yAxisTitle="Service"
++      colorScale={{
++        type: 'bands',
++        bands: [
++          { start: -Infinity, end: 3, color: BLUE },
++          { start: 3, end: Infinity, color: RED },
++        ],
++      }}
++    />
++  </>
++);
++
++const renderToSvg = (element: React.ReactElement) => {
++  const svg = new SvgCanvas(WIDTH, HEIGHT);
++  renderChart({ specs: collectSpecs(element), width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D });
++  return svg.toSvg();
++};
++
++const textContents = (svg: string) =>
++  [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text = '']) =>
++    text.replaceAll(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))),
++  );
++
++const countFills = (svg: string, color: string) => svg.split(`fill="${color}"`).length - 1;
++
++// The horizontal offset of the first `<text>` whose content is `text`.
++const textX = (svg: string, text: string) => {
++  const [, offsetX = '0', x = 'NaN'] =
++    new RegExp(`(?:matrix\\(1 0 0 1 ([\\d.-]+) [\\d.-]+\\)" )?x="(-?[\\d.]+)"[^>]*>${text}<`).exec(svg) ?? [];
++  return Number(offsetX) + Number(x);
++};
++
++describe('Headless heatmap rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it('draws cells colored by band, axis labels, titles and cell values', () => {
++    const svg = renderToSvg(heatmap());
++    const texts = textContents(svg);
++
++    expect(countFills(svg, BLUE_CELL)).toBe(3);
++    expect(countFills(svg, RED_CELL)).toBe(3);
++    expect(texts).toEqual(expect.arrayContaining(['a', 'b', 'c', 'checkout', 'cart', 'Host', 'Service']));
++    expect(texts).toEqual(expect.arrayContaining(['0', '1', '2', '3', '4', '5']));
++  });
++
++  it('draws the color bands as legend items', () => {
++    const svg = renderToSvg(heatmap());
++
++    expect(countFills(svg, BLUE)).toBe(1);
++    expect(countFills(svg, RED)).toBe(1);
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['< 3', '≥ 3']));
++  });
++
++  it('moves the heatmap aside for a left legend', () => {
++    const right = renderToSvg(heatmap(Position.Right));
++    const left = renderToSvg(heatmap(Position.Left));
++
++    expect(textX(left, '≥ 3')).toBeLessThan(textX(right, '≥ 3'));
++    expect(textX(left, 'checkout')).toBeGreaterThan(textX(right, 'checkout'));
++  });
++
++  it('spreads a time x axis over the x domain in the given time zone', () => {
++    const DAY = 24 * 60 * 60 * 1000;
++    // Midnight in Amsterdam (UTC+1 in winter).
++    const start = Date.UTC(2024, 0, 1) - 60 * 60 * 1000;
++    const svg = renderToSvg(
++      <>
++        <Settings xDomain={{ min: start, max: start + 3 * DAY }} />
++        <Heatmap
++          id="heatmap"
++          data={[0, 1].map((day) => ({ day: start + day * DAY, count: day }))}
++          xAccessor="day"
++          yAccessor={() => ''}
++          valueAccessor="count"
++          xScale={{ type: ScaleType.Time, interval: { type: 'fixed', unit: 'd', value: 1 } }}
++          timeZone="Europe/Amsterdam"
++          xAxisLabelFormatter={(value) => `day ${(Number(value) - start) / DAY}`}
++          colorScale={{ type: 'bands', bands: [{ start: -Infinity, end: Infinity, color: RED }] }}
++        />
++      </>,
++    );
++
++    expect(countFills(svg, RED_CELL)).toBe(2);
++    // The domain max is exclusive, so the grid ends with an empty day 2 column.
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['day 0', 'day 1', 'day 2']));
++  });
++
++  it('draws nothing when there is no data', () => {
++    const svg = renderToSvg(
++      <Heatmap
++        id="heatmap"
++        data={[]}
++        xAccessor="host"
++        yAccessor="service"
++        valueAccessor="count"
++        colorScale={{ type: 'bands', bands: [{ start: 0, end: 1, color: RED }] }}
++      />,
++    );
++
++    expect(countFills(svg, RED_CELL)).toBe(0);
++    expect(textContents(svg)).toEqual([]);
++  });
++});
+diff --git a/packages/charts/src/headless/render_heatmap.ts b/packages/charts/src/headless/render_heatmap.ts
+new file mode 100644
+index 000000000..0e7132e43
+--- /dev/null
++++ b/packages/charts/src/headless/render_heatmap.ts
+@@ -0,0 +1,65 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { headlessPainter } from './painter';
++import type { HeadlessRenderer } from './types';
++import type { ReactiveChartStateProps } from '../chart_types/heatmap/renderer/connected_component';
++import { renderHeatmap } from '../chart_types/heatmap/renderer/renderers';
++import { computeChartDimensionsSelector } from '../chart_types/heatmap/state/selectors/compute_chart_dimensions';
++import { computeChartElementSizesSelector } from '../chart_types/heatmap/state/selectors/compute_chart_element_sizes';
++import { getHeatmapContainerSizeSelector } from '../chart_types/heatmap/state/selectors/get_heatmap_container_size';
++import { getPerPanelHeatmapGeometries } from '../chart_types/heatmap/state/selectors/get_per_panel_heatmap_geometries';
++import type { GlobalChartState } from '../state/chart_state';
++import { getA11ySettingsSelector } from '../state/selectors/get_accessibility_config';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++import { getLegendConfigSelector } from '../state/selectors/get_legend_config_selector';
++import { getLegendSizeSelector } from '../state/selectors/get_legend_size';
++import { LayoutDirection, Position } from '../utils/common';
++
++// What the connected Heatmap component maps from the state, without interactions.
++const getHeatmapRendererProps = (state: GlobalChartState): ReactiveChartStateProps => {
++  const theme = getChartThemeSelector(state);
++  return {
++    chartId: state.chartId,
++    renderer: 'canvas',
++    initialized: true,
++    geometries: getPerPanelHeatmapGeometries(state),
++    chartContainerDimensions: getHeatmapContainerSizeSelector(state),
++    highlightedLegendBands: [],
++    theme,
++    a11ySettings: getA11ySettingsSelector(state),
++    background: theme.background.color,
++    elementSizes: computeChartElementSizesSelector(state),
++    debug: false,
++    chartDimensions: computeChartDimensionsSelector(state).chartDimensions,
++    devicePixelRatio: 1,
++  };
++};
++
++// In the DOM the heatmap canvas follows the legend, so a left or top legend pushes it aside.
++const getContainerOffset = (state: GlobalChartState) => {
++  const { showLegend, legendPosition } = getLegendConfigSelector(state);
++  if (!showLegend || legendPosition.floating) return { x: 0, y: 0 };
++  const { width, height, margin } = getLegendSizeSelector(state);
++  if (legendPosition.direction === LayoutDirection.Vertical) {
++    return { x: legendPosition.hAlign === Position.Left ? width + margin * 2 : 0, y: 0 };
++  }
++  const { maxLegendHeight } = getChartThemeSelector(state).heatmap;
++  return { x: 0, y: legendPosition.vAlign === Position.Top ? maxLegendHeight ?? height + margin * 2 : 0 };
++};
++
++/** @internal */
++export const renderHeatmapChart: HeadlessRenderer = (ctx, state) => {
++  const props = getHeatmapRendererProps(state);
++  if (props.geometries.heatmapViewModels.length === 0) return;
++  const { x, y } = getContainerOffset(state);
++  ctx.save();
++  ctx.translate(x, y);
++  renderHeatmap(headlessPainter(ctx), props);
++  ctx.restore();
++};
+diff --git a/packages/charts/src/headless/render_metric.test.tsx b/packages/charts/src/headless/render_metric.test.tsx
+new file mode 100644
+index 000000000..94ee48b67
+--- /dev/null
++++ b/packages/charts/src/headless/render_metric.test.tsx
+@@ -0,0 +1,222 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, renderChart, SvgCanvas } from '.';
++import type { MetricDatum } from '../chart_types/metric/specs';
++import { Metric, Settings } from '../specs';
++import { LayoutDirection } from '../utils/common';
++
++const WIDTH = 600;
++const HEIGHT = 200;
++
++const formatter = (value: number) => `${value.toFixed(1)} KB`;
++
++const renderToSvg = (data: Array<Array<MetricDatum | undefined>>, height = HEIGHT) => {
++  const svg = new SvgCanvas(WIDTH, height);
++  renderChart({
++    specs: collectSpecs(
++      <>
++        <Settings theme={{ metric: { barBackground: '#ECF1F9' } }} />
++        <Metric id="metric" data={data} />
++      </>,
++    ),
++    width: WIDTH,
++    height,
++    context: svg.context,
++    Path2D: svg.Path2D,
++  });
++  return svg.toSvg();
++};
++
++const tile = (title: string, value: number): MetricDatum => ({
++  value,
++  valueFormatter: String,
++  title,
++  color: '#FFFFFF',
++});
++
++const texts = (svg: string) =>
++  [...svg.matchAll(/<text [^>]*x="([\d.]+)" y="([\d.]+)"[^>]*font-size="([\d.]+)"[^>]*>([^<]*)<\/text>/g)].map(
++    ([, x, y, size, text = '']) => ({ x: Number(x), y: Number(y), size: Number(size), text }),
++  );
++const textContents = (svg: string) => texts(svg).map(({ text }) => text);
++// The value is drawn last, one text per part.
++const valueParts = (svg: string, count: number) => texts(svg).slice(-count);
++const fills = (svg: string) => [...svg.matchAll(/<path [^>]*fill="([^"]+)"/g)].map(([, fill]) => fill);
++
++describe('Headless Metric rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it('draws the title, subtitle and the value with a smaller unit', () => {
++    const svg = renderToSvg([
++      [{ value: 5432.1, valueFormatter: formatter, title: 'Bytes', subtitle: 'Average', color: '#FFFFFF' }],
++    ]);
++    const texts = textContents(svg);
++
++    expect(texts).toEqual(expect.arrayContaining(['Bytes', 'Average']));
++    const [value, unit] = valueParts(svg, 2);
++    expect(value?.text).toBe('5432.1');
++    expect(unit?.text).toBe(' KB');
++    expect(unit?.size).toBeLessThan(value?.size ?? 0);
++  });
++
++  it('fills the tile with its color and picks a contrasting text color', () => {
++    const svg = renderToSvg([[{ value: 12, valueFormatter: String, title: 'Errors', color: '#000000' }]]);
++
++    expect(fills(svg)).toContain('rgb(0,0,0)');
++    // The theme's light text color.
++    expect(svg).toMatch(/fill="rgb\(227,232,242\)"[^>]*>12</);
++  });
++
++  it('draws the secondary metric as a badge with its label', () => {
++    const svg = renderToSvg([
++      [
++        {
++          value: 10,
++          valueFormatter: String,
++          title: 'Requests',
++          color: '#FFFFFF',
++          extra: { value: '+5', label: 'vs last week', badgeColor: '#C9F3E3', icon: '↑' },
++        },
++      ],
++    ]);
++
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['vs last week', '+5', '↑']));
++    expect(fills(svg)).toContain('#C9F3E3');
++    // The badge comes after the label.
++    const label = texts(svg).find(({ text }) => text === 'vs last week');
++    const value = texts(svg).find(({ text }) => text === '+5');
++    expect(value?.x).toBeGreaterThan(label?.x ?? Infinity);
++  });
++
++  it('cuts a secondary metric that is wider than the tile with an ellipsis, label first', () => {
++    const svg = renderToSvg([
++      [
++        {
++          value: 10,
++          valueFormatter: String,
++          title: 'Requests',
++          color: '#FFFFFF',
++          extra: { value: '1234 requests', label: 'A very long secondary metric label '.repeat(4) },
++        },
++      ],
++    ]);
++    const all = textContents(svg);
++
++    expect(all).toContain('1234 requests');
++    const label = all.find((text) => text.startsWith('A very long'));
++    expect(label).toMatch(/…$/);
++    expect(label?.length).toBeLessThan('A very long secondary metric label '.repeat(4).length);
++  });
++
++  it('draws a progress bar with its track and fill', () => {
++    const svg = renderToSvg([
++      [
++        {
++          value: 30,
++          valueFormatter: String,
++          title: 'Disk',
++          color: '#61A2FF',
++          domainMax: 100,
++          progressBarDirection: LayoutDirection.Horizontal,
++        },
++      ],
++    ]);
++    const paths = fills(svg);
++
++    expect(paths).toContain('#ECF1F9');
++    expect(paths).toContain('rgb(97,162,255)');
++    // The fill covers 30% of the 584px track inside the 8px padding: its right edge is at 183.2.
++    expect(svg).toMatch(/<path d="M[^"]*183\.2[^"]*" fill="rgb\(97,162,255\)"/);
++  });
++
++  it('draws a gradient progress fill across the whole track', () => {
++    const svg = renderToSvg([
++      [
++        {
++          value: 50,
++          valueFormatter: String,
++          title: 'Disk',
++          color: '#61A2FF',
++          domainMax: 100,
++          progressBarDirection: LayoutDirection.Horizontal,
++          progressBarFill: {
++            type: 'palette',
++            style: 'gradient',
++            colorStops: [
++              { stop: 0, color: '#FF0000' },
++              { stop: 100, color: '#0000FF' },
++            ],
++          },
++        },
++      ],
++    ]);
++
++    // The gradient runs from the start of the 584px track to its end, and the fill reveals half of it.
++    expect(svg).toMatch(/<linearGradient id="(\w+)" gradientUnits="userSpaceOnUse" x1="8" y1="[\d.]+" x2="592"/);
++    expect(svg).toMatch(/<stop offset="0" stop-color="rgb\(255,0,0\)"/);
++    expect(svg).toMatch(/<path d="M[^"]*300[^"]*" fill="url\(#gradient\d+\)"/);
++  });
++
++  it('draws the trend as an area over the tile color', () => {
++    const svg = renderToSvg([
++      [
++        {
++          value: 4,
++          valueFormatter: String,
++          title: 'Trend',
++          color: '#D9E8FF',
++          trend: [0, 1, 2, 3].map((x) => ({ x, y: [2, 5, 3, 4][x] ?? 0 })),
++          trendShape: 'area',
++        },
++      ],
++    ]);
++
++    expect(fills(svg)).toEqual(expect.arrayContaining(['rgb(217,232,255)']));
++    // The area spans the tile width, from the left edge to the right one.
++    expect(svg).toMatch(/<path d="M0 [\d.]+L[^"]*L600 /);
++  });
++
++  it('lays out a breakdown as a grid with one tile per datum and borders between tiles', () => {
++    const svg = renderToSvg(
++      [
++        [tile('a', 1), tile('b', 2), tile('c', 3)],
++        [tile('d', 4), tile('e', 5)],
++      ],
++      240,
++    );
++
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['a', 'b', 'c', 'd', 'e']));
++    expect(textContents(svg).filter((text) => /^\d$/.test(text))).toEqual(['1', '2', '3', '4', '5']);
++    const titleX = (title: string) => Number(new RegExp(`x="([\\d.]+)"[^>]*>${title}<`).exec(svg)?.[1]);
++    const titleY = (title: string) => Number(new RegExp(`y="([\\d.]+)"[^>]*>${title}<`).exec(svg)?.[1]);
++    expect(titleX('b') - titleX('a')).toBeCloseTo(WIDTH / 3);
++    expect(titleY('d') - titleY('a')).toBeCloseTo(120);
++  });
++
++  it('draws icons that render as SVG paths', () => {
++    const Icon = ({ width, height }: { width: number; height: number }) => (
++      <svg width={width} height={height} viewBox="0 0 16 16">
++        <path d="M0 0h16v16H0z" />
++      </svg>
++    );
++    const svg = renderToSvg([[{ value: 1, valueFormatter: String, title: 'With icon', color: '#FFFFFF', icon: Icon }]]);
++
++    // A 16px icon in the top right corner, inside the 8px panel padding.
++    expect(svg).toMatch(/<path transform="matrix\(1 0 0 1 576 8\)" d="M0 0h16v16H0z"/);
++  });
++});
+diff --git a/packages/charts/src/headless/render_metric.ts b/packages/charts/src/headless/render_metric.ts
+new file mode 100644
+index 000000000..9172c4552
+--- /dev/null
++++ b/packages/charts/src/headless/render_metric.ts
+@@ -0,0 +1,861 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import type { ReactElement } from 'react';
++import { renderToStaticMarkup } from 'react-dom/server';
++
++import type { HeadlessRenderer } from './types';
++import { BADGE_BORDER, BADGE_PADDING_BLOCK } from '../chart_types/metric/renderer/dom/badge';
++import { getMetricProgressBarSize, getMetricProgressBarThickness } from '../chart_types/metric/renderer/dom/progress';
++import { getSortedData, getSparkLineColor } from '../chart_types/metric/renderer/dom/sparkline';
++import type { MetricTextDimensions } from '../chart_types/metric/renderer/dom/text_measurements';
++import {
++  getFittedFontSizes,
++  getFitValueFontSize,
++  getFixedFontSizes,
++  getMetricTextPartDimensions,
++  getSnappedFontSizes,
++} from '../chart_types/metric/renderer/dom/text_measurements';
++import type { MetricDatum, MetricWTrend, SecondaryMetricProps } from '../chart_types/metric/specs';
++import {
++  isBulletMetric,
++  isMetricWNumber,
++  isMetricWProgress,
++  isMetricWTrend,
++  isSecondaryMetricProps,
++  MetricTrendShape,
++} from '../chart_types/metric/specs';
++import { chartSize } from '../chart_types/metric/state/selectors/chart_size';
++import { getMetricSpecs } from '../chart_types/metric/state/selectors/data';
++import { hasChartTitles } from '../chart_types/metric/state/selectors/has_chart_titles';
++import type { ColorContrastOptions } from '../common/color_calcs';
++import { combineColors, highContrastColor } from '../common/color_calcs';
++import { colorToRgba, RGBATupleToString } from '../common/color_library_wrappers';
++import type { Color } from '../common/colors';
++import { fillTextColor } from '../common/fill_text_color';
++import { extent } from '../common/math';
++import type { MeterColorStop, MeterFill } from '../components/meter';
++import { MeterFillStyle } from '../components/meter';
++import { getMeterGeometry, getMeterScalePosition, getMeterSolidFillColor } from '../components/meter/utils';
++import { areaGenerator } from '../geoms/path';
++import { createPath2D } from '../renderers/canvas/path2d';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++import { getResolvedBackgroundColorSelector } from '../state/selectors/get_resolved_background_color';
++import { getSettingsSpecSelector } from '../state/selectors/get_settings_spec';
++import { clamp, isFiniteNumber, isNil, LayoutDirection, renderWithProps, sortNumbers } from '../utils/common';
++import { CurveType } from '../utils/curves';
++import type { ContinuousDomain } from '../utils/domain';
++import type { MetricStyle } from '../utils/themes/theme';
++
++// The sizes below mirror the Metric DOM components and their SCSS (`renderer/dom/*.scss`).
++const LINE_HEIGHT = 1.2;
++const METER_CORNER_RADIUS = 8;
++const FILL_BORDER_WIDTH = 2;
++const BADGE_MIN_HEIGHT = 18;
++const BADGE_PADDING_INLINE = 10;
++const BADGE_ICON_MARGIN = 4;
++const SECONDARY_GAP = 4;
++const EMPTY_MARK = { right: 11, bottom: 9, width: 20 };
++// Where the browser puts the alphabetic baseline below the middle of a line box, in em: half of
++// ascender minus descender, which is (2728 - 680) / 2 / 2816 for Inter.
++const BASELINE_BELOW_MIDDLE = 0.364;
++const ELLIPSIS = '…';
++
++interface Rect {
++  x: number;
++  y: number;
++  width: number;
++  height: number;
++}
++
++interface TextContrastOptions {
++  text: ColorContrastOptions;
++  subtitle: ColorContrastOptions;
++  extra: ColorContrastOptions;
++}
++
++interface TextColors {
++  highContrast: Color;
++  subtitle: Color;
++  extra: Color;
++}
++
++interface PanelContext {
++  style: MetricStyle;
++  chartBackground: Color;
++  contrastOptions: TextContrastOptions;
++  totalRows: number;
++  totalColumns: number;
++  hasTitles: boolean;
++}
++
++type Align = 'left' | 'center' | 'right';
++
++const font = (weight: string | number, size: number, family: string) => `${weight} ${size}px ${family}`;
++
++const getTextContrastOptions = (style: MetricStyle): TextContrastOptions => ({
++  text: { lightColor: colorToRgba(style.textLightColor), darkColor: colorToRgba(style.textDarkColor) },
++  subtitle: {
++    lightColor: colorToRgba(style.textSubtitleLightColor),
++    darkColor: colorToRgba(style.textSubtitleDarkColor),
++  },
++  extra: { lightColor: colorToRgba(style.textExtraLightColor), darkColor: colorToRgba(style.textExtraDarkColor) },
++});
++
++// Same as `getTextColor` in `metric.tsx`.
++const getTextColor = (
++  backgroundColor: Color,
++  blendedColor: Color,
++  hasProgressBar: boolean,
++  hasTrend: boolean,
++  contrastOptions: ColorContrastOptions,
++): Color => {
++  const highContrast = fillTextColor(
++    backgroundColor,
++    hasProgressBar ? backgroundColor : blendedColor,
++    undefined,
++    contrastOptions,
++  );
++  if (hasTrend) {
++    const { ratio, color, shade } = fillTextColor(
++      backgroundColor,
++      getSparkLineColor(blendedColor),
++      undefined,
++      contrastOptions,
++    );
++    if (shade !== highContrast.shade && ratio > highContrast.ratio) return color.keyword;
++  }
++  return highContrast.color.keyword;
++};
++
++const roundedRect = (ctx: CanvasRenderingContext2D, { x, y, width, height }: Rect, maxRadius: number) => {
++  // CSS scales radii down so that they fit the box.
++  const radius = Math.max(0, Math.min(maxRadius, width / 2, height / 2));
++  ctx.beginPath();
++  ctx.moveTo(x + radius, y);
++  ctx.arcTo(x + width, y, x + width, y + height, radius);
++  ctx.arcTo(x + width, y + height, x, y + height, radius);
++  ctx.arcTo(x, y + height, x, y, radius);
++  ctx.arcTo(x, y, x + width, y, radius);
++  ctx.closePath();
++};
++
++const fillRect = (ctx: CanvasRenderingContext2D, { x, y, width, height }: Rect, color: Color) => {
++  ctx.fillStyle = color;
++  ctx.fillRect(x, y, width, height);
++};
++
++const clipTo = (ctx: CanvasRenderingContext2D, { x, y, width, height }: Rect) => {
++  ctx.beginPath();
++  ctx.rect(x, y, width, height);
++  ctx.clip();
++};
++
++const alignedX = (align: Align, { x, width }: Pick<Rect, 'x' | 'width'>, contentWidth: number) =>
++  align === 'left' ? x : align === 'right' ? x + width - contentWidth : x + (width - contentWidth) / 2;
++
++const baselineY = (top: number, lineHeight: number, fontSize: number) =>
++  top + lineHeight / 2 + BASELINE_BELOW_MIDDLE * fontSize;
++
++// Writes one line of text from `x`, in a line box of `lineHeight` whose top is at `top`.
++const fillLine = (
++  ctx: CanvasRenderingContext2D,
++  text: string,
++  x: number,
++  top: number,
++  lineHeight: number,
++  fontSize: number,
++) => {
++  ctx.textAlign = 'left';
++  ctx.textBaseline = 'alphabetic';
++  ctx.fillText(text, x, baselineY(top, lineHeight, fontSize));
++};
++
++// Writes one line of text aligned in `box`, like a block with `text-align`.
++const fillAlignedLine = (
++  ctx: CanvasRenderingContext2D,
++  text: string,
++  align: Align,
++  box: Pick<Rect, 'x' | 'width'>,
++  top: number,
++  lineHeight: number,
++  fontSize: number,
++) => fillLine(ctx, text, alignedX(align, box, ctx.measureText(text).width), top, lineHeight, fontSize);
++
++// Like `text-overflow: ellipsis` on one line: the longest start of `text` that fits `maxWidth` with
++// an ellipsis, in the current font.
++const ellipsize = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
++  if (ctx.measureText(text).width <= maxWidth) return text;
++  let end = text.length;
++  while (end > 0 && ctx.measureText(`${text.slice(0, end)}${ELLIPSIS}`).width > maxWidth) end--;
++  return `${text.slice(0, end)}${ELLIPSIS}`;
++};
++
++const drawBorders = (
++  ctx: CanvasRenderingContext2D,
++  cell: Rect,
++  borders: { right: boolean; bottom: boolean; top: boolean },
++  color: Color,
++) => {
++  const { x, y, width, height } = cell;
++  if (borders.right) fillRect(ctx, { x: x + width - 1, y, width: 1, height }, color);
++  if (borders.bottom) fillRect(ctx, { x, y: y + height - 1, width, height: 1 }, color);
++  if (borders.top) fillRect(ctx, { x, y, width, height: 1 }, color);
++};
++
++// The padding box of a cell: inside the borders, which take room in a border-box layout.
++const insideBorders = (cell: Rect, borders: { right: boolean; bottom: boolean; top: boolean }): Rect => {
++  const top = borders.top ? 1 : 0;
++  return {
++    x: cell.x,
++    y: cell.y + top,
++    width: cell.width - (borders.right ? 1 : 0),
++    height: cell.height - top - (borders.bottom ? 1 : 0),
++  };
++};
++
++/** Draws the area of a `MetricWTrend` over the whole panel, like `SparkLine`. */
++const drawSparkline = (ctx: CanvasRenderingContext2D, box: Rect, { color, trend, trendShape }: MetricWTrend) => {
++  fillRect(ctx, box, color);
++  const sortedTrendData = getSortedData(trend);
++  const xMin = sortedTrendData.at(0)?.x ?? NaN;
++  const xMax = sortedTrendData.at(-1)?.x ?? NaN;
++  const [, yMax] = extent(sortedTrendData.map((d) => d.y));
++  if (!(xMax - xMin) || !yMax) return;
++  // The DOM draws the area in a unit square scaled into the lower half of the panel.
++  const path = areaGenerator<{ x: number; y: number }>(
++    (d) => box.x + ((d.x - xMin) / (xMax - xMin)) * box.width,
++    () => box.y + box.height,
++    (d) => box.y + box.height * (0.5 + 0.5 * (1 - d.y / yMax)),
++    (d) => isFiniteNumber(d.x) && isFiniteNumber(d.y),
++    trendShape === MetricTrendShape.Bars ? CurveType.CURVE_STEP_AFTER : CurveType.LINEAR,
++  ).area(sortedTrendData);
++  if (!path) return;
++  ctx.fillStyle = getSparkLineColor(color);
++  ctx.fill(createPath2D(path));
++};
++
++const blend = (color: Color, background: Color) =>
++  RGBATupleToString(combineColors(colorToRgba(color), colorToRgba(background)));
++
++// The color stops of a gradient fill at their track positions (0 to 100), extended to both ends of
++// the track, like `getMeterGradientFill`.
++const getGradientStops = (domain: ContinuousDomain, colorStops: MeterColorStop[]) => {
++  const stops = colorStops
++    .map(({ color, stop }) => ({ color, position: clamp(getMeterScalePosition(domain, stop), 0, 100) }))
++    .sort((a, b) => a.position - b.position);
++  const first = stops[0];
++  const last = stops.at(-1);
++  if (!first || !last) return [];
++  return [
++    ...(first.position > 0 ? [{ color: first.color, position: 0 }] : []),
++    ...stops,
++    ...(last.position < 100 ? [{ color: last.color, position: 100 }] : []),
++  ];
++};
++
++/**
++ * The paint of the progress bar fill, like `ProgressBar` and `Meter`: the bar color, a single color,
++ * the palette color at the value, or a gradient across the whole track that the fill reveals.
++ */
++const getProgressFillStyle = (
++  ctx: CanvasRenderingContext2D,
++  fill: MeterFill | undefined,
++  {
++    blendedBarColor,
++    fillBackground,
++    barBackground,
++  }: { blendedBarColor: Color; fillBackground: Color; barBackground: Color },
++  domain: ContinuousDomain,
++  value: number,
++  track: Rect,
++  isVertical: boolean,
++): string | CanvasGradient => {
++  if (!fill) return blendedBarColor;
++  if (fill.type === MeterFillStyle.Single) return blend(fill.color, fillBackground);
++  // `ProgressBar` blends every stop with the background before the meter interpolates them.
++  const colorStops = fill.colorStops.map((stop) => ({ ...stop, color: blend(stop.color, fillBackground) }));
++  const fallback = fill.fallbackColor ? blend(fill.fallbackColor, fillBackground) : undefined;
++  const solidColor = getMeterSolidFillColor(
++    domain,
++    colorStops,
++    value,
++    fallback ?? colorStops[0]?.color ?? barBackground,
++  );
++  const gradientStops = fill.style === MeterFillStyle.Gradient ? getGradientStops(domain, colorStops) : [];
++  if (gradientStops.length === 0) return solidColor;
++  // `to right` for horizontal bars, `to top` for vertical ones.
++  const gradient = isVertical
++    ? ctx.createLinearGradient(track.x, track.y + track.height, track.x, track.y)
++    : ctx.createLinearGradient(track.x, track.y, track.x + track.width, track.y);
++  gradientStops.forEach(({ color, position }) => gradient.addColorStop(position / 100, color));
++  return gradient;
++};
++
++/** Draws the progress bar of a `MetricWProgress` like `ProgressBar` and `Meter` do. */
++const drawProgressBar = (
++  ctx: CanvasRenderingContext2D,
++  box: Rect,
++  datum: MetricDatum,
++  {
++    padding,
++    thickness,
++    barBackground,
++    panelBackground,
++    fillBackground,
++    blendedBarColor,
++  }: {
++    padding: number;
++    thickness: number;
++    barBackground: Color;
++    panelBackground: Color;
++    fillBackground: Color;
++    blendedBarColor: Color;
++  },
++) => {
++  if (!isMetricWProgress(datum) && !isBulletMetric(datum)) return;
++  const isVertical = datum.progressBarDirection === LayoutDirection.Vertical;
++  const unsortedDomain: ContinuousDomain = isBulletMetric(datum)
++    ? datum.domain
++    : [datum.domainMin ?? 0, datum.domainMax];
++  const domain = sortNumbers(unsortedDomain);
++  const track: Rect = isVertical
++    ? { x: box.x + padding, y: box.y + padding, width: thickness, height: box.height - 2 * padding }
++    : {
++        x: box.x + padding,
++        y: box.y + box.height - padding - thickness,
++        width: box.width - 2 * padding,
++        height: thickness,
++      };
++  ctx.fillStyle = barBackground;
++  roundedRect(ctx, track, METER_CORNER_RADIUS);
++  ctx.fill();
++
++  const { fillStart, fillEnd, fillSize, isBaselineInDomain } = getMeterGeometry(domain, datum.value, 0);
++  if (!(fillSize > 0)) return;
++  const fill: Rect = isVertical
++    ? {
++        x: track.x,
++        y: track.y + track.height * (1 - fillEnd / 100),
++        width: track.width,
++        height: (track.height * fillSize) / 100,
++      }
++    : {
++        x: track.x + (track.width * fillStart) / 100,
++        y: track.y,
++        width: (track.width * fillSize) / 100,
++        height: track.height,
++      };
++  // The fill has a ring in the panel color (a box shadow in the DOM) that separates it from the track.
++  const ringRadius = METER_CORNER_RADIUS + FILL_BORDER_WIDTH;
++  ctx.fillStyle = panelBackground;
++  roundedRect(
++    ctx,
++    {
++      x: fill.x - FILL_BORDER_WIDTH,
++      y: fill.y - FILL_BORDER_WIDTH,
++      width: fill.width + 2 * FILL_BORDER_WIDTH,
++      height: fill.height + 2 * FILL_BORDER_WIDTH,
++    },
++    ringRadius,
++  );
++  ctx.fill();
++  const hasZeroBaselineMarker = isBaselineInDomain && domain[0] < 0 && domain[1] > 0;
++  ctx.fillStyle = getProgressFillStyle(
++    ctx,
++    datum.progressBarFill,
++    { blendedBarColor, fillBackground, barBackground },
++    domain,
++    datum.value,
++    track,
++    isVertical,
++  );
++  roundedRect(ctx, fill, hasZeroBaselineMarker ? Math.min(fill.width, fill.height) / 2 : METER_CORNER_RADIUS);
++  ctx.fill();
++};
++
++/**
++ * Draws an icon component that renders a plain SVG of paths (like EUI icon assets) by rendering it
++ * to markup and filling its paths. Other icons are skipped.
++ */
++const drawIcon = (
++  ctx: CanvasRenderingContext2D,
++  icon: MetricDatum['icon'],
++  { x, y }: { x: number; y: number },
++  size: number,
++  color: Color,
++) => {
++  if (!icon) return;
++  let markup: string;
++  try {
++    markup = renderToStaticMarkup(renderWithProps(icon, { width: size, height: size, color }) as ReactElement);
++  } catch {
++    return;
++  }
++  const [, minX = 0, minY = 0, viewWidth = size, viewHeight = size] = (
++    /viewBox="([\d.-]+)[\s,]+([\d.-]+)[\s,]+([\d.]+)[\s,]+([\d.]+)"/.exec(markup) ?? []
++  ).map(Number);
++  const paths = [...markup.matchAll(/<path([^>]*)>/g)];
++  if (paths.length === 0 || !viewWidth || !viewHeight) return;
++  ctx.save();
++  ctx.translate(x, y);
++  ctx.scale(size / viewWidth, size / viewHeight);
++  ctx.translate(-minX, -minY);
++  ctx.fillStyle = color;
++  paths.forEach(([, attributes = '']) => {
++    const d = / d="([^"]+)"/.exec(attributes)?.[1];
++    if (d) ctx.fill(createPath2D(d), /fill-rule="evenodd"/.test(attributes) ? 'evenodd' : 'nonzero');
++  });
++  ctx.restore();
++};
++
++/**
++ * Height and drawing of the secondary metric (`SecondaryMetric` and `Badge`): the label and the value
++ * side by side with a 4px gap, shrunk to the block like the flex layout, where the label gives way
++ * first and both end with an ellipsis when cut.
++ */
++const layoutSecondaryMetric = (
++  ctx: CanvasRenderingContext2D,
++  extra: SecondaryMetricProps,
++  fontSize: number,
++  fontFamily: string,
++  badgeBorderColor: Color | undefined,
++) => {
++  const { value, label, badgeColor, badgeTextColor, labelPosition = 'before', icon, iconPosition = 'after' } = extra;
++  const textFont = font(500, fontSize, fontFamily);
++  ctx.font = textFont;
++  const lineHeight = fontSize * LINE_HEIGHT;
++  const inlineLabel = label && labelPosition !== 'tooltip' ? label : undefined;
++  const labelWidth = inlineLabel ? ctx.measureText(inlineLabel).width : 0;
++  const valueTextWidth = ctx.measureText(value).width;
++  const iconWidth = icon ? ctx.measureText(icon).width + (value === '' ? 0 : BADGE_ICON_MARGIN) : 0;
++  const hasBadge = !!badgeColor;
++  const badgeInset = BADGE_PADDING_INLINE + BADGE_BORDER;
++  const valueWidth = hasBadge ? valueTextWidth + iconWidth + 2 * badgeInset : valueTextWidth;
++  const badgeHeight = Math.max(BADGE_MIN_HEIGHT, lineHeight + 2 * (BADGE_PADDING_BLOCK + BADGE_BORDER));
++  const height = hasBadge ? Math.max(lineHeight, badgeHeight) : lineHeight;
++
++  const drawBadge = (badge: Rect) => {
++    if (badgeBorderColor) {
++      ctx.fillStyle = badgeBorderColor;
++      roundedRect(ctx, badge, badgeHeight / 2);
++      ctx.fill();
++    }
++    ctx.fillStyle = badgeColor ?? '';
++    const inner = badgeBorderColor
++      ? {
++          x: badge.x + BADGE_BORDER,
++          y: badge.y + BADGE_BORDER,
++          width: badge.width - 2 * BADGE_BORDER,
++          height: badge.height - 2 * BADGE_BORDER,
++        }
++      : badge;
++    roundedRect(ctx, inner, badgeHeight / 2);
++    ctx.fill();
++    // The text shrinks so that the icon keeps its room.
++    const textBoxWidth = Math.max(0, badge.width - 2 * badgeInset - iconWidth);
++    const textTop = badge.y + (badgeHeight - lineHeight) / 2;
++    ctx.save();
++    clipTo(ctx, { x: badge.x + badgeInset, y: badge.y, width: badge.width - 2 * badgeInset, height: badge.height });
++    ctx.fillStyle = badgeTextColor ?? highContrastColor(colorToRgba(badgeColor ?? '')).color.keyword;
++    const textX = badge.x + badgeInset + (icon && iconPosition === 'before' ? iconWidth : 0);
++    fillLine(ctx, ellipsize(ctx, value, textBoxWidth), textX, textTop, lineHeight, fontSize);
++    if (icon) {
++      const iconX =
++        iconPosition === 'before'
++          ? badge.x + badgeInset
++          : badge.x + badgeInset + textBoxWidth + iconWidth - ctx.measureText(icon).width;
++      fillLine(ctx, icon, iconX, textTop, lineHeight, fontSize);
++    }
++    ctx.restore();
++  };
++
++  const draw = (span: Pick<Rect, 'x' | 'width'>, align: Align, top: number, color: Color) => {
++    ctx.font = textFont;
++    // The flex container is as wide as its content, at most the block. The value does not shrink
++    // but is at most the container minus the gap; the label takes what is left.
++    const naturalWidth = valueWidth + (inlineLabel ? labelWidth + SECONDARY_GAP : 0);
++    const width = Math.min(naturalWidth, span.width);
++    const valueBoxWidth = Math.max(0, Math.min(valueWidth, inlineLabel ? width - SECONDARY_GAP : width));
++    const labelBoxWidth = inlineLabel ? Math.max(0, width - valueBoxWidth - SECONDARY_GAP) : 0;
++    const x = alignedX(align, span, width);
++    const labelFirst = labelPosition === 'before';
++    const valueX = inlineLabel && labelFirst ? x + labelBoxWidth + SECONDARY_GAP : x;
++    const lineTop = top + (height - lineHeight) / 2;
++
++    ctx.save();
++    clipTo(ctx, { x, y: top, width, height });
++    ctx.fillStyle = color;
++    if (inlineLabel) {
++      // The label box clips what does not fit, even its ellipsis.
++      const labelX = labelFirst ? x : valueX + valueBoxWidth + SECONDARY_GAP;
++      ctx.save();
++      clipTo(ctx, { x: labelX, y: top, width: labelBoxWidth, height });
++      fillLine(ctx, ellipsize(ctx, inlineLabel, labelBoxWidth), labelX, lineTop, lineHeight, fontSize);
++      ctx.restore();
++    }
++    if (hasBadge) {
++      drawBadge({ x: valueX, y: top + (height - badgeHeight) / 2, width: valueBoxWidth, height: badgeHeight });
++    } else {
++      fillLine(ctx, ellipsize(ctx, value, valueBoxWidth), valueX, lineTop, lineHeight, fontSize);
++    }
++    ctx.restore();
++  };
++
++  return { height, draw };
++};
++
++// The grid placement of `MetricText`, from `text.tsx`.
++const GRID_ROWS = {
++  top: { value: 1, titles: 2, body: 3, extra: 4 },
++  middle: { value: 3, titles: 1, body: 2, extra: 5 },
++  bottom: { value: 4, titles: 1, body: 2, extra: 3 },
++} as const;
++// Rows that share the space left by the content-sized ones (`auto` and `1fr` tracks).
++const FLEXIBLE_ROWS = { top: [3], middle: [2, 4], bottom: [2] } as const;
++
++type Span = readonly [first: number, last: number];
++const FULL: Span = [1, 3];
++const getColumnSpans = (style: MetricStyle, hasIcon: boolean): { value: Span; titles: Span; extra: Span } => {
++  if (!hasIcon) return { value: FULL, titles: FULL, extra: FULL };
++  const { valuePosition, iconAlign } = style;
++  const besideIcon: Span = iconAlign === 'left' ? [2, 3] : [1, 2];
++  if (valuePosition === 'top') {
++    return { value: style.valueTextAlign === 'center' ? [2, 2] : besideIcon, titles: FULL, extra: FULL };
++  }
++  return {
++    value: FULL,
++    titles: valuePosition === 'bottom' && style.titlesTextAlign === 'center' ? [2, 2] : besideIcon,
++    extra: FULL,
++  };
++};
++
++/** Draws one metric tile like the `Metric` DOM component. */
++const drawMetricPanel = (
++  ctx: CanvasRenderingContext2D,
++  cell: Rect,
++  datum: MetricDatum,
++  textDimensions: MetricTextDimensions,
++  { rowIndex, columnIndex }: { rowIndex: number; columnIndex: number },
++  { style, chartBackground, contrastOptions, totalRows, totalColumns, hasTitles }: PanelContext,
++) => {
++  const progressDatum = isMetricWProgress(datum) || isBulletMetric(datum) ? datum : undefined;
++  const hasProgressBar = progressDatum !== undefined;
++  const hasTrend = isMetricWTrend(datum);
++  const { heightBasedSizes: sizes, metricSpacing, visibility, textParts } = textDimensions;
++  const padding = metricSpacing.panelPadding;
++
++  const backgroundColor = datum.background ? blend(datum.background, chartBackground) : chartBackground;
++  const blendingBackground = style.blendingBackground
++    ? blend(style.blendingBackground, backgroundColor)
++    : backgroundColor;
++  const blendedColor = blend(datum.color, blendingBackground);
++  const colors: TextColors = {
++    highContrast: getTextColor(backgroundColor, blendedColor, hasProgressBar, hasTrend, contrastOptions.text),
++    subtitle: getTextColor(backgroundColor, blendedColor, hasProgressBar, hasTrend, contrastOptions.subtitle),
++    extra: getTextColor(backgroundColor, blendedColor, hasProgressBar, hasTrend, contrastOptions.extra),
++  };
++  const borders = {
++    right: columnIndex < totalColumns - 1,
++    bottom: rowIndex < totalRows - 1,
++    top: hasTitles && rowIndex === 0,
++  };
++  const box = insideBorders(cell, borders);
++
++  ctx.save();
++  clipTo(ctx, cell);
++  fillRect(ctx, cell, hasTrend || hasProgressBar ? backgroundColor : blendedColor);
++  drawBorders(ctx, cell, borders, style.border);
++  if (isMetricWTrend(datum)) drawSparkline(ctx, box, { ...datum, color: blendedColor });
++
++  // The container makes room for the progress bar with its padding.
++  const progressBarSize = progressDatum
++    ? progressDatum.progressBarSize ?? getMetricProgressBarSize(sizes.progressBarThickness)
++    : undefined;
++  const thickness = getMetricProgressBarThickness(progressBarSize) ?? sizes.progressBarThickness;
++  const progressBarRoom = progressDatum
++    ? thickness + (isNil(progressDatum.target) ? 0 : 8) + metricSpacing.progressTextGap
++    : 0;
++  const isVerticalBar = progressDatum?.progressBarDirection === LayoutDirection.Vertical;
++  const textBox: Rect = {
++    x: box.x + (isVerticalBar ? progressBarRoom : 0),
++    y: box.y,
++    width: box.width - (isVerticalBar ? progressBarRoom : 0),
++    height: box.height - (progressDatum && !isVerticalBar ? progressBarRoom : 0),
++  };
++  if (progressDatum) {
++    drawProgressBar(ctx, box, progressDatum, {
++      padding,
++      thickness,
++      barBackground: style.barBackground,
++      panelBackground: backgroundColor,
++      fillBackground: blendingBackground,
++      blendedBarColor: blendedColor,
++    });
++  }
++
++  // `MetricText`: a grid inside the panel padding.
++  const inner: Rect = {
++    x: textBox.x + padding,
++    y: textBox.y + padding,
++    width: textBox.width - 2 * padding,
++    height: textBox.height - 2 * padding,
++  };
++  const hasIcon = !!datum.icon;
++  const iconColumnWidth = sizes.iconSize + padding;
++  const columnEdges = hasIcon
++    ? [inner.x, inner.x + iconColumnWidth, inner.x + inner.width - iconColumnWidth, inner.x + inner.width]
++    : [inner.x, inner.x, inner.x + inner.width, inner.x + inner.width];
++  const spanRect = ([first, last]: Span) => ({
++    x: columnEdges[first - 1] ?? inner.x,
++    width: (columnEdges[last] ?? inner.x) - (columnEdges[first - 1] ?? inner.x),
++  });
++  const spans = getColumnSpans(style, hasIcon);
++
++  // Titles block.
++  const titleLineHeight = sizes.titleFontSize * LINE_HEIGHT;
++  const subtitleLineHeight = sizes.subtitleFontSize * LINE_HEIGHT;
++  const titleLines = visibility.title ? visibility.titleLines : [];
++  const subtitleLines = visibility.subtitle ? visibility.subtitleLines : [];
++  const titlesHeight =
++    titleLines.length * titleLineHeight +
++    (subtitleLines.length > 0 ? metricSpacing.titleSubtitleGap + subtitleLines.length * subtitleLineHeight : 0);
++
++  // Extra block.
++  const extra = visibility.extra && isSecondaryMetricProps(datum.extra) ? datum.extra : undefined;
++  const badgeBorder = extra?.badgeBorderColor;
++  const secondary = extra
++    ? layoutSecondaryMetric(
++        ctx,
++        extra,
++        sizes.extraFontSize,
++        style.fontFamily,
++        badgeBorder?.mode === 'custom' ? badgeBorder.color : undefined,
++      )
++    : undefined;
++  const extraPaddingTop = style.valuePosition === 'middle' ? 0 : metricSpacing.extraPaddingTop;
++  const extraHeight = extraPaddingTop + (secondary?.height ?? 0);
++
++  // Value block.
++  const valueLineHeight = sizes.valueFontSize * LINE_HEIGHT;
++  const valueMarginTop = style.valuePosition === 'bottom' && visibility.extra ? metricSpacing.primaryAdjacentGap : 0;
++  const valueMarginBottom = style.valuePosition === 'top' && visibility.title ? metricSpacing.primaryAdjacentGap : 0;
++  const valueHeight = valueMarginTop + valueLineHeight + valueMarginBottom;
++
++  const rows = GRID_ROWS[style.valuePosition];
++  const rowHeights = new Map<number, number>([
++    [rows.titles, titlesHeight],
++    [rows.extra, extraHeight],
++    [rows.value, valueHeight],
++  ]);
++  // The icon sits in the first row.
++  if (hasIcon) rowHeights.set(1, Math.max(rowHeights.get(1) ?? 0, sizes.iconSize));
++  const rowCount = style.valuePosition === 'middle' ? 5 : 4;
++  const flexibleRows: readonly number[] = FLEXIBLE_ROWS[style.valuePosition];
++  const fixedHeight = [...rowHeights.entries()].reduce(
++    (sum, [row, height]) => sum + (flexibleRows.includes(row) ? 0 : height),
++    0,
++  );
++  const flexibleHeight = Math.max(0, inner.height - fixedHeight) / flexibleRows.length;
++  const rowTops: number[] = [];
++  let rowTop = inner.y;
++  for (let row = 1; row <= rowCount; row++) {
++    rowTops[row] = rowTop;
++    rowTop += flexibleRows.includes(row) ? flexibleHeight : rowHeights.get(row) ?? 0;
++  }
++
++  ctx.save();
++  clipTo(ctx, inner);
++
++  if (hasIcon) {
++    const iconX = style.iconAlign === 'left' ? inner.x : inner.x + inner.width - sizes.iconSize;
++    drawIcon(ctx, datum.icon, { x: iconX, y: inner.y }, sizes.iconSize, colors.highContrast);
++  }
++
++  // Titles: the title (bold by theme) and the subtitle, each aligned in its block.
++  const titlesSpan = spanRect(spans.titles);
++  let lineTop = rowTops[rows.titles] ?? inner.y;
++  ctx.font = font(style.titleWeight, sizes.titleFontSize, style.fontFamily);
++  ctx.fillStyle = colors.highContrast;
++  titleLines.forEach((line) => {
++    fillAlignedLine(ctx, line, style.titlesTextAlign, titlesSpan, lineTop, titleLineHeight, sizes.titleFontSize);
++    lineTop += titleLineHeight;
++  });
++  if (subtitleLines.length > 0) {
++    lineTop += metricSpacing.titleSubtitleGap;
++    ctx.font = font('normal', sizes.subtitleFontSize, style.fontFamily);
++    ctx.fillStyle = colors.subtitle;
++    subtitleLines.forEach((line) => {
++      fillAlignedLine(
++        ctx,
++        line,
++        style.titlesTextAlign,
++        titlesSpan,
++        lineTop,
++        subtitleLineHeight,
++        sizes.subtitleFontSize,
++      );
++      lineTop += subtitleLineHeight;
++    });
++  }
++
++  // Secondary metric.
++  if (secondary) {
++    const extraSpan = spanRect(spans.extra);
++    const extraTop = (rowTops[rows.extra] ?? inner.y) + extraPaddingTop;
++    secondary.draw(extraSpan, style.extraTextAlign, extraTop, colors.extra);
++  }
++
++  // Value: digits at the value font size, other characters (units, suffixes) smaller, on one baseline.
++  const valueSpan = spanRect(spans.value);
++  const partFont = (emphasis: string) =>
++    font(500, emphasis === 'small' ? sizes.valuePartFontSize : sizes.valueFontSize, style.fontFamily);
++  const partWidths = textParts.map(({ text, emphasis }) => {
++    ctx.font = partFont(emphasis);
++    return ctx.measureText(text).width;
++  });
++  const valueWidth = partWidths.reduce((sum, width) => sum + width, 0);
++  // A value wider than its block starts at the left and is cut on the right, like the
++  // `overflow: hidden` paragraph; text values end with an ellipsis there.
++  const isOverflowing = valueWidth > valueSpan.width;
++  const valueAlign: Align = isOverflowing ? 'left' : style.valueTextAlign;
++  const valueTop = (rowTops[rows.value] ?? inner.y) + valueMarginTop;
++  ctx.save();
++  clipTo(ctx, { x: valueSpan.x, y: valueTop, width: valueSpan.width, height: valueLineHeight });
++  ctx.fillStyle = datum.valueColor ?? colors.highContrast;
++  if (isOverflowing && !isMetricWNumber(datum)) {
++    ctx.font = partFont('normal');
++    const text = ellipsize(ctx, textParts.map(({ text: part }) => part).join(''), valueSpan.width);
++    fillLine(ctx, text, valueSpan.x, valueTop, valueLineHeight, sizes.valueFontSize);
++  } else {
++    let valueX = alignedX(valueAlign, valueSpan, valueWidth);
++    textParts.forEach(({ text, emphasis }, index) => {
++      ctx.font = partFont(emphasis);
++      fillLine(ctx, text, valueX, valueTop, valueLineHeight, sizes.valueFontSize);
++      valueX += partWidths[index] ?? 0;
++    });
++  }
++  ctx.restore();
++
++  ctx.restore();
++  ctx.restore();
++};
++
++/** Draws a cell without a metric: a blank panel, with a short line when it pads a row (`echMetricEmpty`). */
++const drawEmptyPanel = (
++  ctx: CanvasRenderingContext2D,
++  cell: Rect,
++  { rowIndex, columnIndex, isPadding }: { rowIndex: number; columnIndex: number; isPadding: boolean },
++  { style, chartBackground, contrastOptions, totalRows, totalColumns, hasTitles }: PanelContext,
++) => {
++  const backgroundRGBA = combineColors(colorToRgba(style.emptyBackground), colorToRgba(chartBackground));
++  const borders = {
++    right: isPadding && columnIndex < totalColumns - 1,
++    bottom: rowIndex < totalRows - 1,
++    top: hasTitles && rowIndex === 0,
++  };
++  fillRect(ctx, cell, RGBATupleToString(backgroundRGBA));
++  drawBorders(ctx, cell, borders, style.border);
++  if (!isPadding) return;
++  const box = insideBorders(cell, borders);
++  const markColor = highContrastColor(backgroundRGBA, undefined, contrastOptions.text).color.keyword;
++  fillRect(
++    ctx,
++    {
++      x: box.x + box.width - EMPTY_MARK.right - EMPTY_MARK.width,
++      y: box.y + box.height - EMPTY_MARK.bottom - 1,
++      width: EMPTY_MARK.width,
++      height: 1,
++    },
++    markColor,
++  );
++};
++
++/**
++ * Draws the Metric chart, whose browser version is DOM: a grid of tiles with titles, values,
++ * secondary metrics, progress bars and trend areas, laid out like the DOM components.
++ * @internal
++ */
++export const renderMetricChart: HeadlessRenderer = (ctx, state) => {
++  const [spec] = getMetricSpecs(state);
++  const { width, height } = chartSize(state);
++  if (!spec || width === 0 || height === 0) return;
++  const { metric: style } = getChartThemeSelector(state);
++  const { locale } = getSettingsSpecSelector(state);
++  const { data } = spec;
++  const totalRows = data.length;
++  const totalColumns = data.reduce((acc, row) => Math.max(acc, row.length), 0);
++  if (totalRows === 0 || totalColumns === 0) return;
++
++  // Rows are at least `minHeight` tall (`minmax(minHeight, 1fr)`); the browser scrolls the rest.
++  const panel = { width: width / totalColumns, height: height / totalRows };
++  const rowHeight = Math.max(style.minHeight, panel.height);
++  const context: PanelContext = {
++    style,
++    chartBackground: getResolvedBackgroundColorSelector(state),
++    contrastOptions: getTextContrastOptions(style),
++    totalRows,
++    totalColumns,
++    hasTitles: hasChartTitles(state),
++  };
++
++  // Like the `Metric` component: fit the value of each tile, then use the smallest size for all.
++  let fittedValueFontSize = Number.MAX_SAFE_INTEGER;
++  const tiles = data.map((columns) =>
++    columns.map((datum) => {
++      if (!datum) return undefined;
++      const textDimensions = getMetricTextPartDimensions(datum, panel, style, locale);
++      const totalWidth = panel.width - textDimensions.progressBarWidth - textDimensions.iconGridColumnWidth;
++      const valueFontSize = getFitValueFontSize(
++        textDimensions.heightBasedSizes.valueFontSize,
++        totalWidth,
++        textDimensions.visibility.availableHeightWithoutValue,
++        textDimensions.textParts,
++        style.minValueFontSize,
++        datum.valueIcon !== undefined,
++        style.valueFontSize === 'fit',
++        textDimensions.metricSpacing.panelPadding,
++        style.fontFamily,
++      );
++      fittedValueFontSize = Math.min(fittedValueFontSize, valueFontSize);
++      return { datum, textDimensions };
++    }),
++  );
++  const { valueFontSize, valuePartFontSize } =
++    typeof style.valueFontSize === 'number'
++      ? getFixedFontSizes(style.valueFontSize)
++      : style.valueFontSize === 'default'
++        ? getSnappedFontSizes(fittedValueFontSize, panel.height, style)
++        : getFittedFontSizes(fittedValueFontSize);
++
++  tiles.forEach((columns, rowIndex) => {
++    for (let columnIndex = 0; columnIndex < totalColumns; columnIndex++) {
++      const cell: Rect = {
++        x: columnIndex * panel.width,
++        y: rowIndex * rowHeight,
++        width: panel.width,
++        height: rowHeight,
++      };
++      const tile = columns[columnIndex];
++      if (!tile) {
++        drawEmptyPanel(ctx, cell, { rowIndex, columnIndex, isPadding: columnIndex < columns.length }, context);
++        continue;
++      }
++      const { datum, textDimensions } = tile;
++      const sizes = { ...textDimensions.heightBasedSizes, valueFontSize, valuePartFontSize };
++      drawMetricPanel(
++        ctx,
++        cell,
++        datum,
++        { ...textDimensions, heightBasedSizes: sizes },
++        { rowIndex, columnIndex },
++        context,
++      );
++    }
++  });
++};
+diff --git a/packages/charts/src/headless/render_partition.test.tsx b/packages/charts/src/headless/render_partition.test.tsx
+new file mode 100644
+index 000000000..665eca293
+--- /dev/null
++++ b/packages/charts/src/headless/render_partition.test.tsx
+@@ -0,0 +1,182 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, createGlyphFont, renderChart, SvgCanvas } from '.';
++import { PartitionLayout } from '../chart_types/partition_chart/layout/types/config_types';
++import { LegendValue } from '../common/legend';
++import { Partition, Settings } from '../specs';
++import type { SettingsProps } from '../specs';
++import type { Datum } from '../utils/common';
++import { Position } from '../utils/common';
++import type { PartialTheme } from '../utils/themes/theme';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++const COLORS = ['#16C5C0', '#61A2FF', '#EE72A6', '#F6726A'];
++
++const requests = [
++  { os: 'win', response: '200', count: 400 },
++  { os: 'win', response: '404', count: 100 },
++  { os: 'osx', response: '200', count: 300 },
++  { os: 'osx', response: '404', count: 50 },
++  { os: 'linux', response: '200', count: 150 },
++];
++
++const layer = (accessor: string) => ({
++  groupByRollup: (d: Datum) => d[accessor],
++  nodeLabel: (d: unknown) => String(d),
++  shape: {
++    fillColor: (key: unknown) => COLORS[['win', 'osx', 'linux', '200', '404'].indexOf(String(key)) % 4] ?? '#000',
++  },
++});
++
++// A test font with a 500 x 500 unit box for every character the charts below draw.
++const font = createGlyphFont({
++  family: 'Test',
++  faces: [
++    {
++      weight: 400,
++      unitsPerEm: 1000,
++      ascender: 800,
++      descender: -200,
++      glyphs: Object.fromEntries(
++        [...'abcdefghijklmnopqrstuvwxyz0123456789 '].map((char): [string, [number, string]] => [
++          char,
++          [600, char === ' ' ? '' : 'M50 0H550V500H50Z'],
++        ]),
++      ),
++    },
++  ],
++});
++
++const renderToSvg = (element: React.ReactElement, withFont = false) => {
++  const svg = new SvgCanvas(WIDTH, HEIGHT, withFont ? { font } : {});
++  renderChart({ specs: collectSpecs(element), width: WIDTH, height: HEIGHT, context: svg.context, Path2D: svg.Path2D });
++  return svg.toSvg();
++};
++
++const partitionChart = (
++  layout: PartitionLayout,
++  accessors: string[],
++  theme: PartialTheme = {},
++  showLegend = false,
++  legend: Partial<SettingsProps> = {},
++) =>
++  renderToSvg(
++    <>
++      <Settings showLegend={showLegend} legendPosition={Position.Right} theme={theme} {...legend} />
++      <Partition
++        id="requests"
++        data={requests}
++        layout={layout}
++        valueAccessor={(d: Datum) => d.count}
++        valueFormatter={(value: number) => `${value} req`}
++        layers={accessors.map(layer)}
++      />
++    </>,
++  );
++
++const textContents = (svg: string) => [...svg.matchAll(/<text[^>]*>([^<]*)<\/text>/g)].map(([, text]) => text);
++const filledPaths = (svg: string, color: string) => svg.match(new RegExp(`<path [^>]*fill="${color}"`, 'g')) ?? [];
++// Arc commands draw the sectors of pies and donuts; rectangles use only lines.
++const arcPaths = (svg: string) => svg.match(/<path d="[^"]*A[^"]*" fill="(?!none)/g) ?? [];
++const firstPoint = (svg: string) => /<path d="M([\d.]+) ([\d.]+)/.exec(svg)?.slice(1).map(Number) ?? [];
++// The legend is drawn untransformed, unlike the chart's labels.
++const legendX = (svg: string, label: string) =>
++  Number(new RegExp(`matrix\\(1 0 0 1 0 0\\)" x="([\\d.]+)"[^>]*>${label}<`).exec(svg)?.[1]);
++
++describe('Headless partition rendering', () => {
++  // Tests run in jsdom; failing on any element creation shows the headless path needs no DOM.
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it('draws a pie with one slice per category and value labels', () => {
++    const svg = partitionChart(PartitionLayout.sunburst, ['os']);
++
++    expect(arcPaths(svg)).toHaveLength(3);
++    expect(filledPaths(svg, COLORS[0]!)).toHaveLength(1);
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['win', '500 req', 'osx', '350 req', 'linux', '150 req']));
++  });
++
++  it('draws the labels as glyph outlines when the canvas has a font', () => {
++    const pie = (withFont: boolean) =>
++      renderToSvg(
++        <Partition
++          id="requests"
++          data={requests}
++          layout={PartitionLayout.sunburst}
++          valueAccessor={(d: Datum) => d.count}
++          valueFormatter={(value: number) => `${value} req`}
++          layers={[layer('os')]}
++        />,
++        withFont,
++      );
++
++    expect(textContents(pie(false))).toEqual(expect.arrayContaining(['win', '500 req']));
++    expect(textContents(pie(true))).toEqual([]);
++    // Each character is a 500 x 500 unit box, scaled to the label font size.
++    expect(pie(true)).toMatch(/<path [^>]*d="M(?: [\d.-]+){2} H [\d.-]+ V [\d.-]+ H [\d.-]+ Z/);
++  });
++
++  it('draws a donut with an empty center', () => {
++    const svg = partitionChart(PartitionLayout.sunburst, ['os'], { partition: { emptySizeRatio: 0.5 } });
++    const pie = partitionChart(PartitionLayout.sunburst, ['os']);
++    // A pie slice starts at the center, a donut sector at its inner radius.
++    const [cx = NaN, cy = NaN] = firstPoint(pie);
++    const [x = NaN, y = NaN] = firstPoint(svg);
++
++    expect(arcPaths(svg)).toHaveLength(3);
++    expect(Math.hypot(x - cx, y - cy)).toBeGreaterThan(20);
++  });
++
++  it('draws nested rings for two layers', () => {
++    const svg = partitionChart(PartitionLayout.sunburst, ['os', 'response']);
++
++    expect(arcPaths(svg)).toHaveLength(3 + 5);
++  });
++
++  it('draws treemap and mosaic rectangles with labels', () => {
++    const treemap = partitionChart(PartitionLayout.treemap, ['os']);
++    const mosaic = partitionChart(PartitionLayout.mosaic, ['os', 'response']);
++
++    expect(arcPaths(treemap)).toHaveLength(0);
++    expect(filledPaths(treemap, COLORS[0]!)).toHaveLength(1);
++    expect(textContents(treemap)).toEqual(expect.arrayContaining(['win', 'osx', 'linux']));
++    expect(textContents(mosaic)).toEqual(expect.arrayContaining(['win', 'osx', 'linux', '200', '404']));
++  });
++
++  it('draws waffle cells and a legend', () => {
++    const svg = partitionChart(PartitionLayout.waffle, ['os'], {}, true);
++
++    // 100 cells in all, at most one per percent.
++    expect(svg.match(/<path [^>]*fill="#/g)?.length).toBeGreaterThanOrEqual(100);
++    expect(filledPaths(svg, COLORS[0]!).length).toBeGreaterThan(40);
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['win', 'osx', 'linux']));
++  });
++
++  it('shows legend values after the labels', () => {
++    const svg = partitionChart(PartitionLayout.waffle, ['os'], {}, true, { legendValues: [LegendValue.Value] });
++
++    expect(textContents(svg)).toEqual(expect.arrayContaining(['win', '500 req', 'linux', '150 req']));
++  });
++
++  it('indents the nested items of a hierarchical legend', () => {
++    const nested = partitionChart(PartitionLayout.sunburst, ['os', 'response'], {}, true, { flatLegend: false });
++    const flat = partitionChart(PartitionLayout.sunburst, ['os', 'response'], {}, true, { flatLegend: true });
++
++    expect(legendX(nested, '404') - legendX(nested, 'win')).toBe(10);
++    expect(legendX(flat, '404') - legendX(flat, 'win')).toBe(0);
++  });
++});
+diff --git a/packages/charts/src/headless/render_partition.ts b/packages/charts/src/headless/render_partition.ts
+new file mode 100644
+index 000000000..c65a099da
+--- /dev/null
++++ b/packages/charts/src/headless/render_partition.ts
+@@ -0,0 +1,53 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { headlessPainter } from './painter';
++import type { HeadlessRenderer } from './types';
++import { isSimpleLinear, isWaffle } from '../chart_types/partition_chart/layout/viewmodel/viewmodel';
++import { renderLinearPartition } from '../chart_types/partition_chart/renderer/linear_renderers';
++import type { AnimationState } from '../chart_types/partition_chart/renderer/partition';
++import { renderPartition } from '../chart_types/partition_chart/renderer/renderers';
++import { renderWrappedPartition } from '../chart_types/partition_chart/renderer/wrapped_renderers';
++import {
++  partitionDrilldownFocus,
++  partitionMultiGeometries,
++} from '../chart_types/partition_chart/state/selectors/geometries';
++import { getChartContainerDimensionsSelector } from '../state/selectors/get_chart_container_dimensions';
++import { getChartThemeSelector } from '../state/selectors/get_chart_theme';
++import { getSettingsSpecSelector } from '../state/selectors/get_settings_spec';
++
++/**
++ * Draws pie, donut, sunburst, treemap, mosaic, waffle, icicle and flame charts with the canvas
++ * renderers the `Partition` component uses. Nothing is highlighted and animations are off.
++ * @internal
++ */
++export const renderPartitionChart: HeadlessRenderer = (ctx, state) => {
++  const multiGeometries = partitionMultiGeometries(state);
++  const foci = partitionDrilldownFocus(state);
++  const { left, top } = getChartContainerDimensionsSelector(state);
++  const { legendStrategy, flatLegend } = getSettingsSpecSelector(state);
++  const { partition: partitionStyle } = getChartThemeSelector(state);
++  const painter = headlessPainter(ctx);
++  const animationState: AnimationState = { rafId: NaN };
++
++  ctx.save();
++  // In the DOM the canvas sits inside the chart container, which a left or top legend pushes aside.
++  ctx.translate(left, top);
++  multiGeometries.forEach((geometries, index) => {
++    const focus = foci[index];
++    if (!focus) return;
++    if (isSimpleLinear(geometries.layout, geometries.style.fillLabel, geometries.layers)) {
++      renderLinearPartition(painter, geometries, focus, [], legendStrategy, flatLegend, partitionStyle, animationState);
++    } else if (isWaffle(geometries.layout)) {
++      renderWrappedPartition(painter, geometries, [], legendStrategy, flatLegend, partitionStyle);
++    } else {
++      renderPartition(painter, geometries, [], legendStrategy, flatLegend, partitionStyle);
++    }
++  });
++  ctx.restore();
++};
+diff --git a/packages/charts/src/headless/render_wordcloud.test.tsx b/packages/charts/src/headless/render_wordcloud.test.tsx
+new file mode 100644
+index 000000000..a459a377a
+--- /dev/null
++++ b/packages/charts/src/headless/render_wordcloud.test.tsx
+@@ -0,0 +1,236 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import React from 'react';
++
++import { collectSpecs, createGlyphFont, renderChart, SvgCanvas } from '.';
++import { OutlineSpriteCanvas } from './render_wordcloud';
++import type { WeightFn, WordModel } from '../chart_types/wordcloud/specs';
++import { Wordcloud } from '../chart_types/wordcloud/specs';
++
++const WIDTH = 600;
++const HEIGHT = 300;
++
++const words: WordModel[] = [
++  { text: 'php', weight: 1, color: '#16c5c0' },
++  { text: 'gz', weight: 0.8, color: '#a6edea' },
++  { text: 'css', weight: 0.4, color: '#61a2ff' },
++  { text: 'deb', weight: 0, color: '#bfdbff' },
++];
++
++// A test font: an L-shaped "L" and a 500 x 500 unit box for every other character used here.
++const font = createGlyphFont({
++  family: 'Test',
++  faces: [
++    {
++      weight: 400,
++      unitsPerEm: 1000,
++      ascender: 800,
++      descender: -200,
++      glyphs: {
++        L: [600, 'M0 0H600V200H200V700H0Z'],
++        ...Object.fromEntries(
++          [...'abcdeghijklmnopqrstuvwxyz0123456789'].map((char): [string, [number, string]] => [
++            char,
++            [600, 'M50 0H550V500H50Z'],
++          ]),
++        ),
++      },
++    },
++  ],
++});
++
++const renderToSvg = (element: React.ReactElement, width = WIDTH, height = HEIGHT, withFont = false) => {
++  const svg = new SvgCanvas(width, height, withFont ? { font } : {});
++  renderChart({ specs: collectSpecs(element), width, height, context: svg.context, Path2D: svg.Path2D });
++  return svg.toSvg();
++};
++
++interface DrawnWord {
++  text: string;
++  size: number;
++  color: string;
++  transform: number[];
++}
++
++interface DrawnOutline {
++  color: string;
++  box: { left: number; right: number; top: number; bottom: number };
++}
++
++// Words drawn as outlines, with the bounding box of their outline on the chart.
++const drawnOutlines = (svg: string): DrawnOutline[] =>
++  [...svg.matchAll(/<path transform="matrix\(([^)]*)\)" d="([^"]*)" fill="([^"]+)"/g)].map(
++    ([, matrix = '', d = '', color = '']) => {
++      const [a = 1, b = 0, c = 0, dd = 1, e = 0, f = 0] = matrix.split(' ').map(Number);
++      // The test font outlines only use M, H, V and Z.
++      let current = [0, 0];
++      const points = [...d.matchAll(/([HMV])([^HMVZ]*)/g)].map(([, command, values = '']) => {
++        const [first = 0, second = 0] = values.trim().split(' ').map(Number);
++        current =
++          command === 'M' ? [first, second] : command === 'H' ? [first, current[1] ?? 0] : [current[0] ?? 0, first];
++        return current;
++      });
++      const xs = points.map(([x = 0, y = 0]) => a * x + c * y + e);
++      const ys = points.map(([x = 0, y = 0]) => b * x + dd * y + f);
++      return {
++        color,
++        box: { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys) },
++      };
++    },
++  );
++
++const drawnWords = (svg: string): DrawnWord[] =>
++  [
++    ...svg.matchAll(/<text transform="matrix\(([^)]*)\)"[^>]*font-size="([\d.]+)"[^>]*fill="([^"]+)"[^>]*>([^<]*)</g),
++  ].map(([, matrix = '', size, color = '', text = '']) => ({
++    text,
++    size: Number(size),
++    color,
++    transform: matrix.split(' ').map(Number),
++  }));
++
++// The rotation of a word's transform matrix, in degrees.
++const toDegrees = ([a = 1, b = 0]: number[]) => Math.round((Math.atan2(b, a) * 180) / Math.PI);
++
++const cloud = (props: Partial<React.ComponentProps<typeof Wordcloud>> = {}) => (
++  <Wordcloud
++    id="cloud"
++    startAngle={0}
++    endAngle={0}
++    angleCount={360}
++    padding={5}
++    fontWeight={400}
++    fontFamily="Inter, sans-serif"
++    fontStyle="normal"
++    minFontSize={18}
++    maxFontSize={72}
++    spiral="archimedean"
++    weightFn="linear"
++    data={words}
++    {...props}
++  />
++);
++
++describe('Headless Wordcloud rendering', () => {
++  beforeEach(() => {
++    jest.spyOn(document, 'createElement').mockImplementation((tagName: string) => {
++      throw new Error(`Headless rendering created a <${tagName}> element`);
++    });
++  });
++
++  afterEach(() => jest.restoreAllMocks());
++
++  it('draws every word that fits with its color, centered on the chart', () => {
++    const drawn = drawnWords(renderToSvg(cloud()));
++
++    expect(drawn.map(({ text }) => text).sort()).toEqual(words.map(({ text }) => text).sort());
++    expect(drawn.find(({ text }) => text === 'php')).toMatchObject({ size: 72, color: '#16c5c0' });
++    // The biggest word is placed first, at the center of the chart.
++    const [, , , , x, y] = drawn.find(({ text }) => text === 'php')?.transform ?? [];
++    expect(x).toBe(WIDTH / 2);
++    expect(y).toBe(HEIGHT / 2);
++  });
++
++  it('places the words without overlapping their bodies', () => {
++    const drawn = drawnWords(renderToSvg(cloud()));
++    // The x-height band of each horizontal word; real glyph shapes may only interleave outside it.
++    const boxes = drawn.map(({ text, size, transform: [, , , , x = 0, y = 0] }) => {
++      const width = text.length * size * 0.45;
++      return { left: x - width / 2, right: x + width / 2, top: y - 0.5 * size, bottom: y };
++    });
++    boxes.forEach((a, i) =>
++      boxes.slice(i + 1).forEach((b) => {
++        const overlaps = a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
++        expect(overlaps).toBe(false);
++      }),
++    );
++  });
++
++  it('lays out the same words the same way every time', () => {
++    expect(renderToSvg(cloud())).toBe(renderToSvg(cloud()));
++  });
++
++  it.each<[string, number, number, number]>([
++    ['single', 0, 360, 1],
++    ['right angled', 90, 2, 2],
++    ['multiple', -90, 12, 3],
++  ])('rotates words for the %s orientation', (_name, endAngle, angleCount, minDistinctAngles) => {
++    const many = Array.from({ length: 12 }, (_, i) => ({ text: `word${i}`, weight: i / 11, color: '#000' }));
++    const drawn = drawnWords(renderToSvg(cloud({ endAngle, angleCount, data: many, maxFontSize: 30 })));
++    const angles = new Set(drawn.map(({ transform }) => toDegrees(transform)));
++    // Like the Wordcloud renderer, angles are spread evenly from startAngle (0) to endAngle.
++    const allowedAngles =
++      angleCount > 1
++        ? Array.from({ length: angleCount }, (_, i) => Math.round((i * endAngle) / (angleCount - 1)))
++        : [0];
++
++    expect(drawn.length).toBeGreaterThan(0);
++    expect([...angles].filter((angle) => !allowedAngles.includes(angle))).toEqual([]);
++    expect(angles.size).toBeGreaterThanOrEqual(minDistinctAngles);
++  });
++
++  it.each<[WeightFn, number]>([
++    ['linear', 18 + 54 * 0.4],
++    ['squareRoot', 18 + 54 * Math.sqrt(0.4)],
++    ['log', 18 + 54 * Math.log2(1.4)],
++    ['exponential', 18 + 54 * 0.4 ** 3],
++  ])('sizes words with the %s weight function', (weightFn, expectedSize) => {
++    const drawn = drawnWords(renderToSvg(cloud({ weightFn })));
++
++    expect(drawn.find(({ text }) => text === 'css')?.size).toBe(Math.trunc(expectedSize));
++  });
++
++  it('draws words as the canvas font outlines and keeps the outlines apart', () => {
++    const svg = renderToSvg(cloud(), WIDTH, HEIGHT, true);
++    const drawn = drawnOutlines(svg);
++
++    expect(svg).not.toContain('<text');
++    expect(drawn.map(({ color }) => color).sort()).toEqual(words.map(({ color }) => color).sort());
++    drawn.forEach(({ box: a }, i) =>
++      drawn.slice(i + 1).forEach(({ box: b }) => {
++        const overlaps = a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
++        expect(overlaps).toBe(false);
++      }),
++    );
++    expect(renderToSvg(cloud(), WIDTH, HEIGHT, true)).toBe(svg);
++  });
++
++  it('rasterizes sprites from the glyph outlines, grown by half the line width when stroked', () => {
++    const sprite = new OutlineSpriteCanvas(font.measure, (text, cssFont, x, y) => font.toPath(text, cssFont, x, y));
++    sprite.width = 100;
++    sprite.height = 100;
++    sprite.font = '100px Test';
++    const filled = (x: number, y: number) => sprite.getImageData(x, y, 1, 1).data[0] === 255;
++    // The "L" at 10, 90: a bar from x 10 to 30 and y 20 to 90, and a foot from x 30 to 70 and y 70 to 90.
++    sprite.fillText('L', 10, 90);
++
++    expect(filled(15, 50)).toBe(true);
++    expect(filled(50, 80)).toBe(true);
++    expect(filled(30, 50)).toBe(false);
++    expect(filled(50, 50)).toBe(false);
++
++    sprite.lineWidth = 10;
++    sprite.strokeText('L', 10, 90);
++
++    expect(filled(34, 50)).toBe(true);
++    expect(filled(35, 50)).toBe(false);
++    expect(filled(50, 66)).toBe(true);
++    expect(filled(50, 50)).toBe(false);
++  });
++
++  it('reports the words that did not fit', () => {
++    const outOfRoomCallback = jest.fn<void, [number, number, string[]]>();
++    renderToSvg(cloud({ outOfRoomCallback }), 200, 60);
++
++    expect(outOfRoomCallback).toHaveBeenCalledWith(words.length, expect.any(Number), expect.any(Array));
++    const [, renderedCount = 0, renderedWords] = outOfRoomCallback.mock.calls[0] ?? [];
++    expect(renderedCount).toBeLessThan(words.length);
++    expect(renderedWords).toHaveLength(renderedCount);
++  });
++});
+diff --git a/packages/charts/src/headless/render_wordcloud.ts b/packages/charts/src/headless/render_wordcloud.ts
+new file mode 100644
+index 000000000..6272b40b9
+--- /dev/null
++++ b/packages/charts/src/headless/render_wordcloud.ts
+@@ -0,0 +1,427 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { parseFont } from './svg_canvas';
++import type { TextOutlineContext } from './svg_canvas';
++import type { HeadlessRenderer } from './types';
++import type { Word } from '../chart_types/wordcloud/layout/types/viewmodel_types';
++import { layoutMaker } from '../chart_types/wordcloud/renderer/svg/connected_component';
++import { geometries } from '../chart_types/wordcloud/state/selectors/geometries';
++
++type Matrix = [a: number, b: number, c: number, d: number, e: number, f: number];
++type Point = [x: number, y: number];
++type Edge = [x0: number, y0: number, x1: number, y1: number];
++type Span = [left: number, right: number];
++// The spans of a shape in each pixel row, from row `top` down.
++type ShapeRows = { top: number; rows: Span[][] };
++type TextMeasure = (text: string, font: string) => number;
++type TextOutline = (text: string, font: string, x: number, baselineY: number) => string | undefined;
++
++interface SpriteState {
++  transform: Matrix;
++  font: string;
++  lineWidth: number;
++  textAlign: string;
++}
++
++const DEGREES = Math.PI / 180;
++const IDENTITY: Matrix = [1, 0, 0, 1, 0, 0];
++// Text without an outline is filled as its box, from this far above to this far below the baseline (em).
++const FALLBACK_ASCENT = 0.77;
++const FALLBACK_DESCENT = 0.21;
++// Scanlines sampled per pixel row, so thin horizontal strokes still mark the rows they cross.
++const SAMPLES_PER_ROW = 4;
++const PATH_TOKEN = /[A-Za-z]|-?\d*\.?\d+(?:e[+-]?\d+)?/g;
++
++const distance = ([x0, y0]: Point, [x1, y1]: Point) => Math.hypot(x1 - x0, y1 - y0);
++
++// Points along a quadratic or cubic Bézier from `from`, excluding `from`, in segments of about 2px.
++const flattenCurve = (from: Point, controls: Point[]): Point[] => {
++  const points = [from, ...controls];
++  const length = points.slice(1).reduce((sum, point, index) => sum + distance(points[index] ?? point, point), 0);
++  const segments = Math.min(32, Math.max(1, Math.ceil(length / 2)));
++  // Bernstein weights of a quadratic (3 points) or cubic (4 points) curve at t.
++  const weights = (t: number) =>
++    points.length === 3
++      ? [(1 - t) ** 2, 2 * (1 - t) * t, t ** 2]
++      : [(1 - t) ** 3, 3 * (1 - t) ** 2 * t, 3 * (1 - t) * t ** 2, t ** 3];
++  return Array.from({ length: segments }, (_, index) =>
++    weights((index + 1) / segments).reduce<Point>(
++      ([x, y], weight, i) => {
++        const [px, py] = points[i] ?? from;
++        return [x + weight * px, y + weight * py];
++      },
++      [0, 0],
++    ),
++  );
++};
++
++/** Turns absolute SVG path data (M, L, H, V, Q, C, Z) into closed polygons. */
++const pathToPolygons = (path: string): Point[][] => {
++  const polygons: Point[][] = [];
++  let polygon: Point[] = [];
++  let current: Point = [0, 0];
++  let command = '';
++  let args: number[] = [];
++  const argumentCounts: Record<string, number> = { M: 2, L: 2, H: 1, V: 1, Q: 4, C: 6 };
++  const closePolygon = () => {
++    if (polygon.length > 2) polygons.push(polygon);
++    polygon = [];
++  };
++  for (const token of path.match(PATH_TOKEN) ?? []) {
++    if (/[A-Za-z]/.test(token)) {
++      command = token.toUpperCase();
++      args = [];
++      if (command === 'Z') closePolygon();
++      continue;
++    }
++    args.push(Number(token));
++    if (args.length < (argumentCounts[command] ?? Infinity)) continue;
++    const [a = 0, b = 0, c = 0, d = 0, e = 0, f = 0] = args;
++    args = [];
++    if (command === 'M') {
++      closePolygon();
++      current = [a, b];
++      polygon = [current];
++      // Further coordinate pairs after a move are lines.
++      command = 'L';
++    } else if (command === 'L' || command === 'H' || command === 'V') {
++      current = command === 'L' ? [a, b] : command === 'H' ? [a, current[1]] : [current[0], a];
++      polygon.push(current);
++    } else {
++      const controls: Point[] =
++        command === 'Q'
++          ? [
++              [a, b],
++              [c, d],
++            ]
++          : [
++              [a, b],
++              [c, d],
++              [e, f],
++            ];
++      polygon.push(...flattenCurve(current, controls));
++      current = controls.at(-1) ?? current;
++    }
++  }
++  closePolygon();
++  return polygons;
++};
++
++// The parts of a scanline inside the polygons, by the nonzero winding rule, from the x and direction
++// of every edge crossing it.
++const windingSpans = (crossings: Array<[x: number, direction: number]>): Span[] => {
++  const spans: Span[] = [];
++  let winding = 0;
++  let left = 0;
++  [...crossings]
++    .sort(([a], [b]) => a - b)
++    .forEach(([x, direction]) => {
++      if (winding === 0) left = x;
++      winding += direction;
++      if (winding === 0) spans.push([left, x]);
++    });
++  return spans;
++};
++
++// The union of the spans, as sorted spans that do not overlap.
++const mergeSpans = (spans: Span[]): Span[] =>
++  [...spans]
++    .sort(([a], [b]) => a - b)
++    .reduce<Span[]>((merged, [left, right]) => {
++      const last = merged.at(-1);
++      if (last && left <= last[1]) {
++        last[1] = Math.max(last[1], right);
++      } else {
++        merged.push([left, right]);
++      }
++      return merged;
++    }, []);
++
++/**
++ * The part of a canvas that d3-cloud uses to rasterize word sprites, for Node, which has no canvas.
++ * Text is filled with the glyph outlines of the chart canvas font when it has them (see
++ * {@link TextOutlineContext}), like the browser fills it, else as its box. Stroked text is filled
++ * grown by half the line width. Every pixel the shape touches is marked, like antialiased edges.
++ * @internal
++ */
++export class OutlineSpriteCanvas {
++  private canvasWidth = 1;
++  private canvasHeight = 1;
++  private pixels = new Uint8ClampedArray(4);
++  private state: SpriteState = { transform: IDENTITY, font: '10px sans-serif', lineWidth: 1, textAlign: 'start' };
++  private readonly stack: SpriteState[] = [];
++  private lastShape?: ShapeRows & { key: string };
++
++  // Assigned by d3-cloud; sprites are monochrome, so the color does not matter.
++  fillStyle = '';
++  strokeStyle = '';
++
++  constructor(
++    private readonly measure: TextMeasure,
++    private readonly outline: TextOutline,
++  ) {}
++
++  get width() {
++    return this.canvasWidth;
++  }
++
++  set width(value: number) {
++    this.canvasWidth = Math.max(1, Math.floor(value));
++    this.resize();
++  }
++
++  get height() {
++    return this.canvasHeight;
++  }
++
++  set height(value: number) {
++    this.canvasHeight = Math.max(1, Math.floor(value));
++    this.resize();
++  }
++
++  get font() {
++    return this.state.font;
++  }
++
++  set font(value: string) {
++    this.state.font = value;
++  }
++
++  get lineWidth() {
++    return this.state.lineWidth;
++  }
++
++  set lineWidth(value: number) {
++    this.state.lineWidth = value;
++  }
++
++  get textAlign() {
++    return this.state.textAlign;
++  }
++
++  set textAlign(value: string) {
++    this.state.textAlign = value;
++  }
++
++  getContext() {
++    return this;
++  }
++
++  save() {
++    this.stack.push({ ...this.state });
++  }
++
++  restore() {
++    this.state = this.stack.pop() ?? this.state;
++  }
++
++  translate(x: number, y: number) {
++    this.transform([1, 0, 0, 1, x, y]);
++  }
++
++  rotate(angle: number) {
++    const cos = Math.cos(angle);
++    const sin = Math.sin(angle);
++    this.transform([cos, sin, -sin, cos, 0, 0]);
++  }
++
++  clearRect() {
++    // d3-cloud always clears the whole canvas.
++    this.pixels.fill(0);
++  }
++
++  measureText(text: string) {
++    return { width: this.measure(text, this.state.font) };
++  }
++
++  fillText(text: string, x: number, y: number) {
++    this.fillOutline(text, x, y, 0);
++  }
++
++  strokeText(text: string, x: number, y: number) {
++    this.fillOutline(text, x, y, this.state.lineWidth / 2);
++  }
++
++  getImageData(sx: number, sy: number, sw: number, sh: number) {
++    const data = new Uint8ClampedArray(sw * sh * 4);
++    for (let row = 0; row < sh; row++) {
++      const start = ((sy + row) * this.canvasWidth + sx) * 4;
++      data.set(this.pixels.subarray(start, start + sw * 4), row * sw * 4);
++    }
++    return { data };
++  }
++
++  private resize() {
++    this.pixels = new Uint8ClampedArray(this.canvasWidth * this.canvasHeight * 4);
++  }
++
++  private transform([a2, b2, c2, d2, e2, f2]: Matrix) {
++    const [a, b, c, d, e, f] = this.state.transform;
++    this.state.transform = [
++      a * a2 + c * b2,
++      b * a2 + d * b2,
++      a * c2 + c * d2,
++      b * c2 + d * d2,
++      a * e2 + c * f2 + e,
++      b * e2 + d * f2 + f,
++    ];
++  }
++
++  private toDevice([x, y]: Point): Point {
++    const [a, b, c, d, e, f] = this.state.transform;
++    return [a * x + c * y + e, b * x + d * y + f];
++  }
++
++  // The text's outline polygons in user space, aligned like canvas text on the baseline `y`.
++  private textPolygons(text: string, x: number, y: number): Point[][] {
++    const { font, textAlign } = this.state;
++    const width = this.measure(text, font);
++    const left = textAlign === 'center' ? x - width / 2 : textAlign === 'right' || textAlign === 'end' ? x - width : x;
++    const path = this.outline(text, font, left, y);
++    if (path !== undefined) return pathToPolygons(path);
++    const { size } = parseFont(font);
++    const top = y - FALLBACK_ASCENT * size;
++    const bottom = y + FALLBACK_DESCENT * size;
++    return [
++      [
++        [left, top],
++        [left + width, top],
++        [left + width, bottom],
++        [left, bottom],
++      ],
++    ];
++  }
++
++  // The parts of each pixel row the text's outline touches, from row `top` down. d3-cloud fills and
++  // then strokes each word at the same place, so the last shape is kept.
++  private textShape(text: string, x: number, y: number): ShapeRows {
++    const key = JSON.stringify([text, x, y, this.state.font, this.state.textAlign, this.state.transform]);
++    if (this.lastShape?.key === key) return this.lastShape;
++    const edges = this.textPolygons(text, x, y).flatMap((polygon) => {
++      const points = polygon.map((point) => this.toDevice(point));
++      return points.map((from, index): Edge => {
++        const to = points[(index + 1) % points.length] ?? from;
++        return [from[0], from[1], to[0], to[1]];
++      });
++    });
++    const ys = edges.flatMap(([, y0, , y1]) => [y0, y1]);
++    const top = ys.length > 0 ? Math.floor(Math.min(...ys)) : 0;
++    const rowCount = ys.length > 0 ? Math.ceil(Math.max(...ys)) - top : 0;
++    // Where each edge crosses the scanline samples it spans (sample `i` is at y `top + (i + 0.5) / S`).
++    const crossings = Array.from({ length: rowCount * SAMPLES_PER_ROW }, (): Array<[number, number]> => []);
++    edges.forEach(([x0, y0, x1, y1]) => {
++      if (y0 === y1) return;
++      const first = Math.max(0, Math.ceil((Math.min(y0, y1) - top) * SAMPLES_PER_ROW - 0.5));
++      const end = Math.min(crossings.length, Math.ceil((Math.max(y0, y1) - top) * SAMPLES_PER_ROW - 0.5));
++      for (let index = first; index < end; index++) {
++        const sampleY = top + (index + 0.5) / SAMPLES_PER_ROW;
++        crossings[index]?.push([x0 + ((sampleY - y0) * (x1 - x0)) / (y1 - y0), y1 > y0 ? 1 : -1]);
++      }
++    });
++    const rows = Array.from({ length: rowCount }, (_, row) =>
++      mergeSpans(crossings.slice(row * SAMPLES_PER_ROW, (row + 1) * SAMPLES_PER_ROW).flatMap(windingSpans)),
++    );
++    this.lastShape = { key, top, rows };
++    return this.lastShape;
++  }
++
++  // Marks every pixel within `grow` of the text's outline.
++  private fillOutline(text: string, x: number, y: number, grow: number) {
++    const { top, rows } = this.textShape(text, x, y);
++    const spans = rows.flat();
++    if (spans.length === 0) return;
++    const reach = Math.ceil(grow);
++    const minColumn = Math.max(0, Math.floor(Math.min(...spans.map(([left]) => left)) - reach));
++    const maxColumn = Math.min(this.canvasWidth, Math.ceil(Math.max(...spans.map(([, right]) => right)) + reach));
++    // Per row, +1 where a grown span starts and -1 where it ends, relative to `minColumn`.
++    const coverage = new Int32Array(maxColumn - minColumn + 1);
++    const firstRow = Math.max(0, top - reach);
++    const lastRow = Math.min(this.canvasHeight - 1, top + rows.length - 1 + reach);
++    for (let row = firstRow; row <= lastRow; row++) {
++      coverage.fill(0);
++      // The row is marked where the disc of radius `grow` around the shape's pixels reaches it.
++      for (let offset = -reach; offset <= reach; offset++) {
++        const dy = Math.max(0, Math.abs(offset) - 1);
++        if (offset !== 0 && dy >= grow) continue;
++        const dx = Math.sqrt(grow * grow - dy * dy);
++        rows[row + offset - top]?.forEach(([left, right]) => {
++          const start = Math.max(0, Math.floor(left - dx) - minColumn);
++          const end = Math.min(coverage.length - 1, Math.ceil(right + dx) - minColumn);
++          if (end <= start) return;
++          coverage[start] = (coverage[start] ?? 0) + 1;
++          coverage[end] = (coverage[end] ?? 0) - 1;
++        });
++      }
++      let depth = 0;
++      let runStart = 0;
++      coverage.forEach((change, column) => {
++        if (depth === 0 && change > 0) runStart = column;
++        depth += change;
++        if (depth === 0 && change < 0) this.fillRowSpan(row, minColumn + runStart, minColumn + column);
++      });
++    }
++  }
++
++  private fillRowSpan(row: number, left: number, right: number) {
++    const firstColumn = Math.max(0, Math.floor(left));
++    const lastColumn = Math.min(this.canvasWidth - 1, Math.ceil(right) - 1);
++    if (lastColumn < firstColumn) return;
++    const rowStart = row * this.canvasWidth;
++    this.pixels.fill(255, (rowStart + firstColumn) * 4, (rowStart + lastColumn + 1) * 4);
++  }
++}
++
++/**
++ * Lays out the words with d3-cloud like the Wordcloud SVG renderer (`layoutMaker`), rasterizing
++ * their sprites from the canvas font's glyph outlines, and draws them as text.
++ * @internal
++ */
++export const renderWordcloudChart: HeadlessRenderer = (ctx, state) => {
++  const { wordcloudViewModel } = geometries(state);
++  const { width, height } = state.parentDimensions;
++  if (width === 0 || height === 0) return;
++
++  const measure: TextMeasure = (text, font) => {
++    ctx.save();
++    ctx.font = font;
++    const textWidth = ctx.measureText(text).width;
++    ctx.restore();
++    return textWidth;
++  };
++  const outline: TextOutline = (text, font, x, baselineY) =>
++    (ctx as Partial<TextOutlineContext>).textOutline?.(text, font, x, baselineY);
++
++  let words: Word[] = [];
++  // d3-cloud places every word synchronously, since its time interval is unlimited.
++  layoutMaker(wordcloudViewModel, { width, height })
++    .canvas(() => new OutlineSpriteCanvas(measure, outline) as unknown as HTMLCanvasElement)
++    .on('end', (placed) => (words = placed))
++    .start();
++
++  const { data, outOfRoomCallback } = wordcloudViewModel;
++  if (data.length !== words.length && typeof outOfRoomCallback === 'function') {
++    outOfRoomCallback(
++      data.length,
++      words.length,
++      words.map(({ text }) => text),
++    );
++  }
++
++  words.forEach(({ text, x = 0, y = 0, rotate = 0, style, fontWeight, size, fontFamily, color }) => {
++    ctx.save();
++    ctx.translate(width / 2 + x, height / 2 + y);
++    ctx.rotate(rotate * DEGREES);
++    ctx.font = `${style} ${fontWeight} ${size}px ${fontFamily}`;
++    ctx.fillStyle = color;
++    ctx.textAlign = 'center';
++    ctx.textBaseline = 'alphabetic';
++    ctx.fillText(text, 0, 0);
++    ctx.restore();
++  });
++};
+diff --git a/packages/charts/src/headless/render_xy.ts b/packages/charts/src/headless/render_xy.ts
+new file mode 100644
+index 000000000..a23e49406
+--- /dev/null
++++ b/packages/charts/src/headless/render_xy.ts
+@@ -0,0 +1,93 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import { headlessPainter } from './painter';
++import type { HeadlessRenderer } from './types';
++import type { AnnotationLineProps } from '../chart_types/xy_chart/annotations/line/types';
++import type { AnnotationMarker } from '../chart_types/xy_chart/annotations/types';
++import type { AnimationContext } from '../chart_types/xy_chart/renderer/animations';
++import type { AnimatedValue } from '../chart_types/xy_chart/renderer/animations/animation';
++import { drawXYChart } from '../chart_types/xy_chart/renderer/renderers';
++import type { ReactiveChartStateProps } from '../chart_types/xy_chart/renderer/xy_chart';
++import { getXYChartRendererProps } from '../chart_types/xy_chart/renderer/xy_chart';
++import { DEFAULT_FONT_FAMILY } from '../common/default_theme_attributes';
++import { withContext } from '../renderers/canvas';
++import { Position } from '../utils/common';
++
++// Animations are off: every animated value is drawn at its final value.
++const finalValue = (_key: string, value: AnimatedValue) => value;
++const staticAnimationContext: AnimationContext = { getValue: () => finalValue };
++
++const MARKER_FONT_SIZE = 12;
++const MARKER_FONT = `${MARKER_FONT_SIZE}px ${DEFAULT_FONT_FAMILY}`;
++const MARKER_GAP = 4;
++
++const isTextNode = (node: unknown): node is string | number => typeof node === 'string' || typeof node === 'number';
++
++const isLineAnnotation = (dimension: object): dimension is AnnotationLineProps => 'markers' in dimension;
++
++// The DOM marker is centered on its anchor along the line and placed outside the plot edge
++// (`MARKER_TRANSFORMS` in `line_marker.tsx`); its body follows on the same side.
++const TEXT_PLACEMENT: Record<
++  Position,
++  { align: CanvasTextAlign; baseline: CanvasTextBaseline; dx: number; dy: number }
++> = {
++  [Position.Right]: { align: 'left', baseline: 'middle', dx: 1, dy: 0 },
++  [Position.Left]: { align: 'right', baseline: 'middle', dx: -1, dy: 0 },
++  [Position.Top]: { align: 'center', baseline: 'bottom', dx: 0, dy: -1 },
++  [Position.Bottom]: { align: 'center', baseline: 'top', dx: 0, dy: 1 },
++};
++
++/**
++ * Draws the line annotation markers whose icon and body are plain text, which the DOM renders as
++ * text nodes; other React markers cannot be drawn without a DOM and are skipped. Text beside a
++ * vertical plot edge reads upwards, so it fits the narrow space next to the axis.
++ */
++const renderTextMarkers = (
++  ctx: CanvasRenderingContext2D,
++  { annotationDimensions, renderingArea }: ReactiveChartStateProps,
++) =>
++  annotationDimensions.forEach((dimensions) =>
++    dimensions.filter(isLineAnnotation).forEach(({ markers, panel }) =>
++      markers.forEach(({ icon, body, color, position, alignment }: AnnotationMarker) => {
++        const text = [icon, body].filter(isTextNode).join(' ');
++        if (!text) return;
++        const { align, baseline, dx, dy } = TEXT_PLACEMENT[alignment];
++        const x = renderingArea.left + panel.left + position.left + dx * MARKER_GAP;
++        const y = renderingArea.top + panel.top + position.top + dy * MARKER_GAP;
++        withContext(ctx, () => {
++          ctx.font = MARKER_FONT;
++          ctx.fillStyle = color;
++          if (dx !== 0) {
++            ctx.translate(x + (dx * MARKER_FONT_SIZE) / 2, y);
++            ctx.rotate(-Math.PI / 2);
++            ctx.textAlign = 'center';
++            ctx.textBaseline = 'middle';
++            ctx.fillText(text, 0, 0);
++            return;
++          }
++          ctx.textAlign = align;
++          ctx.textBaseline = baseline;
++          ctx.fillText(text, x, y);
++        });
++      }),
++    ),
++  );
++
++/** @internal */
++export const renderXYChart: HeadlessRenderer = (ctx, state) => {
++  const props = getXYChartRendererProps(state);
++  if (props.isChartEmpty) return;
++  const { left, top } = props.chartContainerDimensions;
++  ctx.save();
++  // In the DOM the canvas sits inside the chart container, which a left or top legend pushes aside.
++  ctx.translate(left, top);
++  drawXYChart(headlessPainter(ctx), props, staticAnimationContext);
++  renderTextMarkers(ctx, props);
++  ctx.restore();
++};
+diff --git a/packages/charts/src/headless/svg_canvas.ts b/packages/charts/src/headless/svg_canvas.ts
+new file mode 100644
+index 000000000..265be9c4d
+--- /dev/null
++++ b/packages/charts/src/headless/svg_canvas.ts
+@@ -0,0 +1,733 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++/**
++ * Measures the width of `text` drawn with a CSS `font` shorthand, in pixels.
++ * @public
++ */
++export type SvgTextWidthMeasure = (text: string, font: string) => number;
++
++/**
++ * Options for {@link SvgCanvas}.
++ * @public
++ */
++export interface SvgCanvasOptions {
++  /**
++   * Measures text for the chart layout. Defaults to the `font` metrics when given, else Helvetica
++   * metrics, which match what most SVG rasterizers fall back to.
++   */
++  measureTextWidth?: SvgTextWidthMeasure;
++  /**
++   * Measures text and draws it as outlines, so the image looks the same whatever fonts the SVG
++   * rasterizer has, e.g. {@link createGlyphFont}. Without it, text is drawn as SVG `<text>`.
++   */
++  font?: SvgFont;
++}
++
++/**
++ * A font that measures text and turns it into SVG path data.
++ * @public
++ */
++export interface SvgFont {
++  family: string;
++  /** Width of `text` drawn with a CSS `font` shorthand, in pixels. */
++  measure: SvgTextWidthMeasure;
++  /**
++   * Outline of `text` as SVG path data in pixels, starting at `x` on the alphabetic baseline
++   * `baselineY`, or undefined when the font cannot draw it.
++   */
++  toPath(text: string, font: string, x: number, baselineY: number): string | undefined;
++}
++
++/**
++ * A context that can give the outline of text in its font, like `SvgCanvas.context` with a `font`.
++ * Renderers use it to lay out text by its real glyph shapes (e.g. the Wordcloud).
++ * @internal
++ */
++export interface TextOutlineContext {
++  /**
++   * Outline of `text` as SVG path data, starting at `x` on the alphabetic baseline `baselineY`, in
++   * the current user space, or undefined when the canvas has no outline font that can draw it.
++   */
++  textOutline(text: string, font: string, x: number, baselineY: number): string | undefined;
++}
++
++/**
++ * Options for {@link SvgCanvas.toSvg}.
++ * @public
++ */
++export interface SvgOutputOptions {
++  /** Fills the whole image behind the chart, e.g. `'#fff'`. Transparent when omitted. */
++  background?: string;
++}
++
++// Helvetica advance widths per 1000 em for ASCII 32..126 (standard AFM metrics).
++const HELVETICA_WIDTHS = [
++  278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556,
++  556, 556, 556, 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833,
++  722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556,
++  556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334,
++  260, 334, 584,
++];
++const DEFAULT_GLYPH_WIDTH = 556;
++const BOLD_WIDTH_FACTOR = 1.07;
++
++// Offsets in em from each canvas `textBaseline` to the alphabetic baseline SVG text uses.
++const BASELINE_OFFSETS: Record<CanvasTextBaseline, number> = {
++  alphabetic: 0,
++  top: 0.77,
++  hanging: 0.72,
++  middle: 0.35,
++  ideographic: -0.21,
++  bottom: -0.21,
++};
++const ASCENT = 0.77;
++const DESCENT = 0.21;
++const TAU = Math.PI * 2;
++
++type Matrix = [a: number, b: number, c: number, d: number, e: number, f: number];
++type Point = [x: number, y: number];
++
++interface ParsedFont {
++  size: number;
++  family: string;
++  bold: boolean;
++  italic: boolean;
++  /** Numeric CSS font weight. */
++  weight: number;
++}
++
++/** @internal */
++export const parseFont = (font: string): ParsedFont => {
++  const sizeMatch = /(\d+(?:\.\d+)?)px/.exec(font);
++  if (!sizeMatch) return { size: 10, family: 'sans-serif', bold: false, italic: false, weight: 400 };
++  const before = font.slice(0, sizeMatch.index);
++  const family = font
++    .slice(sizeMatch.index + sizeMatch[0].length)
++    .replace(/^\/\S+/, '') // drop a `/line-height` part
++    .trim();
++  const numericWeight = /\b([1-9]00)\b/.exec(before)?.[1];
++  const weight = numericWeight ? Number(numericWeight) : /\b(bold|bolder)\b/.test(before) ? 700 : 400;
++  return {
++    size: Number(sizeMatch[1]),
++    family: family || 'sans-serif',
++    bold: weight >= 500,
++    italic: /\bitalic\b/.test(before),
++    weight,
++  };
++};
++
++/**
++ * Text width from Helvetica metrics, the default {@link SvgTextWidthMeasure}.
++ * @public
++ */
++export const measureHelveticaTextWidth: SvgTextWidthMeasure = (text, font) => {
++  const { size, bold } = parseFont(font);
++  let units = 0;
++  for (const char of text) {
++    const code = char.codePointAt(0) ?? 0;
++    units += code >= 32 && code <= 126 ? HELVETICA_WIDTHS[code - 32] ?? DEFAULT_GLYPH_WIDTH : DEFAULT_GLYPH_WIDTH;
++  }
++  return (units / 1000) * size * (bold ? BOLD_WIDTH_FACTOR : 1);
++};
++
++const round = (value: number) => Number(value.toFixed(2));
++const escapeXml = (text: string) => text.replaceAll(/["&'<>]/g, (char) => `&#${char.charCodeAt(0)};`);
++
++// SVG 1.1 renderers do not all accept rgba(), so it is split into a color and an opacity.
++const parseColor = (color: string): { color: string; opacity: number } => {
++  if (color === 'transparent' || color === 'none') return { color: 'none', opacity: 0 };
++  const rgba = /^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/.exec(color);
++  if (!rgba) return { color, opacity: 1 };
++  const [, r, g, b, a] = rgba.map(Number);
++  return { color: `rgb(${Math.round(r ?? 0)},${Math.round(g ?? 0)},${Math.round(b ?? 0)})`, opacity: a ?? 1 };
++};
++
++/** SVG path data built from Path2D-style calls; Elastic Charts only builds paths from SVG strings. */
++class SvgPath2D {
++  readonly d: string;
++
++  constructor(path?: string | SvgPath2D) {
++    this.d = typeof path === 'string' ? path : path?.d ?? '';
++  }
++}
++
++class SvgLinearGradient {
++  readonly stops: Array<{ offset: number; color: string }> = [];
++  defined = false;
++
++  constructor(
++    readonly id: string,
++    readonly from: Point,
++    readonly to: Point,
++  ) {}
++
++  addColorStop(offset: number, color: string) {
++    this.stops.push({ offset, color });
++  }
++}
++
++interface DrawingState {
++  transform: Matrix;
++  fillStyle: unknown;
++  strokeStyle: unknown;
++  lineWidth: number;
++  lineCap: CanvasLineCap;
++  lineJoin: CanvasLineJoin;
++  lineDash: number[];
++  font: string;
++  textAlign: CanvasTextAlign;
++  textBaseline: CanvasTextBaseline;
++  direction: CanvasDirection;
++  globalAlpha: number;
++  clipId?: string;
++}
++
++/**
++ * The subset of the Canvas 2D API Elastic Charts draws with, recorded as SVG elements.
++ * Shapes are stored in device coordinates, so the SVG needs no nested transforms.
++ */
++class SvgRecordingContext {
++  readonly canvas: { width: number; height: number };
++  readonly elements: string[] = [];
++  readonly defs: string[] = [];
++  private nextId = 0;
++  private stack: DrawingState[] = [];
++  private state: DrawingState = {
++    transform: [1, 0, 0, 1, 0, 0],
++    fillStyle: '#000',
++    strokeStyle: '#000',
++    lineWidth: 1,
++    lineCap: 'butt',
++    lineJoin: 'miter',
++    lineDash: [],
++    font: '10px sans-serif',
++    textAlign: 'start',
++    textBaseline: 'alphabetic',
++    direction: 'ltr',
++    globalAlpha: 1,
++  };
++
++  private path: string[] = [];
++  private current?: Point;
++  private subpathStart?: Point;
++
++  constructor(
++    width: number,
++    height: number,
++    private readonly measureTextWidth: SvgTextWidthMeasure,
++    private readonly outlineFont?: SvgFont,
++  ) {
++    this.canvas = { width, height };
++  }
++
++  // --- state -------------------------------------------------------------
++
++  save() {
++    this.stack.push({ ...this.state, transform: [...this.state.transform] });
++  }
++
++  restore() {
++    this.state = this.stack.pop() ?? this.state;
++  }
++
++  get fillStyle() {
++    return this.state.fillStyle;
++  }
++
++  set fillStyle(value: unknown) {
++    this.state.fillStyle = value;
++  }
++
++  get strokeStyle() {
++    return this.state.strokeStyle;
++  }
++
++  set strokeStyle(value: unknown) {
++    this.state.strokeStyle = value;
++  }
++
++  get lineWidth() {
++    return this.state.lineWidth;
++  }
++
++  set lineWidth(value: number) {
++    this.state.lineWidth = value;
++  }
++
++  get lineCap() {
++    return this.state.lineCap;
++  }
++
++  set lineCap(value: CanvasLineCap) {
++    this.state.lineCap = value;
++  }
++
++  get lineJoin() {
++    return this.state.lineJoin;
++  }
++
++  set lineJoin(value: CanvasLineJoin) {
++    this.state.lineJoin = value;
++  }
++
++  get font() {
++    return this.state.font;
++  }
++
++  set font(value: string) {
++    this.state.font = value;
++  }
++
++  get textAlign() {
++    return this.state.textAlign;
++  }
++
++  set textAlign(value: CanvasTextAlign) {
++    this.state.textAlign = value;
++  }
++
++  get textBaseline() {
++    return this.state.textBaseline;
++  }
++
++  set textBaseline(value: CanvasTextBaseline) {
++    this.state.textBaseline = value;
++  }
++
++  get direction() {
++    return this.state.direction;
++  }
++
++  set direction(value: CanvasDirection) {
++    this.state.direction = value;
++  }
++
++  get globalAlpha() {
++    return this.state.globalAlpha;
++  }
++
++  set globalAlpha(value: number) {
++    this.state.globalAlpha = value;
++  }
++
++  setLineDash(segments: number[]) {
++    this.state.lineDash = [...segments];
++  }
++
++  getLineDash() {
++    return [...this.state.lineDash];
++  }
++
++  // --- transforms --------------------------------------------------------
++
++  setTransform(a: number | DOMMatrix2DInit, b?: number, c?: number, d?: number, e?: number, f?: number) {
++    this.state.transform =
++      typeof a === 'number'
++        ? [a, b ?? 0, c ?? 0, d ?? 1, e ?? 0, f ?? 0]
++        : [a.a ?? 1, a.b ?? 0, a.c ?? 0, a.d ?? 1, a.e ?? 0, a.f ?? 0];
++  }
++
++  resetTransform() {
++    this.setTransform(1, 0, 0, 1, 0, 0);
++  }
++
++  transform(a2: number, b2: number, c2: number, d2: number, e2: number, f2: number) {
++    const [a, b, c, d, e, f] = this.state.transform;
++    this.state.transform = [
++      a * a2 + c * b2,
++      b * a2 + d * b2,
++      a * c2 + c * d2,
++      b * c2 + d * d2,
++      a * e2 + c * f2 + e,
++      b * e2 + d * f2 + f,
++    ];
++  }
++
++  translate(x: number, y: number) {
++    this.transform(1, 0, 0, 1, x, y);
++  }
++
++  scale(x: number, y: number) {
++    this.transform(x, 0, 0, y, 0, 0);
++  }
++
++  rotate(angle: number) {
++    const cos = Math.cos(angle);
++    const sin = Math.sin(angle);
++    this.transform(cos, sin, -sin, cos, 0, 0);
++  }
++
++  private toDevice(x: number, y: number): Point {
++    const [a, b, c, d, e, f] = this.state.transform;
++    return [a * x + c * y + e, b * x + d * y + f];
++  }
++
++  // Uniform scale of the current transform, for radii and line widths.
++  private get scaleFactor() {
++    const [a, b, c, d] = this.state.transform;
++    return Math.sqrt(Math.abs(a * d - b * c));
++  }
++
++  // --- paths -------------------------------------------------------------
++
++  beginPath() {
++    this.path = [];
++    this.current = undefined;
++    this.subpathStart = undefined;
++  }
++
++  moveTo(x: number, y: number) {
++    const point = this.toDevice(x, y);
++    this.path.push(`M${round(point[0])} ${round(point[1])}`);
++    this.current = point;
++    this.subpathStart = point;
++  }
++
++  lineTo(x: number, y: number) {
++    if (!this.current) return this.moveTo(x, y);
++    const point = this.toDevice(x, y);
++    this.path.push(`L${round(point[0])} ${round(point[1])}`);
++    this.current = point;
++  }
++
++  closePath() {
++    if (!this.current) return;
++    this.path.push('Z');
++    this.current = this.subpathStart;
++  }
++
++  rect(x: number, y: number, width: number, height: number) {
++    this.moveTo(x, y);
++    this.lineTo(x + width, y);
++    this.lineTo(x + width, y + height);
++    this.lineTo(x, y + height);
++    this.closePath();
++  }
++
++  arc(x: number, y: number, radius: number, startAngle: number, endAngle: number, counterclockwise = false) {
++    const [cx, cy] = this.toDevice(x, y);
++    const r = radius * this.scaleFactor;
++    const [a, b] = this.state.transform;
++    const start = startAngle + Math.atan2(b, a);
++    const pointAt = (angle: number): Point => [cx + r * Math.cos(angle), cy + r * Math.sin(angle)];
++    const startPoint = pointAt(start);
++    this.path.push(`${this.current ? 'L' : 'M'}${round(startPoint[0])} ${round(startPoint[1])}`);
++    if (!this.current) this.subpathStart = startPoint;
++    this.current = startPoint;
++
++    const rawSweep = counterclockwise ? startAngle - endAngle : endAngle - startAngle;
++    const sweep = rawSweep >= TAU ? TAU : ((rawSweep % TAU) + TAU) % TAU;
++    const direction = counterclockwise ? -1 : 1;
++    // An SVG arc cannot draw a full circle, so long sweeps are split in two.
++    const steps = sweep > Math.PI ? 2 : 1;
++    for (let step = 1; step <= steps && sweep > 0; step++) {
++      const point = pointAt(start + (direction * sweep * step) / steps);
++      this.path.push(`A${round(r)} ${round(r)} 0 0 ${counterclockwise ? 0 : 1} ${round(point[0])} ${round(point[1])}`);
++      this.current = point;
++    }
++  }
++
++  arcTo(x1: number, y1: number, x2: number, y2: number, radius: number) {
++    if (!this.current) this.moveTo(x1, y1);
++    const p0 = this.current ?? this.toDevice(x1, y1);
++    const p1 = this.toDevice(x1, y1);
++    const p2 = this.toDevice(x2, y2);
++    const r = radius * this.scaleFactor;
++    const v1: Point = [p0[0] - p1[0], p0[1] - p1[1]];
++    const v2: Point = [p2[0] - p1[0], p2[1] - p1[1]];
++    const length1 = Math.hypot(...v1);
++    const length2 = Math.hypot(...v2);
++    if (r === 0 || length1 === 0 || length2 === 0 || Math.abs(v1[0] * v2[1] - v1[1] * v2[0]) < 1e-9) {
++      this.path.push(`L${round(p1[0])} ${round(p1[1])}`);
++      this.current = p1;
++      return;
++    }
++    const u1: Point = [v1[0] / length1, v1[1] / length1];
++    const u2: Point = [v2[0] / length2, v2[1] / length2];
++    const angle = Math.acos(Math.max(-1, Math.min(1, u1[0] * u2[0] + u1[1] * u2[1])));
++    const distance = r / Math.tan(angle / 2);
++    const t1: Point = [p1[0] + u1[0] * distance, p1[1] + u1[1] * distance];
++    const t2: Point = [p1[0] + u2[0] * distance, p1[1] + u2[1] * distance];
++    // Turning from (p0 -> p1) to (p1 -> p2); positive turns clockwise on screen.
++    const turn = u1[1] * u2[0] - u1[0] * u2[1];
++    this.path.push(`L${round(t1[0])} ${round(t1[1])}`);
++    this.path.push(`A${round(r)} ${round(r)} 0 0 ${turn > 0 ? 1 : 0} ${round(t2[0])} ${round(t2[1])}`);
++    this.current = t2;
++  }
++
++  // --- painting ----------------------------------------------------------
++
++  private paint(style: unknown): { color: string; opacity: number } {
++    const alpha = this.state.globalAlpha;
++    if (style instanceof SvgLinearGradient) {
++      this.defineGradient(style);
++      return { color: `url(#${style.id})`, opacity: alpha };
++    }
++    // Patterns (bar and area textures) are not supported.
++    if (typeof style !== 'string') return { color: 'none', opacity: 0 };
++    const { color, opacity } = parseColor(style);
++    return { color, opacity: opacity * alpha };
++  }
++
++  private clipAttribute() {
++    return this.state.clipId ? ` clip-path="url(#${this.state.clipId})"` : '';
++  }
++
++  // Device-space shapes carry the clip themselves; user-space ones (a Path2D or text keeps the
++  // current transform) are wrapped in a group, because a clip on a transformed element would move with it.
++  private pushElement(element: string, userSpaceTransform?: string) {
++    if (!userSpaceTransform) {
++      this.elements.push(element.replace(/\/>$/, `${this.clipAttribute()}/>`));
++      return;
++    }
++    const transformed = element.replace(/^<(\w+) /, `<$1 transform="${userSpaceTransform}" `);
++    this.elements.push(this.state.clipId ? `<g${this.clipAttribute()}>${transformed}</g>` : transformed);
++  }
++
++  private get matrixAttribute() {
++    return `matrix(${this.state.transform.map(round).join(' ')})`;
++  }
++
++  fill(pathOrRule?: SvgPath2D | CanvasFillRule, maybeRule?: CanvasFillRule) {
++    if (pathOrRule instanceof SvgPath2D) {
++      this.emitFill(pathOrRule.d, maybeRule, this.matrixAttribute);
++    } else if (this.path.length > 0) {
++      this.emitFill(this.path.join(''), pathOrRule);
++    }
++  }
++
++  private emitFill(d: string, fillRule: CanvasFillRule = 'nonzero', userSpaceTransform?: string) {
++    const { color, opacity } = this.paint(this.state.fillStyle);
++    if (color === 'none' || opacity === 0) return;
++    const opacityAttribute = opacity < 1 ? ` fill-opacity="${round(opacity)}"` : '';
++    const ruleAttribute = fillRule === 'evenodd' ? ' fill-rule="evenodd"' : '';
++    this.pushElement(`<path d="${d}" fill="${color}"${opacityAttribute}${ruleAttribute}/>`, userSpaceTransform);
++  }
++
++  stroke(path?: SvgPath2D) {
++    if (path instanceof SvgPath2D) {
++      this.emitStroke(path.d, this.matrixAttribute);
++    } else if (this.path.length > 0) {
++      this.emitStroke(this.path.join(''));
++    }
++  }
++
++  private emitStroke(d: string, userSpaceTransform?: string) {
++    const { color, opacity } = this.paint(this.state.strokeStyle);
++    if (color === 'none' || opacity === 0 || this.state.lineWidth <= 0) return;
++    // A user-space path keeps its transform, which scales the stroke like canvas does.
++    const scale = userSpaceTransform ? 1 : this.scaleFactor;
++    const { lineWidth, lineCap, lineJoin, lineDash } = this.state;
++    const attributes = [
++      'fill="none"',
++      `stroke="${color}"`,
++      `stroke-width="${round(lineWidth * scale)}"`,
++      lineCap !== 'butt' ? `stroke-linecap="${lineCap}"` : '',
++      lineJoin !== 'miter' ? `stroke-linejoin="${lineJoin}"` : '',
++      lineDash.length > 0 ? `stroke-dasharray="${lineDash.map((dash) => round(dash * scale)).join(' ')}"` : '',
++      opacity < 1 ? `stroke-opacity="${round(opacity)}"` : '',
++    ].filter(Boolean);
++    this.pushElement(`<path d="${d}" ${attributes.join(' ')}/>`, userSpaceTransform);
++  }
++
++  private withSeparatePath(draw: () => void) {
++    const { path, current, subpathStart } = this;
++    this.beginPath();
++    draw();
++    this.path = path;
++    this.current = current;
++    this.subpathStart = subpathStart;
++  }
++
++  fillRect(x: number, y: number, width: number, height: number) {
++    this.withSeparatePath(() => {
++      this.rect(x, y, width, height);
++      this.fill();
++    });
++  }
++
++  strokeRect(x: number, y: number, width: number, height: number) {
++    this.withSeparatePath(() => {
++      this.rect(x, y, width, height);
++      this.stroke();
++    });
++  }
++
++  clearRect() {
++    // The SVG starts empty, so there is nothing to clear.
++  }
++
++  clip() {
++    if (this.path.length === 0) return;
++    const id = `clip${this.nextId++}`;
++    // Clipping the clip path with the previous clip intersects the two, like canvas does.
++    this.defs.push(
++      `<clipPath id="${id}" clipPathUnits="userSpaceOnUse"${this.clipAttribute()}><path d="${this.path.join('')}"/></clipPath>`,
++    );
++    this.state.clipId = id;
++  }
++
++  createLinearGradient(x0: number, y0: number, x1: number, y1: number) {
++    return new SvgLinearGradient(`gradient${this.nextId++}`, this.toDevice(x0, y0), this.toDevice(x1, y1));
++  }
++
++  private defineGradient(gradient: SvgLinearGradient) {
++    if (gradient.defined) return;
++    gradient.defined = true;
++    const stops = gradient.stops
++      .map(({ offset, color }) => {
++        const parsed = parseColor(color);
++        return `<stop offset="${offset}" stop-color="${parsed.color}" stop-opacity="${parsed.opacity}"/>`;
++      })
++      .join('');
++    const [[x1, y1], [x2, y2]] = [gradient.from, gradient.to];
++    const coordinates = `x1="${round(x1)}" y1="${round(y1)}" x2="${round(x2)}" y2="${round(y2)}"`;
++    this.defs.push(
++      `<linearGradient id="${gradient.id}" gradientUnits="userSpaceOnUse" ${coordinates}>${stops}</linearGradient>`,
++    );
++  }
++
++  createPattern() {
++    return null;
++  }
++
++  drawImage() {
++    // Images are only drawn for textures, which are not supported.
++  }
++
++  // --- text --------------------------------------------------------------
++
++  measureText(text: string) {
++    const { size } = parseFont(this.state.font);
++    return {
++      // Snapped to 1/64 px like browser text metrics, so a width survives `width + padding - padding`
++      // and the widest label still fits the space measured for it (e.g. heatmap Y labels).
++      width: Math.round(this.measureTextWidth(text, this.state.font) * 64) / 64,
++      actualBoundingBoxAscent: size * ASCENT,
++      actualBoundingBoxDescent: size * DESCENT,
++      fontBoundingBoxAscent: size * ASCENT,
++      fontBoundingBoxDescent: size * DESCENT,
++    };
++  }
++
++  fillText(text: string, x: number, y: number) {
++    this.emitText(text, x, y, 'fill');
++  }
++
++  strokeText(text: string, x: number, y: number) {
++    this.emitText(text, x, y, 'stroke');
++  }
++
++  /** Not part of the Canvas API (see {@link TextOutlineContext}). */
++  textOutline(text: string, font: string, x: number, baselineY: number) {
++    return this.outlineFont?.toPath(text, font, x, baselineY);
++  }
++
++  /** Paints text outlines from {@link SvgFont.toPath} like `fillText` / `strokeText` paint text. */
++  private emitOutline(d: string, mode: 'fill' | 'stroke') {
++    if (!d) return;
++    const { color, opacity } = this.paint(mode === 'fill' ? this.state.fillStyle : this.state.strokeStyle);
++    if (color === 'none' || opacity === 0) return;
++    const paint =
++      mode === 'fill'
++        ? `fill="${color}"${opacity < 1 ? ` fill-opacity="${round(opacity)}"` : ''}`
++        : `fill="none" stroke="${color}" stroke-width="${round(this.state.lineWidth)}"${
++            opacity < 1 ? ` stroke-opacity="${round(opacity)}"` : ''
++          }`;
++    this.pushElement(`<path d="${d}" ${paint}/>`, this.matrixAttribute);
++  }
++
++  private emitText(text: string, x: number, y: number, mode: 'fill' | 'stroke') {
++    const { color, opacity } = this.paint(mode === 'fill' ? this.state.fillStyle : this.state.strokeStyle);
++    if (color === 'none' || opacity === 0) return;
++    const { size, family, bold, italic } = parseFont(this.state.font);
++    const { textAlign, textBaseline, direction, lineWidth } = this.state;
++    const isStart = textAlign === 'start' || textAlign === 'left';
++    const isEnd = textAlign === 'end' || textAlign === 'right';
++    const anchor =
++      textAlign === 'center'
++        ? 'middle'
++        : direction === 'rtl' && (textAlign === 'start' || textAlign === 'end')
++          ? isStart
++            ? 'end'
++            : 'start'
++          : isEnd
++            ? 'end'
++            : 'start';
++    const baselineY = y + BASELINE_OFFSETS[textBaseline] * size;
++    if (this.outlineFont) {
++      const width = this.outlineFont.measure(text, this.state.font);
++      const startX = anchor === 'middle' ? x - width / 2 : anchor === 'end' ? x - width : x;
++      const path = this.outlineFont.toPath(text, this.state.font, startX, baselineY);
++      if (path !== undefined) {
++        this.emitOutline(path, mode);
++        return;
++      }
++    }
++    const opacityName = mode === 'fill' ? 'fill-opacity' : 'stroke-opacity';
++    const paintAttributes =
++      mode === 'fill' ? `fill="${color}"` : `fill="none" stroke="${color}" stroke-width="${round(lineWidth)}"`;
++    const fontAttributes = [
++      `font-family="${escapeXml(family)}"`,
++      `font-size="${round(size)}"`,
++      bold ? 'font-weight="bold"' : '',
++      italic ? 'font-style="italic"' : '',
++    ].filter(Boolean);
++    const opacityAttribute = opacity < 1 ? ` ${opacityName}="${round(opacity)}"` : '';
++    // Canvas keeps leading, trailing and repeated spaces (e.g. the Bullet value before its target); SVG collapses them.
++    const spaceAttribute = /^\s|\s$|\s\s/.test(text) ? ' xml:space="preserve"' : '';
++    this.pushElement(
++      `<text x="${round(x)}" y="${round(baselineY)}" ${fontAttributes.join(' ')} text-anchor="${anchor}" ${paintAttributes}${opacityAttribute}${spaceAttribute}>${escapeXml(text)}</text>`,
++      this.matrixAttribute,
++    );
++  }
++}
++
++/**
++ * A drawing surface that records what Elastic Charts draws as an SVG document, with no DOM or native canvas.
++ *
++ * ```ts
++ * const svg = new SvgCanvas(720, 360);
++ * renderChart({ specs, width: 720, height: 360, context: svg.context, Path2D: svg.Path2D });
++ * const markup = svg.toSvg({ background: '#fff' });
++ * ```
++ * Textures and images are not drawn.
++ * @public
++ */
++export class SvgCanvas {
++  /** The canvas context to draw on. */
++  readonly context: CanvasRenderingContext2D;
++  /** The Path2D implementation this canvas understands. */
++  readonly Path2D = SvgPath2D as unknown as typeof Path2D;
++  private readonly recorder: SvgRecordingContext;
++
++  constructor(
++    readonly width: number,
++    readonly height: number,
++    { font, measureTextWidth = font?.measure ?? measureHelveticaTextWidth }: SvgCanvasOptions = {},
++  ) {
++    this.recorder = new SvgRecordingContext(width, height, measureTextWidth, font);
++    // The recorder implements the part of the Canvas 2D API that Elastic Charts uses.
++    this.context = this.recorder as unknown as CanvasRenderingContext2D;
++  }
++
++  /** The recorded drawing as a standalone SVG document. */
++  toSvg({ background }: SvgOutputOptions = {}): string {
++    const { width, height } = this;
++    return [
++      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
++      this.recorder.defs.length > 0 ? `<defs>${this.recorder.defs.join('')}</defs>` : '',
++      background ? `<rect width="${width}" height="${height}" fill="${escapeXml(background)}"/>` : '',
++      ...this.recorder.elements,
++      '</svg>',
++    ]
++      .filter(Boolean)
++      .join('\n');
++  }
++}
+diff --git a/packages/charts/src/headless/types.ts b/packages/charts/src/headless/types.ts
+new file mode 100644
+index 000000000..f11b5b1eb
+--- /dev/null
++++ b/packages/charts/src/headless/types.ts
+@@ -0,0 +1,16 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++import type { GlobalChartState } from '../state/chart_state';
++
++/**
++ * Draws one chart type from the initialized chart state onto `ctx`, in CSS pixels, inside the
++ * chart's parent dimensions. The legend is drawn separately.
++ * @internal
++ */
++export type HeadlessRenderer = (ctx: CanvasRenderingContext2D, state: GlobalChartState) => void;
+diff --git a/packages/charts/src/renderers/canvas/painter.ts b/packages/charts/src/renderers/canvas/painter.ts
+index 6e0af053f..c282dab2c 100644
+--- a/packages/charts/src/renderers/canvas/painter.ts
++++ b/packages/charts/src/renderers/canvas/painter.ts
+@@ -6,6 +6,7 @@
+  * Side Public License, v 1.
+  */
+ 
++import { createPath2D } from './path2d';
+ import type { Color } from '../../common/colors';
+ import { Colors } from '../../common/colors';
+ import type { Texture } from '../../geoms/types';
+@@ -23,15 +24,18 @@ export class CanvasPainter implements Painter {
+ 
+   readonly animates: boolean;
+ 
++  private readonly textures: boolean;
++
+   private devicePixelRatio = 1;
+   private readonly patterns = new Map<string, CanvasPattern>();
+   private tile: HTMLCanvasElement | null = null;
+ 
+   constructor(
+     private readonly ctx: CanvasRenderingContext2D,
+-    { animates = true }: { animates?: boolean } = {},
++    { animates = true, textures = true }: { animates?: boolean; textures?: boolean } = {},
+   ) {
+     this.animates = animates;
++    this.textures = textures;
+   }
+ 
+   /**
+@@ -55,6 +59,8 @@ export class CanvasPainter implements Painter {
+     const cached = key === null ? undefined : this.patterns.get(key);
+     if (cached) return cached;
+ 
++    // A texture tile is a canvas element; without textures the geometry keeps its plain fill.
++    if (!this.textures) return null;
+     const dpr = this.devicePixelRatio;
+     this.tile ??= document.createElement('canvas');
+     const { tile } = this;
+@@ -72,7 +78,7 @@ export class CanvasPainter implements Painter {
+     tileCtx.translate(width / 2, height / 2);
+     if (shapeRotation) tileCtx.rotate(degToRad(shapeRotation));
+     tileCtx.beginPath();
+-    const path2d = typeof path === 'string' ? new Path2D(path) : path;
++    const path2d = typeof path === 'string' ? createPath2D(path) : path;
+     tileCtx.stroke(path2d);
+     if (fill) tileCtx.fill(path2d);
+ 
+@@ -101,11 +107,11 @@ export class CanvasPainter implements Painter {
+   }
+ 
+   fillPath(d: string, fillRule?: CanvasFillRule) {
+-    this.ctx.fill(new Path2D(d), fillRule);
++    this.ctx.fill(createPath2D(d), fillRule);
+   }
+ 
+   strokePath(d: string) {
+-    this.ctx.stroke(new Path2D(d));
++    this.ctx.stroke(createPath2D(d));
+   }
+ 
+   save() {
+diff --git a/packages/charts/src/renderers/canvas/path2d.ts b/packages/charts/src/renderers/canvas/path2d.ts
+new file mode 100644
+index 000000000..2c3b2cd15
+--- /dev/null
++++ b/packages/charts/src/renderers/canvas/path2d.ts
+@@ -0,0 +1,30 @@
++/*
++ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
++ * or more contributor license agreements. Licensed under the Elastic License
++ * 2.0 and the Server Side Public License, v 1; you may not use this file except
++ * in compliance with, at your election, the Elastic License 2.0 or the Server
++ * Side Public License, v 1.
++ */
++
++// Set while a chart renders headlessly, where the global Path2D may be missing or belong to another canvas.
++let path2DOverride: typeof Path2D | undefined;
++
++/**
++ * Runs `fun` with paths created by `Path2DConstructor`, the one that matches the context being drawn on.
++ * @internal
++ */
++export const withPath2D = <T>(Path2DConstructor: typeof Path2D, fun: () => T): T => {
++  const previous = path2DOverride;
++  path2DOverride = Path2DConstructor;
++  try {
++    return fun();
++  } finally {
++    path2DOverride = previous;
++  }
++};
++
++/**
++ * Creates a Path2D from SVG path data for the canvas currently being drawn on.
++ * @internal
++ */
++export const createPath2D = (path: string): Path2D => new (path2DOverride ?? Path2D)(path);
+diff --git a/packages/charts/src/state/spec_factory.ts b/packages/charts/src/state/spec_factory.ts
+index 916dcbd7b..0d28e68d1 100644
+--- a/packages/charts/src/state/spec_factory.ts
++++ b/packages/charts/src/state/spec_factory.ts
+@@ -7,7 +7,7 @@
+  */
+ 
+ import type { FC } from 'react';
+-import { useEffect } from 'react';
++import { createContext, useContext, useEffect } from 'react';
+ import { useDispatch } from 'react-redux';
+ import type { OptionalKeys, RequiredKeys } from 'utility-types';
+ 
+@@ -15,12 +15,21 @@ import { upsertSpec, removeSpec } from './actions/specs';
+ import type { Spec } from '../specs/spec_type'; // kept as long-winded import on separate line otherwise import circularity emerges
+ import { stripUndefined } from '../utils/common';
+ 
++/**
++ * When provided, receives every spec while it renders. Effects do not run during server-side
++ * rendering, so this is how specs are collected without mounting a chart.
++ * @internal
++ */
++export const SpecCollectorContext = createContext<((spec: Spec) => void) | null>(null);
++
+ /**
+  * Used inside custom spec component to link component to state as new spec
+  * @internal
+  */
+ export function useSpecFactory<Props extends Spec>(props: Props) {
+   const dispatch = useDispatch();
++  const collectSpec = useContext(SpecCollectorContext);
++  collectSpec?.(props);
+ 
+   useEffect(() => {
+     dispatch(upsertSpec(props));
+diff --git a/packages/charts/src/utils/bbox/canvas_text_bbox_calculator.ts b/packages/charts/src/utils/bbox/canvas_text_bbox_calculator.ts
+index 5312e7ccf..492a54d9d 100644
+--- a/packages/charts/src/utils/bbox/canvas_text_bbox_calculator.ts
++++ b/packages/charts/src/utils/bbox/canvas_text_bbox_calculator.ts
+@@ -12,8 +12,26 @@ import { withContext } from '../../renderers/canvas';
+ import type { Ctx2d } from '../../renderers/painter';
+ import type { Size } from '../dimensions';
+ 
++// Set while a chart renders headlessly, where there is no document to create a measuring canvas from.
++let textMeasureContextOverride: CanvasRenderingContext2D | undefined;
++
++/**
++ * Runs `fun` with text measured by `ctx` instead of a canvas created from the document.
++ * @internal
++ */
++export const withTextMeasureContext = <T>(ctx: CanvasRenderingContext2D, fun: () => T): T => {
++  const previous = textMeasureContextOverride;
++  textMeasureContextOverride = ctx;
++  try {
++    return fun();
++  } finally {
++    textMeasureContextOverride = previous;
++  }
++};
++
+ /** @internal */
+ export const withTextMeasure = <T>(fun: (textMeasure: TextMeasure) => T) => {
++  if (textMeasureContextOverride) return fun(measureText(textMeasureContextOverride));
+   const canvas = document.createElement('canvas');
+   const ctx = canvas.getContext('2d');
+   return fun(ctx ? measureText(ctx) : () => ({ width: 0, height: 0 }));
+diff --git a/scripts/setup_tests.ts b/scripts/setup_tests.ts
+index d50a4743c..3cf072281 100644
+--- a/scripts/setup_tests.ts
++++ b/scripts/setup_tests.ts
+@@ -6,8 +6,13 @@
+  * Side Public License, v 1.
+  */
+ 
++import { TextEncoder } from 'util';
++
+ process.env.RNG_SEED = 'jest-unit-tests';
+ 
++// jsdom lacks TextEncoder, which the browser build of react-dom/server (used by headless rendering) needs.
++Object.assign(globalThis, { TextEncoder: globalThis.TextEncoder ?? TextEncoder });
++
+ /**
+  * Mocking RAF and ResizeObserver to missing RAF and RO in jsdom
+  */
+-- 
+2.55.0
+

@@ -27,7 +27,7 @@ The few elements this engine draws beside Elastic Charts' own, a metric's second
 
 ## One spec builder
 
-`sceneSpecs(scene, env, options?)` turns a `metric`, `xy` or `partition` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, the metric grid, or a `Partition` of the Scene's slices. The renderer wraps them in `<Chart>`; headless drawing hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
+`sceneSpecs(scene, env, options?)` turns a `metric`, `xy` or `partition` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, the metric grid, or a `Partition` of the Scene's slices. The renderer wraps them in `<Chart>`; [static Elastic Charts](../charts-elastic-static/index.md) hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
 
 `@elastic/isomer-charts-elastic/engine` exports `sceneSpecs` and what else another Elastic Charts drawing of a Scene builds on: `kibanaBaseTheme`, `ariaDescriptionOf`, `emptyTextOf` and its text sizes, `seriesOf` and `slicesOf`. A drawing that collects the specs must build them from the same copy of `@elastic/charts` it collects with.
 

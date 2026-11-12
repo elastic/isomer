@@ -98,6 +98,60 @@ const fonts = [
 
 A `FontLoader` string is a URL takumi fetches on demand, not a filesystem path — `fetch` rejects a bare path and a `file:` URL alike — so a local file goes in as an eager buffer or a lazy `data()`, as above. Registration order is takumi's fallback order. The PDF engine is a second takumi instance and registers the same list separately, so a lazy `data()` is read once per engine.
 
+## Memory on a small server
+
+A host that draws PNGs in its own process, such as Kibana on a 1 GB serverless instance, pays once to load this package and the fonts, then for each render in flight. What the charts pack costs to draw is measured in the [Elastic Charts engine's benchmark](../../isomer-charts-elastic-static/docs/index.md#measuring-it): about 130 MB of RSS loaded with static Elastic Charts, and about 16 MB more for a typical one-off chart PNG at 2×. These are the defaults that keep it there:
+
+- **Load on first use.** Load this package, and the chart engine with it, the first time a host draws an image, not when it starts, so a process that never draws one never pays. `@takumi-rs/core` is a native binary loaded on import. Node loads the CommonJS build with `require`; the ESM build is for bundlers, so a native `import()` of it fails in an unbundled Node host. An ES module host makes its `require` with `createRequire`:
+
+  ```ts
+  import { createRequire } from 'node:module';
+  import type { TakumiBackend } from '@elastic/isomer-image-takumi';
+
+  const require = createRequire(import.meta.url);
+  let backend: TakumiBackend | undefined;
+  const takumi = () =>
+    (backend ??= (
+      require('@elastic/isomer-image-takumi') as typeof import('@elastic/isomer-image-takumi')
+    ).createTakumiImageBackend({ fonts }));
+  ```
+
+- **One backend per process.** Fonts register once per backend, before its first render. Inter Latin at the four weights a pack draws with is four `@fontsource/inter` woff2 files of about 24 KB each, and costs about 1 MB of RSS registered. Register only the scripts the host's locales need: one weight of a CJK face is 10 to 20 MB.
+- **At most two renders in flight.** takumi rasterizes on the libuv thread pool, so its own parallelism is bounded, but every render queued behind it holds its markup, and the composition and Scene that made it, until its PNG is done. Queue the rest, and refuse past a queue length, so a burst waits rather than growing the heap. Measured on Linux, 16 charts requested at once through the limiter below peaked at 257–270 MB.
+
+  ```ts
+  const limit = (inFlight: number, queued: number) => {
+    let running = 0;
+    const waiting: (() => void)[] = [];
+    return async <T>(render: () => Promise<T>): Promise<T> => {
+      if (running < inFlight) {
+        running += 1;
+      } else {
+        if (waiting.length >= queued) {
+          throw new Error('busy');
+        }
+        await new Promise<void>((resolve) => waiting.push(resolve));
+      }
+      try {
+        return await render();
+      } finally {
+        // Hand the slot straight to the next waiting render, so a call that
+        // lands before it resumes cannot take the slot too.
+        const next = waiting.shift();
+        if (next) {
+          next();
+        } else {
+          running -= 1;
+        }
+      }
+    };
+  };
+  ```
+
+- **`scale` of 2 at most.** The raster is `width × height × scale²` pixels at four bytes each, so a 960 × 332 chart at 2× is a 5 MB bitmap before encoding, and at 3× an 11 MB one.
+- **A smaller input budget.** Memory grows with the data a composition carries, and a pack's input budget is sized for what it accepts, not for what a small server can draw. Set the runtime's `inputBudget` for the host, and refuse what is over it before drawing.
+- **The resource cache as it is.** `cacheMaxBytes` defaults to takumi's 64 MiB, shared by decoded images, SVG rasters and parsed stylesheets. Measured over 168 chart PNGs on Linux, `0` saved about 20 MB of peak RSS and made each PNG up to 60% slower, since nothing it parsed is reused; 4 to 16 MiB saved less and were still slower. Leave it unset unless a host draws many large images.
+
 ## Determinism
 
 The raster is byte-stable for the same input, same process, same platform — `backend.test.ts` asserts this directly, and it is what lets a committed PNG be compared byte-for-byte rather than by pixel tolerance. Cross-platform stability (darwin-arm64 producing the same bytes as linux-x64, at a pinned `@takumi-rs/core` and a fixed font set) is the deck example's operating assumption, but CI runs Ubuntu only, so that half of the claim is not independently verified here.

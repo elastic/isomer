@@ -5,3 +5,7 @@
 
 packages:
   - packages/*
+
+# The static Elastic Charts engine injects the browser engine, so it resolves @elastic/charts to the static build; resync that copy after each build.
+syncInjectedDepsAfterScripts:
+  - build
