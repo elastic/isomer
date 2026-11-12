@@ -33,6 +33,15 @@ export const chartsDistillery = createDistillery({
   theme: {},
 });
 
+// A value, not a method, so `contextWith` views pass it through unchanged.
+const STYLE_SCOPE = Symbol.for('isomer.charts.styleScope');
+
+/** The collector a render context's classes record into, for a context the pack's adapter made. */
+export const styleScopeOf = (context: unknown): object | undefined =>
+  typeof context === 'object' && context !== null
+    ? (Reflect.get(context, STYLE_SCOPE) as object | undefined)
+    : undefined;
+
 /** The pack's HTML style adapter: records the handles a render resolves and emits their rules. */
 export const chartsStyleAdapter: HTMLStyleAdapter<
   PrimitiveNode,
@@ -46,6 +55,7 @@ export const chartsStyleAdapter: HTMLStyleAdapter<
       collector.useHandles(handles as unknown as readonly StyleHandle[]);
       return handles.map(({ readableName }) => readableName).join(' ');
     },
+    [STYLE_SCOPE]: collector,
   }),
   renderStyles: (collector) => chartsDistillery.renderStyles(collector),
 };
