@@ -16,7 +16,7 @@ import type { GaugeNode } from '../schema/gauge';
 
 import { resolveChart } from './resolve';
 import { niceMax } from './resolve_gauge';
-import { TABLE_CHROME } from './theme';
+import { TABLE_CHROME, TRANSPARENT } from './theme';
 
 const number = (id: string): ChartColumn => ({
   id,
@@ -161,6 +161,22 @@ describe('resolveGauge: bands and ticks', () => {
     expect(scene.bands).toEqual([
       { start: -1e308, end: 0, color: '#0000FF' },
       { start: 0, end: 1e308, color: '#FF0000' },
+    ]);
+  });
+
+  it('colors a band on a subnormal scale', () => {
+    const tiny = Number.MIN_VALUE;
+    const scene = resolve(
+      gauge([tiny, 0, 4 * tiny, null], {
+        min: { column: 'lo' },
+        max: { column: 'hi' },
+        colors: { bands: [{ from: 2 * tiny, to: 3 * tiny, color: BLUE }] },
+      })
+    );
+    expect(scene.bands).toEqual([
+      { start: 0, end: 2 * tiny, color: TRANSPARENT },
+      { start: 2 * tiny, end: 3 * tiny, color: '#0000FF' },
+      { start: 3 * tiny, end: 4 * tiny, color: TRANSPARENT },
     ]);
   });
 

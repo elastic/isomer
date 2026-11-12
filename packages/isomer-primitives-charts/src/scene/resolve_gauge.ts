@@ -132,14 +132,15 @@ export const resolveGauge = (
       max,
     ]),
   ].sort((a, b) => a - b);
-  // Bands ascend without overlapping, so one pass pairs stretches with them.
+  // Bands ascend without overlapping, and stretches split at their edges, so
+  // one pass pairs each stretch's start with the band it lies in.
   let next = 0;
-  const colorAt = (middle: number) => {
-    while (next < ranges.length && ranges[next]!.to <= middle) {
+  const colorAt = (start: number) => {
+    while (next < ranges.length && ranges[next]!.to <= start) {
       next += 1;
     }
     const range = ranges[next];
-    return range && range.from <= middle ? range.color : TRANSPARENT;
+    return range && range.from <= start ? range.color : TRANSPARENT;
   };
   const bands: GaugeBand[] = reason
     ? []
@@ -147,7 +148,7 @@ export const resolveGauge = (
       ? [{ start: min, end: max, color: TABLE_CHROME[scheme].barTrack }]
       : edges.slice(1).map((end, index) => {
           const start = edges[index]!;
-          return { start, end, color: colorAt(start / 2 + end / 2) };
+          return { start, end, color: colorAt(start) };
         });
 
   const ticksMode = node.ticks ?? 'auto';
