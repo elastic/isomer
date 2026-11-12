@@ -17,6 +17,8 @@ import type { HeatmapNode } from '../schema/heatmap';
 import {
   createResolution,
   describe,
+  nextUp,
+  percentAlong,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -48,19 +50,6 @@ const DEFAULT_BANDS: readonly ColorBand[] = HEATMAP_PALETTE.map(
     color: { light: color, dark: color },
   })
 );
-
-/** The least double above `value`, so a band's inclusive top is an exclusive `end`. */
-export const nextUp = (value: number): number => {
-  if (!Number.isFinite(value)) {
-    return value;
-  }
-  if (value === 0) {
-    return Number.MIN_VALUE;
-  }
-  const bits = new BigInt64Array(new Float64Array([value]).buffer);
-  bits[0] = bits[0]! + (value > 0 ? 1n : -1n);
-  return new Float64Array(bits.buffer)[0]!;
-};
 
 interface Position {
   readonly identity: string;
@@ -105,14 +94,14 @@ const positionsOf = (
   return { positions, byRow };
 };
 
-/** Positions in axis order: by `sort` if stated, numbers by value and anything else by label. */
+/** Positions in axis order: by instant when `byInstant` and each has one, else by `sort` if stated, numbers by value and anything else by label. */
 const ordered = (
   positions: readonly Position[],
   sort: 'asc' | 'desc' | undefined,
   locale: string,
-  time: boolean
+  byInstant: boolean
 ): Position[] => {
-  if (time) {
+  if (byInstant && positions.every(({ instant }) => instant !== undefined)) {
     return [...positions].sort((a, b) => a.instant! - b.instant!);
   }
   if (sort === undefined) {
@@ -235,7 +224,7 @@ export const resolveHeatmap = (
   const time =
     timeZone !== undefined &&
     x.positions.every(({ instant }) => instant !== undefined);
-  const xOrder = ordered(x.positions, node.x.sort, locale, time);
+  const xOrder = ordered(x.positions, node.x.sort, locale, isDate);
   const yOrder = ordered(y.positions, node.y?.sort, locale, false);
   const xRank = new Map(xOrder.map((position, rank) => [position, rank]));
   const yRank = new Map(yOrder.map((position, rank) => [position, rank]));
@@ -291,15 +280,17 @@ export const resolveHeatmap = (
     toNumber(resolution.cell(valueColumn, row))
   );
   const finite = values.filter((value): value is number => value !== undefined);
-  const min = finite.length ? Math.min(...finite) : 0;
-  const max = finite.length ? Math.max(...finite) : 0;
+  const min = finite.length
+    ? finite.reduce((least, value) => Math.min(least, value))
+    : 0;
+  const max = finite.length
+    ? finite.reduce((most, value) => Math.max(most, value))
+    : 0;
 
   const percentage =
     node.bandsRange === 'percentage' || !node.colors?.bands?.length;
   const absolute = (bound: number | undefined) =>
-    bound === undefined || !percentage
-      ? bound
-      : min + ((max - min) * bound) / 100;
+    bound === undefined || !percentage ? bound : percentAlong(min, max, bound);
   const stated = node.colors?.bands?.length ? node.colors.bands : DEFAULT_BANDS;
   const format = (value: number) => resolution.valueText(valueColumn, value);
   const bands: HeatmapBand[] = stated.flatMap(

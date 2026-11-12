@@ -14,9 +14,9 @@ import { describe, expect, it } from 'vitest';
 import type { Cell, ChartColumn } from '../schema/data';
 import type { HeatmapNode } from '../schema/heatmap';
 
+import { nextUp } from './common';
 import { brushEvent } from './events';
 import { resolveChart } from './resolve';
-import { nextUp } from './resolve_heatmap';
 import type { HeatmapScene } from './types';
 
 const HOUR = 3_600_000;
@@ -146,6 +146,32 @@ describe('resolveHeatmap: bands', () => {
       [60, nextUp(110), '60 - 110'],
     ]);
     expect(scene.cells.every(({ color }) => color === '#888888')).toBe(true);
+  });
+
+  it('places percentage bounds across the largest doubles without overflowing', () => {
+    const colors = (values: number[]) =>
+      resolve(
+        node(values.map((one, index) => [String(index), 'p', one]))
+      ).cells.map(({ color }) => color);
+    expect(colors([0, 1e308])).toEqual([TEMPERATURE[0], TEMPERATURE[4]]);
+    expect(colors([-1e308, 0, 1e308])).toEqual([
+      TEMPERATURE[0],
+      TEMPERATURE[2],
+      TEMPERATURE[4],
+    ]);
+  });
+
+  it('spans a table too long to spread into an argument list', () => {
+    const rows: Cell[][] = Array.from({ length: 200_000 }, (_, row) => [
+      String(row % 500),
+      String(Math.floor(row / 500)),
+      row,
+    ]);
+    const { bands } = resolve(node(rows));
+    expect([bands[0]?.start, bands.at(-1)?.start]).toEqual([
+      0,
+      (199_999 * 4) / 5,
+    ]);
   });
 
   it('gives every cell the last band where every value is the same', () => {
@@ -376,6 +402,19 @@ describe('resolveHeatmap: positions', () => {
       });
       expect(scene.kind === 'heatmap' && scene.x.timeZone).toBeUndefined();
       expect(scene.kind === 'heatmap' && scene.cells).toHaveLength(2);
+    });
+
+    it('keeps an ordinal date axis in time order, whatever `sort` says', () => {
+      const scene = resolveChart(
+        daily([T0 + 7 * HOUR, T0 + HOUR, T0 + 4 * HOUR], 'UTC', {
+          x: { column: 'x', interval: 3 * HOUR, sort: 'desc' },
+        }),
+        { scheme: 'light' }
+      );
+      expect(scene.kind === 'heatmap' && scene.x.scale).toBe('ordinal');
+      expect(scene.kind === 'heatmap' && scene.cells.map(({ x }) => x)).toEqual(
+        [2, 0, 1]
+      );
     });
 
     it('states a custom domain on a time axis, as Lens’s `xDomain`', () => {
