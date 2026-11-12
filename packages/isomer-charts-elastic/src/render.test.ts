@@ -46,7 +46,11 @@ import {
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
-import { gaugeColorBands, gaugeValueFormatter } from './gauge';
+import {
+  gaugeColorBands,
+  gaugeTargetFormatter,
+  gaugeValueFormatter,
+} from './gauge';
 import { heatmapTooltip, heatmapValueFormatter } from './heatmap';
 import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
@@ -1155,10 +1159,21 @@ describe('elastic-charts renderer: gauge text and bands', () => {
   }
 
   it('writes the value and goal as the Scene does, and any other value as the scale prints it', () => {
-    const format = gaugeValueFormatter(scene);
-    expect(format(scene.value!)).toBe(scene.valueText);
-    expect(format(scene.goal!.value)).toBe(scene.goal!.text);
-    expect(format(50)).toBe(formatAxisValue(scene, scene, 50));
+    const value = gaugeValueFormatter(scene);
+    const target = gaugeTargetFormatter(scene);
+    expect(value(scene.value!)).toBe(scene.valueText);
+    expect(target(scene.goal!.value)).toBe(scene.goal!.text);
+    expect(value(50)).toBe(formatAxisValue(scene, scene, 50));
+    expect(target(50)).toBe(formatAxisValue(scene, scene, 50));
+  });
+
+  it('writes a goal the value reaches in its own text', () => {
+    const reached = {
+      ...scene,
+      goal: { value: scene.value!, text: 'Goal text' },
+    };
+    expect(gaugeTargetFormatter(reached)(scene.value!)).toBe('Goal text');
+    expect(gaugeValueFormatter(reached)(scene.value!)).toBe(scene.valueText);
   });
 
   it('passes each band’s edges and color, and a lone band as one color', () => {

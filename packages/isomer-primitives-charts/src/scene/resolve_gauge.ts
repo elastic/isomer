@@ -13,6 +13,8 @@ import type { GaugeNode } from '../schema/gauge';
 
 import {
   createResolution,
+  nextUp,
+  percentAlong,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
@@ -44,13 +46,15 @@ const niceNumber = (range: number): number => {
 export const niceMax = (min: number, max: number): number => {
   const offsetMax = max + 0.0000001;
   const spacing = niceNumber(niceNumber(offsetMax - min) / 4);
-  return Math.ceil(Math.ceil(offsetMax / spacing) * spacing);
+  const nice = Math.ceil(Math.ceil(offsetMax / spacing) * spacing);
+  // Where the offset rounds away and `max` is `min`, there is no span to step.
+  return Number.isFinite(nice) ? nice : Math.ceil(nextUp(max));
 };
 
-/** Lens's `getTicksLabels`: the edges, without any within a tenth of the scale of its neighbor or the last. */
+/** Lens's `getTicksLabels`: the ascending edges, without any within a tenth of the scale of its neighbor or the last. */
 const bandTicks = (edges: readonly number[]): number[] => {
-  const tenth = (Math.max(...edges) - Math.min(...edges)) * 0.1;
   const last = edges.length - 1;
+  const tenth = (edges[last]! - edges[0]!) * 0.1;
   return edges.filter(
     (edge, index) =>
       index === 0 ||
@@ -113,7 +117,7 @@ export const resolveGauge = (
   const absolute = (bound: number | undefined) =>
     bound === undefined || node.bandsRange !== 'percentage'
       ? bound
-      : min + ((max - min) * bound) / 100;
+      : percentAlong(min, max, bound);
   const ranges = stated.map(({ from, to, color }) => ({
     from: absolute(from) ?? Number.NEGATIVE_INFINITY,
     to: absolute(to) ?? Number.POSITIVE_INFINITY,
@@ -128,20 +132,22 @@ export const resolveGauge = (
       max,
     ]),
   ].sort((a, b) => a - b);
+  // Bands ascend without overlapping, so one pass pairs stretches with them.
+  let next = 0;
+  const colorAt = (middle: number) => {
+    while (next < ranges.length && ranges[next]!.to <= middle) {
+      next += 1;
+    }
+    const range = ranges[next];
+    return range && range.from <= middle ? range.color : TRANSPARENT;
+  };
   const bands: GaugeBand[] = reason
     ? []
     : stated.length === 0
       ? [{ start: min, end: max, color: TABLE_CHROME[scheme].barTrack }]
       : edges.slice(1).map((end, index) => {
           const start = edges[index]!;
-          const middle = (start + end) / 2;
-          return {
-            start,
-            end,
-            color:
-              ranges.find(({ from, to }) => from <= middle && middle < to)
-                ?.color ?? TRANSPARENT,
-          };
+          return { start, end, color: colorAt(start / 2 + end / 2) };
         });
 
   const ticksMode = node.ticks ?? 'auto';

@@ -7,16 +7,16 @@ description: One value on a scale, as a bullet or a dial, as Lens's gauge draws 
 
 One value against a scale from `min` to `max`, on the [chart core](core.md). Lens's gauge materializes into it.
 
-| Field | What it is |
-| --- | --- |
-| `shape` | `horizontalBullet` and `verticalBullet`: straight scales with the value as a bar. `semiCircle`, `arc` (two thirds of a circle) and `circle`: round scales with the value as an arc |
-| `value` | `column`: the `number` column whose value the gauge shows. The gauge reads the first row where it is a number |
-| `min`, `max` | `column`: the start and end of the scale, from the same row. Absent `min` is 0, or 10 below the value (or `max`) where either is at most 0; absent `max` is the largest of the value, the goal and the start, rounded up to a readable number, as Lens's `getMinValue` and `getMaxValue` do |
-| `goal` | `column`: a marker on the scale, drawn where it falls between `min` and `max` |
-| `bandsRange` | `absolute` (default): `colors.bands` bounds are values. `percentage`: they are percentages of the scale from `min` (0) to `max` (100) |
-| `ticks` | `auto` (default) lets the engine place ticks; `bands` puts them at the band edges, leaving out any within a tenth of the scale of its neighbor or the end; `hidden` draws none |
-| `labels` | `major`: the gauge's title, absent for the value column's label, false for none. `minor`: a subtitle |
-| `interactions` | A static `link`. Nothing on a gauge is selectable, as in Lens |
+| Field          | What it is                                                                                                                                                                                                                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shape`        | `horizontalBullet` and `verticalBullet`: straight scales with the value as a bar. `semiCircle`, `arc` (two thirds of a circle) and `circle`: round scales with the value as an arc                                                                                                          |
+| `value`        | `column`: the `number` column whose value the gauge shows. The gauge reads the first row where it is a number                                                                                                                                                                               |
+| `min`, `max`   | `column`: the start and end of the scale, from the same row. Absent `min` is 0, or 10 below the value (or `max`) where either is at most 0; absent `max` is the largest of the value, the goal and the start, rounded up to a readable number, as Lens's `getMinValue` and `getMaxValue` do |
+| `goal`         | `column`: a marker on the scale, drawn where it falls between `min` and `max`                                                                                                                                                                                                               |
+| `bandsRange`   | `absolute` (default): `colors.bands` bounds are values. `percentage`: they are percentages of the scale from `min` (0) to `max` (100)                                                                                                                                                       |
+| `ticks`        | `auto` (default) lets the engine place ticks; `bands` puts them at the band edges, leaving out any within a tenth of the scale of its neighbor or the end; `hidden` draws none                                                                                                              |
+| `labels`       | `major`: the gauge's title, absent for the value column's label, false for none. `minor`: a subtitle                                                                                                                                                                                        |
+| `interactions` | A static `link`. Nothing on a gauge is selectable, as in Lens                                                                                                                                                                                                                               |
 
 `colors.bands` color the scale; without them it is one neutral color (EUI's `lightShade`), as Lens draws a gauge with no palette. `colors.byKey` does not apply.
 
@@ -39,6 +39,6 @@ The Scene's `kind` is `gauge`. Expected values come from Lens's gauge (`expressi
 
 ## Surfaces
 
-The [Elastic Charts engines](../../isomer-charts-elastic/docs/index.md) draw it with Elastic Charts' `Bullet`, in the browser and headless. Without a host size it takes Lens's size spec for its shape (`useGaugeSizeByType`), at most its largest box: 3:1 and 600 px wide for a horizontal bullet, 2:3 and 400 px wide for a vertical one, 2:1.25 for a semicircle, 1.1:1 for an arc and 1:1 for a circle, each at most 600 px wide; `snapshotHeight` reports it. Text and Markdown write the summary, the description and the data table. On Slack it is a picture asset, as the other charts are.
+The [Elastic Charts engine](../../isomer-charts-elastic/docs/index.md) draws it with Elastic Charts' `Bullet` in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes Lens's size spec for its shape (`useGaugeSizeByType`), at most its largest box: 3:1 and 600 px wide for a horizontal bullet, 2:3 and 400 px wide for a vertical one, 2:1.25 for a semicircle, 1.1:1 for an arc and 1:1 for a circle, each at most 600 px wide; `snapshotHeight` reports it. Text and Markdown write the summary, the description and the data table. On Slack it is a picture asset, as the other charts are.
 
 `gaugeExamples` covers a semicircle with bands, a goal and band ticks, a horizontal bullet with Lens's default bounds and a subtitle, a vertical bullet with percentage bands and no ticks, an arc whose bands leave gaps, a circle with a pre-rendered value, a link and provenance, a negative value, a huge value, no value, and bounds the wrong way round.

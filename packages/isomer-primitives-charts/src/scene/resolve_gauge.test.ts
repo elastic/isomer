@@ -74,6 +74,15 @@ describe('resolveGauge: bounds', () => {
     ).toMatchObject({ min: 5, max: 55 });
   });
 
+  it('ends above a value at its stated start where the offset rounds away', () => {
+    const scene = resolve(
+      gauge([1e12, 1e12, null, null], { min: { column: 'lo' } })
+    );
+    expect(scene.max).toBe(1e12 + 1);
+    expect(scene.empty).toBeUndefined();
+    expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
+  });
+
   it('reads the first row with a value', () => {
     const node = gauge([null, null, null, null]);
     node.data.rows.push([7, null, null, null], [9, null, null, null]);
@@ -109,6 +118,49 @@ describe('resolveGauge: bands and ticks', () => {
       { start: 0, end: 30, color: '#000088' },
       { start: 30, end: 60, color: '#FFFFFF00' },
       { start: 60, end: 100, color: '#880000' },
+    ]);
+  });
+
+  it('colors each stretch of many contiguous bands by its own band, with no gap', () => {
+    const count = 40_000;
+    const scene = resolve(
+      gauge([1, 0, count, null], {
+        min: { column: 'lo' },
+        max: { column: 'hi' },
+        colors: {
+          bands: Array.from({ length: count }, (_, index) => ({
+            from: index,
+            to: index + 1,
+            color: index % 2 ? RED : BLUE,
+          })),
+        },
+      })
+    );
+    expect(scene.bands).toHaveLength(count);
+    expect(
+      scene.bands.every(
+        ({ start, color }) => color === (start % 2 ? '#FF0000' : '#0000FF')
+      )
+    ).toBe(true);
+  });
+
+  it('places percentage band edges across the largest doubles without overflowing', () => {
+    const scene = resolve(
+      gauge([0, -1e308, 1e308, null], {
+        min: { column: 'lo' },
+        max: { column: 'hi' },
+        bandsRange: 'percentage',
+        colors: {
+          bands: [
+            { from: 0, to: 50, color: BLUE },
+            { from: 50, to: 100, color: RED },
+          ],
+        },
+      })
+    );
+    expect(scene.bands).toEqual([
+      { start: -1e308, end: 0, color: '#0000FF' },
+      { start: 0, end: 1e308, color: '#FF0000' },
     ]);
   });
 

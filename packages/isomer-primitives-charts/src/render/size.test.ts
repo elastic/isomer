@@ -8,7 +8,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
+import { resolveChart } from '../scene/resolve';
 import type { MetricScene, XyScene } from '../scene/types';
+import { gaugeExamples } from '../schema/examples/gauge';
 
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
 import { CHARTS_THEME } from './theme';
@@ -23,6 +25,9 @@ const ordinal: XyScene = {
     x: { ...xyTimeSeriesScene.axes.x, scale: 'ordinal' },
   },
 };
+const semiCircle = resolveChart(gaugeExamples[0]!.node, {
+  scheme: 'light',
+});
 const [tile] = metricSingleValueScene.tiles;
 const sixTiles: MetricScene = {
   ...metricSingleValueScene,
@@ -81,6 +86,22 @@ describe('chartSize', () => {
       height: 540,
     });
   });
+
+  // Lens's `useGaugeSizeByType`, at the theme width and past each largest box.
+  it.each([
+    ['horizontalBullet', [480, 160], [600, 200]],
+    ['verticalBullet', [400, 600], [400, 600]],
+    ['semiCircle', [480, 300], [600, 375]],
+    ['arc', [480, 436], [600, 545]],
+    ['circle', [480, 480], [600, 600]],
+  ] as const)(
+    'sizes a %s gauge by its shape',
+    (shape, [width, height], wide) => {
+      const spec = chartSizeSpec({ ...semiCircle, shape })!;
+      expect(chartSize(spec)).toEqual({ width, height });
+      expect(chartSize(spec, 960)).toEqual({ width: wide[0], height: wide[1] });
+    }
+  );
 
   it('stops at the largest width', () => {
     expect(chartSize(chartSizeSpec(metricSingleValueScene)!)).toEqual({

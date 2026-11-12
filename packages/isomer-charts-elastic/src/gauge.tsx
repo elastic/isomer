@@ -54,15 +54,21 @@ export const gaugeColorBands = (
   };
 };
 
-/** The text Elastic Charts writes for a value on the scale: the Scene's for its value and goal, else `formatAxisValue`. */
+/** The text Elastic Charts writes for the value: the Scene's, else `formatAxisValue`. */
 export const gaugeValueFormatter =
   (scene: GaugeScene) =>
   (value: number): string =>
     value === scene.value
       ? scene.valueText
-      : value === scene.goal?.value
-        ? scene.goal.text
-        : formatAxisValue(scene, scene, value);
+      : formatAxisValue(scene, scene, value);
+
+/** The text Elastic Charts writes for the goal: the Scene's, else `formatAxisValue`. */
+export const gaugeTargetFormatter =
+  (scene: GaugeScene) =>
+  (value: number): string =>
+    value === scene.goal?.value
+      ? scene.goal.text
+      : formatAxisValue(scene, scene, value);
 
 /** A gauge Scene's spec elements, for `<Chart>` or headless drawing; `null` when it is empty. */
 export const gaugeSpecs = (
@@ -73,7 +79,6 @@ export const gaugeSpecs = (
   if (scene.empty || scene.value === undefined) {
     return null;
   }
-  const format = gaugeValueFormatter(scene);
   const tick = (value: number) => formatAxisValue(scene, scene, value);
   const { ticks } = scene;
   return (
@@ -106,8 +111,8 @@ export const gaugeSpecs = (
                 : { subtitle: scene.labels.minor }),
               domain: [scene.min, scene.max],
               ...(ticks ? { ticks: () => [...ticks] } : {}),
-              valueFormatter: format,
-              targetFormatter: format,
+              valueFormatter: gaugeValueFormatter(scene),
+              targetFormatter: gaugeTargetFormatter(scene),
               tickFormatter: tick,
             },
           ],
