@@ -151,12 +151,15 @@ describe('the pack stamp', () => {
     expect(stamped({})).toBe(true);
   });
 
+  it('accepts every id a pack may have, including an empty one', () => {
+    expect(stamped({ '': 1 })).toBe(true);
+  });
+
   it.each([
     ['zero', { obs: 0 }],
     ['negative', { obs: -1 }],
     ['fractional', { obs: 1.5 }],
     ['string', { obs: '2' }],
-    ['empty id', { '': 1 }],
     ['array', [1]],
   ])('rejects a %s entry', (_, packs) => {
     expect(stamped(packs)).toBe(false);

@@ -45,7 +45,7 @@ export type AuthorComposition<TNode extends PrimitiveNode = PrimitiveNode> =
 
 /**
  * Props of the shim's root element: the composition fields minus `type` and
- * the runtime-written `packs`, with `body` given either as an array or as JSX
+ * the unauthored `packs` stamp, with `body` given either as an array or as JSX
  * children.
  */
 export interface CompositionAuthorProps<

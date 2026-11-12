@@ -202,7 +202,7 @@ describe('printCompositionJsx', () => {
     );
   });
 
-  it('never prints a pack stamp, which only a runtime writes', () => {
+  it('never prints a pack stamp, which an author never writes', () => {
     const stored = { title: 'Empty', packs: { notes: 2 } };
     expect(printCompositionJsx([], env, { root: stored })).toBe(
       '<Composition title="Empty" />'

@@ -272,7 +272,7 @@ const mergeExtraDefs = (
   return [...byId.values()];
 };
 
-/** Only a runtime's `stamp` writes `packs`, so an author is never shown it. */
+/** An author never writes the `packs` stamp, so is never shown it. */
 const dropPackStamp = (schema: JsonSchema): void => {
   const { properties } = schema;
   if (isJsonObject(properties)) {

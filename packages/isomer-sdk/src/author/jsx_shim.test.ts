@@ -99,7 +99,7 @@ describe('buildJsxShim', () => {
     });
   });
 
-  it('drops a pack stamp, which only a runtime writes', () => {
+  it('drops a pack stamp, which an author never writes', () => {
     expectTypeOf<Parameters<typeof Composition>[0]>().not.toHaveProperty(
       'packs'
     );

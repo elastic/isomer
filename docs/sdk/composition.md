@@ -17,7 +17,7 @@ A `Composition` is the resolved JSON document that travels: a title, an optional
 ```
 
 - The stamp is the only source of a stored document's version. Nothing is inferred from its shape: `{ "value": 0.42, "unit": "%" }` can be valid at two versions and mean different things at each.
-- A runtime writes it; an author never does. The [authoring JSON Schema](#json-schema) omits it, so a model never sees it; the JSX root takes no `packs` prop and the shim drops one; `printCompositionJsx` never prints it.
+- An author never writes it, and nothing in the SDK or runtime writes or reads it yet beyond checking its shape. The [authoring JSON Schema](#json-schema) omits it, so a model never sees it; the JSX root takes no `packs` prop and the shim drops one; `printCompositionJsx` never prints it.
 - It sits inside the strict envelope, so the validator and parser check its shape. Entries for packs a runtime does not hold pass through untouched.
 - A runtime that predates the stamp rejects a stamped document with `unrecognized key "packs"`.
 

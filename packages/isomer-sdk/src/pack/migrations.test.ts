@@ -112,7 +112,7 @@ describe('a pack version', () => {
     ).toEqual({ slides: 2, obs: 1 });
   });
 
-  it.each([0, -1, 1.5, Number.NaN, '2', Number.POSITIVE_INFINITY])(
+  it.each([0, -1, 1.5, Number.NaN, '2', Number.POSITIVE_INFINITY, 2n])(
     'rejects %s',
     (version) => {
       expect(
@@ -168,6 +168,24 @@ describe('a pack’s migrations', () => {
       isomerError(
         'INVALID_PACK_MIGRATIONS',
         'migrations keys must be exactly 1..2, one per step to version 3; missing 2; unexpected "3"'
+      )
+    );
+  });
+
+  it('reports a huge gap without enumerating it', () => {
+    expect(
+      thrown(() =>
+        definePrimitivePack({
+          id: 'obs',
+          version: Number.MAX_SAFE_INTEGER,
+          migrations: { 2: {} },
+          primitives: [leaf('x')],
+        })
+      )
+    ).toEqual(
+      isomerError(
+        'INVALID_PACK_MIGRATIONS',
+        `; missing 1, 3, 4, 5, 6, … (${Number.MAX_SAFE_INTEGER - 2} in all)`
       )
     );
   });

@@ -60,7 +60,7 @@ export const buildCompositionSchema = ({
     .object({
       type: z.literal('view', { error: 'type must be "view"' }),
       version: z.literal(1).optional(),
-      packs: z.record(z.string().min(1), z.int().min(1)).optional(),
+      packs: z.record(z.string(), z.int().min(1)).optional(),
       title: z.string().optional(),
       subtitle: z.string().optional(),
       theme: renderThemeSchema.optional(),

@@ -66,7 +66,7 @@ export const assertPackVersion = (id: string, version: unknown): void => {
   if (version !== undefined && !isPositiveInteger(version)) {
     throw new IsomerError(
       'INVALID_PACK_VERSION',
-      `primitive pack "${id}": version must be a positive integer, got ${typeof version === 'number' ? String(version) : JSON.stringify(version)}`
+      `primitive pack "${id}": version must be a positive integer, got ${typeof version === 'number' || typeof version === 'bigint' ? version.toString() : JSON.stringify(version)}`
     );
   }
 };
@@ -102,6 +102,24 @@ const invalidMigrations = (id: string, detail: string): IsomerError =>
     `primitive pack "${id}": ${detail}`
   );
 
+const MISSING_LISTED = 5;
+
+/** The first missing steps, so the scan stays bounded by the keys a pack supplies. */
+const listMissing = (
+  migrations: Record<string, unknown>,
+  count: number
+): string => {
+  const listed: number[] = [];
+  for (let step = 1; listed.length < Math.min(count, MISSING_LISTED); step++) {
+    if (!Object.hasOwn(migrations, String(step))) {
+      listed.push(step);
+    }
+  }
+  return count > listed.length
+    ? `${listed.join(', ')}, … (${count} in all)`
+    : listed.join(', ');
+};
+
 /**
  * Throws `INVALID_PACK_MIGRATIONS` unless `migrations` holds one step for each
  * of `1 .. version - 1` and nothing else, each a {@link PackMigration}.
@@ -117,19 +135,21 @@ export const assertPackMigrations = (
   if (!isRecord(migrations)) {
     throw invalidMigrations(id, 'migrations must be an object');
   }
-  const expected = Array.from({ length: version - 1 }, (_, i) => String(i + 1));
   const keys = Object.keys(migrations);
-  const missing = expected.filter((key) => !Object.hasOwn(migrations, key));
-  const unexpected = keys.filter((key) => !expected.includes(key));
-  if (missing.length > 0 || unexpected.length > 0) {
+  const isStep = (key: string) =>
+    /^[1-9]\d*$/.test(key) && Number(key) < version;
+  const steps = keys.filter(isStep);
+  const unexpected = keys.filter((key) => !isStep(key));
+  const missingCount = version - 1 - steps.length;
+  if (missingCount > 0 || unexpected.length > 0) {
     const range =
       version === 1 ? 'none, at version 1' : `exactly 1..${version - 1}`;
     throw invalidMigrations(
       id,
-      `migrations keys must be ${range}, one per step to version ${version}${missing.length > 0 ? `; missing ${missing.join(', ')}` : ''}${unexpected.length > 0 ? `; unexpected ${unexpected.map((key) => JSON.stringify(key)).join(', ')}` : ''}`
+      `migrations keys must be ${range}, one per step to version ${version}${missingCount > 0 ? `; missing ${listMissing(migrations, missingCount)}` : ''}${unexpected.length > 0 ? `; unexpected ${unexpected.map((key) => JSON.stringify(key)).join(', ')}` : ''}`
     );
   }
-  for (const step of expected) {
+  for (const step of steps) {
     const migration = migrations[step];
     if (!isRecord(migration)) {
       throw invalidMigrations(id, `migrations[${step}] must be an object`);

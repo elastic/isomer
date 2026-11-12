@@ -78,6 +78,8 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | No two packs share an `id` | `DUPLICATE_PACK_ID` | `"components" names more than one pack; pack ids must be unique` |
 | No node type owned by two packs | `DUPLICATE_PRIMITIVE_TYPE` | `primitive type "table" registered by "components" and "charts"` |
 | No pack built for another pack contract | `INCOMPATIBLE_PACK_CONTRACT` | `primitive pack "charts" was built for pack contract 2; this SDK runs contract 1` |
+| Each pack's `version` is a positive integer | `INVALID_PACK_VERSION` | `primitive pack "charts": version must be a positive integer, got 0` |
+| Each pack's `migrations` has one step per earlier version | `INVALID_PACK_MIGRATIONS` | `primitive pack "charts": migrations keys must be exactly 1..2, one per step to version 3; missing 2` |
 | No enhancement id owned by two packs | `DUPLICATE_ENHANCEMENT` | `enhancement "tableSort" registered by "components" and "charts"` |
 | An override names a registered type | `UNKNOWN_PRIMITIVE_TYPE` | `renderer override targets unregistered primitive type "…"` |
 | An override names a real surface key | `UNKNOWN_SURFACE` | `renderer override for "table" targets unknown surface "…"` |
