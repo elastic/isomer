@@ -29,6 +29,8 @@ The few elements this engine draws beside Elastic Charts' own, a metric's second
 
 `sceneSpecs(scene, env, options?)` turns a `metric`, `xy` or `partition` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, the metric grid, or a `Partition` of the Scene's slices. The renderer wraps them in `<Chart>`; headless drawing hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
 
+`@elastic/isomer-charts-elastic/engine` exports `sceneSpecs` and what else another Elastic Charts drawing of a Scene builds on: `kibanaBaseTheme`, `ariaDescriptionOf`, `emptyTextOf` and its text sizes, `seriesOf` and `slicesOf`. A drawing that collects the specs must build them from the same copy of `@elastic/charts` it collects with.
+
 ## What it takes from the Scene
 
 Colors, text and series are the Scene's, and draw order is as far as Elastic Charts' paint bands allow (see the tolerance table). Ticks, domains, stacks and point density are Elastic Charts', computed from the intent each Scene axis and series states, the way Kibana's xy expression hands them over. A tick label prints through `formatAxisValue`, so it reads the same in every engine.
@@ -77,6 +79,15 @@ With `onEvent` and a node id, a gesture raises the event of the Scene part it la
 Clicking a legend item's label toggles its series, which raises nothing.
 
 `src/parity.test.ts` holds the engine to this table over every example the charts pack has, nested in a `grid` or not: each gesture above, built from what Elastic Charts reports for it and sent to the callbacks and legend action the specs install on `Settings`, raises the event of the Scene part it lands on, through `selectEvent` and `brushEvent`, and nothing where the node offers no target. No metric example offers `tile`, so each is also checked offering it.
+
+## Testing a static drawing
+
+`@elastic/isomer-charts-elastic/testing` holds what any static drawing with Elastic Charts checks beside the charts pack's [static renderer checks](../../isomer-primitives-charts/docs/rendering.md#testing-a-static-renderer):
+
+- `debugStateProblems(scene, state)` compares the `DebugState` Elastic Charts reports for a drawing with its Scene: every tick label is the category's label or the value through `formatAxisValue`, the series drawn and the legend items are the Scene's with their colors, and a partition draws each slice by key with its color and value. A metric has no `DebugState`, so it is checked by its text alone. `debugStateTexts` and `debugStateColors` read what it reports as drawn, for an engine whose output holds no text or paint to read.
+- `defineLookSuite({ test, expect, drawn, script, stylesheet, sameScene, looser?, unlike })` declares the look check in Chromium, given Playwright's `test` and `expect`: this engine's browser drawing of each Scene is the static drawing's size and scores a mean SSIM, on luminance at an eighth of their size (`LOOK_SCALE`) with every pixel counted, of at least `sameScene[kind]` against the static drawing of the same Scene, and below it against the static drawing of each of the `unlike` pairs, examples established to differ in layout. `script` is a bundle that calls `installLookPage()`, which draws Scenes with this engine and scores pictures in the page. `onScore`, when given, receives every score with its tolerance, for an engine to record.
+
+`src/testing.test.ts` holds `debugStateProblems` to what this engine draws for every xy and partition example in jsdom, and to mutations of it: a changed tick label, a series in another color, a slice missing.
 
 ## Known gaps and geometry tolerance
 

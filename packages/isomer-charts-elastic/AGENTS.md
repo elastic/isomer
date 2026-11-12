@@ -9,7 +9,7 @@ Read the [root instructions](../../AGENTS.md) and the [charts pack instructions]
 
 ## When changing this area
 
-Source imports only `@elastic/isomer-primitives-charts/scene`: never the schemas, a formatter, or the resolver. Feed every string and color from the Scene, and print tick labels through `formatAxisValue`; where Elastic Charts cannot take a value from it, record the gap in the docs' tolerance table rather than deciding it here. Kibana defaults (theme, styles, legend sizes) come from Kibana's source, cited where they are ported.
+Source imports only `@elastic/isomer-primitives-charts/scene`: never the schemas, a formatter, or the resolver. Feed every string and color from the Scene, and print tick labels through `formatAxisValue`; where Elastic Charts cannot take a value from it, record the gap in the docs' tolerance table rather than deciding it here. Kibana defaults (theme, styles, legend sizes) come from Kibana's source, cited where they are ported. `./engine` is what another Elastic Charts drawing of a Scene builds on, and `./testing` the checks every static drawing with Elastic Charts runs; keep Playwright out of both, so pass its `test` and `expect` in.
 
 ## Evidence required
 

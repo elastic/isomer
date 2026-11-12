@@ -107,6 +107,18 @@ Two gates hold the pack to its Scenes over every example, nested in a `grid` or 
 - **Surface parity** (`src/surface_parity.test.ts`): on each surface, every chart node of the parsed composition the surface shows, nested in a grid or not but not in a collapsed section or left out by its `surfaces` hint, reaches a Scene or goes as a picture once per time it occurs, as many times as the surface reaches a lone chart of its type, so a surface that drops a chart, even one repeated elsewhere, fails rather than shrinking what is checked. Text writes each Scene's summary, description and notes in order, its table as the rows above, and its link. Markdown, read back with a GFM parser, holds the same sentences, the table as a GFM table cell for cell, and the link. Slack without pictures holds the sentences and a native table of the Scene's strings, in the order the chart shows them and within Slack's caps, and the link. With pictures, each asset type is an `image` whose alt text is the node's text, cut to Slack's limit, and every other chart is text as without pictures.
 - **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, and the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes.
 
+## Testing a static renderer
+
+`@elastic/isomer-primitives-charts/testing` holds the checks any renderer that draws a Scene as static markup, for `snapshot` and an image backend, can run with its own test runner. It needs `@elastic/isomer-runtime` and `react-dom`, its optional peers; no other entry reaches them.
+
+- `drawExamples(renderers, environment?)` draws every example of the pack with `renderers` first, in both schemes, through the `react` surface, nested charts included, and returns each drawing (`DrawnScene`: the example, scheme, Scene and markup), every Scene the pack resolved, and the examples.
+- `coverageProblems(drawn, supports)` lists every Scene of a kind the renderer supports that an example did not draw, and every supported kind with no content check.
+- `drawingProblems(drawing, reading)` lists where a drawing differs from its Scene: its box, accessible name and description (`sceneDescription`), background, and what its kind draws: an xy chart's axis titles and series colors; a metric's tile titles, subtitles, values and secondary text; a partition's slice colors, legend items and values, no word that is none of its slices' or legend's, or an empty chart's note alone. Text may be cut with an ellipsis (`textDrawn`).
+
+Each engine reads its own output into a `DrawingReading` (its size, name, description, background, the strings drawn and the colors painted), with `unescapeMarkup` and `rgbOf` to help. Read what the markup draws wherever it can: an engine that draws into bitmaps can only report what its engine says it drew, which is weaker evidence than text and paint in the markup. Ticks are each engine's to choose, so these checks leave them to the engine's own.
+
+`src/testing/testing.test.ts` holds the checks to a renderer that draws each Scene's visible parts, found by walking the Scene, and to mutations of its output, each of which they fail.
+
 ## `grid`
 
 A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.

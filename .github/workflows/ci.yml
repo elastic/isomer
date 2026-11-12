@@ -17,7 +17,7 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-# `static`, `test`, `browser`, and `studio-consumer` split `pnpm verify` across parallel jobs: together they run every
+# `static`, `test`, `browser`, `studio-consumer`, and `memory` split `pnpm verify` across parallel jobs: together they run every
 # script it runs. Keep them in step with it. `peers` runs what depends on Node and the peers at the other versions.
 jobs:
   static:
@@ -116,6 +116,17 @@ jobs:
       - uses: ./.github/actions/playwright-chromium
       - run: pnpm check:studio-consumer
 
+  # Peak RSS of server-side chart PNGs: each chart engine's `bench:check`, through `scripts/bench_charts.cjs`.
+  memory:
+    name: memory
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-workspace
+        with:
+          node-version: 24
+      - run: pnpm check:memory
+
   peers:
     name: peers (${{ matrix.target }}, node ${{ matrix.node }})
     runs-on: ubuntu-latest
@@ -149,7 +160,7 @@ jobs:
   verify:
     name: verify
     if: ${{ !cancelled() }}
-    needs: [static, test, browser, studio-consumer]
+    needs: [static, test, browser, studio-consumer, memory]
     runs-on: ubuntu-latest
     steps:
       - env:

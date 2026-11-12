@@ -76,6 +76,31 @@ describe.each(['./schema', './scene', './resolve'])('charts %s', (entryKey) => {
   });
 });
 
+describe('charts .', () => {
+  const forbidden = RULES['@elastic/isomer-primitives-charts']['.'];
+
+  it('allows React and the SDK', async () => {
+    expect(
+      await forbiddenReachable(
+        entryImporting('react', '@elastic/isomer-sdk'),
+        forbidden
+      )
+    ).toEqual([]);
+  });
+
+  it.each(['@elastic/isomer-runtime', 'react-dom/server'])(
+    'rejects %s, the testing entry’s peer, directly or through a relative module',
+    async (specifier) => {
+      expect(
+        await forbiddenReachable(entryImporting(specifier), forbidden)
+      ).toEqual([specifier]);
+      expect(
+        await forbiddenReachable(entryReaching(specifier), forbidden)
+      ).toEqual([specifier]);
+    }
+  );
+});
+
 describe('SDK ./schema', () => {
   const forbidden = RULES['@elastic/isomer-sdk']['./schema'];
 

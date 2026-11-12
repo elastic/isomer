@@ -20,6 +20,28 @@
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"
+    },
+    "./engine": {
+      "types": "./lib/cjs/engine.d.ts",
+      "import": "./lib/esm/engine.js",
+      "require": "./lib/cjs/engine.js",
+      "default": "./lib/cjs/engine.js"
+    },
+    "./testing": {
+      "types": "./lib/cjs/testing.d.ts",
+      "import": "./lib/esm/testing.js",
+      "require": "./lib/cjs/testing.js",
+      "default": "./lib/cjs/testing.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "engine": [
+        "./lib/cjs/engine.d.ts"
+      ],
+      "testing": [
+        "./lib/cjs/testing.d.ts"
+      ]
     }
   },
   "files": [

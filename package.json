@@ -35,6 +35,7 @@
     "check:pack-consumer": "node scripts/check_pack_consumer.js",
     "check:studio-consumer": "node scripts/check_studio_consumer.js",
     "check:module-graph": "node scripts/check_module_graph.js",
+    "check:memory": "pnpm -r --if-present bench:check",
     "check:pack-contents": "node scripts/check_pack_contents.js",
     "licenses:report": "node scripts/licenses_report.js",
     "docs:assemble": "node scripts/assemble_package_docs.js",
@@ -45,12 +46,13 @@
     "okf:check": "okf validate .okf/isomer && node scripts/check_okf_anchors.js && node scripts/write_okf_map.js --check",
     "okf:index": "okf index .okf/isomer && pnpm okf:map",
     "okf:map": "node scripts/write_okf_map.js",
-    "verify": "pnpm verify:fast && pnpm verify:packed && pnpm test:browser && pnpm check:studio-consumer",
+    "verify": "pnpm verify:fast && pnpm verify:packed && pnpm test:browser && pnpm check:studio-consumer && pnpm check:memory",
     "verify:fast": "pnpm build && pnpm verify:static && pnpm test",
     "verify:static": "node scripts/run_parallel.js typecheck lint 'licenses:report --check'",
     "verify:packed": "pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer",
     "semantic-release": "semantic-release",
-    "prepare": "husky"
+    "prepare": "husky",
+    "bench:charts": "node scripts/bench_charts.cjs"
   },
   "devDependencies": {
     "@babel/cli": "^7.29.7",
@@ -71,6 +73,7 @@
     "@elastic/isomer-sdk": "workspace:*",
     "@elastic/isomer-studio": "workspace:*",
     "@eslint/js": "^9.25.1",
+    "@fontsource/inter": "^5.3.0",
     "@playwright/test": "1.64.0",
     "@semantic-release/commit-analyzer": "^13.0.1",
     "@semantic-release/release-notes-generator": "^14.1.1",

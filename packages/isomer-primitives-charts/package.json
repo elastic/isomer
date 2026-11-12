@@ -38,6 +38,12 @@
       "import": "./lib/esm/resolve/index.js",
       "require": "./lib/cjs/resolve/index.js",
       "default": "./lib/cjs/resolve/index.js"
+    },
+    "./testing": {
+      "types": "./lib/cjs/testing/index.d.ts",
+      "import": "./lib/esm/testing/index.js",
+      "require": "./lib/cjs/testing/index.js",
+      "default": "./lib/cjs/testing/index.js"
     }
   },
   "typesVersions": {
@@ -50,6 +56,9 @@
       ],
       "resolve": [
         "./lib/cjs/resolve/index.d.ts"
+      ],
+      "testing": [
+        "./lib/cjs/testing/index.d.ts"
       ]
     }
   },
@@ -76,8 +85,18 @@
     "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
+    "@elastic/isomer-runtime": "workspace:^",
     "react": ">=18 <20",
+    "react-dom": ">=18 <20",
     "zod": "^4.5.4"
+  },
+  "peerDependenciesMeta": {
+    "@elastic/isomer-runtime": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@elastic/eui-theme-borealis": "8.1.0",

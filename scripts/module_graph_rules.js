@@ -37,12 +37,16 @@ export const RULES = {
     './author': ['react-dom', 'react-dom/server'],
     './schema': ['react', 'react-dom', ...MARKDOWN_PARSERS],
   },
-  '@elastic/isomer-primitives-charts': Object.fromEntries(
-    ['./schema', './scene', './resolve'].map((entry) => [
-      entry,
-      CHARTS_CONTRACT_FORBIDDEN,
-    ])
-  ),
+  '@elastic/isomer-primitives-charts': {
+    ...Object.fromEntries(
+      ['./schema', './scene', './resolve'].map((entry) => [
+        entry,
+        CHARTS_CONTRACT_FORBIDDEN,
+      ])
+    ),
+    // The runtime and `react-dom/server` are `./testing`'s optional peers alone.
+    '.': ['@elastic/isomer-runtime', 'react-dom/server'],
+  },
 };
 
 const coversPackage = (specifier, name) =>
