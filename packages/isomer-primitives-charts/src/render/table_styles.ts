@@ -122,8 +122,5 @@ export const tableModule = chartsDistillery.createStyleModule(
     page: css`
       font-weight: ${theme.headerWeight};
     `,
-    link: css`
-      color: inherit;
-    `,
   })
 );

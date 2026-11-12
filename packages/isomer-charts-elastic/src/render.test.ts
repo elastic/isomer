@@ -623,4 +623,8 @@ describe('elastic-charts renderer', () => {
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
   });
+
+  it('fills its container, so the chart shim gives it the size spec’s box', () => {
+    expect(renderer.fluid).toBe(true);
+  });
 });

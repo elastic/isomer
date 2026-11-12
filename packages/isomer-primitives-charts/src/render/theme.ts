@@ -42,6 +42,8 @@ export const CHARTS_THEME = {
       /** The largest side of each tile when there are several, in pixels. */
       tileSide: 200,
     },
+    /** Height of the line a chart's link draws on below the chart, in pixels. */
+    linkHeight: 18,
   },
   grid: {
     /** Height of one grid row unit, in pixels. */
@@ -63,7 +65,7 @@ export const CHARTS_THEME = {
   type: {
     /** Panel and section title size, in pixels. */
     title: 14,
-    /** Description and reason size, in pixels. */
+    /** Description, reason and link size, in pixels. */
     body: 12,
   },
   /** A `dataTable`, laid out as EUI's data grid. */

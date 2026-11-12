@@ -25,7 +25,11 @@ import { tableSceneToSlack } from '../text/slack_table';
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import { dataTableIcon, metricIcon, xyChartIcon } from './icons';
-import { renderSceneNode, type SceneShimConfig } from './scene_node';
+import {
+  linkLineHeight,
+  renderSceneNode,
+  type SceneShimConfig,
+} from './scene_node';
 import { chartSize, chartSizeSpec } from './size';
 import { tableHeight } from './table';
 
@@ -55,12 +59,13 @@ const sanitizeLink = <TNode extends ChartNode>(node: TNode): TNode => {
   };
 };
 
-/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws. */
+/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws, and its link line. */
 const snapshotHeight =
   (config: SceneShimConfig) =>
   (node: ChartNode): number => {
-    const spec = chartSizeSpec(resolveForText(node, config));
-    return spec ? chartSize(spec).height : 0;
+    const scene = resolveForText(node, config);
+    const spec = chartSizeSpec(scene);
+    return (spec ? chartSize(spec).height : 0) + linkLineHeight(scene);
   };
 
 /** The chart primitives, each drawing through `config`. */
@@ -84,8 +89,10 @@ export const defineChartPrimitives = (config: SceneShimConfig) =>
       examples: dataTableExamples,
       sanitize: sanitizeLink,
       metrics: {
-        snapshotHeight: (node: DataTableNode) =>
-          tableHeight(resolveForText(node, config) as TableScene),
+        snapshotHeight: (node: DataTableNode) => {
+          const scene = resolveForText(node, config) as TableScene;
+          return tableHeight(scene) + linkLineHeight(scene);
+        },
       },
       renderers: {
         ...chartRenderers<DataTableNode>(config),

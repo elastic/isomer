@@ -35,6 +35,7 @@ export const createElasticChartsRenderer = (
 ): SceneRenderer<ReactNode> => ({
   id: 'elastic-charts',
   environments: ['browser'],
+  fluid: true,
   supports: (kind) => KINDS.includes(kind),
   render: (scene: Scene, env) => {
     const resolved = { debugState: options.debugState ?? debugFlag() };

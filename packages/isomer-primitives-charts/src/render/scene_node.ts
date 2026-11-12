@@ -6,10 +6,11 @@
  */
 
 // Every chart primitive's `react` renderer is this shim: resolve the node to a
-// Scene, pick a renderer, and hand it the Scene. Nothing here draws.
+// Scene, pick a renderer, and hand it the Scene. The chart's link is the one
+// thing drawn here.
 
 import { createElement, type ReactNode } from 'react';
-import { nodeAnchor } from '@elastic/isomer-sdk';
+import { nodeAnchor, sanitizeNavigationHref } from '@elastic/isomer-sdk';
 
 import { selectSceneRenderer } from '../scene/select';
 import type {
@@ -27,7 +28,9 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeStyle } from './size';
+import { cls } from './styles';
 import { summarySceneRenderer } from './summary_renderer';
 import { tableHeight } from './table';
 import { CHARTS_THEME } from './theme';
@@ -38,6 +41,20 @@ export interface SceneShimConfig {
   /** Tried after the host's `sceneRenderers`. The last should support every kind. */
   readonly sceneRenderers: readonly ReactSceneRenderer[];
 }
+
+const { linkHeight } = CHARTS_THEME.chart;
+
+/** A Scene's link, when its `href` passes the SDK's navigation policy. */
+const sceneLink = ({
+  interactions: { link },
+}: Scene): { readonly href: string; readonly label: string } | undefined => {
+  const href = link && sanitizeNavigationHref(link.href);
+  return link && href ? { href, label: link.label } : undefined;
+};
+
+/** The height a Scene's link line takes below the chart. */
+export const linkLineHeight = (scene: Scene): number =>
+  sceneLink(scene) ? linkHeight : 0;
 
 /** Where a render is drawing, when the host does not say. */
 const detectSceneEnvironment = (): SceneEnvironment =>
@@ -111,11 +128,13 @@ const fixedBox = (
 
 /**
  * Draws a chart node through the first renderer that runs here and supports
- * its kind, in one `div` that carries the node anchor.
+ * its kind, in one `div` that carries the node anchor, with the Scene's link
+ * on a line below it.
  *
  * Without a host `size`, the chart takes its kind's size spec. On Node, or
  * for a `sized` renderer, it resolves for the spec's box; in a browser, a
- * `fluid` renderer's `div` takes the spec's shape and the renderer fills it.
+ * `fluid` renderer's box takes the spec's shape and the renderer fills it.
+ * A host `size` holds the link line too.
  */
 export const renderSceneNode = (
   node: ChartNode,
@@ -126,8 +145,12 @@ export const renderSceneNode = (
   const environment = context?.environment ?? detectSceneEnvironment();
   const unsized = resolveForReact(node, env, config);
   const renderer = pickSceneRenderer(unsized, environment, context, config);
+  const link = sceneLink(unsized);
   const box = context?.size
-    ? undefined
+    ? link && {
+        width: context.size.width,
+        height: Math.max(0, context.size.height - linkHeight),
+      }
     : fixedBox(unsized, environment, renderer);
   const scene = box ? resolveForReact(node, env, config, box) : unsized;
   const spec =
@@ -135,12 +158,30 @@ export const renderSceneNode = (
       ? chartSizeSpec(unsized)
       : undefined;
   const drawn = renderer.render(scene, renderEnv(node, environment, context));
+  const style = spec && chartSizeStyle(spec);
+  if (!link) {
+    return createElement(
+      'div',
+      { ...nodeAnchor(context, node), ...(style && { style }) },
+      drawn
+    );
+  }
   return createElement(
     'div',
-    {
-      ...nodeAnchor(context, node),
-      ...(spec ? { style: chartSizeStyle(spec) } : {}),
-    },
-    drawn
+    nodeAnchor(context, node),
+    createElement('div', style && { style }, drawn),
+    createElement(
+      'a',
+      {
+        href: link.href,
+        title: link.label,
+        className: cls(context, sceneModule.handles.link),
+        style: {
+          color: unsized.chrome.text,
+          background: unsized.chrome.background,
+        },
+      },
+      link.label
+    )
   );
 };

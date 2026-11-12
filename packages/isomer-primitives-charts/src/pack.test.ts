@@ -11,7 +11,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef, Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { chartsPack, createChartsPack } from './pack';
+import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import type {
   ChartNode,
   ChartsRenderContext,
@@ -349,14 +349,36 @@ describe("a Scene's link and emphasis notes", () => {
   const { link } = xyInteractiveScene.interactions;
   const [note] = xyInteractiveScene.interactions.emphasis;
   const seen: ChartNode[] = [];
-  const pack = createChartsPack({
-    resolveScene: (node, { scheme }) => {
-      seen.push(node);
-      return { ...xyInteractiveScene, scheme };
-    },
-  });
+  const sizes: (ResolveSceneOptions['size'] | undefined)[] = [];
+  const resolveInteractive = (
+    node: ChartNode,
+    { scheme, size }: ResolveSceneOptions
+  ): Scene => {
+    seen.push(node);
+    sizes.push(size);
+    return { ...xyInteractiveScene, scheme };
+  };
+  const pack = createChartsPack({ resolveScene: resolveInteractive });
   const runtime = runtimeFor(pack);
   const interactive: Composition = { type: 'view', body: [xyInteractive] };
+  const react = (
+    drawing: ReturnType<typeof createChartsPack>,
+    context: ChartsRenderContext
+  ) =>
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        runtimeFor(drawing).surfaces.react.render(interactive, {
+          context,
+          heading: false,
+        })
+      )
+    );
+  const links = (html: string) =>
+    [...html.matchAll(/<a\b[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/g)].map(
+      ([, href, label]) => ({ href, label })
+    );
 
   it('are written on text and Markdown around the table', () => {
     const text = runtime.surfaces.text.render(interactive, { heading: false });
@@ -371,19 +393,84 @@ describe("a Scene's link and emphasis notes", () => {
     expect(markdown).toContain(`[${link?.label}](${link?.href})`);
   });
 
-  it('are drawn by the fallback', () => {
-    const html = renderToStaticMarkup(
-      createElement(
-        'div',
-        null,
-        runtime.surfaces.react.render(interactive, {
-          context: { environment: 'node' },
-          heading: false,
-        })
-      )
-    );
+  it('are drawn by the fallback, with the link once below it', () => {
+    const html = react(pack, { environment: 'node' });
     expect(html).toContain(`<em>${note?.note}</em>`);
-    expect(html).toContain(`<a href="${link?.href}">${link?.label}</a>`);
+    expect(links(html)).toEqual([link]);
+  });
+
+  it('draw the link once below any renderer', () => {
+    const engine = createChartsPack({
+      resolveScene: resolveInteractive,
+      sceneRenderers: [tagging('engine', ['xy'])],
+    });
+    const html = react(engine, { environment: 'node' });
+    expect(html).toContain('engine:xy:light');
+    expect(links(html)).toEqual([link]);
+    expect(html.indexOf('engine:xy')).toBeLessThan(html.indexOf('<a'));
+  });
+
+  it("draw the link outside a fluid chart's box in a browser", () => {
+    const engine = createChartsPack({
+      resolveScene: resolveInteractive,
+      sceneRenderers: [
+        { ...tagging('engine', ['xy'], ['browser']), fluid: true },
+      ],
+    });
+    const html = react(engine, { environment: 'browser' });
+    const [, anchor, box, after] =
+      /^<div><div([^>]*)><div([^>]*)><output>[^<]*<\/output><\/div>(.*)<\/div><\/div>$/.exec(
+        html
+      ) ?? [];
+    expect(anchor).not.toContain('aspect-ratio');
+    expect(box).toContain('aspect-ratio');
+    expect(links(after ?? '')).toEqual([link]);
+  });
+
+  it('draw the link on one clipped line in the Scene’s text and background colors', () => {
+    const chrome = {
+      ...xyInteractiveScene.chrome,
+      text: '#DFE5EF',
+      background: '#0B1628',
+    };
+    const dark = createChartsPack({
+      resolveScene: (node, options) => ({
+        ...resolveInteractive(node, options),
+        chrome,
+      }),
+    });
+    const [, className, style] =
+      /<a\b[^>]*class="([^"]*)"[^>]*style="([^"]*)"/.exec(
+        react(dark, { environment: 'browser' })
+      ) ?? [];
+    expect(style).toBe(`color:${chrome.text};background:${chrome.background}`);
+    expect(className).toBe('chartsScene-link');
+    const [, rule] =
+      /\.chartsScene-link\{([^}]*)\}/.exec(chartsStylesheet()) ?? [];
+    expect(rule).toContain(`height:${CHARTS_THEME.chart.linkHeight}px`);
+    expect(rule).toContain('overflow:hidden');
+    expect(rule).toContain('white-space:nowrap');
+    expect(rule).toContain('text-overflow:ellipsis');
+  });
+
+  it('leave the link its line inside a host size', () => {
+    sizes.length = 0;
+    const size = { width: 320, height: 200 };
+    react(pack, { environment: 'browser', size });
+    expect(sizes.at(-1)).toEqual({
+      width: size.width,
+      height: size.height - CHARTS_THEME.chart.linkHeight,
+    });
+  });
+
+  it('add the link line to the snapshot height', () => {
+    const snapshotHeight = pack.primitives.find(
+      ({ type }) => type === 'xyChart'
+    )!.metrics?.snapshotHeight as (node: ChartNode) => number;
+    expect(snapshotHeight(xyInteractive)).toBe(
+      chartSize(chartSizeSpec(xyInteractiveScene)!).height +
+        CHARTS_THEME.chart.linkHeight
+    );
   });
 
   // `react` skips validation, so its node may carry any href.

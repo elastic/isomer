@@ -60,7 +60,7 @@ A host that loads the charts pack without a style adapter names the runtime's ty
 
 When the context carries `onEvent`, the shim passes the renderer an `onEvent` that wraps each `ChartEvent` with `toActionEvent`. Without it the renderer gets none and the chart is not interactive.
 
-The shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors).
+The shim puts the renderer's output in one `div` that carries the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors), and draws the Scene's `link` below the chart in the Scene's text and background colors, on one line `CHARTS_THEME.chart.linkHeight` pixels tall that clips a longer label, so every renderer gets it without drawing it. A host or grid panel `size` holds that line: the chart resolves for the height left above it.
 
 ## Chart size
 
@@ -74,7 +74,7 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 | `metric` with several tiles | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
 | `dataTable` | None: the table is its rows tall |
 
-In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
+In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric` and `xyChart` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
 ## Styling
 
@@ -82,7 +82,7 @@ The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/
 
 ## Text, Markdown and Slack
 
-The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description, notes and link. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
+The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description and notes, and the shim draws the link below it. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.
 
 ```text
 Requests over time: Count of records by @timestamp per hour, from 98 to 210.
