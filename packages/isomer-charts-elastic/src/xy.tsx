@@ -233,32 +233,37 @@ export const seriesData = (series: XySeries, index: number): XyDatum[] =>
   series.marks.map(({ x, y }, mark) => ({ x, y, series: index, mark }));
 
 /**
- * Each mark's label by the value Elastic Charts passes a value-label formatter.
- * A percentage stack passes each mark's share, which prints through its axis, as Lens labels it.
- * The formatter sees the value alone, so a value whose marks carry different
- * labels prints none rather than another mark's.
+ * Each mark's label by the value Elastic Charts passes a value-label formatter, which is all it passes.
+ * A percentage stack's share, and a value whose marks carry different labels, print through the y axis, as Lens labels every value.
  */
 export const valueLabeler = (
   series: XySeries,
   scene: XyScene,
   axis: SceneAxis | undefined
 ) => {
+  const throughAxis = (value: number) =>
+    axis === undefined ? '' : formatAxisValue(scene, axis, value);
   if (series.stack?.mode === 'percentage' && axis !== undefined) {
     return (value: unknown) =>
-      typeof value === 'number' ? formatAxisValue(scene, axis, value) : '';
+      typeof value === 'number' ? throughAxis(value) : '';
   }
   const labels = new Map<number, string | undefined>();
-  for (const mark of series.marks) {
-    if (mark.y !== null) {
-      const known = labels.has(mark.y);
+  for (const { y, label } of series.marks) {
+    if (y !== null) {
       labels.set(
-        mark.y,
-        !known || labels.get(mark.y) === mark.label ? mark.label : undefined
+        y,
+        !labels.has(y) || labels.get(y) === label ? label : undefined
       );
     }
   }
-  return (value: unknown) =>
-    (typeof value === 'number' ? labels.get(value) : undefined) ?? '';
+  return (value: unknown) => {
+    if (typeof value !== 'number') {
+      return '';
+    }
+    return labels.has(value) && labels.get(value) === undefined
+      ? throughAxis(value)
+      : (labels.get(value) ?? '');
+  };
 };
 
 const inOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
