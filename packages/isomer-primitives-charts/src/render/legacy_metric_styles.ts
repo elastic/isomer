@@ -57,8 +57,7 @@ export const legacyMetricModule = createVarsModule(
       flex-wrap: wrap;
       justify-content: center;
       align-items: center;
-      align-content: center;
-      overflow: hidden;
+      overflow: auto;
       color: ${box.ink};
       background: ${box.fill};
     `,
@@ -67,10 +66,8 @@ export const legacyMetricModule = createVarsModule(
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      flex: none;
-      width: ${tile.width};
+      flex: 0 1 ${tile.width};
       max-width: 100%;
-      min-width: 0;
       padding: ${tile.padding};
       background: ${tile.fill};
     `,

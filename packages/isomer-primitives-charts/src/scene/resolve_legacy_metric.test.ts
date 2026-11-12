@@ -493,7 +493,15 @@ describe('resolveLegacyMetric', () => {
       emphasis: [{ rows: [1], note: 'Busiest' }, { rows: [3] }],
     });
     const scene = resolveChart(node, { scheme: 'dark' });
-    expect(scene.emphasisBackground).toBe(TABLE_CHROME.dark.emphasis);
+    const shade = TABLE_CHROME.dark.emphasis;
+    expect(scene.tiles.map(({ background }) => background)).toEqual([
+      undefined,
+      shade,
+      undefined,
+      shade,
+      undefined,
+      undefined,
+    ]);
     expect(scene.tiles.map(({ emphasis }) => emphasis)).toEqual([
       undefined,
       'Busiest',
@@ -520,6 +528,32 @@ describe('resolveLegacyMetric', () => {
         480
       ) + noteHeight
     ).toBeLessThanOrEqual(tight);
+  });
+
+  it('leaves a lone emphasized tile on the band that fills the chart', () => {
+    const scene = resolveChart(
+      legacy([[null, 90, 0]], {
+        colors: {
+          bands: [{ color: { light: '#1750BA', dark: '#1750BA' } }],
+        },
+        emphasis: [{ rows: [0], note: 'Over budget' }],
+      }),
+      { scheme: 'light' }
+    );
+    expect(scene.background).toBe('#1750BA');
+    expect(scene.tiles[0]!.background).toBeUndefined();
+    expect(scene.tiles[0]!.emphasis).toBe('Over budget');
+    expect(scene.tiles[0]!.labelColor).toBe(light.background);
+  });
+
+  it('shades an emphasized tile no band colors', () => {
+    const scene = resolveChart(
+      legacy([[null, 90, 0]], { emphasis: [{ rows: [0] }] }),
+      { scheme: 'light' }
+    );
+    expect(scene.background).toBe(light.background);
+    expect(scene.tiles[0]!.background).toBe(TABLE_CHROME.light.emphasis);
+    expect(scene.tiles[0]!.labelColor).toBe(light.text);
   });
 
   it('measures full-width characters at an em each', () => {

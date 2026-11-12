@@ -834,7 +834,7 @@ export interface LegacyMetricTile {
     readonly color: SceneColor;
   };
   readonly labelColor: SceneColor;
-  /** The tile's own background, when a band colors it and it does not fill the chart. */
+  /** The tile's own background, when it does not fill the chart: its band's color, else the emphasis fill when emphasized. */
   readonly background?: SceneColor;
   /**
    * Lengths in pixels, already shrunk to fit the Scene's `size` as Lens's
@@ -870,8 +870,6 @@ export interface LegacyMetricScene extends SceneBase {
   readonly valueWeight: number;
   /** The whole chart's background: a lone tile's band color, else the chrome background. */
   readonly background: SceneColor;
-  /** An emphasized tile's background, where no band colors it. */
-  readonly emphasisBackground: SceneColor;
   /** Present when there is nothing to draw: the reason, and the text to draw instead. */
   readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }

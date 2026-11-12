@@ -147,7 +147,7 @@ describe('legacyMetricSceneRenderer', () => {
     ).toBe(`${scene.summary} Hosts reporting in the last hour.`);
   });
 
-  it('draws each tile at its resolved width', () => {
+  it('lays each tile out from its resolved width', () => {
     const { scene, tiles } = draw(legacy(rows));
     expect(
       tiles.map(({ style }) => style.getPropertyValue(vars.tile.width.propName))

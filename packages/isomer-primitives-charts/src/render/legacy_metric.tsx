@@ -52,9 +52,7 @@ const Tile = ({
         select && legacy.selectable
       )}
       style={varStyle(vars.tile, {
-        fill:
-          tile.background ??
-          (emphasis === undefined ? undefined : scene.emphasisBackground),
+        fill: tile.background,
         padding: px(tile.type.padding),
         width: px(tile.box.width),
       })}

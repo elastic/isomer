@@ -317,7 +317,13 @@ export const resolveLegacyMetric = (
           color: color !== undefined && !onBackground ? color : ink,
         },
         labelColor: ink,
-        ...(own !== undefined && fill === undefined ? { background: own } : {}),
+        ...(fill !== undefined
+          ? {}
+          : own !== undefined
+            ? { background: own }
+            : emphasis.has(row)
+              ? { background: TABLE_CHROME[scheme].emphasis }
+              : {}),
         type: {
           value: round(VALUE_SIZES[step] * scale),
           label: round(LABEL_SIZES[step] * scale),
@@ -356,7 +362,6 @@ export const resolveLegacyMetric = (
     lineHeight: LINE_HEIGHT,
     valueWeight: VALUE_WEIGHT,
     background: fill ?? chrome.background,
-    emphasisBackground: TABLE_CHROME[scheme].emphasis,
     ...(empty ? { empty } : {}),
   };
 };
