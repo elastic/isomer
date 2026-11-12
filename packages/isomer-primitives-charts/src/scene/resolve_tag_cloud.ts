@@ -14,6 +14,7 @@ import type { TagCloudNode } from '../schema/tag_cloud';
 import {
   createResolution,
   describe,
+  fractionAlong,
   keyPart,
   type ResolveChartOptions,
   resolveInteractions,
@@ -54,16 +55,16 @@ export const resolveTagCloud = (
     toNumber(resolution.cell(metric, row))
   );
   const finite = values.filter((value): value is number => value !== undefined);
-  const min = Math.min(...finite);
-  const max = Math.max(...finite);
-  // Lens's `calculateWeight`: a lone row is whole; otherwise each value's
-  // place in the range, and 0 where that is not a number.
+  const min = finite.reduce((least, value) => Math.min(least, value), Infinity);
+  const max = finite.reduce((most, value) => Math.max(most, value), -Infinity);
+  // A missing value weighs 0. Lens's `calculateWeight`: a lone row is whole;
+  // otherwise each value's place in the range, and 0 where that is not a number.
   const weightOf = (value: number | undefined) =>
-    data.rows.length <= 1
-      ? 1
-      : value === undefined
-        ? 0
-        : (value - min) / (max - min) || 0;
+    value === undefined
+      ? 0
+      : data.rows.length <= 1
+        ? 1
+        : fractionAlong(min, max, value) || 0;
 
   // A tag's palette rank is the first row it shows in, as Lens ranks it.
   const firstRow = new Map<string, number>();

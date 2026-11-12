@@ -67,6 +67,34 @@ describe('resolveTagCloud', () => {
     ).toEqual([0, 0]);
   });
 
+  it('weighs a lone word with no value at nothing', () => {
+    expect(
+      resolveChart(cloud([['a', null]]), { scheme: 'light' }).words[0]!.weight
+    ).toBe(0);
+  });
+
+  it('weighs words across the largest doubles without overflowing', () => {
+    expect(
+      resolveChart(
+        cloud([
+          ['a', -1e308],
+          ['b', 0],
+          ['c', 1e308],
+        ]),
+        { scheme: 'light' }
+      ).words.map(({ weight }) => weight)
+    ).toEqual([0, 0.5, 1]);
+  });
+
+  it('weighs a table too long to spread into an argument list', () => {
+    const rows: Cell[][] = Array.from({ length: 200_000 }, (_, row) => [
+      `t${row}`,
+      row,
+    ]);
+    const { words } = resolveChart(cloud(rows), { scheme: 'light' });
+    expect([words[0]!.weight, words.at(-1)!.weight]).toEqual([0, 1]);
+  });
+
   it('colors a tag by its stated key, else by the first row it shows in', () => {
     const scene = resolveChart(
       cloud(

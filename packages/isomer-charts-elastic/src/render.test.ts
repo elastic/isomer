@@ -16,7 +16,12 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act as testUtilsAct } from 'react-dom/test-utils';
-import { type CustomTooltip, type DebugState, Tooltip } from '@elastic/charts';
+import {
+  type CustomTooltip,
+  type DebugState,
+  Tooltip,
+  Wordcloud,
+} from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ChartEvent,
@@ -1231,6 +1236,27 @@ describe('elastic-charts renderer: tag cloud', () => {
     ).not.toBeNull();
     const label = box.querySelector(`.${elastic.tagCloudLabel.readableName}`);
     expect(label?.textContent ?? undefined).toBe(scene.label);
+  });
+
+  it('draws every word through one Wordcloud spec, at the Scene’s sizes and angles', () => {
+    const scene = resolveChart(tagCloudExamples[0]!.node, { scheme: 'light' });
+    const specs = sceneSpecs(scene, {
+      environment: 'browser',
+    }) as React.ReactElement<{ children: React.ReactNode }>;
+    const clouds = React.Children.toArray(specs.props.children).filter(
+      (child): child is React.ReactElement<Record<string, unknown>> =>
+        React.isValidElement(child) && child.type === Wordcloud
+    );
+    expect(clouds).toHaveLength(1);
+    expect(clouds[0]!.props).toMatchObject({
+      data: tagCloudData(scene),
+      minFontSize: scene.fontSize.min,
+      maxFontSize: scene.fontSize.max,
+      startAngle: scene.angles.start,
+      endAngle: scene.angles.end,
+      angleCount: scene.angles.count,
+      weightFn: scene.scale,
+    });
   });
 
   it('passes each word with its weight and color, naming it by index', () => {
