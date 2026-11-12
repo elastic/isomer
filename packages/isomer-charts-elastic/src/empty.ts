@@ -15,6 +15,8 @@ export const EMPTY_LINE_HEIGHT = 20;
 
 /** The note a Scene with nothing to draw shows instead, as the Scene states it. */
 export const emptyTextOf = (scene: Scene): string | undefined =>
-  scene.kind === 'partition' || scene.kind === 'heatmap'
+  scene.kind === 'partition' ||
+  scene.kind === 'heatmap' ||
+  scene.kind === 'gauge'
     ? scene.empty?.text
     : undefined;
