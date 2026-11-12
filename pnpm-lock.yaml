@@ -217,6 +217,64 @@ importers:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
 
+  packages/isomer-charts-elastic-static:
+    dependencies:
+      '@elastic/charts':
+        specifier: file:vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz
+        version: file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)
+      '@elastic/eui':
+        specifier: 123.1.0
+        version: 123.1.0(@elastic/datemath@5.0.3(moment@2.31.0))(@elastic/eui-theme-borealis@8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@emotion/css@11.13.5)(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(@types/react-dom@18.3.7(@types/react@18.3.31))(@types/react@18.3.31)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(typescript@5.9.3)
+      '@elastic/eui-theme-borealis':
+        specifier: 8.1.0
+        version: 8.1.0(@emotion/react@11.14.0(@types/react@18.3.31)(react@18.3.1))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@elastic/isomer-charts-elastic':
+        specifier: workspace:*
+        version: file:packages/isomer-charts-elastic(@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@4.6.5)
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
+      jsdom:
+        specifier: 20.0.1
+        version: 20.0.1
+      zod:
+        specifier: ^4.5.4
+        version: 4.6.5
+    dependenciesMeta:
+      '@elastic/isomer-charts-elastic':
+        injected: true
+    devDependencies:
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../isomer-image-takumi
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
+      '@fontsource/inter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@types/jsdom':
+        specifier: 20.0.1
+        version: 20.0.1
+      '@types/react':
+        specifier: ^18.3.31
+        version: 18.3.31
+      moment:
+        specifier: 2.31.0
+        version: 2.31.0
+      moment-timezone:
+        specifier: ^0.5.48
+        version: 0.5.48
+      react:
+        specifier: ^18.3.1
+        version: 18.3.1
+      react-dom:
+        specifier: ^18.3.1
+        version: 18.3.1(react@18.3.1)
+
   packages/isomer-evals:
     dependencies:
       '@elastic/isomer-sdk':
@@ -1201,6 +1259,15 @@ packages:
       react: ^18.0
       react-dom: ^18.0
 
+  '@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz':
+    resolution: {integrity: sha512-4aB4YWP0vwJnns8e6nl3IABhVe3057/vjadLTYnDjLeKI5LhqRt+570JG0S6EEtOpaOzB0S+PRJAm1orxtlmBA==, tarball: file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz}
+    version: 73.3.2
+    peerDependencies:
+      moment: ^2.29.1
+      moment-timezone: ^0.5.32
+      react: ^18.0
+      react-dom: ^18.0
+
   '@elastic/datemath@5.0.3':
     resolution: {integrity: sha512-8Hbr1Uyjm5OcYBfEB60K7sCP6U3IXuWDaLaQmYv3UxgI4jqBWbakoemwWvsqPVUvnwEjuX6z7ghPZbefs8xiaA==}
     peerDependencies:
@@ -1237,6 +1304,14 @@ packages:
       react: ^17.0 || ^18.0
       react-dom: ^17.0 || ^18.0
       typescript: ~4.5.3 || ^5
+
+  '@elastic/isomer-charts-elastic@file:packages/isomer-charts-elastic':
+    resolution: {directory: packages/isomer-charts-elastic, type: directory}
+    peerDependencies:
+      '@elastic/charts': ^73.3.0
+      react: ^18.0.0
+      react-dom: ^18.0.0
+      zod: ^4.5.4
 
   '@elastic/prismjs-esql@4.31.0':
     resolution: {integrity: sha512-2Y8abeUm4OJs5kz+nwcadxz4Xh86eOOWa2ZMIs8xFy4Xere9xgBo1ybHBFHbucq+3a2AUH8Lf/Yfu0PnBIEfRA==}
@@ -1930,6 +2005,9 @@ packages:
     peerDependencies:
       '@types/react': '*'
 
+  '@types/jsdom@20.0.1':
+    resolution: {integrity: sha512-d0r18sZPmMQr1eG35u12FZfhIXNrnsPU/g5wvRKCUf/tOGilKKwYMYGqh33BNR6ba+2gkHw1EUiHoN3mn7E5IQ==}
+
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
 
@@ -1982,6 +2060,9 @@ packages:
 
   '@types/refractor@3.4.1':
     resolution: {integrity: sha512-wYuorIiCTSuvRT9srwt+taF6mH/ww+SyN2psM0sjef2qW+sS8GmshgDGTEDgWB1sTVGgYVE6EK7dBA2MxQxibg==}
+
+  '@types/tough-cookie@4.0.5':
+    resolution: {integrity: sha512-/Ad8+nIOV7Rl++6f1BdKxFSMgmoqEoYbHRpPcx3JEfv8VRsQe9Z4mCXeJBzxs7mbHY/XOZZuXlRNfhpVPbs6ZA==}
 
   '@types/unist@2.0.11':
     resolution: {integrity: sha512-CmBKiL6NNo/OqgmMn95Fk9Whlp2mtvIv+KNpQKN2F4SjvrEesubTRWGYSg+BnWZOnlCaSTU1sMpsBOzgbYhnsA==}
@@ -6399,6 +6480,36 @@ snapshots:
       - redux
       - reselect
 
+  '@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)':
+    dependencies:
+      '@popperjs/core': 2.11.8
+      '@reduxjs/toolkit': 2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)
+      bezier-easing: 2.1.0
+      chroma-js: 2.6.0
+      classnames: 2.5.1
+      d3-array: 1.2.4
+      d3-cloud: 1.2.9
+      d3-collection: 1.0.7
+      d3-interpolate: 3.0.2
+      d3-scale: 3.3.0
+      d3-shape: 2.1.0
+      immer: 11.1.8
+      luxon: 1.28.1
+      moment: 2.31.0
+      moment-timezone: 0.5.48
+      prop-types: 15.8.1
+      re-reselect: 4.0.1(reselect@5.3.0)
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+      ts-debounce: 4.0.0
+      utility-types: 3.11.0
+      uuid: 14.0.3
+    transitivePeerDependencies:
+      - '@types/react'
+      - redux
+      - reselect
+
   '@elastic/datemath@5.0.3(moment@2.31.0)':
     dependencies:
       moment: 2.31.0
@@ -6478,6 +6589,14 @@ snapshots:
       vfile: 4.2.1
     transitivePeerDependencies:
       - react-native
+
+  '@elastic/isomer-charts-elastic@file:packages/isomer-charts-elastic(@elastic/charts@file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@4.6.5)':
+    dependencies:
+      '@elastic/charts': file:packages/isomer-charts-elastic-static/vendor/elastic-charts-73.3.2-pr2941-c830c3bc.tgz(@types/react@18.3.31)(moment-timezone@0.5.48)(moment@2.31.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(redux@4.2.1)(reselect@5.3.0)
+      '@elastic/isomer-primitives-charts': link:packages/isomer-primitives-charts
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      zod: 4.6.5
 
   '@elastic/prismjs-esql@4.31.0':
     dependencies:
@@ -6849,6 +6968,18 @@ snapshots:
 
   '@popperjs/core@2.11.8': {}
 
+  '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1))(react@18.3.1)':
+    dependencies:
+      '@standard-schema/spec': 1.1.0
+      '@standard-schema/utils': 0.3.0
+      immer: 11.1.8
+      redux: 5.0.1
+      redux-thunk: 3.1.0(redux@5.0.1)
+      reselect: 5.3.0
+    optionalDependencies:
+      react: 18.3.1
+      react-redux: 9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1)
+
   '@reduxjs/toolkit@2.12.0(react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1))(react@18.3.1)':
     dependencies:
       '@standard-schema/spec': 1.1.0
@@ -7109,6 +7240,12 @@ snapshots:
       '@types/react': 18.3.31
       hoist-non-react-statics: 3.3.2
 
+  '@types/jsdom@20.0.1':
+    dependencies:
+      '@types/node': 22.20.2
+      '@types/tough-cookie': 4.0.5
+      parse5: 7.3.0
+
   '@types/json-schema@7.0.15': {}
 
   '@types/katex@0.16.8': {}
@@ -7157,6 +7294,8 @@ snapshots:
   '@types/refractor@3.4.1':
     dependencies:
       '@types/prismjs': 1.26.6
+
+  '@types/tough-cookie@4.0.5': {}
 
   '@types/unist@2.0.11': {}
 
@@ -9792,6 +9931,15 @@ snapshots:
       '@types/react': 18.3.31
       '@types/react-dom': 18.3.7(@types/react@18.3.31)
       react-dom: 18.3.1(react@18.3.1)
+      redux: 4.2.1
+
+  react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@4.2.1):
+    dependencies:
+      '@types/use-sync-external-store': 0.0.6
+      react: 18.3.1
+      use-sync-external-store: 1.7.0(react@18.3.1)
+    optionalDependencies:
+      '@types/react': 18.3.31
       redux: 4.2.1
 
   react-redux@9.2.0(@types/react@18.3.31)(react@18.3.1)(redux@5.0.1):

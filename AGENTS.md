@@ -17,6 +17,7 @@ Read this root first, then the scopes below and any nested `AGENTS.md` along aff
 | Slides reference pack, theme, examples, decks | [Slides](packages/isomer-primitives-slides/AGENTS.md) |
 | Chart, grid and unsupported contracts | [Charts](packages/isomer-primitives-charts/AGENTS.md) |
 | Elastic Charts `SceneRenderer` | [Elastic Charts engine](packages/isomer-charts-elastic/AGENTS.md) |
+| Static Elastic Charts drawing on Node, its benchmark and memory bounds | [Static Elastic Charts](packages/isomer-charts-elastic-static/AGENTS.md) |
 | Snapshot rasterization, measurement, PDF workers | [Takumi](packages/isomer-image-takumi/AGENTS.md) |
 | Studio CLI, browser app, config loading | [Studio](packages/isomer-studio/AGENTS.md) |
 | Transport-neutral tools, resources, prompts | [Agent tools](packages/isomer-agent-tools/AGENTS.md) |
@@ -56,6 +57,8 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 `packages/isomer-primitives-charts` is the chart pack, `"private": true` until the npm admin seeds `@elastic/isomer-primitives-charts` (TODO: remove `private`, and add it back to the Trusted Publisher list in RELEASING.md, once seeded; unseeded, its publish fails with `E404`): chart primitives on one shared core, `grid` and `unsupported`. Its `./schema` entry holds the contracts (schemas, node types, catalog entries and examples) and imports no renderer; `./scene` holds the Scene types renderers read and the `SceneRenderer` interface; formatting is internal to the resolver, from portable formats that are `Intl` options. Hosts and Kibana materializers build against it. Its `./testing` entry holds the checks any static renderer runs, with `drawExamples`.
 
 `packages/isomer-charts-elastic` is the Elastic Charts engine, `"private": true` while the charts pack is: a browser `SceneRenderer` that draws chart Scenes as Kibana draws its panels. It imports only the charts pack's `./scene` entry and keeps `@elastic/charts` and React as peers, so neither reaches the charts pack. Its `./engine` entry is what a static drawing with Elastic Charts builds on, and `./testing` that drawing's `DebugState` checks and look suite. `scripts/bench_charts.cjs` measures any chart engine's server-side PNGs; `pnpm check:memory` runs each engine package's `bench:check`.
+
+`packages/isomer-charts-elastic-static` draws chart Scenes on Node with Elastic Charts' SVG renderer: the browser engine's `<Chart renderer="svg">` in a jsdom window, serialized as markup, for the `snapshot` surface and an image backend. It depends on a vendored build of elastic/elastic-charts#2941, so it stays `"private": true` until that ships; it injects the browser engine, so the engine's specs come from that build.
 
 `packages/isomer-image-takumi` renders the `snapshot` surface's output to PNG, SVG, or PDF. It depends on no isomer package — it declares the surface's result shape structurally.
 

@@ -540,6 +540,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
 | `@dual-bundle/import-meta-resolve` | 4.2.1 | MIT | `node_modules/.pnpm/@dual-bundle+import-meta-resolve@4.2.1/node_modules/@dual-bundle/import-meta-resolve` |  |
 | `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
+| `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@file+packages+isomer-charts-elastic-static+vendor+elastic-charts-73.3.2_195b217fee2bd6651174c9ed2d9ffb94/node_modules/@elastic/charts` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
@@ -653,6 +654,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@pnpm/npm-conf` | 3.0.3 | MIT | `node_modules/.pnpm/@pnpm+npm-conf@3.0.3/node_modules/@pnpm/npm-conf` |  |
 | `@popperjs/core` | 2.11.8 | MIT | `node_modules/.pnpm/@popperjs+core@2.11.8/node_modules/@popperjs/core` |  |
 | `@reduxjs/toolkit` | 2.12.0 | MIT | `node_modules/.pnpm/@reduxjs+toolkit@2.12.0_react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@5.0.1__react@18.3.1/node_modules/@reduxjs/toolkit` |  |
+| `@reduxjs/toolkit` | 2.12.0 | MIT | `node_modules/.pnpm/@reduxjs+toolkit@2.12.0_react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@4.2.1__react@18.3.1/node_modules/@reduxjs/toolkit` |  |
 | `@rolldown/binding-android-arm-eabi` | 1.2.13 | MIT | `declared optional dependency` |  |
 | `@rolldown/binding-android-arm64` | 1.2.13 | MIT | `declared optional dependency` |  |
 | `@rolldown/binding-darwin-arm64` | 1.2.13 | MIT | `declared optional dependency` |  |
@@ -698,6 +700,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/estree` | 1.0.9 | MIT | `node_modules/.pnpm/@types+estree@1.0.9/node_modules/@types/estree` |  |
 | `@types/hast` | 2.3.10 | MIT | `node_modules/.pnpm/@types+hast@2.3.10/node_modules/@types/hast` |  |
 | `@types/hoist-non-react-statics` | 3.3.7 | MIT | `node_modules/.pnpm/@types+hoist-non-react-statics@3.3.7_@types+react@18.3.31/node_modules/@types/hoist-non-react-statics` |  |
+| `@types/jsdom` | 20.0.1 | MIT | `node_modules/.pnpm/@types+jsdom@20.0.1/node_modules/@types/jsdom` |  |
 | `@types/json-schema` | 7.0.15 | MIT | `node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema` |  |
 | `@types/katex` | 0.16.8 | MIT | `node_modules/.pnpm/@types+katex@0.16.8/node_modules/@types/katex` |  |
 | `@types/lodash` | 4.17.26 | MIT | `node_modules/.pnpm/@types+lodash@4.17.26/node_modules/@types/lodash` |  |
@@ -715,6 +718,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@types/react-dom` | 18.3.7 | MIT | `node_modules/.pnpm/@types+react-dom@18.3.7_@types+react@18.3.31/node_modules/@types/react-dom` |  |
 | `@types/react-window` | 1.8.8 | MIT | `node_modules/.pnpm/@types+react-window@1.8.8/node_modules/@types/react-window` |  |
 | `@types/refractor` | 3.4.1 | MIT | `node_modules/.pnpm/@types+refractor@3.4.1/node_modules/@types/refractor` |  |
+| `@types/tough-cookie` | 4.0.5 | MIT | `node_modules/.pnpm/@types+tough-cookie@4.0.5/node_modules/@types/tough-cookie` |  |
 | `@types/unist` | 2.0.11 | MIT | `node_modules/.pnpm/@types+unist@2.0.11/node_modules/@types/unist` |  |
 | `@types/unist` | 3.0.3 | MIT | `node_modules/.pnpm/@types+unist@3.0.3/node_modules/@types/unist` |  |
 | `@types/use-sync-external-store` | 0.0.3 | MIT | `node_modules/.pnpm/@types+use-sync-external-store@0.0.3/node_modules/@types/use-sync-external-store` |  |
@@ -1394,6 +1398,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `react-is` | 18.3.1 | MIT | `node_modules/.pnpm/react-is@18.3.1/node_modules/react-is` |  |
 | `react-redux` | 8.1.3 | MIT | `node_modules/.pnpm/react-redux@8.1.3_@types+react-dom@18.3.7_@types+react@18.3.31__@types+react@18.3.31_re_200ec7b00437ba6d838f87a2aabb112b/node_modules/react-redux` |  |
 | `react-redux` | 9.2.0 | MIT | `node_modules/.pnpm/react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@5.0.1/node_modules/react-redux` |  |
+| `react-redux` | 9.2.0 | MIT | `node_modules/.pnpm/react-redux@9.2.0_@types+react@18.3.31_react@18.3.1_redux@4.2.1/node_modules/react-redux` |  |
 | `react-remove-scroll` | 2.7.2 | MIT | `node_modules/.pnpm/react-remove-scroll@2.7.2_@types+react@18.3.31_react@18.3.1/node_modules/react-remove-scroll` |  |
 | `react-remove-scroll-bar` | 2.3.8 | MIT | `node_modules/.pnpm/react-remove-scroll-bar@2.3.8_@types+react@18.3.31_react@18.3.1/node_modules/react-remove-scroll-bar` |  |
 | `react-style-singleton` | 2.2.3 | MIT | `node_modules/.pnpm/react-style-singleton@2.2.3_@types+react@18.3.31_react@18.3.1/node_modules/react-style-singleton` |  |
