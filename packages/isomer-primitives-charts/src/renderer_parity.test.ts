@@ -100,7 +100,11 @@ const contentChecks: Record<string, (drawing: Drawn) => void> = {
     }
     expect(
       root.querySelector('[role="group"]')?.getAttribute('aria-label')
-    ).toBe(scene.summary);
+    ).toBe(
+      scene.description
+        ? `${scene.summary} ${scene.description}`
+        : scene.summary
+    );
     expect(textOf(root.querySelector('[data-part="empty"]'))).toBe(
       scene.empty?.text
     );
@@ -110,6 +114,14 @@ const contentChecks: Record<string, (drawing: Drawn) => void> = {
     expect(textsOf(root, '[data-part="label"]')).toEqual(
       scene.showLabels ? scene.tiles.map(({ label }) => label) : []
     );
+    expect(textsOf(root, '[data-part="note"]')).toEqual(
+      scene.empty ? [] : notesOf(scene)
+    );
+    expect(
+      [...root.querySelectorAll('[data-part="tile"]')].map((tile) =>
+        tile.getAttribute('data-emphasis')
+      )
+    ).toEqual(scene.tiles.map(({ emphasis }) => emphasis ?? null));
   },
   [summarySceneRenderer.id]: ({ scene, root }) => {
     expect(textsOf(root, 'p')).toEqual([

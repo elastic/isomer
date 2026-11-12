@@ -17,6 +17,7 @@ import type {
   LegacyMetricTile,
   SceneRenderEnv,
 } from '../scene/types';
+import { described, sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';
 import { legacyMetricModule } from './legacy_metric_styles';
@@ -39,9 +40,11 @@ const Tile = ({
       ? () => env.onEvent?.(selectEvent(env.nodeId!, selection))
       : undefined;
   const lineHeight = String(scene.lineHeight);
+  const { emphasis } = tile;
   return (
     <div
       data-part="tile"
+      {...(emphasis === undefined ? {} : { 'data-emphasis': emphasis })}
       className={cls(
         env,
         legacy.tile,
@@ -49,8 +52,11 @@ const Tile = ({
         select && legacy.selectable
       )}
       style={varStyle(vars.tile, {
-        fill: tile.background,
+        fill:
+          tile.background ??
+          (emphasis === undefined ? undefined : scene.emphasisBackground),
         padding: px(tile.type.padding),
+        width: px(tile.box.width),
       })}
       {...(select
         ? {
@@ -102,7 +108,7 @@ const LegacyMetricView = ({
 }) => (
   <div
     role="group"
-    aria-label={scene.summary}
+    aria-label={[scene.summary, ...described(scene)].join(' ')}
     className={cls(env, legacy.root)}
     style={varStyle(vars.box, {
       width: scene.size && px(scene.size.width),
@@ -115,9 +121,20 @@ const LegacyMetricView = ({
         {scene.empty.text}
       </span>
     ) : (
-      scene.tiles.map((tile, index) => (
-        <Tile key={index} scene={scene} tile={tile} env={env} />
-      ))
+      <>
+        {scene.tiles.map((tile, index) => (
+          <Tile key={index} scene={scene} tile={tile} env={env} />
+        ))}
+        {sceneNotes(scene).map((note, index) => (
+          <div
+            key={`note-${index}`}
+            data-part="note"
+            title={note}
+            className={cls(env, legacy.note)}>
+            <em>{note}</em>
+          </div>
+        ))}
+      </>
     )}
   </div>
 );

@@ -62,6 +62,8 @@ export const CHARTS_THEME = {
        * taller when its tiles wrap to more rows than fit.
        */
       aspectRatio: { x: 16, y: 9 },
+      /** Height of an emphasis note line under the tiles, in pixels. */
+      noteHeight: 18,
     },
     heatmap: {
       /**

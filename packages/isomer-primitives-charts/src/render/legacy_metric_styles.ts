@@ -38,7 +38,7 @@ export const legacyMetricModule = createVarsModule(
       fill: 'transparent',
       ink: 'currentColor',
     }),
-    tile: vars('tile', { fill: 'transparent', padding: '0px' }),
+    tile: vars('tile', { fill: 'transparent', padding: '0px', width: 'auto' }),
     text: vars('text', {
       size: 'inherit',
       color: 'currentColor',
@@ -67,6 +67,8 @@ export const legacyMetricModule = createVarsModule(
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      flex: none;
+      width: ${tile.width};
       max-width: 100%;
       min-width: 0;
       padding: ${tile.padding};
@@ -95,6 +97,15 @@ export const legacyMetricModule = createVarsModule(
         order: ${position === 'top' ? -1 : 2};
       `
     ),
+    note: css`
+      ${ellipsis}
+      flex: none;
+      width: 100%;
+      height: ${CHARTS_THEME.chart.legacyMetric.noteHeight}px;
+      line-height: ${CHARTS_THEME.chart.legacyMetric.noteHeight}px;
+      font-size: ${CHARTS_THEME.type.body}px;
+      text-align: center;
+    `,
     empty: css`
       font-size: ${CHARTS_THEME.type.body}px;
     `,

@@ -846,10 +846,12 @@ export interface LegacyMetricTile {
     readonly label: number;
     readonly padding: number;
   };
-  /** The tile's box at those lengths, from estimated text widths. */
+  /** The tile's box at those lengths, from estimated text widths: the width it draws at. */
   readonly box: SceneSize;
   /** What a selection of the tile describes, such as "host.name: web-01 · Count: 12". */
   readonly description: string;
+  /** Emphasized: the note, or an empty string for none. */
+  readonly emphasis?: string;
   /** The `tile` selection, when the node offers it. */
   readonly selection?: SceneSelection;
 }
@@ -868,6 +870,8 @@ export interface LegacyMetricScene extends SceneBase {
   readonly valueWeight: number;
   /** The whole chart's background: a lone tile's band color, else the chrome background. */
   readonly background: SceneColor;
+  /** An emphasized tile's background, where no band colors it. */
+  readonly emphasisBackground: SceneColor;
   /** Present when there is nothing to draw: the reason, and the text to draw instead. */
   readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }

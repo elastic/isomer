@@ -10,24 +10,28 @@
 // `withAutoScale`, with the font sizes Lens's `toExpression` sets), with every
 // tile's text, color and type size decided here.
 
+import { CHARTS_THEME } from '../render/theme';
 import type { LegacyMetricNode } from '../schema/legacy_metric';
 
 import {
   createResolution,
   describe,
+  fractionAlong,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
   titled,
   toNumber,
+  wrappedHeight,
 } from './common';
 import { bandFor } from './resolve_metric';
-import { isColorDark, resolveColor } from './theme';
+import { isColorDark, resolveColor, TABLE_CHROME } from './theme';
 import type {
   LegacyMetricScene,
   LegacyMetricTile,
   SceneColor,
   SceneSelection,
+  SceneSize,
 } from './types';
 
 const NO_RESULTS = 'No results found';
@@ -56,7 +60,12 @@ const MAX_SCALE = 1;
 
 // Inter's advance widths in em, by character class, rounded up a little so a
 // tile shrinks rather than clips.
+const FULL_WIDTH =
+  /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/u;
 const advance = (char: string): number => {
+  if (FULL_WIDTH.test(char)) {
+    return 1;
+  }
   if (/[0-9]/.test(char)) {
     return 0.63;
   }
@@ -87,17 +96,51 @@ export const estimateTextWidth = (
 
 const round = (value: number) => Math.round(value * 100) / 100;
 
-// `getLegacyMetricDataBounds`: one value is colored across twice itself, more
-// across their range.
-const boundsOf = (values: readonly number[]): [number, number] => {
+/**
+ * A value's percentage of `getLegacyMetricDataBounds`: one value is colored
+ * across twice itself, at its middle (or from -50 to 100 for 0), more across
+ * their range.
+ */
+const percentOf = (values: readonly number[]) => {
   if (values.length === 1) {
-    const only = values[0]!;
-    if (only === 0) {
-      return [-50, 100];
-    }
-    return only < 0 ? [only * 2, 0] : [0, only * 2];
+    const at = values[0] === 0 ? fractionAlong(-50, 100, 0) * 100 : 50;
+    return () => at;
   }
-  return [Math.min(...values), Math.max(...values)];
+  const low = values.reduce((least, value) => Math.min(least, value));
+  const high = values.reduce((most, value) => Math.max(most, value));
+  return (value: number) => fractionAlong(low, high, value) * 100;
+};
+
+/** The one scale, at most each tile's own, at which the wrapped tiles fit `height`. */
+const fitScale = (
+  boxes: readonly SceneSize[],
+  own: readonly number[],
+  width: number,
+  height: number
+): number => {
+  const fits = (scale: number) =>
+    wrappedHeight(
+      boxes.map((box, index) => {
+        const each = Math.min(scale, own[index]!);
+        return {
+          width: round(box.width * each),
+          height: round(box.height * each),
+        };
+      }),
+      width
+    ) <= height;
+  if (fits(MAX_SCALE)) {
+    return MAX_SCALE;
+  }
+  let [low, high] = [MIN_SCALE, MAX_SCALE];
+  if (!fits(low)) {
+    return low;
+  }
+  for (let step = 0; step < 20; step += 1) {
+    const middle = (low + high) / 2;
+    [low, high] = fits(middle) ? [middle, high] : [low, middle];
+  }
+  return low;
 };
 
 /** The Scene of a `legacyMetric` node. */
@@ -131,6 +174,21 @@ export const resolveLegacyMetric = (
     return { width, height };
   };
 
+  const percents = new Map<string, (value: number) => number>();
+  const percentIn = (columnId: string) => {
+    let percent = percents.get(columnId);
+    if (!percent) {
+      percent = percentOf(
+        data.rows.flatMap((_, at) => {
+          const each = toNumber(resolution.cell(columnId, at));
+          return each === undefined ? [] : [each];
+        })
+      );
+      percents.set(columnId, percent);
+    }
+    return percent;
+  };
+
   const colorFor = (columnId: string, row: number): SceneColor | undefined => {
     const value = toNumber(resolution.cell(columnId, row));
     if (
@@ -142,12 +200,7 @@ export const resolveLegacyMetric = (
     }
     let position = value;
     if (node.bandsRange === 'percentage') {
-      const values = data.rows.flatMap((_, at) => {
-        const each = toNumber(resolution.cell(columnId, at));
-        return each === undefined ? [] : [each];
-      });
-      const [low, high] = boundsOf(values);
-      position = ((value - low) / (high - low)) * 100;
+      position = percentIn(columnId)(value);
       if (!Number.isFinite(position)) {
         position = bands[0]?.from ?? Number.NEGATIVE_INFINITY;
       }
@@ -204,16 +257,39 @@ export const resolveLegacyMetric = (
   const fill =
     lone?.color !== undefined && onBackground ? lone.color : undefined;
 
+  const emphasis = new Map<number, string>();
+  for (const { rows, note } of interactions.emphasis) {
+    for (const row of rows) {
+      emphasis.set(row, note ?? emphasis.get(row) ?? '');
+    }
+  }
+  const notes = interactions.emphasis.filter(({ note }) => note).length;
+
+  // `withAutoScale` shrinks each tile to the chart; wrapped rows that still
+  // overrun its height shrink together, no further than its least scale.
+  const naturals = drafts.map(({ label, text }) => natural(label, text));
+  const scales = naturals.map(({ width, height }) =>
+    box
+      ? Math.max(
+          Math.min(MAX_SCALE, box.width / width, box.height / height),
+          MIN_SCALE
+        )
+      : 1
+  );
+  const shared = box
+    ? fitScale(
+        naturals,
+        scales,
+        box.width,
+        box.height - notes * CHARTS_THEME.chart.legacyMetric.noteHeight
+      )
+    : 1;
+
   const tiles = drafts.map(
-    ({
-      metricId,
-      row,
-      label,
-      text,
-      color,
-      description,
-      selection,
-    }): LegacyMetricTile => {
+    (
+      { metricId, row, label, text, color, description, selection },
+      index
+    ): LegacyMetricTile => {
       const own = color !== undefined && onBackground ? color : undefined;
       // Kibana's `MetricVisValue` leaves text in the panel's `euiTextColor`,
       // unless `needsLightText` finds the tile's color dark: then the
@@ -224,13 +300,8 @@ export const resolveLegacyMetric = (
         under !== undefined && isColorDark(under)
           ? chrome.background
           : chrome.text;
-      const { width, height } = natural(label, text);
-      const scale = box
-        ? Math.max(
-            Math.min(MAX_SCALE, box.width / width, box.height / height),
-            MIN_SCALE
-          )
-        : 1;
+      const { width, height } = naturals[index]!;
+      const scale = Math.min(scales[index]!, shared);
       return {
         source: {
           rows: [row],
@@ -254,6 +325,7 @@ export const resolveLegacyMetric = (
         },
         box: { width: round(width * scale), height: round(height * scale) },
         description,
+        ...(emphasis.has(row) ? { emphasis: emphasis.get(row)! } : {}),
         ...(selection ? { selection } : {}),
       };
     }
@@ -284,6 +356,7 @@ export const resolveLegacyMetric = (
     lineHeight: LINE_HEIGHT,
     valueWeight: VALUE_WEIGHT,
     background: fill ?? chrome.background,
+    emphasisBackground: TABLE_CHROME[scheme].emphasis,
     ...(empty ? { empty } : {}),
   };
 };

@@ -10,7 +10,9 @@
 // `CHARTS_THEME.chart`. A browser applies a spec as CSS; Node, which has no
 // container to fill, turns it into a box at the theme's width.
 
+import { wrappedHeight } from '../scene/common';
 import type { Scene, SceneSize } from '../scene/types';
+import { sceneNotes } from '../text/scene_text';
 
 import { CHARTS_THEME } from './theme';
 
@@ -25,27 +27,6 @@ export interface ChartSizeSpec {
 }
 
 const { chart } = CHARTS_THEME;
-
-/** The height of boxes wrapped into rows `width` wide, as a centered flex row wraps them. */
-export const wrappedHeight = (
-  boxes: readonly SceneSize[],
-  width: number
-): number => {
-  let height = 0;
-  let rowWidth = 0;
-  let rowHeight = 0;
-  for (const box of boxes) {
-    const fitted = Math.min(box.width, width);
-    if (rowWidth > 0 && rowWidth + fitted > width) {
-      height += rowHeight;
-      rowWidth = 0;
-      rowHeight = 0;
-    }
-    rowWidth += fitted;
-    rowHeight = Math.max(rowHeight, box.height);
-  }
-  return Math.ceil(height + rowHeight);
-};
 
 /** The size spec of a Scene's kind; none for a kind that sizes itself, such as a table. */
 export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
@@ -68,10 +49,12 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
     case 'legacyMetric':
       return {
         aspectRatio: chart.legacyMetric.aspectRatio,
-        minHeight: wrappedHeight(
-          scene.tiles.map(({ box }) => box),
-          chart.width
-        ),
+        minHeight:
+          wrappedHeight(
+            scene.tiles.map(({ box }) => box),
+            chart.width
+          ) +
+          sceneNotes(scene).length * chart.legacyMetric.noteHeight,
       };
     case 'metric': {
       if (scene.tiles.length <= 1) {

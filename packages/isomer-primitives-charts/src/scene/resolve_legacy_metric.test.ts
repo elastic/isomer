@@ -12,12 +12,14 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { CHARTS_THEME } from '../render/theme';
 import type { Cell, ChartColumn } from '../schema/data';
 import type { LegacyMetricNode } from '../schema/legacy_metric';
 
+import { wrappedHeight } from './common';
 import { resolveChart } from './resolve';
 import { estimateTextWidth } from './resolve_legacy_metric';
-import { CHART_CHROME } from './theme';
+import { CHART_CHROME, TABLE_CHROME } from './theme';
 
 const RED = { light: '#CC5642', dark: '#AA3322' };
 const GREEN = { light: '#209280', dark: '#107060' };
@@ -372,5 +374,157 @@ describe('resolveLegacyMetric', () => {
       values: { host: 'b' },
       description: 'Host: b · Count: 2',
     });
+  });
+
+  it.each([
+    [[[null, 1e308, 0]], 'red', 0],
+    [[[null, -1e308, 0]], 'red', 0],
+    [
+      [
+        ['a', -1e308, 0],
+        ['b', 0, 0],
+        ['c', 1e308, 0],
+      ],
+      'red',
+      1,
+    ],
+  ] as const)(
+    'places percentage bands without overflow at the ends of a number (%#)',
+    (rows, expected, tile) => {
+      const scene = resolveChart(
+        legacy(rows as unknown as Cell[][], {
+          colors: {
+            bands: [
+              { to: 30, color: GREEN },
+              { from: 30, color: RED },
+            ],
+          },
+          bandsRange: 'percentage',
+          applyColorTo: 'value',
+          ...(rows.length > 1 ? { breakdown: { column: 'host' } } : {}),
+        }),
+        { scheme: 'light' }
+      );
+      expect(scene.tiles[tile]!.value.color).toBe(
+        expected === 'red' ? RED.light : GREEN.light
+      );
+    }
+  );
+
+  it('places percentage bands across a large table', () => {
+    const count = 200_000;
+    const scene = resolveChart(
+      legacy(
+        Array.from({ length: count }, (_, index) => [`h${index}`, index, 0]),
+        {
+          colors: {
+            bands: [
+              { to: 50, color: GREEN },
+              { from: 50, color: RED },
+            ],
+          },
+          bandsRange: 'percentage',
+          applyColorTo: 'value',
+          breakdown: { column: 'host' },
+        }
+      ),
+      { scheme: 'light' }
+    );
+    expect(scene.tiles[0]!.value.color).toBe(GREEN.light);
+    expect(scene.tiles[count - 1]!.value.color).toBe(RED.light);
+  });
+
+  it('shrinks wrapped tiles together until they fit the chart’s height', () => {
+    const rows = Array.from({ length: 12 }, (_, index) => [
+      `host-${index}`,
+      1000 + index,
+      0,
+    ]);
+    const node = legacy(rows, { breakdown: { column: 'host' } });
+    const size = { width: 480, height: 300 };
+    const unfitted = resolveChart(node, { scheme: 'light' });
+    expect(
+      wrappedHeight(
+        unfitted.tiles.map(({ box }) => box),
+        size.width
+      )
+    ).toBeGreaterThan(size.height);
+
+    const scene = resolveChart(node, { scheme: 'light', size });
+    const boxes = scene.tiles.map(({ box }) => box);
+    expect(wrappedHeight(boxes, size.width)).toBeLessThanOrEqual(size.height);
+    expect(new Set(scene.tiles.map(({ type }) => type.value)).size).toBe(1);
+    // The fit is the largest: tiles a little larger would overrun.
+    const larger = boxes.map(({ width, height }) => ({
+      width: width * 1.05,
+      height: height * 1.05,
+    }));
+    expect(wrappedHeight(larger, size.width)).toBeGreaterThan(size.height);
+  });
+
+  it('shrinks wrapped tiles no further than three tenths', () => {
+    const rows = Array.from({ length: 200 }, (_, index) => [
+      `host-${index}`,
+      index,
+      0,
+    ]);
+    const scene = resolveChart(
+      legacy(rows, { breakdown: { column: 'host' } }),
+      {
+        scheme: 'light',
+        size: { width: 480, height: 100 },
+      }
+    );
+    expect(scene.tiles[0]!.type.value).toBeCloseTo(
+      resolveChart(legacy([[null, 1, 0]]), { scheme: 'light' }).tiles[0]!.type
+        .value * 0.3,
+      1
+    );
+  });
+
+  it('marks emphasized tiles, and fits their notes under the tiles', () => {
+    const rows = Array.from({ length: 6 }, (_, index) => [
+      `host-${index}`,
+      index,
+      0,
+    ]);
+    const node = legacy(rows, {
+      breakdown: { column: 'host' },
+      emphasis: [{ rows: [1], note: 'Busiest' }, { rows: [3] }],
+    });
+    const scene = resolveChart(node, { scheme: 'dark' });
+    expect(scene.emphasisBackground).toBe(TABLE_CHROME.dark.emphasis);
+    expect(scene.tiles.map(({ emphasis }) => emphasis)).toEqual([
+      undefined,
+      'Busiest',
+      undefined,
+      '',
+      undefined,
+      undefined,
+    ]);
+
+    const { noteHeight } = CHARTS_THEME.chart.legacyMetric;
+    const tight = wrappedHeight(
+      resolveChart(legacy(rows, { breakdown: { column: 'host' } }), {
+        scheme: 'dark',
+      }).tiles.map(({ box }) => box),
+      480
+    );
+    const fitted = resolveChart(node, {
+      scheme: 'dark',
+      size: { width: 480, height: tight },
+    });
+    expect(
+      wrappedHeight(
+        fitted.tiles.map(({ box }) => box),
+        480
+      ) + noteHeight
+    ).toBeLessThanOrEqual(tight);
+  });
+
+  it('measures full-width characters at an em each', () => {
+    expect(estimateTextWidth('東京', 10)).toBe(20);
+    expect(estimateTextWidth('서울', 10)).toBe(20);
+    expect(estimateTextWidth('ＡＢ', 10)).toBe(20);
   });
 });
