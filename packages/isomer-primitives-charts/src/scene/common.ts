@@ -167,6 +167,33 @@ export const toNumber = (cell: Cell | undefined): number | undefined => {
     : undefined;
 };
 
+/** The value `percent` of the way from `low` to `high`, even where their span overflows. */
+export const percentAlong = (
+  low: number,
+  high: number,
+  percent: number
+): number => {
+  const exact = low + ((high - low) * percent) / 100;
+  if (Number.isFinite(exact)) {
+    return exact;
+  }
+  const share = percent / 100;
+  return low * (1 - share) + high * share;
+};
+
+/** The least double above `value`. */
+export const nextUp = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  if (value === 0) {
+    return Number.MIN_VALUE;
+  }
+  const bits = new BigInt64Array(new Float64Array([value]).buffer);
+  bits[0] = bits[0]! + (value > 0 ? 1n : -1n);
+  return new Float64Array(bits.buffer)[0]!;
+};
+
 /** The fields every Scene kind shares. */
 export const sceneBase = (
   resolution: Resolution,

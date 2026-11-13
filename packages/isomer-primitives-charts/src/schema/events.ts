@@ -101,6 +101,23 @@ export const interactionsSchemaFor = <
     })
     .describe(INTERACTIONS_DESCRIPTION);
 
+/** The `interactions` schema for a chart that brushes along `brush`, with no persisted view state. */
+export const brushInteractionsSchemaFor = <
+  const TTargets extends readonly [SelectTarget, ...SelectTarget[]],
+  TBrush extends z.ZodType,
+>(
+  targets: TTargets,
+  brush: TBrush
+) =>
+  z
+    .strictObject({
+      select: selectSchema(targets),
+      brush: brush.optional(),
+      sync: syncSchema.optional(),
+      link: linkSchema.optional(),
+    })
+    .describe(INTERACTIONS_DESCRIPTION);
+
 /** The `interactions` schema for a chart that brushes and persists view state. */
 export const brushingInteractionsSchemaFor = <
   const TTargets extends readonly [SelectTarget, ...SelectTarget[]],
@@ -150,6 +167,10 @@ interface InteractionsInput {
 
 interface InteractionCheckOptions {
   brushColumns?: readonly string[];
+  /** Reported for a brush on any other column, in place of `INTERACTION_RULES.brushColumn`. */
+  brushRule?: string;
+  /** The types a brush column takes. Absent means `date` and `number`. */
+  brushTypes?: readonly ('date' | 'number')[];
 }
 
 /** Checks emphasis rows and an `xyChart` brush against `data` and its x columns. */
@@ -167,19 +188,19 @@ export const checkInteractions = (
     references.push({
       path: ['interactions', 'brush', 'column'],
       id: brush.column,
-      types: ['date', 'number'],
+      types: options.brushTypes ?? ['date', 'number'],
     });
     if (options.brushColumns && !options.brushColumns.includes(brush.column)) {
       context.addIssue({
         code: 'custom',
         path: ['interactions', 'brush', 'column'],
-        message: INTERACTION_RULES.brushColumn,
+        message: options.brushRule ?? INTERACTION_RULES.brushColumn,
       });
     }
   }
   checkColumnReferences(node.data, references, context, {
     missing: COLUMN_REF_RULE,
-    type: INTERACTION_RULES.brushColumn,
+    type: options.brushRule ?? INTERACTION_RULES.brushColumn,
   });
   (node.emphasis ?? []).forEach(({ rows }, index) => {
     rows.forEach((row, rowIndex) => {

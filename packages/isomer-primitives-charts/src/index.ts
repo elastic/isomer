@@ -33,6 +33,11 @@ export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,
+  type HeatmapAxis,
+  type HeatmapBand,
+  type HeatmapCategory,
+  type HeatmapCell,
+  type HeatmapScene,
   type MetricAlignment,
   type MetricLayout,
   type MetricScene,
@@ -79,6 +84,7 @@ export {
 } from './scene/types';
 export {
   gridCatalog,
+  heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
   unsupportedCatalog,
@@ -114,6 +120,7 @@ export {
   INTERACTION_RULES,
   SELECT_TARGETS,
   brushingInteractionsSchemaFor,
+  brushInteractionsSchemaFor,
   brushSchema,
   chartEventSchema,
   checkInteractions,
@@ -126,6 +133,7 @@ export {
 } from './schema/events';
 export { chartEventExamples } from './schema/examples/events';
 export { gridExamples } from './schema/examples/grid';
+export { heatmapExamples } from './schema/examples/heatmap';
 export { metricExamples } from './schema/examples/metric';
 export { partitionChartExamples } from './schema/examples/partition_chart';
 export { unsupportedExamples } from './schema/examples/unsupported';
@@ -149,6 +157,11 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
+export {
+  type HeatmapNode,
+  HEATMAP_RULES,
+  heatmapSchema,
+} from './schema/heatmap';
 export { glyphSchema } from './schema/icons';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {

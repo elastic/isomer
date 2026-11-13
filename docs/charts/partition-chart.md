@@ -46,6 +46,6 @@ The Scene's `kind` is `partition`. Expected values come from Lens's partition vi
 
 ## Surfaces
 
-The [Elastic Charts engines](../charts-elastic/index.md) draw it, in the browser and headless. Without a host size it takes a 16:9 box, as an `xyChart` that fills its container does, and `snapshotHeight` reports it. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as `metric` and `xyChart` are.
+The [Elastic Charts engine](../charts-elastic/index.md) draws it in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes a 16:9 box, as an `xyChart` that fills its container does, and `snapshotHeight` reports it. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as `metric` and `xyChart` are.
 
 `partitionChartExamples` covers a pie, a donut with Other and missing buckets, a nested pie with values and a nested legend, a treemap, a mosaic, a waffle over a date group, several metrics, huge, tiny, zero and missing values, negative values, no rows, and selectable slices with pre-rendered names, emphasis, a link and provenance.

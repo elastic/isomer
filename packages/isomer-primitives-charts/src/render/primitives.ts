@@ -10,15 +10,18 @@ import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import type { Scene, TableScene } from '../scene/types';
 import {
   dataTableCatalog,
+  heatmapCatalog,
   metricCatalog,
   partitionChartCatalog,
   xyChartCatalog,
 } from '../schema/catalog';
 import { type DataTableNode, dataTableSchema } from '../schema/data_table';
 import { dataTableExamples } from '../schema/examples/data_table';
+import { heatmapExamples } from '../schema/examples/heatmap';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
 import { xyChartExamples } from '../schema/examples/xy_chart';
+import { heatmapSchema } from '../schema/heatmap';
 import { metricSchema } from '../schema/metric';
 import { partitionChartSchema } from '../schema/partition_chart';
 import { xyChartSchema } from '../schema/xy_chart';
@@ -29,6 +32,7 @@ import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import {
   dataTableIcon,
+  heatmapIcon,
   metricIcon,
   partitionChartIcon,
   xyChartIcon,
@@ -138,6 +142,16 @@ export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
       catalog: partitionChartCatalog,
       examples: partitionChartExamples,
       sanitize: sanitizeLink(config),
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'heatmap',
+      icon: heatmapIcon,
+      schema: heatmapSchema,
+      catalog: heatmapCatalog,
+      examples: heatmapExamples,
+      sanitize: sanitizeLink,
       metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),

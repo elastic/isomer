@@ -39,6 +39,7 @@ describe('contract examples', () => {
         'xyChart',
         'dataTable',
         'partitionChart',
+        'heatmap',
         'grid',
         'unsupported',
       ])
@@ -78,6 +79,7 @@ describe('JSON Schema projection', () => {
     'xyChart',
     'dataTable',
     'partitionChart',
+    'heatmap',
     'grid',
     'unsupported',
   ])('projects %s', (type) => {

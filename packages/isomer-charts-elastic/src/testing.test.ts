@@ -16,11 +16,13 @@ import { act as testUtilsAct } from 'react-dom/test-utils';
 import type { DebugState } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import type {
+  HeatmapScene,
   PartitionScene,
   Scene,
   XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
+  heatmapExamples,
   partitionChartExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts/schema';
@@ -116,12 +118,19 @@ const debugStateOf = async (scene: Scene): Promise<DebugState> => {
   return JSON.parse(raw) as DebugState;
 };
 
-const scenes = [...xyChartExamples, ...partitionChartExamples]
+const scenes = [
+  ...xyChartExamples,
+  ...partitionChartExamples,
+  ...heatmapExamples,
+]
   .map(({ name, node }): { name: string; scene: Scene } => ({
     name,
     scene: resolveChart(node, { scheme: 'light', size: SIZE }),
   }))
-  .filter(({ scene }) => !(scene.kind === 'partition' && scene.empty));
+  .filter(
+    ({ scene }) =>
+      !((scene.kind === 'partition' || scene.kind === 'heatmap') && scene.empty)
+  );
 
 describe('debugStateProblems', () => {
   it.each(scenes)(
@@ -189,6 +198,26 @@ describe('debugStateProblems', () => {
     expect(debugStateProblems(partition, undefined)).toEqual([
       'Elastic Charts reports no DebugState',
     ]);
+  });
+
+  it('fails a heat map cell in another color or with another value', async () => {
+    const heatmap = scenes.find(({ scene }) => scene.kind === 'heatmap')!
+      .scene as HeatmapScene;
+    const state = await debugStateOf(heatmap);
+    const [first, ...rest] = state.heatmap!.cells;
+    const changed = {
+      ...state,
+      heatmap: {
+        ...state.heatmap!,
+        cells: [
+          { ...first!, fill: 'rgba(1, 2, 3, 1)', formatted: 'other' },
+          ...rest,
+        ],
+      },
+    };
+    const problems = debugStateProblems(heatmap, changed).join('\n');
+    expect(problems).toMatch(/cell \d+ is filled rgba\(1, 2, 3, 1\)/);
+    expect(problems).toMatch(/cell \d+ reads "other"/);
   });
 
   it('reads the text and colors Elastic Charts reports', async () => {

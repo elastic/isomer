@@ -15,6 +15,7 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | [`xyChart`](xy-chart.md) | Lines, areas and bars over a shared x axis, with reference lines and annotations |
 | [`dataTable`](data-table.md) | Rows and columns to read exactly, with colored cells, bars, sorting, paging and a summary row |
 | [`partitionChart`](partition-chart.md) | Parts of a whole as a pie, donut, treemap, mosaic or waffle, in up to three layers |
+| [`heatmap`](heatmap.md) | Cells by two dimensions, colored by value bands |
 | [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
 | [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
 

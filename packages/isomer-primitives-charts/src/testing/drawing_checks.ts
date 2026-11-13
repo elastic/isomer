@@ -6,6 +6,7 @@
  */
 
 import type {
+  HeatmapScene,
   MetricScene,
   PartitionNode,
   PartitionScene,
@@ -108,6 +109,16 @@ const painted = (reading: DrawingReading, what: string, color: string) =>
     ? []
     : [`${what} ${color} is not painted`];
 
+const emptyAlone = (reading: DrawingReading, text: string) =>
+  reading.texts.join(' ') === text
+    ? []
+    : [
+        `an empty chart draws "${text}" alone, not ${JSON.stringify(reading.texts)}`,
+      ];
+
+// A fully transparent fill has no paint to find.
+const CLEAR = /^#[\da-f]{6}00$/i;
+
 /** What each kind's drawing must show beyond its box, name and background. */
 const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
   xy: (scene, reading) => {
@@ -143,11 +154,7 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
   partition: (scene, reading) => {
     const partition = scene as PartitionScene;
     if (partition.empty) {
-      return reading.texts.join(' ') === partition.empty.text
-        ? []
-        : [
-            `an empty chart draws "${partition.empty.text}" alone, not ${JSON.stringify(reading.texts)}`,
-          ];
+      return emptyAlone(reading, partition.empty.text);
     }
     const all = slices(partition.nodes);
     const words = [
@@ -183,6 +190,23 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
         .map(
           (word) => `"${word}" is drawn but is no slice's or legend item's text`
         ),
+    ];
+  },
+  heatmap: (scene, reading) => {
+    const { empty, x, y, cells, bands, legend } = scene as HeatmapScene;
+    if (empty) {
+      return emptyAlone(reading, empty.text);
+    }
+    return [
+      ...[x, y].flatMap(({ title }) =>
+        title === undefined ? [] : drawnText(reading, 'axis title', title)
+      ),
+      ...[...new Set(cells.map(({ color }) => color))]
+        .filter((color) => !CLEAR.test(color))
+        .flatMap((color) => painted(reading, 'cell', color)),
+      ...(legend.visible ? bands : []).flatMap(({ label }) =>
+        drawnText(reading, 'legend band', label)
+      ),
     ];
   },
 };

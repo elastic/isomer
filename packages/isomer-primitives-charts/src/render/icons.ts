@@ -38,6 +38,11 @@ export const partitionChartIcon = chartsIcon(
   `<path d="M7.5 3.5a5 5 0 1 0 5 5h-5z" fill="${paint.muted}"/><path d="M9 2v5h5a5 5 0 0 0-5-5z" fill="${paint.accent}"/><path d="M7.5 3.5a5 5 0 1 0 5 5" stroke="${paint.fg}"/>`
 );
 
+/** A grid of cells in three shades. */
+export const heatmapIcon = chartsIcon(
+  `<rect x="3" y="3" width="3" height="3" fill="${paint.accent}"/><rect x="6.5" y="3" width="3" height="3" fill="${paint.muted}"/><rect x="10" y="3" width="3" height="3" fill="${paint.fg}"/><rect x="3" y="6.5" width="3" height="3" fill="${paint.muted}"/><rect x="6.5" y="6.5" width="3" height="3" fill="${paint.fg}"/><rect x="10" y="6.5" width="3" height="3" fill="${paint.accent}"/><rect x="3" y="10" width="3" height="3" fill="${paint.fg}"/><rect x="6.5" y="10" width="3" height="3" fill="${paint.accent}"/><rect x="10" y="10" width="3" height="3" fill="${paint.muted}"/>`
+);
+
 /** A shaded header row above rules. */
 export const dataTableIcon = chartsIcon(
   `<rect x="3" y="3" width="10" height="3" rx="1" fill="${paint.accent}"/><path d="M3 8.5h10M3 11h10M3 13.5h10" stroke="${paint.fg}"/><path d="M7.5 7v6.5" stroke="${paint.muted}"/>`
