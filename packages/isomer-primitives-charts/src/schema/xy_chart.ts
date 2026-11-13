@@ -8,6 +8,7 @@
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../coordinates';
+import { isoDateTimeEpoch } from '../iso_date_time';
 
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
@@ -64,6 +65,7 @@ export const XY_RULES = {
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
   rangeOrder: "An annotation range's `from` is not after its `to`.",
+  time: 'A time written as a string is an ISO 8601 date-time with a UTC offset, such as `2026-11-03T00:30:00Z`, as a `date` cell is.',
   customDomain:
     'A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.',
 } as const;
@@ -71,10 +73,22 @@ export const XY_RULES = {
 const dateOrNumberSchema = z
   .union([
     z.number().min(-MAX_EPOCH).max(MAX_EPOCH),
-    z.iso.datetime({ offset: true }),
+    z.string().check(
+      crossSuperRefine<string>(
+        (value, context) => {
+          if (
+            typeof value === 'string' &&
+            isoDateTimeEpoch(value) === undefined
+          ) {
+            context.addIssue({ code: 'custom', message: XY_RULES.time });
+          }
+        },
+        [XY_RULES.time]
+      )
+    ),
   ])
   .describe(
-    'Epoch milliseconds within the `Date` range, ±8.64e15, or an ISO 8601 date-time.'
+    `Epoch milliseconds within the \`Date\` range, ±8.64e15, or an ISO 8601 date-time. ${XY_RULES.time}`
   );
 
 const strokeDashSchema = z.enum(['solid', 'dashed', 'dotted']);

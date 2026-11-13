@@ -695,6 +695,43 @@ describe('xyChart', () => {
   });
 
   it.each([
+    '2026-11-03T00:30Z',
+    '2026-11-03T00:30:00+0530',
+    '2026-11-03T00:30:00.123456789Z',
+  ])('takes %s as an annotation time, as a date cell does', (at) => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          layers: [
+            ...xy().layers,
+            { kind: 'annotations', events: [{ kind: 'point', at }] },
+          ],
+          style: { currentTime: at },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    '2026-11-03',
+    '2026-11-03T00:30:00',
+    '2026-11-03T00:30:00.1234567890Z',
+  ])('rejects %s as an annotation time', (at) => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          layers: [
+            ...xy().layers,
+            { kind: 'annotations', events: [{ kind: 'point', at }] },
+          ],
+        })
+      ).map(({ path }) => path)
+    ).toContain('layers.1.events.0.at');
+  });
+
+  it.each([
     [
       'an annotation',
       {

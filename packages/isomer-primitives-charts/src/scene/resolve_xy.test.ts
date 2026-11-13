@@ -1063,3 +1063,28 @@ describe('visibility, cell identity and bounds', () => {
     expect(Object.is(seriesIn(scene)[0]?.marks[0]?.x, 0)).toBe(true);
   });
 });
+
+describe('an unvalidated annotation time', () => {
+  it('drops the annotation rather than drawing it at 1970', () => {
+    const scene = resolve(
+      xy({
+        layers: [
+          ...xy().layers,
+          {
+            kind: 'annotations',
+            events: [
+              { kind: 'point', at: 'not a time' },
+              { kind: 'range', from: 0, to: 'not a time' },
+              { kind: 'point', at: 1 },
+            ],
+          },
+        ],
+      })
+    );
+    expect(
+      scene.layers.flatMap((layer) =>
+        layer.kind === 'annotation' ? [layer.annotation] : []
+      )
+    ).toEqual([expect.objectContaining({ kind: 'point', at: 1 })]);
+  });
+});

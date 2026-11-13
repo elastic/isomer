@@ -36,6 +36,7 @@ Rules:
 - At least one layer is a `data` layer.
 - Every data layer uses the same x column; absent means every row draws at one x position.
 - An annotation range's `from` is not after its `to`.
+- A time written as a string is an ISO 8601 date-time with a UTC offset, such as `2026-11-03T00:30:00Z`, as a `date` cell is.
 - A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.
 - A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.
 - Emphasis rows are indexes into `data.rows`.
