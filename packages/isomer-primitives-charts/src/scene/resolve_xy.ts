@@ -56,7 +56,8 @@ const MAX_DATE = 8.64e15;
  * from the drawn marks (`mergeXDomain`): the marks' extent or the custom
  * domain; the stated interval unless it is wider than the marks' smallest
  * spacing; and one bucket more where bars fill buckets, as `xy.tsx` turns on
- * histogram mode. Absent when no mark has a time.
+ * histogram mode. Absent when no mark has a time, when one x and no stated
+ * interval leave the bucket unknown, and when no raster fits the span.
  */
 const timeTicksOf = (
   series: readonly XySeries[],
@@ -82,7 +83,11 @@ const timeTicksOf = (
       )
     ),
   ].sort((a, b) => a - b);
-  if (xs.length === 0) {
+  const stated =
+    statedInterval === undefined || statedInterval < 0
+      ? undefined
+      : statedInterval;
+  if (xs.length === 0 || (xs.length === 1 && stated === undefined)) {
     return {};
   }
   const spacing = xs.reduce(
@@ -90,13 +95,7 @@ const timeTicksOf = (
       index === 0 ? smallest : Math.min(smallest, x - xs[index - 1]!),
     Infinity
   );
-  const computed = Number.isFinite(spacing) ? spacing : 1;
-  const interval =
-    statedInterval === undefined ||
-    statedInterval < 0 ||
-    (xs.length > 1 && statedInterval > computed)
-      ? computed
-      : statedInterval;
+  const interval = stated === undefined || stated > spacing ? spacing : stated;
   const custom =
     domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
   const min = custom?.min ?? xs[0]!;
@@ -110,17 +109,16 @@ const timeTicksOf = (
   const extend =
     bars.length > 0 &&
     bars.some(({ stack }) => stack !== undefined || bars.length <= 1);
-  return {
-    timeTicks: resolveTimeTicks({
-      min,
-      max,
-      interval,
-      extend,
-      locale,
-      timeZone,
-      ...(maxWidth === undefined ? {} : { maxWidth }),
-    }),
-  };
+  const timeTicks = resolveTimeTicks({
+    min,
+    max,
+    interval,
+    extend,
+    locale,
+    timeZone,
+    ...(maxWidth === undefined ? {} : { maxWidth }),
+  });
+  return timeTicks ? { timeTicks } : {};
 };
 
 // Style for nodes that state none.
