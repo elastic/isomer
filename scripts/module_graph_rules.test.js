@@ -119,3 +119,37 @@ describe('SDK ./schema', () => {
     }
   );
 });
+
+describe('Vega ./schema', () => {
+  const forbidden = RULES['@elastic/isomer-primitives-vega']['./schema'];
+
+  it('allows zod and the SDK and charts schema entries', async () => {
+    expect(
+      await forbiddenReachable(
+        entryImporting(
+          'zod',
+          '@elastic/isomer-sdk/schema',
+          '@elastic/isomer-primitives-charts/schema'
+        ),
+        forbidden
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    'vega',
+    'vega-lite',
+    'vega-interpreter',
+    'vega-tooltip',
+    'react',
+    '@elastic/isomer-runtime',
+    '@elastic/isomer-sdk',
+    '@elastic/isomer-primitives-charts',
+    '@elastic/isomer-primitives-charts/resolve',
+    'mdast-util-gfm',
+  ])('rejects %s through a relative module', async (specifier) => {
+    expect(
+      await forbiddenReachable(entryReaching(specifier), forbidden)
+    ).toEqual([specifier]);
+  });
+});

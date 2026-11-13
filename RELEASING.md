@@ -19,9 +19,13 @@ pnpm -r exec npm pkg set version=X.Y.Z
 pnpm -r publish --access public --tag latest --no-git-checks
 ```
 
-`pnpm -r publish` skips private packages and any package already on the registry at that version, so only the missing ones go out.
+`pnpm -r publish` skips private packages and any package already on the registry at that version, so only the missing ones go out. A host that `require`s the Vega pack applies the workspace's `patches/vega-canvas@2.0.0.patch`, as Kibana does; see [Loading Vega on Node](packages/isomer-primitives-vega/docs/rendering.md#loading-vega-on-node).
 
 Releases come only from `main`. A `feat:` commit releases the next minor; while the package is pre-1.0, a `BREAKING CHANGE` footer or a `!` after the type (`feat!:`) also releases a minor and is listed under breaking changes in the notes. To cut `1.0.0`, change the `breaking` rule in `.releaserc.json` back to `major` and update `scripts/releaserc.test.js` to match. Only a commit that changes the folder of a package published now or at the last release, or a root build input in `BUILD_INPUTS` in `scripts/semantic_release_workspace.js`, counts toward the version or appears in the notes. For the root `package.json`, only the `build` scripts count; a `feat:` or `fix:` confined to the slides pack, docs, or tooling does not cut a release. The supported consumer install is `npm install @elastic/isomer-sdk` (and `@elastic/isomer-runtime`) from registry.npmjs.org. All published packages ship at the same version.
+
+## Private packages
+
+`@elastic/isomer-primitives-charts`, `@elastic/isomer-charts-elastic` and `@elastic/isomer-primitives-vega` are private until the npm admin seeds `@elastic/isomer-primitives-charts`, which the other two depend on; unseeded, its publish fails with `E404`. Make the three public together: seed each, add each to the Trusted Publisher list in [step 3](#cut-a-release), then remove its `"private": true`.
 
 ## Snapshots under `next`
 
