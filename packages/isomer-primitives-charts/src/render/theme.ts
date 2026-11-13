@@ -129,6 +129,8 @@ export const CHARTS_THEME = {
     badgePadding: 4,
     badgeRadius: 3,
     pageGap: 12,
+    /** The most consecutive pages the pager lists, as EUI's pagination. */
+    pagerWindow: 5,
     /** Height of the title line, in pixels. */
     titleHeight: 24,
     /** Height of a description, note or link line, in pixels. */
