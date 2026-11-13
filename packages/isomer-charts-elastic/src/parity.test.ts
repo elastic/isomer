@@ -31,13 +31,15 @@ import {
   type Scene,
   type SceneRenderEnv,
   selectEvent,
+  xyInteractiveScene,
+  type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { type Composition, primitiveExamples } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { seriesOf, type XyDatum } from './events';
+import { seriesOf, seriesSpecId, type XyDatum } from './events';
 import { sceneSpecs } from './specs';
 
 /**
@@ -121,7 +123,7 @@ const installed = (scene: Scene, env: SceneRenderEnv) => {
   expect(settings, 'a Settings spec').toBeDefined();
   const callback = (name: string) => settings![name] as Callback | undefined;
   const series = elements.flatMap(({ props }) =>
-    typeof props.id === 'string' && /^series-\d+$/.test(props.id)
+    typeof props.id === 'string' && props.id.startsWith('series-')
       ? [{ id: props.id, data: props.data as readonly XyDatum[] }]
       : []
   );
@@ -306,7 +308,7 @@ const gestures = (
     scene.categories.find((category) => category.x === x);
   const series = seriesOf(scene);
   // Each Scene mark, and the datum at its x and y in its series' spec.
-  const marks = series.flatMap((one, index) =>
+  const marks = series.flatMap((one) =>
     one.marks.map((mark) => {
       const selection = offers('datum')
         ? mark.selection
@@ -319,7 +321,7 @@ const gestures = (
         raise: () => {
           const { events, env } = listen();
           const { callback, series: specs } = installed(scene, env);
-          const spec = specs.find(({ id }) => id === `series-${index}`);
+          const spec = specs.find(({ id }) => id === seriesSpecId(one));
           const datum = spec?.data.find(
             ({ x, y }) => x === mark.x && y === mark.y
           );
@@ -349,7 +351,7 @@ const gestures = (
         : [],
   }));
   // The buttons the installed legend action draws for each series' item.
-  const legend = series.flatMap((one, index) =>
+  const legend = series.flatMap((one) =>
     [false, true].map((negate) => {
       const item = scene.legend.items.find(
         ({ key, series: { layer, y } }) =>
@@ -363,7 +365,7 @@ const gestures = (
           const { callback, series: specs } = installed(scene, env);
           const action = callback('legendAction');
           if (action) {
-            const spec = specs.find(({ id }) => id === `series-${index}`);
+            const spec = specs.find(({ id }) => id === seriesSpecId(one));
             const button = elementsOf(
               action({
                 series: [{ specId: spec!.id }],
@@ -454,6 +456,85 @@ describe('event parity over every example', () => {
       for (const { gesture, raise, expected } of gestures(scene)) {
         expect(raise(), gesture).toEqual(expected);
       }
+    }
+  );
+});
+
+describe('series spec ids across a data refresh', () => {
+  const before = seriesOf(xyInteractiveScene);
+  const template = before[0]!;
+  // A refresh that brings a series ahead of the ones already drawn.
+  const refreshed: XyScene = {
+    ...xyInteractiveScene,
+    layers: [
+      {
+        kind: 'series',
+        series: {
+          ...template,
+          key: 'new',
+          label: 'New',
+          marks: template.marks.map(
+            ({ selection: _selection, ...mark }) => mark
+          ),
+        },
+      },
+      ...xyInteractiveScene.layers,
+    ],
+  };
+  const ids = (scene: XyScene) =>
+    installed(scene, listen().env).series.map(({ id }) => id);
+  const kept = [
+    'series-0-0-200',
+    'series-0-0-404',
+    'series-0-0-Other',
+    'series-0-0-\\null',
+  ];
+
+  it('keeps each series’ id when a new series sorts ahead of it', () => {
+    expect(ids(xyInteractiveScene)).toEqual(kept);
+    expect(ids(refreshed)).toEqual(['series-0-0-new', ...kept]);
+  });
+
+  it('gives two layers plotting one key their own ids', () => {
+    const twice: XyScene = {
+      ...xyInteractiveScene,
+      layers: [
+        { kind: 'series', series: template },
+        {
+          kind: 'series',
+          series: { ...template, series: { layer: 1, y: 0 } },
+        },
+      ],
+    };
+    expect(ids(twice)).toEqual([kept[0], `series-1-0-${template.key}`]);
+  });
+
+  it.each(before.map((one, index) => ({ one, id: kept[index]! })))(
+    '$id still names its series to the legend action and a click',
+    ({ one, id }) => {
+      const item = xyInteractiveScene.legend.items.find(
+        ({ key }) => key === one.key
+      );
+      const legend = listen();
+      const action = installed(refreshed, legend.env).callback('legendAction');
+      const button = elementsOf(
+        action!({ series: [{ specId: id }], label: one.label }) as ReactNode
+      ).find(({ props }) => props['aria-label'] === `Filter for ${one.label}`);
+      (button!.props.onClick as Callback)();
+      expect(legend.events).toEqual([selectEvent(NODE, item!.selection!)]);
+
+      const click = listen();
+      const { callback, series } = installed(refreshed, click.env);
+      const datum = series.find((spec) => spec.id === id)!.data[0]!;
+      callback('onElementClick')?.([
+        [
+          { x: datum.x, y: datum.y, mark: null, accessor: 'y1', datum },
+          { specId: id, key: id },
+        ],
+      ]);
+      expect(click.events).toEqual([
+        selectEvent(NODE, one.marks[0]!.selection!),
+      ]);
     }
   );
 });
