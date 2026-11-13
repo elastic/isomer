@@ -54,4 +54,8 @@ export {
   createCompositionValidator,
   warningsForSurface,
 } from './validation';
-export { displayValueSchema, namedColorSchema } from './value_schemas';
+export {
+  displayValueSchema,
+  namedColorSchema,
+  structuredValueSchema,
+} from './value_schemas';

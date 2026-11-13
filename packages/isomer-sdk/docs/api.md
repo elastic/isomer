@@ -75,7 +75,7 @@ Types: `ValidationError`, `ValidationResult`, `CheckedValidationResult` (`Valida
 
 `assetUrl` and `navigationHref` (each taking an optional `max` length), `sanitizeAssetUrl`, `sanitizeNavigationHref`, `sanitizeParsedAssetUrl`, `sanitizeParsedNavigationHref`, `ASSET_URL_RULE`, `NAVIGATION_HREF_RULE`, `ASSET_URL_MESSAGE`, `NAVIGATION_HREF_MESSAGE`, `BLOCKED_HREF` — see [URL trust](url-trust.md).
 
-`displayValueSchema`, `namedColorSchema`, `formatDisplayValue`, `ISOMER_ERROR_CODES`.
+`displayValueSchema`, `structuredValueSchema`, `namedColorSchema`, `formatDisplayValue`, `ISOMER_ERROR_CODES`. A pack that accepts a structured value beside its own text schema, such as `z.union([plainText, structuredValueSchema])`, uses `structuredValueSchema` itself, so the authoring JSON Schema names it `structuredValue` and its formats stay the SDK's.
 
 `scopeScript` wraps one script body in its own function, for anything that joins bodies, such as a render joining its enhancements' scripts and its style adapter's `getScriptText`. It lives here rather than on `./html` because it needs no server renderer. See [Enhancements](rendering.md#enhancements).
 
