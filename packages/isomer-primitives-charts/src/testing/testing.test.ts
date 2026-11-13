@@ -9,7 +9,13 @@ import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import type { ReactSceneRenderer } from '../render/context';
-import type { HeatmapScene, MetricScene, Scene, XyScene } from '../scene/types';
+import type {
+  HeatmapScene,
+  MetricScene,
+  PartitionScene,
+  Scene,
+  XyScene,
+} from '../scene/types';
 import {
   CHECKED_KINDS,
   coverageProblems,
@@ -17,6 +23,7 @@ import {
   drawingProblems,
   type DrawingReader,
   type DrawnScene,
+  rgbOf,
   sceneDescription,
   textDrawn,
   unescapeMarkup,
@@ -185,6 +192,74 @@ describe('the static renderer checks', () => {
     expect(problems).toContain(`series "${label}" ${color} is not painted`);
   });
 
+  const recolored = (drawing: DrawnScene, color: string): DrawnScene => {
+    const scene = drawing.scene as XyScene;
+    return {
+      ...drawing,
+      scene: {
+        ...scene,
+        layers: scene.layers.map((layer) =>
+          layer.kind === 'series'
+            ? { ...layer, series: { ...layer.series, color } }
+            : layer
+        ),
+      },
+    };
+  };
+  const seriesProblems = (drawing: DrawnScene, paint: string) =>
+    mutated(drawing, (markup) =>
+      markup.replace(/data-color="[^"]*"/g, `data-color="${paint}"`)
+    ).filter((problem) => problem.startsWith('series '));
+
+  it('fail a `#rgb` series painted with a paint that is no color', () => {
+    const drawing = recolored(first('xy'), '#abc');
+    for (const paint of ['none', 'currentColor', 'url(#fill)', '#abd']) {
+      expect(seriesProblems(drawing, paint), paint).not.toEqual([]);
+    }
+  });
+
+  it('pass a series painted its color in another notation', () => {
+    expect(seriesProblems(recolored(first('xy'), '#ffffff'), '#fff')).toEqual(
+      []
+    );
+    const drawing = recolored(first('xy'), '#abc');
+    for (const paint of [
+      '#AABBCC',
+      '#aabbccff',
+      'rgb(170, 187, 204)',
+      'rgb(170 187 204)',
+      'rgba(170 187 204 / 0.5)',
+    ]) {
+      expect(seriesProblems(drawing, paint), paint).toEqual([]);
+    }
+  });
+
+  it('fail a tile value drawn as another number that holds its digits', () => {
+    const drawing = first('metric');
+    const { text } = (drawing.scene as MetricScene).tiles[0]!.value;
+    expect(drawing.markup).toContain(`<span>${text}</span>`);
+    const problems = mutated(drawing, (markup) =>
+      markup.replaceAll(`<span>${text}</span>`, `<span>${text}7</span>`)
+    );
+    expect(problems).toContain(`tile value "${text}" is not drawn`);
+  });
+
+  it('fail a partition drawing a fragment of a label', () => {
+    const drawing = drawn.find(
+      ({ scene }) => scene.kind === 'partition' && !scene.empty
+    )!;
+    const { label } = (drawing.scene as PartitionScene).nodes[0]!;
+    const fragment = label.slice(0, -1);
+    expect(fragment).toMatch(/^\S+$/);
+    expect(
+      mutated(drawing, (markup) =>
+        markup.replace('</figure>', `<span>${fragment}</span></figure>`)
+      )
+    ).toContain(
+      `"${fragment}" is drawn but is no slice's or legend item's text`
+    );
+  });
+
   it('fail a drawing at another size, without a description or on another background', () => {
     const drawing = first('partition');
     const { width } = drawing.scene.size!;
@@ -255,5 +330,46 @@ describe('the static renderer checks', () => {
     expect(textDrawn(['Requests p…'], 'Requests per hour')).toBe(true);
     expect(textDrawn(['Responses…'], 'Requests per hour')).toBe(false);
     expect(textDrawn(['Requests'], 'Requests per hour')).toBe(false);
+    expect(
+      textDrawn(['Total', 'Requests', 'per hour', '12'], 'Requests per hour')
+    ).toBe(true);
+    expect(
+      textDrawn(['Total', 'Reque', 'sts p…', '12'], 'Requests per hour')
+    ).toBe(true);
+    expect(textDrawn(['12', '31'], '1')).toBe(false);
+    expect(textDrawn(['12', '31'], '23')).toBe(false);
+    expect(
+      textDrawn(['Requests per hour, all hosts'], 'Requests per hour')
+    ).toBe(false);
+    expect(textDrawn(['Requests'], '')).toBe(true);
+  });
+
+  it('read a color’s channels in any hex or `rgb()` notation, and match no other paint', () => {
+    for (const color of [
+      '#abc',
+      '#ABCD',
+      '#aabbcc',
+      '#aabbcc80',
+      'rgb(170,187,204)',
+      'RGB(170 187 204)',
+      'rgba(170, 187, 204, 0.5)',
+      'rgb(170 187 204 / 50%)',
+    ]) {
+      expect(rgbOf(color), color).toBe('170,187,204');
+    }
+    for (const paint of ['none', 'currentColor', '#abcde', 'rgb(1 2)', '']) {
+      expect(rgbOf(paint), paint).not.toBe(rgbOf(paint));
+    }
+  });
+
+  it('decode astral character references and `&nbsp;`', () => {
+    expect(unescapeMarkup('&#128512; &#x1F600;')).toBe('\u{1F600} \u{1F600}');
+    expect(unescapeMarkup('5&nbsp;ms')).toBe(
+      `5${String.fromCodePoint(0xa0)}ms`
+    );
+    expect(unescapeMarkup('&amp;nbsp; &#1114112;')).toBe('&nbsp; &#1114112;');
+    expect(
+      textDrawn([unescapeMarkup('Up &#x1F600;&nbsp;now')], 'Up \u{1F600} now')
+    ).toBe(true);
   });
 });

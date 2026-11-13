@@ -394,6 +394,31 @@ describe('debugStateProblems', () => {
     expect(problems).toMatch(/cell \d+ reads "other"/);
   });
 
+  it('reads a `#rgb` heat map cell color, and matches it to no fill that is no color', async () => {
+    const heatmap = scenes.find(({ scene }) => scene.kind === 'heatmap')!
+      .scene as HeatmapScene;
+    const state = await debugStateOf(heatmap);
+    const [first, ...rest] = state.heatmap!.cells;
+    const { originalIndex } = first!.datum as { originalIndex: number };
+    const short: HeatmapScene = {
+      ...heatmap,
+      cells: heatmap.cells.map((cell, index) =>
+        index === originalIndex ? { ...cell, color: '#abc' } : cell
+      ),
+    };
+    const filled = (fill: string) =>
+      debugStateProblems(short, {
+        ...state,
+        heatmap: { ...state.heatmap!, cells: [{ ...first!, fill }, ...rest] },
+      }).filter((problem) => problem.includes('is filled'));
+    expect(filled('rgba(170, 187, 204, 1)')).toEqual([]);
+    for (const fill of ['none', 'currentColor', 'rgba(171, 187, 204, 1)']) {
+      expect(filled(fill), fill).toEqual([
+        `cell ${originalIndex} is filled ${fill}, not #abc`,
+      ]);
+    }
+  });
+
   it('fails a gauge with another value or band', async () => {
     const gauge = scenes.find(({ scene }) => scene.kind === 'gauge')!
       .scene as GaugeScene;
