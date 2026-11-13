@@ -117,7 +117,7 @@ export interface SceneColumn {
 /**
  * The node's data as text, for accessible tables and the text, Markdown and
  * Slack surfaces. Cells are formatted; an empty cell carries the empty-value
- * text. Rows keep `data` order.
+ * text. Rows keep `data` order, and are formatted on first read.
  */
 export interface SceneTable {
   readonly columns: readonly SceneColumn[];
