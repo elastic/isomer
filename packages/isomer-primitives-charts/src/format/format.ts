@@ -10,7 +10,12 @@ import type { PortableFormat } from '../schema/format';
 
 import { formatDate, toEpoch } from './date';
 import { formatDuration } from './duration';
-import { formatNumber, numberFormat, numberOptions } from './intl';
+import {
+  formatNumber,
+  numberFormat,
+  numberOptions,
+  scaledUnitIndex,
+} from './intl';
 
 /** The text for values a format cannot show. */
 interface MissingText {
@@ -123,14 +128,11 @@ const formatNumeric = (
     case 'bits': {
       const units = format.kind === 'bytes' ? BYTES : BITS;
       const base = format.base ?? (format.kind === 'bytes' ? 1024 : 1000);
-      const magnitude = Math.abs(number);
-      let exponent = 0;
-      while (
-        exponent < units.length - 1 &&
-        magnitude >= base ** (exponent + 1)
-      ) {
-        exponent++;
-      }
+      const exponent = scaledUnitIndex(
+        Math.abs(number),
+        units.map((_, index) => base ** index),
+        format
+      );
       return formatNumber(
         numberFormat(locale, {
           style: 'unit',

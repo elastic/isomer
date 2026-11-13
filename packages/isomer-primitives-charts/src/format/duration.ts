@@ -11,7 +11,12 @@ import type {
   PortableFormat,
 } from '../schema/format';
 
-import { formatNumber, numberFormat, numberOptions } from './intl';
+import {
+  formatNumber,
+  numberFormat,
+  numberOptions,
+  scaledUnitIndex,
+} from './intl';
 
 type DurationFormat = Extract<PortableFormat, { kind: 'duration' }>;
 
@@ -40,18 +45,18 @@ const NAMED_UNITS = new Set<string>(
     : []
 );
 
-const LARGEST_FIRST: readonly DurationOutputUnit[] = (
+const SMALLEST_FIRST: readonly DurationOutputUnit[] = (
   [
-    'years',
-    'months',
-    'weeks',
-    'days',
-    'hours',
-    'minutes',
-    'seconds',
-    'milliseconds',
-    'microseconds',
     'nanoseconds',
+    'microseconds',
+    'milliseconds',
+    'seconds',
+    'minutes',
+    'hours',
+    'days',
+    'weeks',
+    'months',
+    'years',
   ] as const
 ).filter(
   (unit) =>
@@ -60,13 +65,15 @@ const LARGEST_FIRST: readonly DurationOutputUnit[] = (
 );
 
 const isShown = (unit: DurationUnit): unit is DurationOutputUnit =>
-  (LARGEST_FIRST as readonly string[]).includes(unit);
+  (SMALLEST_FIRST as readonly string[]).includes(unit);
+
+const SIZES = SMALLEST_FIRST.map((unit) => PICOSECONDS[unit]);
 
 /**
  * Formats a number of `format.input` units in `format.output`, or in the
- * largest unit it is at least one of, with `Intl.NumberFormat`'s unit names.
- * Zero stays in its input unit when that is one a duration displays in. A
- * unit the environment cannot name falls back to milliseconds.
+ * largest unit it rounds to at least one of, with `Intl.NumberFormat`'s unit
+ * names. Zero stays in its input unit when that is one a duration displays
+ * in. A unit the environment cannot name falls back to milliseconds.
  */
 export const formatDuration = (
   value: number,
@@ -74,12 +81,13 @@ export const formatDuration = (
   locale: string
 ): string => {
   const { input, output = 'auto', unitDisplay = 'long' } = format;
-  const magnitude = Math.abs(value) * PICOSECONDS[input];
   const unit =
     output === 'auto'
-      ? (LARGEST_FIRST.find(
-          (candidate) => magnitude >= PICOSECONDS[candidate]
-        ) ?? (value === 0 && isShown(input) ? input : LARGEST_FIRST.at(-1)!))
+      ? value === 0 && isShown(input)
+        ? input
+        : SMALLEST_FIRST[
+            scaledUnitIndex(Math.abs(value) * PICOSECONDS[input], SIZES, format)
+          ]!
       : isShown(output)
         ? output
         : 'milliseconds';
