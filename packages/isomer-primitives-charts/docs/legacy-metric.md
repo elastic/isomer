@@ -47,3 +47,16 @@ The Scene's `kind` is `legacyMetric`. Expected values come from Kibana's legacy 
 No chart engine draws it: Kibana draws a legacy metric as plain DOM, so the pack's own legacy metric renderer does, the same in the browser and on Node, as the table renderer draws a `dataTable`. It draws the Scene as a wrapping, centered flex row of tiles that scrolls where it overruns the chart, as Kibana's container does, with the pack's [Distillate](rendering.md#styling) classes, every per-tile color and length through CSS custom properties, and takumi rasterizes that markup on `snapshot`. The renderer is `sized`: without a host size the chart resolves for a 16:9 box at the chart width, taller when its tiles and notes wrap to more rows than that holds, and `snapshotHeight` reports it. Its accessible label is the summary and the description. A selectable tile is a focusable button that raises its selection on click, Enter or Space. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as the other charts are.
 
 `legacyMetricExamples` covers one value, a lone value whose band fills the chart, values colored by percentage bands across a breakdown with the Other and missing buckets, several columns of one row, several columns by a breakdown with banded backgrounds, a string, a date and a missing number, a long value shrunk to fit with labels hidden, no rows, and selectable tiles with pre-rendered names, emphasis, a link and provenance.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `legacyMetricSchema` | The `legacyMetric` schema, with its rules |
+| `LegacyMetricNode` | A validated `legacyMetric` node |
+| `legacyMetricCatalog` | What an agent reads to choose `legacyMetric`: purpose, when to use it, and an example |
+| `legacyMetricExamples` | Its named examples |
+| `LEGACY_METRIC_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
+| `LEGACY_METRIC_SIZES` | The type steps of Lens's legacy metric, smallest first: `xs`, `s`, `m`, `l`, `xl`, `xxl` |

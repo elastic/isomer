@@ -132,3 +132,30 @@ A node is a static snapshot. A host shows when it was captured, and refreshes it
 ## `losses`
 
 `{ path, kind: 'dropped' | 'approximated' | 'prerendered', note }[]`: what the source had that the node drops or approximates. Studio and hosts can show it, and tests can pin it.
+
+## Exports
+
+On `./schema` and the root entry; `ChartGlyph` and `CHART_GLYPHS` are on `./scene` too:
+
+| Export | What it is |
+| --- | --- |
+| `chartCoreShape` | The fields every chart primitive shares, spread into each chart's schema |
+| `chartDataSchema`, `ChartData` | [`data`](#data): columns, rows and optional pre-rendered strings, with its rules |
+| `ChartColumn` | A column of `data`: its identity, type, role and format |
+| `ColumnType` | The kind of value a column's cells hold: `number`, `string`, `date` or `boolean` |
+| `ColumnRole` | `dimension` or `metric` |
+| `cellSchema`, `Cell` | A cell: one value, or an array of values in a `multivalue` column |
+| `ScalarCell` | One value in a non-multivalue cell: a number, string, boolean or `null` |
+| `columnRefSchema` | A column id, checked against `data.columns` by the chart that holds it |
+| `ColumnReference` | One column id found in a node, where it was found, and the types it accepts |
+| `portableFormatSchema`, `PortableFormat` | [How a column formats its values](#portableformat) |
+| `FORMAT_RULES` | The format's cross-field rules, one sentence each, as the schema's description states them |
+| `DurationUnit` | A unit a duration column's raw value can be stored in |
+| `DurationOutputUnit` | A unit a duration displays in |
+| `colorValueSchema`, `ColorValue` | [A color](#colorvalue): concrete for both schemes, a chrome token, or a categorical palette index |
+| `chartColorsSchema`, `ChartColors` | `colors`: per series or category key (`byKey`), and by value range (`bands`) |
+| `ColorBand` | One of `colors.bands`: a color for values from `from` up to `to` |
+| `glyphSchema`, `ChartGlyph` | A [glyph](#glyphs) by name |
+| `CHART_GLYPHS` | What each glyph shows, and the EUI icon type it is drawn as by default |
+| `provenanceSchema`, `Provenance` | [`source`](#source): where a node came from |
+| `lossSchema`, `Loss` | One of [`losses`](#losses): something the source had that the node drops or approximates |

@@ -42,3 +42,16 @@ The Scene's `kind` is `gauge`. Expected values come from Lens's gauge (`expressi
 The [Elastic Charts engine](../../isomer-charts-elastic/docs/index.md) draws it with Elastic Charts' `Bullet` in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes Lens's size spec for its shape (`useGaugeSizeByType`), at most its largest box: 3:1 and 600 px wide for a horizontal bullet, 2:3 and 400 px wide for a vertical one, 2:1.25 for a semicircle, 1.1:1 for an arc and 1:1 for a circle, each at most 600 px wide; `snapshotHeight` reports it. Text and Markdown write the summary, the description and the data table. On Slack it is a picture asset, as the other charts are.
 
 `gaugeExamples` covers a semicircle with bands, a goal and band ticks, a horizontal bullet with Lens's default bounds and a subtitle, a vertical bullet with percentage bands and no ticks, an arc whose bands leave gaps, a circle with a pre-rendered value, a link and provenance, a negative value, a huge value, no value, and bounds the wrong way round.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `gaugeSchema` | The `gauge` schema, with its rules |
+| `GaugeNode` | A validated `gauge` node |
+| `gaugeCatalog` | What an agent reads to choose `gauge`: purpose, when to use it, and an example |
+| `gaugeExamples` | Its named examples |
+| `GAUGE_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
+| `GAUGE_SHAPES`, `GaugeShape` | The shapes it draws: `horizontalBullet`, `verticalBullet`, `semiCircle`, `arc`, `circle` |

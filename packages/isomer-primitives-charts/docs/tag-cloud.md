@@ -43,3 +43,16 @@ The Scene's `kind` is `tagCloud`. Expected values come from Lens's tag cloud (`e
 The [Elastic Charts engine](../../isomer-charts-elastic/docs/index.md) draws it with Elastic Charts' `Wordcloud` in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes a 16:9 box, as an `xyChart` that fills its container does, and `snapshotHeight` reports it. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as the other charts are.
 
 `tagCloudExamples` covers ten words in the default palette, right-angled words with stated colors and the Other and missing buckets, many angles on a log scale, numbers as tags with missing values, one tag, no rows, and selectable words with pre-rendered names, emphasis, a link and provenance.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `tagCloudSchema` | The `tagCloud` schema, with its rules |
+| `TagCloudNode` | A validated `tagCloud` node |
+| `tagCloudCatalog` | What an agent reads to choose `tagCloud`: purpose, when to use it, and an example |
+| `tagCloudExamples` | Its named examples |
+| `TAG_CLOUD_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
+| `TAG_CLOUD_KEY_RULE` | The rule for what a `colors.byKey` key names |

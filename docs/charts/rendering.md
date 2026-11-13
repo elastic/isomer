@@ -170,3 +170,55 @@ Its theme, `ChartsFrameTheme`, is `{ scheme, background, text }` per mode: the s
 ## `unsupported`
 
 An `unsupported` node draws a note with its title, reason and link, in the page's text color. Text and Markdown write the same three. A link that fails the SDK's navigation policy is dropped.
+
+## Exports
+
+On the root entry, beside everything `./schema`, `./scene` and `./resolve` export:
+
+| Export | What it is |
+| --- | --- |
+| `chartsPack` | The pack with its defaults: `resolveChart`, then the summary fallback |
+| `createChartsPack`, `ChartsPackOptions` | Builds the pack from its options: `resolveScene`, `sceneRenderers` and `onFailure`, each optional |
+| `SceneResolver` | Turns a chart node into the Scene its renderers draw: the type of `resolveScene` |
+| `ReactSceneRenderer` | A renderer the `react` and `snapshot` surfaces can use: a `SceneRenderer` whose output is a React node |
+| `ChartsRenderContext` | [The render context](#the-render-context) the pack's `react` renderers read |
+| `ChartFailureHandler` | The type of `onFailure`: told the error and the node of [each chart that drew its failure note](#when-a-chart-cannot-be-drawn) |
+| `CHART_FAILURE_TEXT` | What every surface writes in place of a chart that could not be resolved or drawn |
+| `chartSizeSpec`, `ChartSizeSpec` | [The size spec](#chart-size) of a Scene's kind: an `aspectRatio`, a `minHeight?` and a `maxWidth?`; none for a kind that sizes itself |
+| `chartSize` | The box a spec takes at a width |
+| `chartsStylesheet` | [Every rule the pack draws with](#styling) |
+| `chartsFrame`, `ChartsFrameTheme` | [The `snapshot` frame](#chartsframe), and the palette it draws with per scheme |
+
+On `./resolve` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `resolveChart` | [Resolves a chart node to its Scene](scene.md#resolvechart) |
+| `ResolveChartOptions` | What the host draws a Scene for: `scheme`, `size?`, `locale?` and `timeZone?` |
+| `ChartNode` | A chart node the resolver draws: any chart primitive's node, so neither `grid` nor `unsupported` |
+
+On `./scene` and the root entry, the [style helpers](#styling):
+
+| Export | What it is |
+| --- | --- |
+| `createVarsModule` | Authors a style module whose rules read module-local vars |
+| `varStyle` | Sets a module's vars on one element |
+| `px` | A number of pixels as a var's value |
+| `cls` | Resolves style handles to class names |
+| `StyleHandle`, `LocalVarGroup` | Distillate's types for what `createVarsModule` returns: a rule's handle, and a group of module-local vars |
+
+On `./testing` alone, for [testing a static renderer](#testing-a-static-renderer):
+
+| Export | What it is |
+| --- | --- |
+| `drawExamples` | Draws every example of the pack with the given renderers first, in each scheme |
+| `DrawnExamples` | What `drawExamples` recorded |
+| `DrawnScene` | One Scene a renderer drew for an example, and its markup |
+| `coverageProblems` | Where a renderer misses a Scene it supports, or supports a kind with no content check |
+| `drawingProblems` | Where a drawing of a Scene differs from the Scene |
+| `DrawingReading` | What a drawing shows, as its engine reads it back |
+| `DrawingReader` | Reads a drawing back into a `DrawingReading`; one per engine |
+| `sceneDescription` | The accessible description a drawing of a Scene carries: its summary, then its authored description |
+| `textDrawn` | Whether a value is drawn whole or, where it does not fit, cut with an ellipsis |
+| `unescapeMarkup` | Markup text with its entities decoded |
+| `rgbOf` | A color's channels, as `r,g,b` |

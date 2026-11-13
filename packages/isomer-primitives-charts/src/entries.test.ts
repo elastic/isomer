@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -30,6 +30,31 @@ describe('the root entry', () => {
     'exports every name %s does',
     (entry) => {
       expect(namesOf(entry).filter((name) => !root.has(name))).toEqual([]);
+    }
+  );
+});
+
+describe('the package docs', () => {
+  const docsDir = join(__dirname, '..', 'docs');
+  const docs = readdirSync(docsDir)
+    .filter((file) => file.endsWith('.md'))
+    .map((file) => readFileSync(join(docsDir, file), 'utf8'))
+    .join('\n');
+  const UNDOCUMENTED = new Set([
+    'CHECKED_KINDS',
+    'ResolveSceneOptions',
+    'SCHEMES',
+  ]);
+
+  it.each(['index.ts', 'testing/index.ts'])(
+    'name every export of %s',
+    (entry) => {
+      expect(
+        namesOf(entry).filter(
+          (name) =>
+            !UNDOCUMENTED.has(name) && !new RegExp(`\\b${name}\\b`).test(docs)
+        )
+      ).toEqual([]);
     }
   );
 });

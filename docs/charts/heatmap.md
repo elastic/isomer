@@ -49,3 +49,15 @@ The Scene's `kind` is `heatmap`. Expected values come from Lens's heat map (`exp
 The [Elastic Charts engine](../charts-elastic/index.md) draws it in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes a 16:9 box, as an `xyChart` that fills its container does, and `snapshotHeight` reports it. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as the other charts are.
 
 `heatmapExamples` covers an hourly time axis with the default palette, stated bands over categories with the Other bucket, rows with a missing position, and cell labels, percentage bands with sorted axes, one row with no `y`, huge, tiny, missing and out-of-band values, every value the same, no rows, and selectable, brushable cells with pre-rendered values, emphasis, a link and provenance.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `heatmapSchema` | The `heatmap` schema, with its rules |
+| `HeatmapNode` | A validated `heatmap` node |
+| `heatmapCatalog` | What an agent reads to choose `heatmap`: purpose, when to use it, and an example |
+| `heatmapExamples` | Its named examples |
+| `HEATMAP_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
