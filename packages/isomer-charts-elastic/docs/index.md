@@ -91,6 +91,8 @@ With `onEvent` and a node id, a gesture raises the event of the Scene part it la
 | Drag across a heat map's time axis                          | `onBrushEnd`                                                | `brush`                                             |
 | Click a tag cloud word                                      | `onElementClick` (the word, by its datum)                   | `tag`                                               |
 
+A click on the plot falls in an x position when Elastic Charts projects it to that position's x, or, on an axis stating an `interval`, to an x from there to less than one interval after it. Elastic Charts projects a click on a histogram to the start of the bucket under the pointer, so a click on a bucket with no data, or past the last one, raises nothing.
+
 Clicking a legend item's label toggles its series, which raises nothing.
 
 `src/parity.test.ts` holds the engine to this table over every example the charts pack has, nested in a `grid` or not: each gesture above, built from what Elastic Charts reports for it and sent to the callbacks and legend action the specs install on `Settings`, raises the event of the Scene part it lands on, through `selectEvent` and `brushEvent`, and nothing where the node offers no target. No metric example offers `tile`, so each is also checked offering it.

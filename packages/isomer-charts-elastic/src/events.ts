@@ -55,24 +55,25 @@ export const markOf = (scene: XyScene, datum: unknown): XyMark | undefined =>
     ? seriesOf(scene)[datum.series]?.marks[datum.mark]
     : undefined;
 
-/** The category at `x`: the position itself on an ordinal axis, else the last at or before it. */
+/** The category whose bucket holds `x`: the position itself, or, on an axis stating an `interval`, the last one starting within that interval before it. */
 export const categoryAt = (
   scene: XyScene,
   x: unknown
 ): XyCategory | undefined => {
-  if (typeof x === 'string') {
-    return scene.categories.find((category) => category.x === x);
+  const { categories } = scene;
+  const exact = categories.find((category) => category.x === x);
+  const { interval } = scene.axes.x;
+  if (exact || typeof x !== 'number' || interval === undefined) {
+    return exact;
   }
-  if (typeof x !== 'number') {
-    return undefined;
-  }
-  let found: XyCategory | undefined;
-  for (const category of scene.categories) {
-    if (typeof category.x === 'number' && category.x <= x) {
-      found = category;
-    }
-  }
-  return found;
+  return categories
+    .filter(
+      (category) =>
+        typeof category.x === 'number' &&
+        category.x <= x &&
+        x < category.x + interval
+    )
+    .at(-1);
 };
 
 /** Whether the host can receive events from this Scene. */
