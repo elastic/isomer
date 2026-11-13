@@ -232,6 +232,32 @@ describe('the static renderer checks', () => {
     ).toContain(`legend band "${label}" is not drawn`);
   });
 
+  it.each(['xy', 'metric'] as const)(
+    'fail an empty %s drawing without its note, with another, or with more beside it',
+    (kind) => {
+      const drawing = drawn.find(
+        ({ scene }) => scene.kind === kind && scene.empty
+      )!;
+      const note = '<span>No results found</span>';
+      expect(drawing.markup).toContain(note);
+      const failed = (texts: string[]) =>
+        `an empty chart draws "No results found" alone, not ${JSON.stringify(texts)}`;
+      expect(mutated(drawing, (markup) => markup.replace(note, ''))).toEqual([
+        failed([]),
+      ]);
+      expect(
+        mutated(drawing, (markup) =>
+          markup.replace(note, '<span>No data to display</span>')
+        )
+      ).toEqual([failed(['No data to display'])]);
+      expect(
+        mutated(drawing, (markup) =>
+          markup.replace('</figure>', '<span>Bogus</span></figure>')
+        )
+      ).toEqual([failed(['No results found', 'Bogus'])]);
+    }
+  );
+
   it('fail coverage when a supported Scene goes undrawn', () => {
     const skipping = drawExamples([
       { ...fake, supports: (kind) => kind === 'xy' },
