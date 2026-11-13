@@ -165,6 +165,36 @@ describe('the pack stamp', () => {
     expect(stamped(packs)).toBe(false);
   });
 
+  it('preserves prototype-named and foreign pack entries without changing the prototype', () => {
+    const packs = JSON.parse(
+      '{"__proto__":2,"constructor":1,"toString":3,"foreign":4}'
+    ) as Record<string, number>;
+    const parsed = schema.parse({
+      type: 'view',
+      packs,
+      body: [{ type: 'metric' }],
+    });
+    expect(parsed.packs).toEqual(packs);
+    expect(parsed.packs).not.toBe(packs);
+    expect(Object.hasOwn(parsed.packs as object, '__proto__')).toBe(true);
+    expect(Object.getPrototypeOf(parsed.packs)).toBe(Object.prototype);
+  });
+
+  it.each([0, -1, 1.5, '2', null, Number.MAX_SAFE_INTEGER + 1])(
+    'rejects an invalid __proto__ version: %s',
+    (version) => {
+      const result = schema.safeParse({
+        type: 'view',
+        packs: { ['__proto__']: version },
+        body: [{ type: 'metric' }],
+      });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0]?.path).toEqual(['packs', '__proto__']);
+      }
+    }
+  );
+
   it('keeps the envelope strict', () => {
     expect(
       schema.safeParse({

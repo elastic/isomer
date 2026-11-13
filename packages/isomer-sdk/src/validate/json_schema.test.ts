@@ -173,6 +173,21 @@ const metricPrimitive = define({
 });
 
 describe('buildAuthoringJsonSchema', () => {
+  it('projects every pack stamp entry as a positive safe integer', () => {
+    const { properties } = buildCompositionJsonSchema([metricPrimitive]) as {
+      properties: Record<string, unknown>;
+    };
+    expect(properties.packs).toMatchObject({
+      type: 'object',
+      propertyNames: { type: 'string' },
+      additionalProperties: {
+        type: 'integer',
+        minimum: 1,
+        maximum: Number.MAX_SAFE_INTEGER,
+      },
+    });
+  });
+
   it('never shows an author the pack stamp, which the validator accepts', () => {
     const properties = (schema: object) =>
       Object.keys((schema as { properties: object }).properties);
