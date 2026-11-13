@@ -247,6 +247,40 @@ describe('chart data', () => {
     expect(message).not.toContain('x'.repeat(40));
   });
 
+  const circular: unknown[] = [];
+  circular.push(circular);
+
+  it.each([
+    ['a bigint', 10n, '10n'],
+    ['a circular array', circular, 'a value with no JSON text'],
+    ['an array holding a bigint', [10n], 'a value with no JSON text'],
+    ['a symbol', Symbol('s'), 'Symbol(s)'],
+    ['a function', () => 1, '() => 1'],
+  ])('reports the problems after %s cell', (_, cell, held) => {
+    const issues = issuesOf(
+      'metric',
+      metric({
+        data: {
+          columns: [number('v')],
+          rows: [[cell], ['one']],
+          display: { w: ['x'] },
+        },
+      })
+    );
+    expect(issues).toContainEqual({
+      path: 'data.rows.0.0',
+      message: containing(`Row 0 of column "v" holds ${held};`),
+    });
+    expect(issues).toContainEqual({
+      path: 'data.rows.1.0',
+      message: containing('Row 1 of column "v" holds "one";'),
+    });
+    expect(issues).toContainEqual({
+      path: 'data.display.w',
+      message: containing(DATA_RULES.display),
+    });
+  });
+
   it.each([
     ['NaN', number('v'), Number.NaN],
     ['Infinity', number('v'), Number.POSITIVE_INFINITY],
