@@ -10,8 +10,10 @@
 // Lives in the sdk so both the assembly layer and a pack import it from the
 // same place; a pack must not have to depend on the assembly layer for it.
 
+import type { PackVersions } from '../composition/composition';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
+import { packVersionsOf } from './migrations';
 import type { AnyPrimitivePack } from './primitive_pack';
 
 /** `native` renders through the primitive's own renderer, `fallback` through another surface's (Slack via markdown). */
@@ -37,6 +39,8 @@ export interface HostCapabilities<TEnhancement extends string = string> {
   support: Record<string, Record<string, SurfaceSupport>>;
   /** Progressive enhancements the packs declare, by id, which an HTML or React render may request. */
   enhancements?: Partial<Record<TEnhancement, boolean>>;
+  /** Each pack's version by id, as a composition written for these packs is stamped. */
+  packs?: PackVersions;
 }
 
 /** What {@link describeCapabilities} reports beyond the packs themselves. */
@@ -68,6 +72,7 @@ export const describeCapabilities = (
   const definitions = packs.flatMap((pack) => pack.primitives);
   return {
     primitives: definitions.map(({ type }) => type),
+    packs: packVersionsOf(packs),
     surfaces: [...surfaces],
     formats: [...new Set([...surfaces, ...formats])].filter(
       (format) => format !== SNAPSHOT

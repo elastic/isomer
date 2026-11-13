@@ -17,6 +17,12 @@ import type {
 } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
+import {
+  assertPackMigrations,
+  assertPackVersion,
+  PACK_CONTRACT_VERSION,
+  type PackMigrations,
+} from './migrations';
 
 /**
  * The authoring-schema material a pack contributes for its own primitives.
@@ -58,6 +64,18 @@ export type PackStyleAdapter = {
 export interface PrimitivePackInput {
   /** Stable identifier, used in capability reports and error messages. */
   id: string;
+  /**
+   * The vocabulary's version: a positive integer, raised when a change means a
+   * document that was valid no longer validates, or means something else.
+   * Adding an optional field does not raise it. Absent means 1.
+   */
+  version?: number;
+  /**
+   * The steps that carry a stored document from each earlier version to the
+   * next: key `k` migrates `k` to `k + 1`, and the keys are exactly
+   * `1 .. version - 1`. Every type a step names stays owned by this pack.
+   */
+  migrations?: PackMigrations;
   /**
    * The optional surfaces this pack's primitives implement.
    *
@@ -131,11 +149,17 @@ export interface PrimitivePackInput {
 export interface PrimitivePack<TTheme = unknown> {
   /** Unique among the packs a runtime composes, and used in error messages. */
   readonly id: string;
+  /** See {@link PrimitivePackInput.version}. Absent on a pack built by an SDK that predates versions, which means 1. */
+  readonly version?: number;
+  /** See {@link PrimitivePackInput.migrations}. Absent on a pack built by an SDK that predates versions, which means none. */
+  readonly migrations?: PackMigrations;
+  /** The {@link PACK_CONTRACT_VERSION} the pack was built for. Absent on a pack built by an SDK that predates it, which means 1. */
+  readonly contract?: number;
   /** See {@link PrimitivePackInput.surfaces}. */
   readonly surfaces: readonly OptionalSurface[];
   /** See {@link PrimitivePackInput.primitives}. */
   readonly primitives: readonly AnyPrimitiveDefinition[];
-  /** Node types this pack owns, for duplicate detection across packs. */
+  /** Node types this pack registers now. With every type its migrations name, they are the types it owns (`ownedTypes`). */
   readonly types: ReadonlySet<string>;
   /**
    * Each primitive's `icon` by type, for the primitives that declare one, so a host listing them need not walk `primitives`.
@@ -186,6 +210,9 @@ export const definePrimitivePack = <TTheme = unknown>(
       `primitive pack "${input.id}": at least one primitive is required`
     );
   }
+  assertPackVersion(input.id, input.version);
+  const version = input.version ?? 1;
+  assertPackMigrations(input.id, version, input.migrations);
   assertUniquePrimitiveTypes(input.id, input.primitives);
   assertUniqueEnhancementIds(input.id, input.enhancements ?? []);
   const types = new Set(input.primitives.map((definition) => definition.type));
@@ -203,6 +230,9 @@ export const definePrimitivePack = <TTheme = unknown>(
 
   return {
     id: input.id,
+    version,
+    migrations: Object.freeze({ ...input.migrations }),
+    contract: PACK_CONTRACT_VERSION,
     surfaces: input.surfaces ?? [],
     primitives: input.primitives,
     types,

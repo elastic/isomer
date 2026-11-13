@@ -13,6 +13,12 @@ export {
 export { composePacks } from './compose';
 export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
+  type PackMigration,
+  type PackMigrations,
+  PACK_CONTRACT_VERSION,
+  ownedTypes,
+} from './migrations';
+export {
   type AnyPrimitivePack,
   type PackAuthoringOptions,
   type PrimitiveGroup,

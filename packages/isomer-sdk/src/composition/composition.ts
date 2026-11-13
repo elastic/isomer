@@ -24,6 +24,15 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
    * already means v1 — writing one in would rewrite stored documents.
    */
   version?: 1;
+  /**
+   * The vocabulary version each pack's nodes were written in: one positive
+   * integer per pack id. The only source of a stored document's version;
+   * nothing is inferred from its shape. An author never writes it, so the
+   * authoring schema omits it, the JSX root drops it, and the printer never
+   * prints it. Entries for packs a runtime does not hold pass through
+   * untouched.
+   */
+  packs?: PackVersions;
   title?: string;
   subtitle?: string;
   /** Light/dark preference, not a resolved value; `auto` resolves light. */
@@ -32,6 +41,9 @@ export interface Composition<TNode extends PrimitiveNode = PrimitiveNode> {
   body: TNode[];
   meta?: CompositionMeta;
 }
+
+/** Pack versions by pack id, as {@link Composition.packs} records them. */
+export type PackVersions = Readonly<Record<string, number>>;
 
 /**
  * Context a host may surface beside the render.

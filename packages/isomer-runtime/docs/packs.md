@@ -27,7 +27,7 @@ The last facts are declared by the pack because they are facts about a vocabular
 
 Two rules, both enforced when the runtime is built:
 
-- No node type may be registered by two packs. The dispatcher is keyed on `type` and nothing else, so a duplicate makes dispatch ambiguous.
+- No node type may be owned by two packs. The dispatcher is keyed on `type` and nothing else, so a duplicate makes dispatch ambiguous. A pack also owns every retired type its [`migrations`](../../isomer-sdk/docs/packs.md#ownership) name, since a stored document can still hold one.
 - No enhancement id may be registered by two packs, for the same reason one level up — the HTML surface flattens enhancements runtime-wide.
 
 Everything else composes silently, with one bound to respect: a pack declares the palette its `snapshot` renderers read, and every pack in a runtime — plus every frame in its map — has to agree on it. A pack that declares `snapshot` and one that does not can still sit together; nodes from the second simply produce a validation warning if you try to draw them. Packs whose renderers want _different_ palettes belong in different runtimes, which is what [Frame](frame.md) covers.

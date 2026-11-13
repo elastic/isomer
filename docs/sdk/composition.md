@@ -1,12 +1,25 @@
 # Composition and validation
 
-A `Composition` is the resolved JSON document that travels: a title, an optional subtitle and theme, an optional `version`, and a body of at least one node. The SDK owns its schema, and everything downstream, the validator, the parser, and the JSON Schema an agent reads, is built from the same composition.
+A `Composition` is the resolved JSON document that travels: a title, an optional subtitle and theme, an optional `version`, an optional [pack stamp](#the-pack-stamp), and a body of at least one node. The SDK owns its schema, and everything downstream, the validator, the parser, and the JSON Schema an agent reads, is built from the same composition.
 
 ```ts
-{ type: 'view', version?: 1, title?, subtitle?, theme?, body: [PrimitiveNode, ...], meta? }
+{ type: 'view', version?: 1, packs?, title?, subtitle?, theme?, body: [PrimitiveNode, ...], meta? }
 ```
 
 `meta` is a `CompositionMeta`: advisory context a host may show beside the render, which nothing in the SDK reads. The discriminator is `'view'` and does not change. `version` is an optional literal `1`; absent means v1. The schema uses `z.literal(1).optional()` with no default, so parse does not rewrite stored documents. The object is `.strict()`, so an unrecognized top-level key is an error rather than silently ignored, and `definePrimitive` closes every node schema the same way, so the validator agrees with the `additionalProperties: false` the JSON Schema projection emits. `body` must hold at least one node.
+
+## The pack stamp
+
+`version` versions the envelope. `packs` versions the vocabulary: it records the [version](packs.md#version-and-migrations) each pack's nodes were written in, one positive integer per pack id.
+
+```json
+{ "type": "view", "packs": { "slides": 2, "obs": 1 }, "body": [{ "type": "metric", "label": "p95 latency", "value": 412 }] }
+```
+
+- The stamp is the only source of a stored document's version. Nothing is inferred from its shape: `{ "value": 0.42, "unit": "%" }` can be valid at two versions and mean different things at each.
+- An author never writes it, and nothing in the SDK or runtime writes or reads it yet beyond checking its shape. The [authoring JSON Schema](#json-schema) omits it, so a model never sees it; the JSX root takes no `packs` prop and the shim drops one; `printCompositionJsx` never prints it.
+- It sits inside the strict envelope, so the validator and parser check its shape. Entries for packs a runtime does not hold pass through untouched.
+- A runtime that predates the stamp rejects a stamped document with `unrecognized key "packs"`.
 
 ## Validate versus parse
 
@@ -57,7 +70,7 @@ Every error is a `ValidationError`, `{ path, message, nodeType?, code? }`: `path
 
 ## JSON Schema
 
-`buildAuthoringJsonSchema` projects the composition to draft-2020-12 for an agent to read. JSON Schema cannot express a Zod refinement, so anything stated only in one must also be stated in prose an agent will read. The projection starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds and per-node `id`/`surfaces`, and accepts `describe` and extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses.
+`buildAuthoringJsonSchema` projects the composition to draft-2020-12 for an agent to read. JSON Schema cannot express a Zod refinement, so anything stated only in one must also be stated in prose an agent will read. The projection starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds, per-node `id`/`surfaces`, and the root `packs` stamp, and accepts `describe` and extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses.
 
 ## How the body-node union is built
 

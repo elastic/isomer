@@ -10,6 +10,12 @@ import type { PrimitiveIcon } from '../define/primitive_icon';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import type { EnhancementDefinition } from './enhancements';
+import {
+  assertPackContract,
+  assertPackMigrations,
+  assertPackVersion,
+  typeOwnership,
+} from './migrations';
 import { type AnyPrimitivePack, iconsByType } from './primitive_pack';
 
 /**
@@ -30,6 +36,11 @@ export interface ComposedPacks {
  * Flattens `packs` into one inventory, rejecting cross-pack duplicate node
  * types and duplicate enhancement ids. Every offender is named in one error,
  * so a bad three-pack composition reports all three at once.
+ *
+ * A pack's types include every type its migrations name, so a retired name
+ * is never reused by another pack. A pack built by an SDK that predates
+ * versions reads as version 1, no migrations, and contract 1; one built for
+ * another contract throws `INCOMPATIBLE_PACK_CONTRACT`.
  */
 export const composePacks = (
   packs: readonly AnyPrimitivePack[]
@@ -37,13 +48,20 @@ export const composePacks = (
   const typeOwners = new Map<string, string[]>();
   const enhancementOwners = new Map<string, string[]>();
   for (const pack of packs) {
-    for (const { type } of pack.primitives) {
-      typeOwners.set(type, [...(typeOwners.get(type) ?? []), pack.id]);
+    assertPackContract(pack);
+    assertPackVersion(pack.id, pack.version);
+    assertPackMigrations(pack.id, pack.version ?? 1, pack.migrations);
+    for (const [type, owned] of typeOwnership(pack)) {
+      const owner =
+        owned === 'current'
+          ? `"${pack.id}"`
+          : `"${pack.id}" (historical, migrations[${owned}])`;
+      typeOwners.set(type, [...(typeOwners.get(type) ?? []), owner]);
     }
     for (const { id } of pack.enhancements) {
       enhancementOwners.set(id, [
         ...(enhancementOwners.get(id) ?? []),
-        pack.id,
+        `"${pack.id}"`,
       ]);
     }
   }
@@ -90,7 +108,7 @@ const assertUnique = (
     duplicates
       .map(
         ([key, packs]) =>
-          `${noun} "${key}" registered by ${packs.map((id) => `"${id}"`).join(' and ')}`
+          `${noun} "${key}" registered by ${packs.join(' and ')}`
       )
       .join('; ')
   );
