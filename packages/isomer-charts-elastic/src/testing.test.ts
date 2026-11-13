@@ -366,6 +366,26 @@ describe('debugStateProblems', () => {
     ]);
   });
 
+  it('asks no DebugState of an empty Scene, and one of every other', () => {
+    const resolved = [
+      ...xyChartExamples,
+      ...partitionChartExamples,
+      ...heatmapExamples,
+      ...gaugeExamples,
+    ].map(({ node }): Scene => resolveChart(node, { scheme: 'light' }));
+    const empty = resolved.filter(
+      (scene) => 'empty' in scene && scene.empty !== undefined
+    );
+    expect(new Set(empty.map(({ kind }) => kind))).toEqual(
+      new Set(['xy', 'partition', 'heatmap', 'gauge'])
+    );
+    for (const scene of resolved) {
+      expect(debugStateProblems(scene, undefined), scene.title).toEqual(
+        empty.includes(scene) ? [] : ['Elastic Charts reports no DebugState']
+      );
+    }
+  });
+
   it('fails a heat map cell in another color or with another value', async () => {
     const heatmap = scenes.find(({ scene }) => scene.kind === 'heatmap')!
       .scene as HeatmapScene;
