@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -23,33 +23,39 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import semver from 'semver';
 
-import { repoRoot, workspacePackages } from './workspace_packages.js';
+import { splitDiagnostics } from './tsc_diagnostics.js';
+import {
+  isPublishable,
+  repoRoot,
+  workspacePackages,
+} from './workspace_packages.js';
 
 const workspace = workspacePackages();
-const privateNames = new Set(
+const neverPublishedNames = new Set(
   workspace
-    .filter(({ manifest }) => manifest.private === true)
+    .filter(({ manifest }) => !isPublishable(manifest))
     .map(({ manifest }) => manifest.name)
 );
 
-// Every package that publishes: the packed tarball of each must import with
+// Every package that publishes, or will once seeded: the packed tarball of each must import with
 // only its declared dependencies and required peers beside it.
-const publishing = workspace.filter(
-  ({ manifest }) => manifest.private !== true
-);
+const publishing = workspace.filter(({ manifest }) => isPublishable(manifest));
 const packageNames = publishing.map(({ manifest }) => manifest.name);
 
 // A published package cannot reach one that never publishes.
-const privateReferences = publishing.flatMap(({ manifest }) =>
+const neverPublishedReferences = publishing.flatMap(({ manifest }) =>
   ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
     (field) =>
       Object.keys(manifest[field] ?? {})
-        .filter((name) => privateNames.has(name))
-        .map((name) => `${manifest.name} ${field} lists private ${name}`)
+        .filter((name) => neverPublishedNames.has(name))
+        .map(
+          (name) =>
+            `${manifest.name} ${field} lists ${name}, which never publishes`
+        )
   )
 );
-if (privateReferences.length > 0) {
-  for (const reference of privateReferences) {
+if (neverPublishedReferences.length > 0) {
+  for (const reference of neverPublishedReferences) {
     console.error(reference);
   }
   process.exit(1);
@@ -128,12 +134,50 @@ const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
+const compileDiagnostics = (project) => {
+  const result = spawnSync(
+    process.execPath,
+    [tsc, '-p', project, '--pretty', 'false'],
+    { encoding: 'utf-8' }
+  );
+  if (result.error) {
+    throw result.error;
+  }
+  const diagnostics = splitDiagnostics(result.stdout);
+  if (
+    result.status !== 0 &&
+    diagnostics.own.length === 0 &&
+    diagnostics.thirdParty.length === 0
+  ) {
+    throw new Error(`tsc exited ${result.status}: ${result.stderr}`);
+  }
+  return diagnostics;
+};
+
 /** Entries that only Node loads, so they bundle for Node alone. */
 const NODE_ONLY_ENTRIES = new Set([
   '@elastic/isomer-image-takumi',
   '@elastic/isomer-runtime/testing',
   '@elastic/isomer-sdk/testing',
 ]);
+
+/** Entries that load optional peers, and those peers; every other entry imports without them. */
+const OPTIONAL_PEER_ENTRIES = new Map([
+  [
+    '@elastic/isomer-primitives-charts/testing',
+    ['@elastic/isomer-runtime', 'react-dom'],
+  ],
+]);
+
+const requireEntries = (specifiers, consumerDir) =>
+  execFileSync(
+    process.execPath,
+    [
+      '--eval',
+      `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
+    ],
+    { cwd: consumerDir, stdio: 'inherit' }
+  );
 
 /**
  * Bundles one packed entry's ESM build with esbuild, as a consumer's bundler would.
@@ -238,15 +282,27 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     const specifiers = exportSpecifiers(pkg.manifest);
 
-    // Node loads the CommonJS build.
-    execFileSync(
-      process.execPath,
-      [
-        '--eval',
-        `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
-      ],
-      { cwd: consumerDir, stdio: 'inherit' }
+    // Node loads the CommonJS build, with optional peers only for the entries that need them.
+    requireEntries(
+      specifiers.filter((specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)),
+      consumerDir
     );
+    const optionalPeerEntries = specifiers.filter((specifier) =>
+      OPTIONAL_PEER_ENTRIES.has(specifier)
+    );
+    for (const peer of new Set(
+      optionalPeerEntries.flatMap((specifier) =>
+        OPTIONAL_PEER_ENTRIES.get(specifier)
+      )
+    )) {
+      linkDirectory(
+        packages.get(peer)?.dir ?? resolve(repoRoot, 'node_modules', peer),
+        join(pkg.dir, 'node_modules', peer)
+      );
+    }
+    if (optionalPeerEntries.length > 0) {
+      requireEntries(optionalPeerEntries, consumerDir);
+    }
 
     // The ESM build is for bundlers: each entry must bundle, and the Node bundle must import.
     const bundleDir = join(pkg.dir, '.esm-check');
@@ -330,7 +386,8 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
   }
 
   // A consumer compiles every published declaration with `skipLibCheck` off,
-  // against whichever `@types/react` this install has.
+  // against whichever `@types/react` this install has. Errors inside a third-party
+  // package's own declarations are that package's, so they are printed but do not fail.
   for (const types of ['node', 'react', 'react-dom']) {
     linkDirectory(
       resolve(repoRoot, 'node_modules', '@types', types),
@@ -376,9 +433,18 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
         files: ['index.ts'],
       })
     );
-    execFileSync(process.execPath, [tsc, '-p', typesConsumerDir], {
-      stdio: 'inherit',
-    });
+    const { thirdParty, own } = compileDiagnostics(typesConsumerDir);
+    for (const diagnostic of thirdParty) {
+      console.warn(`Third-party declaration error, not ours: ${diagnostic}`);
+    }
+    if (own.length > 0) {
+      for (const diagnostic of own) {
+        console.error(diagnostic);
+      }
+      throw new Error(
+        `Packed declarations fail to compile under ${moduleResolution} resolution.`
+      );
+    }
     console.log(
       `Packed declarations of ${checked.length} entry points compile under ${moduleResolution} resolution.`
     );

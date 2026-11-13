@@ -22,8 +22,16 @@ export const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
  * @property {Record<string, string>} [devDependencies]
  * @property {Record<string, string>} [peerDependencies]
  * @property {Record<string, string>} [optionalDependencies]
- * @property {{ packedFiles?: string[] }} [isomer]
+ * @property {{ packedFiles?: string[]; unseeded?: boolean }} [isomer]
  */
+
+/**
+ * Whether the package publishes, or will once npm seeds its name: `isomer.unseeded` marks a package kept `private` only until then, so the packed checks and license files treat it as published.
+ *
+ * @param {PackageManifest} manifest
+ */
+export const isPublishable = (manifest) =>
+  manifest.private !== true || manifest.isomer?.unseeded === true;
 
 /** @returns {Array<{ dir: string; folder: string; manifest: PackageManifest }>} */
 export const workspacePackages = (root = repoRoot) => {
