@@ -21,6 +21,8 @@ pnpm -r publish --access public --tag latest --no-git-checks
 
 `pnpm -r publish` skips private packages and any package already on the registry at that version, so only the missing ones go out.
 
+A package waiting for npm to seed its name stays `private` and carries `"isomer": { "unseeded": true }`, so `check:pack-contents`, `check:pack-consumer` and `licenses:report` already treat it as published. Once its name is seeded, configure its Trusted Publisher (step 3), then remove `private` and `isomer.unseeded` together; the next release publishes it at that release's version.
+
 Releases come only from `main`. A `feat:` commit releases the next minor; while the package is pre-1.0, a `BREAKING CHANGE` footer or a `!` after the type (`feat!:`) also releases a minor and is listed under breaking changes in the notes. To cut `1.0.0`, change the `breaking` rule in `.releaserc.json` back to `major` and update `scripts/releaserc.test.js` to match. Only a commit that changes the folder of a package published now or at the last release, or a root build input in `BUILD_INPUTS` in `scripts/semantic_release_workspace.js`, counts toward the version or appears in the notes. For the root `package.json`, only the `build` scripts count; a `feat:` or `fix:` confined to the slides pack, docs, or tooling does not cut a release. The supported consumer install is `npm install @elastic/isomer-sdk` (and `@elastic/isomer-runtime`) from registry.npmjs.org. All published packages ship at the same version.
 
 ## Snapshots under `next`
