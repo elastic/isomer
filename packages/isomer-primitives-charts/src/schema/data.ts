@@ -12,21 +12,22 @@ import { isoDateTimeEpoch } from '../iso_date_time';
 import { crossSuperRefine } from './cross_field';
 import { portableFormatSchema } from './format';
 
-const scalarCellSchema = z.union([
-  z.number(),
-  z.string(),
-  z.boolean(),
-  z.null(),
-]);
+const CELL_MESSAGE =
+  'must be a finite number, a string, a boolean, null, or an array of those';
+
+const scalarCellSchema = z.union(
+  [z.number(), z.string(), z.boolean(), z.null()],
+  { error: () => CELL_MESSAGE }
+);
 
 /** One value in a non-multivalue cell. `null` is a missing value, never zero. */
 export type ScalarCell = z.infer<typeof scalarCellSchema>;
 
 /** A cell: one scalar, or an array of scalars for a multivalue column. */
-export const cellSchema = z.union([
-  scalarCellSchema,
-  z.array(scalarCellSchema),
-]);
+export const cellSchema = z.union(
+  [scalarCellSchema, z.array(scalarCellSchema)],
+  { error: () => CELL_MESSAGE }
+);
 
 /** A cell: one value, or an array of values in a `multivalue` column. */
 export type Cell = z.infer<typeof cellSchema>;
@@ -106,7 +107,8 @@ const scalarMatches = (type: ColumnType, value: ScalarCell): boolean => {
   }
 };
 
-const cellMatchesColumn = (
+/** Whether `cell` holds what `column`'s type and `multivalue` allow. */
+export const cellMatchesColumn = (
   column: Pick<ChartColumn, 'type' | 'multivalue'>,
   cell: Cell
 ): boolean =>
@@ -114,6 +116,49 @@ const cellMatchesColumn = (
     ? column.multivalue === true &&
       cell.every((value) => scalarMatches(column.type, value))
     : scalarMatches(column.type, cell);
+
+const CELL_NEEDS: Record<ColumnType, string> = {
+  number: 'a number',
+  string: 'a string',
+  boolean: 'a boolean',
+  date: 'epoch milliseconds or an ISO 8601 date-time string with a UTC offset',
+};
+
+const MAX_QUOTED_LENGTH = 40;
+
+const textOf = (value: unknown): string => {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'bigint') {
+    return `${value}n`;
+  }
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return 'a value with no JSON text';
+  }
+};
+
+/** Never throws: a throw inside a check drops the check's later issues. */
+const quoted = (value: unknown): string => {
+  const text = textOf(value);
+  return text.length > MAX_QUOTED_LENGTH
+    ? `${text.slice(0, MAX_QUOTED_LENGTH)}…`
+    : text;
+};
+
+const cellTypeMessage = (
+  { id, type, multivalue }: ChartColumn,
+  rowIndex: number,
+  cell: unknown
+): string => {
+  const needs = multivalue
+    ? `${CELL_NEEDS[type]}, null, or an array of those`
+    : `${CELL_NEEDS[type]}, or null`;
+  const kind = multivalue ? `multivalue \`${type}\`` : `\`${type}\``;
+  return `${DATA_RULES.cellType} Row ${rowIndex} of column "${id}" holds ${quoted(cell)}; a ${kind} column needs ${needs}.`;
+};
 
 const DATA_DESCRIPTION = [
   'Typed columnar data, as the source table holds it: rows are never reordered, and a selection refers to them by index.',
@@ -200,7 +245,7 @@ const checkRows = ({ columns, rows }: ChartDataInput, context: Issues) => {
         context.addIssue({
           code: 'custom',
           path: ['rows', rowIndex, columnIndex],
-          message: `${DATA_RULES.cellType} Column "${column.id}" is \`${column.type}\`${column.multivalue ? ' and multivalue' : ''}.`,
+          message: cellTypeMessage(column, rowIndex, cell),
         });
       }
     });

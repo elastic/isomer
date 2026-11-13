@@ -25,19 +25,26 @@ const CHROME_TOKENS = [
   'border',
 ] as const;
 
+/** The shapes a color takes, as a validation message names them. */
+export const COLOR_VALUE_FORMS =
+  '`{ light, dark }` hex colors (`#rgb`, `#rrggbb` or `#rrggbbaa`), a `{ token }`, or a `{ palette: "categorical", index }`';
+
 /**
  * A color, resolved by whoever built the node: concrete for both schemes,
  * a chrome token, or an index into the default categorical palette.
  */
 export const colorValueSchema = z
-  .union([
-    z.strictObject({ light: hexColorSchema, dark: hexColorSchema }),
-    z.strictObject({ token: z.enum(CHROME_TOKENS) }),
-    z.strictObject({
-      palette: z.literal('categorical'),
-      index: z.int().min(0),
-    }),
-  ])
+  .union(
+    [
+      z.strictObject({ light: hexColorSchema, dark: hexColorSchema }),
+      z.strictObject({ token: z.enum(CHROME_TOKENS) }),
+      z.strictObject({
+        palette: z.literal('categorical'),
+        index: z.int().min(0),
+      }),
+    ],
+    { error: () => `must be ${COLOR_VALUE_FORMS}` }
+  )
   .describe(
     'A color. Data colors are concrete for both schemes (`{ light, dark }`). `{ token }` is for chrome only: text, axes, grid lines, background, borders. `{ palette: "categorical", index }` picks from the default categorical palette, for charts authored with no palette of their own.'
   );
