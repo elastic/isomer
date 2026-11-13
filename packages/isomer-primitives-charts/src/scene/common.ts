@@ -101,7 +101,8 @@ const isEmpty = (cell: Cell | undefined) =>
   (Array.isArray(cell) && cell.length === 0);
 
 // `rows` formats every cell, and only the text surfaces and an accessible
-// table read it, so it is built on first read and kept.
+// table read it, so it is built on first read, from the node's data as it is
+// then, and kept.
 const buildTable = (resolution: Resolution): SceneTable => {
   const { data } = resolution;
   let rows: SceneTable['rows'] | undefined;

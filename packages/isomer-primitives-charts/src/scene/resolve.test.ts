@@ -528,3 +528,60 @@ describe('formatting options', () => {
     expect(scene.tiles[0]?.value.text).toBe('n/a');
   });
 });
+
+describe('a Scene’s table rows', () => {
+  // A metric reads only its value column, so the `note` column's display
+  // strings are read by nothing but the table.
+  const counted = () => {
+    let reads = 0;
+    const display = new Proxy(['first', 'second'], {
+      get: (strings, key, receiver) => {
+        if (key === '0' || key === '1') {
+          reads += 1;
+        }
+        return Reflect.get(strings, key, receiver) as unknown;
+      },
+    });
+    const node: MetricNode = {
+      type: 'metric',
+      data: {
+        columns: [
+          { id: 'host', label: 'Host', type: 'string', role: 'dimension' },
+          { id: 'value', label: 'Value', type: 'number', role: 'metric' },
+          { id: 'note', label: 'Note', type: 'string', role: 'dimension' },
+        ],
+        rows: [
+          ['a', 1, 'x'],
+          ['b', 2, 'y'],
+        ],
+        display: { note: display },
+      },
+      value: { column: 'value' },
+      breakdown: { column: 'host' },
+    };
+    return {
+      scene: resolveChart(node, { scheme: 'light' }),
+      reads: () => reads,
+    };
+  };
+
+  it('are not formatted until they are read', () => {
+    const { scene, reads } = counted();
+    expect(reads()).toBe(0);
+    expect(scene.table.rows.map(({ cells }) => cells[2])).toEqual([
+      'first',
+      'second',
+    ]);
+    expect(reads()).toBe(2);
+  });
+
+  it('are formatted once, and serialize with the Scene', () => {
+    const { scene, reads } = counted();
+    const { rows } = scene.table;
+    expect(scene.table.rows).toBe(rows);
+    expect((JSON.parse(JSON.stringify(scene)) as Scene).table.rows).toEqual(
+      rows
+    );
+    expect(reads()).toBe(2);
+  });
+});

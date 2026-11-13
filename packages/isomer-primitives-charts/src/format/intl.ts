@@ -5,15 +5,20 @@
  * 2.0.
  */
 
+import { afterTask } from '../after_task';
+
 // Cached `Intl` formatters. Constructing one is far slower than using it.
 
-/** How many formatters of each kind are kept. Options come from nodes, so the caches are bounded. */
+/** How many formatters of each kind are kept between tasks. Options come from nodes, so the caches are bounded. */
 export const INTL_CACHE_SIZE = 64;
 
-// Keeps the `INTL_CACHE_SIZE` most recently used values.
+// Keeps the `INTL_CACHE_SIZE` most recently used values, and every value the
+// current task has used, so one resolution with more formats than that builds
+// each formatter once.
 const createCache = <T>() => {
   const values = new Map<string, T>();
-  return (key: string, create: () => T): T => {
+  let task: Map<string, T> | undefined;
+  const recent = (key: string, create: () => T): T => {
     let value = values.get(key);
     if (value === undefined) {
       value = create();
@@ -24,6 +29,20 @@ const createCache = <T>() => {
       values.delete(key);
     }
     values.set(key, value);
+    return value;
+  };
+  return (key: string, create: () => T): T => {
+    if (!task) {
+      task = new Map();
+      afterTask(() => {
+        task = undefined;
+      });
+    }
+    let value = task.get(key);
+    if (value === undefined) {
+      value = recent(key, create);
+      task.set(key, value);
+    }
     return value;
   };
 };

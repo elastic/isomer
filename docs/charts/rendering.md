@@ -94,7 +94,7 @@ Every declaration is in a style module. What only a node or a Scene knows, such 
 
 ## When a chart cannot be drawn
 
-A chart whose resolver or renderer throws does not fail the render. On every surface it draws `CHART_FAILURE_TEXT`, "This chart could not be drawn.", under its title in place of the chart, in the node's anchor on `react`, and the charts beside it draw as usual. `createChartsPack({ onFailure })` is told the error and the node, once for each node a render could not draw; without it the error is dropped.
+A chart whose resolver or renderer throws does not fail the render. On every surface it draws `CHART_FAILURE_TEXT`, "This chart could not be drawn.", under its title in place of the chart, in the node's anchor on `react`, and the charts beside it draw as usual. `createChartsPack({ onFailure })` is told the error and the node, once for each node a render could not draw; without it the error is dropped. An `onFailure` that throws fails the render, which is what a test harness wants.
 
 ```ts
 createChartsPack({

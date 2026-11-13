@@ -163,7 +163,13 @@ const child = async (scenario, engine, repeat, cacheMaxBytes, budgetValues) => {
     fonts,
     ...(cacheMaxBytes === undefined ? {} : { cacheMaxBytes }),
   });
-  const pack = createChartsPack({ sceneRenderers });
+  // A chart that fails would draw its small failure note and pass any bound.
+  const pack = createChartsPack({
+    sceneRenderers,
+    onFailure: (error) => {
+      throw error;
+    },
+  });
   const runtime = createIsomerRuntime({
     packs: [pack],
     frames: { charts: chartsFrame },

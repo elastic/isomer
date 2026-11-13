@@ -348,16 +348,34 @@ describe('Intl caches', () => {
     );
   });
 
-  it('keep only the most recently used formatters', () => {
-    const zone = (index: number) =>
-      `+${String(index % 24).padStart(2, '0')}:${String(Math.floor(index / 24)).padStart(2, '0')}`;
+  const zone = (index: number) =>
+    `+${String(index % 24).padStart(2, '0')}:${String(Math.floor(index / 24)).padStart(2, '0')}`;
+  const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('keep only the most recently used formatters between tasks', async () => {
+    await nextTask();
     const first = dateFormat('en', { timeZone: zone(0) });
     for (let index = 1; index <= INTL_CACHE_SIZE; index++) {
       dateFormat('en', { timeZone: zone(index) });
     }
     const last = dateFormat('en', { timeZone: zone(INTL_CACHE_SIZE) });
+    await nextTask();
     expect(dateFormat('en', { timeZone: zone(INTL_CACHE_SIZE) })).toBe(last);
     expect(dateFormat('en', { timeZone: zone(0) })).not.toBe(first);
+  });
+
+  it('build each formatter once in a task that uses more than they keep', async () => {
+    await nextTask();
+    const count = INTL_CACHE_SIZE + 6;
+    const formats = Array.from({ length: count }, (_, index) =>
+      dateFormat('en', { timeZone: zone(100 + index) })
+    );
+    expect(
+      formats.map((_, index) =>
+        dateFormat('en', { timeZone: zone(100 + index) })
+      )
+    ).toEqual(formats);
+    expect(dateFormat('en', { timeZone: zone(100) })).toBe(formats[0]);
   });
 
   it('collate in English for a malformed or unknown locale', () => {

@@ -545,7 +545,7 @@ const xyChartObjectSchema = z.object({
 });
 
 const toTime = (value: number | string): number =>
-  typeof value === 'number' ? value : Date.parse(value);
+  typeof value === 'number' ? value : (isoDateTimeEpoch(value) ?? Number.NaN);
 
 type XyChartInput = z.infer<typeof xyChartObjectSchema>;
 type XyLayer = XyChartInput['layers'][number];

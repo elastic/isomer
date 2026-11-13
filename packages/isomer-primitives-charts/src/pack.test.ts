@@ -627,6 +627,29 @@ describe('a chart that cannot be drawn', () => {
     ]);
   });
 
+  it('tells the host again when the same node fails in a later render', async () => {
+    failures.length = 0;
+    const pack = failing();
+    draw(pack);
+    draw(pack);
+    expect(failures).toHaveLength(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    draw(pack);
+    expect(failures).toHaveLength(2);
+  });
+
+  it("fails the render when the host's handler throws", () => {
+    expect(() =>
+      draw(
+        failing({
+          onFailure: (error) => {
+            throw error;
+          },
+        })
+      )
+    ).toThrow(broken);
+  });
+
   it('writes its note on text and markdown', () => {
     const { surfaces } = runtimeFor(failing());
     const note = `${xyTimeSeries.title}: ${CHART_FAILURE_TEXT}`;

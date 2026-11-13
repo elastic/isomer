@@ -8,6 +8,8 @@
 import type { ReactNode } from 'react';
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
+import { afterTask } from '../after_task';
+
 import type { ChartNode, ChartsReactEnv } from './context';
 import { cls } from './styles';
 import { CHARTS_THEME } from './theme';
@@ -19,10 +21,10 @@ export const CHART_FAILURE_TEXT = 'This chart could not be drawn.';
 /** The height a `snapshot` frame reserves for a failure note, in pixels. */
 export const FAILURE_HEIGHT = CHARTS_THEME.unsupported.height;
 
-/** Told of each chart that drew its failure note, once for each node a render draws. */
+/** Told of each chart that drew its failure note, once for each node a render draws. What it throws fails the render. */
 export type ChartFailureHandler = (error: unknown, node: ChartNode) => void;
 
-/** Runs `draw`, and `fallback` when it throws, reporting the error once per node. */
+/** Runs `draw`, and `fallback` when it throws, reporting the error once per node and task. */
 export interface FailureGuard {
   <T>(node: ChartNode, draw: () => T, fallback: () => T): T;
 }
@@ -30,14 +32,23 @@ export interface FailureGuard {
 export const createFailureGuard = (
   onFailure: ChartFailureHandler | undefined
 ): FailureGuard => {
-  const reported = new WeakSet<ChartNode>();
+  // A render reads a node several times; its failure is reported once per task.
+  let reported: WeakSet<ChartNode> | undefined;
   return (node, draw, fallback) => {
     try {
       return draw();
     } catch (error) {
-      if (onFailure && !reported.has(node)) {
-        reported.add(node);
-        onFailure(error, node);
+      if (onFailure) {
+        if (!reported) {
+          reported = new WeakSet();
+          afterTask(() => {
+            reported = undefined;
+          });
+        }
+        if (!reported.has(node)) {
+          reported.add(node);
+          onFailure(error, node);
+        }
       }
       return fallback();
     }
