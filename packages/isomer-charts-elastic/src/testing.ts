@@ -293,19 +293,25 @@ const partitionProblems = (
   ];
 };
 
-/** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
-const rgbOf = (color: string): string => {
-  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
-  if (hex) {
-    return hex
-      .slice(1, 4)
-      .map((channel) => parseInt(channel, 16))
-      .join(',');
-  }
-  return (color.match(/\d+(?:\.\d+)?/g) ?? [])
-    .slice(0, 3)
-    .map((channel) => String(Math.round(Number(channel))))
-    .join(',');
+/** A `#rgb[a]`, `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`; `undefined` for any other paint. */
+const rgbOf = (color: string): string | undefined => {
+  const hex = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i.exec(color)?.[1];
+  const channels = hex
+    ? (hex.length < 6
+        ? [...hex].map((digit) => digit + digit)
+        : (hex.match(/../g) ?? [])
+      ).map((pair) => parseInt(pair, 16))
+    : (/^rgba?\(([^)]*)\)$/i.exec(color)?.[1]?.match(/\d*\.?\d+/g) ?? []).map(
+        Number
+      );
+  return channels.length < 3
+    ? undefined
+    : channels.slice(0, 3).map(Math.round).join(',');
+};
+
+const sameColor = (drawn: string, color: string): boolean => {
+  const channels = rgbOf(drawn);
+  return channels !== undefined && channels === rgbOf(color);
 };
 
 const heatmapProblems = (scene: HeatmapScene, state: DebugState): string[] => {
@@ -326,7 +332,7 @@ const heatmapProblems = (scene: HeatmapScene, state: DebugState): string[] => {
     }
     // A cell in no band is transparent, whatever channels it names.
     const clear = /^#[\da-f]{6}00$/i.test(cell.color);
-    if (clear ? !fill.endsWith(', 0)') : rgbOf(fill) !== rgbOf(cell.color)) {
+    if (clear ? !fill.endsWith(', 0)') : !sameColor(fill, cell.color)) {
       problems.push(`cell ${index} is filled ${fill}, not ${cell.color}`);
     }
     if (formatted !== '' && formatted !== cell.valueText) {

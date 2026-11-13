@@ -40,30 +40,62 @@ export interface DrawingReading {
 /** Reads a drawing back; one per engine. */
 export type DrawingReader = (drawing: DrawnScene) => DrawingReading;
 
-/** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
+const HEX = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i;
+const RGB = /^rgba?\(([^)]*)\)$/i;
+const CHANNEL = /^\d*\.?\d+%?$/;
+
+const hexChannels = (digits: string): number[] =>
+  (digits.length < 6
+    ? [...digits].map((digit) => digit + digit)
+    : (digits.match(/../g) ?? [])
+  )
+    .slice(0, 3)
+    .map((pair) => parseInt(pair, 16));
+
+const rgbChannels = (channels: string): number[] =>
+  channels
+    .trim()
+    .split(/[\s,/]+/)
+    .slice(0, 3)
+    .map((channel) =>
+      !CHANNEL.test(channel)
+        ? NaN
+        : channel.endsWith('%')
+          ? parseFloat(channel) * 2.55
+          : Number(channel)
+    );
+
+let unread = 0;
+
+/**
+ * A `#rgb[a]`, `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`,
+ * its alpha apart. Any other paint, such as `none` or `currentColor`, reads
+ * as a string no other call returns, so it equals no color and no paint.
+ */
 export const rgbOf = (color: string): string => {
-  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
-  return hex
-    ? hex
-        .slice(1, 4)
-        .map((pair) => parseInt(pair, 16))
-        .join(',')
-    : (/^rgba?\(([^)]*)\)/.exec(color)?.[1] ?? color)
-        .split(',')
-        .slice(0, 3)
-        .map((channel) => Number(channel.trim()))
-        .join(',');
+  const paint = color.trim();
+  const hex = HEX.exec(paint)?.[1];
+  const channels = hex
+    ? hexChannels(hex)
+    : rgbChannels(RGB.exec(paint)?.[1] ?? '');
+  return channels.length === 3 && channels.every(Number.isFinite)
+    ? channels.map(Math.round).join(',')
+    : `unread ${unread++}`;
 };
+
+const character = (code: number, reference: string) =>
+  code <= 0x10ffff ? String.fromCodePoint(code) : reference;
 
 /** Markup text with its entities decoded. */
 export const unescapeMarkup = (text: string): string =>
   text
-    .replace(/&#(\d+);/g, (_, code: string) =>
-      String.fromCharCode(Number(code))
+    .replace(/&#(\d+);/g, (reference, code: string) =>
+      character(Number(code), reference)
     )
-    .replace(/&#x([\da-f]+);/gi, (_, code: string) =>
-      String.fromCharCode(parseInt(code, 16))
+    .replace(/&#x([\da-f]+);/gi, (reference, code: string) =>
+      character(parseInt(code, 16), reference)
     )
+    .replace(/&nbsp;/g, String.fromCodePoint(0xa0))
     .replace(/&quot;/g, '"')
     .replace(/&#?39;|&apos;/g, "'")
     .replace(/&lt;/g, '<')
@@ -73,23 +105,61 @@ export const unescapeMarkup = (text: string): string =>
 // An engine may break a string across lines, even mid-word.
 const squash = (text: string) => text.replace(/\s+/g, '');
 
+/** Whether the runs from some run on spell `whole`, or its start and an ellipsis. */
+const spelled = (runs: readonly string[], whole: string): boolean =>
+  runs.some((_, start) => {
+    let shown = '';
+    for (const run of runs.slice(start)) {
+      shown += run;
+      if (shown === whole) {
+        return true;
+      }
+      if (run.endsWith('…')) {
+        return shown.length > 1 && whole.startsWith(shown.slice(0, -1));
+      }
+      if (!whole.startsWith(shown)) {
+        return false;
+      }
+    }
+    return false;
+  });
+
 /**
- * Whether `value` is drawn whole, or, where it does not fit, its start on one
- * or more lines and an ellipsis.
+ * Whether `value` is drawn: one whole entry of `texts`, or consecutive entries
+ * that are its lines, or, where it does not fit, its start on one or more
+ * lines and an ellipsis. Whitespace apart; an empty `value` has nothing to draw.
  */
 export const textDrawn = (texts: readonly string[], value: string): boolean => {
   const whole = squash(value);
-  if (squash(texts.join('')).includes(whole)) {
-    return true;
+  return whole === '' || spelled(texts.map(squash), whole);
+};
+
+/** The `drawn` words that are no `known` word, whole, cut with an ellipsis, or broken across consecutive words. */
+const strayWords = (
+  drawn: readonly string[],
+  known: readonly string[]
+): string[] => {
+  const strays: string[] = [];
+  for (let at = 0; at < drawn.length;) {
+    let shown = '';
+    let end = at;
+    let found = false;
+    while (!found && end < drawn.length) {
+      shown += drawn[end++];
+      const cut = shown.endsWith('…') ? shown.slice(0, -1) : undefined;
+      found =
+        known.includes(shown) ||
+        (cut !== undefined && known.some((word) => word.startsWith(cut)));
+      if (!known.some((word) => word.startsWith(shown))) {
+        break;
+      }
+    }
+    if (!found) {
+      strays.push(drawn[at]!);
+    }
+    at = found ? end : at + 1;
   }
-  return texts.some(
-    (text, end) =>
-      text.endsWith('…') &&
-      texts.slice(0, end + 1).some((_, start) => {
-        const shown = squash(texts.slice(start, end + 1).join('')).slice(0, -1);
-        return shown.length > 0 && whole.startsWith(shown);
-      })
-  );
+  return strays;
 };
 
 /** The accessible description a drawing of `scene` carries: its summary, then its authored description. */
@@ -180,16 +250,14 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
           ...(value ? drawnText(reading, 'legend value', value) : []),
         ]
       ),
-      ...reading.texts
-        .flatMap((text) => text.split(/\s+/))
-        .filter(
-          (word) =>
-            word !== '' &&
-            !words.some((known) => known.includes(word.replace(/…$/, '')))
-        )
-        .map(
-          (word) => `"${word}" is drawn but is no slice's or legend item's text`
-        ),
+      ...strayWords(
+        reading.texts
+          .flatMap((text) => text.split(/\s+/))
+          .filter((word) => word !== ''),
+        words
+      ).map(
+        (word) => `"${word}" is drawn but is no slice's or legend item's text`
+      ),
     ];
   },
   heatmap: (scene, reading) => {
