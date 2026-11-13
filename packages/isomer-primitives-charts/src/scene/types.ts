@@ -285,7 +285,8 @@ export interface SceneAxis {
   /**
    * On a vertical chart's time x axis, the two-row axis Lens draws: the ticks
    * and labels at every plot width. A renderer draws these rather than
-   * choosing ticks.
+   * choosing ticks. Absent where the resolver cannot state one, and the engine
+   * labels its own ticks through `formatAxisValue`.
    */
   readonly timeTicks?: SceneTimeTicks;
 }
