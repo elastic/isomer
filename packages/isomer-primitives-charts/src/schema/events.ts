@@ -54,15 +54,28 @@ export const INTERACTION_RULES = {
 
 /** A static link a chart draws on every surface. */
 export const linkSchema = z
-  .strictObject({ href: navigationHrefSchema, label: requiredString() })
+  .strictObject({
+    href: navigationHrefSchema,
+    label: requiredString().describe('The link’s text.'),
+  })
   .describe(
     'A static link, such as "Open in Kibana", drawn on every surface including images and text.'
   );
 
 const syncSchema = z
   .strictObject({
-    cursor: z.boolean().optional(),
-    tooltips: z.boolean().optional(),
+    cursor: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows other charts’ cursor position on this one. Absent means false.'
+      ),
+    tooltips: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows this chart’s tooltip while another is hovered. Absent means false.'
+      ),
   })
   .describe(
     'Share the cursor and tooltips with other charts in the composition. Takes effect where a container enables it.'

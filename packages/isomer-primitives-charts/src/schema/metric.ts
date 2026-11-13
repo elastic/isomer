@@ -51,8 +51,18 @@ const metricCompareSchema = z
       .describe(
         'The value compared to when `to` is `baseline`. Absent means 0.'
       ),
-    showIcon: z.boolean().optional(),
-    showValue: z.boolean().optional(),
+    showIcon: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows an arrow for the difference’s direction. Absent means true.'
+      ),
+    showValue: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows the secondary text beside the arrow: the difference when `to` is `primary`, else the secondary value. Absent means true.'
+      ),
     colors: z
       .strictObject({
         increase: colorValueSchema,
@@ -72,15 +82,20 @@ const backgroundSchema = z.discriminatedUnion('kind', [
       max: columnRefSchema.describe(
         `The column holding each tile's maximum. ${COLUMN_REF_RULE}`
       ),
-      orientation: z.enum(['horizontal', 'vertical']).optional(),
+      orientation: z
+        .enum(['horizontal', 'vertical'])
+        .optional()
+        .describe('The direction the bar fills in. Absent means `horizontal`.'),
     })
     .describe('A progress bar from zero to `max` behind the value.'),
   z
     .strictObject({
       kind: z.literal('trend'),
-      data: chartDataSchema,
-      x: columnRefSchema,
-      y: columnRefSchema,
+      data: chartDataSchema.describe(
+        'The trend’s own table, apart from the metric’s `data`.'
+      ),
+      x: columnRefSchema.describe('The column along the trend line.'),
+      y: columnRefSchema.describe('The column the trend line plots.'),
       breakdown: columnRefSchema
         .optional()
         .describe(
@@ -105,37 +120,61 @@ const metricObjectSchema = z.object({
   ...chartCoreShape,
   ...interactionsCoreShape,
   interactions: interactionsSchemaFor(['tile']).optional(),
-  value: z.strictObject({
-    column: columnRefSchema.describe(
-      `The column holding the headline value. ${COLUMN_REF_RULE}`
-    ),
-    subtitle: z.string().optional(),
-    color: z
-      .union([colorValueSchema, z.literal('bands')])
-      .optional()
-      .describe(
-        'A static color, or `bands` to color by `colors.bands`. Absent means the default.'
+  value: z
+    .strictObject({
+      column: columnRefSchema.describe(
+        `The column holding the headline value. ${COLUMN_REF_RULE}`
       ),
-    bandsRange: z
-      .enum(['absolute', 'percentage'])
-      .optional()
-      .describe(
-        'Whether band bounds are values, or percentages from 0 to the `background` bar’s `max`, across the range of `breakdown` tiles, or from 0 to twice a lone value. A tile in an empty range takes the first band. Absent means `absolute`.'
-      ),
-    applyColorTo: z
-      .enum(['value', 'background'])
-      .optional()
-      .describe('What the color paints. Absent means `background`.'),
-  }),
+      subtitle: z
+        .string()
+        .optional()
+        .describe('Text under each tile’s title. Absent means none.'),
+      color: z
+        .union([colorValueSchema, z.literal('bands')])
+        .optional()
+        .describe(
+          'A static color, or `bands` to color by `colors.bands`. Absent means the default.'
+        ),
+      bandsRange: z
+        .enum(['absolute', 'percentage'])
+        .optional()
+        .describe(
+          'Whether band bounds are values, or percentages from 0 to the `background` bar’s `max`, across the range of `breakdown` tiles, or from 0 to twice a lone value. A tile in an empty range takes the first band. Absent means `absolute`.'
+        ),
+      applyColorTo: z
+        .enum(['value', 'background'])
+        .optional()
+        .describe('What the color paints. Absent means `background`.'),
+    })
+    .describe('The headline value of each tile, and its color.'),
   secondary: z
     .strictObject({
-      column: columnRefSchema,
-      showLabel: z.boolean().optional(),
-      labelPlacement: z.enum(['before', 'after', 'tooltip']).optional(),
-      color: colorValueSchema.optional(),
+      column: columnRefSchema.describe(
+        `The column holding the secondary value. ${COLUMN_REF_RULE}`
+      ),
+      showLabel: z
+        .boolean()
+        .optional()
+        .describe(
+          'Shows the column’s label with the secondary value. Absent means false.'
+        ),
+      labelPlacement: z
+        .enum(['before', 'after', 'tooltip'])
+        .optional()
+        .describe(
+          'Where the label sits: `before` or `after` the value, or in a `tooltip` on it. Absent means `before`.'
+        ),
+      color: colorValueSchema
+        .optional()
+        .describe(
+          'The secondary text’s color. Absent means the chart’s subdued text color, or a readable color on a colored background.'
+        ),
       compare: metricCompareSchema.optional(),
     })
-    .optional(),
+    .optional()
+    .describe(
+      'A second, smaller value on each tile, such as a previous period or a comparison.'
+    ),
   background: backgroundSchema.optional(),
   breakdown: z
     .strictObject({
@@ -146,25 +185,56 @@ const metricObjectSchema = z.object({
         .int()
         .min(1)
         .optional()
-        .describe('Tiles per row before wrapping.'),
+        .describe('Tiles per row before wrapping. Absent means 3.'),
     })
-    .optional(),
+    .optional()
+    .describe(
+      'One tile per row of `data`, titled by a column. Absent means one tile.'
+    ),
   layout: z
     .strictObject({
-      density: z.enum(['compact', 'default']).optional(),
+      density: z
+        .enum(['compact', 'default'])
+        .optional()
+        .describe(
+          '`compact` tightens each tile’s spacing. Absent means `default`.'
+        ),
       icon: z
         .strictObject({
           name: glyphSchema,
-          alignment: z.enum(['left', 'right']).optional(),
+          alignment: z
+            .enum(['left', 'right'])
+            .optional()
+            .describe(
+              'The side of the tile the icon sits on. Absent means `right`.'
+            ),
         })
-        .optional(),
-      valuePosition: z.enum(['top', 'middle', 'bottom']).optional(),
-      labelsAlignment: alignmentSchema.optional(),
-      valueAlignment: alignmentSchema.optional(),
-      valueSizing: z.enum(['auto', 'fill']).optional(),
-      secondaryAlignment: alignmentSchema.optional(),
+        .optional()
+        .describe('A glyph drawn on every tile. Absent means none.'),
+      valuePosition: z
+        .enum(['top', 'middle', 'bottom'])
+        .optional()
+        .describe(
+          'Where the value sits in its tile, with the title and subtitle taking the room left. Absent means `bottom`.'
+        ),
+      labelsAlignment: alignmentSchema
+        .optional()
+        .describe('How the title and subtitle align. Absent means `left`.'),
+      valueAlignment: alignmentSchema
+        .optional()
+        .describe('How the value aligns. Absent means `right`.'),
+      valueSizing: z
+        .enum(['auto', 'fill'])
+        .optional()
+        .describe(
+          '`fill` grows the value’s text to the room its tile has; `auto` keeps the renderer’s size for the tile. Absent means `auto`.'
+        ),
+      secondaryAlignment: alignmentSchema
+        .optional()
+        .describe('How the secondary value aligns. Absent means `right`.'),
     })
-    .optional(),
+    .optional()
+    .describe('How each tile arranges its text.'),
 });
 
 type MetricInput = z.infer<typeof metricObjectSchema>;

@@ -13,7 +13,10 @@ import { lossSchema, provenanceSchema } from './provenance';
 
 /** The fields every chart primitive shares. Spread into each chart's schema. */
 export const chartCoreShape = {
-  title: z.string().optional(),
+  title: z
+    .string()
+    .optional()
+    .describe('The chart’s title, which opens its summary. Absent means none.'),
   description: z
     .string()
     .optional()

@@ -55,7 +55,7 @@ A chart node carries everything a faithful rendering needs, and drawing it is th
 
 ## Where each entry loads
 
-`./schema` reaches only zod and the SDK's React-free `./schema` entry, `./scene` adds Distillate for the style helpers an engine authors its few elements with, and `./resolve` adds d3-scale, so all three load in browsers and on servers without React. `pnpm check:module-graph` checks it on every change. A chart engine imports only `./scene`: it draws a Scene, and never formats, validates or resolves one. ESLint enforces it in every `@elastic/isomer-charts-*` package.
+`./schema` reaches only zod and the SDK's React-free `./schema` entry, `./scene` adds Distillate for the style helpers an engine authors its few elements with, and `./resolve` adds nothing more, so all three load in browsers and on servers without React. `pnpm check:module-graph` checks it on every change. A chart engine imports only `./scene`: it draws a Scene, and never formats, validates or resolves one. ESLint enforces it in every `@elastic/isomer-charts-*` package.
 
 ## Rules
 
