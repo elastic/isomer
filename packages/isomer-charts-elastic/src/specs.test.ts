@@ -16,7 +16,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 import { describe, expect, it } from 'vitest';
 
-import { seriesOf } from './events';
+import { seriesOf, seriesSpecId } from './events';
 import { metricDatum } from './metric';
 import { sceneSpecs } from './specs';
 
@@ -40,8 +40,11 @@ const specProps = (scene: XyScene, id: string): Record<string, unknown> => {
   return props!;
 };
 
+const firstSeriesId = (scene: XyScene): string =>
+  seriesSpecId(seriesOf(scene)[0]!);
+
 describe('sceneSpecs', () => {
-  it('draws xy layers in the Scene order, each kind keeping its own index', () => {
+  it('draws xy layers in the Scene order, each helper kind keeping its own index', () => {
     const [first, second, third] = seriesOf(xyInteractiveScene);
     const scene: XyScene = {
       ...xyInteractiveScene,
@@ -76,11 +79,11 @@ describe('sceneSpecs', () => {
         /^(series|reference|annotation)-/.test(id)
       )
     ).toEqual([
-      'series-0',
+      'series-0-0-200',
       'reference-0',
-      'series-1',
+      'series-0-0-404',
       'annotation-0',
-      'series-2',
+      'series-0-0-Other',
     ]);
   });
 
@@ -115,8 +118,12 @@ describe('sceneSpecs', () => {
       },
     };
     expect(specProps(fitted, 'y').domain).toMatchObject({ fit: true });
-    expect(specProps(fitted, 'series-0')).toMatchObject({ yNice: false });
-    expect(specProps(scene, 'series-0')).toMatchObject({ yNice: true });
+    expect(specProps(fitted, firstSeriesId(fitted))).toMatchObject({
+      yNice: false,
+    });
+    expect(specProps(scene, firstSeriesId(scene))).toMatchObject({
+      yNice: true,
+    });
   });
 
   it('hands Elastic Charts the x domain bounds and bucket interval', () => {
@@ -186,7 +193,9 @@ describe('sceneSpecs', () => {
           : layer
       ),
     };
-    expect(specProps(xyInteractiveScene, 'series-0')).toMatchObject({
+    expect(
+      specProps(xyInteractiveScene, firstSeriesId(xyInteractiveScene))
+    ).toMatchObject({
       stackAccessors: ['x'],
       data: first!.marks.map(({ x, y }, mark) => ({
         x,
@@ -195,8 +204,10 @@ describe('sceneSpecs', () => {
         mark,
       })),
     });
-    expect(specProps(xyInteractiveScene, 'series-0').stackMode).toBe(undefined);
-    expect(specProps(percentage, 'series-0')).toMatchObject({
+    expect(
+      specProps(xyInteractiveScene, firstSeriesId(xyInteractiveScene)).stackMode
+    ).toBe(undefined);
+    expect(specProps(percentage, firstSeriesId(percentage))).toMatchObject({
       stackMode: 'percentage',
     });
   });
@@ -217,7 +228,7 @@ describe('sceneSpecs', () => {
           : layer
       ),
     };
-    const { displayValueSettings } = specProps(scene, 'series-0') as {
+    const { displayValueSettings } = specProps(scene, firstSeriesId(scene)) as {
       displayValueSettings: { valueFormatter: (value: unknown) => string };
     };
     const label = displayValueSettings.valueFormatter(0.25);
@@ -249,7 +260,7 @@ describe('sceneSpecs', () => {
           : layer
       ),
     };
-    const { displayValueSettings } = specProps(scene, 'series-0') as {
+    const { displayValueSettings } = specProps(scene, firstSeriesId(scene)) as {
       displayValueSettings: { valueFormatter: (value: unknown) => string };
     };
     const tenThroughAxis = formatAxisValue(scene, scene.axes.y!, 10);
@@ -311,7 +322,7 @@ describe('sceneSpecs', () => {
       ...xyTimeSeriesScene,
       layers: [{ kind: 'series', series: { ...series, points } }],
     };
-    expect(specProps(scene, 'series-0')).toMatchObject({
+    expect(specProps(scene, firstSeriesId(scene))).toMatchObject({
       lineSeriesStyle: { point: { visible } },
     });
   });

@@ -49,6 +49,10 @@ export const seriesOf = (scene: XyScene): readonly XySeries[] =>
     layer.kind === 'series' ? [layer.series] : []
   );
 
+/** A series' spec id. Elastic Charts keeps a reader's hidden series by spec id, so it names the series in its node, not its position. */
+export const seriesSpecId = ({ key, series: { layer, y } }: XySeries): string =>
+  `series-${layer}-${y}-${key}`;
+
 /** The Scene mark an Elastic Charts geometry value was drawn from. */
 export const markOf = (scene: XyScene, datum: unknown): XyMark | undefined =>
   isXyDatum(datum)

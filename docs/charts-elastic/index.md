@@ -91,7 +91,7 @@ With `onEvent` and a node id, a gesture raises the event of the Scene part it la
 | Drag across a heat map's time axis                          | `onBrushEnd`                                                | `brush`                                             |
 | Click a tag cloud word                                      | `onElementClick` (the word, by its datum)                   | `tag`                                               |
 
-Clicking a legend item's label toggles its series, which raises nothing.
+Clicking a legend item's label toggles its series, which raises nothing. Elastic Charts keeps the series a reader hides by spec id, and a series' spec id is its node's data layer, y entry and series key (`series-<layer>-<y>-<key>`), so a hidden series stays hidden when new data adds, removes or reorders the series around it.
 
 `src/parity.test.ts` holds the engine to this table over every example the charts pack has, nested in a `grid` or not: each gesture above, built from what Elastic Charts reports for it and sent to the callbacks and legend action the specs install on `Settings`, raises the event of the Scene part it lands on, through `selectEvent` and `brushEvent`, and nothing where the node offers no target. No metric example offers `tile`, so each is also checked offering it.
 

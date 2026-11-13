@@ -62,8 +62,8 @@ const element = (seriesKey: string, mark: number) => {
   return [
     { x: datum.x, y: datum.y, mark: null, accessor: 'y1', datum },
     {
-      specId: `series-${index}`,
-      key: `series-${index}`,
+      specId: `series-0-0-${seriesKey}`,
+      key: `series-0-0-${seriesKey}`,
       yAccessor: 'y',
       splitAccessors: new Map(),
       seriesKeys: ['y'],
