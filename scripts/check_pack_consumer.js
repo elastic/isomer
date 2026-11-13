@@ -7,14 +7,11 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
-  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  realpathSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -25,6 +22,12 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import semver from 'semver';
 
+import {
+  failOnWarning,
+  linkDirectory,
+  requireEntries,
+  requireWithoutPeers,
+} from './packed_require.js';
 import { splitDiagnostics } from './tsc_diagnostics.js';
 import {
   isPublishable,
@@ -50,14 +53,6 @@ if (references.length > 0) {
 }
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
 
-const linkDirectory = (target, path) => {
-  if (existsSync(path)) {
-    return;
-  }
-  mkdirSync(dirname(path), { recursive: true });
-  symlinkSync(target, path, process.platform === 'win32' ? 'junction' : 'dir');
-};
-
 const packPackage = (packageName) => {
   const folder = packageName.slice(packageName.lastIndexOf('/') + 1);
   const packageDir = join(repoRoot, 'packages', folder);
@@ -76,11 +71,6 @@ const packPackage = (packageName) => {
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
   return { dir, manifest, sourceDir };
 };
-
-// Fails an import on any process warning, such as the `ExperimentalWarning`
-// Node 22.12 prints when `require()` loads an ES module.
-const failOnWarning =
-  "process.on('warning', (warning) => { console.error(warning); process.exitCode = 1; });";
 
 /** Where pnpm installed `dependency` for the workspace package, or `undefined`. */
 const installedDependency = (pkg, dependency) =>
@@ -156,55 +146,6 @@ const OPTIONAL_PEER_ENTRIES = new Map([
     ['@elastic/isomer-runtime', 'react-dom'],
   ],
 ]);
-
-const requireEntries = (specifiers, consumerDir) =>
-  execFileSync(
-    process.execPath,
-    [
-      '--eval',
-      `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
-    ],
-    { cwd: consumerDir, stdio: 'inherit' }
-  );
-
-/**
- * Requires `specifiers` from a copy of `pkg` that holds only its dependencies and required peers, since another
- * package's required peer may already be linked into `pkg` itself. Fails when any of `peers` still resolves there.
- */
-const requireWithoutPeers = (pkg, specifiers, peers) => {
-  const { name, dependencies = {}, peerDependencies = {} } = pkg.manifest;
-  const isolatedDir = join(tempDir, 'isolated', name);
-  const ownModules = join(pkg.dir, 'node_modules');
-  cpSync(pkg.dir, isolatedDir, {
-    recursive: true,
-    filter: (source) => !source.startsWith(ownModules),
-  });
-  for (const linked of [
-    ...Object.keys(dependencies),
-    ...Object.keys(peerDependencies).filter((peer) => !peers.has(peer)),
-  ]) {
-    const target = join(ownModules, linked);
-    if (existsSync(target)) {
-      linkDirectory(
-        realpathSync(target),
-        join(isolatedDir, 'node_modules', linked)
-      );
-    }
-  }
-  const isolatedRequire = createRequire(join(isolatedDir, 'package.json'));
-  for (const peer of peers) {
-    let resolved;
-    try {
-      resolved = isolatedRequire.resolve(peer);
-    } catch {
-      continue;
-    }
-    throw new Error(`${name}: optional peer "${peer}" resolves at ${resolved}`);
-  }
-  const consumerDir = join(tempDir, 'isolated-consumers', name);
-  linkDirectory(isolatedDir, join(consumerDir, 'node_modules', name));
-  requireEntries(specifiers, consumerDir);
-};
 
 /**
  * Bundles one packed entry's ESM build with esbuild, as a consumer's bundler would.
@@ -324,7 +265,7 @@ try {
     if (optionalPeers.size === 0) {
       requireEntries(plainEntries, consumerDir);
     } else {
-      requireWithoutPeers(pkg, plainEntries, optionalPeers);
+      requireWithoutPeers(pkg, plainEntries, optionalPeers, tempDir);
     }
     for (const peer of optionalPeers) {
       linkDirectory(
