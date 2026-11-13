@@ -50,13 +50,13 @@ import type {
 } from './types';
 
 /** Kibana's dash for a missing value in a table (`NULL_PLACEHOLDER`). */
-export const TABLE_MISSING_TEXT = '-';
+const TABLE_MISSING_TEXT = '-';
 
 /** Lens's empty table message (`charts.noDataLabel`). */
 export const TABLE_EMPTY_TEXT = 'No results found';
 
 /** Lens's summary labels (`getSummaryRowOptions`). */
-export const SUMMARY_LABELS: Readonly<Record<DataTableSummary, string>> = {
+const SUMMARY_LABELS: Readonly<Record<DataTableSummary, string>> = {
   count: 'Value count',
   sum: 'Sum',
   avg: 'Average',
