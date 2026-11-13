@@ -321,14 +321,14 @@ export const TableView = ({
           className={cls(styles, table.pager, table.row[density])}>
           <span>{scene.paging.rowsPerPage}</span>
           <span className={cls(styles, table.pages)}>
-            {scene.paging.pageLabels.map((label, page) =>
+            {scene.paging.pages.map(({ label, page }, index) =>
               page === 0 ? (
-                <span key={label} className={cls(styles, table.page)}>
+                <span key={index} className={cls(styles, table.page)}>
                   {label}
                 </span>
               ) : (
                 <span
-                  key={label}
+                  key={index}
                   className={cls(styles, table.ink)}
                   style={subdued}>
                   {label}

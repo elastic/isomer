@@ -543,8 +543,36 @@ describe('dataTable selection', () => {
       pageSize: 10,
       pageCount: 3,
       rowsPerPage: 'Rows per page: 10',
-      pageLabels: ['1', '2', '3'],
+      pages: [
+        { label: '1', page: 0 },
+        { label: '2', page: 1 },
+        { label: '3', page: 2 },
+      ],
     });
+  });
+
+  // EUI's `EuiPagination`: five pages from the first, then the last, with an
+  // ellipsis for two or more pages between and the page itself for one.
+  it.each([
+    [1, ['1']],
+    [5, ['1', '2', '3', '4', '5']],
+    [6, ['1', '2', '3', '4', '5', '6']],
+    [7, ['1', '2', '3', '4', '5', '6', '7']],
+    [8, ['1', '2', '3', '4', '5', '…', '8']],
+    [10_000, ['1', '2', '3', '4', '5', '…', '10000']],
+  ])('lists a bounded pager for %i pages', (pageCount, labels) => {
+    const { paging } = resolve(
+      table(
+        [column('n', 'number')],
+        Array.from({ length: pageCount * 10 }, (_, i) => [i]),
+        { pageSize: 10 }
+      )
+    );
+    expect(paging?.pageCount).toBe(pageCount);
+    expect(paging?.pages.map(({ label }) => label)).toEqual(labels);
+    expect(paging?.pages.map(({ page }) => page)).toEqual(
+      labels.map((label) => (label === '…' ? undefined : Number(label) - 1))
+    );
   });
 });
 
