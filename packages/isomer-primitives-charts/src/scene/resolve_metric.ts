@@ -6,11 +6,11 @@
  */
 
 import { coordinateOf, MAX_EPOCH } from '../coordinates';
-import type { ColorBand } from '../schema/colors';
 import type { PortableFormat } from '../schema/format';
 import type { MetricNode } from '../schema/metric';
 
 import {
+  bandFor,
   cellIdentity,
   cellKey,
   createResolution,
@@ -22,7 +22,7 @@ import {
   titled,
   toNumber,
 } from './common';
-import { categoricalColor, resolveColor, textOn } from './theme';
+import { categoricalColor, keyColor, resolveColor, textOn } from './theme';
 import type {
   MetricScene,
   MetricTile,
@@ -38,19 +38,6 @@ const TREND_ICONS = {
   neutral: '=',
 } as const;
 const NOT_AVAILABLE = 'N/A';
-
-/** The band `value` falls in: `from` inclusive, `to` exclusive except on the last band, as Lens's palette stops. */
-export const bandFor = (
-  bands: readonly ColorBand[],
-  value: number
-): ColorBand | undefined =>
-  bands.find(
-    ({ from, to }, index) =>
-      (from === undefined || value >= from) &&
-      (to === undefined ||
-        value < to ||
-        (index === bands.length - 1 && value === to))
-  );
 
 const HALF_DAY = 43_200_000;
 
@@ -145,16 +132,13 @@ export const resolveMetric = (
   const colorOf = (row: number): SceneColor | undefined => {
     const color = node.value.color;
     if (color === undefined) {
-      const colors = node.colors?.byKey;
-      const key =
+      return keyColor(
+        node.colors?.byKey,
         breakdownId === undefined
           ? undefined
-          : keyPart(resolution.cell(breakdownId, row));
-      const byKey =
-        colors && key !== undefined && Object.hasOwn(colors, key)
-          ? colors[key]
-          : undefined;
-      return byKey === undefined ? undefined : resolveColor(byKey, scheme);
+          : keyPart(resolution.cell(breakdownId, row)),
+        scheme
+      );
     }
     return color === 'bands' ? bandColor(row) : resolveColor(color, scheme);
   };

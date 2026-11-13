@@ -16,17 +16,15 @@ import {
   describe,
   fractionAlong,
   keyPart,
+  NO_RESULTS,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
   titled,
   toNumber,
 } from './common';
-import { categoricalColor, resolveColor } from './theme';
+import { categoricalColor, keyColor } from './theme';
 import type { SceneSelection, TagCloudScene, TagCloudWord } from './types';
-
-/** Lens's text for a tag cloud with nothing to draw. */
-const NO_RESULTS = 'No results found';
 
 /** Lens's defaults: `tagcloud`'s `minFontSize` and `maxFontSize`. */
 const FONT_SIZE = { min: 18, max: 72 } as const;
@@ -49,7 +47,8 @@ export const resolveTagCloud = (
   const metric = node.metric.column;
   const tagsLabel = resolution.column(tags).label;
   const metricLabel = resolution.column(metric).label;
-  const selectable = resolveInteractions(node).select.includes('tag');
+  const interactions = resolveInteractions(node);
+  const selectable = interactions.select.includes('tag');
 
   const values = data.rows.map((_, row) =>
     toNumber(resolution.cell(metric, row))
@@ -81,9 +80,6 @@ export const resolveTagCloud = (
     const text = resolution.text(tags, row);
     const value = values[row];
     const valueText = resolution.text(metric, row);
-    const part = keyPart(cell);
-    const stated =
-      colors && Object.hasOwn(colors, part) ? colors[part] : undefined;
     const description = describe([
       [tagsLabel, text],
       [metricLabel, valueText],
@@ -102,9 +98,9 @@ export const resolveTagCloud = (
       weight: weightOf(value),
       value: value ?? null,
       valueText,
-      color: stated
-        ? resolveColor(stated, scheme)
-        : categoricalColor(firstRow.get(resolution.identity(tags, row)) ?? row),
+      color:
+        keyColor(colors, keyPart(cell), scheme) ??
+        categoricalColor(firstRow.get(resolution.identity(tags, row)) ?? row),
       source: { rows: [row], columns: [tags, metric] },
       description,
       ...(selection ? { selection } : {}),
@@ -135,7 +131,7 @@ export const resolveTagCloud = (
     kind: 'tagCloud',
     ...sceneBase(resolution, node),
     summary: titled(node.title, sentence),
-    interactions: resolveInteractions(node),
+    interactions,
     words,
     scale: node.scale ?? 'linear',
     angles: { ...ANGLES[node.orientation ?? 'single'] },
