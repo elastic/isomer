@@ -55,25 +55,38 @@ export const markOf = (scene: XyScene, datum: unknown): XyMark | undefined =>
     ? seriesOf(scene)[datum.series]?.marks[datum.mark]
     : undefined;
 
-/** The category whose bucket holds `x`: the position itself, or, on an axis stating an `interval`, the last one starting within that interval before it. */
+/** The bucket width Elastic Charts draws a stated `interval` at: no wider than the positions' smallest spacing. */
+const bucketOf = ({ axes: { x }, categories }: XyScene): number | undefined => {
+  if (x.interval === undefined) {
+    return undefined;
+  }
+  const xs = categories
+    .map((category) => category.x)
+    .filter((value): value is number => typeof value === 'number')
+    .sort((a, b) => a - b);
+  return Math.min(
+    x.interval,
+    ...xs.slice(1).map((value, index) => value - xs[index]!)
+  );
+};
+
+/** The category whose bucket holds `x`: the position itself, or, on an axis stating an `interval`, the one starting less than a {@link bucketOf bucket} before it. */
 export const categoryAt = (
   scene: XyScene,
   x: unknown
 ): XyCategory | undefined => {
   const { categories } = scene;
   const exact = categories.find((category) => category.x === x);
-  const { interval } = scene.axes.x;
-  if (exact || typeof x !== 'number' || interval === undefined) {
+  const bucket = bucketOf(scene);
+  if (exact || typeof x !== 'number' || bucket === undefined) {
     return exact;
   }
-  return categories
-    .filter(
-      (category) =>
-        typeof category.x === 'number' &&
-        category.x <= x &&
-        x < category.x + interval
-    )
-    .at(-1);
+  return categories.find(
+    (category) =>
+      typeof category.x === 'number' &&
+      category.x <= x &&
+      x < category.x + bucket
+  );
 };
 
 /** Whether the host can receive events from this Scene. */

@@ -364,18 +364,21 @@ const gestures = (
         ? [selectEvent(NODE, category.selection)]
         : [],
   });
-  // Elastic Charts projects a click onto its bucket grid, data there or not.
+  // Elastic Charts projects a click onto its bucket grid, data there or not:
+  // buckets of the stated interval, or the positions' smallest spacing if narrower.
   const { interval } = scene.axes.x;
-  const bucket =
-    interval ?? Math.min(...xs.slice(1).map((x, index) => x - xs[index]!));
+  const bucket = Math.min(
+    interval ?? Infinity,
+    ...xs.slice(1).map((x, index) => x - xs[index]!)
+  );
   const buckets = xs.flatMap((x, index) => {
     const next = xs[index + 1] ?? Infinity;
     return [
-      ...(interval !== undefined && x + interval / 2 < next
+      ...(interval !== undefined
         ? [
             projected(
               `click the plot inside the bucket at ${String(x)}`,
-              x + interval / 2,
+              x + bucket / 2,
               categoryAt(x)
             ),
           ]
