@@ -17,7 +17,10 @@ interactions?: {
   brush?: { column: string };       // xyChart: a date or number x column; heatmap: its date x column
   sync?: { cursor?: boolean; tooltips?: boolean };
   link?: { href: string; label: string }; // static, drawn on every surface
-  initial?: { hiddenSeries?: string[] };  // xyChart only: series keys hidden at first
+  initial?: {                       // the starting view state
+    hiddenSeries?: string[];        // xyChart: series keys hidden at first
+    sort?: { column: string; direction: 'asc' | 'desc' }; // dataTable: the column the rows start sorted by
+  };
 }
 ```
 
@@ -71,7 +74,7 @@ type ChartEvent = {
 );
 ```
 
-An event refers to data, never to pixels: `rows` are indexes into the node's `data.rows`, and `columns` are the dimension columns that identify the target, whose value every row in `rows` shares. A click in the SVG renderer, Elastic Charts or ECharts, and a tap on a phone, raise the same event. A renderer raises no event for a node without an `id`.
+An event refers to data, never to pixels: `rows` are indexes into the node's `data.rows`, and `columns` are the dimension columns that identify the target, whose value every row in `rows` shares. A click in the [Elastic Charts engine](../charts-elastic/index.md) or in a host's own renderer, and a tap on a phone, raise the same event. A renderer raises no event for a node without an `id`.
 
 `datum`, `series` and `legend` selections carry `seriesKey`, using the [xyChart series-key rule](xy-chart.md), and `series`, the `{ layer, y }` indexes identifying the chosen y entry. The indexes distinguish different y series across layers even when their keys and source rows match; an empty key is valid.
 
