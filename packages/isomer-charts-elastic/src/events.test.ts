@@ -171,6 +171,47 @@ describe('xy events from Elastic Charts callbacks', () => {
     });
   });
 
+  describe('on an axis stating a two-hour interval, with data at 00:00, 01:00 and 03:00', () => {
+    const { node } = xyChartExamples.find(
+      ({ name }) => name === 'Interactive stacked bars'
+    )!;
+    // Four rows per hour: rows 4 to 7 are 01:00, and rows 8 to 11 move from 02:00 to 03:00.
+    const scene = resolveChart(
+      {
+        ...node,
+        data: {
+          ...node.data,
+          rows: node.data.rows.map(([time, ...cells], row) =>
+            row >= 8 ? [START + 3 * HOUR, ...cells] : [time, ...cells]
+          ),
+        },
+        axes: { x: { scale: 'temporal', interval: 2 * HOUR } },
+      } as XyChartNode,
+      { scheme: 'light' }
+    );
+    const click = (x: number) => {
+      const { events, env } = listen();
+      xyHandlers(scene, env).onProjectionClick?.({ x, y: [] });
+      return events;
+    };
+
+    it('takes the hour between positions as the bucket, as Elastic Charts does', () => {
+      expect(click(START + 2 * HOUR)).toEqual([]);
+      expect(click(START + 4 * HOUR)).toEqual([]);
+      expect(click(START + HOUR + 30 * 60_000)).toEqual([
+        {
+          kind: 'select',
+          node: NODE,
+          target: 'category',
+          rows: [4, 5, 6, 7],
+          columns: ['time'],
+          values: { time: START + HOUR },
+          description: '@timestamp per hour: 01:00',
+        },
+      ]);
+    });
+  });
+
   it('raises a brushed range', () => {
     const { events, env } = listen();
     xyHandlers(xyInteractiveScene, env).onBrushEnd?.({

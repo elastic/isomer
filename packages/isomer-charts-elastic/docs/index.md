@@ -91,7 +91,7 @@ With `onEvent` and a node id, a gesture raises the event of the Scene part it la
 | Drag across a heat map's time axis                          | `onBrushEnd`                                                | `brush`                                             |
 | Click a tag cloud word                                      | `onElementClick` (the word, by its datum)                   | `tag`                                               |
 
-A click on the plot falls in an x position when Elastic Charts projects it to that position's x, or, on an axis stating an `interval`, to an x from there to less than one interval after it. Elastic Charts projects a click on a histogram to the start of the bucket under the pointer, so a click on a bucket with no data, or past the last one, raises nothing.
+A click on the plot falls in an x position when Elastic Charts projects it to that position's x, or, on an axis stating an `interval`, to an x from there to less than one bucket after it. The bucket is the stated `interval`, or the smallest spacing between x positions when that is narrower, as Elastic Charts' `minInterval` is. Elastic Charts projects a click on a histogram to the start of the bucket under the pointer, so a click on a bucket with no data, or past the last one, raises nothing.
 
 Clicking a legend item's label toggles its series, which raises nothing.
 
