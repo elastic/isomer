@@ -57,12 +57,12 @@ The options argument, and `context` inside it, is optional only when omitting it
 `context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, here a `chartsPack` whose renderers read a `ChartsRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
 
 ```ts
-const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsFrameTheme>({
   packs: [chartsPack],
-  frames: { card: cardFrame },
+  frames: { charts: chartsFrame },
 });
 
-runtime.surfaces.react.render(composition, { context: { resolveClassName } });
+runtime.surfaces.react.render(composition, { context: { scheme: 'dark' } });
 ```
 
 The first parameter is the host context views build with, the second the render context, the third the theme; [Runtime](runtime.md#typing-the-render-context) covers when each is worth naming.
