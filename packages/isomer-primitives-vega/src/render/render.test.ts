@@ -228,6 +228,17 @@ describe('renderVegaSvg', () => {
     ).toContain('echo:a');
   });
 
+  it('draws text and descriptions that mention `url(`, which fetch nothing', () => {
+    const svg = draw(
+      marks({
+        text: { value: 'see url(https://example.com)' },
+        description: { value: 'url(https://example.com)' },
+      })
+    );
+    expect(svg).toContain('see url(https://example.com)');
+    expect(svg).toContain('aria-label="url(https://example.com)"');
+  });
+
   it('throws, rather than drawing a partial chart, when the dataflow fails', () => {
     const input = vega({
       data: [

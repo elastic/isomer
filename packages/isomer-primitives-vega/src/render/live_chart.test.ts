@@ -7,17 +7,21 @@
 
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import { readChartEvent } from '@elastic/isomer-primitives-charts/schema';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef } from '@elastic/isomer-sdk';
-import type { View } from 'vega';
+import { View } from 'vega';
 
 import { vegaPack } from '../pack';
 import { brushExample, mapExample } from '../schema/examples';
 
 import * as live from './live';
+/** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
+
 const runtime = createIsomerRuntime({ packs: [vegaPack] });
 
 (
@@ -68,6 +72,49 @@ describe('the react renderer in a browser', () => {
       node: 'requests-brush',
       range: [from, to],
     });
+    act(() => root.unmount());
+    spy.mockRestore();
+  });
+
+  it('keeps a newer live view when an older one fails late', async () => {
+    let fail: (error: Error) => void = () => undefined;
+    const runAsync = vi
+      .spyOn(View.prototype, 'runAsync')
+      .mockImplementationOnce(
+        () => new Promise((_, reject) => (fail = reject))
+      );
+    const { container, root } = await mount(brushExample);
+    const render = (onEvent?: (event: ActionEventRef) => void) =>
+      runtime.surfaces.react.render(
+        { type: 'view', body: [brushExample] },
+        { ...(onEvent && { context: { onEvent } }), heading: false }
+      );
+    act(() => root.render(render(() => undefined)));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    const chart = container.querySelector('[data-isomer-vega-chart]');
+    const live = chart?.querySelector('svg');
+    expect(live).not.toBeNull();
+    await act(async () => {
+      fail(new Error('boom'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(chart?.querySelector('svg')).toBe(live);
+    act(() => root.unmount());
+    runAsync.mockRestore();
+  });
+
+  it('restarts the live view when the node’s interactions change', async () => {
+    const spy = vi.spyOn(live, 'startLiveView');
+    const { root } = await mount(brushExample);
+    const render = (node: typeof brushExample) =>
+      runtime.surfaces.react.render(
+        { type: 'view', body: [node] },
+        { heading: false }
+      );
+    act(() => root.render(render({ ...brushExample, id: 'renamed' })));
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(spy).toHaveBeenCalledTimes(2);
+    expect(spy.mock.calls[1]?.[2]?.node?.id).toBe('renamed');
     act(() => root.unmount());
     spy.mockRestore();
   });

@@ -38,6 +38,7 @@ export const LiveChart = ({
   const handler = useRef(onEvent);
   handler.current = onEvent;
   const interactive = onEvent !== undefined;
+  const events = JSON.stringify([node.id, node.interactions]);
   useEffect(() => {
     const container = ref.current;
     if (!container) {
@@ -59,15 +60,14 @@ export const LiveChart = ({
       })
       .catch(() => {
         // The server's SVG stays where the view cannot start.
-        container.innerHTML = svg;
       });
     return () => {
       disposed = true;
       finalize?.();
     };
-    // `svg` changes whenever the spec, size or scheme does.
+    // `svg` changes whenever the spec, data, size or scheme does; `events` covers the rest of what the view reads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [svg, interactive]);
+  }, [svg, interactive, events]);
   return (
     <div
       ref={ref}

@@ -43,18 +43,19 @@ const SCENARIOS = {
 
 /**
  * Ceilings `--check` holds each scenario's median run to, in MB: about 1.5×
- * what macOS arm64 measured on Node 22, with a floor for `one`'s small delta,
- * so a runner's variance passes and a doubling fails. Lower a bound when
- * rendering gets cheaper; raise one only with Linux CI's numbers beside it.
+ * the larger of macOS arm64 and CI's Linux x64 on Node 22, with a floor for
+ * `one`'s small delta, so a runner's variance passes and a doubling fails.
+ * Lower a bound when rendering gets cheaper; raise one only with Linux CI's
+ * numbers beside it.
  */
 const BOUNDS = {
-  examples: { peakRssMb: 320, renderRssMb: 140 },
+  examples: { peakRssMb: 450, renderRssMb: 260 },
   one: { peakRssMb: 210, renderRssMb: 40 },
-  'budget-marks': { peakRssMb: 360, renderRssMb: 80 },
-  'budget-spec': { peakRssMb: 280, renderRssMb: 100 },
-  'budget-data': { peakRssMb: 280, renderRssMb: 100 },
-  'over-marks': { peakRssMb: 265, renderRssMb: 90 },
-  'burst-limited': { peakRssMb: 350, renderRssMb: 170 },
+  'budget-marks': { peakRssMb: 550, renderRssMb: 100 },
+  'budget-spec': { peakRssMb: 460, renderRssMb: 270 },
+  'budget-data': { peakRssMb: 450, renderRssMb: 260 },
+  'over-marks': { peakRssMb: 450, renderRssMb: 260 },
+  'burst-limited': { peakRssMb: 460, renderRssMb: 270 },
 };
 
 const mb = (bytes) => bytes / 1024 / 1024;
@@ -150,7 +151,7 @@ const child = async (scenario) => {
       ),
     };
   };
-  /** The most points that draw: the cap, less the root mark, its group, the point mark, and the axes. */
+  /** The most points that draw: the cap, less the root group and the axes. */
   const atMarkLimit = () => {
     const probe = (count) => {
       const input = {

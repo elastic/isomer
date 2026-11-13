@@ -89,9 +89,10 @@ export interface LiveViewOptions {
 /**
  * Draws `spec` into `container` as a live view, replacing what it holds, and
  * wires the node's `mark` selection and brush signal to `onEvent`. Resolves
- * once the first render is done; finalize the view to remove it.
+ * once the first render is done; finalize the view to remove it. On failure the
+ * view is finalized and `container` gets its markup back.
  */
-export const startLiveView = (
+export const startLiveView = async (
   container: HTMLElement,
   spec: SpecObject,
   { onEvent, node }: LiveViewOptions = {}
@@ -126,6 +127,18 @@ export const startLiveView = (
       });
     }
   }
+  const markup = Array.from(container.childNodes);
   container.replaceChildren();
-  return view.initialize(container).runAsync();
+  view.initialize(container);
+  const drawn = Array.from(container.childNodes);
+  try {
+    return await view.runAsync();
+  } catch (error) {
+    view.finalize();
+    // The server's markup comes back unless a newer view has taken the container.
+    if (drawn.every((child) => child.parentNode === container)) {
+      container.replaceChildren(...markup);
+    }
+    throw error;
+  }
 };

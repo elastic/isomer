@@ -405,11 +405,11 @@ describe('vega rendering', () => {
       });
     const drawn = (node: VegaNode) =>
       markupOf(runtime.surfaces.react.renderNode(node));
-    // The root mark, its group, the symbol mark, and one item per point.
-    expect(drawn(points(MAX_DRAWN_ITEMS - 3))).not.toContain(
+    // The root group, and one item per point.
+    expect(drawn(points(MAX_DRAWN_ITEMS - 1))).not.toContain(
       'data-isomer-vega-error'
     );
-    const over = drawn(points(MAX_DRAWN_ITEMS - 2));
+    const over = drawn(points(MAX_DRAWN_ITEMS));
     expect(over).toContain('data-isomer-vega-error');
     expect(over).toContain(`more than the ${MAX_DRAWN_ITEMS}`);
     // A line draws one path, however many points it has.
@@ -424,6 +424,33 @@ describe('vega rendering', () => {
       ],
     });
     expect(drawn(line)).not.toContain('data-isomer-vega-error');
+    // Each facet draws its group and one line: 4,001 elements with the root.
+    const facets = 2_000;
+    const facetLines = withSpec(vegaGrammarExample, {
+      data: [
+        {
+          name: 'table',
+          values: Array.from({ length: facets * 3 }, (_, x) => ({
+            k: Math.floor(x / 3),
+            x,
+          })),
+        },
+      ],
+      marks: [
+        {
+          type: 'group',
+          from: { facet: { name: 'series', data: 'table', groupby: 'k' } },
+          marks: [
+            {
+              type: 'line',
+              from: { data: 'series' },
+              encode: { enter: { x: { field: 'x' } } },
+            },
+          ],
+        },
+      ],
+    });
+    expect(drawn(facetLines)).not.toContain('data-isomer-vega-error');
   });
 
   it('draws a note in the chart’s box when Vega cannot draw the spec', () => {

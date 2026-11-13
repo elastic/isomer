@@ -136,6 +136,48 @@ describe('vega results', () => {
     ]);
   });
 
+  it('refuses a result path that names no data entry, even one that resolves to an object', () => {
+    const image = {
+      ...bars,
+      data: [],
+      marks: [
+        {
+          type: 'image',
+          encode: { update: { url: { value: 'https://example.com/a.png' } } },
+        },
+      ],
+    };
+    const result = { values: [], scope: 'static' };
+    for (const path of [
+      ['marks', 0, 'encode', 'update'],
+      ['config'],
+      ['__proto__'],
+    ]) {
+      expect(
+        errors(
+          node({
+            spec: { ...image, config: {} },
+            results: [{ ...result, path }],
+          })
+        )
+      ).toEqual(
+        expect.arrayContaining([
+          expect.stringMatching(
+            /results\[0\]\.path: Each `results` path names a data entry/
+          ),
+        ])
+      );
+    }
+    expect(
+      errors(
+        node({
+          spec: { marks: [{ type: 'group', data: [{ name: 'g', url: 'x' }] }] },
+          results: [{ ...result, path: ['marks', 0, 'data', 0] }],
+        })
+      )
+    ).toEqual([]);
+  });
+
   it('draws a result as the inline values it replaces', () => {
     const values = { rows: [{ v: 1 }, { v: 3 }] };
     const inline = {

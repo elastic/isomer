@@ -10,6 +10,7 @@
 import { readChartEvent } from '@elastic/isomer-primitives-charts/schema';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef } from '@elastic/isomer-sdk';
+import { View } from 'vega';
 
 import { hydrateVega } from './client';
 import { vegaPack } from './pack';
@@ -56,6 +57,30 @@ describe('hydrateVega', () => {
     const { views } = await hydrateVega(root);
     expect(views).toHaveLength(0);
     expect(root.querySelector('[data-isomer-vega-chart] svg')).toBe(before);
+  });
+
+  it('keeps the server SVG of a chart that cannot start, and the others live', async () => {
+    const root = mount(vegaExample);
+    root.append(
+      ...mount(vegaExample).childNodes,
+      ...mount(vegaExample).childNodes
+    );
+    const charts = root.querySelectorAll('[data-isomer-vega-chart]');
+    const [failing, unreadable] = Array.from(charts, (chart) =>
+      chart.querySelector('svg')
+    );
+    root.querySelectorAll('script[data-isomer-vega-spec]')[1]!.textContent =
+      '{';
+    vi.spyOn(View.prototype, 'runAsync').mockRejectedValueOnce(
+      new Error('boom')
+    );
+    const { views, dispose } = await hydrateVega(root);
+    expect(views).toHaveLength(1);
+    expect(charts[0]?.querySelector('svg')).toBe(failing);
+    expect(charts[1]?.querySelector('svg')).toBe(unreadable);
+    expect(views[0]?.container()).toBe(charts[2]);
+    dispose();
+    vi.restoreAllMocks();
   });
 
   it('re-hardens an embedded spec someone edited', async () => {

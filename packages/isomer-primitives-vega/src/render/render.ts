@@ -232,9 +232,25 @@ const svgRenderer = (): HeadlessSvgRenderer => {
   return new (lookup('svg').headless)(inertLoader);
 };
 
-/** Markup the scrub should have made impossible; any `url(` but a reference to the chart's own defs. */
-const ESCAPED =
-  /<a[\s>]|<image\b[^>]*href="[^"]|<script|<foreignObject|url\((?!#)/i;
+/** Elements the scrub should have made impossible. */
+const ESCAPED_ELEMENT =
+  /<a[\s>]|<image\b[^>]*href="[^"]|<script|<style|<foreignObject/i;
+
+/** Vega escapes `<` and `>` in text and attributes, so every `<…>` is a tag. */
+const TAG = /<[^>]*>/g;
+const ATTRIBUTE = /\s([\w:-]+)="([^"]*)"/g;
+/** Any `url(` but a reference to the chart's own defs. */
+const FETCHING_URL = /url\((?!#)/i;
+
+/** Whether `markup` can link out or fetch. Text and `aria-*` attributes are prose, so `url(` there is harmless. */
+const escapes = (markup: string): boolean =>
+  ESCAPED_ELEMENT.test(markup) ||
+  Array.from(markup.matchAll(TAG), ([tag]) => tag).some((tag) =>
+    Array.from(tag.matchAll(ATTRIBUTE)).some(
+      ([, name = '', value = '']) =>
+        !name.startsWith('aria-') && FETCHING_URL.test(value)
+    )
+  );
 
 /** Ids Vega numbers from process-wide counters: gradients, patterns, and clip paths. */
 const DEF_ID = /(id="|url\(#)((?:p_)?gradient_\d+|clip\d+)/g;
@@ -260,28 +276,31 @@ export interface VegaSvg {
 /** Marks whose items draw together as one SVG path. */
 const ONE_PATH_MARKS = new Set(['line', 'area', 'trail']);
 
+/** A scene mark, or a group item holding marks. */
+interface SceneNode {
+  marktype?: string;
+  items?: unknown[];
+}
+
 /**
  * The SVG elements a scene draws: one per item, but one per line, area and
  * trail, whose items are the vertices of one path. Stops counting past the cap.
  */
 const countDrawn = (root: unknown): number => {
   let count = 0;
-  const stack: unknown[] = [root];
-  while (stack.length > 0 && count <= MAX_DRAWN_ITEMS) {
-    const node = stack.pop() as {
-      marktype?: string;
-      items?: unknown[];
-    } | null;
-    count += 1;
-    if (!node || !Array.isArray(node.items)) {
+  const marks: unknown[] = [root];
+  while (marks.length > 0 && count <= MAX_DRAWN_ITEMS) {
+    const mark = marks.pop() as SceneNode | null;
+    const items = Array.isArray(mark?.items) ? mark.items : [];
+    if (mark?.marktype !== undefined && ONE_PATH_MARKS.has(mark.marktype)) {
+      count += items.length > 0 ? 1 : 0;
       continue;
     }
-    if (node.marktype !== undefined && ONE_PATH_MARKS.has(node.marktype)) {
-      count += node.items.length > 0 ? 1 : 0;
-      continue;
-    }
-    for (const item of node.items) {
-      stack.push(item);
+    count += items.length;
+    for (const item of items as Array<SceneNode | null>) {
+      if (Array.isArray(item?.items)) {
+        marks.push(...item.items);
+      }
     }
   }
   return count;
@@ -324,7 +343,7 @@ const drawView = (view: View, log: VegaLog): string => {
   if (!markup) {
     throw new VegaRenderError('vega: the renderer produced no SVG');
   }
-  if (ESCAPED.test(markup)) {
+  if (escapes(markup)) {
     throw new VegaRenderError(
       'vega: the rendered SVG holds a link, an image source, or a fetching style'
     );
@@ -402,7 +421,7 @@ export const pruneVegaResults = <T extends VegaChartInput>(
     // Each recording run draws the full results, so its SVG is the full drawing the pruned one must match.
     const fullSvgs = themes.map((theme) => {
       const log: VegaLog = { errors: [], warnings: [] };
-      const compiled = withoutTooltips(toVegaSpec(marked, theme, log));
+      const compiled = withoutTooltips(toVegaSpec(marked, theme));
       const found = replaceMarkers(compiled, (index) =>
         // A copy: Vega writes into rows as it runs, and the result must stay as the query returned it.
         recordReads(structuredClone(results[index]!.values), records[index]!)

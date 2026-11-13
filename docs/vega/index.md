@@ -70,7 +70,7 @@ The package is `"private": true` while the charts pack is, and depends on it.
 ### Rules
 
 - A spec reaches nothing outside itself. Validation reports every `url` (data sources, lookups, image marks), every `href` and every bound input's `element`, at its path; rows under `values` and `datasets` are data and are not inspected. Anything nested deeper than 64 levels is refused.
-- A data source keeps its `url` only where a `results` entry replaces it, and each `results` path names a data entry of the spec.
+- A data source keeps its `url` only where a `results` entry replaces it, and each `results` path names a data entry of the spec: an entry of a Vega `data` array, or a Vega-Lite `data` object.
 - Kibana map mode, `config.kibana.type: "map"`, is refused: a [materializer converts it](materializing.md#map-mode). Every other `config.kibana` key is dropped, since only Kibana's own view reads them.
 - With `data`, the spec reads it as the dataset named `table`: a Vega spec declares `{ "name": "table" }` in `data` with no `values`, `url` or `source`, and a Vega-Lite spec reads `"data": { "name": "table" }` and declares no `datasets.table`. The pack fills it with one object per row keyed by column id, dates as epoch milliseconds.
 - `interactions.select` and `interactions.brush` need `data`, and a `brush` column is a `date` or `number` column of `data`.

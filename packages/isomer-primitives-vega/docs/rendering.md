@@ -110,7 +110,9 @@ The size limits bound the rest, parsing and memory: 250,000 characters of spec, 
 
 `budget-marks` finds its point count by drawing, so its loaded RSS includes those draws. A render service still runs each render under its own time limit.
 
-`pnpm --filter @elastic/isomer-primitives-vega bench:check`, part of `pnpm check:memory`, runs every scenario three times and fails when a median is over its bound in the script.
+Linux pays more for the same work, so read Linux for a server: on CI's Linux x64 runners, one cold PNG peaked at 135 MB and every other scenario at 294–364 MB, about 170 MB over loaded (66 MB for `budget-marks`).
+
+`pnpm --filter @elastic/isomer-primitives-vega bench:check`, part of `pnpm check:memory`, runs every scenario three times and fails when a median is over its bound in the script. A bound is about 1.5× the larger of the macOS and Linux x64 medians, with a floor for `one`'s small delta, so a runner's variance passes and a doubling fails.
 
 ## Developing
 

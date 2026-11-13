@@ -66,21 +66,28 @@ export const hydrateVega = async (
   const charts = Array.from(root.querySelectorAll('[data-isomer-vega]'));
   const raise =
     onEvent && ((event: ChartEvent) => onEvent(toActionEvent(event)));
-  const views = await Promise.all(
-    charts.flatMap((chart) => {
+  // A chart that cannot start keeps its server SVG and leaves the others live.
+  const start = async (chart: Element): Promise<View[]> => {
+    const container = chart.querySelector('[data-isomer-vega-chart]');
+    if (!(container instanceof HTMLElement)) {
+      return [];
+    }
+    try {
       const embedded = readEmbedded(chart);
-      const container = chart.querySelector('[data-isomer-vega-chart]');
-      if (embedded === undefined || !(container instanceof HTMLElement)) {
+      if (embedded === undefined) {
         return [];
       }
       return [
-        startLiveView(container, embedded.spec, {
+        await startLiveView(container, embedded.spec, {
           ...(raise && { onEvent: raise }),
           ...(embedded.node && { node: embedded.node }),
         }),
       ];
-    })
-  );
+    } catch {
+      return [];
+    }
+  };
+  const views = (await Promise.all(charts.map(start))).flat();
   return {
     views,
     dispose: () => {

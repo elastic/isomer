@@ -65,8 +65,21 @@ export const VEGA_RULES = {
   resultsSize: `Results are at most ${MAX_RESULTS_CHARS.toLocaleString('en')} characters of JSON.`,
   resultUrl:
     'A data source keeps its `url` only where a `results` entry replaces it.',
-  resultPath: 'Each `results` path names a data entry of the spec.',
+  resultPath:
+    'Each `results` path names a data entry of the spec: an entry of a Vega `data` array, or a Vega-Lite `data` object.',
 } as const;
+
+const NOT_JSON = 'cannot be written as JSON';
+const UNREADABLE = 'threw while it was read';
+
+/** Characters of JSON `value` takes, or `undefined` where it cannot be written as JSON, such as a cycle or a BigInt. */
+const jsonLength = (value: unknown): number | undefined => {
+  try {
+    return JSON.stringify(value).length;
+  } catch {
+    return undefined;
+  }
+};
 
 const side = (what: string) =>
   z
@@ -81,7 +94,10 @@ const side = (what: string) =>
 const specSchema = z
   .record(z.string(), z.unknown())
   .superRefine((spec, ctx) => {
-    if (JSON.stringify(spec).length > MAX_SPEC_CHARS) {
+    const length = jsonLength(spec);
+    if (length === undefined) {
+      ctx.addIssue({ code: 'custom', message: NOT_JSON });
+    } else if (length > MAX_SPEC_CHARS) {
       ctx.addIssue({ code: 'custom', message: VEGA_RULES.size });
     }
   })
@@ -113,7 +129,10 @@ const resultsSchema = z
   )
   .max(MAX_RESULTS)
   .superRefine((results, ctx) => {
-    if (JSON.stringify(results).length > MAX_RESULTS_CHARS) {
+    const length = jsonLength(results);
+    if (length === undefined) {
+      ctx.addIssue({ code: 'custom', message: NOT_JSON });
+    } else if (length > MAX_RESULTS_CHARS) {
       ctx.addIssue({ code: 'custom', message: VEGA_RULES.resultsSize });
     }
   })
@@ -258,7 +277,8 @@ export const vegaSchema = vegaObjectSchema
       try {
         crossFieldIssues(node, ctx);
       } catch {
-        // Unreadable input passes; the field that broke it reports the error.
+        // Zod runs this only on well-formed input, so a throw comes from a getter or a proxy.
+        ctx.addIssue({ code: 'custom', message: UNREADABLE });
       }
     })
   )

@@ -24,11 +24,25 @@ export interface VegaResult {
 const at = (root: unknown, path: Path): unknown =>
   path.reduce<unknown>(
     (cursor, key) =>
-      cursor !== null && typeof cursor === 'object'
+      cursor !== null &&
+      typeof cursor === 'object' &&
+      Object.prototype.hasOwnProperty.call(cursor, key)
         ? (cursor as Record<string | number, unknown>)[key]
         : undefined,
     root
   );
+
+/** A Vega `data` array's entry, at the top or in a group mark, or a Vega-Lite `data` object. */
+const isDataEntryPath = (path: Path): boolean => {
+  const last = path[path.length - 1];
+  return (
+    last === 'data' ||
+    (path[path.length - 2] === 'data' && typeof last === 'number')
+  );
+};
+
+const isDataEntry = (spec: SpecObject, path: Path): boolean =>
+  isDataEntryPath(path) && isSpecObject(at(spec, path));
 
 /** Where a result doesn't name a data entry in `spec`, the message why. */
 export const resultIssues = (
@@ -36,7 +50,7 @@ export const resultIssues = (
   results: readonly VegaResult[]
 ): Array<{ path: Path; message: string }> =>
   results.flatMap(({ path }, index) =>
-    isSpecObject(at(spec, path))
+    isDataEntry(spec, path)
       ? []
       : [
           {
@@ -68,7 +82,7 @@ export const withResults = (
 ): SpecObject => {
   let root: SpecObject = spec;
   for (const { path, values } of results) {
-    if (!isSpecObject(at(root, path))) {
+    if (!isDataEntry(root, path)) {
       continue;
     }
     const copyAlong = (node: unknown, depth: number): unknown => {
