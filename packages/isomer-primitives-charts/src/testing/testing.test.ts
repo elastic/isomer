@@ -28,13 +28,11 @@ const COLOR = /^(#[\da-f]{6}([\da-f]{2})?|rgba?\([^)]*\))$/i;
 const drawnParts = (scene: Scene): unknown[] => {
   switch (scene.kind) {
     case 'xy':
-      return [
-        scene.axes,
-        scene.layers,
-        scene.legend.visible ? scene.legend : [],
-      ];
+      return scene.empty
+        ? [scene.empty.text]
+        : [scene.axes, scene.layers, scene.legend.visible ? scene.legend : []];
     case 'metric':
-      return [scene.tiles];
+      return scene.empty ? [scene.empty.text] : [scene.tiles];
     case 'partition':
       return scene.empty
         ? [scene.empty.text]
@@ -233,6 +231,32 @@ describe('the static renderer checks', () => {
       mutated(drawing, (markup) => markup.replace(`<span>${label}</span>`, ''))
     ).toContain(`legend band "${label}" is not drawn`);
   });
+
+  it.each(['xy', 'metric'] as const)(
+    'fail an empty %s drawing without its note, with another, or with more beside it',
+    (kind) => {
+      const drawing = drawn.find(
+        ({ scene }) => scene.kind === kind && scene.empty
+      )!;
+      const note = '<span>No results found</span>';
+      expect(drawing.markup).toContain(note);
+      const failed = (texts: string[]) =>
+        `an empty chart draws "No results found" alone, not ${JSON.stringify(texts)}`;
+      expect(mutated(drawing, (markup) => markup.replace(note, ''))).toEqual([
+        failed([]),
+      ]);
+      expect(
+        mutated(drawing, (markup) =>
+          markup.replace(note, '<span>No data to display</span>')
+        )
+      ).toEqual([failed(['No data to display'])]);
+      expect(
+        mutated(drawing, (markup) =>
+          markup.replace('</figure>', '<span>Bogus</span></figure>')
+        )
+      ).toEqual([failed(['No results found', 'Bogus'])]);
+    }
+  );
 
   it('fail coverage when a supported Scene goes undrawn', () => {
     const skipping = drawExamples([

@@ -681,4 +681,16 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       mark: 'area',
     }),
   },
+  {
+    name: 'No rows',
+    description: 'No data: the chart says there are no results.',
+    node: {
+      type: 'xyChart',
+      title: 'Requests per hour',
+      data: { columns: [timeColumn, countColumn], rows: [] },
+      layers: [
+        { kind: 'data', mark: 'bar', x: 'time', y: [{ column: 'count' }] },
+      ],
+    },
+  },
 ];

@@ -281,22 +281,23 @@ export const metricTheme = (scene: MetricScene): PartialTheme => {
   };
 };
 
-/** A metric Scene's spec elements, for `<Chart>` or headless drawing. */
+/** A metric Scene's spec elements, for `<Chart>` or headless drawing; `null` when it is empty. */
 export const metricSpecs = (
   scene: MetricScene,
   env: SceneRenderEnv,
   options: ElasticChartsOptions
-): ReactNode => (
-  <>
-    <Settings
-      baseTheme={kibanaBaseTheme(scene.scheme)}
-      theme={metricTheme(scene)}
-      locale={scene.locale}
-      debugState={options.debugState ?? false}
-      {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-      ariaDescription={ariaDescriptionOf(scene)}
-      {...metricHandlers(scene, env)}
-    />
-    <Metric id="metric" data={metricGrid(scene, env)} />
-  </>
-);
+): ReactNode =>
+  scene.empty ? null : (
+    <>
+      <Settings
+        baseTheme={kibanaBaseTheme(scene.scheme)}
+        theme={metricTheme(scene)}
+        locale={scene.locale}
+        debugState={options.debugState ?? false}
+        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
+        ariaDescription={ariaDescriptionOf(scene)}
+        {...metricHandlers(scene, env)}
+      />
+      <Metric id="metric" data={metricGrid(scene, env)} />
+    </>
+  );

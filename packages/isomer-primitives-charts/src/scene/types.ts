@@ -248,6 +248,8 @@ export interface MetricScene extends SceneBase {
   readonly layout: MetricLayout;
   /** In `data` order. */
   readonly tiles: readonly MetricTile[];
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }
 
 /** An xy Scene's axis: the category axis, or the primary or secondary value axis. */
@@ -501,6 +503,8 @@ export interface XyScene extends SceneBase {
   readonly barMinimumHeight: number;
   /** A helper mark: the current-time marker, in epoch milliseconds. */
   readonly currentTime?: number;
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }
 
 /** How a table column aligns its cells. */
