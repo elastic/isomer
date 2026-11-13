@@ -11,6 +11,7 @@ import {
   type MetricScene,
   metricSingleValueScene,
   xyInteractiveScene,
+  type XyScene,
   xyTimeSeriesScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
@@ -210,6 +211,31 @@ describe('xy events from Elastic Charts callbacks', () => {
         },
       ]);
     });
+  });
+
+  it('finds the bucket among 200,000 positions', () => {
+    const { selection } = xyInteractiveScene.categories[1]!;
+    // A position every two hours, each selecting its own row, on an hourly interval.
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      axes: {
+        ...xyInteractiveScene.axes,
+        x: { ...xyInteractiveScene.axes.x, interval: HOUR },
+      },
+      categories: Array.from({ length: 200_000 }, (_, row) => ({
+        x: START + row * 2 * HOUR,
+        label: String(row),
+        selection: { ...selection!, rows: [row] },
+      })),
+    };
+    const rows = (x: number) => {
+      const { events, env } = listen();
+      xyHandlers(scene, env).onProjectionClick?.({ x, y: [] });
+      return events.map((event) => event.kind === 'select' && event.rows);
+    };
+    expect(rows(START + 10 * HOUR)).toEqual([[5]]);
+    expect(rows(START + 10 * HOUR + 30 * 60_000)).toEqual([[5]]);
+    expect(rows(START + 11 * HOUR)).toEqual([]);
   });
 
   it('raises a brushed range', () => {
