@@ -585,8 +585,12 @@ export interface TableScene extends SceneBase {
     readonly pageCount: number;
     /** Such as "Rows per page: 10". */
     readonly rowsPerPage: string;
-    /** One label per page, first page first. */
-    readonly pageLabels: readonly string[];
+    /** The pager's entries on the first page: at most the first, a run of pages and the last. An entry with no `page` is the gap between them. */
+    readonly pages: readonly {
+      readonly label: string;
+      /** Zero-based. */
+      readonly page?: number;
+    }[];
   };
   readonly density: 'compact' | 'default' | 'expanded';
   /** Drawn in place of the rows when there are none. */
