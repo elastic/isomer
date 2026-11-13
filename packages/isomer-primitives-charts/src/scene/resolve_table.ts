@@ -24,6 +24,7 @@ import type { PortableFormat } from '../schema/format';
 import {
   createResolution,
   describe,
+  fractionAlong,
   keyPart,
   type Resolution,
   type ResolveChartOptions,
@@ -398,7 +399,7 @@ export const resolveTable = (
       }
       const [min, max] = domain;
       const clamp = (value: number) => Math.min(max, Math.max(min, value));
-      const at = (value: number) => (clamp(value) - min) / (max - min);
+      const at = (value: number) => fractionAlong(min, max, clamp(value));
       const baseline = decoration.baseline ?? 0;
       return {
         ...base,
