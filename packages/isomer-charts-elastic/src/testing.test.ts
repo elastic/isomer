@@ -13,13 +13,14 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act as testUtilsAct } from 'react-dom/test-utils';
-import type { DebugState } from '@elastic/charts';
+import type { DebugState, DebugStateAxis } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import type {
   GaugeScene,
   HeatmapScene,
   PartitionScene,
   Scene,
+  SceneTimeBand,
   XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
@@ -27,6 +28,7 @@ import {
   heatmapExamples,
   partitionChartExamples,
   xyChartExamples,
+  type XyChartNode,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -39,6 +41,9 @@ import {
 
 const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 const SIZE = { width: 480, height: 300 };
+let size = SIZE;
+let wide = new Set<string>();
+const labelWidth = (text: string) => (wide.has(text) ? 200 : text.length * 6);
 
 // jsdom has no layout and no canvas: Elastic Charts learns its size from
 // ResizeObserver and measures text through a 2D context.
@@ -49,7 +54,7 @@ globalThis.ResizeObserver = class {
       [
         {
           target,
-          contentRect: { ...SIZE, top: 0, left: 0 },
+          contentRect: { ...size, top: 0, left: 0 },
         } as unknown as ResizeObserverEntry,
       ],
       this
@@ -67,7 +72,7 @@ const context = new Proxy(
     get: (_, key) =>
       key === 'measureText'
         ? (text: string) => ({
-            width: text.length * 6,
+            width: labelWidth(text),
             actualBoundingBoxAscent: 8,
             actualBoundingBoxDescent: 2,
             fontBoundingBoxAscent: 9,
@@ -95,7 +100,11 @@ globalThis.Path2D = class {
 
 const renderer = createElasticChartsRenderer({ debugState: true });
 const unmounts: (() => void)[] = [];
-afterEach(() => unmounts.splice(0).forEach((unmount) => unmount()));
+afterEach(() => {
+  unmounts.splice(0).forEach((unmount) => unmount());
+  size = SIZE;
+  wide = new Set();
+});
 
 const debugStateOf = async (scene: Scene): Promise<DebugState> => {
   const container = document.createElement('div');
@@ -144,7 +153,9 @@ describe('debugStateProblems', () => {
   it.each(scenes)(
     'passes what Elastic Charts draws for $name',
     async ({ scene }) => {
-      expect(debugStateProblems(scene, await debugStateOf(scene))).toEqual([]);
+      const state = await debugStateOf(scene);
+      expect(debugStateProblems(scene, state)).toEqual([]);
+      expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
     }
   );
 
@@ -171,6 +182,161 @@ describe('debugStateProblems', () => {
     };
     expect(debugStateProblems(xy, changed).join('\n')).toMatch(
       /axis "x" labels .*!"/
+    );
+  });
+
+  const timeScenes = scenes.filter(
+    (entry): entry is { name: string; scene: XyScene } =>
+      entry.scene.kind === 'xy' && entry.scene.axes.x.timeTicks !== undefined
+  );
+  const withX = (state: DebugState, x: Partial<DebugStateAxis>) => ({
+    ...state,
+    axes: { ...state.axes!, x: [{ ...state.axes!.x[0]!, ...x }] },
+  });
+
+  // At this size every band of the monthly example labels years alone.
+  const bandedScenes = timeScenes.filter(({ name }) =>
+    [
+      'Time axis by the minute',
+      'Time axis by the hour across a daylight saving change',
+      'Time axis by the day',
+    ].includes(name)
+  );
+
+  it.each(bandedScenes)(
+    'fails another band’s time labels at the drawn width for $name',
+    async ({ scene }) => {
+      const state = await debugStateOf(scene);
+      const { labels, values } = state.axes!.x[0]!;
+      const drawn = labels.map((label, index) => `${values[index]} ${label}`);
+      const keysOf = ({ layers }: SceneTimeBand) =>
+        layers.flatMap(({ ticks }) =>
+          ticks.flatMap(({ at, label }) =>
+            label === '' ? [] : [`${at} ${label}`]
+          )
+        );
+      // A band that labels a tick the drawing does not, and lacks one it does.
+      const other = scene.axes.x.timeTicks!.bands.find((band) => {
+        const keys = keysOf(band);
+        return (
+          keys.some((key) => !drawn.includes(key)) &&
+          drawn.some((key) => !keys.includes(key))
+        );
+      });
+      expect(other).toBeDefined();
+      const labeled = other!.layers.flatMap(({ ticks }) =>
+        ticks.filter(({ label }) => label !== '')
+      );
+      const changed = withX(state, {
+        labels: labeled.map(({ label }) => label),
+        values: labeled.map(({ at }) => at),
+      });
+      expect(debugStateProblems(scene, changed)).not.toEqual([]);
+    }
+  );
+
+  it('fails a time axis missing its major row', async () => {
+    const scene = timeScenes.find(
+      ({ name }) => name === 'Time axis by the minute'
+    )!.scene;
+    const state = await debugStateOf(scene);
+    const { labels, values } = state.axes!.x[0]!;
+    const minor = labels.flatMap((label, index): [string, unknown][] =>
+      label.endsWith('2026') ? [] : [[label, values[index]]]
+    );
+    expect(minor.length).toBeLessThan(labels.length);
+    const changed = withX(state, {
+      labels: minor.map(([label]) => label),
+      values: minor.map(([, value]) => value),
+    });
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    expect(
+      debugStateProblems(scene, changed, { labelWidth }).join('\n')
+    ).toMatch(/axis "x" leaves out .*2026"/);
+  });
+
+  it('passes a narrow time axis whose major row loses both its labels to measured text', async () => {
+    size = { width: 150, height: 300 };
+    const { node } = xyChartExamples.find(
+      ({ name }) => name === 'Time axis by the minute'
+    )!;
+    const scene = resolveChart(node, { scheme: 'light', size });
+    const state = await debugStateOf(scene);
+    expect(
+      state.axes!.x[0]!.labels.some((label) => label.endsWith('2026'))
+    ).toBe(false);
+    expect(debugStateProblems(scene, state)).toEqual([]);
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+  });
+
+  it('holds each time-layer edge label to its own width, not the widest in its layer', async () => {
+    wide = new Set(['01:00']);
+    const { name, scene } = timeScenes[0]!;
+    expect(name).toBe('Time series line');
+    const state = await debugStateOf(scene);
+    const { labels, values } = state.axes!.x[0]!;
+    expect(labels).toEqual(expect.arrayContaining(['00:00', '01:00', '04:00']));
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    const kept: [string, unknown][] = labels.flatMap((label, index) =>
+      label === '00:00' ? [] : [[label, values[index]]]
+    );
+    const changed = withX(state, {
+      labels: kept.map(([label]) => label),
+      values: kept.map(([, value]) => value),
+    });
+    expect(
+      debugStateProblems(scene, changed, { labelWidth }).join('\n')
+    ).toMatch(/axis "x" leaves out .* "00:00"/);
+  });
+
+  it('passes time-axis gridlines that cannot measure the plot', async () => {
+    const start = Date.UTC(2026, 10, 3);
+    const node: XyChartNode = {
+      type: 'xyChart',
+      data: {
+        columns: [
+          { id: 'time', label: 'time', type: 'date', role: 'dimension' },
+          { id: 'count', label: 'count', type: 'number', role: 'metric' },
+        ],
+        rows: [0, 1, 2, 3].map((hours) => [start + hours * 3_600_000, hours]),
+      },
+      layers: [
+        { kind: 'data', mark: 'line', x: 'time', y: [{ column: 'count' }] },
+      ],
+      axes: {
+        x: {
+          scale: 'temporal',
+          interval: 3_600_000,
+          domain: { kind: 'custom', min: start, max: start + 1_800_000 },
+        },
+      },
+    };
+    const scene = resolveChart(node, { scheme: 'light', size: SIZE });
+    const state = await debugStateOf(scene);
+    expect(state.axes!.x[0]!.gridlines.map(({ x }) => Math.round(x))).toEqual([
+      0,
+    ]);
+    expect(debugStateProblems(scene, state)).toEqual([]);
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    const moved = withX(state, {
+      gridlines: state.axes!.x[0]!.gridlines.map(({ y }) => ({ x: 100, y })),
+    });
+    expect(debugStateProblems(scene, moved).join('\n')).toMatch(
+      /axis "x" draws gridlines at \[100\]/
+    );
+  });
+
+  it('fails time-axis gridlines no band puts where they are drawn', async () => {
+    const scene = timeScenes[0]!.scene;
+    const state = await debugStateOf(scene);
+    const changed = withX(state, {
+      gridlines: state.axes!.x[0]!.gridlines.map(({ x, y }) => ({
+        x: x * 1.5 + 7,
+        y,
+      })),
+    });
+    expect(debugStateProblems(scene, changed).join('\n')).toMatch(
+      /axis "x" draws gridlines at/
     );
   });
 

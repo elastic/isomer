@@ -24,6 +24,7 @@ import {
   toNumber,
 } from './common';
 import { categoricalColor, resolveColor } from './theme';
+import { resolveTimeTicks } from './time_axis';
 import type {
   SceneAnnotation,
   SceneAxis,
@@ -43,6 +44,84 @@ type XScale = 'ordinal' | 'time' | 'linear';
 type Statistic = NonNullable<
   NonNullable<XyChartNode['legend']>['statistics']
 >[number];
+type XDomainConfig = NonNullable<
+  NonNullable<XyChartNode['axes']>['x']
+>['domain'];
+
+/** The largest epoch milliseconds a `Date` holds. */
+const MAX_DATE = 8.64e15;
+
+/**
+ * A time x axis's ticks, from the domain and bucket Elastic Charts computes
+ * from the drawn marks (`mergeXDomain`): the marks' extent or the custom
+ * domain; the stated interval unless it is wider than the marks' smallest
+ * spacing; and one bucket more where bars fill buckets, as `xy.tsx` turns on
+ * histogram mode. Absent when no mark has a time.
+ */
+const timeTicksOf = (
+  series: readonly XySeries[],
+  statedInterval: number | undefined,
+  {
+    domain,
+    locale,
+    timeZone,
+    maxWidth,
+  }: {
+    domain: XDomainConfig;
+    locale: string;
+    timeZone: string;
+    maxWidth: number | undefined;
+  }
+): Pick<SceneAxis, 'timeTicks'> => {
+  const xs = [
+    ...new Set(
+      series.flatMap(({ marks }) =>
+        marks.flatMap(({ x }) =>
+          typeof x === 'number' && Number.isFinite(x) ? [x] : []
+        )
+      )
+    ),
+  ].sort((a, b) => a - b);
+  if (xs.length === 0) {
+    return {};
+  }
+  const spacing = xs.reduce(
+    (smallest, x, index) =>
+      index === 0 ? smallest : Math.min(smallest, x - xs[index - 1]!),
+    Infinity
+  );
+  const computed = Number.isFinite(spacing) ? spacing : 1;
+  const interval =
+    statedInterval === undefined ||
+    statedInterval < 0 ||
+    (xs.length > 1 && statedInterval > computed)
+      ? computed
+      : statedInterval;
+  const custom =
+    domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
+  const min = custom?.min ?? xs[0]!;
+  const max = custom?.max ?? xs.at(-1)!;
+  // Rasters reach a decade or a bucket past the domain, which must stay a valid `Date`.
+  const reach = 2 * interval + 1e12;
+  if (min - reach < -MAX_DATE || max + reach > MAX_DATE) {
+    return {};
+  }
+  const bars = series.filter(({ mark }) => mark === 'bar');
+  const extend =
+    bars.length > 0 &&
+    bars.some(({ stack }) => stack !== undefined || bars.length <= 1);
+  return {
+    timeTicks: resolveTimeTicks({
+      min,
+      max,
+      interval,
+      extend,
+      locale,
+      timeZone,
+      ...(maxWidth === undefined ? {} : { maxWidth }),
+    }),
+  };
+};
 
 // Style for nodes that state none.
 const DEFAULTS = {
@@ -658,6 +737,16 @@ export const resolveXy = (
   };
 
   const xConfig = node.axes?.x;
+  const xTimeTicks =
+    xScale === 'time' && !horizontal
+      ? timeTicksOf(series, statedInterval, {
+          domain: xConfig?.domain,
+          locale: resolution.locale,
+          timeZone:
+            xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone,
+          maxWidth: options.size?.width,
+        })
+      : {};
   const xAxis: SceneAxis = {
     id: 'x',
     position: horizontal ? 'left' : 'bottom',
@@ -689,7 +778,11 @@ export const resolveXy = (
     ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
     showTicks: xConfig?.ticks ?? true,
     showGrid: xConfig?.grid ?? true,
-    labelRotation: ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+    // Lens's multi-layer time axis takes no `labelsOrientation`.
+    labelRotation: xTimeTicks.timeTicks
+      ? 0
+      : ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+    ...xTimeTicks,
   };
 
   const legendConfig = node.legend;
