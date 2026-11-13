@@ -158,6 +158,14 @@ export const TABLE_CHROME: Readonly<
   },
 };
 
+/**
+ * EUI's `isColorDark` (relative luminance at most 0.179) on a color's
+ * channels, its alpha ignored, as Kibana's legacy metric `needsLightText`
+ * reads a background; a fully transparent color is not dark.
+ */
+export const isColorDark = (color: SceneColor): boolean =>
+  !(color.length === 9 && color.slice(7) === '00') && luminance(color) <= 0.179;
+
 /** A table bar's fill when its column sets none: Lens's `DEFAULT_PROGRESS_BAR_COLOR`, `euiColorVis2`. */
 export const DEFAULT_TABLE_BAR_COLOR: SceneColor = CATEGORICAL_PALETTE[2]!;
 
@@ -275,3 +283,16 @@ export const mixLch = (
 
 /** The fill of a mosaic's outer layer, which its inner slices cover: Lens's transparent white. */
 export const TRANSPARENT: SceneColor = '#FFFFFF00';
+
+/**
+ * A heat map's colors when its node states no bands, lowest first: Lens's
+ * default `temperature` palette at its default five steps, EUI's
+ * `euiPaletteForTemperature(5)`, the same in both schemes.
+ */
+export const HEATMAP_PALETTE: readonly SceneColor[] = [
+  '#61A2FF',
+  '#CFE1FF',
+  '#F6F9FC',
+  '#FFD4CF',
+  '#F6726A',
+];

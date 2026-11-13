@@ -223,6 +223,80 @@ const gestures = (
     );
     return [...slices, ...legend];
   }
+  if (scene.kind === 'heatmap') {
+    const offersCells = scene.interactions.select.includes('cell');
+    const clicks = scene.cells.map((cell, index) => ({
+      gesture: `click ${cell.description}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            {
+              datum: {
+                x: cell.x,
+                y: cell.y,
+                value: cell.value,
+                originalIndex: index,
+              },
+              value: cell.value,
+              formatted: cell.valueText,
+            },
+            { specId: 'heatmap', key: 'spec{heatmap}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersCells && cell.selection
+          ? [selectEvent(NODE, cell.selection)]
+          : [],
+    }));
+    const xs = scene.x.categories
+      .map(({ x }) => x)
+      .filter((x): x is number => typeof x === 'number');
+    const brush =
+      scene.x.scale === 'time' && xs.length > 1
+        ? [
+            {
+              gesture: 'brush across the time axis',
+              raise: () => {
+                const { events, env } = listen();
+                installed(scene, env).callback('onBrushEnd')?.({
+                  x: [xs[0]!, xs.at(-1)! + scene.x.interval!],
+                  y: [],
+                  cells: [],
+                });
+                return events;
+              },
+              expected: [
+                brushEvent(scene, NODE, [
+                  xs[0]!,
+                  xs.at(-1)! + scene.x.interval!,
+                ]),
+              ].flatMap((event) => (event ? [event] : [])),
+            },
+          ]
+        : [];
+    return [...clicks, ...brush];
+  }
+  if (scene.kind === 'tagCloud') {
+    const offersTags = scene.interactions.select.includes('tag');
+    return scene.words.map((word, index) => ({
+      gesture: `click ${word.text}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            { text: word.text, weight: word.weight, color: word.color, index },
+            { specId: 'tagCloud', key: 'tagCloud' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersTags && word.selection ? [selectEvent(NODE, word.selection)] : [],
+    }));
+  }
   if (scene.kind !== 'xy') {
     return [];
   }
@@ -360,7 +434,14 @@ describe('event parity over every example', () => {
       interactive.flatMap(({ scene }) => scene.interactions.select)
     );
     expect([...offered].sort()).toEqual(
-      expect.arrayContaining(['category', 'datum', 'legend', 'slice', 'tile'])
+      expect.arrayContaining([
+        'category',
+        'cell',
+        'datum',
+        'legend',
+        'slice',
+        'tile',
+      ])
     );
     expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
       true

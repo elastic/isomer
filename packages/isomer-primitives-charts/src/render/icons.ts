@@ -28,6 +28,11 @@ export const metricIcon = chartsIcon(
   `<path d="M4 4.5h4" stroke="${paint.muted}"/><rect x="4" y="6.5" width="8" height="3" rx="1" fill="${paint.accent}"/><polyline points="4 12 6.5 11 9 11.5 12 10" stroke="${paint.fg}"/>`
 );
 
+/** A large value, centered, over its label. */
+export const legacyMetricIcon = chartsIcon(
+  `<rect x="4" y="4.5" width="8" height="4" rx="1" fill="${paint.accent}"/><path d="M5.5 11.5h5" stroke="${paint.fg}"/>`
+);
+
 /** Axes and a rising line through its points. */
 export const xyChartIcon = chartsIcon(
   `<polyline points="3 3 3 13 13 13" stroke="${paint.fg}"/><polyline points="5 10.5 7.5 7.5 9.5 9 12.5 4.5" stroke="${paint.accent}"/>`
@@ -36,6 +41,21 @@ export const xyChartIcon = chartsIcon(
 /** A pie with one slice pulled out. */
 export const partitionChartIcon = chartsIcon(
   `<path d="M7.5 3.5a5 5 0 1 0 5 5h-5z" fill="${paint.muted}"/><path d="M9 2v5h5a5 5 0 0 0-5-5z" fill="${paint.accent}"/><path d="M7.5 3.5a5 5 0 1 0 5 5" stroke="${paint.fg}"/>`
+);
+
+/** A dial with a needle. */
+export const gaugeIcon = chartsIcon(
+  `<path d="M3 11.5a5 5 0 0 1 10 0" stroke="${paint.muted}"/><path d="M3 11.5a5 5 0 0 1 3.5-4.77" stroke="${paint.accent}"/><path d="M8 11.5l2.5-3.5" stroke="${paint.fg}"/>`
+);
+
+/** Words of three sizes. */
+export const tagCloudIcon = chartsIcon(
+  `<path d="M3 6h5" stroke="${paint.accent}" stroke-width="2.5"/><path d="M9.5 6h3.5M3 9.5h3M7.5 9.5h5.5" stroke="${paint.fg}"/><path d="M4 12.5h3M8.5 12.5h3" stroke="${paint.muted}"/>`
+);
+
+/** A grid of cells in three shades. */
+export const heatmapIcon = chartsIcon(
+  `<rect x="3" y="3" width="3" height="3" fill="${paint.accent}"/><rect x="6.5" y="3" width="3" height="3" fill="${paint.muted}"/><rect x="10" y="3" width="3" height="3" fill="${paint.fg}"/><rect x="3" y="6.5" width="3" height="3" fill="${paint.muted}"/><rect x="6.5" y="6.5" width="3" height="3" fill="${paint.fg}"/><rect x="10" y="6.5" width="3" height="3" fill="${paint.accent}"/><rect x="3" y="10" width="3" height="3" fill="${paint.fg}"/><rect x="6.5" y="10" width="3" height="3" fill="${paint.accent}"/><rect x="10" y="10" width="3" height="3" fill="${paint.muted}"/>`
 );
 
 /** A shaded header row above rules. */

@@ -10,17 +10,29 @@ import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import type { Scene, TableScene } from '../scene/types';
 import {
   dataTableCatalog,
+  gaugeCatalog,
+  heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   xyChartCatalog,
 } from '../schema/catalog';
 import { type DataTableNode, dataTableSchema } from '../schema/data_table';
 import { dataTableExamples } from '../schema/examples/data_table';
+import { gaugeExamples } from '../schema/examples/gauge';
+import { heatmapExamples } from '../schema/examples/heatmap';
+import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
+import { tagCloudExamples } from '../schema/examples/tag_cloud';
 import { xyChartExamples } from '../schema/examples/xy_chart';
+import { gaugeSchema } from '../schema/gauge';
+import { heatmapSchema } from '../schema/heatmap';
+import { legacyMetricSchema } from '../schema/legacy_metric';
 import { metricSchema } from '../schema/metric';
 import { partitionChartSchema } from '../schema/partition_chart';
+import { tagCloudSchema } from '../schema/tag_cloud';
 import { xyChartSchema } from '../schema/xy_chart';
 import { sceneToMarkdown, sceneToText } from '../text/scene_text';
 import { tableSceneToSlack } from '../text/slack_table';
@@ -29,8 +41,12 @@ import type { ChartNode } from './context';
 import { definePrimitive } from './define';
 import {
   dataTableIcon,
+  gaugeIcon,
+  heatmapIcon,
+  legacyMetricIcon,
   metricIcon,
   partitionChartIcon,
+  tagCloudIcon,
   xyChartIcon,
 } from './icons';
 import { createSceneCache } from './scene_cache';
@@ -100,6 +116,16 @@ export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
       renderers: chartRenderers(config),
     }),
     definePrimitive({
+      type: 'legacyMetric',
+      icon: legacyMetricIcon,
+      schema: legacyMetricSchema,
+      catalog: legacyMetricCatalog,
+      examples: legacyMetricExamples,
+      sanitize: sanitizeLink(config),
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
       type: 'dataTable',
       icon: dataTableIcon,
       schema: dataTableSchema,
@@ -137,6 +163,36 @@ export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
       schema: partitionChartSchema,
       catalog: partitionChartCatalog,
       examples: partitionChartExamples,
+      sanitize: sanitizeLink(config),
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'heatmap',
+      icon: heatmapIcon,
+      schema: heatmapSchema,
+      catalog: heatmapCatalog,
+      examples: heatmapExamples,
+      sanitize: sanitizeLink(config),
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'gauge',
+      icon: gaugeIcon,
+      schema: gaugeSchema,
+      catalog: gaugeCatalog,
+      examples: gaugeExamples,
+      sanitize: sanitizeLink(config),
+      metrics: { snapshotHeight: snapshotHeight(config) },
+      renderers: chartRenderers(config),
+    }),
+    definePrimitive({
+      type: 'tagCloud',
+      icon: tagCloudIcon,
+      schema: tagCloudSchema,
+      catalog: tagCloudCatalog,
+      examples: tagCloudExamples,
       sanitize: sanitizeLink(config),
       metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),

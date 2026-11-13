@@ -8,9 +8,13 @@
 export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
 export {
   dataTableCatalog,
+  gaugeCatalog,
   gridCatalog,
+  heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './catalog';
@@ -51,21 +55,27 @@ export {
   INTERACTION_RULES,
   SELECT_TARGETS,
   brushingInteractionsSchemaFor,
+  brushInteractionsSchemaFor,
   brushSchema,
   chartEventSchema,
   checkInteractions,
   emphasisSchema,
   interactionsCoreShape,
   interactionsSchemaFor,
+  linkSchema,
   readChartEvent,
   selectSchema,
   toActionEvent,
 } from './events';
 export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
+export { gaugeExamples } from './examples/gauge';
 export { gridExamples } from './examples/grid';
+export { heatmapExamples } from './examples/heatmap';
+export { legacyMetricExamples } from './examples/legacy_metric';
 export { metricExamples } from './examples/metric';
 export { partitionChartExamples } from './examples/partition_chart';
+export { tagCloudExamples } from './examples/tag_cloud';
 export { unsupportedExamples } from './examples/unsupported';
 export { xyChartExamples } from './examples/xy_chart';
 export {
@@ -75,6 +85,13 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './format';
+export {
+  type GaugeNode,
+  type GaugeShape,
+  GAUGE_RULES,
+  GAUGE_SHAPES,
+  gaugeSchema,
+} from './gauge';
 export {
   type GridNode,
   type GridPanel,
@@ -87,7 +104,14 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './grid';
+export { type HeatmapNode, HEATMAP_RULES, heatmapSchema } from './heatmap';
 export { glyphSchema } from './icons';
+export {
+  type LegacyMetricNode,
+  LEGACY_METRIC_RULES,
+  LEGACY_METRIC_SIZES,
+  legacyMetricSchema,
+} from './legacy_metric';
 export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
 export {
   type PartitionChartNode,
@@ -105,5 +129,11 @@ export {
   provenanceSchema,
 } from './provenance';
 export { type ColumnReference, columnRefSchema } from './references';
+export {
+  type TagCloudNode,
+  TAG_CLOUD_KEY_RULE,
+  TAG_CLOUD_RULES,
+  tagCloudSchema,
+} from './tag_cloud';
 export { type UnsupportedNode, unsupportedSchema } from './unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';

@@ -13,11 +13,13 @@
 import {
   brushEvent,
   type ChartEvent,
+  type HeatmapScene,
   type MetricScene,
   type PartitionNode,
   type PartitionScene,
   type SceneRenderEnv,
   selectEvent,
+  type TagCloudScene,
   type XyCategory,
   type XyMark,
   type XyScene,
@@ -249,4 +251,74 @@ export const partitionLegendSelect = (
   if (selection && listening(env)) {
     raise(env, selectEvent(env.nodeId, selection, negate));
   }
+};
+
+/** The handlers this engine passes Elastic Charts for a heatmap Scene; empty when the chart offers nothing. */
+export const heatmapHandlers = (scene: HeatmapScene, env: SceneRenderEnv) => {
+  if (!listening(env)) {
+    return {};
+  }
+  const { select, brush } = scene.interactions;
+  return {
+    ...((select as readonly string[]).includes('cell')
+      ? {
+          /** The first cell Elastic Charts reports: its datum's index is the Scene cell's. */
+          onElementClick: (elements: readonly unknown[]) => {
+            const [first] = elements;
+            const [cell]: readonly unknown[] = Array.isArray(first)
+              ? (first as readonly unknown[])
+              : [];
+            const index = (
+              cell as { datum?: { originalIndex?: unknown } } | undefined
+            )?.datum?.originalIndex;
+            const selection =
+              typeof index === 'number'
+                ? scene.cells[index]?.selection
+                : undefined;
+            if (selection) {
+              raise(env, selectEvent(env.nodeId, selection));
+            }
+          },
+        }
+      : {}),
+    ...(brush && scene.x.scale === 'time'
+      ? {
+          /** A drag across the time axis: from the first bucket's start to the last's end. */
+          onBrushEnd: (area: { x?: unknown }) => {
+            const xs: readonly unknown[] = Array.isArray(area.x)
+              ? (area.x as readonly unknown[])
+              : [];
+            const [from, to] = [xs[0], xs.at(-1)];
+            if (typeof from === 'number' && typeof to === 'number') {
+              raise(env, brushEvent(scene, env.nodeId, [from, to]));
+            }
+          },
+        }
+      : {}),
+  };
+};
+
+/** The handlers this engine passes Elastic Charts for a tag cloud Scene; empty when the chart offers nothing. */
+export const tagCloudHandlers = (scene: TagCloudScene, env: SceneRenderEnv) => {
+  if (
+    !listening(env) ||
+    !(scene.interactions.select as readonly string[]).includes('tag')
+  ) {
+    return {};
+  }
+  return {
+    /** The word Elastic Charts reports: its datum names the Scene word. */
+    onElementClick: (elements: readonly unknown[]) => {
+      const [first] = elements;
+      const [datum]: readonly unknown[] = Array.isArray(first)
+        ? (first as readonly unknown[])
+        : [];
+      const index = (datum as { index?: unknown } | undefined)?.index;
+      const selection =
+        typeof index === 'number' ? scene.words[index]?.selection : undefined;
+      if (selection) {
+        raise(env, selectEvent(env.nodeId, selection));
+      }
+    },
+  };
 };

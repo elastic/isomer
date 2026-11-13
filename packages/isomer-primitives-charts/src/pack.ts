@@ -9,6 +9,7 @@ import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
 import type { ReactSceneRenderer, SceneResolver } from './render/context';
 import { gridPrimitive } from './render/grid';
+import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { defineChartPrimitives } from './render/primitives';
 import { chartsDistillery, chartsStyleAdapter } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
@@ -46,13 +47,30 @@ export const createChartsPack = ({
 }: ChartsPackOptions = {}): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
-    slackAssetTypes: ['metric', 'xyChart', 'partitionChart'],
+    slackAssetTypes: [
+      'metric',
+      'legacyMetric',
+      'xyChart',
+      'partitionChart',
+      'heatmap',
+      'gauge',
+      'tagCloud',
+    ],
     inputBudget: CHARTS_INPUT_BUDGET,
     authoring: {
       groups: [
         {
           title: 'Charts',
-          types: ['metric', 'xyChart', 'partitionChart', 'dataTable'],
+          types: [
+            'metric',
+            'legacyMetric',
+            'xyChart',
+            'partitionChart',
+            'heatmap',
+            'gauge',
+            'tagCloud',
+            'dataTable',
+          ],
         },
         { title: 'Dashboards', types: ['grid', 'unsupported'] },
       ],
@@ -63,6 +81,7 @@ export const createChartsPack = ({
         sceneRenderers: [
           ...sceneRenderers,
           tableSceneRenderer,
+          legacyMetricSceneRenderer,
           summarySceneRenderer,
         ],
       }),

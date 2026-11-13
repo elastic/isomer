@@ -167,6 +167,66 @@ export const toNumber = (cell: Cell | undefined): number | undefined => {
     : undefined;
 };
 
+/** The value `percent` of the way from `low` to `high`, even where their span overflows. */
+export const percentAlong = (
+  low: number,
+  high: number,
+  percent: number
+): number => {
+  const exact = low + ((high - low) * percent) / 100;
+  if (Number.isFinite(exact)) {
+    return exact;
+  }
+  const share = percent / 100;
+  return low * (1 - share) + high * share;
+};
+
+/** Where `value` lies from `low` (0) to `high` (1), even where their span overflows. */
+export const fractionAlong = (
+  low: number,
+  high: number,
+  value: number
+): number => {
+  const span = high - low;
+  return Number.isFinite(span)
+    ? (value - low) / span
+    : (value / 2 - low / 2) / (high / 2 - low / 2);
+};
+
+/** The least double above `value`. */
+export const nextUp = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  if (value === 0) {
+    return Number.MIN_VALUE;
+  }
+  const bits = new BigInt64Array(new Float64Array([value]).buffer);
+  bits[0] = bits[0]! + (value > 0 ? 1n : -1n);
+  return new Float64Array(bits.buffer)[0]!;
+};
+
+/** The height of boxes wrapped into rows `width` wide, as a centered flex row wraps them. */
+export const wrappedHeight = (
+  boxes: readonly SceneSize[],
+  width: number
+): number => {
+  let height = 0;
+  let rowWidth = 0;
+  let rowHeight = 0;
+  for (const box of boxes) {
+    const fitted = Math.min(box.width, width);
+    if (rowWidth > 0 && rowWidth + fitted > width) {
+      height += rowHeight;
+      rowWidth = 0;
+      rowHeight = 0;
+    }
+    rowWidth += fitted;
+    rowHeight = Math.max(rowHeight, box.height);
+  }
+  return Math.ceil(height + rowHeight);
+};
+
 /** The fields every Scene kind shares. */
 export const sceneBase = (
   resolution: Resolution,

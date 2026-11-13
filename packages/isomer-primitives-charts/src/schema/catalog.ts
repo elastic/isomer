@@ -8,8 +8,12 @@
 import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 
 import { dataTableTopHosts } from './examples/data_table';
+import { gaugeSemiCircle } from './examples/gauge';
+import { heatmapHourly } from './examples/heatmap';
+import { legacyMetricSingleValue } from './examples/legacy_metric';
 import { metricSingleValue } from './examples/metric';
 import { partitionPie } from './examples/partition_chart';
+import { tagCloudServices } from './examples/tag_cloud';
 import { unsupportedVega } from './examples/unsupported';
 import { xyTimeSeries } from './examples/xy_chart';
 
@@ -27,8 +31,26 @@ export const metricCatalog: PrimitiveCatalogEntry = {
   avoidWhen: [
     'The reader needs to see how values change over time or compare many categories: use `xyChart`.',
     'There are more categories than fit as tiles: use `xyChart` bars.',
+    'A Lens legacy metric or an aggregation-based metric visualization is shown: use `legacyMetric`.',
   ],
   example: metricSingleValue,
+};
+
+/** What an agent reads to choose `legacyMetric`: purpose, when to use it, and an example. */
+export const legacyMetricCatalog: PrimitiveCatalogEntry = {
+  type: 'legacyMetric',
+  name: 'Legacy metric',
+  purpose:
+    'Show one or more large values with a label above or below each, optionally colored by value range, as Lens’s legacy metric draws them.',
+  useWhen: [
+    'A Lens legacy metric or an aggregation-based metric visualization is shown.',
+    'A few plain values are wanted large, each with its label, and no tile frame.',
+  ],
+  avoidWhen: [
+    'A value needs a comparison, progress bar, trend or icon: use `metric`.',
+    'Values are compared across many categories: use `xyChart` bars or `dataTable`.',
+  ],
+  example: legacyMetricSingleValue,
 };
 
 /** What an agent reads to choose `xyChart`: purpose, when to use it, and an example. */
@@ -121,4 +143,60 @@ export const partitionChartCatalog: PrimitiveCatalogEntry = {
     'There is one number to report: use `metric`.',
   ],
   example: partitionPie,
+};
+
+/** What an agent reads to choose `heatmap`: purpose, when to use it, and an example. */
+export const heatmapCatalog: PrimitiveCatalogEntry = {
+  type: 'heatmap',
+  name: 'Heat map',
+  purpose:
+    'Show how a value varies across two dimensions, such as time and host, as a grid of cells colored by value bands.',
+  useWhen: [
+    'The point is where a value is high or low across two categories, or across time and a category.',
+    'There are too many series for lines to stay readable.',
+    'A Lens heat map is shown.',
+  ],
+  avoidWhen: [
+    'Exact values matter more than the pattern: use `dataTable`.',
+    'One dimension only, compared by size: use `xyChart` bars.',
+    'Shares of a total: use `partitionChart`.',
+  ],
+  example: heatmapHourly,
+};
+
+/** What an agent reads to choose `gauge`: purpose, when to use it, and an example. */
+export const gaugeCatalog: PrimitiveCatalogEntry = {
+  type: 'gauge',
+  name: 'Gauge',
+  purpose:
+    'Show one value against a scale from a minimum to a maximum, as a bullet or a dial, with colored ranges and an optional goal.',
+  useWhen: [
+    'The point is where one value sits within known bounds, such as utilization against capacity.',
+    'Ranges of the scale mean something, such as healthy, warning and critical.',
+    'A Lens gauge is shown.',
+  ],
+  avoidWhen: [
+    'The value has no meaningful bounds: use `metric`.',
+    'Several values are compared: use `xyChart` bars or `metric` tiles.',
+    'The value changes over time: use `xyChart`.',
+  ],
+  example: gaugeSemiCircle,
+};
+
+/** What an agent reads to choose `tagCloud`: purpose, when to use it, and an example. */
+export const tagCloudCatalog: PrimitiveCatalogEntry = {
+  type: 'tagCloud',
+  name: 'Tag cloud',
+  purpose:
+    'Show which terms are most frequent or largest at a glance, as words sized by value.',
+  useWhen: [
+    'The point is which of many terms stand out, not their exact values.',
+    'A Lens tag cloud is shown.',
+  ],
+  avoidWhen: [
+    'Values are compared exactly, or ranked: use `xyChart` bars or `dataTable`.',
+    'Shares of a total: use `partitionChart`.',
+    'There are only a few terms: use `xyChart` bars.',
+  ],
+  example: tagCloudServices,
 };

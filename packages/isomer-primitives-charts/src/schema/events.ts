@@ -39,6 +39,7 @@ export const SELECT_TARGETS = [
   'slice',
   'mark',
   'region',
+  'tag',
 ] as const;
 
 /** What a selection lands on. Each chart states which it offers. */
@@ -51,7 +52,8 @@ export const INTERACTION_RULES = {
   emphasisRows: 'Emphasis rows are indexes into `data.rows`.',
 } as const;
 
-const linkSchema = z
+/** A static link a chart draws on every surface. */
+export const linkSchema = z
   .strictObject({ href: navigationHrefSchema, label: requiredString() })
   .describe(
     'A static link, such as "Open in Kibana", drawn on every surface including images and text.'
@@ -96,6 +98,23 @@ export const interactionsSchemaFor = <
   z
     .strictObject({
       select: selectSchema(targets),
+      sync: syncSchema.optional(),
+      link: linkSchema.optional(),
+    })
+    .describe(INTERACTIONS_DESCRIPTION);
+
+/** The `interactions` schema for a chart that brushes along `brush`, with no persisted view state. */
+export const brushInteractionsSchemaFor = <
+  const TTargets extends readonly [SelectTarget, ...SelectTarget[]],
+  TBrush extends z.ZodType,
+>(
+  targets: TTargets,
+  brush: TBrush
+) =>
+  z
+    .strictObject({
+      select: selectSchema(targets),
+      brush: brush.optional(),
       sync: syncSchema.optional(),
       link: linkSchema.optional(),
     })
@@ -150,6 +169,10 @@ interface InteractionsInput {
 
 interface InteractionCheckOptions {
   brushColumns?: readonly string[];
+  /** Reported for a brush on any other column, in place of `INTERACTION_RULES.brushColumn`. */
+  brushRule?: string;
+  /** The types a brush column takes. Absent means `date` and `number`. */
+  brushTypes?: readonly ('date' | 'number')[];
 }
 
 /** Checks emphasis rows and an `xyChart` brush against `data` and its x columns. */
@@ -167,19 +190,19 @@ export const checkInteractions = (
     references.push({
       path: ['interactions', 'brush', 'column'],
       id: brush.column,
-      types: ['date', 'number'],
+      types: options.brushTypes ?? ['date', 'number'],
     });
     if (options.brushColumns && !options.brushColumns.includes(brush.column)) {
       context.addIssue({
         code: 'custom',
         path: ['interactions', 'brush', 'column'],
-        message: INTERACTION_RULES.brushColumn,
+        message: options.brushRule ?? INTERACTION_RULES.brushColumn,
       });
     }
   }
   checkColumnReferences(node.data, references, context, {
     missing: COLUMN_REF_RULE,
-    type: INTERACTION_RULES.brushColumn,
+    type: options.brushRule ?? INTERACTION_RULES.brushColumn,
   });
   (node.emphasis ?? []).forEach(({ rows }, index) => {
     rows.forEach((row, rowIndex) => {
@@ -250,9 +273,9 @@ const selectEventSchema = z.discriminatedUnion('target', [
   z.strictObject({
     ...selectEventShape,
     target: z
-      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region'])
+      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region', 'tag'])
       .describe(
-        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, or a map `region`.'
+        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, a map `region`, or a word cloud `tag`.'
       ),
   }),
 ]);

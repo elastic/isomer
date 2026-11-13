@@ -20,6 +20,7 @@ import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from './pack';
 import type { ChartsRenderContext, ReactSceneRenderer } from './render/context';
+import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { summarySceneRenderer } from './render/summary_renderer';
 import { tableSceneRenderer } from './render/table';
 import { resolveChart } from './scene/resolve';
@@ -47,7 +48,11 @@ const recording = (renderer: ReactSceneRenderer): ReactSceneRenderer => ({
   },
 });
 
-const ownRenderers = [tableSceneRenderer, summarySceneRenderer];
+const ownRenderers = [
+  tableSceneRenderer,
+  legacyMetricSceneRenderer,
+  summarySceneRenderer,
+];
 const pack = createChartsPack({
   sceneRenderers: ownRenderers.map(recording),
   resolveScene: (node, options) => {
@@ -89,6 +94,35 @@ const notesOf = ({ interactions }: Scene) =>
 
 /** What each of the pack's renderers must draw of a Scene. A renderer without one fails the gate. */
 const contentChecks: Record<string, (drawing: Drawn) => void> = {
+  [legacyMetricSceneRenderer.id]: ({ scene, root }) => {
+    if (scene.kind !== 'legacyMetric') {
+      throw new Error(`the legacy metric renderer drew a ${scene.kind} Scene`);
+    }
+    expect(
+      root.querySelector('[role="group"]')?.getAttribute('aria-label')
+    ).toBe(
+      scene.description
+        ? `${scene.summary} ${scene.description}`
+        : scene.summary
+    );
+    expect(textOf(root.querySelector('[data-part="empty"]'))).toBe(
+      scene.empty?.text
+    );
+    expect(textsOf(root, '[data-part="value"]')).toEqual(
+      scene.tiles.map(({ value }) => value.text)
+    );
+    expect(textsOf(root, '[data-part="label"]')).toEqual(
+      scene.showLabels ? scene.tiles.map(({ label }) => label) : []
+    );
+    expect(textsOf(root, '[data-part="note"]')).toEqual(
+      scene.empty ? [] : notesOf(scene)
+    );
+    expect(
+      [...root.querySelectorAll('[data-part="tile"]')].map((tile) =>
+        tile.getAttribute('data-emphasis')
+      )
+    ).toEqual(scene.tiles.map(({ emphasis }) => emphasis ?? null));
+  },
   [summarySceneRenderer.id]: ({ scene, root }) => {
     expect(textsOf(root, 'p')).toEqual([
       scene.summary,

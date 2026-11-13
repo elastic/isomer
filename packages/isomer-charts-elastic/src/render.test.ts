@@ -16,7 +16,12 @@ import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act as testUtilsAct } from 'react-dom/test-utils';
-import { type CustomTooltip, type DebugState, Tooltip } from '@elastic/charts';
+import {
+  type CustomTooltip,
+  type DebugState,
+  Tooltip,
+  Wordcloud,
+} from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ChartEvent,
@@ -36,17 +41,28 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 import {
   chartEventExamples,
+  gaugeExamples,
+  heatmapExamples,
+  type HeatmapNode,
   metricExamples,
   partitionChartExamples,
+  tagCloudExamples,
   xyChartExamples,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { seriesOf } from './events';
+import {
+  gaugeColorBands,
+  gaugeTargetFormatter,
+  gaugeValueFormatter,
+} from './gauge';
+import { heatmapTooltip, heatmapValueFormatter } from './heatmap';
 import { partitionValueFormatter, slicesOf } from './partition';
 import { createElasticChartsRenderer } from './renderer';
 import { sceneSpecs } from './specs';
 import { elasticModule } from './styles';
+import { tagCloudData } from './tag_cloud';
 import { sceneTooltip } from './xy';
 
 const { handles: elastic, vars } = elasticModule;
@@ -960,16 +976,311 @@ describe('elastic-charts renderer: partition order and text', () => {
 });
 
 describe('elastic-charts renderer', () => {
-  it('draws metric, xy and partition in the browser', () => {
+  it('draws metric, xy, partition, heatmap, gauge and tagCloud in the browser', () => {
     expect(renderer.id).toBe('elastic-charts');
     expect(renderer.environments).toEqual(['browser']);
     expect(renderer.supports('metric')).toBe(true);
     expect(renderer.supports('xy')).toBe(true);
     expect(renderer.supports('partition')).toBe(true);
+    expect(renderer.supports('heatmap')).toBe(true);
+    expect(renderer.supports('gauge')).toBe(true);
+    expect(renderer.supports('tagCloud')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
+    expect(renderer.supports('legacyMetric')).toBe(false);
   });
 
   it('fills its container, so the chart shim gives it the size spec’s box', () => {
     expect(renderer.fluid).toBe(true);
+  });
+});
+
+describe('elastic-charts renderer: resolved heatmap examples', () => {
+  it.each(resolvedCases(heatmapExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'heatmap') {
+      throw new Error('expected a heatmap Scene');
+    }
+    const container = await draw(scene);
+    if (scene.empty) {
+      expect(container.textContent).toBe(scene.empty.text);
+      expect(container.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    const state = debugStateIn(container);
+    const cells = state.heatmap?.cells ?? [];
+    expect(cells).toHaveLength(scene.cells.length);
+    for (const { datum, formatted } of cells) {
+      const cell =
+        scene.cells[(datum as { originalIndex: number }).originalIndex]!;
+      expect(['', cell.valueText]).toContain(formatted);
+    }
+    expect(state.axes?.y?.[0]?.labels).toEqual(
+      scene.y.categories.map(({ label }) => label)
+    );
+    if (scene.legend.visible) {
+      expect(legendOf(container).map(({ label }) => label)).toEqual(
+        scene.bands.map(({ label }) => label)
+      );
+    }
+  });
+});
+
+describe('elastic-charts renderer: heatmap text', () => {
+  const scene = resolveChart(
+    heatmapExamples.find(({ name }) => name === 'Hourly by host')!.node,
+    { scheme: 'light', size: SIZE }
+  );
+  if (scene.kind !== 'heatmap') {
+    throw new Error('expected a heatmap Scene');
+  }
+
+  it('writes each cell its own value text, and none for a value two cells write differently', () => {
+    const format = heatmapValueFormatter(scene);
+    for (const { value, valueText } of scene.cells) {
+      expect(format(value)).toBe(valueText);
+    }
+    const [first] = scene.cells;
+    const clash = {
+      ...scene,
+      cells: [first!, { ...first!, y: 1, valueText: 'other' }],
+    };
+    expect(heatmapValueFormatter(clash)(first!.value)).toBe('');
+  });
+
+  it('shows a hovered cell’s positions and value, with its color', () => {
+    const cell = scene.cells[4]!;
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      React.createElement(heatmapTooltip(scene), {
+        values: [
+          {
+            datum: {
+              x: scene.x.categories[cell.x]!.x,
+              y: cell.y,
+              value: cell.value,
+            },
+          },
+        ],
+      } as never)
+    );
+    expect(
+      [...page.querySelectorAll('[role="row"]')].map((row) =>
+        [
+          ...row.querySelectorAll(
+            '[role="gridcell"]:not(.echTooltip__colorCell)'
+          ),
+        ].map((one) => one.textContent)
+      )
+    ).toEqual([
+      [scene.x.label, scene.x.categories[cell.x]!.label],
+      [scene.y.label, scene.y.categories[cell.y]!.label],
+      [scene.valueLabel, cell.valueText],
+    ]);
+    expect(page.innerHTML).toContain(cell.color);
+  });
+});
+
+describe('elastic-charts renderer: a heatmap time axis', () => {
+  const DAY = 86_400_000;
+  // Midnights in Toronto (UTC-5), as ES|QL buckets a day in that zone.
+  const start = Date.UTC(2026, 10, 3, 5);
+  const days = [0, 1, 2, 3].map((day) => start + day * DAY);
+  const node = (axes?: Record<string, unknown>) =>
+    ({
+      type: 'heatmap',
+      data: {
+        columns: [
+          {
+            id: 'day',
+            label: 'day',
+            type: 'date',
+            role: 'dimension',
+            format: { kind: 'date', day: 'numeric', timeZone: 'UTC' },
+          },
+          { id: 'os', label: 'os', type: 'string', role: 'dimension' },
+          { id: 'n', label: 'n', type: 'number', role: 'metric' },
+        ],
+        rows: days.flatMap((day, index) => [
+          [day, 'osx', index + 1],
+          [day, 'ios', index + 5],
+        ]),
+      },
+      x: { column: 'day', interval: DAY },
+      y: { column: 'os' },
+      value: { column: 'n' },
+      ...(axes ? { axes } : {}),
+    }) as HeatmapNode;
+  const drawn = async (scene: Scene) => {
+    const state = await debugState(scene);
+    return {
+      cells: state.heatmap?.cells.length,
+      columns: (state.axes?.x?.[0]?.values ?? []).length,
+    };
+  };
+
+  // A date format in UTC over buckets that start at Toronto's midnights laid
+  // the grid on UTC's, which held no cell.
+  it('draws every cell whose bucket starts off UTC midnight', async () => {
+    const scene = resolveChart(node(), {
+      scheme: 'light',
+      size: { width: 600, height: 300 },
+      timeZone: 'America/Toronto',
+    });
+    expect(scene.kind === 'heatmap' && scene.cells).toHaveLength(8);
+    expect(await drawn(scene)).toEqual({ cells: 8, columns: 4 });
+  });
+
+  it('spans a custom domain with empty columns, as Lens’s `xDomain`', async () => {
+    const scene = resolveChart(
+      node({
+        x: { domain: { kind: 'custom', min: start - 2 * DAY, max: days[3]! } },
+      }),
+      {
+        scheme: 'light',
+        size: { width: 600, height: 300 },
+        timeZone: 'America/Toronto',
+      }
+    );
+    expect(await drawn(scene)).toEqual({ cells: 8, columns: 6 });
+  });
+});
+
+describe('elastic-charts renderer: resolved gauge examples', () => {
+  it.each(resolvedCases(gaugeExamples))('$name', async ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'gauge') {
+      throw new Error('expected a gauge Scene');
+    }
+    const container = await draw(scene);
+    if (scene.empty) {
+      expect(container.textContent).toBe(scene.empty.text);
+      expect(container.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    const [drawn] = debugStateIn(container).bullet?.rows?.[0] ?? [];
+    expect(drawn).toMatchObject({
+      title: scene.labels.major,
+      value: scene.value,
+      domain: [scene.min, scene.max],
+    });
+    expect(drawn?.target).toBe(scene.goal?.value);
+    if (scene.ticks) {
+      expect(drawn?.ticks).toEqual(scene.ticks);
+    }
+  });
+});
+
+describe('elastic-charts renderer: gauge text and bands', () => {
+  const scene = resolveChart(gaugeExamples[0]!.node, {
+    scheme: 'light',
+    size: SIZE,
+  });
+  if (scene.kind !== 'gauge') {
+    throw new Error('expected a gauge Scene');
+  }
+
+  it('writes the value and goal as the Scene does, and any other value as the scale prints it', () => {
+    const value = gaugeValueFormatter(scene);
+    const target = gaugeTargetFormatter(scene);
+    expect(value(scene.value!)).toBe(scene.valueText);
+    expect(target(scene.goal!.value)).toBe(scene.goal!.text);
+    expect(value(50)).toBe(formatAxisValue(scene, scene, 50));
+    expect(target(50)).toBe(formatAxisValue(scene, scene, 50));
+  });
+
+  it('writes a goal the value reaches in its own text', () => {
+    const reached = {
+      ...scene,
+      goal: { value: scene.value!, text: 'Goal text' },
+    };
+    expect(gaugeTargetFormatter(reached)(scene.value!)).toBe('Goal text');
+    expect(gaugeValueFormatter(reached)(scene.value!)).toBe(scene.valueText);
+  });
+
+  it('passes each band’s edges and color, and a lone band as one color', () => {
+    expect(gaugeColorBands(scene)).toEqual({
+      steps: [0, 60, 85, 100],
+      colors: scene.bands.map(({ color }) => color),
+    });
+    const lone = { ...scene, bands: [scene.bands[0]!] };
+    expect(gaugeColorBands(lone)).toEqual([
+      scene.bands[0]!.color,
+      scene.bands[0]!.color,
+    ]);
+  });
+});
+
+describe('elastic-charts renderer: tag cloud', () => {
+  // jsdom has no canvas for the word cloud to measure words with, so this
+  // reads the markup; Chromium draws the words in the look gate.
+  it.each(resolvedCases(tagCloudExamples))('$name', ({ node, scheme }) => {
+    const scene = resolveChart(node, { scheme, size: SIZE });
+    if (scene.kind !== 'tagCloud') {
+      throw new Error('expected a tag cloud Scene');
+    }
+    const page = document.createElement('div');
+    page.innerHTML = renderToStaticMarkup(
+      renderer.render(scene, { environment: 'browser' }) as React.ReactElement
+    );
+    if (scene.empty) {
+      expect(page.textContent).toBe(scene.empty.text);
+      expect(page.querySelector('.echChart')).toBeNull();
+      return;
+    }
+    // The cloud above its label, at the Scene's size, the label in its text color.
+    const box = page.querySelector<HTMLElement>(
+      `.${elastic.tagCloud.readableName}`
+    )!;
+    expect(
+      [
+        vars.tagCloud.width,
+        vars.tagCloud.height,
+        vars.tagCloud.ink,
+        vars.tagCloud.fill,
+      ].map(({ propName }) => box.style.getPropertyValue(propName))
+    ).toEqual([
+      `${SIZE.width}px`,
+      `${SIZE.height}px`,
+      scene.chrome.text,
+      scene.chrome.background,
+    ]);
+    expect(
+      box.querySelector(`.${elastic.tagCloudCloud.readableName} .echChart`)
+    ).not.toBeNull();
+    const label = box.querySelector(`.${elastic.tagCloudLabel.readableName}`);
+    expect(label?.textContent ?? undefined).toBe(scene.label);
+  });
+
+  it('draws every word through one Wordcloud spec, at the Scene’s sizes and angles', () => {
+    const scene = resolveChart(tagCloudExamples[0]!.node, { scheme: 'light' });
+    const specs = sceneSpecs(scene, {
+      environment: 'browser',
+    }) as React.ReactElement<{ children: React.ReactNode }>;
+    const clouds = React.Children.toArray(specs.props.children).filter(
+      (child): child is React.ReactElement<Record<string, unknown>> =>
+        React.isValidElement(child) && child.type === Wordcloud
+    );
+    expect(clouds).toHaveLength(1);
+    expect(clouds[0]!.props).toMatchObject({
+      data: tagCloudData(scene),
+      minFontSize: scene.fontSize.min,
+      maxFontSize: scene.fontSize.max,
+      startAngle: scene.angles.start,
+      endAngle: scene.angles.end,
+      angleCount: scene.angles.count,
+      weightFn: scene.scale,
+    });
+  });
+
+  it('passes each word with its weight and color, naming it by index', () => {
+    const scene = resolveChart(tagCloudExamples[0]!.node, { scheme: 'dark' });
+    expect(tagCloudData(scene)).toEqual(
+      scene.words.map(({ text, weight, color }, index) => ({
+        text,
+        weight,
+        color,
+        index,
+      }))
+    );
   });
 });

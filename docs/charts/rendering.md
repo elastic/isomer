@@ -18,7 +18,7 @@ createIsomerRuntime({ packs: [chartsPack] });
 const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
 ```
 
-`chartsPack` registers `metric`, `xyChart`, `dataTable`, `partitionChart`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
+`chartsPack` registers `metric`, `legacyMetric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
 
 A `snapshot` or `html` render reads each chart node several times: its height estimate, then a pass that collects styles and the pass that draws. The pack resolves a node once for each set of options and draws each Scene once per renderer, and keeps neither past the task the render runs in. A `resolveScene` and a renderer are therefore pure: the same input gives the same output. A different `context.onEvent` draws afresh.
 
@@ -30,7 +30,7 @@ For each chart node, the shim tries renderers in this order and takes the first 
 
 1. `context.sceneRenderers`, the host's preference for this render;
 2. the pack's `sceneRenderers`, given to `createChartsPack`;
-3. the pack's own renderers: its table renderer for `table` Scenes (see [`dataTable`](data-table.md#surfaces)), then the fallback, which draws the Scene's summary sentence for every kind in a browser and on Node.
+3. the pack's own renderers: its table renderer for `table` Scenes (see [`dataTable`](data-table.md#surfaces)), its legacy metric renderer for `legacyMetric` Scenes (see [`legacyMetric`](legacy-metric.md#surfaces)), then the fallback, which draws the Scene's summary sentence for every kind in a browser and on Node.
 
 The `snapshot` surface takes no host context, so a host that wants a particular engine in images names it in the pack's `sceneRenderers`. A renderer is a plain value:
 
@@ -71,16 +71,20 @@ The shim puts the renderer's output in one `div` that carries the [node anchor](
 
 A chart in a grid panel draws in the box the panel leaves it, and a host can pass any chart a `size`. Without either, a chart takes its kind's size spec, as Lens's chart size specs do. Every length comes from `CHARTS_THEME.chart`:
 
-| Kind                                  | Spec                                                                                          |
-| ------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `xyChart` over time, drawn vertically | 16:9, at least 300 px tall                                                                    |
-| Any other `xyChart`                   | 16:9. Lens fills its container instead; outside a sized container there is nothing to fill    |
-| `metric` with one tile                | 300:160, at most 300 px wide                                                                  |
-| `metric` with several tiles           | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column |
-| `partitionChart`                      | 16:9. Lens fills its container instead, as for an `xyChart`                                   |
-| `dataTable`                           | None: the table is its rows tall                                                              |
+| Kind                                  | Spec                                                                                                                                                                                                   |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `xyChart` over time, drawn vertically | 16:9, at least 300 px tall                                                                                                                                                                             |
+| Any other `xyChart`                   | 16:9. Lens fills its container instead; outside a sized container there is nothing to fill                                                                                                             |
+| `metric` with one tile                | 300:160, at most 300 px wide                                                                                                                                                                           |
+| `metric` with several tiles           | One square tile side per tile, in the tile grid's columns and rows, at most 200 px per column                                                                                                          |
+| `partitionChart`                      | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
+| `heatmap`                             | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
+| `gauge`                               | Lens's spec for its shape, at its largest box: 3:1 up to 600 px wide for a horizontal bullet, 2:3 up to 400 px for a vertical one, 2:1.25, 1.1:1 and 1:1 up to 600 px for a semicircle, arc and circle |
+| `tagCloud`                            | 16:9. Lens fills its container instead, as for an `xyChart`                                                                                                                                            |
+| `legacyMetric`                        | 16:9, at least as tall as its tiles' estimated boxes wrapped into rows at the chart's width. Lens fills its container instead, as for an `xyChart`                                                     |
+| `dataTable`                           | None: the table is its rows tall                                                                                                                                                                       |
 
-In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart` and `partitionChart` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
+In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` and `legacyMetric` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
 ## Styling
 
@@ -100,14 +104,14 @@ Requests over time: Count of records by @timestamp per hour, from 98 to 210.
 01:00 | 98
 ```
 
-On Slack, `metric`, `xyChart` and `partitionChart` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
+On Slack, `metric`, `legacyMetric`, `xyChart`, `partitionChart`, `heatmap`, `gauge` and `tagCloud` are the pack's `slackAssetTypes`. With `collectAssets`, each chart becomes an `image` block and an upload request for a `snapshot` render of the node, with its text as the alt text, cut to Slack's limit. Without it, a chart is its Markdown converted to Block Kit. A `dataTable` is not an asset type: it is always a native `table` block. A `grid` keeps its nested charts' pictures: its title is a header, each section a container, and each panel title a header above its node.
 
 ### Parity gates
 
 Two gates hold the pack to its Scenes over every example, nested in a `grid` or not. They record each Scene where the pack resolves and draws it, so a new example or chart primitive is covered without changing them.
 
 - **Surface parity** (`src/surface_parity.test.ts`): on each surface, every chart node of the parsed composition the surface shows, nested in a grid or not but not in a collapsed section or left out by its `surfaces` hint, reaches a Scene or goes as a picture once per time it occurs, as many times as the surface reaches a lone chart of its type, so a surface that drops a chart, even one repeated elsewhere, fails rather than shrinking what is checked. Text writes each Scene's summary, description and notes in order, its table as the rows above, and its link. Markdown, read back with a GFM parser, holds the same sentences, the table as a GFM table cell for cell, and the link. Slack without pictures holds the sentences and a native table of the Scene's strings, in the order the chart shows them and within Slack's caps, and the link. With pictures, each asset type is an `image` whose alt text is the node's text, cut to Slack's limit, and every other chart is text as without pictures.
-- **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, and the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes.
+- **Renderer parity** (`src/renderer_parity.test.ts`): the examples resolve every Scene kind, and the fallback draws each Scene's summary, description and notes, the table renderer its title, description, column labels, the first page's rows in the starting order cell for cell, its footer and notes, and the legacy metric renderer its summary as its label, each tile's value and, when shown, label in tile order, or its empty text.
 
 ## Testing a static renderer
 
@@ -115,7 +119,7 @@ Two gates hold the pack to its Scenes over every example, nested in a `grid` or 
 
 - `drawExamples(renderers, environment?)` draws every example of the pack with `renderers` first, in both schemes, through the `react` surface, nested charts included, and returns each drawing (`DrawnScene`: the example, scheme, Scene and markup), every Scene the pack resolved, and the examples.
 - `coverageProblems(drawn, supports)` lists every Scene of a kind the renderer supports that an example did not draw, and every supported kind with no content check.
-- `drawingProblems(drawing, reading)` lists where a drawing differs from its Scene: its box, accessible name and description (`sceneDescription`), background, and what its kind draws: an xy chart's axis titles and series colors; a metric's tile titles, subtitles, values and secondary text; a partition's slice colors, legend items and values, no word that is none of its slices' or legend's, or an empty chart's note alone. Text may be cut with an ellipsis (`textDrawn`).
+- `drawingProblems(drawing, reading)` lists where a drawing differs from its Scene: its box, accessible name and description (`sceneDescription`), background, and what its kind draws: an xy chart's axis titles and series colors; a metric's tile titles, subtitles, values and secondary text; a partition's slice colors, legend items and values, no word that is none of its slices' or legend's, or an empty chart's note alone; a heatmap's axis titles, cell colors and legend bands, or an empty chart's note alone. Text may be cut with an ellipsis (`textDrawn`).
 
 Each engine reads its own output into a `DrawingReading` (its size, name, description, background, the strings drawn and the colors painted), with `unescapeMarkup` and `rgbOf` to help. Read what the markup draws wherever it can: an engine that draws into bitmaps can only report what its engine says it drew, which is weaker evidence than text and paint in the markup. Ticks are each engine's to choose, so these checks leave them to the engine's own.
 

@@ -36,9 +36,13 @@ describe('contract examples', () => {
     expect(new Set(cases.map(({ type }) => type))).toEqual(
       new Set([
         'metric',
+        'legacyMetric',
         'xyChart',
         'dataTable',
         'partitionChart',
+        'heatmap',
+        'gauge',
+        'tagCloud',
         'grid',
         'unsupported',
       ])
@@ -75,9 +79,13 @@ describe('JSON Schema projection', () => {
 
   it.each([
     'metric',
+    'legacyMetric',
     'xyChart',
     'dataTable',
     'partitionChart',
+    'heatmap',
+    'gauge',
+    'tagCloud',
     'grid',
     'unsupported',
   ])('projects %s', (type) => {

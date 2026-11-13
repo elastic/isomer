@@ -10,7 +10,12 @@
 
 import type { ChartBrushEvent, ChartSelectEvent } from '../schema/events';
 
-import type { SceneSelection, XyCategory, XyScene } from './types';
+import type {
+  HeatmapCategory,
+  HeatmapScene,
+  SceneSelection,
+  XyScene,
+} from './types';
 
 /** The `select` event for a part of the Scene the reader selected. */
 export const selectEvent = (
@@ -48,10 +53,10 @@ export const selectEvent = (
 };
 
 const nearest = (
-  categories: readonly XyCategory[],
+  categories: readonly HeatmapCategory[],
   at: number
-): XyCategory | undefined => {
-  let best: XyCategory | undefined;
+): HeatmapCategory | undefined => {
+  let best: HeatmapCategory | undefined;
   for (const category of categories) {
     if (typeof category.x !== 'number') {
       continue;
@@ -69,10 +74,11 @@ const nearest = (
 /**
  * The `brush` event for a range along the Scene's brush column, or `undefined`
  * when the node offers no brush. The description names each end by the x
- * position nearest it, as the x axis formats it.
+ * position nearest it, as the x axis formats it: an xy Scene's `categories`,
+ * or a heat map's `x.categories`.
  */
 export const brushEvent = (
-  scene: XyScene,
+  scene: XyScene | HeatmapScene,
   node: string,
   range: readonly [number, number]
 ): ChartBrushEvent | undefined => {
@@ -85,7 +91,9 @@ export const brushEvent = (
   const label =
     scene.table.columns.find(({ id }) => id === brush.column)?.label ??
     brush.column;
-  const ends = [nearest(scene.categories, from), nearest(scene.categories, to)];
+  const categories =
+    scene.kind === 'heatmap' ? scene.x.categories : scene.categories;
+  const ends = [nearest(categories, from), nearest(categories, to)];
   const description =
     ends[0] && ends[1]
       ? `${label}: ${ends[0].label} to ${ends[1].label}`

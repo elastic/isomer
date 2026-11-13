@@ -9,8 +9,9 @@ import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
 import type { ReactSceneRenderer } from '../render/context';
-import type { MetricScene, Scene, XyScene } from '../scene/types';
+import type { HeatmapScene, MetricScene, Scene, XyScene } from '../scene/types';
 import {
+  CHECKED_KINDS,
   coverageProblems,
   drawExamples,
   drawingProblems,
@@ -38,6 +39,15 @@ const drawnParts = (scene: Scene): unknown[] => {
       return scene.empty
         ? [scene.empty.text]
         : [scene.nodes, scene.legend.visible ? scene.legend.items : []];
+    case 'heatmap':
+      return scene.empty
+        ? [scene.empty.text]
+        : [
+            scene.x.title ?? [],
+            scene.y.title ?? [],
+            scene.cells.map(({ color }) => color),
+            scene.legend.visible ? scene.bands : [],
+          ];
     default:
       return [];
   }
@@ -79,7 +89,7 @@ const fake: ReactSceneRenderer = {
   id: 'fake',
   environments: ['node'],
   sized: true,
-  supports: (kind) => kind !== 'table',
+  supports: (kind) => CHECKED_KINDS.includes(kind),
   render: (scene) => {
     const { texts, colors } = leaves(drawnParts(scene));
     return createElement(
@@ -136,7 +146,7 @@ describe('the static renderer checks', () => {
       []
     );
     expect(new Set(drawn.map(({ scene }) => scene.kind))).toEqual(
-      new Set(['xy', 'metric', 'partition'])
+      new Set(['xy', 'metric', 'partition', 'heatmap'])
     );
     for (const drawing of drawn) {
       expect(drawingProblems(drawing, read(drawing)), drawing.example).toEqual(
@@ -204,6 +214,24 @@ describe('the static renderer checks', () => {
         markup.replace('</figure>', '<span>Bogus</span></figure>')
       )
     ).toContain(`"Bogus" is drawn but is no slice's or legend item's text`);
+  });
+
+  it('fail a heatmap drawing with a cell color or a legend band missing', () => {
+    const drawing = drawn.find(
+      ({ scene }) =>
+        scene.kind === 'heatmap' && !scene.empty && scene.legend.visible
+    )!;
+    const { cells, bands } = drawing.scene as HeatmapScene;
+    const { color } = cells[0]!;
+    const { label } = bands[0]!;
+    expect(
+      mutated(drawing, (markup) =>
+        markup.replaceAll(`data-color="${color}"`, 'data-color="#123456"')
+      )
+    ).toContain(`cell ${color} is not painted`);
+    expect(
+      mutated(drawing, (markup) => markup.replace(`<span>${label}</span>`, ''))
+    ).toContain(`legend band "${label}" is not drawn`);
   });
 
   it('fail coverage when a supported Scene goes undrawn', () => {

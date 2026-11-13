@@ -9,8 +9,12 @@ import { describe, expect, it } from 'vitest';
 
 import { dataTableExamples } from '../schema/examples/data_table';
 import { chartEventExamples } from '../schema/examples/events';
+import { gaugeExamples } from '../schema/examples/gauge';
+import { heatmapExamples } from '../schema/examples/heatmap';
+import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
+import { tagCloudExamples } from '../schema/examples/tag_cloud';
 import { xyChartExamples, xyInteractive } from '../schema/examples/xy_chart';
 import type { MetricNode } from '../schema/metric';
 import type { XyChartNode } from '../schema/xy_chart';
@@ -54,6 +58,22 @@ const nodes = [
   })),
   ...dataTableExamples.map(({ name, node }) => ({
     name: `dataTable: ${name}`,
+    node,
+  })),
+  ...gaugeExamples.map(({ name, node }) => ({
+    name: `gauge: ${name}`,
+    node,
+  })),
+  ...legacyMetricExamples.map(({ name, node }) => ({
+    name: `legacyMetric: ${name}`,
+    node,
+  })),
+  ...tagCloudExamples.map(({ name, node }) => ({
+    name: `tagCloud: ${name}`,
+    node,
+  })),
+  ...heatmapExamples.map(({ name, node }) => ({
+    name: `heatmap: ${name}`,
     node,
   })),
   ...partitionChartExamples.map(({ name, node }) => ({
@@ -114,7 +134,7 @@ describe('resolveChart on every example', () => {
       }) as Scene;
       const ids = new Set(node.data.columns.map(({ id }) => id));
       const sources =
-        scene.kind === 'metric'
+        scene.kind === 'metric' || scene.kind === 'legacyMetric'
           ? scene.tiles.map(({ source }) => source)
           : scene.kind === 'table'
             ? scene.rows.flatMap(({ cells }) =>
@@ -122,10 +142,16 @@ describe('resolveChart on every example', () => {
               )
             : scene.kind === 'partition'
               ? slicesIn(scene.nodes).map(({ source }) => source)
-              : seriesIn(scene).flatMap((series) => [
-                  series.source,
-                  ...series.marks.map(({ source }) => source),
-                ]);
+              : scene.kind === 'heatmap'
+                ? scene.cells.map(({ source }) => source)
+                : scene.kind === 'gauge'
+                  ? []
+                  : scene.kind === 'tagCloud'
+                    ? scene.words.map(({ source }) => source)
+                    : seriesIn(scene).flatMap((series) => [
+                        series.source,
+                        ...series.marks.map(({ source }) => source),
+                      ]);
       for (const { rows, columns } of sources) {
         for (const row of rows) {
           expect(row).toBeLessThan(node.data.rows.length);

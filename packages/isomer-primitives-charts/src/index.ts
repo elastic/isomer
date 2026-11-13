@@ -33,6 +33,16 @@ export { selectSceneRenderer } from './scene/select';
 export {
   type AxisId,
   type ColorScheme,
+  type GaugeBand,
+  type GaugeScene,
+  type GaugeSceneShape,
+  type HeatmapAxis,
+  type HeatmapBand,
+  type HeatmapCategory,
+  type HeatmapCell,
+  type HeatmapScene,
+  type LegacyMetricScene,
+  type LegacyMetricTile,
   type MetricAlignment,
   type MetricLayout,
   type MetricScene,
@@ -70,6 +80,8 @@ export {
   type TableOrder,
   type TableRow,
   type TableScene,
+  type TagCloudScene,
+  type TagCloudWord,
   type XyCategory,
   type XyMark,
   type XyScene,
@@ -78,9 +90,13 @@ export {
   SCENE_KINDS,
 } from './scene/types';
 export {
+  gaugeCatalog,
   gridCatalog,
+  heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
+  tagCloudCatalog,
   unsupportedCatalog,
   xyChartCatalog,
 } from './schema/catalog';
@@ -114,20 +130,26 @@ export {
   INTERACTION_RULES,
   SELECT_TARGETS,
   brushingInteractionsSchemaFor,
+  brushInteractionsSchemaFor,
   brushSchema,
   chartEventSchema,
   checkInteractions,
   emphasisSchema,
   interactionsCoreShape,
   interactionsSchemaFor,
+  linkSchema,
   readChartEvent,
   selectSchema,
   toActionEvent,
 } from './schema/events';
 export { chartEventExamples } from './schema/examples/events';
+export { gaugeExamples } from './schema/examples/gauge';
 export { gridExamples } from './schema/examples/grid';
+export { heatmapExamples } from './schema/examples/heatmap';
+export { legacyMetricExamples } from './schema/examples/legacy_metric';
 export { metricExamples } from './schema/examples/metric';
 export { partitionChartExamples } from './schema/examples/partition_chart';
+export { tagCloudExamples } from './schema/examples/tag_cloud';
 export { unsupportedExamples } from './schema/examples/unsupported';
 export { xyChartExamples } from './schema/examples/xy_chart';
 export {
@@ -137,6 +159,13 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './schema/format';
+export {
+  type GaugeNode,
+  type GaugeShape,
+  GAUGE_RULES,
+  GAUGE_SHAPES,
+  gaugeSchema,
+} from './schema/gauge';
 export {
   type GridNode,
   type GridPanel,
@@ -149,7 +178,18 @@ export {
   gridSchema,
   gridSchemaFor,
 } from './schema/grid';
+export {
+  type HeatmapNode,
+  HEATMAP_RULES,
+  heatmapSchema,
+} from './schema/heatmap';
 export { glyphSchema } from './schema/icons';
+export {
+  type LegacyMetricNode,
+  LEGACY_METRIC_RULES,
+  LEGACY_METRIC_SIZES,
+  legacyMetricSchema,
+} from './schema/legacy_metric';
 export { type MetricNode, METRIC_RULES, metricSchema } from './schema/metric';
 export {
   type PartitionChartNode,
@@ -167,5 +207,11 @@ export {
   provenanceSchema,
 } from './schema/provenance';
 export { type ColumnReference, columnRefSchema } from './schema/references';
+export {
+  type TagCloudNode,
+  TAG_CLOUD_KEY_RULE,
+  TAG_CLOUD_RULES,
+  tagCloudSchema,
+} from './schema/tag_cloud';
 export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';

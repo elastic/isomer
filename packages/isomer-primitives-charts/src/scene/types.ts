@@ -17,7 +17,16 @@ import type { ChartEvent, SelectTarget } from '../schema/events';
 import type { PortableFormat } from '../schema/format';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
-export const SCENE_KINDS = ['metric', 'xy', 'table', 'partition'] as const;
+export const SCENE_KINDS = [
+  'metric',
+  'xy',
+  'table',
+  'partition',
+  'heatmap',
+  'gauge',
+  'tagCloud',
+  'legacyMetric',
+] as const;
 
 /** One of {@link SCENE_KINDS}. */
 export type SceneKind = (typeof SCENE_KINDS)[number];
@@ -687,8 +696,246 @@ export interface PartitionScene extends SceneBase {
   };
 }
 
-/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene} or a {@link PartitionScene}. */
-export type Scene = MetricScene | XyScene | TableScene | PartitionScene;
+/** One position along a {@link HeatmapAxis}, in axis order. */
+export interface HeatmapCategory {
+  /** Epoch milliseconds on a time axis; else an opaque key unique on the axis. */
+  readonly x: number | string;
+  /** The position as the axis labels it. */
+  readonly label: string;
+}
+
+/** One axis of a {@link HeatmapScene}. */
+export interface HeatmapAxis {
+  /** The column whose cells place cells along it; absent on a heat map with no `y`. */
+  readonly column?: string;
+  /** The column's label, for tooltips and descriptions. */
+  readonly label: string;
+  readonly title?: string;
+  /** `time` places positions at their instants, `interval` apart; `ordinal` in `categories` order. */
+  readonly scale: 'ordinal' | 'time';
+  /** How a value on a time axis prints, through `formatAxisValue`. */
+  readonly format: PortableFormat;
+  /** On a time axis, the zone whose round times ticks fall on. */
+  readonly timeZone?: string;
+  /** On a time axis, each position's width in milliseconds. */
+  readonly interval?: number;
+  /** On a time axis, the instants it spans at least, positions or not: the node's `custom` domain. */
+  readonly domain?: { readonly min: number; readonly max: number };
+  readonly showLabels: boolean;
+  /** Label rotation in degrees. */
+  readonly labelRotation: 0 | -45 | -90;
+  /** Every position with a row, in axis order: left to right, or top to bottom. */
+  readonly categories: readonly HeatmapCategory[];
+}
+
+/** One drawn cell of a {@link HeatmapScene}: a row with a value. */
+export interface HeatmapCell {
+  /** The index of its position in `x.categories`. */
+  readonly x: number;
+  /** The index of its position in `y.categories`. */
+  readonly y: number;
+  readonly value: number;
+  /** The value as displayed. */
+  readonly valueText: string;
+  /** The fill: its band's color, or transparent (`#FFFFFF00`) in no band. */
+  readonly color: SceneColor;
+  readonly source: SceneSource;
+  /** The x and y positions and the value, for a tooltip. */
+  readonly tooltip: SceneTooltip;
+  /** What a selection of the cell describes, such as "host.name: web-01 · Count: 12". */
+  readonly description: string;
+  /** The `cell` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** One color band of a {@link HeatmapScene}, ascending: values from `start` (inclusive) to `end` (exclusive). */
+export interface HeatmapBand {
+  /** Absent: open below. */
+  readonly start?: number;
+  /** Absent: open above. */
+  readonly end?: number;
+  readonly color: SceneColor;
+  /** The range as the legend writes it, such as "20 - 40" or "≥ 80". */
+  readonly label: string;
+}
+
+/** A Scene of cells by x and y, colored by value. */
+export interface HeatmapScene extends SceneBase {
+  readonly kind: 'heatmap';
+  readonly x: HeatmapAxis;
+  /** One position with an empty label, and no labels, when the node has no `y`. */
+  readonly y: HeatmapAxis;
+  /** The value column's label: what the cells measure. */
+  readonly valueLabel: string;
+  /** In row order. */
+  readonly cells: readonly HeatmapCell[];
+  /** Ascending, without overlapping; every cell's color is its band's. */
+  readonly bands: readonly HeatmapBand[];
+  /** Write each cell's `valueText` in it, where it fits. */
+  readonly cellLabels: boolean;
+  readonly gridLines: { readonly width: number; readonly color: SceneColor };
+  /** The legend lists `bands`. */
+  readonly legend: {
+    readonly visible: boolean;
+    readonly position: 'top' | 'bottom' | 'left' | 'right';
+    readonly maxLines: number;
+    readonly size: 'auto' | 's' | 'm' | 'l' | 'xl';
+  };
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: {
+    readonly reason: 'noResults';
+    readonly text: string;
+  };
+}
+
+/** The shapes a {@link GaugeScene} draws. */
+export type GaugeSceneShape =
+  'horizontalBullet' | 'verticalBullet' | 'semiCircle' | 'arc' | 'circle';
+
+/** One colored stretch of a {@link GaugeScene}'s scale, from `start` to `end`. */
+export interface GaugeBand {
+  readonly start: number;
+  readonly end: number;
+  /** Transparent (`#FFFFFF00`) where no band of the node covers it. */
+  readonly color: SceneColor;
+}
+
+/** A Scene of one value on a scale: a bullet or a round dial. */
+export interface GaugeScene extends SceneBase {
+  readonly kind: 'gauge';
+  readonly shape: GaugeSceneShape;
+  /** Absent when `empty`. */
+  readonly value?: number;
+  /** `value` as displayed. */
+  readonly valueText: string;
+  /** The scale, `min` below `max`. */
+  readonly min: number;
+  readonly max: number;
+  /** How a value on the scale prints, through `formatAxisValue`. */
+  readonly format: PortableFormat;
+  /** The goal marker, present only where it falls on the scale. */
+  readonly goal?: { readonly value: number; readonly text: string };
+  /** Drawn on the gauge: the title (empty for none) and the subtitle. */
+  readonly labels: { readonly major: string; readonly minor?: string };
+  /** What a tooltip calls the hovered value, the value and the goal. */
+  readonly tooltipLabels: {
+    readonly active: string;
+    readonly value: string;
+    readonly goal: string;
+  };
+  /** Contiguous, ascending, from `min` to `max`. */
+  readonly bands: readonly GaugeBand[];
+  /** Where ticks go, ascending; absent lets the engine choose; empty draws none. */
+  readonly ticks?: readonly number[];
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: {
+    readonly reason: 'noResults' | 'equalBounds' | 'invertedBounds';
+    readonly text: string;
+  };
+}
+
+/** One word of a {@link TagCloudScene}: a row. */
+export interface TagCloudWord {
+  /** The `tags` cell as displayed. */
+  readonly text: string;
+  /** Its place from the smallest value (0) to the largest (1), which sizes it along the Scene's `scale`. */
+  readonly weight: number;
+  readonly value: number | null;
+  /** `value` as displayed. */
+  readonly valueText: string;
+  readonly color: SceneColor;
+  readonly source: SceneSource;
+  /** What a selection of the word describes, such as "host.name: web-01 · Count: 12". */
+  readonly description: string;
+  /** The `tag` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** A Scene of words sized by value. */
+export interface TagCloudScene extends SceneBase {
+  readonly kind: 'tagCloud';
+  /** In row order. */
+  readonly words: readonly TagCloudWord[];
+  /** How a word's `weight` becomes its font size between `fontSize.min` and `fontSize.max`. */
+  readonly scale: 'linear' | 'log' | 'squareRoot';
+  /**
+   * The angles words may take, in degrees: `count` evenly spaced from `start`
+   * to `end`, each word's chosen from its text, as Elastic Charts' word cloud
+   * chooses it.
+   */
+  readonly angles: {
+    readonly start: number;
+    readonly end: number;
+    readonly count: number;
+  };
+  readonly fontSize: { readonly min: number; readonly max: number };
+  /** Written under the cloud, when the node shows it. */
+  readonly label?: string;
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
+}
+
+/** One tile of a {@link LegacyMetricScene}: one value of one row, its type sized to fit the chart. */
+export interface LegacyMetricTile {
+  /** The tile's row, and its breakdown and value columns. */
+  readonly source: SceneSource;
+  readonly label: string;
+  readonly value: {
+    readonly text: string;
+    readonly raw: Cell;
+    readonly color: SceneColor;
+  };
+  readonly labelColor: SceneColor;
+  /** The tile's own background, when it does not fill the chart: its band's color, else the emphasis fill when emphasized. */
+  readonly background?: SceneColor;
+  /**
+   * Lengths in pixels, already shrunk to fit the Scene's `size` as Lens's
+   * auto scale shrinks them: the value's and label's font sizes, and the
+   * padding around them.
+   */
+  readonly type: {
+    readonly value: number;
+    readonly label: number;
+    readonly padding: number;
+  };
+  /** The tile's box at those lengths, from estimated text widths: the width it draws at. */
+  readonly box: SceneSize;
+  /** What a selection of the tile describes, such as "host.name: web-01 · Count: 12". */
+  readonly description: string;
+  /** Emphasized: the note, or an empty string for none. */
+  readonly emphasis?: string;
+  /** The `tile` selection, when the node offers it. */
+  readonly selection?: SceneSelection;
+}
+
+/** A Scene of large values with labels, as Lens's legacy metric draws them. */
+export interface LegacyMetricScene extends SceneBase {
+  readonly kind: 'legacyMetric';
+  /** In tile order: every row of the first metric column, then of the next. */
+  readonly tiles: readonly LegacyMetricTile[];
+  readonly labelPosition: 'top' | 'bottom';
+  /** How a tile's value and label align with each other. */
+  readonly textAlign: MetricAlignment;
+  readonly showLabels: boolean;
+  /** Line height as a multiple of the font size. */
+  readonly lineHeight: number;
+  readonly valueWeight: number;
+  /** The whole chart's background: a lone tile's band color, else the chrome background. */
+  readonly background: SceneColor;
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
+}
+
+/** What a renderer draws: a {@link MetricScene}, an {@link XyScene}, a {@link TableScene}, a {@link PartitionScene}, a {@link HeatmapScene}, a {@link GaugeScene}, a {@link TagCloudScene} or a {@link LegacyMetricScene}. */
+export type Scene =
+  | MetricScene
+  | XyScene
+  | TableScene
+  | PartitionScene
+  | HeatmapScene
+  | GaugeScene
+  | TagCloudScene
+  | LegacyMetricScene;
 
 /** Where a renderer draws: a browser DOM, or Node with no DOM. */
 export type SceneEnvironment = 'browser' | 'node';
