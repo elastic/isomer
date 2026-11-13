@@ -28,6 +28,11 @@ import type {
   ReactSceneRenderer,
   SceneResolver,
 } from './context';
+import {
+  type ChartFailureHandler,
+  type FailureGuard,
+  renderFailure,
+} from './failure';
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
@@ -39,6 +44,7 @@ import { CHARTS_THEME } from './theme';
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
 export interface SceneShimConfig {
   readonly resolveScene: SceneResolver;
+  readonly onFailure?: ChartFailureHandler;
   /** Tried after the host's `sceneRenderers`. The last should support every kind. */
   readonly sceneRenderers: readonly ReactSceneRenderer[];
 }
@@ -46,6 +52,7 @@ export interface SceneShimConfig {
 /** A pack's shim config with the cache its renders share. */
 export interface SceneShim extends SceneShimConfig {
   readonly cache: SceneCache;
+  readonly guard: FailureGuard;
 }
 
 const { linkHeight } = CHARTS_THEME.chart;
@@ -146,7 +153,7 @@ const fixedBox = (
  * `fluid` renderer's box takes the spec's shape and the renderer fills it.
  * A host `size` holds the link line too.
  */
-export const renderSceneNode = (
+const drawSceneNode = (
   node: ChartNode,
   env: ChartsReactEnv,
   config: SceneShim
@@ -206,3 +213,15 @@ export const renderSceneNode = (
     )
   );
 };
+
+/** {@link drawSceneNode}, or the failure note when resolving or drawing throws. */
+export const renderSceneNode = (
+  node: ChartNode,
+  env: ChartsReactEnv,
+  config: SceneShim
+): ReactNode =>
+  config.guard(
+    node,
+    () => drawSceneNode(node, env, config),
+    () => renderFailure(node, env)
+  );

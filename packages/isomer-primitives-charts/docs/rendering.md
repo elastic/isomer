@@ -92,6 +92,18 @@ The pack authors its CSS with [Distillate](https://elastic.github.io/distillate/
 
 Every declaration is in a style module. What only a node or a Scene knows, such as a cell's color, a bar's extent or a panel's place on the grid, reaches its rule through a module-local Distillate var: the rule declares the var's default and reads it, and the renderer sets the value on the same element with `varStyle` (a length through `px`, since a custom property takes no unitless length), so an element's `style` holds only custom properties its classes declare. `createVarsModule` authors such a module, returning its `StyleHandle`s, `LocalVarGroup`s and `stylesheet()` (every rule it authors, variants included), and `cls` resolves its handles; all four helpers are on `./scene`, so a chart engine styles the few elements it draws itself, such as the Elastic Charts engine's secondary-metric text, with the pack's distillery, and `chartsStylesheet()` carries those rules once the engine is loaded; a module's own `stylesheet()` returns its rules whatever has loaded, which is what the engine's `elasticChartsStylesheet()` ships. The one exception is `chartsFrame`: a frame's `wrap` gets no class-name resolution, so the frame draws its surround with inline styles.
 
+## When a chart cannot be drawn
+
+A chart whose resolver or renderer throws does not fail the render. On every surface it draws `CHART_FAILURE_TEXT`, "This chart could not be drawn.", under its title in place of the chart, in the node's anchor on `react`, and the charts beside it draw as usual. `createChartsPack({ onFailure })` is told the error and the node, once for each node a render could not draw; without it the error is dropped.
+
+```ts
+createChartsPack({
+  onFailure: (error, node) => logger.warn({ error, type: node.type }),
+});
+```
+
+A renderer that returns a component draws inside React's own render, after the pack has returned, so what it throws there reaches the host's error boundary and not the note.
+
 ## Text, Markdown and Slack
 
 The `text` and `markdown` renderers take no render context. They resolve the Scene for the light scheme and write its `summary`, its `description` and each emphasis `note`, then its `table`: a header row of column labels, one row per data row, in `data` order, and a `dataTable`'s footer row. Columns the Scene flags as empty are left out, and an empty cell carries the Scene's empty-value text. Markdown writes the table as a GFM table. Last comes the Scene's `link`, as `label: href` (a Markdown link). The fallback renderer draws the summary, description and notes, and the shim draws the link below it. A `link` whose `href` fails the SDK's navigation policy is dropped before any surface draws it.

@@ -19,6 +19,7 @@ export type {
   ResolveSceneOptions,
   SceneResolver,
 } from './render/context';
+export { type ChartFailureHandler, CHART_FAILURE_TEXT } from './render/failure';
 export { type ChartSizeSpec, chartSize, chartSizeSpec } from './render/size';
 export { cls, createVarsModule, px, varStyle } from './render/styles';
 export { type ResolveChartOptions } from './scene/common';
