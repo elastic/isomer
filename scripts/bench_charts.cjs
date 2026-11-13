@@ -17,8 +17,8 @@
 // the scene renderers to draw with, and the ceilings `--check` holds each
 // scenario's median run to, in MB. Without one, only the no-engine scenarios
 // run, held to `PACK_BOUNDS`. `--check` runs the bounded scenarios and fails
-// when a median exceeds its bound or nothing is bounded; with `--json`, its
-// report goes to stderr. Run `pnpm build` first: this loads the
+// when a median exceeds its bound, and refuses a scenario with no bound; with
+// `--json`, its report goes to stderr. Run `pnpm build` first: this loads the
 // built CommonJS packages, as a Node host does.
 
 const { spawnSync } = require('node:child_process');
@@ -359,6 +359,9 @@ const parent = () => {
         `${scenario}: ${scenario in SCENARIOS ? 'needs --engine' : 'unknown scenario'}`
       );
     }
+    if (check && Object.keys(bounds[scenario] ?? {}).length === 0) {
+      throw new Error(`${scenario}: no bound to check`);
+    }
   }
 
   const results = scenarios.flatMap((scenario) =>
@@ -435,10 +438,6 @@ const parent = () => {
     const report = json ? process.stderr : process.stdout;
     for (const { ok, line } of checks) {
       report.write(`${ok ? '✓' : '✗'} ${line}\n`);
-    }
-    if (checks.length === 0) {
-      process.stderr.write('No scenario has a bound to check.\n');
-      process.exitCode = 1;
     }
     const failures = checks.filter(({ ok }) => !ok);
     if (failures.length > 0) {

@@ -6,10 +6,13 @@
  */
 
 import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 const { checkBounds, limit } = createRequire(import.meta.url)(
   './bench_charts.cjs'
@@ -147,17 +150,44 @@ describe('limit', () => {
 });
 
 describe('the harness', () => {
+  const BENCH = fileURLToPath(new URL('./bench_charts.cjs', import.meta.url));
+  const fixtures = mkdtempSync(join(tmpdir(), 'bench-charts-'));
+  afterAll(() => rmSync(fixtures, { recursive: true, force: true }));
+  // Its renderers throw, so a run that reaches a render fails for another reason.
+  const engine = join(fixtures, 'engine.cjs');
+  writeFileSync(
+    engine,
+    `module.exports = {
+      createRenderers: () => { throw new Error('rendered'); },
+      bounds: { one: { peakRssMb: 1 }, engine: {} },
+    };`
+  );
+
   it('refuses an engine scenario without an engine', () => {
+    const run = spawnSync(process.execPath, [BENCH, '--scenarios', 'engine'], {
+      encoding: 'utf8',
+    });
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('engine: needs --engine');
+  });
+
+  it('refuses to check a scenario the engine gives no bound', () => {
     const run = spawnSync(
       process.execPath,
-      [
-        fileURLToPath(new URL('./bench_charts.cjs', import.meta.url)),
-        '--scenarios',
-        'engine',
-      ],
+      [BENCH, '--check', '--engine', engine, '--scenarios', 'one,budget-xy'],
       { encoding: 'utf8' }
     );
     expect(run.status).not.toBe(0);
-    expect(run.stderr).toContain('engine: needs --engine');
+    expect(run.stderr).toContain('budget-xy: no bound to check');
+  });
+
+  it('refuses to check a scenario whose bound holds no measure', () => {
+    const run = spawnSync(
+      process.execPath,
+      [BENCH, '--check', '--engine', engine, '--scenarios', 'engine'],
+      { encoding: 'utf8' }
+    );
+    expect(run.status).not.toBe(0);
+    expect(run.stderr).toContain('engine: no bound to check');
   });
 });
