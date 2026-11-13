@@ -27,13 +27,13 @@ import { gfm } from 'micromark-extension-gfm';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from './pack';
-import type { ResolveSceneOptions } from './render/context';
+import type { ResolveChartOptions } from './scene/common';
 import { type ChartNode, resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
 
 const resolved: { node: ChartNode; scene: Scene }[] = [];
 const pack = createChartsPack({
-  resolveScene: (node: ChartNode, options: ResolveSceneOptions) => {
+  resolveScene: (node: ChartNode, options: ResolveChartOptions) => {
     const scene = resolveChart(node, options);
     resolved.push({ node, scene });
     return scene;

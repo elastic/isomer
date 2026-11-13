@@ -27,8 +27,7 @@ import { elasticModule } from './styles';
 import { kibanaBaseTheme } from './theme';
 
 /** The font Kibana's tag cloud sets its words in. */
-export const TAG_CLOUD_FONT_FAMILY =
-  "'Elastic UI Numeric', 'Inter UI', sans-serif";
+const TAG_CLOUD_FONT_FAMILY = "'Elastic UI Numeric', 'Inter UI', sans-serif";
 
 /** What each datum this engine passes Elastic Charts carries: one Scene word. */
 export interface TagCloudDatum {

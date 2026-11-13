@@ -13,7 +13,8 @@ import { describe, expect, it } from 'vitest';
 
 import { chartsFrame } from './frame';
 import { createChartsPack } from './pack';
-import type { ChartNode, ResolveSceneOptions } from './render/context';
+import type { ChartNode } from './render/context';
+import type { ResolveChartOptions } from './scene/common';
 import { metricSingleValueScene } from './scene/examples';
 import { CHART_CHROME } from './scene/theme';
 import type { Scene } from './scene/types';
@@ -78,10 +79,10 @@ describe('chartsFrame', () => {
   );
 
   describe('on snapshot', () => {
-    const resolved: ResolveSceneOptions[] = [];
+    const resolved: ResolveChartOptions[] = [];
     const resolveScene = (
       _: ChartNode,
-      options: ResolveSceneOptions
+      options: ResolveChartOptions
     ): Scene => {
       resolved.push(options);
       return { ...metricSingleValueScene, scheme: options.scheme };
