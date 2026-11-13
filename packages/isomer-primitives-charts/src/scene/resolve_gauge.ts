@@ -14,6 +14,7 @@ import type { GaugeNode } from '../schema/gauge';
 import {
   createResolution,
   nextUp,
+  NO_RESULTS,
   percentAlong,
   type ResolveChartOptions,
   resolveInteractions,
@@ -26,7 +27,7 @@ import type { GaugeBand, GaugeScene } from './types';
 
 /** Lens's texts for a gauge with nothing to draw. */
 const EMPTY_TEXT = {
-  noResults: 'No results found',
+  noResults: NO_RESULTS,
   equalBounds: 'Minimum and maximum values may not be equal',
   invertedBounds: 'Minimum value may not be greater than maximum value',
 } as const;

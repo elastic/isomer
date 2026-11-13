@@ -7,6 +7,7 @@
 
 import { coordinateOf, scalarOf } from '../coordinates';
 import { defaultFormatFor, formatValue } from '../format/format';
+import type { ColorBand } from '../schema/colors';
 import type { Cell, ChartColumn, ChartData, ColumnType } from '../schema/data';
 import type { Emphasis, SelectTarget } from '../schema/events';
 import type { PortableFormat } from '../schema/format';
@@ -94,7 +95,30 @@ export const createResolution = (
   };
 };
 
-const isEmpty = (cell: Cell | undefined) =>
+/** Lens's text for a chart with nothing to draw (`charts.noDataLabel`). */
+export const NO_RESULTS = 'No results found';
+
+/** An axis label's rotation, in degrees, by its orientation. */
+export const LABEL_ROTATION = {
+  horizontal: 0,
+  angled: -45,
+  vertical: -90,
+} as const;
+
+/** The band `value` falls in: `from` inclusive, `to` exclusive except on the last band, as Lens's palette stops. */
+export const bandFor = (
+  bands: readonly ColorBand[],
+  value: number
+): ColorBand | undefined =>
+  bands.find(
+    ({ from, to }, index) =>
+      (from === undefined || value >= from) &&
+      (to === undefined ||
+        value < to ||
+        (index === bands.length - 1 && value === to))
+  );
+
+export const isEmptyCell = (cell: Cell | undefined) =>
   cell === null ||
   cell === undefined ||
   cell === '' ||
@@ -112,7 +136,7 @@ const buildTable = (resolution: Resolution): SceneTable => {
       label,
       type,
       role,
-      empty: data.rows.every((row) => isEmpty(row[index])),
+      empty: data.rows.every((row) => isEmptyCell(row[index])),
     })),
     get rows() {
       rows ??= data.rows.map((cells, row) => ({
@@ -160,6 +184,19 @@ export const resolveInteractions = ({
     ...(note === undefined ? {} : { note }),
   })),
 });
+
+/** Each emphasized row's note, a later note replacing an earlier one, or `''` for none. */
+export const emphasisNotes = ({
+  emphasis,
+}: Pick<SceneInteractions, 'emphasis'>): Map<number, string> => {
+  const notes = new Map<number, string>();
+  for (const { rows, note } of emphasis) {
+    for (const row of rows) {
+      notes.set(row, note ?? notes.get(row) ?? '');
+    }
+  }
+  return notes;
+};
 
 /** `label: value` pairs joined as a selection's description reads. */
 export const describe = (
