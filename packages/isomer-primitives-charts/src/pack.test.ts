@@ -163,7 +163,9 @@ describe('the charts pack', () => {
   it('falls back to the summary when nothing else supports the kind', () => {
     const bare = createChartsPack({ resolveScene });
     const html = draw(bare);
-    expect(html).toContain(`<p>${metricSingleValueScene.summary}</p>`);
+    expect(html).toContain(
+      `<p class="chartsScene-summary">${metricSingleValueScene.summary}</p>`
+    );
   });
 
   it('resolves for the scheme, locale, time zone and size the host gives', () => {
@@ -228,7 +230,7 @@ describe('the charts pack', () => {
           })
         )
       );
-      expect(html).toContain('<p>');
+      expect(html).toContain('<p class="chartsScene-summary">');
       expect(html).not.toContain('aspect-ratio');
       expect(html).not.toContain('min-height');
     });

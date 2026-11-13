@@ -944,6 +944,8 @@ export type SceneEnvironment = 'browser' | 'node';
 /** What a renderer is told about where it draws, beside the Scene itself. */
 export interface SceneRenderEnv {
   readonly environment: SceneEnvironment;
+  /** True when the Scene's `size.width` is a layout estimate and the container's width is the drawn one, which a renderer that can fills. */
+  readonly fillWidth?: boolean;
   /** The node's `id`, which events name. A renderer raises no event for a node without one. */
   readonly nodeId?: string;
   /** Receives every raised event. Absent means the chart offers no interaction. */
