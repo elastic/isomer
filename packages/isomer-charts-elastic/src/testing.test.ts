@@ -42,7 +42,8 @@ import {
 const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 const SIZE = { width: 480, height: 300 };
 let size = SIZE;
-const labelWidth = (text: string) => text.length * 6;
+let wide = new Set<string>();
+const labelWidth = (text: string) => (wide.has(text) ? 200 : text.length * 6);
 
 // jsdom has no layout and no canvas: Elastic Charts learns its size from
 // ResizeObserver and measures text through a 2D context.
@@ -102,6 +103,7 @@ const unmounts: (() => void)[] = [];
 afterEach(() => {
   unmounts.splice(0).forEach((unmount) => unmount());
   size = SIZE;
+  wide = new Set();
 });
 
 const debugStateOf = async (scene: Scene): Promise<DebugState> => {
@@ -267,6 +269,26 @@ describe('debugStateProblems', () => {
     expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
   });
 
+  it('holds each time-layer edge label to its own width, not the widest in its layer', async () => {
+    wide = new Set(['01:00']);
+    const { name, scene } = timeScenes[0]!;
+    expect(name).toBe('Time series line');
+    const state = await debugStateOf(scene);
+    const { labels, values } = state.axes!.x[0]!;
+    expect(labels).toEqual(expect.arrayContaining(['00:00', '01:00', '04:00']));
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    const kept: [string, unknown][] = labels.flatMap((label, index) =>
+      label === '00:00' ? [] : [[label, values[index]]]
+    );
+    const changed = withX(state, {
+      labels: kept.map(([label]) => label),
+      values: kept.map(([, value]) => value),
+    });
+    expect(
+      debugStateProblems(scene, changed, { labelWidth }).join('\n')
+    ).toMatch(/axis "x" leaves out .* "00:00"/);
+  });
+
   it('passes time-axis gridlines that cannot measure the plot', async () => {
     const start = Date.UTC(2026, 10, 3);
     const node: XyChartNode = {
@@ -296,6 +318,12 @@ describe('debugStateProblems', () => {
     ]);
     expect(debugStateProblems(scene, state)).toEqual([]);
     expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    const moved = withX(state, {
+      gridlines: state.axes!.x[0]!.gridlines.map(({ y }) => ({ x: 100, y })),
+    });
+    expect(debugStateProblems(scene, moved).join('\n')).toMatch(
+      /axis "x" draws gridlines at \[100\]/
+    );
   });
 
   it('fails time-axis gridlines no band puts where they are drawn', async () => {

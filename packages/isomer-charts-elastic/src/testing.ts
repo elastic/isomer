@@ -87,8 +87,8 @@ const tickKey = (value: unknown, label: string) =>
 
 /**
  * Which of a labeled layer's ticks Elastic Charts may leave unlabeled: the
- * first where its label reaches the next tick, the last where its label runs
- * past the plot. Unmeasured, either may be.
+ * first where its own label reaches the next tick, the last where its own label
+ * runs past the plot. Unmeasured, either may be.
  */
 const droppable = (
   ticks: SceneTimeLayer['ticks'],
@@ -150,7 +150,8 @@ const timeBandProblems = (
 
 /**
  * Where a drawn time axis is not the Scene's band at its plot width, measured
- * from its gridlines; with no gridline to measure by, not any band.
+ * from its gridlines; with none past the domain's start to measure by, not any
+ * band.
  */
 const timeAxisProblems = (
   { timeTicks }: SceneAxis,
@@ -177,7 +178,10 @@ const timeAxisProblems = (
   if (band && measure) {
     return timeBandProblems(id, timeTicks, band, measure.width, drawn, options);
   }
-  if (measures.some(([, at]) => at !== undefined)) {
+  if (
+    measures.some(([, at]) => at !== undefined) ||
+    lines.some((x) => x > GRID_TOLERANCE)
+  ) {
     return [
       `axis "${id}" draws gridlines at ${JSON.stringify(lines)}, which no band of the Scene's puts there`,
     ];
