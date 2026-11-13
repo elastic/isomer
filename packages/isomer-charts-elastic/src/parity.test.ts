@@ -31,6 +31,7 @@ import {
   type Scene,
   type SceneRenderEnv,
   selectEvent,
+  type XyCategory,
 } from '@elastic/isomer-primitives-charts/scene';
 import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -348,6 +349,47 @@ const gestures = (
         ? [selectEvent(NODE, category.selection)]
         : [],
   }));
+  const xs = scene.categories
+    .map(({ x }) => x)
+    .filter((x): x is number => typeof x === 'number');
+  const projected = (gesture: string, x: number, category?: XyCategory) => ({
+    gesture,
+    raise: () => {
+      const { events, env } = listen();
+      installed(scene, env).callback('onProjectionClick')?.({ x });
+      return events;
+    },
+    expected:
+      offers('category') && category?.selection
+        ? [selectEvent(NODE, category.selection)]
+        : [],
+  });
+  // Elastic Charts projects a click onto its bucket grid, data there or not.
+  const { interval } = scene.axes.x;
+  const bucket =
+    interval ?? Math.min(...xs.slice(1).map((x, index) => x - xs[index]!));
+  const buckets = xs.flatMap((x, index) => {
+    const next = xs[index + 1] ?? Infinity;
+    return [
+      ...(interval !== undefined && x + interval / 2 < next
+        ? [
+            projected(
+              `click the plot inside the bucket at ${String(x)}`,
+              x + interval / 2,
+              categoryAt(x)
+            ),
+          ]
+        : []),
+      ...(Number.isFinite(bucket) && next >= x + 2 * bucket
+        ? [
+            projected(
+              `click the plot in the empty bucket after ${String(x)}`,
+              x + bucket
+            ),
+          ]
+        : []),
+    ];
+  });
   // The buttons the installed legend action draws for each series' item.
   const legend = series.flatMap((one, index) =>
     [false, true].map((negate) => {
@@ -387,9 +429,6 @@ const gestures = (
       };
     })
   );
-  const xs = scene.categories
-    .map(({ x }) => x)
-    .filter((x): x is number => typeof x === 'number');
   const brush =
     xs.length > 1
       ? [
@@ -408,7 +447,7 @@ const gestures = (
           },
         ]
       : [];
-  return [...marks, ...categories, ...legend, ...brush];
+  return [...marks, ...categories, ...buckets, ...legend, ...brush];
 };
 
 describe('event parity over every example', () => {

@@ -16,6 +16,8 @@ import {
 import {
   chartEventExamples,
   partitionChartExamples,
+  xyChartExamples,
+  type XyChartNode,
 } from '@elastic/isomer-primitives-charts/schema';
 import { describe, expect, it } from 'vitest';
 
@@ -95,13 +97,78 @@ describe('xy events from Elastic Charts callbacks', () => {
     expect(events).toEqual([expected('Select a bar segment')]);
   });
 
-  it('raises the category a projected x falls in', () => {
+  it('raises the category at a projected x', () => {
+    const { events, env } = listen();
+    xyHandlers(xyInteractiveScene, env).onProjectionClick?.({
+      x: START + HOUR,
+      y: [],
+    });
+    expect(events).toEqual([expected('Select an x category')]);
+  });
+
+  it('raises nothing for a projected x between positions when the axis states no interval', () => {
     const { events, env } = listen();
     xyHandlers(xyInteractiveScene, env).onProjectionClick?.({
       x: START + HOUR + 20 * 60_000,
       y: [],
     });
-    expect(events).toEqual([expected('Select an x category')]);
+    expect(events).toEqual([]);
+  });
+
+  describe('on an axis stating an hourly interval, with data at 00:00 and 02:00', () => {
+    const { node } = xyChartExamples.find(
+      ({ name }) => name === 'Interactive stacked bars'
+    )!;
+    // Four rows per hour: without the 01:00 rows, rows 0 to 3 are 00:00 and 4 to 7 are 02:00.
+    const scene = resolveChart(
+      {
+        ...node,
+        data: {
+          ...node.data,
+          rows: node.data.rows.filter((_, row) => row < 4 || row >= 8),
+        },
+        axes: { x: { scale: 'temporal', interval: HOUR } },
+      } as XyChartNode,
+      { scheme: 'light' }
+    );
+    const midnight: ChartEvent = {
+      kind: 'select',
+      node: NODE,
+      target: 'category',
+      rows: [0, 1, 2, 3],
+      columns: ['time'],
+      values: { time: START },
+      description: '@timestamp per hour: 00:00',
+    };
+    const two: ChartEvent = {
+      ...midnight,
+      rows: [4, 5, 6, 7],
+      values: { time: START + 2 * HOUR },
+      description: '@timestamp per hour: 02:00',
+    };
+    const click = (x: number) => {
+      const { events, env } = listen();
+      xyHandlers(scene, env).onProjectionClick?.({ x, y: [] });
+      return events;
+    };
+
+    it('raises the category whose bucket a projected x is inside', () => {
+      expect(click(START + 20 * 60_000)).toEqual([midnight]);
+      expect(click(START + HOUR - 1)).toEqual([midnight]);
+      expect(click(START + 2 * HOUR)).toEqual([two]);
+      expect(click(START + 3 * HOUR - 1)).toEqual([two]);
+    });
+
+    it('raises nothing for the empty bucket between them', () => {
+      expect(click(START + HOUR)).toEqual([]);
+      expect(click(START + HOUR + 20 * 60_000)).toEqual([]);
+    });
+
+    it('raises nothing past the last bucket or before the first', () => {
+      expect(click(START + 3 * HOUR)).toEqual([]);
+      expect(click(START + 10 * HOUR)).toEqual([]);
+      expect(click(START - HOUR)).toEqual([]);
+    });
   });
 
   it('raises a brushed range', () => {
