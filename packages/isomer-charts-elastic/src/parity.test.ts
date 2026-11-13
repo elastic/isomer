@@ -279,6 +279,24 @@ const gestures = (
         : [];
     return [...clicks, ...brush];
   }
+  if (scene.kind === 'tagCloud') {
+    const offersTags = scene.interactions.select.includes('tag');
+    return scene.words.map((word, index) => ({
+      gesture: `click ${word.text}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            { text: word.text, weight: word.weight, color: word.color, index },
+            { specId: 'tagCloud', key: 'tagCloud' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersTags && word.selection ? [selectEvent(NODE, word.selection)] : [],
+    }));
+  }
   if (scene.kind !== 'xy') {
     return [];
   }

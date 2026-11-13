@@ -52,6 +52,7 @@ export const createChartsPack = ({
       'partitionChart',
       'heatmap',
       'gauge',
+      'tagCloud',
     ],
     inputBudget: CHARTS_INPUT_BUDGET,
     authoring: {
@@ -64,6 +65,7 @@ export const createChartsPack = ({
             'partitionChart',
             'heatmap',
             'gauge',
+            'tagCloud',
             'dataTable',
           ],
         },

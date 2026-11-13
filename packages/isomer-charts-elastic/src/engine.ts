@@ -14,4 +14,5 @@ export { type XyDatum, seriesOf } from './events';
 export type { ElasticChartsOptions } from './options';
 export { slicesOf } from './partition';
 export { sceneSpecs } from './specs';
+export { TAG_CLOUD_LABEL } from './tag_cloud_label';
 export { kibanaBaseTheme } from './theme';

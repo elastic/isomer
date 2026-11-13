@@ -13,6 +13,7 @@ import { gaugeExamples } from '../schema/examples/gauge';
 import { heatmapExamples } from '../schema/examples/heatmap';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
+import { tagCloudExamples } from '../schema/examples/tag_cloud';
 import { xyChartExamples, xyInteractive } from '../schema/examples/xy_chart';
 import type { MetricNode } from '../schema/metric';
 import type { XyChartNode } from '../schema/xy_chart';
@@ -60,6 +61,10 @@ const nodes = [
   })),
   ...gaugeExamples.map(({ name, node }) => ({
     name: `gauge: ${name}`,
+    node,
+  })),
+  ...tagCloudExamples.map(({ name, node }) => ({
+    name: `tagCloud: ${name}`,
     node,
   })),
   ...heatmapExamples.map(({ name, node }) => ({
@@ -136,10 +141,12 @@ describe('resolveChart on every example', () => {
                 ? scene.cells.map(({ source }) => source)
                 : scene.kind === 'gauge'
                   ? []
-                  : seriesIn(scene).flatMap((series) => [
-                      series.source,
-                      ...series.marks.map(({ source }) => source),
-                    ]);
+                  : scene.kind === 'tagCloud'
+                    ? scene.words.map(({ source }) => source)
+                    : seriesIn(scene).flatMap((series) => [
+                        series.source,
+                        ...series.marks.map(({ source }) => source),
+                      ]);
       for (const { rows, columns } of sources) {
         for (const row of rows) {
           expect(row).toBeLessThan(node.data.rows.length);

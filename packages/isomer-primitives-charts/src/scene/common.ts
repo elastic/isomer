@@ -181,6 +181,18 @@ export const percentAlong = (
   return low * (1 - share) + high * share;
 };
 
+/** Where `value` lies from `low` (0) to `high` (1), even where their span overflows. */
+export const fractionAlong = (
+  low: number,
+  high: number,
+  value: number
+): number => {
+  const span = high - low;
+  return Number.isFinite(span)
+    ? (value - low) / span
+    : (value / 2 - low / 2) / (high / 2 - low / 2);
+};
+
 /** The least double above `value`. */
 export const nextUp = (value: number): number => {
   if (!Number.isFinite(value)) {

@@ -43,6 +43,11 @@ export const gaugeIcon = chartsIcon(
   `<path d="M3 11.5a5 5 0 0 1 10 0" stroke="${paint.muted}"/><path d="M3 11.5a5 5 0 0 1 3.5-4.77" stroke="${paint.accent}"/><path d="M8 11.5l2.5-3.5" stroke="${paint.fg}"/>`
 );
 
+/** Words of three sizes. */
+export const tagCloudIcon = chartsIcon(
+  `<path d="M3 6h5" stroke="${paint.accent}" stroke-width="2.5"/><path d="M9.5 6h3.5M3 9.5h3M7.5 9.5h5.5" stroke="${paint.fg}"/><path d="M4 12.5h3M8.5 12.5h3" stroke="${paint.muted}"/>`
+);
+
 /** A grid of cells in three shades. */
 export const heatmapIcon = chartsIcon(
   `<rect x="3" y="3" width="3" height="3" fill="${paint.accent}"/><rect x="6.5" y="3" width="3" height="3" fill="${paint.muted}"/><rect x="10" y="3" width="3" height="3" fill="${paint.fg}"/><rect x="3" y="6.5" width="3" height="3" fill="${paint.muted}"/><rect x="6.5" y="6.5" width="3" height="3" fill="${paint.fg}"/><rect x="10" y="6.5" width="3" height="3" fill="${paint.accent}"/><rect x="3" y="10" width="3" height="3" fill="${paint.fg}"/><rect x="6.5" y="10" width="3" height="3" fill="${paint.accent}"/><rect x="10" y="10" width="3" height="3" fill="${paint.muted}"/>`

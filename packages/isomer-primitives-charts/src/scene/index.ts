@@ -69,6 +69,8 @@ export {
   type TableOrder,
   type TableRow,
   type TableScene,
+  type TagCloudScene,
+  type TagCloudWord,
   type XyCategory,
   type XyMark,
   type XyScene,
