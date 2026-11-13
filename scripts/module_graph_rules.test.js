@@ -88,7 +88,12 @@ describe('charts .', () => {
     ).toEqual([]);
   });
 
-  it.each(['@elastic/isomer-runtime', 'react-dom/server'])(
+  it.each([
+    '@elastic/isomer-runtime',
+    'react-dom',
+    'react-dom/client',
+    'react-dom/server',
+  ])(
     'rejects %s, the testing entry’s peer, directly or through a relative module',
     async (specifier) => {
       expect(

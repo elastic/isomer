@@ -19,6 +19,11 @@ const SCREAMING_SNAKE = '^[A-Z][A-Z0-9_]*$';
 const CHART_ENGINE_IMPORTS =
   'A chart engine imports only @elastic/isomer-primitives-charts/scene.';
 
+// A specifier or path that reaches the charts pack other than as its `./scene` entry.
+const CHARTS_PACK_BEYOND_SCENE =
+  '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
+const CHARTS_PACK_BEYOND_SCENE_SELECTOR = `/${CHARTS_PACK_BEYOND_SCENE.replaceAll('/', '\\/')}/`;
+
 const namedSpecifiers = (typeGroup, valueGroup) => [
   'error',
   {
@@ -303,37 +308,24 @@ export default tseslint.config(
       'no-restricted-imports': [
         'error',
         {
-          paths: [
-            {
-              name: '@elastic/isomer-primitives-charts',
-              message: CHART_ENGINE_IMPORTS,
-            },
-          ],
           patterns: [
-            {
-              regex: '^@elastic/isomer-primitives-charts/(?!scene$)',
-              message: CHART_ENGINE_IMPORTS,
-            },
+            { regex: CHARTS_PACK_BEYOND_SCENE, message: CHART_ENGINE_IMPORTS },
           ],
         },
       ],
+      // Any call, so a `createRequire` result under another name is covered.
       'no-restricted-syntax': [
         'error',
-        {
-          selector:
-            'ImportExpression[source.value=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]',
+        ...[
+          'ImportExpression > Literal.source[value=PATH]',
+          'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
+          'CallExpression > Literal.arguments[value=PATH]',
+          'CallExpression > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]',
+          'TSImportType Literal[value=PATH]',
+        ].map((selector) => ({
+          selector: selector.replace('PATH', CHARTS_PACK_BEYOND_SCENE_SELECTOR),
           message: CHART_ENGINE_IMPORTS,
-        },
-        {
-          selector:
-            'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]',
-          message: CHART_ENGINE_IMPORTS,
-        },
-        {
-          selector:
-            "CallExpression[callee.name='require'] > Literal.arguments[value=/^@elastic\\/isomer-primitives-charts(\\/(?!scene$)|$)/]",
-          message: CHART_ENGINE_IMPORTS,
-        },
+        })),
       ],
     },
   },
