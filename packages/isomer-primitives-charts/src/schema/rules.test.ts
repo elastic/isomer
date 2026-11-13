@@ -194,6 +194,82 @@ describe('chart data', () => {
     );
   });
 
+  it.each([
+    [
+      'a string in a number column',
+      number('v'),
+      'one',
+      '"one"',
+      'a `number` column needs a number, or null.',
+    ],
+    [
+      'a boolean in a date column',
+      date('v'),
+      true,
+      'true',
+      'a `date` column needs epoch milliseconds or an ISO 8601 date-time string with a UTC offset, or null.',
+    ],
+    [
+      'an array in a column that is not multivalue',
+      string('v'),
+      ['a'],
+      '["a"]',
+      'a `string` column needs a string, or null.',
+    ],
+    [
+      'a mistyped value inside a multivalue cell',
+      { ...string('v'), multivalue: true },
+      ['a', 1],
+      '["a",1]',
+      'a multivalue `string` column needs a string, null, or an array of those.',
+    ],
+  ])(
+    'names the column, row, value and need for %s',
+    (_, column, cell, held, needs) => {
+      expect(
+        issuesOf(
+          'metric',
+          metric({ data: { columns: [column], rows: [[null], [cell]] } })
+        )
+      ).toContainEqual({
+        path: 'data.rows.1.0',
+        message: `${DATA_RULES.cellType} Row 1 of column "v" holds ${held}; ${needs}`,
+      });
+    }
+  );
+
+  it('shortens a long value in a cell type message', () => {
+    const [{ message } = { message: '' }] = issuesOf(
+      'metric',
+      metric({ data: { columns: [number('v')], rows: [['x'.repeat(500)]] } })
+    );
+    expect(message).toContain(`holds "${'x'.repeat(39)}…;`);
+    expect(message).not.toContain('x'.repeat(40));
+  });
+
+  it.each([
+    ['NaN', number('v'), Number.NaN],
+    ['Infinity', number('v'), Number.POSITIVE_INFINITY],
+    [
+      '-Infinity in a multivalue cell',
+      { ...number('v'), multivalue: true },
+      [Number.NEGATIVE_INFINITY],
+    ],
+  ])('says a %s cell must be finite', (_, column, cell) => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ data: { columns: [column], rows: [[cell]] } })
+      )
+    ).toEqual([
+      {
+        path: 'data.rows.0.0',
+        message:
+          'must be a finite number, a string, a boolean, null, or an array of those',
+      },
+    ]);
+  });
+
   it('rejects display strings for an unknown column or of the wrong length', () => {
     const issues = issuesOf(
       'metric',
@@ -226,6 +302,42 @@ describe('chart data', () => {
         })
       ).length
     ).toBeGreaterThan(0);
+  });
+});
+
+describe('a color of the wrong shape', () => {
+  const forms =
+    '`{ light, dark }` hex colors (`#rgb`, `#rrggbb` or `#rrggbbaa`), a `{ token }`, or a `{ palette: "categorical", index }`';
+
+  it.each(['red', { token: 'series' }, { palette: 'categorical' }])(
+    'names the shapes a color takes for %j',
+    (color) => {
+      expect(
+        issuesOf('metric', metric({ colors: { byKey: { v: color } } }))
+      ).toEqual([{ path: 'colors.byKey.v', message: `must be ${forms}` }]);
+    }
+  );
+
+  it('names `bands` too where a metric takes it', () => {
+    expect(
+      issuesOf('metric', metric({ value: { column: 'v', color: 'red' } }))
+    ).toEqual([
+      { path: 'value.color', message: `must be \`"bands"\`, ${forms}` },
+    ]);
+  });
+
+  it('keeps the hex message for one bad scheme', () => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ colors: { byKey: { v: { light: 'red', dark: '#000' } } } })
+      )
+    ).toEqual([
+      {
+        path: 'colors.byKey.v.light',
+        message: 'must be a #rgb, #rrggbb or #rrggbbaa color',
+      },
+    ]);
   });
 });
 
@@ -458,6 +570,38 @@ describe('xyChart', () => {
       path: 'data.rows.0.0',
       message: XY_RULES.xCoordinate,
     });
+  });
+
+  it.each([
+    ['a non-ISO string in a date x column', date('t'), 'yesterday'],
+    ['a string in a number x column', number('t'), 'one'],
+  ])('reports %s once', (_, column, cell) => {
+    const errors = issuesOf(
+      'xyChart',
+      xy({ data: { columns: [column, number('y')], rows: [[cell, 1]] } })
+    );
+    expect(errors).toEqual([
+      { path: 'data.rows.0.0', message: containing(DATA_RULES.cellType) },
+    ]);
+  });
+
+  it('reports a column reference of the wrong shape once, as its type', () => {
+    const errors = issuesOf(
+      'xyChart',
+      xy({
+        layers: [{ kind: 'data', mark: 'line', x: { column: 't' }, y: ['y'] }],
+      })
+    );
+    expect(errors).toEqual([
+      {
+        path: 'layers.0.x',
+        message: 'Invalid input: expected string, received object',
+      },
+      {
+        path: 'layers.0.y.0',
+        message: 'Invalid input: expected object, received string',
+      },
+    ]);
   });
 
   it.each([
