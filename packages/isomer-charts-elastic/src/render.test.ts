@@ -141,25 +141,32 @@ afterEach(() => {
   roots.splice(0).forEach((unmount) => unmount());
 });
 
-const draw = async (
+/** A mounted chart: `redraw` renders another Scene into the same root. */
+const mount = async (
   scene: Scene,
   env: SceneRenderEnv = { environment: 'browser' }
-): Promise<HTMLElement> => {
+) => {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root = createRoot(container);
-  act(() => {
-    root.render(renderer.render(scene, env) as never);
-  });
-  await act(async () => {
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+  const redraw = async (next: Scene) => {
+    act(() => {
+      root.render(renderer.render(next, env) as never);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+  };
+  await redraw(scene);
   roots.push(() => {
     act(() => root.unmount());
     container.remove();
   });
-  return container;
+  return { container, redraw };
 };
+
+const draw = async (scene: Scene, env?: SceneRenderEnv): Promise<HTMLElement> =>
+  (await mount(scene, env)).container;
 
 /** The legend Elastic Charts drew: each item's label and value. */
 const legendOf = (container: HTMLElement) =>
@@ -385,6 +392,50 @@ describe('elastic-charts renderer: xy legend actions', () => {
   it('offers no legend actions without onEvent', async () => {
     const container = await draw(xyInteractiveScene);
     expect(container.querySelector('button[aria-label^="Filter "]')).toBeNull();
+  });
+});
+
+describe('elastic-charts renderer: a series hidden from the legend', () => {
+  /** The series Elastic Charts draws; it leaves a hidden one out. */
+  const drawn = (container: HTMLElement) =>
+    (debugStateIn(container).bars ?? []).map(({ name }) => name);
+
+  it('stays hidden, alone, when new data puts a series ahead of it', async () => {
+    const [first] = seriesOf(xyInteractiveScene);
+    const {
+      key: _key,
+      selection: _selection,
+      ...item
+    } = xyInteractiveScene.legend.items[0]!;
+    const refreshed: XyScene = {
+      ...xyInteractiveScene,
+      layers: [
+        { kind: 'series', series: { ...first!, key: 'new', label: 'New' } },
+        ...xyInteractiveScene.layers,
+      ],
+      legend: {
+        ...xyInteractiveScene.legend,
+        items: [
+          { ...item, key: 'new', label: 'New' },
+          ...xyInteractiveScene.legend.items,
+        ],
+      },
+    };
+    const { container, redraw } = await mount(xyInteractiveScene);
+    expect(drawn(container)).toEqual(['200', '404', 'Other', '(null)']);
+    const label = [
+      ...container.querySelectorAll<HTMLElement>('.echLegendItem__label'),
+    ].find(({ textContent }) => textContent === '404');
+    expect(label).toBeDefined();
+    // Elastic Charts hides one series on a meta- or ctrl-click, by platform; a plain click isolates it.
+    act(() => {
+      label!.dispatchEvent(
+        new MouseEvent('click', { bubbles: true, metaKey: true, ctrlKey: true })
+      );
+    });
+    expect(drawn(container)).toEqual(['200', 'Other', '(null)']);
+    await redraw(refreshed);
+    expect(drawn(container)).toEqual(['New', '200', 'Other', '(null)']);
   });
 });
 
