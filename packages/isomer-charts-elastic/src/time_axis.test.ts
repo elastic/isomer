@@ -8,12 +8,15 @@
 // The resolver's time ticks against Elastic Charts' own multi-layer time axis
 // (`multilayerAxisEntry`, which Lens draws through), over intervals from
 // milliseconds to years, time zones with and without daylight saving, locales,
-// bars and lines, and plot widths from narrow to wide. Each case runs Elastic
-// Charts' rasters at a width and compares every tick, label, row and grid flag
-// with the band `timeTicksAt` picks for that width.
+// bars and lines, and plot widths from narrow to wide. Each case computes the
+// x domain and bucket with Elastic Charts' `mergeXDomain`, from the data and
+// the `xDomain` Kibana's `getXDomain` builds, runs its rasters at a width, and
+// compares every tick, label, row and grid flag with the band `timeTicksAt`
+// picks for that width.
 
 import * as visibleTicks from '@elastic/charts/dist/chart_types/xy_chart/axes/ticks/visible_ticks';
 import * as multilayerTicks from '@elastic/charts/dist/chart_types/xy_chart/axes/timeslip/multilayer_ticks';
+import * as xDomains from '@elastic/charts/dist/chart_types/xy_chart/domains/x_domain';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type SceneTimeTicks,
@@ -63,6 +66,24 @@ const { generateTicks } = visibleTicks as unknown as {
     multilayerTimeAxis: boolean
   ) => ElasticTick[];
 };
+interface ElasticXDomain {
+  readonly domain: [number, number];
+  readonly minInterval: number;
+}
+const { mergeXDomain } = xDomains as unknown as {
+  mergeXDomain: (
+    xScaleConfig: {
+      type: 'time';
+      nice: boolean;
+      isBandScale: boolean;
+      timeZone: string;
+      desiredTickCount: number;
+      customDomain?: { min: number; max: number; minInterval?: number };
+    },
+    xValues: Set<number>,
+    locale: string
+  ) => ElasticXDomain;
+};
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -75,6 +96,7 @@ interface Case {
   readonly count: number;
   readonly step: number;
   readonly interval?: number;
+  readonly domain?: { readonly min: number; readonly max: number };
   readonly timeZone: string;
   readonly locales?: readonly string[];
 }
@@ -93,6 +115,31 @@ const CASES: readonly Case[] = [
     count: 40,
     step: 30 * SECOND,
     timeZone: 'Europe/Berlin',
+  },
+  {
+    name: 'minute marks in stated 30 s buckets',
+    start: Date.UTC(2026, 10, 3, 12),
+    count: 60,
+    step: MINUTE,
+    interval: 30 * SECOND,
+    timeZone: 'UTC',
+  },
+  {
+    name: 'hourly marks stating a day, wider than their spacing',
+    start: Date.UTC(2026, 10, 3, 12),
+    count: 48,
+    step: HOUR,
+    interval: DAY,
+    timeZone: 'Europe/Berlin',
+  },
+  {
+    name: 'hourly buckets in a custom domain wider than the marks',
+    start: Date.UTC(2026, 10, 3, 6),
+    count: 12,
+    step: HOUR,
+    interval: HOUR,
+    domain: { min: Date.UTC(2026, 10, 2, 18), max: Date.UTC(2026, 10, 4, 6) },
+    timeZone: 'America/New_York',
   },
   {
     name: 'minute buckets over two hours',
@@ -194,10 +241,10 @@ const WIDTHS = [
   1800, 2400,
 ];
 
-const nodeOf = (
-  { start, count, step, interval, timeZone }: Case,
-  mark: 'bar' | 'line'
-): XyChartNode => ({
+const xsOf = ({ start, count, step }: Case) =>
+  Array.from({ length: count }, (_, index) => start + index * step);
+
+const nodeOf = (one: Case, mark: 'bar' | 'line'): XyChartNode => ({
   type: 'xyChart',
   data: {
     columns: [
@@ -206,20 +253,42 @@ const nodeOf = (
         label: 'time',
         type: 'date',
         role: 'dimension',
-        format: { kind: 'date', timeZone },
+        format: { kind: 'date', timeZone: one.timeZone },
       },
       { id: 'count', label: 'count', type: 'number', role: 'metric' },
     ],
-    rows: Array.from({ length: count }, (_, index) => [
-      start + index * step,
-      index % 7,
-    ]),
+    rows: xsOf(one).map((x, index) => [x, index % 7]),
   },
   layers: [{ kind: 'data', mark, x: 'time', y: [{ column: 'count' }] }],
   axes: {
-    x: { scale: 'temporal', ...(interval === undefined ? {} : { interval }) },
+    x: {
+      scale: 'temporal',
+      ...(one.interval === undefined ? {} : { interval: one.interval }),
+      ...(one.domain === undefined
+        ? {}
+        : { domain: { kind: 'custom', ...one.domain } }),
+    },
   },
 });
+
+/** Elastic Charts' x domain and bucket for a case's marks and the `xDomain` Kibana's `getXDomain` passes. */
+const elasticXDomain = (one: Case, mark: 'bar' | 'line', locale: string) =>
+  mergeXDomain(
+    {
+      type: 'time',
+      nice: false,
+      isBandScale: mark === 'bar',
+      timeZone: one.timeZone,
+      desiredTickCount: 0,
+      customDomain: {
+        min: one.domain?.min ?? NaN,
+        max: one.domain?.max ?? NaN,
+        ...(one.interval === undefined ? {} : { minInterval: one.interval }),
+      },
+    },
+    new Set(xsOf(one)),
+    locale
+  );
 
 interface Tick {
   readonly value: number;
@@ -230,9 +299,8 @@ interface Tick {
 
 /** What Elastic Charts' multi-layer axis draws at `width`, before it measures labels. */
 const elasticTicks = (
-  { domain, interval }: SceneTimeTicks,
+  { domain, minInterval }: ElasticXDomain,
   extend: boolean,
-  max: number,
   timeZone: string,
   locale: string,
   width: number
@@ -240,13 +308,13 @@ const elasticTicks = (
   // Positions far from the axis's end and far apart, so no label is measured out.
   const scale = {
     type: 'time',
-    domain: [domain.min, max],
+    domain,
     bandwidth: 0,
     scale: (value: number) => (value - 1e13) * 1000,
     isSingleValue: () => false,
   };
   const entry = multilayerAxisEntry(
-    { domain: [domain.min, max], minInterval: interval, timeZone },
+    { domain, minInterval, timeZone },
     extend,
     [0, width],
     2,
@@ -294,18 +362,17 @@ describe('time ticks: the resolver against Elastic Charts’ multi-layer axis', 
     });
     const ticks = scene.axes.x.timeTicks!;
     expect(ticks).toBeDefined();
-    const lastX = run.start + (run.count - 1) * run.step;
-    expect(ticks.domain.min).toBe(run.start);
+    const extend = run.mark === 'bar';
+    const elastic = elasticXDomain(run, run.mark, run.locale);
+    const [min, max] = elastic.domain;
+    expect(ticks.interval).toBe(elastic.minInterval);
+    expect(ticks.domain).toEqual({
+      min,
+      max: max + (extend ? elastic.minInterval : 0),
+    });
     for (const width of WIDTHS) {
       expect(sceneTicks(ticks, width), `at ${width}px`).toEqual(
-        elasticTicks(
-          ticks,
-          run.mark === 'bar',
-          lastX,
-          run.timeZone,
-          run.locale,
-          width
-        )
+        elasticTicks(elastic, extend, run.timeZone, run.locale, width)
       );
     }
   });

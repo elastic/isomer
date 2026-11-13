@@ -49,28 +49,26 @@ const vis = (hex: string) => ({ light: hex, dark: hex });
 const MINUTE = 60_000;
 const DAY = 24 * HOUR;
 
-/** The first of the month `index` months after `start`'s, UTC. */
-const monthStart = (start: number, index: number) => {
-  const date = new Date(start);
-  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + index, 1);
-};
+/** Midnight in Berlin `index` days after October 1, 2026: UTC+2 through October 25, UTC+1 after. */
+const berlinDay = (index: number) =>
+  Date.UTC(2026, 9, 1 + index) - (index < 25 ? 2 : 1) * HOUR;
 
 /**
- * A count over regular buckets in a time zone, for the time-axis examples: its
- * x column prints dates in that zone, and its interval is the bucket.
+ * A count over buckets in a time zone, for the time-axis examples: its x
+ * column prints dates in that zone, and each bucket starts at `at(index)`.
  */
 const timeAxisExample = ({
   title,
-  start,
+  at,
   count,
-  step,
+  interval,
   timeZone,
   mark,
 }: {
   title: string;
-  start: number;
+  at: (index: number) => number;
   count: number;
-  step: number | 'month';
+  interval?: number;
   timeZone: string;
   mark: 'line' | 'bar' | 'area';
 }): XyChartNode => ({
@@ -93,14 +91,13 @@ const timeAxisExample = ({
       countColumn,
     ],
     rows: Array.from({ length: count }, (_, index) => [
-      step === 'month' ? monthStart(start, index) : start + index * step,
+      at(index),
       Math.round(400 + 250 * Math.sin(index / 5) + ((index * 37) % 60)),
     ]),
   },
   layers: [{ kind: 'data', mark, x: 'time', y: [{ column: 'count' }] }],
-  // Months differ in length, so a monthly series states no interval.
   axes: {
-    x: { scale: 'temporal', ...(step === 'month' ? {} : { interval: step }) },
+    x: { scale: 'temporal', ...(interval === undefined ? {} : { interval }) },
   },
 });
 
@@ -638,9 +635,9 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       'A two-hour line in one-minute buckets across midnight: minutes beside the plot, the day below them.',
     node: timeAxisExample({
       title: 'Events per minute',
-      start: Date.UTC(2026, 10, 3, 23, 10),
+      at: (index) => Date.UTC(2026, 10, 3, 23, 10) + index * MINUTE,
       count: 120,
-      step: MINUTE,
+      interval: MINUTE,
       timeZone: 'UTC',
       mark: 'line',
     }),
@@ -651,9 +648,9 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       'Hourly bars over three days in New York, where 01:00 repeats on November 1: hours or six-hour steps beside the plot, each day below.',
     node: timeAxisExample({
       title: 'Requests per hour',
-      start: Date.UTC(2026, 9, 31, 4),
+      at: (index) => Date.UTC(2026, 9, 31, 4) + index * HOUR,
       count: 72,
-      step: HOUR,
+      interval: HOUR,
       timeZone: 'America/New_York',
       mark: 'bar',
     }),
@@ -664,9 +661,9 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       'Daily bars over two months in Berlin, across the end of daylight saving: days beside the plot, each month below.',
     node: timeAxisExample({
       title: 'Orders per day',
-      start: Date.UTC(2026, 8, 30, 22),
+      at: berlinDay,
       count: 61,
-      step: DAY,
+      interval: DAY,
       timeZone: 'Europe/Berlin',
       mark: 'bar',
     }),
@@ -677,9 +674,9 @@ export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
       'A monthly area over three years: months beside the plot, each year below.',
     node: timeAxisExample({
       title: 'Active users per month',
-      start: Date.UTC(2024, 0, 1),
+      // Months differ in length, so a monthly series states no interval.
+      at: (index) => Date.UTC(2024, index, 1),
       count: 36,
-      step: 'month',
       timeZone: 'UTC',
       mark: 'area',
     }),

@@ -10,8 +10,9 @@
 // rasters are compared case by case in `isomer-charts-elastic`
 // (`src/time_axis.test.ts`); these state the labels Lens shows.
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import { xyChartExamples } from '../schema/examples/xy_chart';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import { resolveChart } from './resolve';
@@ -274,6 +275,17 @@ describe('resolveChart: an xy Scene’s time ticks', () => {
     expect(timeTicks?.interval).toBe(HOUR);
   });
 
+  it('keeps a stated interval narrower than the marks’ spacing, and takes the spacing for a wider one', () => {
+    const withInterval = (interval: number) =>
+      xOf(hourly({ axes: { x: { scale: 'temporal', interval } } })).timeTicks;
+    expect(withInterval(30 * MINUTE)?.interval).toBe(30 * MINUTE);
+    expect(withInterval(30 * MINUTE)?.domain.max).toBe(
+      Date.UTC(2026, 10, 3, 3, 30)
+    );
+    expect(withInterval(DAY)?.interval).toBe(HOUR);
+    expect(withInterval(DAY)?.domain.max).toBe(Date.UTC(2026, 10, 3, 4));
+  });
+
   it('spans a custom domain', () => {
     const min = Date.UTC(2026, 10, 2);
     const max = Date.UTC(2026, 10, 4);
@@ -318,6 +330,24 @@ describe('resolveChart: an xy Scene’s time ticks', () => {
     ).toEqual(['19:00', '20:00']);
   });
 
+  it('draws its labels level whatever `labelOrientation` states, as Lens does', () => {
+    const angled = (orientation: 'vertical' | 'horizontal') =>
+      xOf(
+        hourly({
+          orientation,
+          axes: {
+            x: {
+              scale: 'temporal',
+              interval: HOUR,
+              labelOrientation: 'angled',
+            },
+          },
+        })
+      ).labelRotation;
+    expect(angled('vertical')).toBe(0);
+    expect(angled('horizontal')).toBe(-45);
+  });
+
   it('is absent on a horizontal chart, an ordinal axis and a linear one', () => {
     expect(
       xOf(hourly({ orientation: 'horizontal' })).timeTicks
@@ -328,5 +358,51 @@ describe('resolveChart: an xy Scene’s time ticks', () => {
     expect(
       xOf(hourly({ axes: { x: { scale: 'linear' } } })).timeTicks
     ).toBeUndefined();
+  });
+});
+
+describe('the time-axis examples', () => {
+  it('start each day bucket at midnight in its zone', () => {
+    const { node } = xyChartExamples.find(
+      ({ name }) => name === 'Time axis by the day'
+    )!;
+    const clock = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Europe/Berlin',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    });
+    const times = new Set(
+      node.data.rows.map(([at]) => clock.format(at as number))
+    );
+    expect(times).toEqual(new Set(['00:00']));
+  });
+});
+
+describe('the scene entry without `Intl.PluralRules`', () => {
+  it('imports and picks a band, and resolves days outside English', async () => {
+    const days = {
+      min: Date.UTC(2026, 9, 1),
+      max: Date.UTC(2026, 9, 10),
+      interval: DAY,
+      extend: false,
+      timeZone: 'UTC',
+    };
+    const english = resolveTimeTicks({ ...days, locale: 'en' });
+    vi.resetModules();
+    vi.stubGlobal(
+      'Intl',
+      Object.create(Intl, { PluralRules: { value: undefined } })
+    );
+    try {
+      const scene = await import('./index');
+      const timeAxis = await import('./time_axis');
+      expect(scene.timeTicksAt(english, 800)).toBe(timeTicksAt(english, 800));
+      const german = timeAxis.resolveTimeTicks({ ...days, locale: 'de' });
+      expect(rows(german, 800)[0]?.slice(0, 2)).toEqual(['1', '2']);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
   });
 });

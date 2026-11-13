@@ -279,7 +279,7 @@ export interface SceneAxis {
   readonly title?: string;
   readonly showTicks: boolean;
   readonly showGrid: boolean;
-  /** Tick label rotation in degrees. */
+  /** Tick label rotation in degrees; 0 on an axis with `timeTicks`. */
   readonly labelRotation: 0 | -45 | -90;
   /**
    * On a vertical chart's time x axis, the two-row axis Lens draws: the ticks

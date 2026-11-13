@@ -9,7 +9,7 @@
 // `DebugState` Elastic Charts reports for it: ticks are Elastic Charts' own, so
 // only what it says it drew can be compared with the Scene's labels.
 
-import type { DebugState } from '@elastic/charts';
+import type { DebugState, DebugStateAxis } from '@elastic/charts';
 import {
   formatAxisValue,
   type GaugeScene,
@@ -17,6 +17,9 @@ import {
   type PartitionScene,
   type Scene,
   type SceneAxis,
+  type SceneTimeBand,
+  type SceneTimeTicks,
+  timeTicksAt,
   type XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 
@@ -29,13 +32,113 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
     ? scene.categories.find(({ x }) => x === value)?.label
     : undefined) ?? formatAxisValue(scene, axis, value as number);
 
-/** Every label the Scene gives a time tick at `value`, in any band. */
-const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
-  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
-    layers.flatMap(({ ticks }) =>
-      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
+/** Gridlines within this many pixels of where a tick falls are at it. */
+const GRID_TOLERANCE = 0.5;
+
+/**
+ * The plot width at which `band` puts Elastic Charts' gridlines where it drew
+ * them: `DebugState` reports the finest grid layer's ticks within the domain,
+ * the first perhaps dropped, from 0 at the domain's start.
+ */
+const gridWidth = (
+  { domain: { min, max } }: SceneTimeTicks,
+  band: SceneTimeBand,
+  gridlines: readonly number[]
+): number | undefined => {
+  const at = band.layers
+    .find(({ grid, ticks }) => grid && ticks.some((tick) => tick.at >= min))
+    ?.ticks.map((tick) => tick.at)
+    .filter((value) => value >= min && value <= max);
+  const last = at?.at(-1);
+  const lastLine = gridlines.at(-1);
+  if (!at || last === undefined || last <= min || lastLine === undefined) {
+    return undefined;
+  }
+  const width = (lastLine * (max - min)) / (last - min);
+  const fits = (values: readonly number[]) =>
+    values.length === gridlines.length &&
+    values.every(
+      (value, index) =>
+        Math.abs(((value - min) / (max - min)) * width - gridlines[index]!) <=
+        GRID_TOLERANCE
+    );
+  return fits(at) || fits(at.slice(1)) ? width : undefined;
+};
+
+const tickKey = (value: unknown, label: string) =>
+  `${String(value)} "${label}"`;
+
+/** Each labeled layer's ticks as {@link tickKey}s, finest first. */
+const labeledLayers = ({ layers }: SceneTimeBand): string[][] =>
+  layers
+    .filter(({ labeled, ticks }) => labeled && ticks.length > 0)
+    .map(({ ticks }) => ticks.map(({ at, label }) => tickKey(at, label)));
+
+/**
+ * Where a drawn time axis is not `band`: Elastic Charts measures labels, so it
+ * may leave out a layer's first label (it would collide with the next) and last
+ * (it would overflow), but draws every other and at least one of each layer's.
+ */
+const timeBandProblems = (
+  id: string,
+  band: SceneTimeBand,
+  drawn: ReadonlySet<string>
+): string[] => {
+  const layers = labeledLayers(band);
+  const expected = new Set(layers.flat());
+  return [
+    ...[...drawn]
+      .filter((key) => !expected.has(key))
+      .map((key) => `axis "${id}" labels ${key}, which its band does not`),
+    ...layers.flatMap((keys) => {
+      const missing = keys
+        .slice(1, -1)
+        .filter((key) => !drawn.has(key))
+        .map((key) => `axis "${id}" leaves out ${key}`);
+      return keys.some((key) => drawn.has(key))
+        ? missing
+        : [...missing, `axis "${id}" draws none of ${keys.join(', ')}`];
+    }),
+  ];
+};
+
+/**
+ * Where a drawn time axis is not the Scene's band at its plot width, measured
+ * from its gridlines; with no gridline to measure by, not any band.
+ */
+const timeAxisProblems = (
+  { timeTicks }: SceneAxis,
+  { id, labels, values, gridlines }: DebugStateAxis
+): string[] => {
+  if (!timeTicks) {
+    return [];
+  }
+  const drawn = new Set(
+    labels.flatMap((label, index) =>
+      label === '' ? [] : [tickKey(values[index], label)]
     )
   );
+  const lines = gridlines.map(({ x }) => x);
+  const measured = timeTicks.bands.find((band) => {
+    const width = gridWidth(timeTicks, band, lines);
+    return width !== undefined && timeTicksAt(timeTicks, width) === band;
+  });
+  if (measured) {
+    return timeBandProblems(id, measured, drawn);
+  }
+  if (lines.length > 0) {
+    return [
+      `axis "${id}" draws gridlines at ${JSON.stringify(lines)}, which no band of the Scene's puts there`,
+    ];
+  }
+  return timeTicks.bands.some(
+    (band) => timeBandProblems(id, band, drawn).length === 0
+  )
+    ? []
+    : [
+        `axis "${id}" labels ${JSON.stringify([...drawn])}, which are no band of the Scene's`,
+      ];
+};
 
 const sorted = (entries: readonly string[]) => [...entries].sort();
 
@@ -56,20 +159,17 @@ const xyProblems = (scene: XyScene, state: DebugState): string[] => {
     ),
   ];
   const problems = ticks.length === 0 ? ['no axis is drawn'] : [];
-  for (const [axis, { id, labels, values }] of ticks) {
+  for (const [axis, drawn] of ticks) {
+    const { id, labels, values } = drawn;
     if (!axis) {
       problems.push(`axis "${id}" is drawn but is none of the Scene's`);
       continue;
     }
+    if (axis.timeTicks) {
+      problems.push(...timeAxisProblems(axis, drawn));
+      continue;
+    }
     labels.forEach((label, index) => {
-      if (axis.timeTicks) {
-        if (label !== '' && !timeLabels(axis, values[index]).includes(label)) {
-          problems.push(
-            `axis "${id}" labels ${String(values[index])} "${label}", which no time tick of the Scene's has`
-          );
-        }
-        return;
-      }
       const expected = sceneLabel(scene, axis, values[index]);
       if (label !== '' && label !== expected) {
         problems.push(

@@ -195,19 +195,15 @@ const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
   };
   if (axis.id === 'x') {
     // A Scene time axis is Elastic Charts' multi-layer one (its default
-    // `timeAxisLayerCount: 2`), styled as Lens styles it: Elastic Charts picks
-    // the same rasters the resolver did and labels them itself.
-    return axis.timeTicks ? (
+    // `timeAxisLayerCount: 2`), with only tick visibility styled, as Lens's
+    // `xAxisStyle` styles it (`expression_xy/public/components/xy_chart.tsx`):
+    // Elastic Charts picks the same rasters the resolver did and labels them itself.
+    return (
       <Axis
         key={axis.id}
         {...shared}
-        style={{
-          tickLabel: { visible: axis.showTicks },
-          tickLine: { visible: axis.showTicks },
-        }}
+        {...(axis.timeTicks ? {} : { timeAxisLayerCount: 0 })}
       />
-    ) : (
-      <Axis key={axis.id} {...shared} timeAxisLayerCount={0} />
     );
   }
   const domain = yDomainOf(axis, scene);

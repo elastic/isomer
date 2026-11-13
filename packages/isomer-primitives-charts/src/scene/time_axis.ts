@@ -269,8 +269,6 @@ const ENGLISH_ORDINALS: Record<Intl.LDMLPluralRule, string> = {
   other: 'th',
 };
 
-const englishOrdinals = new Intl.PluralRules('en-US', { type: 'ordinal' });
-
 const HOUR_FORMAT = {
   hour: '2-digit',
   minute: '2-digit',
@@ -313,12 +311,14 @@ const createRasters = (locale: string, timeZone: string) => {
   const yearAt = (s: number) => calendarAt(zone, s).year;
 
   const minorDayBase = format({ day: 'numeric' });
+  let englishOrdinals: Intl.PluralRules | undefined;
   const minorDayFormat = (ms: number) => {
     const text = minorDayBase(ms);
-    const number = Number.parseInt(text, 10);
-    return locale.substring(0, 2) === 'en'
-      ? `${text}${ENGLISH_ORDINALS[englishOrdinals.select(number)]}`
-      : text;
+    if (locale.substring(0, 2) !== 'en') {
+      return text;
+    }
+    englishOrdinals ??= new Intl.PluralRules('en-US', { type: 'ordinal' });
+    return `${text}${ENGLISH_ORDINALS[englishOrdinals.select(Number.parseInt(text, 10))]}`;
   };
   const detailedDayFormat = format({
     year: 'numeric',

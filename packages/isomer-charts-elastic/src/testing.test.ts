@@ -13,13 +13,14 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act as testUtilsAct } from 'react-dom/test-utils';
-import type { DebugState } from '@elastic/charts';
+import type { DebugState, DebugStateAxis } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import type {
   GaugeScene,
   HeatmapScene,
   PartitionScene,
   Scene,
+  SceneTimeBand,
   XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
@@ -171,6 +172,89 @@ describe('debugStateProblems', () => {
     };
     expect(debugStateProblems(xy, changed).join('\n')).toMatch(
       /axis "x" labels .*!"/
+    );
+  });
+
+  const timeScenes = scenes.filter(
+    (entry): entry is { name: string; scene: XyScene } =>
+      entry.scene.kind === 'xy' && entry.scene.axes.x.timeTicks !== undefined
+  );
+  const withX = (state: DebugState, x: Partial<DebugStateAxis>) => ({
+    ...state,
+    axes: { ...state.axes!, x: [{ ...state.axes!.x[0]!, ...x }] },
+  });
+
+  // At this size every band of the monthly example labels years alone.
+  const bandedScenes = timeScenes.filter(({ name }) =>
+    [
+      'Time axis by the minute',
+      'Time axis by the hour across a daylight saving change',
+      'Time axis by the day',
+    ].includes(name)
+  );
+
+  it.each(bandedScenes)(
+    'fails another band’s time labels at the drawn width for $name',
+    async ({ scene }) => {
+      const state = await debugStateOf(scene);
+      const { labels, values } = state.axes!.x[0]!;
+      const drawn = labels.map((label, index) => `${values[index]} ${label}`);
+      const keysOf = ({ layers }: SceneTimeBand) =>
+        layers.flatMap(({ ticks }) =>
+          ticks.flatMap(({ at, label }) =>
+            label === '' ? [] : [`${at} ${label}`]
+          )
+        );
+      // A band that labels a tick the drawing does not, and lacks one it does.
+      const other = scene.axes.x.timeTicks!.bands.find((band) => {
+        const keys = keysOf(band);
+        return (
+          keys.some((key) => !drawn.includes(key)) &&
+          drawn.some((key) => !keys.includes(key))
+        );
+      });
+      expect(other).toBeDefined();
+      const labeled = other!.layers.flatMap(({ ticks }) =>
+        ticks.filter(({ label }) => label !== '')
+      );
+      const changed = withX(state, {
+        labels: labeled.map(({ label }) => label),
+        values: labeled.map(({ at }) => at),
+      });
+      expect(debugStateProblems(scene, changed)).not.toEqual([]);
+    }
+  );
+
+  it('fails a time axis missing its major row', async () => {
+    const scene = timeScenes.find(
+      ({ name }) => name === 'Time axis by the minute'
+    )!.scene;
+    const state = await debugStateOf(scene);
+    const { labels, values } = state.axes!.x[0]!;
+    const minor = labels.flatMap((label, index): [string, unknown][] =>
+      label.endsWith('2026') ? [] : [[label, values[index]]]
+    );
+    expect(minor.length).toBeLessThan(labels.length);
+    const changed = withX(state, {
+      labels: minor.map(([label]) => label),
+      values: minor.map(([, value]) => value),
+    });
+    expect(debugStateProblems(scene, changed).join('\n')).toMatch(
+      /axis "x" (draws none of|leaves out) .*2026"/
+    );
+  });
+
+  it('fails time-axis gridlines no band puts where they are drawn', async () => {
+    const scene = timeScenes[0]!.scene;
+    const state = await debugStateOf(scene);
+    const changed = withX(state, {
+      gridlines: state.axes!.x[0]!.gridlines.map(({ x, y }) => ({
+        x: x * 1.5 + 7,
+        y,
+      })),
+    });
+    expect(debugStateProblems(scene, changed).join('\n')).toMatch(
+      /axis "x" draws gridlines at/
     );
   });
 

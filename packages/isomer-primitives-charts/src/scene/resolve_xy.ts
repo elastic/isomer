@@ -737,6 +737,16 @@ export const resolveXy = (
   };
 
   const xConfig = node.axes?.x;
+  const xTimeTicks =
+    xScale === 'time' && !horizontal
+      ? timeTicksOf(series, statedInterval, {
+          domain: xConfig?.domain,
+          locale: resolution.locale,
+          timeZone:
+            xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone,
+          maxWidth: options.size?.width,
+        })
+      : {};
   const xAxis: SceneAxis = {
     id: 'x',
     position: horizontal ? 'left' : 'bottom',
@@ -768,16 +778,11 @@ export const resolveXy = (
     ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
     showTicks: xConfig?.ticks ?? true,
     showGrid: xConfig?.grid ?? true,
-    labelRotation: ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
-    ...(xScale === 'time' && !horizontal
-      ? timeTicksOf(series, statedInterval, {
-          domain: xConfig?.domain,
-          locale: resolution.locale,
-          timeZone:
-            xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone,
-          maxWidth: options.size?.width,
-        })
-      : {}),
+    // Lens's multi-layer time axis takes no `labelsOrientation`.
+    labelRotation: xTimeTicks.timeTicks
+      ? 0
+      : ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+    ...xTimeTicks,
   };
 
   const legendConfig = node.legend;
