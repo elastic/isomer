@@ -15,9 +15,10 @@
 //
 // `--engine` names a CommonJS module exporting `{ createRenderers, bounds }`:
 // the scene renderers to draw with, and the ceilings `--check` holds each
-// scenario's median run to, in MB. Without one, only `baseline` runs. `--check`
-// runs the bounded scenarios and fails when a median exceeds its bound; with
-// `--json`, its report goes to stderr. Run `pnpm build` first: this loads the
+// scenario's median run to, in MB. Without one, only the no-engine scenarios
+// run, held to `PACK_BOUNDS`. `--check` runs the bounded scenarios and fails
+// when a median exceeds its bound or nothing is bounded; with `--json`, its
+// report goes to stderr. Run `pnpm build` first: this loads the
 // built CommonJS packages, as a Node host does.
 
 const { spawnSync } = require('node:child_process');
@@ -31,6 +32,11 @@ const { resolve } = require('node:path');
 const SCENARIOS = {
   baseline: {
     about: 'every metric and xy example, light and dark, at 1×, no engine',
+    engine: false,
+  },
+  budget: {
+    about:
+      "one xy line at the charts pack's whole input budget, at 2×, no engine",
     engine: false,
   },
   engine: {
@@ -49,6 +55,16 @@ const SCENARIOS = {
   'burst-unlimited': {
     about: '16 xy PNGs at 2× requested at once, no limiter',
   },
+};
+
+/**
+ * The ceilings `--check` holds the no-engine scenarios to, in MB: what the
+ * charts pack costs by itself. Each is about twice what Node 22 measures on
+ * arm64 macOS, to hold across platforms and still catch a doubling.
+ */
+const PACK_BOUNDS = {
+  baseline: { peakRssMb: 280 },
+  budget: { peakRssMb: 900, renderRssMb: 800 },
 };
 
 const mb = (bytes) => bytes / 1024 / 1024;
@@ -218,20 +234,23 @@ const child = async (scenario, engine, repeat, cacheMaxBytes, budgetValues) => {
       scale: 2,
     }));
 
+  const budgetXy = () => [
+    {
+      composition: atBudget((rows) => ({
+        type: 'view',
+        body: [withRows(rows)],
+      })),
+      theme: 'light',
+      scale: 2,
+    },
+  ];
+
   const jobs = {
     baseline: examples,
     engine: examples,
     one: () => xyAt2x(1),
-    'budget-xy': () => [
-      {
-        composition: atBudget((rows) => ({
-          type: 'view',
-          body: [withRows(rows)],
-        })),
-        theme: 'light',
-        scale: 2,
-      },
-    ],
+    budget: budgetXy,
+    'budget-xy': budgetXy,
     'budget-grid': () => [
       { composition: atBudget(grid), theme: 'light', scale: 2 },
     ],
@@ -316,7 +335,7 @@ const parent = () => {
   const check = args.includes('--check');
   const enginePath = option('--engine', undefined);
   const engine = enginePath === undefined ? undefined : resolve(enginePath);
-  const bounds = engine === undefined ? {} : require(engine).bounds;
+  const bounds = engine === undefined ? PACK_BOUNDS : require(engine).bounds;
   const runs = Number(option('--runs', check ? 3 : 4));
   const repeat = Number(option('--repeat', 1));
   const cacheMaxBytes = option('--cache-max-bytes', undefined);
@@ -411,6 +430,10 @@ const parent = () => {
     for (const { ok, line } of checks) {
       report.write(`${ok ? '✓' : '✗'} ${line}\n`);
     }
+    if (checks.length === 0) {
+      process.stderr.write('No scenario has a bound to check.\n');
+      process.exitCode = 1;
+    }
     const failures = checks.filter(({ ok }) => !ok);
     if (failures.length > 0) {
       process.stderr.write(
@@ -421,7 +444,7 @@ const parent = () => {
   }
 };
 
-module.exports = { checkBounds, limit };
+module.exports = { PACK_BOUNDS, checkBounds, limit };
 
 if (require.main === module) {
   if (process.argv[2] === '--child') {

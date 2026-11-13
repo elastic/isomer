@@ -147,7 +147,7 @@ describe('limit', () => {
 });
 
 describe('the harness', () => {
-  it('runs only the no-engine scenario without an engine', () => {
+  it('refuses an engine scenario without an engine', () => {
     const run = spawnSync(
       process.execPath,
       [
