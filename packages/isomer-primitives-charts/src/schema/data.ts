@@ -126,11 +126,23 @@ const CELL_NEEDS: Record<ColumnType, string> = {
 
 const MAX_QUOTED_LENGTH = 40;
 
+const textOf = (value: unknown): string => {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'bigint') {
+    return `${value}n`;
+  }
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return 'a value with no JSON text';
+  }
+};
+
+/** Never throws: a throw inside a check drops the check's later issues. */
 const quoted = (value: unknown): string => {
-  const text =
-    typeof value === 'number'
-      ? String(value)
-      : (JSON.stringify(value) ?? String(value));
+  const text = textOf(value);
   return text.length > MAX_QUOTED_LENGTH
     ? `${text.slice(0, MAX_QUOTED_LENGTH)}…`
     : text;
