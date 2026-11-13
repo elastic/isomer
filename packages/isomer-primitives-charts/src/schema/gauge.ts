@@ -7,6 +7,7 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
+import { BANDS_RANGE_RULE, checkBandsRange } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import { linkSchema } from './events';
@@ -33,7 +34,7 @@ export type GaugeShape = (typeof GAUGE_SHAPES)[number];
 export const GAUGE_RULES = {
   numberColumns:
     'The `value`, `min`, `max` and `goal` columns are single-valued `number` columns.',
-  bandsRange: 'A `bandsRange` needs `colors.bands`.',
+  bandsRange: BANDS_RANGE_RULE,
 } as const;
 
 const GAUGE_DESCRIPTION = [
@@ -126,13 +127,7 @@ export const gaugeSchema = gaugeObjectSchema.describe(GAUGE_DESCRIPTION).check(
         missing: COLUMN_REF_RULE,
         type: GAUGE_RULES.numberColumns,
       });
-      if (node.bandsRange !== undefined && !node.colors?.bands?.length) {
-        context.addIssue({
-          code: 'custom',
-          path: ['bandsRange'],
-          message: GAUGE_RULES.bandsRange,
-        });
-      }
+      checkBandsRange(node, context);
     },
     [COLUMN_REF_RULE, GAUGE_RULES.numberColumns, GAUGE_RULES.bandsRange]
   )

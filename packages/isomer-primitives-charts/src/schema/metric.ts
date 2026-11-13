@@ -7,7 +7,12 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { colorValueSchema, KEY_PART_RULE } from './colors';
+import {
+  BANDS_RANGE_RULE,
+  checkBandsRange,
+  colorValueSchema,
+  KEY_PART_RULE,
+} from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import { chartDataSchema } from './data';
@@ -35,6 +40,7 @@ export const METRIC_RULES = {
     'Trend column references name a column in `background.data.columns`.',
   oneRow: 'Without a `breakdown`, `data` holds at most one row.',
   bands: 'A `bands` color needs `colors.bands`.',
+  bandsRange: BANDS_RANGE_RULE,
   trendBreakdown: 'A trend `breakdown` needs a `breakdown` on the metric.',
 } as const;
 
@@ -139,7 +145,7 @@ const metricObjectSchema = z.object({
         .enum(['absolute', 'percentage'])
         .optional()
         .describe(
-          'Whether band bounds are values, or percentages from 0 to the `background` bar’s `max`, across the range of `breakdown` tiles, or from 0 to twice a lone value. A tile in an empty range takes the first band. Absent means `absolute`.'
+          `Whether band bounds are values, or percentages from 0 to the \`background\` bar’s \`max\`, across the range of \`breakdown\` tiles, or from 0 to twice a lone value. A tile in an empty range takes the first band. Absent means \`absolute\`. ${METRIC_RULES.bandsRange}`
         ),
       applyColorTo: z
         .enum(['value', 'background'])
@@ -317,6 +323,11 @@ const checkBands = (node: MetricInput, context: Issues) => {
       message: METRIC_RULES.bands,
     });
   }
+  checkBandsRange(
+    { bandsRange: node.value.bandsRange, colors: node.colors },
+    context,
+    ['value', 'bandsRange']
+  );
 };
 
 /** A metric: one headline value per tile, with optional secondary value, progress bar or trend. */
@@ -349,6 +360,7 @@ export const metricSchema = metricObjectSchema
         METRIC_RULES.trendColumns,
         METRIC_RULES.oneRow,
         METRIC_RULES.bands,
+        METRIC_RULES.bandsRange,
         METRIC_RULES.trendBreakdown,
         INTERACTION_RULES.emphasisRows,
       ]

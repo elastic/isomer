@@ -128,3 +128,24 @@ export const chartColorsSchema = chartColorsObjectSchema
 
 /** Colors resolved by whoever built the node. */
 export type ChartColors = z.infer<typeof chartColorsSchema>;
+
+/** The rule every primitive with a `bandsRange` states. */
+export const BANDS_RANGE_RULE = 'A `bandsRange` needs `colors.bands`.';
+
+/** Adds a {@link BANDS_RANGE_RULE} issue at `path` for a `bandsRange` stated with no bands. */
+export const checkBandsRange = (
+  {
+    bandsRange,
+    colors,
+  }: { bandsRange?: string | undefined; colors?: ChartColors | undefined },
+  context: z.core.$RefinementCtx<unknown>,
+  path: readonly string[] = ['bandsRange']
+): void => {
+  if (bandsRange !== undefined && !colors?.bands?.length) {
+    context.addIssue({
+      code: 'custom',
+      path: [...path],
+      message: BANDS_RANGE_RULE,
+    });
+  }
+};
