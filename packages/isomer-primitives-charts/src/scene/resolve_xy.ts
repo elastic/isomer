@@ -51,12 +51,40 @@ type XDomainConfig = NonNullable<
 /** The largest epoch milliseconds a `Date` holds. */
 const MAX_DATE = 8.64e15;
 
+// A gap past the largest double stops at it.
+const bounded = (value: number) =>
+  Math.max(-Number.MAX_VALUE, Math.min(Number.MAX_VALUE, value));
+
+/**
+ * The bucket width over ascending distinct x values, as Elastic Charts'
+ * `minInterval` is: the stated interval, unless it is wider than their
+ * smallest spacing, which is used then, as it is when none is stated.
+ */
+const bucketWidthOf = (
+  xs: readonly number[],
+  stated: number | undefined
+): number | undefined => {
+  const spacing = xs.reduce<number | undefined>((smallest, x, at) => {
+    if (at === 0) {
+      return smallest;
+    }
+    const gap = bounded(x - xs[at - 1]!);
+    return gap > 0 && (smallest === undefined || gap < smallest)
+      ? gap
+      : smallest;
+  }, undefined);
+  return stated === undefined ||
+    stated < 0 ||
+    (spacing !== undefined && stated > spacing)
+    ? spacing
+    : stated;
+};
+
 /**
  * A time x axis's ticks, from the domain and bucket Elastic Charts computes
  * from the drawn marks (`mergeXDomain`): the marks' extent or the custom
- * domain; the stated interval unless it is wider than the marks' smallest
- * spacing; and one bucket more where bars fill buckets, as `xy.tsx` turns on
- * histogram mode. Absent when no mark has a time.
+ * domain; their {@link bucketWidthOf}; and one bucket more where bars fill
+ * buckets, as `xy.tsx` turns on histogram mode. Absent when no mark has a time.
  */
 const timeTicksOf = (
   series: readonly XySeries[],
@@ -85,18 +113,7 @@ const timeTicksOf = (
   if (xs.length === 0) {
     return {};
   }
-  const spacing = xs.reduce(
-    (smallest, x, index) =>
-      index === 0 ? smallest : Math.min(smallest, x - xs[index - 1]!),
-    Infinity
-  );
-  const computed = Number.isFinite(spacing) ? spacing : 1;
-  const interval =
-    statedInterval === undefined ||
-    statedInterval < 0 ||
-    (xs.length > 1 && statedInterval > computed)
-      ? computed
-      : statedInterval;
+  const interval = bucketWidthOf(xs, statedInterval) ?? 1;
   const custom =
     domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
   const min = custom?.min ?? xs[0]!;
@@ -151,10 +168,6 @@ const STATISTIC_NAMES: Record<Statistic, string> = {
 };
 
 const ROTATION = { horizontal: 0, angled: -45, vertical: -90 } as const;
-
-// A gap past the largest double stops at it.
-const bounded = (value: number) =>
-  Math.max(-Number.MAX_VALUE, Math.min(Number.MAX_VALUE, value));
 
 const rowsOf = (layer: DataLayer, total: number): number[] => {
   const [start, end] = layer.rows ?? [0, total];
@@ -468,23 +481,16 @@ export const resolveXy = (
   );
   const statedInterval =
     xScale === 'ordinal' ? undefined : node.axes?.x?.interval;
-  // Decides whether a mark's bucket crosses the queried range's end; absent a stated one, each layer's smallest x spacing.
+  // Each layer's bucket width, which decides whether a mark's bucket crosses the queried range's end.
   const intervals = new Map(
     dataLayers.map(({ layer, index }) => {
       const xs = new Set(rowsOf(layer, data.rows.length).map(xOf));
-      const layerXs = numericXs.filter((x) => xs.has(x));
       return [
         index,
-        statedInterval ??
-          layerXs.reduce<number | undefined>((smallest, x, at) => {
-            if (at === 0) {
-              return smallest;
-            }
-            const gap = bounded(x - layerXs[at - 1]!);
-            return gap > 0 && (smallest === undefined || gap < smallest)
-              ? gap
-              : smallest;
-          }, undefined),
+        bucketWidthOf(
+          numericXs.filter((x) => xs.has(x)),
+          statedInterval
+        ),
       ] as const;
     })
   );
