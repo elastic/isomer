@@ -18,6 +18,7 @@ import {
   type Scene,
   type SceneAxis,
   type SceneTimeBand,
+  type SceneTimeLayer,
   type SceneTimeTicks,
   timeTicksAt,
   type XyScene,
@@ -35,23 +36,39 @@ const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
 /** Gridlines within this many pixels of where a tick falls are at it. */
 const GRID_TOLERANCE = 0.5;
 
+/** Elastic Charts' `MIN_LABEL_GAP`, between a time layer's first label and its next tick. */
+const MIN_LABEL_GAP = 4;
+
+/** What a drawing measured, beyond what its `DebugState` reports. */
+export interface DebugStateOptions {
+  /** A tick label's width in pixels, as the drawing measured it. */
+  readonly labelWidth?: (label: string) => number;
+}
+
 /**
- * The plot width at which `band` puts Elastic Charts' gridlines where it drew
- * them: `DebugState` reports the finest grid layer's ticks within the domain,
- * the first perhaps dropped, from 0 at the domain's start.
+ * The plot width at which `band` puts Elastic Charts' gridlines, and whether it
+ * puts every one where it was drawn; `undefined` when no gridline lies past the
+ * domain's start to measure by. `DebugState` reports the finest grid layer's
+ * ticks within the domain, the first perhaps dropped, from 0 at its start.
  */
-const gridWidth = (
+const gridMeasure = (
   { domain: { min, max } }: SceneTimeTicks,
   band: SceneTimeBand,
   gridlines: readonly number[]
-): number | undefined => {
+): { width: number; fits: boolean } | undefined => {
   const at = band.layers
     .find(({ grid, ticks }) => grid && ticks.some((tick) => tick.at >= min))
     ?.ticks.map((tick) => tick.at)
     .filter((value) => value >= min && value <= max);
   const last = at?.at(-1);
   const lastLine = gridlines.at(-1);
-  if (!at || last === undefined || last <= min || lastLine === undefined) {
+  if (
+    !at ||
+    last === undefined ||
+    last <= min ||
+    lastLine === undefined ||
+    lastLine <= GRID_TOLERANCE
+  ) {
     return undefined;
   }
   const width = (lastLine * (max - min)) / (last - min);
@@ -62,42 +79,71 @@ const gridWidth = (
         Math.abs(((value - min) / (max - min)) * width - gridlines[index]!) <=
         GRID_TOLERANCE
     );
-  return fits(at) || fits(at.slice(1)) ? width : undefined;
+  return { width, fits: fits(at) || fits(at.slice(1)) };
 };
 
 const tickKey = (value: unknown, label: string) =>
   `${String(value)} "${label}"`;
 
-/** Each labeled layer's ticks as {@link tickKey}s, finest first. */
-const labeledLayers = ({ layers }: SceneTimeBand): string[][] =>
-  layers
-    .filter(({ labeled, ticks }) => labeled && ticks.length > 0)
-    .map(({ ticks }) => ticks.map(({ at, label }) => tickKey(at, label)));
-
 /**
- * Where a drawn time axis is not `band`: Elastic Charts measures labels, so it
- * may leave out a layer's first label (it would collide with the next) and last
- * (it would overflow), but draws every other and at least one of each layer's.
+ * Which of a labeled layer's ticks Elastic Charts may leave unlabeled: the
+ * first where its label reaches the next tick, the last where its label runs
+ * past the plot. Unmeasured, either may be.
  */
+const droppable = (
+  ticks: SceneTimeLayer['ticks'],
+  { domain: { min, max } }: SceneTimeTicks,
+  width: number | undefined,
+  { labelWidth }: DebugStateOptions
+): ReadonlySet<number> => {
+  const last = ticks.length - 1;
+  if (width === undefined || labelWidth === undefined) {
+    return new Set([0, last]);
+  }
+  const at = (value: number) =>
+    ((Math.max(value, min) - min) / (max - min)) * width;
+  const [first, second] = ticks;
+  return new Set([
+    ...(first &&
+    second &&
+    at(second.at) - at(first.at) < labelWidth(first.label) + MIN_LABEL_GAP
+      ? [0]
+      : []),
+    ...(at(ticks[last]!.at) + labelWidth(ticks[last]!.label) > width
+      ? [last]
+      : []),
+  ]);
+};
+
+/** Where a drawn time axis is not `band`, drawn `width` pixels wide when measured. */
 const timeBandProblems = (
   id: string,
+  ticks: SceneTimeTicks,
   band: SceneTimeBand,
-  drawn: ReadonlySet<string>
+  width: number | undefined,
+  drawn: ReadonlySet<string>,
+  options: DebugStateOptions
 ): string[] => {
-  const layers = labeledLayers(band);
-  const expected = new Set(layers.flat());
+  const layers = band.layers.filter(
+    (layer) => layer.labeled && layer.ticks.length > 0
+  );
+  const expected = new Set(
+    layers.flatMap((layer) =>
+      layer.ticks.map(({ at, label }) => tickKey(at, label))
+    )
+  );
   return [
     ...[...drawn]
       .filter((key) => !expected.has(key))
       .map((key) => `axis "${id}" labels ${key}, which its band does not`),
-    ...layers.flatMap((keys) => {
-      const missing = keys
-        .slice(1, -1)
-        .filter((key) => !drawn.has(key))
-        .map((key) => `axis "${id}" leaves out ${key}`);
-      return keys.some((key) => drawn.has(key))
-        ? missing
-        : [...missing, `axis "${id}" draws none of ${keys.join(', ')}`];
+    ...layers.flatMap((layer) => {
+      const optional = droppable(layer.ticks, ticks, width, options);
+      return layer.ticks.flatMap(({ at, label }, index) => {
+        const key = tickKey(at, label);
+        return optional.has(index) || drawn.has(key)
+          ? []
+          : [`axis "${id}" leaves out ${key}`];
+      });
     }),
   ];
 };
@@ -108,7 +154,8 @@ const timeBandProblems = (
  */
 const timeAxisProblems = (
   { timeTicks }: SceneAxis,
-  { id, labels, values, gridlines }: DebugStateAxis
+  { id, labels, values, gridlines }: DebugStateAxis,
+  options: DebugStateOptions
 ): string[] => {
   if (!timeTicks) {
     return [];
@@ -119,20 +166,26 @@ const timeAxisProblems = (
     )
   );
   const lines = gridlines.map(({ x }) => x);
-  const measured = timeTicks.bands.find((band) => {
-    const width = gridWidth(timeTicks, band, lines);
-    return width !== undefined && timeTicksAt(timeTicks, width) === band;
-  });
-  if (measured) {
-    return timeBandProblems(id, measured, drawn);
+  const measures = timeTicks.bands.map(
+    (band) => [band, gridMeasure(timeTicks, band, lines)] as const
+  );
+  const [band, measure] =
+    measures.find(
+      ([candidate, at]) =>
+        at?.fits && timeTicksAt(timeTicks, at.width) === candidate
+    ) ?? [];
+  if (band && measure) {
+    return timeBandProblems(id, timeTicks, band, measure.width, drawn, options);
   }
-  if (lines.length > 0) {
+  if (measures.some(([, at]) => at !== undefined)) {
     return [
       `axis "${id}" draws gridlines at ${JSON.stringify(lines)}, which no band of the Scene's puts there`,
     ];
   }
   return timeTicks.bands.some(
-    (band) => timeBandProblems(id, band, drawn).length === 0
+    (candidate) =>
+      timeBandProblems(id, timeTicks, candidate, undefined, drawn, options)
+        .length === 0
   )
     ? []
     : [
@@ -151,7 +204,11 @@ const sameList = (
     ? []
     : [`${what} are ${JSON.stringify(got)}, not ${JSON.stringify(expected)}`];
 
-const xyProblems = (scene: XyScene, state: DebugState): string[] => {
+const xyProblems = (
+  scene: XyScene,
+  state: DebugState,
+  options: DebugStateOptions
+): string[] => {
   const ticks = [
     ...(state.axes?.x ?? []).map((axis) => [scene.axes.x, axis] as const),
     ...(state.axes?.y ?? []).map(
@@ -166,7 +223,7 @@ const xyProblems = (scene: XyScene, state: DebugState): string[] => {
       continue;
     }
     if (axis.timeTicks) {
-      problems.push(...timeAxisProblems(axis, drawn));
+      problems.push(...timeAxisProblems(axis, drawn, options));
       continue;
     }
     labels.forEach((label, index) => {
@@ -357,10 +414,13 @@ const gaugeProblems = (scene: GaugeScene, state: DebugState): string[] => {
  * chart's tick labels, series and legend items, a partition's slices, a heat
  * map's cells, positions and bands, a gauge's bullet. A metric or tag cloud
  * has no `DebugState` in Elastic Charts, so it is checked by its text alone.
+ * Given {@link DebugStateOptions.labelWidth}, a time axis's edge labels are
+ * held to Elastic Charts' rules for leaving them out.
  */
 export const debugStateProblems = (
   scene: Scene,
-  state: DebugState | undefined
+  state: DebugState | undefined,
+  options: DebugStateOptions = {}
 ): string[] => {
   // A metric or tag cloud has no DebugState, and an empty chart draws its note alone.
   if (
@@ -380,7 +440,7 @@ export const debugStateProblems = (
   const { kind } = scene;
   switch (scene.kind) {
     case 'xy':
-      return xyProblems(scene, state);
+      return xyProblems(scene, state, options);
     case 'partition':
       return partitionProblems(scene, state);
     case 'heatmap':

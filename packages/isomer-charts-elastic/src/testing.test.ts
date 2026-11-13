@@ -28,6 +28,7 @@ import {
   heatmapExamples,
   partitionChartExamples,
   xyChartExamples,
+  type XyChartNode,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -40,6 +41,8 @@ import {
 
 const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 const SIZE = { width: 480, height: 300 };
+let size = SIZE;
+const labelWidth = (text: string) => text.length * 6;
 
 // jsdom has no layout and no canvas: Elastic Charts learns its size from
 // ResizeObserver and measures text through a 2D context.
@@ -50,7 +53,7 @@ globalThis.ResizeObserver = class {
       [
         {
           target,
-          contentRect: { ...SIZE, top: 0, left: 0 },
+          contentRect: { ...size, top: 0, left: 0 },
         } as unknown as ResizeObserverEntry,
       ],
       this
@@ -68,7 +71,7 @@ const context = new Proxy(
     get: (_, key) =>
       key === 'measureText'
         ? (text: string) => ({
-            width: text.length * 6,
+            width: labelWidth(text),
             actualBoundingBoxAscent: 8,
             actualBoundingBoxDescent: 2,
             fontBoundingBoxAscent: 9,
@@ -96,7 +99,10 @@ globalThis.Path2D = class {
 
 const renderer = createElasticChartsRenderer({ debugState: true });
 const unmounts: (() => void)[] = [];
-afterEach(() => unmounts.splice(0).forEach((unmount) => unmount()));
+afterEach(() => {
+  unmounts.splice(0).forEach((unmount) => unmount());
+  size = SIZE;
+});
 
 const debugStateOf = async (scene: Scene): Promise<DebugState> => {
   const container = document.createElement('div');
@@ -145,7 +151,9 @@ describe('debugStateProblems', () => {
   it.each(scenes)(
     'passes what Elastic Charts draws for $name',
     async ({ scene }) => {
-      expect(debugStateProblems(scene, await debugStateOf(scene))).toEqual([]);
+      const state = await debugStateOf(scene);
+      expect(debugStateProblems(scene, state)).toEqual([]);
+      expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
     }
   );
 
@@ -239,9 +247,55 @@ describe('debugStateProblems', () => {
       labels: minor.map(([label]) => label),
       values: minor.map(([, value]) => value),
     });
-    expect(debugStateProblems(scene, changed).join('\n')).toMatch(
-      /axis "x" (draws none of|leaves out) .*2026"/
-    );
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+    expect(
+      debugStateProblems(scene, changed, { labelWidth }).join('\n')
+    ).toMatch(/axis "x" leaves out .*2026"/);
+  });
+
+  it('passes a narrow time axis whose major row loses both its labels to measured text', async () => {
+    size = { width: 150, height: 300 };
+    const { node } = xyChartExamples.find(
+      ({ name }) => name === 'Time axis by the minute'
+    )!;
+    const scene = resolveChart(node, { scheme: 'light', size });
+    const state = await debugStateOf(scene);
+    expect(
+      state.axes!.x[0]!.labels.some((label) => label.endsWith('2026'))
+    ).toBe(false);
+    expect(debugStateProblems(scene, state)).toEqual([]);
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
+  });
+
+  it('passes time-axis gridlines that cannot measure the plot', async () => {
+    const start = Date.UTC(2026, 10, 3);
+    const node: XyChartNode = {
+      type: 'xyChart',
+      data: {
+        columns: [
+          { id: 'time', label: 'time', type: 'date', role: 'dimension' },
+          { id: 'count', label: 'count', type: 'number', role: 'metric' },
+        ],
+        rows: [0, 1, 2, 3].map((hours) => [start + hours * 3_600_000, hours]),
+      },
+      layers: [
+        { kind: 'data', mark: 'line', x: 'time', y: [{ column: 'count' }] },
+      ],
+      axes: {
+        x: {
+          scale: 'temporal',
+          interval: 3_600_000,
+          domain: { kind: 'custom', min: start, max: start + 1_800_000 },
+        },
+      },
+    };
+    const scene = resolveChart(node, { scheme: 'light', size: SIZE });
+    const state = await debugStateOf(scene);
+    expect(state.axes!.x[0]!.gridlines.map(({ x }) => Math.round(x))).toEqual([
+      0,
+    ]);
+    expect(debugStateProblems(scene, state)).toEqual([]);
+    expect(debugStateProblems(scene, state, { labelWidth })).toEqual([]);
   });
 
   it('fails time-axis gridlines no band puts where they are drawn', async () => {
