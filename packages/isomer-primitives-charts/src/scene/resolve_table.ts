@@ -11,6 +11,7 @@
 
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS, EMPTY_LABEL, NULL_LABEL } from '../format/format';
+import { collator } from '../format/intl';
 import type { ChartColors } from '../schema/colors';
 import type { Cell, ScalarCell } from '../schema/data';
 import type {
@@ -85,7 +86,7 @@ const compareKeys = (a: SortKey, b: SortKey, locale: string): number => {
   }
   return typeof a === 'number' && typeof b === 'number'
     ? a - b
-    : String(a).localeCompare(String(b), locale);
+    : collator(locale).compare(String(a), String(b));
 };
 
 /** Each row's sort keys in column `id`, element by element; `undefined` for a missing cell. */

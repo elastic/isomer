@@ -547,3 +547,14 @@ describe('dataTable selection', () => {
     });
   });
 });
+
+describe('dataTable locale', () => {
+  it('sorts strings in English for a malformed locale', () => {
+    const scene = resolve(
+      table([column('host', 'string')], [['b'], ['A'], ['a']]),
+      'light',
+      'en_US'
+    );
+    expect(scene.kind === 'table' && scene.orders.host?.asc).toEqual([2, 1, 0]);
+  });
+});

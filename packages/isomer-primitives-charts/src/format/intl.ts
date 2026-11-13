@@ -7,15 +7,37 @@
 
 // Cached `Intl` formatters. Constructing one is far slower than using it.
 
-const numberFormats = new Map<string, Intl.NumberFormat>();
-const dateFormats = new Map<string, Intl.DateTimeFormat>();
+/** How many formatters of each kind are kept. Options come from nodes, so the caches are bounded. */
+export const INTL_CACHE_SIZE = 64;
+
+// Keeps the `INTL_CACHE_SIZE` most recently used values.
+const createCache = <T>() => {
+  const values = new Map<string, T>();
+  return (key: string, create: () => T): T => {
+    let value = values.get(key);
+    if (value === undefined) {
+      value = create();
+      if (values.size >= INTL_CACHE_SIZE) {
+        values.delete(values.keys().next().value!);
+      }
+    } else {
+      values.delete(key);
+    }
+    values.set(key, value);
+    return value;
+  };
+};
+
+const numberFormats = createCache<Intl.NumberFormat>();
+const dateFormats = createCache<Intl.DateTimeFormat>();
+const collators = createCache<Intl.Collator>();
 
 // `locale` when well-formed, else `en`. The constructors also fall back to `en` for a well-formed tag the environment lacks.
-const supportedLocale = (locale: string): string => {
+const localesOf = (locale: string): string[] => {
   try {
-    return Intl.getCanonicalLocales(locale)[0] ?? 'en';
+    return [Intl.getCanonicalLocales(locale)[0] ?? 'en', 'en'];
   } catch {
-    return 'en';
+    return ['en'];
   }
 };
 
@@ -23,29 +45,25 @@ const supportedLocale = (locale: string): string => {
 export const numberFormat = (
   locale: string,
   options: Intl.NumberFormatOptions
-): Intl.NumberFormat => {
-  const key = `${locale}|${JSON.stringify(options)}`;
-  let format = numberFormats.get(key);
-  if (!format) {
-    format = new Intl.NumberFormat([supportedLocale(locale), 'en'], options);
-    numberFormats.set(key, format);
-  }
-  return format;
-};
+): Intl.NumberFormat =>
+  numberFormats(
+    `${locale}|${JSON.stringify(options)}`,
+    () => new Intl.NumberFormat(localesOf(locale), options)
+  );
 
 /** A cached `Intl.DateTimeFormat`, falling back to `en` rather than the host default. Throws a `RangeError` for a time zone the environment does not know. */
 export const dateFormat = (
   locale: string,
   options: Intl.DateTimeFormatOptions
-): Intl.DateTimeFormat => {
-  const key = `${locale}|${JSON.stringify(options)}`;
-  let format = dateFormats.get(key);
-  if (!format) {
-    format = new Intl.DateTimeFormat([supportedLocale(locale), 'en'], options);
-    dateFormats.set(key, format);
-  }
-  return format;
-};
+): Intl.DateTimeFormat =>
+  dateFormats(
+    `${locale}|${JSON.stringify(options)}`,
+    () => new Intl.DateTimeFormat(localesOf(locale), options)
+  );
+
+/** A cached `Intl.Collator`, falling back to `en` rather than the host default. */
+export const collator = (locale: string): Intl.Collator =>
+  collators(locale, () => new Intl.Collator(localesOf(locale)));
 
 /** `value` formatted, printing a negative value that rounds to zero as zero, not `-0`, unless the sign display is `always`. */
 export const formatNumber = (
