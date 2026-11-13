@@ -7,8 +7,9 @@
 
 // @vitest-environment jsdom
 
-import { act } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
+import { act as testUtilsAct } from 'react-dom/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { resolveChart } from '../scene/resolve';
@@ -20,6 +21,9 @@ import type { LegacyMetricNode } from '../schema/legacy_metric';
 
 import { legacyMetricSceneRenderer } from './legacy_metric';
 import { legacyMetricModule } from './legacy_metric_styles';
+
+// React 18.3 exports `act` from `react`; earlier 18.x only from `react-dom/test-utils`.
+const { act = testUtilsAct } = React as { act?: typeof testUtilsAct };
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
