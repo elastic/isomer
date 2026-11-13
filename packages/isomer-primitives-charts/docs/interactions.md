@@ -92,3 +92,34 @@ An event refers to data, never to pixels: `rows` are indexes into the node's `da
 A Kibana host rebuilds Kibana's click and range contexts from the node's `data` and the opaque column `source`, and fires its triggers; a host without Kibana's UI actions asks the Kibana server to turn the event into filters. Either way it keeps filters as its state and materializes the node again.
 
 `chartEventExamples` lists events on the `xyChart` example "Interactive stacked bars": a bar segment, the missing bucket, a filtered-out legend item, an x category and a brushed range.
+
+## Building a chart primitive on the core
+
+A chart primitive spreads `interactionsCoreShape`, which holds `emphasis`, beside `chartCoreShape`, and takes its `interactions` schema from one of three factories. Each takes the `select` targets the chart offers and returns a strict object with `select`, `sync` and `link`:
+
+- `interactionsSchemaFor(targets)` adds nothing more. `metric`, `legacyMetric`, `dataTable`, `partitionChart` and `tagCloud` use it.
+- `brushInteractionsSchemaFor(targets, brush)` adds `brush`, validated by the brush schema the chart passes, and no `initial`. `heatmap` uses it.
+- `brushingInteractionsSchemaFor(targets, initial)` adds `brush`, which is always `brushSchema`, and `initial`, a strict object of the shape the chart passes. `xyChart` uses it.
+
+The chart's cross-field check calls `checkInteractions(node, context, options?)`, which reports emphasis rows outside `data.rows` and a `brush` column that is missing, of the wrong type, or not one of the `brushColumns` the chart names.
+
+## Exports
+
+On `./schema` and the root entry; `ChartEvent`, `ChartSelectEvent`, `ChartBrushEvent` and `SelectTarget` are on `./scene` too:
+
+| Export | What it is |
+| --- | --- |
+| `chartEventSchema`, `ChartEvent` | An event a chart raises: a selection or a brush |
+| `ChartSelectEvent`, `ChartBrushEvent` | The `select` and the `brush` member of `ChartEvent` |
+| `CHART_EVENT_NAMES` | The `ActionEventRef` name of each kind: `chart.select` and `chart.brush` |
+| `toActionEvent`, `readChartEvent` | Wrap an event as an `ActionEventRef`, and read one back |
+| `chartEventExamples` | The example events above |
+| `SELECT_TARGETS`, `SelectTarget` | Every part of a chart a reader can select |
+| `selectSchema` | `interactions.select` for a chart offering the targets it is given |
+| `brushSchema` | `interactions.brush`: a brush along one continuous x column |
+| `linkSchema` | `interactions.link`: a static link a chart draws on every surface |
+| `emphasisSchema`, `Emphasis` | `emphasis`: rows drawn with emphasis, each with an optional note |
+| `interactionsCoreShape` | The interaction fields every chart spreads into its schema beside the core |
+| `interactionsSchemaFor`, `brushInteractionsSchemaFor`, `brushingInteractionsSchemaFor` | The [`interactions` schema factories](#building-a-chart-primitive-on-the-core) |
+| `checkInteractions` | Checks emphasis rows and a brush column against `data` |
+| `INTERACTION_RULES` | The interaction rules, one sentence each, as the schemas' descriptions state them |

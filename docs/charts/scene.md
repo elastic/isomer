@@ -138,3 +138,112 @@ A `sized` renderer, such as one that draws an SVG, always gets a Scene with a `s
 `SceneRenderEnv` carries the `environment`, the node's `id`, and the host's `onEvent`, which receives each [`ChartEvent`](interactions.md#chartevent). Without `onEvent` a renderer offers no interaction. It also carries the render's `resolveClassName`, through which a renderer drawing with the pack's own styles, such as its table, resolves its classes.
 
 `metricSingleValueScene`, `xyTimeSeriesScene` and `xyInteractiveScene` are hand-written Scenes for three schema examples, for building and testing a renderer without the resolver. `xyInteractiveScene`'s selections raise exactly the events in `chartEventExamples`.
+
+## Exports
+
+Every name below is on `./scene` and the root entry. `./scene` also carries `ChartEvent`, `ChartSelectEvent`, `ChartBrushEvent` and `SelectTarget` ([Interactions](interactions.md#exports)), `ChartGlyph` and `CHART_GLYPHS` ([Chart core](core.md#exports)), and the style helpers ([Rendering](rendering.md#exports)).
+
+### Every Scene
+
+| Export | What it is |
+| --- | --- |
+| `Scene` | What a renderer draws: one of the eight Scenes below |
+| `SCENE_KINDS`, `SceneKind` | The chart kinds a Scene describes. A renderer declares which it supports |
+| `ColorScheme` | The color scheme a Scene is resolved for: `light` or `dark` |
+| `SceneColor` | A concrete color for the Scene's scheme: `#rrggbb` or `#rrggbbaa` |
+| `SceneSize` | A box in CSS pixels |
+| `SceneChrome` | Chrome colors for the Scene's scheme |
+| `SceneTable` | The node's data as text, for accessible tables and the text, Markdown and Slack surfaces |
+| `SceneColumn` | One column of `SceneTable`, labelled for display |
+| `SceneInteractions` | What the node offers, resolved |
+| `SceneSource` | The cells of the node's `data` a mark represents: row indexes and column ids |
+| `SceneSelection` | [What selecting a part of the chart raises](#selections-and-events) |
+| `SceneTooltip` | A tooltip's header and entries, already formatted |
+| `SceneTooltipEntry` | One labelled value in a tooltip, already formatted |
+
+### `metric` and `legacyMetric`
+
+| Export | What it is |
+| --- | --- |
+| `MetricScene` | A Scene of metric tiles |
+| `MetricTile` | One tile: one row of `data`, with its colors and text resolved |
+| `MetricLayout` | How a metric Scene arranges its tiles |
+| `MetricAlignment` | How a metric tile aligns its title and value: `left`, `center` or `right` |
+| `LegacyMetricScene` | A Scene of large values with labels, as Lens's legacy metric draws them |
+| `LegacyMetricTile` | One tile: one value of one row, its type sized to fit the chart |
+
+### `xyChart`
+
+| Export | What it is |
+| --- | --- |
+| `XyScene` | A Scene of lines, areas and bars on shared axes |
+| `XySceneLayer` | One entry in its draw order: a series, a reference line or an annotation |
+| `XySeries` | One drawn series, with its mark, axis, color and stack group |
+| `XyMark` | One drawn datum: a point, a bar or an area vertex |
+| `XyCategory` | One x position with data, in axis order |
+| `AxisId` | The category axis (`x`), or the primary (`y`) or secondary (`y2`) value axis |
+| `SceneAxis` | One axis, stated as intent |
+| `SceneDomain` | Where a continuous axis's domain comes from: `data` or `custom` bounds |
+| `SceneLegend` | The legend: placement, sizing and items |
+| `SceneLegendItem` | One legend entry, in legend order |
+| `SceneReferenceLine` | A reference line, a helper mark with no source |
+| `SceneAnnotation` | An annotation, a helper mark with no source |
+| `SceneTimeTicks` | [A time axis's ticks](#time-axes) for every plot width |
+| `SceneTimeBand` | What a time axis draws from one plot width up to the next band's `from` |
+| `SceneTimeLayer` | One raster of a time axis: ticks at one interval, such as every hour or every day |
+| `SceneTimeTick` | One tick of a `SceneTimeLayer` |
+
+### `dataTable`
+
+| Export | What it is |
+| --- | --- |
+| `TableScene` | A Scene of a data table: columns, rows and their sorted orders |
+| `TableColumn` | One column, with its alignment, width and footer |
+| `TableRow` | One row: its cells, in column order |
+| `TableCell` | How one cell is drawn |
+| `TableAlignment` | How a column aligns its cells: `left`, `center` or `right` |
+| `TableOrder` | Positions into `rows`, in the order a sort shows them |
+
+### `partitionChart`
+
+| Export | What it is |
+| --- | --- |
+| `PartitionScene` | A Scene of slices of a whole: pie, donut, treemap, mosaic or waffle |
+| `PartitionSceneShape` | The shapes it draws |
+| `PartitionLayer` | One layer, outermost first |
+| `PartitionNode` | One slice, with its children in draw order |
+| `PartitionLegend` | The legend: placement, sizing and items |
+| `PartitionLegendItem` | One legend entry, in legend order |
+
+### `heatmap`
+
+| Export | What it is |
+| --- | --- |
+| `HeatmapScene` | A Scene of cells by x and y, colored by value |
+| `HeatmapAxis` | One axis |
+| `HeatmapCategory` | One position along an axis, in axis order |
+| `HeatmapCell` | One drawn cell: a row with a value |
+| `HeatmapBand` | One color band, ascending: values from `start` (inclusive) to `end` (exclusive) |
+
+### `gauge` and `tagCloud`
+
+| Export | What it is |
+| --- | --- |
+| `GaugeScene` | A Scene of one value on a scale: a bullet or a round dial |
+| `GaugeSceneShape` | The shapes it draws |
+| `GaugeBand` | One colored stretch of the scale, from `start` to `end` |
+| `TagCloudScene` | A Scene of words sized by value |
+| `TagCloudWord` | One word: a row |
+
+### Renderers, helpers and example Scenes
+
+| Export | What it is |
+| --- | --- |
+| `SceneRenderer` | [What describes a renderer](#scenerenderer) |
+| `SceneRenderEnv` | What a renderer is told about where it draws, beside the Scene itself |
+| `SceneEnvironment` | Where a renderer draws: `browser`, or `node` with no DOM |
+| `selectSceneRenderer` | The first renderer in a preference list that runs in the environment and supports the kind |
+| `selectEvent`, `brushEvent` | [The event for a selection, and for a brushed range](#selections-and-events) |
+| `formatAxisValue` | A value on a continuous axis as the axis prints it, such as a tick an engine chose |
+| `timeTicksAt` | The band of a `SceneTimeTicks` drawn at a plot width |
+| `metricSingleValueScene`, `xyTimeSeriesScene`, `xyInteractiveScene` | Hand-written Scenes for three schema examples, in light |

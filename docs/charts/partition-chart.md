@@ -49,3 +49,18 @@ The Scene's `kind` is `partition`. Expected values come from Lens's partition vi
 The [Elastic Charts engine](../charts-elastic/index.md) draws it in the browser. On Node it draws only through a host's engine that collects the same specs (`sceneSpecs`); without one, `snapshot`, and so a Slack picture, draws the pack's [fallback](rendering.md#choosing-a-renderer), the summary sentence. Without a host size it takes a 16:9 box, as an `xyChart` that fills its container does, and `snapshotHeight` reports it. Text and Markdown write the summary, the description, each emphasis note and the data table. On Slack it is a picture asset, as `metric` and `xyChart` are.
 
 `partitionChartExamples` covers a pie, a donut with Other and missing buckets, a nested pie with values and a nested legend, a treemap, a mosaic, a waffle over a date group, several metrics, huge, tiny, zero and missing values, negative values, no rows, and selectable slices with pre-rendered names, emphasis, a link and provenance.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `partitionChartSchema` | The `partitionChart` schema, with its rules |
+| `PartitionChartNode` | A validated `partitionChart` node |
+| `partitionChartCatalog` | What an agent reads to choose `partitionChart`: purpose, when to use it, and an example |
+| `partitionChartExamples` | Its named examples |
+| `PARTITION_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
+| `PARTITION_KEY_RULE` | The rule for what a `colors.byKey` key names |
+| `PARTITION_SHAPES`, `PartitionShape` | The shapes it draws: `pie`, `donut`, `treemap`, `mosaic`, `waffle` |
+| `PARTITION_MAX_GROUPS` | The most `groups` each shape takes: 3 for a pie or donut, 2 for a treemap or mosaic, 1 for a waffle |
