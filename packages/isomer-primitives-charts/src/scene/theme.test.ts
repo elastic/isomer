@@ -28,7 +28,7 @@ describe('chart theme', () => {
     expect(CHART_CHROME[scheme]).toEqual({
       text: text.textParagraph,
       textSubdued: text.textSubdued,
-      axis: border.borderBasePlain,
+      axis: border.borderBaseSubdued,
       gridLine: border.borderBaseSubdued,
       background: background.backgroundBasePlain,
       border: border.borderBasePlain,

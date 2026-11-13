@@ -113,7 +113,7 @@ describe('metric colors', () => {
     const scene = resolveChart(node, { scheme: 'light' });
     expect(scene.tiles.map(({ background }) => background)).toEqual([
       '#0000FF',
-      '#CAD3E2',
+      '#E3E8F2',
     ]);
   });
 

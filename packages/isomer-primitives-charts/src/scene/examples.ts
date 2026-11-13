@@ -32,7 +32,7 @@ const NUMBER: PortableFormat = { kind: 'number', maximumFractionDigits: 3 };
 const lightChrome: SceneChrome = {
   text: '#384861',
   textSubdued: '#516381',
-  axis: '#CAD3E2',
+  axis: '#E3E8F2',
   gridLine: '#E3E8F2',
   background: '#FFFFFF',
   border: '#CAD3E2',
