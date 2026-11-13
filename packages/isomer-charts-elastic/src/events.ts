@@ -56,17 +56,15 @@ export const markOf = (scene: XyScene, datum: unknown): XyMark | undefined =>
     : undefined;
 
 /** The bucket width Elastic Charts draws a stated `interval` at: no wider than the positions' smallest spacing. */
-const bucketOf = ({ axes: { x }, categories }: XyScene): number | undefined => {
-  if (x.interval === undefined) {
-    return undefined;
-  }
+const bucketOf = (interval: number, categories: XyScene['categories']) => {
   const xs = categories
     .map((category) => category.x)
     .filter((value): value is number => typeof value === 'number')
     .sort((a, b) => a - b);
-  return Math.min(
-    x.interval,
-    ...xs.slice(1).map((value, index) => value - xs[index]!)
+  return xs.reduce(
+    (bucket, value, index) =>
+      index === 0 ? bucket : Math.min(bucket, value - xs[index - 1]!),
+    interval
   );
 };
 
@@ -77,10 +75,11 @@ export const categoryAt = (
 ): XyCategory | undefined => {
   const { categories } = scene;
   const exact = categories.find((category) => category.x === x);
-  const bucket = bucketOf(scene);
-  if (exact || typeof x !== 'number' || bucket === undefined) {
+  const { interval } = scene.axes.x;
+  if (exact || typeof x !== 'number' || interval === undefined) {
     return exact;
   }
+  const bucket = bucketOf(interval, categories);
   return categories.find(
     (category) =>
       typeof category.x === 'number' &&

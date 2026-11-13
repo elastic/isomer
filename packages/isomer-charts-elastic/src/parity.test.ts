@@ -367,9 +367,10 @@ const gestures = (
   // Elastic Charts projects a click onto its bucket grid, data there or not:
   // buckets of the stated interval, or the positions' smallest spacing if narrower.
   const { interval } = scene.axes.x;
-  const bucket = Math.min(
-    interval ?? Infinity,
-    ...xs.slice(1).map((x, index) => x - xs[index]!)
+  const bucket = xs.reduce(
+    (width, x, index) =>
+      index === 0 ? width : Math.min(width, x - xs[index - 1]!),
+    interval ?? Infinity
   );
   const buckets = xs.flatMap((x, index) => {
     const next = xs[index + 1] ?? Infinity;
