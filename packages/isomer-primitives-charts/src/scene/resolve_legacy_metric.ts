@@ -14,9 +14,12 @@ import { CHARTS_THEME } from '../render/theme';
 import type { LegacyMetricNode } from '../schema/legacy_metric';
 
 import {
+  bandFor,
   createResolution,
   describe,
+  emphasisNotes,
   fractionAlong,
+  NO_RESULTS,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
@@ -24,7 +27,6 @@ import {
   toNumber,
   wrappedHeight,
 } from './common';
-import { bandFor } from './resolve_metric';
 import { isColorDark, resolveColor, TABLE_CHROME } from './theme';
 import type {
   LegacyMetricScene,
@@ -33,8 +35,6 @@ import type {
   SceneSelection,
   SceneSize,
 } from './types';
-
-const NO_RESULTS = 'No results found';
 
 /** EUI's font sizes, which Lens sizes labels by. */
 const LABEL_SIZES = { xs: 12, s: 14, m: 16, l: 20, xl: 24, xxl: 32 } as const;
@@ -257,12 +257,7 @@ export const resolveLegacyMetric = (
   const fill =
     lone?.color !== undefined && onBackground ? lone.color : undefined;
 
-  const emphasis = new Map<number, string>();
-  for (const { rows, note } of interactions.emphasis) {
-    for (const row of rows) {
-      emphasis.set(row, note ?? emphasis.get(row) ?? '');
-    }
-  }
+  const emphasis = emphasisNotes(interactions);
   const notes = interactions.emphasis.filter(({ note }) => note).length;
 
   // `withAutoScale` shrinks each tile to the chart; wrapped rows that still

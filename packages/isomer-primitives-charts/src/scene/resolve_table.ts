@@ -22,19 +22,23 @@ import type {
 import type { PortableFormat } from '../schema/format';
 
 import {
+  bandFor,
   createResolution,
   describe,
+  emphasisNotes,
+  isEmptyCell,
   keyPart,
+  NO_RESULTS,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
   titled,
 } from './common';
-import { bandFor } from './resolve_metric';
 import {
   contrastText,
   DEFAULT_TABLE_BAR_COLOR,
+  keyColor as byKeyColor,
   resolveColor,
   TABLE_CHROME,
 } from './theme';
@@ -51,9 +55,6 @@ import type {
 
 /** Kibana's dash for a missing value in a table (`NULL_PLACEHOLDER`). */
 export const TABLE_MISSING_TEXT = '-';
-
-/** Lens's empty table message (`charts.noDataLabel`). */
-export const TABLE_EMPTY_TEXT = 'No results found';
 
 /** Lens's summary labels (`getSummaryRowOptions`). */
 export const SUMMARY_LABELS: Readonly<Record<DataTableSummary, string>> = {
@@ -154,12 +155,6 @@ const sortRows = (
     .sort((x, y) => rowCompare(keys[x], keys[y]));
 };
 
-const isEmptyCell = (cell: Cell | undefined) =>
-  cell === null ||
-  cell === undefined ||
-  cell === '' ||
-  (Array.isArray(cell) && cell.length === 0);
-
 const keyColor = (
   colors: ChartColors | undefined,
   value: ScalarCell,
@@ -174,12 +169,7 @@ const keyColor = (
       return resolveColor(band.color, scheme);
     }
   }
-  const key = keyPart(value);
-  const byKey =
-    colors.byKey && Object.hasOwn(colors.byKey, key)
-      ? colors.byKey[key]
-      : undefined;
-  return byKey ? resolveColor(byKey, scheme) : undefined;
+  return byKeyColor(colors.byKey, keyPart(value), scheme);
 };
 
 /** A bar's `[min, max]`, as Lens's `getProgressBarDomain`. */
@@ -338,12 +328,7 @@ export const resolveTable = (
     )
   );
 
-  const emphasis = new Map<number, string>();
-  for (const { rows, note } of interactions.emphasis) {
-    for (const row of rows) {
-      emphasis.set(row, note ?? emphasis.get(row) ?? '');
-    }
-  }
+  const emphasis = emphasisNotes(interactions);
 
   const nullText = data.missing?.null ?? NULL_LABEL;
   const blankText = data.missing?.empty ?? EMPTY_LABEL;
@@ -514,7 +499,7 @@ export const resolveTable = (
       ? {}
       : { paging: pagingOf(node.pageSize, rows.length) }),
     density: node.density ?? 'default',
-    emptyText: TABLE_EMPTY_TEXT,
+    emptyText: NO_RESULTS,
     headerBackground: palette.header,
     emphasisBackground: palette.emphasis,
   };

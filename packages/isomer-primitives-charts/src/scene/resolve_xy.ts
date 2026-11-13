@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { continuousScaleOf, coordinateOf } from '../coordinates';
+import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../coordinates';
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
@@ -16,6 +16,7 @@ import {
   createResolution,
   describe,
   keyPart,
+  LABEL_ROTATION,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -23,7 +24,7 @@ import {
   titled,
   toNumber,
 } from './common';
-import { categoricalColor, resolveColor } from './theme';
+import { categoricalColor, keyColor, resolveColor } from './theme';
 import { resolveTimeTicks } from './time_axis';
 import type {
   SceneAnnotation,
@@ -47,9 +48,6 @@ type Statistic = NonNullable<
 type XDomainConfig = NonNullable<
   NonNullable<XyChartNode['axes']>['x']
 >['domain'];
-
-/** The largest epoch milliseconds a `Date` holds. */
-const MAX_DATE = 8.64e15;
 
 /**
  * A time x axis's ticks, from the domain and bucket Elastic Charts computes
@@ -103,7 +101,7 @@ const timeTicksOf = (
   const max = custom?.max ?? xs.at(-1)!;
   // Rasters reach a decade or a bucket past the domain, which must stay a valid `Date`.
   const reach = 2 * interval + 1e12;
-  if (min - reach < -MAX_DATE || max + reach > MAX_DATE) {
+  if (min - reach < -MAX_EPOCH || max + reach > MAX_EPOCH) {
     return {};
   }
   const bars = series.filter(({ mark }) => mark === 'bar');
@@ -149,8 +147,6 @@ const STATISTIC_NAMES: Record<Statistic, string> = {
   distinct_count: 'Distinct count',
   current_and_last_value: 'Current and last value',
 };
-
-const ROTATION = { horizontal: 0, angled: -45, vertical: -90 } as const;
 
 // A gap past the largest double stops at it.
 const bounded = (value: number) =>
@@ -399,13 +395,9 @@ export const resolveXy = (
   }
 
   const colorOf = (draft: SeriesDraft, index: number): SceneColor => {
-    const colors = node.colors?.byKey;
-    const byKey =
-      colors && Object.hasOwn(colors, draft.key)
-        ? colors[draft.key]
-        : undefined;
+    const byKey = keyColor(node.colors?.byKey, draft.key, scheme);
     if (byKey) {
-      return resolveColor(byKey, scheme);
+      return byKey;
     }
     const own = draft.layer.y[draft.yIndex]?.color;
     if (own && !draft.split) {
@@ -732,7 +724,7 @@ export const resolveXy = (
       ...(config?.title === undefined ? {} : { title: config.title }),
       showTicks: config?.ticks ?? true,
       showGrid: config?.grid ?? true,
-      labelRotation: ROTATION[config?.labelOrientation ?? 'horizontal'],
+      labelRotation: LABEL_ROTATION[config?.labelOrientation ?? 'horizontal'],
     };
   };
 
@@ -781,7 +773,7 @@ export const resolveXy = (
     // Lens's multi-layer time axis takes no `labelsOrientation`.
     labelRotation: xTimeTicks.timeTicks
       ? 0
-      : ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+      : LABEL_ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
     ...xTimeTicks,
   };
 
