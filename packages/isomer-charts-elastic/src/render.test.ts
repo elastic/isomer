@@ -97,6 +97,8 @@ globalThis.ResizeObserver = FixedResizeObserver;
 ).IS_REACT_ACT_ENVIRONMENT = true;
 /** Every fill and stroke color Elastic Charts sets, in paint order. */
 const paints: string[] = [];
+/** Every other canvas call Elastic Charts makes, in order. */
+const calls: [name: string, args: unknown[]][] = [];
 const context = new Proxy(
   {},
   {
@@ -113,7 +115,9 @@ const context = new Proxy(
           ? () => []
           : typeof key === 'string' && key.startsWith('create')
             ? () => ({ addColorStop: () => undefined })
-            : () => undefined,
+            : (...args: unknown[]) => {
+                calls.push([String(key), args]);
+              },
     set: (_, key, value) => {
       if (key === 'fillStyle' || key === 'strokeStyle') {
         paints.push(String(value));
@@ -354,6 +358,97 @@ describe('elastic-charts renderer: xy layer order', () => {
     expect(order.range).toBeLessThan(order.bar);
     expect(order.bar).toBeLessThan(order.line);
   });
+});
+
+describe('elastic-charts renderer: bar value labels', () => {
+  const [series] = seriesOf(xyInteractiveScene);
+  // The last bar is shorter than its label.
+  const values = [900, 600, 40];
+  const fitting = ['v900', 'v600'];
+  const scene = (orientation: XyScene['orientation']): XyScene => ({
+    ...(orientation === 'horizontal' ? horizontalScene : xyInteractiveScene),
+    layers: [
+      {
+        kind: 'series',
+        series: {
+          ...series!,
+          valueLabels: true,
+          marks: values.map((y, index) => ({
+            ...series!.marks[index]!,
+            y,
+            label: `v${y}`,
+          })),
+        },
+      },
+    ],
+  });
+
+  /**
+   * Each bar's rectangle and each drawn label's origin and scale, in the panel's
+   * rotated space, where `y` grows toward the baseline in either orientation.
+   */
+  const drawn = async (orientation: XyScene['orientation']) => {
+    calls.length = 0;
+    await draw(scene(orientation));
+    const clip = calls.findIndex(
+      ([name, [x, y]]) => name === 'rect' && x === -0.5 && y === -0.5
+    );
+    const bars = calls
+      .slice(clip + 1)
+      .filter(([name]) => name === 'rect')
+      .slice(0, values.length)
+      .map(([, args]) => {
+        const [x, y, width, height] = args as number[];
+        return { x: x!, y: y!, width: width!, height: height! };
+      });
+    // Elastic Charts' `renderText`: translate to the origin, rotate, translate, scale, fill.
+    const labels = calls.flatMap(([name, [text]], index) => {
+      if (name !== 'fillText' || !/^v\d+$/.test(String(text))) {
+        return [];
+      }
+      const [x, y] = calls[index - 4]![1] as number[];
+      const [scale] = calls[index - 1]![1] as number[];
+      return [{ text: String(text), x: x!, y: y!, scale: scale! }];
+    });
+    return { bars, labels };
+  };
+
+  // Kibana's `getValueLabelsStyling` (`expression_xy/public/components/xy_chart.tsx`):
+  // 10 to 12 px text, offset 10 px along the bar, over the base theme's centered alignment.
+  it.each(['vertical', 'horizontal'] as const)(
+    'draws each fitting label 10 px toward the baseline from the middle of its bar on a %s chart',
+    async (orientation) => {
+      const { bars, labels } = await drawn(orientation);
+      expect(labels.map(({ text }) => text)).toEqual(fitting);
+      labels.forEach(({ text, x, y, scale }, index) => {
+        const bar = bars[index]!;
+        expect(scale).toBeCloseTo(12 / 10);
+        const textHeight = 10 * scale;
+        // The canvas stub measures 6 px a character; Elastic Charts pads a label's width by 1.
+        const textWidth = text.length * 6 + 1;
+        const [across, along] =
+          orientation === 'vertical'
+            ? [x, y + textHeight / 2]
+            : [x + textHeight / 2, y + textWidth / 2];
+        expect(across).toBeCloseTo(bar.x + bar.width / 2);
+        expect(along).toBeCloseTo(bar.y + bar.height / 2 + 10);
+      });
+    }
+  );
+
+  // Kibana's `overflowConstraints` (`expression_xy/public/components/data_layers.tsx`).
+  it.each(['vertical', 'horizontal'] as const)(
+    'draws no label that overflows its bar on a %s chart',
+    async (orientation) => {
+      const { bars, labels } = await drawn(orientation);
+      expect(bars[2]!.height).toBeGreaterThan(0);
+      // A label is 10 px tall at its smallest, and the canvas stub measures `v40` 18 px wide.
+      expect(bars[2]!.height).toBeLessThan(
+        orientation === 'vertical' ? 10 : 18
+      );
+      expect(labels.map(({ text }) => text)).not.toContain('v40');
+    }
+  );
 });
 
 describe('elastic-charts renderer: xy legend actions', () => {
