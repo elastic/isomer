@@ -15,21 +15,17 @@
 import type { ReactNode } from 'react';
 
 import { afterTask } from '../after_task';
+import type { ResolveChartOptions } from '../scene/common';
 import type { Scene, SceneRenderEnv } from '../scene/types';
 
-import type {
-  ChartNode,
-  ReactSceneRenderer,
-  ResolveSceneOptions,
-  SceneResolver,
-} from './context';
+import type { ChartNode, ReactSceneRenderer, SceneResolver } from './context';
 
 /** Resolves and draws each chart node once per render. */
 export interface SceneCache {
   /** `resolveScene(node, options)`, once per node and options. */
   readonly resolve: (
     node: ChartNode,
-    options: ResolveSceneOptions,
+    options: ResolveChartOptions,
     resolveScene: SceneResolver
   ) => Scene;
   /** `renderer.render(scene, env)`, once per Scene, renderer, environment, style scope and event receiver. */
@@ -85,7 +81,7 @@ const optionsKey = ({
   size,
   locale,
   timeZone,
-}: ResolveSceneOptions): string =>
+}: ResolveChartOptions): string =>
   JSON.stringify([scheme, size?.width, size?.height, locale, timeZone]);
 
 /**
