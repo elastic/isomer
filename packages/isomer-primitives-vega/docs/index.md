@@ -17,8 +17,6 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-The package is `"private": true` while the charts pack is, and depends on it.
-
 ## Entries
 
 | Entry | Holds |
