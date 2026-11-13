@@ -51,3 +51,15 @@ Rules:
 - Emphasis rows are indexes into `data.rows`.
 
 `metricExamples` covers a single value, a comparison, a breakdown with the Other and missing buckets, a trend, huge, tiny and negative values, a missing value, a multivalue headline, long text, and a pre-rendered value with provenance.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `metricSchema` | The `metric` schema, with its rules |
+| `MetricNode` | A validated `metric` node |
+| `metricCatalog` | What an agent reads to choose `metric`: purpose, when to use it, and an example |
+| `metricExamples` | Its named examples |
+| `METRIC_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |

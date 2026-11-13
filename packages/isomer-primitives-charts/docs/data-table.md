@@ -42,3 +42,18 @@ The Scene's `kind` is `table`. Expected values come from Lens's datatable and Ki
 No chart engine draws a table, so the pack does: its table renderer draws the title and description, the first page in the starting order as an HTML table, then each emphasis note, the same in the browser and on `snapshot`; the chart's link draws below it, as for every chart. The table is laid out as Lens's data grid: a shaded header, horizontal rules, the row header's cells as row headers, emphasized rows filled, the footer and the pager. Every color is the Scene's and every length is `CHARTS_THEME`'s. A host renderer that supports the `table` kind replaces it. Without a Scene `size`, the table is its title, description, header, first page, footer, pager and notes tall, and `snapshotHeight` reports that height plus any link line; with one, it draws the rows that fit. Text and Markdown write the summary and the table, footer row last, in `data` order. Slack gets the summary, description and notes as rich text, which the envelope splits rather than cuts, then a native `table` block of the Scene's strings in the starting order, capped at Slack's 100 rows and 20 columns, rather than a picture, then the link. Interactive sorting, paging and cell selection in the browser belong to the interactive renderers.
 
 `dataTableExamples` covers a sorted table with an Other bucket, every decoration, missing, blank, multivalue and all-empty cells, paging with a summary, huge, tiny and negative values, chosen columns with pre-rendered values and provenance, and no rows.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `dataTableSchema` | The `dataTable` schema, with its rules |
+| `DataTableNode` | A validated `dataTable` node |
+| `DataTableColumn` | One entry of a node's `columns` |
+| `dataTableCatalog` | What an agent reads to choose `dataTable`: purpose, when to use it, and an example |
+| `dataTableExamples` | Its named examples |
+| `DATA_TABLE_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
+| `DATA_TABLE_KEY_RULE` | The rule for how a `byKey` color names a cell |
+| `DATA_TABLE_SUMMARIES`, `DataTableSummary` | The footer summaries a column can show: `sum`, `avg`, `count`, `min`, `max` |

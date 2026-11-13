@@ -86,3 +86,15 @@ On a vertical chart with a `temporal` x scale, the x axis draws as Lens's does: 
 | The zone and language | The x column format's `timeZone`, else `resolveChart`'s `timeZone`; and `resolveChart`'s `locale` | `dateFormat:tz`, resolved to an IANA zone (`Browser` becomes the viewer's zone), which Lens gives each series as `timeZone`; and `i18n.getLocale()`, which Lens gives `Settings.locale`                                                                                                                                                    |
 
 The x column's own date format does not change the axis labels, nor do `dateFormat:scaled` or `dateFormat:dow`: Elastic Charts labels a multi-layer axis with its own `Intl` formats, and Lens passes no `dow`, so weeks start on Monday. The column's format still prints table cells, tooltips and selections. `axes.x.labelOrientation` does not apply either: the labels draw level, as Lens passes its multi-layer axis no `labelsOrientation`.
+
+## Exports
+
+On `./schema` and the root entry:
+
+| Export | What it is |
+| --- | --- |
+| `xyChartSchema` | The `xyChart` schema, with its rules |
+| `XyChartNode` | A validated `xyChart` node |
+| `xyChartCatalog` | What an agent reads to choose `xyChart`: purpose, when to use it, and an example |
+| `xyChartExamples` | Its named examples, such as "Time series line" and "Interactive stacked bars" |
+| `XY_RULES` | Its cross-field rules, one sentence each, as the schema's description states them |
