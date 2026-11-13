@@ -9,6 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { dataTableExamples } from '../schema/examples/data_table';
 import { chartEventExamples } from '../schema/examples/events';
+import { gaugeExamples } from '../schema/examples/gauge';
 import { heatmapExamples } from '../schema/examples/heatmap';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
@@ -55,6 +56,10 @@ const nodes = [
   })),
   ...dataTableExamples.map(({ name, node }) => ({
     name: `dataTable: ${name}`,
+    node,
+  })),
+  ...gaugeExamples.map(({ name, node }) => ({
+    name: `gauge: ${name}`,
     node,
   })),
   ...heatmapExamples.map(({ name, node }) => ({
@@ -129,10 +134,12 @@ describe('resolveChart on every example', () => {
               ? slicesIn(scene.nodes).map(({ source }) => source)
               : scene.kind === 'heatmap'
                 ? scene.cells.map(({ source }) => source)
-                : seriesIn(scene).flatMap((series) => [
-                    series.source,
-                    ...series.marks.map(({ source }) => source),
-                  ]);
+                : scene.kind === 'gauge'
+                  ? []
+                  : seriesIn(scene).flatMap((series) => [
+                      series.source,
+                      ...series.marks.map(({ source }) => source),
+                    ]);
       for (const { rows, columns } of sources) {
         for (const row of rows) {
           expect(row).toBeLessThan(node.data.rows.length);

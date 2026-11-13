@@ -39,17 +39,19 @@ const sourcesOf = (scene: Scene): SceneSource[] =>
         ? slicesOf(scene.nodes).map(({ source }) => source)
         : scene.kind === 'heatmap'
           ? scene.cells.map(({ source }) => source)
-          : [
-              ...scene.layers.flatMap((layer) =>
-                layer.kind === 'series'
-                  ? [
-                      layer.series.source,
-                      ...layer.series.marks.map(({ source }) => source),
-                    ]
-                  : []
-              ),
-              ...scene.legend.items.map(({ source }) => source),
-            ];
+          : scene.kind === 'gauge'
+            ? []
+            : [
+                ...scene.layers.flatMap((layer) =>
+                  layer.kind === 'series'
+                    ? [
+                        layer.series.source,
+                        ...layer.series.marks.map(({ source }) => source),
+                      ]
+                    : []
+                ),
+                ...scene.legend.items.map(({ source }) => source),
+              ];
 
 const cases: { name: string; scene: Scene; data: ChartData }[] = [
   {
@@ -80,18 +82,20 @@ const selectionsOf = (scene: Scene): SceneSelection[] =>
           ]
         : scene.kind === 'heatmap'
           ? scene.cells.map(({ selection }) => selection)
-          : [
-              ...scene.categories.map(({ selection }) => selection),
-              ...scene.layers.flatMap((layer) =>
-                layer.kind === 'series'
-                  ? [
-                      layer.series.selection,
-                      ...layer.series.marks.map(({ selection }) => selection),
-                    ]
-                  : []
-              ),
-              ...scene.legend.items.map(({ selection }) => selection),
-            ]
+          : scene.kind === 'gauge'
+            ? []
+            : [
+                ...scene.categories.map(({ selection }) => selection),
+                ...scene.layers.flatMap((layer) =>
+                  layer.kind === 'series'
+                    ? [
+                        layer.series.selection,
+                        ...layer.series.marks.map(({ selection }) => selection),
+                      ]
+                    : []
+                ),
+                ...scene.legend.items.map(({ selection }) => selection),
+              ]
   ).filter((selection) => selection !== undefined);
 
 describe('Scene examples', () => {

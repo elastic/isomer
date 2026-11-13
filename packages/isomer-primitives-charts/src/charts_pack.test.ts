@@ -87,9 +87,10 @@ describe('chartsPack', () => {
     }))
   );
 
-  it('registers metric, xyChart, dataTable, partitionChart, heatmap, grid and unsupported', () => {
+  it('registers metric, xyChart, dataTable, partitionChart, heatmap, gauge, grid and unsupported', () => {
     expect([...chartsPack.types].sort()).toEqual([
       'dataTable',
+      'gauge',
       'grid',
       'heatmap',
       'metric',
@@ -147,46 +148,50 @@ describe('chartsPack', () => {
   });
 
   // `react` skips validation, so its node may carry any href.
-  it.each(['metric', 'xyChart', 'dataTable', 'partitionChart', 'heatmap'])(
-    '%s loses an unsafe href before the resolver sees the node',
-    (type) => {
-      const seen: ChartNode[] = [];
-      const spying = createIsomerRuntime({
-        packs: [
-          createChartsPack({
-            resolveScene: (node, options) => {
-              seen.push(node);
-              return resolveChart(node, options);
-            },
-          }),
-        ],
-      });
-      const { node } = cases.find((example) => example.type === type)!;
-      const unsafe = view({
-        ...node,
-        interactions: {
-          ...(node as ChartNode).interactions,
-          link: { label: 'Open', href: 'javascript:alert(1)' },
-        },
-      } as ChartNode);
-      const html = renderToStaticMarkup(
-        createElement(
-          'div',
-          null,
-          spying.surfaces.react.render(unsafe, { heading: false })
-        )
-      );
-      expect(seen.length).toBeGreaterThan(0);
-      expect(seen.map(({ interactions }) => interactions?.link)).toEqual(
-        seen.map(() => undefined)
-      );
-      expect(html).not.toContain('javascript:');
-    }
-  );
+  it.each([
+    'metric',
+    'xyChart',
+    'dataTable',
+    'partitionChart',
+    'heatmap',
+    'gauge',
+  ])('%s loses an unsafe href before the resolver sees the node', (type) => {
+    const seen: ChartNode[] = [];
+    const spying = createIsomerRuntime({
+      packs: [
+        createChartsPack({
+          resolveScene: (node, options) => {
+            seen.push(node);
+            return resolveChart(node, options);
+          },
+        }),
+      ],
+    });
+    const { node } = cases.find((example) => example.type === type)!;
+    const unsafe = view({
+      ...node,
+      interactions: {
+        ...(node as ChartNode).interactions,
+        link: { label: 'Open', href: 'javascript:alert(1)' },
+      },
+    } as ChartNode);
+    const html = renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        spying.surfaces.react.render(unsafe, { heading: false })
+      )
+    );
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.map(({ interactions }) => interactions?.link)).toEqual(
+      seen.map(() => undefined)
+    );
+    expect(html).not.toContain('javascript:');
+  });
 
   it.each(
     cases.filter(({ type }) =>
-      ['metric', 'xyChart', 'partitionChart', 'heatmap'].includes(type)
+      ['metric', 'xyChart', 'partitionChart', 'heatmap', 'gauge'].includes(type)
     )
   )('$type: $name draws its summary with no engine registered', ({ node }) => {
     const composition = view(node);

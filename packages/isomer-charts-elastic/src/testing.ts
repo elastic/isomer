@@ -12,6 +12,7 @@
 import type { DebugState } from '@elastic/charts';
 import {
   formatAxisValue,
+  type GaugeScene,
   type HeatmapScene,
   type PartitionScene,
   type Scene,
@@ -195,21 +196,64 @@ const heatmapProblems = (scene: HeatmapScene, state: DebugState): string[] => {
   return problems;
 };
 
+const gaugeProblems = (scene: GaugeScene, state: DebugState): string[] => {
+  const [drawn] = state.bullet?.rows?.[0] ?? [];
+  if (!drawn) {
+    return ['no bullet is drawn'];
+  }
+  const colors = (drawn.colorBands ?? []).map((color) => color.toUpperCase());
+  return [
+    ...sameList(
+      'bullet',
+      [
+        drawn.title,
+        drawn.subtitle ?? '',
+        String(drawn.value),
+        String(drawn.target ?? ''),
+        drawn.domain.join(' to '),
+      ],
+      [
+        scene.labels.major,
+        scene.labels.minor ?? '',
+        String(scene.value),
+        String(scene.goal?.value ?? ''),
+        `${scene.min} to ${scene.max}`,
+      ]
+    ),
+    // A lone band is passed as its color twice.
+    ...sameList(
+      'bands',
+      scene.bands.length === 1 ? [...new Set(colors)] : colors,
+      scene.bands.map(({ color }) => color.toUpperCase())
+    ),
+    ...(scene.ticks
+      ? sameList(
+          'ticks',
+          (drawn.ticks ?? []).map(String),
+          scene.ticks.map(String)
+        )
+      : []),
+  ];
+};
+
 /**
  * Where what Elastic Charts reports drawing for `scene` differs from it: an xy
  * chart's tick labels, series and legend items, a partition's slices, a heat
- * map's cells, positions and bands. A metric
+ * map's cells, positions and bands, a gauge's bullet. A metric
  * has no `DebugState` in Elastic Charts, so it is checked by its text alone.
  */
 export const debugStateProblems = (
   scene: Scene,
   state: DebugState | undefined
 ): string[] => {
-  // A metric has no DebugState, and an empty partition or heat map draws its note alone.
+  // A metric has no DebugState, and an empty chart draws its note alone.
   if (
     scene.kind === 'metric' ||
     scene.kind === 'table' ||
-    ((scene.kind === 'partition' || scene.kind === 'heatmap') && scene.empty)
+    ((scene.kind === 'partition' ||
+      scene.kind === 'heatmap' ||
+      scene.kind === 'gauge') &&
+      scene.empty)
   ) {
     return [];
   }
@@ -224,6 +268,8 @@ export const debugStateProblems = (
       return partitionProblems(scene, state);
     case 'heatmap':
       return heatmapProblems(scene, state);
+    case 'gauge':
+      return gaugeProblems(scene, state);
     default:
       return [`no DebugState check for ${kind} Scenes`];
   }

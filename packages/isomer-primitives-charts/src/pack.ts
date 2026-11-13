@@ -46,7 +46,13 @@ export const createChartsPack = ({
 }: ChartsPackOptions = {}): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
-    slackAssetTypes: ['metric', 'xyChart', 'partitionChart', 'heatmap'],
+    slackAssetTypes: [
+      'metric',
+      'xyChart',
+      'partitionChart',
+      'heatmap',
+      'gauge',
+    ],
     inputBudget: CHARTS_INPUT_BUDGET,
     authoring: {
       groups: [
@@ -57,6 +63,7 @@ export const createChartsPack = ({
             'xyChart',
             'partitionChart',
             'heatmap',
+            'gauge',
             'dataTable',
           ],
         },

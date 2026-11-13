@@ -16,12 +16,14 @@ import { act as testUtilsAct } from 'react-dom/test-utils';
 import type { DebugState } from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import type {
+  GaugeScene,
   HeatmapScene,
   PartitionScene,
   Scene,
   XyScene,
 } from '@elastic/isomer-primitives-charts/scene';
 import {
+  gaugeExamples,
   heatmapExamples,
   partitionChartExamples,
   xyChartExamples,
@@ -122,6 +124,7 @@ const scenes = [
   ...xyChartExamples,
   ...partitionChartExamples,
   ...heatmapExamples,
+  ...gaugeExamples,
 ]
   .map(({ name, node }): { name: string; scene: Scene } => ({
     name,
@@ -129,7 +132,12 @@ const scenes = [
   }))
   .filter(
     ({ scene }) =>
-      !((scene.kind === 'partition' || scene.kind === 'heatmap') && scene.empty)
+      !(
+        (scene.kind === 'partition' ||
+          scene.kind === 'heatmap' ||
+          scene.kind === 'gauge') &&
+        scene.empty
+      )
   );
 
 describe('debugStateProblems', () => {
@@ -218,6 +226,26 @@ describe('debugStateProblems', () => {
     const problems = debugStateProblems(heatmap, changed).join('\n');
     expect(problems).toMatch(/cell \d+ is filled rgba\(1, 2, 3, 1\)/);
     expect(problems).toMatch(/cell \d+ reads "other"/);
+  });
+
+  it('fails a gauge with another value or band', async () => {
+    const gauge = scenes.find(({ scene }) => scene.kind === 'gauge')!
+      .scene as GaugeScene;
+    const state = await debugStateOf(gauge);
+    const rows = state.bullet!.rows.map((row) =>
+      row.map(
+        (bullet) =>
+          bullet && {
+            ...bullet,
+            value: bullet.value + 1,
+            colorBands: ['#123456'],
+          }
+      )
+    );
+    const changed = { ...state, bullet: { ...state.bullet!, rows } };
+    const problems = debugStateProblems(gauge, changed).join('\n');
+    expect(problems).toMatch(/^bullet are /m);
+    expect(problems).toMatch(/^bands are /m);
   });
 
   it('reads the text and colors Elastic Charts reports', async () => {
