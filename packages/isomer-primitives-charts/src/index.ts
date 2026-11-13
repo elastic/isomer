@@ -20,6 +20,7 @@ export type {
   SceneResolver,
 } from './render/context';
 export { type ChartSizeSpec, chartSize, chartSizeSpec } from './render/size';
+export { cls, createVarsModule, px, varStyle } from './render/styles';
 export { type ResolveChartOptions } from './scene/common';
 export { brushEvent, selectEvent } from './scene/events';
 export {
@@ -30,6 +31,7 @@ export {
 export { formatAxisValue } from './scene/format_axis';
 export { type ChartNode, resolveChart } from './scene/resolve';
 export { selectSceneRenderer } from './scene/select';
+export { timeTicksAt } from './scene/time_axis';
 export {
   type AxisId,
   type ColorScheme,
@@ -72,6 +74,10 @@ export {
   type SceneSize,
   type SceneSource,
   type SceneTable,
+  type SceneTimeBand,
+  type SceneTimeLayer,
+  type SceneTimeTick,
+  type SceneTimeTicks,
   type SceneTooltip,
   type SceneTooltipEntry,
   type TableAlignment,
@@ -90,6 +96,7 @@ export {
   SCENE_KINDS,
 } from './scene/types';
 export {
+  dataTableCatalog,
   gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
@@ -118,6 +125,15 @@ export {
   cellSchema,
   chartDataSchema,
 } from './schema/data';
+export {
+  type DataTableColumn,
+  type DataTableNode,
+  type DataTableSummary,
+  DATA_TABLE_KEY_RULE,
+  DATA_TABLE_RULES,
+  DATA_TABLE_SUMMARIES,
+  dataTableSchema,
+} from './schema/data_table';
 export type {
   ChartBrushEvent,
   ChartEvent,
@@ -142,6 +158,7 @@ export {
   selectSchema,
   toActionEvent,
 } from './schema/events';
+export { dataTableExamples } from './schema/examples/data_table';
 export { chartEventExamples } from './schema/examples/events';
 export { gaugeExamples } from './schema/examples/gauge';
 export { gridExamples } from './schema/examples/grid';
@@ -215,3 +232,4 @@ export {
 } from './schema/tag_cloud';
 export { type UnsupportedNode, unsupportedSchema } from './schema/unsupported';
 export { type XyChartNode, XY_RULES, xyChartSchema } from './schema/xy_chart';
+export type { LocalVarGroup, StyleHandle } from '@elastic/distillate';
