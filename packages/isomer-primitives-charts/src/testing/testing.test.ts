@@ -28,13 +28,11 @@ const COLOR = /^(#[\da-f]{6}([\da-f]{2})?|rgba?\([^)]*\))$/i;
 const drawnParts = (scene: Scene): unknown[] => {
   switch (scene.kind) {
     case 'xy':
-      return [
-        scene.axes,
-        scene.layers,
-        scene.legend.visible ? scene.legend : [],
-      ];
+      return scene.empty
+        ? [scene.empty.text]
+        : [scene.axes, scene.layers, scene.legend.visible ? scene.legend : []];
     case 'metric':
-      return [scene.tiles];
+      return scene.empty ? [scene.empty.text] : [scene.tiles];
     case 'partition':
       return scene.empty
         ? [scene.empty.text]

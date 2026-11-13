@@ -55,6 +55,8 @@ A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y:
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Both can carry a [glyph](core.md#glyphs) `icon`. Neither carries rows, so neither is ever selected.
 
+A chart whose data layers hold no y value, with no rows or with every y cell missing, says "No results found" in place of the plot; its reference lines and annotations are not drawn.
+
 A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has `splitBy`. Series that share a key, such as two layers plotting one y column, share its `colors.byKey` entry and hidden state. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, which no string produces.
 
 Rules:

@@ -139,15 +139,7 @@ const scenes = [
     name,
     scene: resolveChart(node, { scheme: 'light', size: SIZE }),
   }))
-  .filter(
-    ({ scene }) =>
-      !(
-        (scene.kind === 'partition' ||
-          scene.kind === 'heatmap' ||
-          scene.kind === 'gauge') &&
-        scene.empty
-      )
-  );
+  .filter(({ scene }) => !('empty' in scene && scene.empty));
 
 describe('debugStateProblems', () => {
   it.each(scenes)(

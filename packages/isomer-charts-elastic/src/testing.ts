@@ -431,10 +431,7 @@ export const debugStateProblems = (
     scene.kind === 'metric' ||
     scene.kind === 'tagCloud' ||
     scene.kind === 'table' ||
-    ((scene.kind === 'partition' ||
-      scene.kind === 'heatmap' ||
-      scene.kind === 'gauge') &&
-      scene.empty)
+    ('empty' in scene && scene.empty)
   ) {
     return [];
   }

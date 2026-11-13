@@ -1088,3 +1088,57 @@ describe('an unvalidated annotation time', () => {
     ).toEqual([expect.objectContaining({ kind: 'point', at: 1 })]);
   });
 });
+
+describe('an xy chart with nothing to draw', () => {
+  const noResults = { reason: 'noResults', text: 'No results found' };
+  const { columns } = xy().data;
+
+  it('says so with no rows, and with no y value', () => {
+    expect(resolve(xy({ data: { columns, rows: [] } })).empty).toEqual(
+      noResults
+    );
+    expect(
+      resolve(
+        xy({
+          data: {
+            columns,
+            rows: [
+              [0, null],
+              [1, null],
+            ],
+          },
+        })
+      ).empty
+    ).toEqual(noResults);
+  });
+
+  it('says so with reference lines and no mark', () => {
+    const scene = resolve(
+      xy({
+        data: { columns, rows: [] },
+        layers: [
+          ...xy().layers,
+          { kind: 'referenceLines', lines: [{ value: 3 }] },
+        ],
+      })
+    );
+    expect(scene.empty).toEqual(noResults);
+  });
+
+  it('draws a chart with one y value', () => {
+    expect(resolve(xy())).not.toHaveProperty('empty');
+    expect(
+      resolve(
+        xy({
+          data: {
+            columns,
+            rows: [
+              [0, null],
+              [1, 4],
+            ],
+          },
+        })
+      )
+    ).not.toHaveProperty('empty');
+  });
+});

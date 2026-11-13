@@ -122,7 +122,10 @@ const CLEAR = /^#[\da-f]{6}00$/i;
 /** What each kind's drawing must show beyond its box, name and background. */
 const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
   xy: (scene, reading) => {
-    const { axes, layers } = scene as XyScene;
+    const { empty, axes, layers } = scene as XyScene;
+    if (empty) {
+      return emptyAlone(reading, empty.text);
+    }
     return [
       ...[axes.x, axes.y, axes.y2].flatMap((axis) =>
         axis?.title === undefined
@@ -140,8 +143,12 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
       ),
     ];
   },
-  metric: (scene, reading) =>
-    (scene as MetricScene).tiles.flatMap((tile) => [
+  metric: (scene, reading) => {
+    const { empty, tiles } = scene as MetricScene;
+    if (empty) {
+      return emptyAlone(reading, empty.text);
+    }
+    return tiles.flatMap((tile) => [
       ...drawnText(reading, 'tile title', tile.title),
       ...(tile.subtitle
         ? drawnText(reading, 'tile subtitle', tile.subtitle)
@@ -150,7 +157,8 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
       ...(tile.secondary
         ? drawnText(reading, 'tile secondary', tile.secondary.text)
         : []),
-    ]),
+    ]);
+  },
   partition: (scene, reading) => {
     const partition = scene as PartitionScene;
     if (partition.empty) {
