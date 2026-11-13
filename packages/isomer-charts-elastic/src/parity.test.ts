@@ -131,6 +131,10 @@ const installed = (scene: Scene, env: SceneRenderEnv) => {
 const gestures = (
   scene: Scene
 ): { gesture: string; raise: () => ChartEvent[]; expected: ChartEvent[] }[] => {
+  // An empty Scene draws its note alone, so it installs no handler.
+  if ('empty' in scene && scene.empty) {
+    return [];
+  }
   if (scene.kind === 'metric') {
     return scene.tiles.flatMap((tile, index) =>
       tile.selection

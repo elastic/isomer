@@ -50,4 +50,6 @@ Rules:
 - A trend `breakdown` needs a `breakdown` on the metric.
 - Emphasis rows are indexes into `data.rows`.
 
-`metricExamples` covers a single value, a comparison, a breakdown with the Other and missing buckets, a trend, huge, tiny and negative values, a missing value, a multivalue headline, long text, and a pre-rendered value with provenance.
+A metric with no rows has no tile and says "No results found"; a row whose value is missing still draws its tile.
+
+`metricExamples` covers a single value, a comparison, a breakdown with the Other and missing buckets, a trend, huge, tiny and negative values, a missing value, a multivalue headline, long text, a pre-rendered value with provenance, and no rows.
