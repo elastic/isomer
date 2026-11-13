@@ -7,10 +7,12 @@
 
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -27,35 +29,21 @@ import { splitDiagnostics } from './tsc_diagnostics.js';
 import {
   isPublishable,
   repoRoot,
+  unpublishableReferences,
   workspacePackages,
 } from './workspace_packages.js';
 
 const workspace = workspacePackages();
-const neverPublishedNames = new Set(
-  workspace
-    .filter(({ manifest }) => !isPublishable(manifest))
-    .map(({ manifest }) => manifest.name)
-);
-
 // Every package that publishes, or will once seeded: the packed tarball of each must import with
 // only its declared dependencies and required peers beside it.
 const publishing = workspace.filter(({ manifest }) => isPublishable(manifest));
 const packageNames = publishing.map(({ manifest }) => manifest.name);
 
-// A published package cannot reach one that never publishes.
-const neverPublishedReferences = publishing.flatMap(({ manifest }) =>
-  ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
-    (field) =>
-      Object.keys(manifest[field] ?? {})
-        .filter((name) => neverPublishedNames.has(name))
-        .map(
-          (name) =>
-            `${manifest.name} ${field} lists ${name}, which never publishes`
-        )
-  )
+const references = unpublishableReferences(
+  workspace.map(({ manifest }) => manifest)
 );
-if (neverPublishedReferences.length > 0) {
-  for (const reference of neverPublishedReferences) {
+if (references.length > 0) {
+  for (const reference of references) {
     console.error(reference);
   }
   process.exit(1);
@@ -180,6 +168,45 @@ const requireEntries = (specifiers, consumerDir) =>
   );
 
 /**
+ * Requires `specifiers` from a copy of `pkg` that holds only its dependencies and required peers, since another
+ * package's required peer may already be linked into `pkg` itself. Fails when any of `peers` still resolves there.
+ */
+const requireWithoutPeers = (pkg, specifiers, peers) => {
+  const { name, dependencies = {}, peerDependencies = {} } = pkg.manifest;
+  const isolatedDir = join(tempDir, 'isolated', name);
+  const ownModules = join(pkg.dir, 'node_modules');
+  cpSync(pkg.dir, isolatedDir, {
+    recursive: true,
+    filter: (source) => !source.startsWith(ownModules),
+  });
+  for (const linked of [
+    ...Object.keys(dependencies),
+    ...Object.keys(peerDependencies).filter((peer) => !peers.has(peer)),
+  ]) {
+    const target = join(ownModules, linked);
+    if (existsSync(target)) {
+      linkDirectory(
+        realpathSync(target),
+        join(isolatedDir, 'node_modules', linked)
+      );
+    }
+  }
+  const isolatedRequire = createRequire(join(isolatedDir, 'package.json'));
+  for (const peer of peers) {
+    let resolved;
+    try {
+      resolved = isolatedRequire.resolve(peer);
+    } catch {
+      continue;
+    }
+    throw new Error(`${name}: optional peer "${peer}" resolves at ${resolved}`);
+  }
+  const consumerDir = join(tempDir, 'isolated-consumers', name);
+  linkDirectory(isolatedDir, join(consumerDir, 'node_modules', name));
+  requireEntries(specifiers, consumerDir);
+};
+
+/**
  * Bundles one packed entry's ESM build with esbuild, as a consumer's bundler would.
  * Isomer packages are bundled from their packed `lib/esm`; the package's own
  * dependencies and peers stay external, as installed beside it.
@@ -283,18 +310,23 @@ try {
     const specifiers = exportSpecifiers(pkg.manifest);
 
     // Node loads the CommonJS build, with optional peers only for the entries that need them.
-    requireEntries(
-      specifiers.filter((specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)),
-      consumerDir
+    const plainEntries = specifiers.filter(
+      (specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)
     );
     const optionalPeerEntries = specifiers.filter((specifier) =>
       OPTIONAL_PEER_ENTRIES.has(specifier)
     );
-    for (const peer of new Set(
+    const optionalPeers = new Set(
       optionalPeerEntries.flatMap((specifier) =>
         OPTIONAL_PEER_ENTRIES.get(specifier)
       )
-    )) {
+    );
+    if (optionalPeers.size === 0) {
+      requireEntries(plainEntries, consumerDir);
+    } else {
+      requireWithoutPeers(pkg, plainEntries, optionalPeers);
+    }
+    for (const peer of optionalPeers) {
       linkDirectory(
         packages.get(peer)?.dir ?? resolve(repoRoot, 'node_modules', peer),
         join(pkg.dir, 'node_modules', peer)
