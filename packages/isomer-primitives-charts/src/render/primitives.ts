@@ -121,7 +121,7 @@ export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
       schema: legacyMetricSchema,
       catalog: legacyMetricCatalog,
       examples: legacyMetricExamples,
-      sanitize: sanitizeLink,
+      sanitize: sanitizeLink(config),
       metrics: { snapshotHeight: snapshotHeight(config) },
       renderers: chartRenderers(config),
     }),
