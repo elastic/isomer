@@ -55,6 +55,16 @@ export const CHARTS_THEME = {
        */
       aspectRatio: { x: 16, y: 9 },
     },
+    legacyMetric: {
+      /**
+       * Width to height. Lens gives a legacy metric no size spec and fills its
+       * container, so outside one it takes the xy chart's shape, growing
+       * taller when its tiles wrap to more rows than fit.
+       */
+      aspectRatio: { x: 16, y: 9 },
+      /** Height of an emphasis note line under the tiles, in pixels. */
+      noteHeight: 18,
+    },
     heatmap: {
       /**
        * Width to height. Lens gives a heat map no size spec and fills its

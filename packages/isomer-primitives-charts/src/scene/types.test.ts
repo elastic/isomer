@@ -31,7 +31,7 @@ const slicesOf = (nodes: readonly PartitionNode[]): PartitionNode[] =>
 
 /** Every source a selectable part of the Scene carries. */
 const sourcesOf = (scene: Scene): SceneSource[] =>
-  scene.kind === 'metric'
+  scene.kind === 'metric' || scene.kind === 'legacyMetric'
     ? scene.tiles.map(({ source }) => source)
     : scene.kind === 'table'
       ? scene.rows.flatMap(({ cells }) => cells.map(({ source }) => source))
@@ -71,7 +71,7 @@ const cases: { name: string; scene: Scene; data: ChartData }[] = [
 
 /** Every selection the Scene offers. */
 const selectionsOf = (scene: Scene): SceneSelection[] =>
-  (scene.kind === 'metric'
+  (scene.kind === 'metric' || scene.kind === 'legacyMetric'
     ? scene.tiles.map(({ selection }) => selection)
     : scene.kind === 'table'
       ? scene.rows.flatMap(({ cells }) =>

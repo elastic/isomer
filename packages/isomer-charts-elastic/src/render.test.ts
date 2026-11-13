@@ -974,6 +974,7 @@ describe('elastic-charts renderer', () => {
     expect(renderer.supports('gauge')).toBe(true);
     expect(renderer.supports('tagCloud')).toBe(true);
     expect(renderer.supports('table')).toBe(false);
+    expect(renderer.supports('legacyMetric')).toBe(false);
   });
 
   it('fills its container, so the chart shim gives it the size spec’s box', () => {

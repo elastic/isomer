@@ -12,6 +12,7 @@ A chart node is self-contained: its data is inline and typed, its data colors ar
 | Primitive | Holds |
 | --- | --- |
 | [`metric`](metric.md) | One headline value, or one tile per row, with an optional secondary value, progress bar or trend line |
+| [`legacyMetric`](legacy-metric.md) | Large values with a label above or below each, as Lens's legacy metric draws them |
 | [`xyChart`](xy-chart.md) | Lines, areas and bars over a shared x axis, with reference lines and annotations |
 | [`dataTable`](data-table.md) | Rows and columns to read exactly, with colored cells, bars, sorting, paging and a summary row |
 | [`partitionChart`](partition-chart.md) | Parts of a whole as a pie, donut, treemap, mosaic or waffle, in up to three layers |

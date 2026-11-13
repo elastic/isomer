@@ -7,10 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { wrappedHeight } from '../scene/common';
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
 import { resolveChart } from '../scene/resolve';
 import type { MetricScene, XyScene } from '../scene/types';
 import { gaugeExamples } from '../schema/examples/gauge';
+import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
 import { CHARTS_THEME } from './theme';
@@ -129,6 +131,73 @@ describe('chartSizeVars', () => {
     expect(chartSizeVars(chartSizeSpec(metricSingleValueScene)!)).toEqual({
       aspectRatio: '300 / 160',
       maxWidth: '300px',
+    });
+  });
+});
+
+describe('wrappedHeight', () => {
+  const box = (width: number, height: number) => ({ width, height });
+
+  it('takes the tallest box of a single row', () => {
+    expect(wrappedHeight([box(100, 40), box(150, 60), box(200, 50)], 480)).toBe(
+      60
+    );
+  });
+
+  it('adds each row’s tallest box when the boxes wrap', () => {
+    // 200 + 200 fit 480; the third box starts a row, and the fourth another.
+    expect(
+      wrappedHeight(
+        [box(200, 40), box(200, 60), box(300, 50), box(300, 30)],
+        480
+      )
+    ).toBe(60 + 50 + 30);
+  });
+
+  it('gives a box wider than the chart a row of its own', () => {
+    expect(wrappedHeight([box(100, 40), box(900, 70), box(100, 20)], 480)).toBe(
+      40 + 70 + 20
+    );
+  });
+
+  it('rounds up to a whole pixel', () => {
+    expect(wrappedHeight([box(10, 20.2)], 480)).toBe(21);
+  });
+});
+
+describe('chartSizeSpec for a legacy metric', () => {
+  const scene = resolveChart(legacyMetricExamples[0]!.node, {
+    scheme: 'light',
+  });
+  const tiles = wrappedHeight(
+    scene.tiles.map(({ box }) => box),
+    chart.width
+  );
+
+  it('keeps its least height to its wrapped tiles', () => {
+    expect(
+      chartSizeSpec({
+        ...scene,
+        interactions: { ...scene.interactions, emphasis: [] },
+      })
+    ).toEqual({
+      aspectRatio: chart.legacyMetric.aspectRatio,
+      minHeight: tiles,
+    });
+  });
+
+  it('adds a line for each emphasis note', () => {
+    expect(
+      chartSizeSpec({
+        ...scene,
+        interactions: {
+          ...scene.interactions,
+          emphasis: [{ rows: [0], note: 'Busiest' }, { rows: [1] }],
+        },
+      })
+    ).toEqual({
+      aspectRatio: chart.legacyMetric.aspectRatio,
+      minHeight: tiles + chart.legacyMetric.noteHeight,
     });
   });
 });

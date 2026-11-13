@@ -10,7 +10,9 @@
 // `CHARTS_THEME.chart`. A browser applies a spec as CSS; Node, which has no
 // container to fill, turns it into a box at the theme's width.
 
+import { wrappedHeight } from '../scene/common';
 import type { Scene, SceneSize } from '../scene/types';
+import { sceneNotes } from '../text/scene_text';
 
 import { CHARTS_THEME } from './theme';
 
@@ -44,6 +46,16 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
       return { aspectRatio: chart.tagCloud.aspectRatio };
     case 'heatmap':
       return { aspectRatio: chart.heatmap.aspectRatio };
+    case 'legacyMetric':
+      return {
+        aspectRatio: chart.legacyMetric.aspectRatio,
+        minHeight:
+          wrappedHeight(
+            scene.tiles.map(({ box }) => box),
+            chart.width
+          ) +
+          sceneNotes(scene).length * chart.legacyMetric.noteHeight,
+      };
     case 'metric': {
       if (scene.tiles.length <= 1) {
         const { width, height } = chart.metric.single;

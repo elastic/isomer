@@ -11,6 +11,7 @@ import { dataTableExamples } from '../schema/examples/data_table';
 import { chartEventExamples } from '../schema/examples/events';
 import { gaugeExamples } from '../schema/examples/gauge';
 import { heatmapExamples } from '../schema/examples/heatmap';
+import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 import { metricExamples } from '../schema/examples/metric';
 import { partitionChartExamples } from '../schema/examples/partition_chart';
 import { tagCloudExamples } from '../schema/examples/tag_cloud';
@@ -61,6 +62,10 @@ const nodes = [
   })),
   ...gaugeExamples.map(({ name, node }) => ({
     name: `gauge: ${name}`,
+    node,
+  })),
+  ...legacyMetricExamples.map(({ name, node }) => ({
+    name: `legacyMetric: ${name}`,
     node,
   })),
   ...tagCloudExamples.map(({ name, node }) => ({
@@ -129,7 +134,7 @@ describe('resolveChart on every example', () => {
       }) as Scene;
       const ids = new Set(node.data.columns.map(({ id }) => id));
       const sources =
-        scene.kind === 'metric'
+        scene.kind === 'metric' || scene.kind === 'legacyMetric'
           ? scene.tiles.map(({ source }) => source)
           : scene.kind === 'table'
             ? scene.rows.flatMap(({ cells }) =>

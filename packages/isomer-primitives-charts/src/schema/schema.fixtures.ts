@@ -20,6 +20,7 @@ import {
   gaugeCatalog,
   gridCatalog,
   heatmapCatalog,
+  legacyMetricCatalog,
   metricCatalog,
   partitionChartCatalog,
   tagCloudCatalog,
@@ -31,6 +32,7 @@ import { dataTableExamples } from './examples/data_table';
 import { gaugeExamples } from './examples/gauge';
 import { gridExamples } from './examples/grid';
 import { heatmapExamples } from './examples/heatmap';
+import { legacyMetricExamples } from './examples/legacy_metric';
 import { metricExamples } from './examples/metric';
 import { partitionChartExamples } from './examples/partition_chart';
 import { tagCloudExamples } from './examples/tag_cloud';
@@ -39,6 +41,7 @@ import { xyChartExamples } from './examples/xy_chart';
 import { gaugeSchema } from './gauge';
 import { type GridNode, gridSchema, gridSchemaFor } from './grid';
 import { heatmapSchema } from './heatmap';
+import { legacyMetricSchema } from './legacy_metric';
 import { metricSchema } from './metric';
 import { partitionChartSchema } from './partition_chart';
 import { tagCloudSchema } from './tag_cloud';
@@ -58,6 +61,13 @@ export const contractDefinitions: readonly AnyPrimitiveDefinition[] = [
     schema: metricSchema,
     catalog: metricCatalog,
     examples: metricExamples,
+    renderers,
+  }),
+  definePrimitive({
+    type: 'legacyMetric',
+    schema: legacyMetricSchema,
+    catalog: legacyMetricCatalog,
+    examples: legacyMetricExamples,
     renderers,
   }),
   definePrimitive({

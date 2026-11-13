@@ -9,6 +9,7 @@ import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
 import type { ReactSceneRenderer, SceneResolver } from './render/context';
 import { gridPrimitive } from './render/grid';
+import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { defineChartPrimitives } from './render/primitives';
 import { chartsDistillery, chartsStyleAdapter } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
@@ -48,6 +49,7 @@ export const createChartsPack = ({
     id: 'charts',
     slackAssetTypes: [
       'metric',
+      'legacyMetric',
       'xyChart',
       'partitionChart',
       'heatmap',
@@ -61,6 +63,7 @@ export const createChartsPack = ({
           title: 'Charts',
           types: [
             'metric',
+            'legacyMetric',
             'xyChart',
             'partitionChart',
             'heatmap',
@@ -78,6 +81,7 @@ export const createChartsPack = ({
         sceneRenderers: [
           ...sceneRenderers,
           tableSceneRenderer,
+          legacyMetricSceneRenderer,
           summarySceneRenderer,
         ],
       }),
