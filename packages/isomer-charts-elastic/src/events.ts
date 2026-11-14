@@ -11,6 +11,12 @@
 // Elastic Charts' own indexes or values.
 
 import {
+  type BrushEndListener,
+  type ElementClickListener,
+  isMetricElementEvent,
+  type ProjectionClickListener,
+} from '@elastic/charts';
+import {
   brushEvent,
   type ChartEvent,
   type HeatmapScene,
@@ -19,6 +25,7 @@ import {
   type PartitionScene,
   type SceneRenderEnv,
   selectEvent,
+  type SelectTarget,
   type TagCloudScene,
   type XyCategory,
   type XyMark,
@@ -40,8 +47,10 @@ export interface XyDatum {
 export const isXyDatum = (value: unknown): value is XyDatum =>
   typeof value === 'object' &&
   value !== null &&
-  typeof (value as XyDatum).series === 'number' &&
-  typeof (value as XyDatum).mark === 'number';
+  'series' in value &&
+  typeof value.series === 'number' &&
+  'mark' in value &&
+  typeof value.mark === 'number';
 
 /** The Scene's series, in draw order, without its reference lines and annotations. */
 export const seriesOf = (scene: XyScene): readonly XySeries[] =>
@@ -75,41 +84,57 @@ export const categoryAt = (
   return found;
 };
 
-/** Whether the host can receive events from this Scene. */
-const listening = (
-  env: SceneRenderEnv
-): env is SceneRenderEnv & {
+type ListeningEnv = SceneRenderEnv & {
   nodeId: string;
   onEvent: (event: ChartEvent) => void;
-} => env.nodeId !== undefined && env.onEvent !== undefined;
+};
 
-const raise = (env: SceneRenderEnv, event: ChartEvent | undefined): void => {
-  if (event !== undefined && listening(env)) {
+/** Whether the host can receive events from this Scene. */
+const listening = (env: SceneRenderEnv): env is ListeningEnv =>
+  env.nodeId !== undefined && env.onEvent !== undefined;
+
+/** Whether the host can receive the Scene's selections of `target`. */
+export const offers = (
+  { interactions: { select } }: { interactions: XyScene['interactions'] },
+  env: SceneRenderEnv,
+  target: SelectTarget
+): env is ListeningEnv => listening(env) && select.includes(target);
+
+const raise = (env: ListeningEnv, event: ChartEvent | undefined): void => {
+  if (event !== undefined) {
     env.onEvent(event);
   }
 };
 
+/** The first member of a tuple element: what was hit. The metric element is no tuple. */
+const subjectOf = (
+  element: Parameters<ElementClickListener>[0][number] | undefined
+) => (Array.isArray(element) ? element[0] : undefined);
+
+interface Handlers {
+  onElementClick?: ElementClickListener;
+  onProjectionClick?: ProjectionClickListener;
+  onBrushEnd?: BrushEndListener;
+}
+
 /** The handlers this engine passes Elastic Charts for an xy Scene; empty when the chart offers nothing. */
-export const xyHandlers = (scene: XyScene, env: SceneRenderEnv) => {
+export const xyHandlers = (scene: XyScene, env: SceneRenderEnv): Handlers => {
   if (!listening(env)) {
     return {};
   }
   const { select, brush } = scene.interactions;
-  const offers = (target: string) =>
-    (select as readonly string[]).includes(target);
   const category = (x: unknown) => categoryAt(scene, x)?.selection;
   return {
-    ...(offers('datum') || offers('category')
+    ...(select.includes('datum') || select.includes('category')
       ? {
           /** The first element Elastic Charts reports, as Kibana's xy click handler takes it. */
-          onElementClick: (elements: readonly unknown[]) => {
-            const [first] = elements;
-            const [geometry]: readonly unknown[] = Array.isArray(first)
-              ? (first as readonly unknown[])
-              : [];
-            const datum = (geometry as { datum?: unknown } | undefined)?.datum;
-            const mark = markOf(scene, datum);
-            const selection = offers('datum')
+          onElementClick: ([first]) => {
+            const geometry = subjectOf(first);
+            const mark =
+              geometry && 'accessor' in geometry
+                ? markOf(scene, geometry.datum)
+                : undefined;
+            const selection = select.includes('datum')
               ? mark?.selection
               : category(mark?.x);
             if (selection) {
@@ -118,9 +143,9 @@ export const xyHandlers = (scene: XyScene, env: SceneRenderEnv) => {
           },
         }
       : {}),
-    ...(offers('category')
+    ...(select.includes('category')
       ? {
-          onProjectionClick: ({ x }: { x: unknown; y?: unknown }) => {
+          onProjectionClick: ({ x }) => {
             const selection = category(x);
             if (selection) {
               raise(env, selectEvent(env.nodeId, selection));
@@ -130,10 +155,8 @@ export const xyHandlers = (scene: XyScene, env: SceneRenderEnv) => {
       : {}),
     ...(brush
       ? {
-          onBrushEnd: (area: { x?: unknown }) => {
-            const [from, to]: readonly unknown[] = Array.isArray(area.x)
-              ? (area.x as readonly unknown[])
-              : [];
+          onBrushEnd: ({ x = [] }) => {
+            const [from, to] = x;
             if (typeof from === 'number' && typeof to === 'number') {
               raise(env, brushEvent(scene, env.nodeId, [from, to]));
             }
@@ -160,30 +183,21 @@ export const legendSelect = (
 };
 
 /** The handlers this engine passes Elastic Charts for a metric Scene; empty when the chart offers nothing. */
-export const metricHandlers = (scene: MetricScene, env: SceneRenderEnv) => {
-  if (
-    !listening(env) ||
-    !(scene.interactions.select as readonly string[]).includes('tile')
-  ) {
+export const metricHandlers = (
+  scene: MetricScene,
+  env: SceneRenderEnv
+): Handlers => {
+  if (!offers(scene, env, 'tile')) {
     return {};
   }
   return {
-    onElementClick: (elements: readonly unknown[]) => {
+    onElementClick: (elements) => {
       for (const element of elements) {
-        const cell = element as {
-          type?: string;
-          rowIndex?: number;
-          columnIndex?: number;
-        };
-        if (
-          cell.type !== 'metricElementEvent' ||
-          cell.rowIndex === undefined ||
-          cell.columnIndex === undefined
-        ) {
+        if (!isMetricElementEvent(element)) {
           continue;
         }
-        const tile =
-          scene.tiles[cell.rowIndex * scene.layout.columns + cell.columnIndex];
+        const { rowIndex, columnIndex } = element;
+        const tile = scene.tiles[rowIndex * scene.layout.columns + columnIndex];
         if (tile?.selection) {
           raise(env, selectEvent(env.nodeId, tile.selection));
         }
@@ -209,24 +223,17 @@ const sliceNamed = (
 export const partitionHandlers = (
   scene: PartitionScene,
   env: SceneRenderEnv
-) => {
-  if (
-    !listening(env) ||
-    !(scene.interactions.select as readonly string[]).includes('slice')
-  ) {
+): Handlers => {
+  if (!offers(scene, env, 'slice')) {
     return {};
   }
   return {
     /** The innermost slice of the first element: the one the reader hit, as Kibana's partition click takes it. */
-    onElementClick: (elements: readonly unknown[]) => {
-      const [first] = elements;
-      const [layers]: readonly unknown[] = Array.isArray(first)
-        ? (first as readonly unknown[])
-        : [];
-      const hit = Array.isArray(layers)
-        ? (layers as readonly { groupByRollup?: unknown }[]).at(-1)
+    onElementClick: ([first]) => {
+      const layers = subjectOf(first);
+      const key = Array.isArray(layers)
+        ? layers.at(-1)?.groupByRollup
         : undefined;
-      const key = hit?.groupByRollup;
       const selection =
         typeof key === 'string'
           ? sliceNamed(scene.nodes, key)?.selection
@@ -254,26 +261,23 @@ export const partitionLegendSelect = (
 };
 
 /** The handlers this engine passes Elastic Charts for a heatmap Scene; empty when the chart offers nothing. */
-export const heatmapHandlers = (scene: HeatmapScene, env: SceneRenderEnv) => {
+export const heatmapHandlers = (
+  scene: HeatmapScene,
+  env: SceneRenderEnv
+): Handlers => {
   if (!listening(env)) {
     return {};
   }
   const { select, brush } = scene.interactions;
   return {
-    ...((select as readonly string[]).includes('cell')
+    ...(select.includes('cell')
       ? {
           /** The first cell Elastic Charts reports: its datum's index is the Scene cell's. */
-          onElementClick: (elements: readonly unknown[]) => {
-            const [first] = elements;
-            const [cell]: readonly unknown[] = Array.isArray(first)
-              ? (first as readonly unknown[])
-              : [];
-            const index = (
-              cell as { datum?: { originalIndex?: unknown } } | undefined
-            )?.datum?.originalIndex;
+          onElementClick: ([first]) => {
+            const cell = subjectOf(first);
             const selection =
-              typeof index === 'number'
-                ? scene.cells[index]?.selection
+              cell && 'formatted' in cell
+                ? scene.cells[cell.datum.originalIndex]?.selection
                 : undefined;
             if (selection) {
               raise(env, selectEvent(env.nodeId, selection));
@@ -284,11 +288,8 @@ export const heatmapHandlers = (scene: HeatmapScene, env: SceneRenderEnv) => {
     ...(brush && scene.x.scale === 'time'
       ? {
           /** A drag across the time axis: from the first bucket's start to the last's end. */
-          onBrushEnd: (area: { x?: unknown }) => {
-            const xs: readonly unknown[] = Array.isArray(area.x)
-              ? (area.x as readonly unknown[])
-              : [];
-            const [from, to] = [xs[0], xs.at(-1)];
+          onBrushEnd: ({ x = [] }) => {
+            const [from, to] = [x[0], x.at(-1)];
             if (typeof from === 'number' && typeof to === 'number') {
               raise(env, brushEvent(scene, env.nodeId, [from, to]));
             }
@@ -299,23 +300,24 @@ export const heatmapHandlers = (scene: HeatmapScene, env: SceneRenderEnv) => {
 };
 
 /** The handlers this engine passes Elastic Charts for a tag cloud Scene; empty when the chart offers nothing. */
-export const tagCloudHandlers = (scene: TagCloudScene, env: SceneRenderEnv) => {
-  if (
-    !listening(env) ||
-    !(scene.interactions.select as readonly string[]).includes('tag')
-  ) {
+export const tagCloudHandlers = (
+  scene: TagCloudScene,
+  env: SceneRenderEnv
+): Handlers => {
+  if (!offers(scene, env, 'tag')) {
     return {};
   }
   return {
-    /** The word Elastic Charts reports: its datum names the Scene word. */
-    onElementClick: (elements: readonly unknown[]) => {
-      const [first] = elements;
-      const [datum]: readonly unknown[] = Array.isArray(first)
-        ? (first as readonly unknown[])
-        : [];
-      const index = (datum as { index?: unknown } | undefined)?.index;
+    /** The word Elastic Charts reports: the datum this engine passed it, whose `index` `WordModel` omits. */
+    onElementClick: ([first]) => {
+      const word = subjectOf(first);
       const selection =
-        typeof index === 'number' ? scene.words[index]?.selection : undefined;
+        word &&
+        'text' in word &&
+        'index' in word &&
+        typeof word.index === 'number'
+          ? scene.words[word.index]?.selection
+          : undefined;
       if (selection) {
         raise(env, selectEvent(env.nodeId, selection));
       }

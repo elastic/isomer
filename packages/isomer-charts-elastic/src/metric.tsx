@@ -45,9 +45,17 @@ type DatumEnv = Pick<SceneRenderEnv, 'environment' | 'resolveClassName'>;
 
 const { handles: elastic, vars } = elasticModule;
 
+/** Elastic Charts' own class names, which its stylesheet styles. */
+export const ECH_CLASSES = {
+  secondary: 'echSecondaryMetric',
+  secondaryLabel: 'echSecondaryMetric__label',
+  secondaryTooltip: 'echSecondaryMetric__tooltip',
+  screenReaderOnly: 'echScreenReaderOnly',
+} as const;
+
 /** The secondary text's class names: Elastic Charts' own, then the Scene's color. */
 const secondaryClass = (styles: Styles) =>
-  `echSecondaryMetric ${cls(styles, elastic.secondary)}`;
+  `${ECH_CLASSES.secondary} ${cls(styles, elastic.secondary)}`;
 
 /**
  * A tooltip label as Elastic Charts' secondary metric offers it: a focusable
@@ -123,13 +131,13 @@ const TooltipLabelled = ({
           hide();
         }
       }}>
-      <span className="echScreenReaderOnly">{label} </span>
+      <span className={ECH_CLASSES.screenReaderOnly}>{label} </span>
       {children}
       {open
         ? createPortal(
             <div
               aria-hidden="true"
-              className={`echSecondaryMetric__tooltip ${cls(styles, elastic.tooltip)}`}
+              className={`${ECH_CLASSES.secondaryTooltip} ${cls(styles, elastic.tooltip)}`}
               style={varStyle(vars.anchor, {
                 top: px(open.rect.top),
                 left: px(open.rect.left + open.rect.width / 2),
@@ -163,11 +171,11 @@ const plainSecondary = (
         className={secondaryClass(styles)}
         style={varStyle(vars.ink, { color })}>
         {label !== undefined && labelPlacement === 'before' ? (
-          <span className="echSecondaryMetric__label">{label} </span>
+          <span className={ECH_CLASSES.secondaryLabel}>{label} </span>
         ) : null}
         {text}
         {label !== undefined && labelPlacement === 'after' ? (
-          <span className="echSecondaryMetric__label"> {label}</span>
+          <span className={ECH_CLASSES.secondaryLabel}> {label}</span>
         ) : null}
       </span>
     );

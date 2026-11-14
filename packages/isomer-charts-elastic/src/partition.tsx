@@ -39,7 +39,7 @@ import {
 } from '@elastic/isomer-primitives-charts/scene';
 
 import { ariaDescriptionOf } from './accessibility';
-import { partitionHandlers, partitionLegendSelect } from './events';
+import { offers, partitionHandlers, partitionLegendSelect } from './events';
 import type { ElasticChartsOptions } from './options';
 import { elasticModule } from './styles';
 import { chromeTheme, kibanaBaseTheme } from './theme';
@@ -305,10 +305,7 @@ export const partitionSpecs = (
     legend.items.map(({ key }, position) => [key, position])
   );
   const size = LEGEND_SIZE[legend.size];
-  const offersSlices =
-    env.onEvent !== undefined &&
-    env.nodeId !== undefined &&
-    scene.interactions.select.includes('slice');
+  const offersSlices = offers(scene, env, 'slice');
   return (
     <>
       <Tooltip customTooltip={partitionTooltip(scene)} />
