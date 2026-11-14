@@ -16,12 +16,21 @@ import { xyChartExamples } from '../schema/examples/xy_chart';
 import type { XyChartNode } from '../schema/xy_chart';
 
 import { resolveChart } from './resolve';
+import type { TimeTicksInput } from './time_axis';
 import { resolveTimeTicks, timeTicksAt } from './time_axis';
 import type { SceneTimeTicks } from './types';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
+
+const ticksFor = (input: TimeTicksInput): SceneTimeTicks => {
+  const ticks = resolveTimeTicks(input);
+  if (!ticks) {
+    throw new Error('no raster fits');
+  }
+  return ticks;
+};
 
 /** Each labeled row's labels at `width`: row 0, then row 1. */
 const rows = (ticks: SceneTimeTicks, width: number) => {
@@ -44,7 +53,7 @@ const times = (ticks: SceneTimeTicks, width: number, row: number) =>
 describe('resolveTimeTicks', () => {
   it('labels minutes by the hour and minute, under the day', () => {
     const min = Date.UTC(2026, 10, 3, 23, 10);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 119 * MINUTE,
       interval: MINUTE,
@@ -65,7 +74,7 @@ describe('resolveTimeTicks', () => {
 
   it('draws a major label that starts before the domain at the domain, but drops such a minor one', () => {
     const min = Date.UTC(2026, 10, 3, 23, 10);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 119 * MINUTE,
       interval: MINUTE,
@@ -80,7 +89,7 @@ describe('resolveTimeTicks', () => {
   it('labels hours in the zone’s wall-clock time, repeating the hour daylight saving repeats', () => {
     // 2026-11-01 in New York: 01:00 happens twice, and the day lasts 25 hours.
     const min = Date.UTC(2026, 10, 1, 4);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 24 * HOUR,
       interval: HOUR,
@@ -114,7 +123,7 @@ describe('resolveTimeTicks', () => {
   it('skips the hour daylight saving skips, and starts each day at local midnight', () => {
     // 2026-03-08 in New York: 02:00 never happens.
     const min = Date.UTC(2026, 2, 8, 4);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 12 * HOUR,
       interval: HOUR,
@@ -139,18 +148,18 @@ describe('resolveTimeTicks', () => {
       extend: true,
       timeZone: 'UTC',
     };
-    expect(rows(resolveTimeTicks({ ...input, locale: 'en' }), 1500)).toEqual([
+    expect(rows(ticksFor({ ...input, locale: 'en' }), 1500)).toEqual([
       ['5th', '12th', '19th', '26th', '2nd', '9th', '16th', '23rd', '30th'],
       ['October 2026', 'November 2026', 'December 2026'],
     ]);
-    expect(rows(resolveTimeTicks({ ...input, locale: 'de' }), 1500)).toEqual([
+    expect(rows(ticksFor({ ...input, locale: 'de' }), 1500)).toEqual([
       ['5', '12', '19', '26', '2', '9', '16', '23', '30'],
       ['Oktober 2026', 'November 2026', 'Dezember 2026'],
     ]);
   });
 
   it('labels months by their short name, under the year, and years alone when narrow', () => {
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min: Date.UTC(2024, 0, 1),
       max: Date.UTC(2026, 11, 1),
       interval: 30 * DAY,
@@ -171,7 +180,7 @@ describe('resolveTimeTicks', () => {
 
   it('starts weeks on Monday in the axis’s zone', () => {
     const min = Date.UTC(2026, 9, 31, 4);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 71 * HOUR,
       interval: HOUR,
@@ -190,7 +199,7 @@ describe('resolveTimeTicks', () => {
 
   it('lists bands by width, the first from zero, with more ticks as the plot widens', () => {
     const min = Date.UTC(2026, 10, 3);
-    const ticks = resolveTimeTicks({
+    const ticks = ticksFor({
       min,
       max: min + 2 * DAY,
       interval: HOUR,
@@ -221,11 +230,25 @@ describe('resolveTimeTicks', () => {
       locale: 'en',
       timeZone: 'UTC',
     };
-    const all = resolveTimeTicks(input);
-    const narrow = resolveTimeTicks({ ...input, maxWidth: 300 });
+    const all = ticksFor(input);
+    const narrow = ticksFor({ ...input, maxWidth: 300 });
     expect(narrow.bands.every(({ from }) => from <= 300)).toBe(true);
     expect(narrow.bands.length).toBeLessThan(all.bands.length);
     expect(timeTicksAt(narrow, 300)).toEqual(timeTicksAt(all, 300));
+  });
+
+  it('states no axis for a bucket wider than the coarsest raster', () => {
+    const min = Date.UTC(2026, 0, 1);
+    expect(
+      resolveTimeTicks({
+        min,
+        max: min + 40 * 365 * DAY,
+        interval: 20 * 365 * DAY,
+        extend: false,
+        locale: 'en',
+        timeZone: 'UTC',
+      })
+    ).toBeUndefined();
   });
 });
 
@@ -348,6 +371,86 @@ describe('resolveChart: an xy Scene’s time ticks', () => {
     expect(angled('horizontal')).toBe(-45);
   });
 
+  const single = (
+    mark: 'line' | 'bar',
+    interval?: number
+  ): ReturnType<typeof xOf> => {
+    const node = hourly();
+    return xOf(
+      hourly({
+        data: { ...node.data, rows: [[Date.UTC(2026, 10, 3), 1]] },
+        layers: [{ kind: 'data', mark, x: 'time', y: [{ column: 'count' }] }],
+        axes: {
+          x: {
+            scale: 'temporal',
+            labelOrientation: 'angled',
+            ...(interval === undefined ? {} : { interval }),
+          },
+        },
+      })
+    );
+  };
+
+  it.each(['line', 'bar'] as const)(
+    'is absent for a single x on a %s with no stated interval, and the labels keep their rotation',
+    (mark) => {
+      const { timeTicks, labelRotation } = single(mark);
+      expect(timeTicks).toBeUndefined();
+      expect(labelRotation).toBe(-45);
+    }
+  );
+
+  it('takes a single x’s bucket from the stated interval', () => {
+    const at = Date.UTC(2026, 10, 3);
+    const line = single('line', HOUR);
+    expect(line.timeTicks?.domain).toEqual({ min: at, max: at });
+    expect(line.timeTicks?.interval).toBe(HOUR);
+    expect(rows(line.timeTicks!, 600)).toEqual([
+      ['00:00'],
+      ['November 3, 2026'],
+    ]);
+    expect(line.labelRotation).toBe(0);
+    const bar = single('bar', HOUR);
+    expect(bar.timeTicks?.domain).toEqual({ min: at, max: at + HOUR });
+    expect(bar.timeTicks?.interval).toBe(HOUR);
+    expect(bar.labelRotation).toBe(0);
+  });
+
+  it('is absent when the span fits no raster, and the labels keep their rotation', () => {
+    const spanning = (lastYear: number) => {
+      const node = hourly();
+      return xOf(
+        hourly({
+          data: {
+            ...node.data,
+            rows: [1500, 1800, lastYear].map((year, index) => [
+              Date.UTC(year, 0, 1),
+              index,
+            ]),
+          },
+          layers: [
+            { kind: 'data', mark: 'line', x: 'time', y: [{ column: 'count' }] },
+          ],
+          axes: {
+            x: {
+              scale: 'temporal',
+              interval: 365 * DAY,
+              labelOrientation: 'angled',
+            },
+          },
+        })
+      );
+    };
+    const fits = spanning(1900);
+    expect(fits.timeTicks?.bands.some(({ layers }) => layers.length > 0)).toBe(
+      true
+    );
+    expect(fits.labelRotation).toBe(0);
+    const tooLong = spanning(2100);
+    expect(tooLong.timeTicks).toBeUndefined();
+    expect(tooLong.labelRotation).toBe(-45);
+  });
+
   it('is absent on a horizontal chart, an ordinal axis and a linear one', () => {
     expect(
       xOf(hourly({ orientation: 'horizontal' })).timeTicks
@@ -388,7 +491,7 @@ describe('the scene entry without `Intl.PluralRules`', () => {
       extend: false,
       timeZone: 'UTC',
     };
-    const english = resolveTimeTicks({ ...days, locale: 'en' });
+    const english = ticksFor({ ...days, locale: 'en' });
     vi.resetModules();
     vi.stubGlobal(
       'Intl',
@@ -398,7 +501,7 @@ describe('the scene entry without `Intl.PluralRules`', () => {
       const scene = await import('./index');
       const timeAxis = await import('./time_axis');
       expect(scene.timeTicksAt(english, 800)).toBe(timeTicksAt(english, 800));
-      const german = timeAxis.resolveTimeTicks({ ...days, locale: 'de' });
+      const german = timeAxis.resolveTimeTicks({ ...days, locale: 'de' })!;
       expect(rows(german, 800)[0]?.slice(0, 2)).toEqual(['1', '2']);
     } finally {
       vi.unstubAllGlobals();
