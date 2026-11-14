@@ -35,7 +35,7 @@ import {
 } from './failure';
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
-import { chartSize, chartSizeSpec, chartSizeVars } from './size';
+import { chartSize, chartSizeSpec, chartSizeVars, isNominalSize } from './size';
 import { cls, styleScopeOf, varStyle } from './styles';
 import { summarySceneRenderer } from './summary_renderer';
 import { tableHeight } from './table';
@@ -118,6 +118,7 @@ const renderEnv = (
 ): SceneRenderEnv => {
   return {
     environment,
+    ...(isNominalSize(context?.size) && { fillWidth: true }),
     ...(node.id !== undefined && { nodeId: node.id }),
     ...(context?.onEvent && {
       onEvent: (event) => context.onEvent?.(toActionEvent(event)),

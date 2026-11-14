@@ -29,6 +29,10 @@ export const sceneModule = createVarsModule(
       min-height: ${size.minHeight};
       max-width: ${size.maxWidth};
     `,
+    /** A paragraph of the summary fallback. */
+    summary: css`
+      margin: 0;
+    `,
     link: css`
       ${chrome}
       color: ${chrome.ink};

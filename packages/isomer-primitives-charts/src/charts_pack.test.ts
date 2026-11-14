@@ -215,7 +215,11 @@ describe('chartsPack', () => {
           runtime.surfaces.react.render(composition, { heading: false })
         )
       )
-    ).toContain(renderToStaticMarkup(createElement('p', null, summary)));
+    ).toContain(
+      renderToStaticMarkup(
+        createElement('p', { className: 'chartsScene-summary' }, summary)
+      )
+    );
     expect(
       runtime.surfaces.slack.render(composition, { collectAssets: true }).assets
     ).toHaveLength(1);
@@ -291,7 +295,7 @@ describe('a Scene description', () => {
       )
     );
     expect(out).toContain(
-      `<p>${described.summary}</p><p>Requests the edge served</p>`
+      `<p class="chartsScene-summary">${described.summary}</p><p class="chartsScene-summary">Requests the edge served</p>`
     );
   });
 });

@@ -109,7 +109,7 @@ const LegacyMetricView = ({
     aria-label={[scene.summary, ...described(scene)].join(' ')}
     className={cls(env, legacy.root)}
     style={varStyle(vars.box, {
-      width: scene.size && px(scene.size.width),
+      width: scene.size && !env.fillWidth ? px(scene.size.width) : undefined,
       height: scene.size && px(scene.size.height),
       fill: scene.background,
       ink: scene.empty ? scene.chrome.textSubdued : scene.chrome.text,
