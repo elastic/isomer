@@ -57,6 +57,110 @@ Reference lines sit at fixed values; annotations are points or ranges at fixed t
 
 A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has `splitBy`. Series that share a key, such as two layers plotting one y column, share its `colors.byKey` entry and hidden state. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, which no string produces.
 
+## Example
+
+The fewest fields that validate and draw, one line over a time axis:
+
+<!-- node-example -->
+
+```ts
+import type { XyChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requestsOverTime: XyChartNode = {
+  type: 'xyChart',
+  data: {
+    columns: [
+      { id: 'time', label: '@timestamp', type: 'date', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['2026-11-03T00:00:00Z', 120],
+      ['2026-11-03T01:00:00Z', 98],
+      ['2026-11-03T02:00:00Z', 143],
+    ],
+  },
+  layers: [{ kind: 'data', mark: 'line', x: 'time', y: [{ column: 'count' }] }],
+};
+```
+
+A typical panel, hourly bars stacked by status with a color per series, a legend below, and marks, series and a time range a reader can select:
+
+<!-- node-example -->
+
+```ts
+import type { XyChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const responsesByStatus: XyChartNode = {
+  type: 'xyChart',
+  title: 'Responses by status',
+  data: {
+    columns: [
+      {
+        id: 'time',
+        label: '@timestamp per hour',
+        type: 'date',
+        role: 'dimension',
+        format: {
+          kind: 'date',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'UTC',
+        },
+      },
+      {
+        id: 'status',
+        label: 'response.code',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['2026-11-03T00:00:00Z', '200', 802],
+      ['2026-11-03T00:00:00Z', '404', 41],
+      ['2026-11-03T01:00:00Z', '200', 911],
+      ['2026-11-03T01:00:00Z', '404', 37],
+    ],
+  },
+  layers: [
+    {
+      kind: 'data',
+      mark: 'bar',
+      stack: 'stacked',
+      x: 'time',
+      y: [{ column: 'count' }],
+      splitBy: 'status',
+    },
+  ],
+  axes: {
+    x: { scale: 'temporal', interval: 3600000 },
+    y: { title: 'Requests' },
+  },
+  colors: {
+    byKey: {
+      '200': { light: '#54B399', dark: '#54B399' },
+      '404': { light: '#D6BF57', dark: '#D6BF57' },
+    },
+  },
+  legend: { position: 'bottom' },
+  interactions: {
+    select: ['datum', 'series'],
+    brush: { column: 'time' },
+  },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.

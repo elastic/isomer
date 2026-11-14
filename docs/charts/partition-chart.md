@@ -21,6 +21,86 @@ A missing or non-number value counts as 0. Any negative value leaves the chart e
 
 A `colors.byKey` key names a color category: the outermost group's cell, or on a `mosaic` with two groups the second group's cell; with no `groups`, a metric column id. Each is a key part, as the [chart core](core.md#colorvalue) encodes one: the missing bucket is `\null`. A category with no key takes the default categorical palette by where it first shows in the rows; a date category is one instant however its cells write it, so it takes one color in every mosaic column.
 
+## Example
+
+The fewest fields that validate and draw, one pie layer:
+
+<!-- node-example -->
+
+```ts
+import type { PartitionChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requestsByStatus: PartitionChartNode = {
+  type: 'partitionChart',
+  shape: 'pie',
+  data: {
+    columns: [
+      { id: 'status', label: 'Status', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['200', 8412],
+      ['404', 1204],
+      ['500', 382],
+    ],
+  },
+  metrics: [{ column: 'count' }],
+  groups: [{ column: 'status' }],
+};
+```
+
+A typical panel, a titled donut with a color per slice for both schemes, a legend and selectable slices:
+
+<!-- node-example -->
+
+```ts
+import type { PartitionChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const trafficByCountry: PartitionChartNode = {
+  type: 'partitionChart',
+  title: 'Traffic by country',
+  shape: 'donut',
+  donutHole: 0.54,
+  data: {
+    columns: [
+      {
+        id: 'country',
+        label: 'geo.country_iso_code',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['US', 4120],
+      ['DE', 1830],
+      ['Other', 2410],
+    ],
+  },
+  metrics: [{ column: 'count' }],
+  groups: [{ column: 'country' }],
+  colors: {
+    byKey: {
+      US: { light: '#16C5C0', dark: '#16C5C0' },
+      DE: { light: '#61A2FF', dark: '#61A2FF' },
+      Other: { light: '#CAD3E2', dark: '#485975' },
+    },
+  },
+  legend: { visibility: 'visible', position: 'right' },
+  interactions: { select: ['slice'] },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.
