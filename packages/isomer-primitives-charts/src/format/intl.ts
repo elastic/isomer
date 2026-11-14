@@ -123,3 +123,30 @@ export const numberOptions = ({
   ...(signDisplay === undefined ? {} : { signDisplay }),
   ...(useGrouping === undefined ? {} : { useGrouping }),
 });
+
+/**
+ * The index in ascending `sizes` of the largest unit that `magnitude`, rounded
+ * to the format's fraction digits, is at least one of; `0` below them all.
+ */
+export const scaledUnitIndex = (
+  magnitude: number,
+  sizes: readonly number[],
+  { minimumFractionDigits, maximumFractionDigits }: NumberFields
+): number => {
+  let index = sizes.length - 1;
+  while (index > 0 && magnitude < sizes[index]!) {
+    index--;
+  }
+  const size = sizes[index]!;
+  const next = sizes[index + 1];
+  if (next === undefined) {
+    return index;
+  }
+  const rounded = Number(
+    numberFormat('en', {
+      useGrouping: false,
+      ...numberOptions({ minimumFractionDigits, maximumFractionDigits }),
+    }).format(magnitude / size)
+  );
+  return rounded >= next / size ? index + 1 : index;
+};

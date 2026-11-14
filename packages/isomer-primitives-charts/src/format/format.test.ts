@@ -99,20 +99,56 @@ describe('percent', () => {
 
 describe('bytes and bits', () => {
   it.each(['bytes', 'bits'] as const)(
-    'keeps %s below a unit boundary in the smaller unit',
+    'keeps %s that round below a unit boundary in the smaller unit',
     (kind) => {
       expect(
-        formatValue(1024 ** 4 - 0.001, {
+        formatValue(1023.99 * 1024 ** 3, {
           kind,
           base: 1024,
           unitDisplay: 'long',
         })
-      ).toBe(kind === 'bytes' ? '1,024 gigabytes' : '1,024 gigabits');
+      ).toBe(kind === 'bytes' ? '1,023.99 gigabytes' : '1,023.99 gigabits');
       expect(
         formatValue(1024 ** 4, { kind, base: 1024, unitDisplay: 'long' })
       ).toBe(kind === 'bytes' ? '1 terabyte' : '1 terabit');
     }
   );
+
+  it.each([
+    ['bytes', 1024, ['1 kB', '1 MB', '1 GB', '1 TB', '1 PB']],
+    ['bytes', 1000, ['1 kB', '1 MB', '1 GB', '1 TB', '1 PB']],
+    ['bits', 1000, ['1 kb', '1 Mb', '1 Gb', '1 Tb']],
+    ['bits', 1024, ['1 kb', '1 Mb', '1 Gb', '1 Tb']],
+  ] as const)(
+    'prints %s by %i that round up to a unit in that unit',
+    (kind, base, expected) => {
+      expected.forEach((text, index) => {
+        const value = base ** (index + 1) * (1 - 1e-9);
+        expect(formatValue(value, { kind, base })).toBe(text);
+        expect(formatValue(-value, { kind, base })).toBe(`-${text}`);
+      });
+    }
+  );
+
+  it('picks the unit after rounding to the fraction digits', () => {
+    expect(formatValue(1023.9999, { kind: 'bytes' })).toBe('1 kB');
+    expect(formatValue(1023.9994, { kind: 'bytes' })).toBe('1,023.999 byte');
+    expect(formatValue(-1023.9999, { kind: 'bytes' })).toBe('-1 kB');
+    const whole = { maximumFractionDigits: 0 } as const;
+    expect(formatValue(1023.5, { kind: 'bytes', ...whole })).toBe('1 kB');
+    expect(formatValue(1023.4, { kind: 'bytes', ...whole })).toBe('1,023 byte');
+    expect(formatValue(-1023.5, { kind: 'bytes', ...whole })).toBe('-1 kB');
+    expect(formatValue(999.5, { kind: 'bits', ...whole })).toBe('1 kb');
+    expect(formatValue(999.4, { kind: 'bits', ...whole })).toBe('999 bit');
+    expect(formatValue(-999.5, { kind: 'bits', ...whole })).toBe('-1 kb');
+    expect(
+      formatValue(999.96, {
+        kind: 'bits',
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })
+    ).toBe('1.0 kb');
+  });
 
   it('scales bytes by 1024 by default', () => {
     expect(
@@ -162,6 +198,54 @@ describe('duration', () => {
     expect(formatValue(45, { kind: 'duration', input: 'days' })).toBe(
       '1.5 months'
     );
+  });
+
+  it.each([
+    ['nanoseconds', 999.9999, '1 microsecond'],
+    ['microseconds', 999.9999, '1 millisecond'],
+    ['milliseconds', 999.9999, '1 second'],
+    ['seconds', 59.9999, '1 minute'],
+    ['seconds', 3599.9999, '1 hour'],
+    ['hours', 23.99999, '1 day'],
+    ['days', 6.99999, '1 week'],
+    ['days', 29.99999, '1 month'],
+    ['days', 364.99999, '1 year'],
+  ] as const)(
+    'prints %s that round up to a unit in that unit',
+    (input, value, text) => {
+      expect(formatValue(value, { kind: 'duration', input })).toBe(text);
+      expect(formatValue(-value, { kind: 'duration', input })).toBe(`-${text}`);
+    }
+  );
+
+  it('picks the unit after rounding to the fraction digits', () => {
+    const seconds = { kind: 'duration', input: 'seconds' } as const;
+    expect(formatValue(59.9994, seconds)).toBe('59.999 seconds');
+    expect(formatValue(-59.9994, seconds)).toBe('-59.999 seconds');
+    const tenths = { ...seconds, maximumFractionDigits: 1 } as const;
+    expect(formatValue(59.96, tenths)).toBe('1 minute');
+    expect(formatValue(59.94, tenths)).toBe('59.9 seconds');
+    expect(formatValue(-59.96, tenths)).toBe('-1 minute');
+    const whole = { ...seconds, maximumFractionDigits: 0 } as const;
+    expect(formatValue(3570, whole)).toBe('1 hour');
+    expect(formatValue(3569, whole)).toBe('59 minutes');
+    expect(formatValue(-3570, whole)).toBe('-1 hour');
+  });
+
+  it('keeps zero in a small input unit', () => {
+    expect(formatValue(0, { kind: 'duration', input: 'nanoseconds' })).toBe(
+      '0 nanoseconds'
+    );
+    expect(formatValue(0, { kind: 'duration', input: 'microseconds' })).toBe(
+      '0 microseconds'
+    );
+    expect(
+      formatValue(0, {
+        kind: 'duration',
+        input: 'milliseconds',
+        maximumFractionDigits: 0,
+      })
+    ).toBe('0 milliseconds');
   });
 
   it('goes below a millisecond, and keeps zero in its input unit', () => {
