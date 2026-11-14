@@ -25,6 +25,13 @@ const LEGEND_ACTION_GAP = 2;
 /** Above Elastic Charts' own layers, as EUI's tooltip draws. */
 const TOOLTIP_Z_INDEX = 10000;
 
+const BOX_DEFAULTS = {
+  width: '100%',
+  height: '100%',
+  ink: 'currentColor',
+  fill: 'transparent',
+};
+
 interface ElasticStyles {
   readonly handles: Readonly<
     Record<
@@ -41,8 +48,8 @@ interface ElasticStyles {
   readonly vars: {
     readonly ink: LocalVarGroup<'color'>;
     readonly anchor: LocalVarGroup<'top' | 'left'>;
-    readonly empty: LocalVarGroup<'width' | 'height' | 'ink' | 'fill'>;
-    readonly tagCloud: LocalVarGroup<'width' | 'height' | 'ink' | 'fill'>;
+    readonly empty: LocalVarGroup<keyof typeof BOX_DEFAULTS>;
+    readonly tagCloud: LocalVarGroup<keyof typeof BOX_DEFAULTS>;
   };
   readonly stylesheet: () => string;
 }
@@ -52,18 +59,8 @@ export const elasticModule: ElasticStyles = createVarsModule(
   (vars) => ({
     ink: vars('ink', { color: 'currentColor' }),
     anchor: vars('anchor', { top: '0px', left: '0px' }),
-    empty: vars('empty', {
-      width: '100%',
-      height: '100%',
-      ink: 'currentColor',
-      fill: 'transparent',
-    }),
-    tagCloud: vars('tagCloud', {
-      width: '100%',
-      height: '100%',
-      ink: 'currentColor',
-      fill: 'transparent',
-    }),
+    empty: vars('empty', BOX_DEFAULTS),
+    tagCloud: vars('tagCloud', BOX_DEFAULTS),
   }),
   ({ css }, { ink, anchor, empty, tagCloud }) => ({
     /** A metric's secondary text without a badge, in the Scene's color. */

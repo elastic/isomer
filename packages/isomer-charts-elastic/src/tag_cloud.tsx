@@ -20,11 +20,10 @@ import {
   varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import { tagCloudHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
+import { commonSettings } from './settings';
 import { elasticModule } from './styles';
-import { kibanaBaseTheme } from './theme';
 
 /** The font Kibana's tag cloud sets its words in. */
 export const TAG_CLOUD_FONT_FAMILY =
@@ -48,13 +47,6 @@ export const tagCloudData = (scene: TagCloudScene): TagCloudDatum[] =>
     index,
   }));
 
-/** Elastic Charts' weight function for the Scene's `scale`. */
-const WEIGHT_FN = {
-  linear: 'linear',
-  log: 'log',
-  squareRoot: 'squareRoot',
-} as const;
-
 /** A tag cloud Scene's spec elements, for `<Chart>` or headless drawing; `null` when it is empty. */
 export const tagCloudSpecs = (
   scene: TagCloudScene,
@@ -67,12 +59,8 @@ export const tagCloudSpecs = (
   return (
     <>
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={{ background: { color: scene.chrome.background } }}
-        locale={scene.locale}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
         {...tagCloudHandlers(scene, env)}
       />
       <Wordcloud
@@ -88,7 +76,7 @@ export const tagCloudSpecs = (
         maxFontSize={scene.fontSize.max}
         spiral="archimedean"
         data={tagCloudData(scene)}
-        weightFn={WEIGHT_FN[scene.scale]}
+        weightFn={scene.scale}
       />
     </>
   );
