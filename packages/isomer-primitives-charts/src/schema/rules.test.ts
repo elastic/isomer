@@ -645,6 +645,28 @@ describe('xyChart', () => {
     );
   });
 
+  it('orders an annotation range by the instants its strings name', () => {
+    const range = (from: string, to: string) =>
+      xy({
+        layers: [
+          ...xy().layers,
+          { kind: 'annotations', events: [{ kind: 'range', from, to }] },
+        ],
+      });
+    expectRule(
+      'xyChart',
+      range('2026-11-03T12:00:00+0530', '2026-11-03T06:00:00.123456789Z'),
+      XY_RULES.rangeOrder,
+      'layers.1.events.0'
+    );
+    expect(
+      issuesOf(
+        'xyChart',
+        range('2026-11-03T06:00:00.123456789Z', '2026-11-03T12:00:00+0530')
+      )
+    ).toEqual([]);
+  });
+
   it('rejects an annotation range that ends before it starts', () => {
     expectRule(
       'xyChart',
@@ -692,6 +714,43 @@ describe('xyChart', () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it.each([
+    '2026-11-03T00:30Z',
+    '2026-11-03T00:30:00+0530',
+    '2026-11-03T00:30:00.123456789Z',
+  ])('takes %s as an annotation time, as a date cell does', (at) => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          layers: [
+            ...xy().layers,
+            { kind: 'annotations', events: [{ kind: 'point', at }] },
+          ],
+          style: { currentTime: at },
+        })
+      )
+    ).toEqual([]);
+  });
+
+  it.each([
+    '2026-11-03',
+    '2026-11-03T00:30:00',
+    '2026-11-03T00:30:00.1234567890Z',
+  ])('rejects %s as an annotation time', (at) => {
+    expect(
+      issuesOf(
+        'xyChart',
+        xy({
+          layers: [
+            ...xy().layers,
+            { kind: 'annotations', events: [{ kind: 'point', at }] },
+          ],
+        })
+      ).map(({ path }) => path)
+    ).toContain('layers.1.events.0.at');
   });
 
   it.each([

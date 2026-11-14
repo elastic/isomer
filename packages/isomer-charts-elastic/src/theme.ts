@@ -71,15 +71,12 @@ const themes: Partial<Record<ColorScheme, Theme>> = {};
 export const kibanaBaseTheme = (scheme: ColorScheme): Theme =>
   (themes[scheme] ??= build(scheme));
 
-/** The Scene's chrome over the base theme: text, axis, grid line and background colors. */
+/** The Scene's chrome over the base theme: axis, grid line and background colors. Axis text keeps the base theme's fill. */
 export const chromeTheme = (chrome: SceneChrome): PartialTheme => ({
   background: { color: chrome.background },
   axes: {
-    axisTitle: { fill: chrome.textSubdued },
-    axisPanelTitle: { fill: chrome.textSubdued },
     axisLine: { stroke: chrome.axis },
     tickLine: { stroke: chrome.axis },
-    tickLabel: { fill: chrome.textSubdued },
     gridLine: {
       horizontal: { stroke: chrome.gridLine },
       vertical: { stroke: chrome.gridLine },

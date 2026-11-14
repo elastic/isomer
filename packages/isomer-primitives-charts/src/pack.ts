@@ -8,6 +8,7 @@
 import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
 import type { ReactSceneRenderer, SceneResolver } from './render/context';
+import type { ChartFailureHandler } from './render/failure';
 import { gridPrimitive } from './render/grid';
 import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { defineChartPrimitives } from './render/primitives';
@@ -27,6 +28,12 @@ export interface ChartsPackOptions {
    * surface takes no host context, so this is where its preference goes.
    */
   readonly sceneRenderers?: readonly ReactSceneRenderer[];
+  /**
+   * Told of each chart that could not be resolved or drawn, once for each node
+   * a render draws. The
+   * chart draws `CHART_FAILURE_TEXT` in its place on every surface.
+   */
+  readonly onFailure?: ChartFailureHandler;
 }
 
 /**
@@ -44,6 +51,7 @@ export const CHARTS_INPUT_BUDGET = {
 export const createChartsPack = ({
   resolveScene = resolveChart,
   sceneRenderers = [],
+  onFailure,
 }: ChartsPackOptions = {}): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
@@ -84,6 +92,7 @@ export const createChartsPack = ({
           legacyMetricSceneRenderer,
           summarySceneRenderer,
         ],
+        ...(onFailure && { onFailure }),
       }),
       gridPrimitive,
       unsupportedPrimitive,

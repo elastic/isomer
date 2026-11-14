@@ -6,6 +6,8 @@
  */
 
 import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
+import { md } from '@elastic/isomer-sdk/markdown';
+import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import type { Scene, TableScene } from '../scene/types';
 import {
@@ -39,6 +41,7 @@ import { tableSceneToSlack } from '../text/slack_table';
 
 import type { ChartNode } from './context';
 import { definePrimitive } from './define';
+import { createFailureGuard, FAILURE_HEIGHT, failureText } from './failure';
 import {
   dataTableIcon,
   gaugeIcon,
@@ -67,8 +70,18 @@ const resolveForText = (node: ChartNode, config: SceneShim): Scene =>
 const chartRenderers = <TNode extends ChartNode>(config: SceneShim) => ({
   react: (node: TNode, env: Parameters<typeof renderSceneNode>[1]) =>
     renderSceneNode(node, env, config),
-  text: (node: TNode) => sceneToText(resolveForText(node, config)),
-  markdown: (node: TNode) => sceneToMarkdown(resolveForText(node, config)),
+  text: (node: TNode) =>
+    config.guard(
+      node,
+      () => sceneToText(resolveForText(node, config)),
+      () => failureText(node)
+    ),
+  markdown: (node: TNode) =>
+    config.guard(
+      node,
+      () => sceneToMarkdown(resolveForText(node, config)),
+      () => [md.paragraph(failureText(node))]
+    ),
 });
 
 // An unsafe link is dropped; the chart still draws. A safe link keeps the
@@ -95,15 +108,24 @@ const sanitizeLink =
 /** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws, and its link line. */
 const snapshotHeight =
   (config: SceneShim) =>
-  (node: ChartNode): number => {
-    const scene = resolveForText(node, config);
-    const spec = chartSizeSpec(scene);
-    return (spec ? chartSize(spec).height : 0) + linkLineHeight(scene);
-  };
+  (node: ChartNode): number =>
+    config.guard(
+      node,
+      () => {
+        const scene = resolveForText(node, config);
+        const spec = chartSizeSpec(scene);
+        return (spec ? chartSize(spec).height : 0) + linkLineHeight(scene);
+      },
+      () => FAILURE_HEIGHT
+    );
 
 /** The chart primitives, each drawing through `shimConfig`, resolving and drawing each node once per render. */
 export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
-  const config: SceneShim = { ...shimConfig, cache: createSceneCache() };
+  const config: SceneShim = {
+    ...shimConfig,
+    cache: createSceneCache(),
+    guard: createFailureGuard(shimConfig.onFailure),
+  };
   return [
     definePrimitive({
       type: 'metric',
@@ -133,17 +155,37 @@ export const defineChartPrimitives = (shimConfig: SceneShimConfig) => {
       examples: dataTableExamples,
       sanitize: sanitizeLink(config),
       metrics: {
-        snapshotHeight: (node: DataTableNode) => {
-          const scene = resolveForText(node, config) as TableScene;
-          return tableHeight(scene) + linkLineHeight(scene);
-        },
+        snapshotHeight: (node: DataTableNode) =>
+          config.guard(
+            node,
+            () => {
+              const scene = resolveForText(node, config) as TableScene;
+              return tableHeight(scene) + linkLineHeight(scene);
+            },
+            () => FAILURE_HEIGHT
+          ),
       },
       renderers: {
         ...chartRenderers<DataTableNode>(config),
         slack: (node: DataTableNode, { baseUrl }: { baseUrl?: string }) =>
-          tableSceneToSlack(
-            resolveForText(node, config) as TableScene,
-            baseUrl
+          config.guard<SlackBlock[]>(
+            node,
+            () =>
+              tableSceneToSlack(
+                resolveForText(node, config) as TableScene,
+                baseUrl
+              ),
+            () => [
+              {
+                type: 'rich_text',
+                elements: [
+                  {
+                    type: 'rich_text_section',
+                    elements: [{ type: 'text', text: failureText(node) }],
+                  },
+                ],
+              },
+            ]
           ),
       },
     }),

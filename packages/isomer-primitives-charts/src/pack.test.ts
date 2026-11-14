@@ -18,6 +18,7 @@ import type {
   ReactSceneRenderer,
   ResolveSceneOptions,
 } from './render/context';
+import { CHART_FAILURE_TEXT } from './render/failure';
 import { sceneModule } from './render/scene_styles';
 import { chartSize, chartSizeSpec } from './render/size';
 import { CHARTS_THEME } from './render/theme';
@@ -587,5 +588,104 @@ describe('events', () => {
 
   it('are not offered without a host onEvent', () => {
     expect(draw(pack)).not.toContain('<output>live</output>');
+  });
+});
+
+describe('a chart that cannot be drawn', () => {
+  const failures: [unknown, ChartNode][] = [];
+  const broken = new Error('no column');
+  const failing = (options: Parameters<typeof createChartsPack>[0] = {}) =>
+    createChartsPack({
+      resolveScene: (node, sceneOptions) => {
+        if (node.type === 'xyChart') {
+          throw broken;
+        }
+        return resolveScene(node, sceneOptions);
+      },
+      onFailure: (error, node) => failures.push([error, node]),
+      ...options,
+    });
+
+  it('draws its note on react and still draws the charts beside it', () => {
+    failures.length = 0;
+    const html = draw(
+      failing({ sceneRenderers: [tagging('test', ['metric'])] })
+    );
+    expect(html).toContain('test:metric:light');
+    expect(html).toContain(
+      `<strong class="chartsUnsupported-title">${xyTimeSeries.title}</strong>`
+    );
+    expect(html).toContain(CHART_FAILURE_TEXT);
+    expect(html).toContain('role="note"');
+  });
+
+  it('tells the host once for each node a render could not draw', () => {
+    failures.length = 0;
+    runtimeFor(failing()).surfaces.text.render(composition);
+    expect(failures).toEqual([
+      [broken, expect.objectContaining({ type: 'xyChart' })],
+    ]);
+  });
+
+  it('tells the host again when the same node fails in a later render', async () => {
+    failures.length = 0;
+    const pack = failing();
+    draw(pack);
+    draw(pack);
+    expect(failures).toHaveLength(1);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    draw(pack);
+    expect(failures).toHaveLength(2);
+  });
+
+  it("fails the render when the host's handler throws", () => {
+    expect(() =>
+      draw(
+        failing({
+          onFailure: (error) => {
+            throw error;
+          },
+        })
+      )
+    ).toThrow(broken);
+  });
+
+  it('writes its note on text and markdown', () => {
+    const { surfaces } = runtimeFor(failing());
+    const note = `${xyTimeSeries.title}: ${CHART_FAILURE_TEXT}`;
+    expect(surfaces.text.render(composition)).toContain(note);
+    expect(surfaces.markdown.render(composition)).toContain(note);
+    expect(surfaces.text.render(composition)).toContain(
+      metricSingleValueScene.summary
+    );
+  });
+
+  it("reserves the note's height on snapshot", () => {
+    const snapshotHeight = failing().primitives.find(
+      ({ type }) => type === 'xyChart'
+    )!.metrics?.snapshotHeight as (node: ChartNode) => number;
+    expect(snapshotHeight(xyTimeSeries)).toBe(CHARTS_THEME.unsupported.height);
+  });
+
+  it('draws its note when a renderer throws', () => {
+    failures.length = 0;
+    const throwing: ReactSceneRenderer = {
+      ...tagging('throwing', ['metric']),
+      render: () => {
+        throw broken;
+      },
+    };
+    const html = draw(
+      createChartsPack({
+        resolveScene,
+        sceneRenderers: [throwing, tagging('test', ['xy'])],
+        onFailure: (error, node) => failures.push([error, node]),
+      })
+    );
+    expect(html).toContain(`${metricSingleValue.title}</strong>`);
+    expect(html).toContain('test:xy:light');
+    expect(failures).toEqual([
+      [broken, expect.objectContaining({ type: 'metric' })],
+    ]);
   });
 });

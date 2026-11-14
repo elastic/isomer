@@ -14,6 +14,7 @@
 
 import type { ReactNode } from 'react';
 
+import { afterTask } from '../after_task';
 import type { Scene, SceneRenderEnv } from '../scene/types';
 
 import type {
@@ -76,14 +77,6 @@ const fingerprintOf = (source: object): string | undefined => {
     return JSON.stringify(source);
   } catch {
     return undefined;
-  }
-};
-
-const afterTask = (callback: () => void): void => {
-  if (typeof queueMicrotask === 'function') {
-    queueMicrotask(callback);
-  } else {
-    void Promise.resolve().then(callback);
   }
 };
 

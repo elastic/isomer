@@ -11,6 +11,7 @@
 // cell's color decided here, so an engine only lays the grid out.
 
 import { coordinateOf } from '../coordinates';
+import { collator, dateFormat } from '../format/intl';
 import type { ColorBand } from '../schema/colors';
 import type { HeatmapNode } from '../schema/heatmap';
 
@@ -112,25 +113,19 @@ const ordered = (
     const byValue =
       typeof a.cell === 'number' && typeof b.cell === 'number'
         ? a.cell - b.cell
-        : a.label.localeCompare(b.label, locale);
+        : collator(locale).compare(a.label, b.label);
     return sign * byValue || a.first - b.first;
   });
 };
 
 const OFFSET = /^GMT(?:([+-])(\d{1,2}):?(\d{2})?(?::?(\d{2}))?)?$/;
-const offsetFormats = new Map<string, Intl.DateTimeFormat>();
 
 /** `zone`'s offset from UTC at `instant`, in milliseconds. */
 const offsetAt = (instant: number, zone: string): number => {
-  let format = offsetFormats.get(zone);
-  if (!format) {
-    format = new Intl.DateTimeFormat('en-US', {
-      timeZone: zone,
-      timeZoneName: 'longOffset',
-    });
-    offsetFormats.set(zone, format);
-  }
-  const name = format
+  const name = dateFormat('en-US', {
+    timeZone: zone,
+    timeZoneName: 'longOffset',
+  })
     .formatToParts(instant)
     .find(({ type }) => type === 'timeZoneName')?.value;
   const [, sign, hours = '0', minutes = '0', seconds = '0'] =

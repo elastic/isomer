@@ -39,7 +39,7 @@ const scene = resolveChart(node, {
 });
 ```
 
-`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` or `legacyMetric` node into its Scene ([how a table resolves](data-table.md#how-it-resolves)). It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped; only the ticks an engine chooses are formatted where it runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
+`resolveChart(node, { scheme, size?, locale?, timeZone? })` turns a `metric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` or `legacyMetric` node into its Scene ([how a table resolves](data-table.md#how-it-resolves)). It is pure and synchronous, and the Scene is plain JSON data, so it can be resolved on a server and shipped (`table.rows` is formatted on first read, from the node's data as it is then, which serializing it does); only the ticks an engine chooses are formatted where it runs, through `formatAxisValue`. `locale` defaults to `en` and `timeZone`, for dates whose format names none, to `UTC`. Every string comes from the node: its `display` strings, or its values in their [formats](format.md). No host code takes part, so a node prints the same wherever it is resolved; a host that needs its own text sends `display` strings.
 
 What it decides:
 
@@ -54,7 +54,7 @@ Legend statistic names, default reference-line and annotation colors, and style 
 
 The series in `interactions.initial.hiddenSeries` start hidden: their legend items say so, and the summary sentence, which no reader can toggle, leaves them out. Everything else in the Scene holds every series, so an engine shows or hides one without resolving again.
 
-Every data layer shares one x column, so one axis scale and format serve them all. A node that skipped validation and holds an x cell its continuous scale cannot place throws a `RangeError`.
+Every data layer shares one x column, so one axis scale and format serve them all. A node that skipped validation and holds an x cell its continuous scale cannot place throws a `RangeError` from `resolveChart`; the pack draws [its failure note](rendering.md#when-a-chart-cannot-be-drawn) in the chart's place.
 
 Ordinal x positions are opaque keys derived from raw cells; tick and category labels hold their displayed text. Distinct cells remain distinct positions even when their labels match; a date cell is its instant, so date-times for one instant share a position, as they share a split series, whatever their UTC offset.
 
@@ -64,11 +64,11 @@ A time x axis on a vertical chart carries `timeTicks`: the axis Lens draws, with
 
 Which ticks fit depends on the plot's width, which only the engine knows once it lays out the axes and legend. So `timeTicks` holds every width's ticks:
 
-| Field | What it is |
-| --- | --- |
-| `domain` | `min` and `max` in epoch milliseconds: the drawn marks' extent, or the custom domain, with `max` one bucket further where bars fill buckets (any stacked bars, or one bar series) |
-| `interval` | The bucket in milliseconds: the axis's `interval`, unless it is wider than the marks' smallest spacing, which is used then, as it is when the node states none |
-| `bands` | By ascending `from`, the first from 0: each holds the `layers` drawn at plot widths from its `from`, in CSS pixels, up to the next band's. Bands wider than the Scene's `size` are left out |
+| Field      | What it is                                                                                                                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `domain`   | `min` and `max` in epoch milliseconds: the drawn marks' extent, or the custom domain, with `max` one bucket further where bars fill buckets (any stacked bars, or one bar series)           |
+| `interval` | The bucket in milliseconds: the axis's `interval`, unless it is wider than the marks' smallest spacing, which is used then, as it is when the node states none                              |
+| `bands`    | By ascending `from`, the first from 0: each holds the `layers` drawn at plot widths from its `from`, in CSS pixels, up to the next band's. Bands wider than the Scene's `size` are left out |
 
 A layer is one raster, finest first: its label `row` (0 beside the plot, 1 below it, -1 for unlabeled ticks finer than both), whether it is `labeled`, whether it draws `grid` lines where the axis shows a grid, and its `ticks`, each an `at` time and a `label` (empty on an unlabeled layer). A row's first tick may start before the domain: on row 0 the resolver leaves it out, and on row 1 it draws at the domain's start, so the first day or month is always named.
 

@@ -84,6 +84,9 @@ export const drawExamples = (
       resolved.push({ example: current.example, kind: scene.kind });
       return scene;
     },
+    onFailure: (error) => {
+      throw error;
+    },
   });
   const runtime = createIsomerRuntime<unknown, ChartsRenderContext>({
     packs: [pack],

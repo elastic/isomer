@@ -50,9 +50,19 @@ const columnSchema = z.strictObject({
     'Stable within the node. Every other field refers to the column by this id.'
   ),
   label: z.string().describe('What the column is called on every surface.'),
-  type: z.enum(COLUMN_TYPES),
-  role: z.enum(COLUMN_ROLES),
-  format: portableFormatSchema.optional(),
+  type: z
+    .enum(COLUMN_TYPES)
+    .describe('The kind of value the column’s cells hold.'),
+  role: z
+    .enum(COLUMN_ROLES)
+    .describe(
+      'A `dimension` column identifies a row, such as a category, bucket or time; a `metric` column measures it.'
+    ),
+  format: portableFormatSchema
+    .optional()
+    .describe(
+      'How the column’s values print. Absent means the default for its `type`: a number, a medium date and time, or the text as is.'
+    ),
   multivalue: z
     .literal(true)
     .optional()
@@ -111,8 +121,15 @@ const DATA_DESCRIPTION = [
 ].join(' ');
 
 const chartDataObjectSchema = z.strictObject({
-  columns: z.array(columnSchema).min(1),
-  rows: z.array(z.array(cellSchema)),
+  columns: z
+    .array(columnSchema)
+    .min(1)
+    .describe('The table’s columns, in order.'),
+  rows: z
+    .array(z.array(cellSchema))
+    .describe(
+      'One array per row, with one cell per column in `columns` order.'
+    ),
   source: z
     .unknown()
     .optional()

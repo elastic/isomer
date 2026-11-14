@@ -11,7 +11,7 @@ import type { PortableFormat } from '../schema/format';
 
 import { toEpoch } from './date';
 import { defaultFormatFor, formatValue } from './format';
-import { dateFormat, numberFormat } from './intl';
+import { collator, dateFormat, INTL_CACHE_SIZE, numberFormat } from './intl';
 
 const MAY_5_2019 = Date.UTC(2019, 4, 5, 14, 4, 56, 201);
 
@@ -338,5 +338,48 @@ describe('missing values', () => {
     expect(formatValue(null, number, { missing })).toBe('—');
     expect(formatValue('', { kind: 'text' }, { missing })).toBe('');
     expect(formatValue('abc', number, { missing })).toBe('NaN');
+  });
+});
+
+describe('Intl caches', () => {
+  it('reuse a formatter for the same locale and options', () => {
+    expect(numberFormat('en', { maximumFractionDigits: 3 })).toBe(
+      numberFormat('en', { maximumFractionDigits: 3 })
+    );
+  });
+
+  const zone = (index: number) =>
+    `+${String(index % 24).padStart(2, '0')}:${String(Math.floor(index / 24)).padStart(2, '0')}`;
+  const nextTask = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('keep only the most recently used formatters between tasks', async () => {
+    await nextTask();
+    const first = dateFormat('en', { timeZone: zone(0) });
+    for (let index = 1; index <= INTL_CACHE_SIZE; index++) {
+      dateFormat('en', { timeZone: zone(index) });
+    }
+    const last = dateFormat('en', { timeZone: zone(INTL_CACHE_SIZE) });
+    await nextTask();
+    expect(dateFormat('en', { timeZone: zone(INTL_CACHE_SIZE) })).toBe(last);
+    expect(dateFormat('en', { timeZone: zone(0) })).not.toBe(first);
+  });
+
+  it('build each formatter once in a task that uses more than they keep', async () => {
+    await nextTask();
+    const count = INTL_CACHE_SIZE + 6;
+    const formats = Array.from({ length: count }, (_, index) =>
+      dateFormat('en', { timeZone: zone(100 + index) })
+    );
+    expect(
+      formats.map((_, index) =>
+        dateFormat('en', { timeZone: zone(100 + index) })
+      )
+    ).toEqual(formats);
+    expect(dateFormat('en', { timeZone: zone(100) })).toBe(formats[0]);
+  });
+
+  it('collate in English for a malformed or unknown locale', () => {
+    expect(collator('en_US').resolvedOptions().locale).toBe('en');
+    expect(collator('zz-ZZ').resolvedOptions().locale).toBe('en');
   });
 });

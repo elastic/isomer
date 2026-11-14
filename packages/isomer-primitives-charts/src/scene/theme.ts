@@ -13,12 +13,12 @@ import type { ColorValue } from '../schema/colors';
 
 import type { ColorScheme, SceneChrome, SceneColor } from './types';
 
-/** Chrome per scheme: EUI Borealis `textParagraph`, `textSubdued`, `borderBasePlain`, `borderBaseSubdued` and `backgroundBasePlain`. */
+/** Chrome per scheme, in EUI Borealis tokens: `textParagraph`, `textSubdued`, `borderBaseSubdued` for axis and grid lines, `backgroundBasePlain` and `borderBasePlain`. */
 export const CHART_CHROME: Readonly<Record<ColorScheme, SceneChrome>> = {
   light: {
     text: '#384861',
     textSubdued: '#516381',
-    axis: '#CAD3E2',
+    axis: '#E3E8F2',
     gridLine: '#E3E8F2',
     background: '#FFFFFF',
     border: '#CAD3E2',
@@ -26,7 +26,7 @@ export const CHART_CHROME: Readonly<Record<ColorScheme, SceneChrome>> = {
   dark: {
     text: '#B4C1D5',
     textSubdued: '#98A8C3',
-    axis: '#485975',
+    axis: '#2B394F',
     gridLine: '#2B394F',
     background: '#111C2C',
     border: '#485975',

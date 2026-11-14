@@ -8,6 +8,7 @@
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../coordinates';
+import { isoDateTimeEpoch } from '../iso_date_time';
 
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
@@ -64,6 +65,7 @@ export const XY_RULES = {
   stack: 'Only `bar` and `area` layers stack.',
   dataLayer: 'At least one layer is a `data` layer.',
   rangeOrder: "An annotation range's `from` is not after its `to`.",
+  time: 'A time written as a string is an ISO 8601 date-time with a UTC offset, such as `2026-11-03T00:30:00Z`, as a `date` cell is.',
   customDomain:
     'A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.',
 } as const;
@@ -71,10 +73,22 @@ export const XY_RULES = {
 const dateOrNumberSchema = z
   .union([
     z.number().min(-MAX_EPOCH).max(MAX_EPOCH),
-    z.iso.datetime({ offset: true }),
+    z.string().check(
+      crossSuperRefine<string>(
+        (value, context) => {
+          if (
+            typeof value === 'string' &&
+            isoDateTimeEpoch(value) === undefined
+          ) {
+            context.addIssue({ code: 'custom', message: XY_RULES.time });
+          }
+        },
+        [XY_RULES.time]
+      )
+    ),
   ])
   .describe(
-    'Epoch milliseconds within the `Date` range, ±8.64e15, or an ISO 8601 date-time.'
+    `Epoch milliseconds within the \`Date\` range, ±8.64e15, or an ISO 8601 date-time. ${XY_RULES.time}`
   );
 
 const strokeDashSchema = z.enum(['solid', 'dashed', 'dotted']);
@@ -82,7 +96,9 @@ const strokeDashSchema = z.enum(['solid', 'dashed', 'dotted']);
 const dataLayerSchema = z
   .strictObject({
     kind: z.literal('data'),
-    mark: z.enum(['line', 'area', 'bar']),
+    mark: z
+      .enum(['line', 'area', 'bar'])
+      .describe('How every series in the layer draws.'),
     stack: z
       .enum(['stacked', 'percentage'])
       .optional()
@@ -127,21 +143,54 @@ const referenceLineSchema = z.strictObject({
     .describe(
       'Absent means `y`. On a time x axis the value is epoch milliseconds.'
     ),
-  label: z.string().optional(),
-  format: portableFormatSchema.optional(),
-  showText: z.boolean().optional(),
-  color: colorValueSchema.optional(),
-  fill: z.enum(['above', 'below']).optional(),
-  icon: glyphSchema.optional(),
-  strokeWidth: z.number().min(1).max(10).optional(),
-  strokeDash: strokeDashSchema.optional(),
-  textPosition: z.enum(['auto', 'left', 'right']).optional(),
+  label: z
+    .string()
+    .optional()
+    .describe(
+      'Text drawn beside the line. Absent means none, or the formatted `value` when `showText` is true.'
+    ),
+  format: portableFormatSchema
+    .optional()
+    .describe(
+      'How `value` prints when `showText` is true. Absent means the format of the line’s axis.'
+    ),
+  showText: z
+    .boolean()
+    .optional()
+    .describe(
+      'Prints the formatted `value` beside the line when there is no `label`. Absent means false.'
+    ),
+  color: colorValueSchema
+    .optional()
+    .describe('Absent means the chart’s text color.'),
+  fill: z
+    .enum(['above', 'below'])
+    .optional()
+    .describe(
+      'Shades the plot from the line to the end of its axis: `above` toward larger values, `below` toward smaller. Absent means no shading.'
+    ),
+  icon: glyphSchema
+    .optional()
+    .describe('A glyph drawn with the line. Absent means none.'),
+  strokeWidth: z
+    .number()
+    .min(1)
+    .max(10)
+    .optional()
+    .describe('In pixels. Absent means 1.'),
+  strokeDash: strokeDashSchema.optional().describe('Absent means `solid`.'),
+  textPosition: z
+    .enum(['auto', 'left', 'right'])
+    .optional()
+    .describe(
+      'Which side of the line its text sits on. Absent means `auto`, where the renderer chooses.'
+    ),
 });
 
 const referenceLinesLayerSchema = z
   .strictObject({
     kind: z.literal('referenceLines'),
-    lines: z.array(referenceLineSchema).min(1),
+    lines: z.array(referenceLineSchema).min(1).describe('One line each.'),
   })
   .describe(
     'Lines at fixed values. They carry no rows and are never selected.'
@@ -151,33 +200,68 @@ const annotationSchema = z.discriminatedUnion('kind', [
   z.strictObject({
     kind: z.literal('point'),
     at: dateOrNumberSchema,
-    label: z.string().optional(),
+    label: z
+      .string()
+      .optional()
+      .describe(
+        'Names the event in its tooltip. Absent means the tooltip shows the time alone.'
+      ),
     text: z.string().optional().describe('Text drawn beside the marker.'),
-    color: colorValueSchema.optional(),
-    icon: glyphSchema.optional(),
+    color: colorValueSchema
+      .optional()
+      .describe('Absent means the chart’s subdued text color.'),
+    icon: glyphSchema
+      .optional()
+      .describe(
+        'A glyph for the marker. Absent means the renderer’s default marker.'
+      ),
     line: z
       .strictObject({
         width: z.number().min(1).max(10),
         dash: strokeDashSchema,
       })
-      .optional(),
-    hidden: z.boolean().optional(),
+      .optional()
+      .describe(
+        'The line drawn at the event: `width` in pixels and its `dash`. Absent means the renderer’s default line.'
+      ),
+    hidden: z
+      .boolean()
+      .optional()
+      .describe('True leaves the event out. Absent means false.'),
   }),
   z.strictObject({
     kind: z.literal('range'),
     from: dateOrNumberSchema,
     to: dateOrNumberSchema,
-    label: z.string().optional(),
-    color: colorValueSchema.optional(),
-    fill: z.enum(['inside', 'outside']).optional(),
-    hidden: z.boolean().optional(),
+    label: z
+      .string()
+      .optional()
+      .describe(
+        'Names the range in its tooltip. Absent means the tooltip shows the times alone.'
+      ),
+    color: colorValueSchema
+      .optional()
+      .describe('Absent means the chart’s subdued text color.'),
+    fill: z
+      .enum(['inside', 'outside'])
+      .optional()
+      .describe(
+        '`inside` shades between `from` and `to`; `outside` shades the rest of the plot. Absent means `inside`.'
+      ),
+    hidden: z
+      .boolean()
+      .optional()
+      .describe('True leaves the range out. Absent means false.'),
   }),
 ]);
 
 const annotationsLayerSchema = z
   .strictObject({
     kind: z.literal('annotations'),
-    events: z.array(annotationSchema).min(1),
+    events: z
+      .array(annotationSchema)
+      .min(1)
+      .describe('A `point` at one time or a `range` between two.'),
   })
   .describe(
     `Events on the x axis, resolved to fixed times. They carry no rows and are never selected. ${XY_RULES.rangeOrder}`
@@ -185,14 +269,30 @@ const annotationsLayerSchema = z
 
 const axisShape = {
   title: z.string().optional().describe('Absent means no title.'),
-  ticks: z.boolean().optional(),
-  grid: z.boolean().optional(),
-  labelOrientation: z.enum(['horizontal', 'vertical', 'angled']).optional(),
+  ticks: z
+    .boolean()
+    .optional()
+    .describe(
+      'Shows the axis’s tick marks and tick labels. Absent means true.'
+    ),
+  grid: z
+    .boolean()
+    .optional()
+    .describe('Shows a grid line at each tick. Absent means true.'),
+  labelOrientation: z
+    .enum(['horizontal', 'vertical', 'angled'])
+    .optional()
+    .describe(
+      'How tick labels turn: `angled` is 45 degrees and `vertical` 90. Absent means `horizontal`. A time x axis on a vertical chart is always `horizontal`.'
+    ),
 };
 
 const yAxisSchema = z.strictObject({
   ...axisShape,
-  scale: z.enum(['linear', 'log', 'sqrt']).optional(),
+  scale: z
+    .enum(['linear', 'log', 'sqrt'])
+    .optional()
+    .describe('Absent means `linear`.'),
   domain: z
     .discriminatedUnion('kind', [
       z
@@ -203,13 +303,16 @@ const yAxisSchema = z.strictObject({
       z
         .strictObject({ kind: z.literal('fit') })
         .describe('From the data alone.'),
-      z.strictObject({
-        kind: z.literal('custom'),
-        min: z.number(),
-        max: z.number(),
-      }),
+      z
+        .strictObject({
+          kind: z.literal('custom'),
+          min: z.number(),
+          max: z.number(),
+        })
+        .describe(`From \`min\` to \`max\`. ${XY_RULES.customDomain}`),
     ])
-    .optional(),
+    .optional()
+    .describe('The values the axis spans. Absent means `full`.'),
   rounding: z
     .boolean()
     .optional()
@@ -218,17 +321,29 @@ const yAxisSchema = z.strictObject({
 
 const xAxisSchema = z.strictObject({
   ...axisShape,
-  scale: z.enum(['ordinal', 'temporal', 'linear']).optional(),
+  scale: z
+    .enum(['ordinal', 'temporal', 'linear'])
+    .optional()
+    .describe(
+      'Absent means the x column’s type decides: `temporal` for `date`, `linear` for `number`, else `ordinal`, one position per distinct value.'
+    ),
   domain: z
     .discriminatedUnion('kind', [
-      z.strictObject({ kind: z.literal('fit') }),
-      z.strictObject({
-        kind: z.literal('custom'),
-        min: z.number(),
-        max: z.number(),
-      }),
+      z
+        .strictObject({ kind: z.literal('fit') })
+        .describe('From the data alone.'),
+      z
+        .strictObject({
+          kind: z.literal('custom'),
+          min: z.number(),
+          max: z.number(),
+        })
+        .describe(`From \`min\` to \`max\`. ${XY_RULES.customDomain}`),
     ])
-    .optional(),
+    .optional()
+    .describe(
+      'The values a continuous axis spans. Absent means `fit`. Ignored on an `ordinal` axis.'
+    ),
   rounding: yAxisSchema.shape.rounding,
   interval: z
     .number()
@@ -280,50 +395,114 @@ const xyChartObjectSchema = z.object({
       y: yAxisSchema.optional(),
       y2: yAxisSchema.optional(),
     })
-    .optional(),
+    .optional()
+    .describe(
+      'Options for each axis. `y2` is the axis on the opposite side from `y`, drawn when a series or reference line uses it.'
+    ),
   legend: z
     .strictObject({
-      visibility: z.enum(['auto', 'visible', 'hidden']).optional(),
-      position: z.enum(['top', 'bottom', 'left', 'right']).optional(),
+      visibility: z
+        .enum(['auto', 'visible', 'hidden'])
+        .optional()
+        .describe(
+          '`auto` shows the legend when the chart has more than one series. Absent means `auto`.'
+        ),
+      position: z
+        .enum(['top', 'bottom', 'left', 'right'])
+        .optional()
+        .describe(
+          'The side of the chart the legend sits on. Absent means `right`.'
+        ),
       inside: z
         .enum(['top_left', 'top_right', 'bottom_left', 'bottom_right'])
         .optional()
-        .describe('Draws the legend inside the plot at this corner.'),
-      layout: z.enum(['grid', 'list']).optional(),
-      columns: z.int().min(1).max(5).optional(),
+        .describe(
+          'Draws the legend inside the plot at this corner, instead of at `position`. Absent means outside the plot.'
+        ),
+      layout: z
+        .enum(['grid', 'list'])
+        .optional()
+        .describe(
+          'How a legend at the `top` or `bottom` flows: `list` runs items along a line, `grid` sets them in columns. Absent means `list`.'
+        ),
+      columns: z
+        .int()
+        .min(1)
+        .max(5)
+        .optional()
+        .describe(
+          'Columns of items in a legend drawn `inside` the plot. Absent means 1.'
+        ),
       maxLines: z
         .int()
         .min(1)
         .optional()
-        .describe('Lines before a legend item truncates.'),
-      size: z.enum(['auto', 's', 'm', 'l', 'xl']).optional(),
+        .describe('Lines before a legend item truncates. Absent means 1.'),
+      size: z
+        .enum(['auto', 's', 'm', 'l', 'xl'])
+        .optional()
+        .describe(
+          'The room the legend takes: `s` 80, `m` 130, `l` 180 and `xl` 230 pixels; `auto` fits its items. Absent means `auto`.'
+        ),
       statistics: z
         .array(z.enum(XY_LEGEND_STATISTICS))
         .optional()
-        .describe('Values computed per series and shown beside it.'),
-      seriesHeader: z.string().optional(),
+        .describe(
+          'Values computed per series and shown beside it, in this order. Absent means none.'
+        ),
+      seriesHeader: z
+        .string()
+        .optional()
+        .describe('A heading above the series names. Absent means none.'),
     })
-    .optional(),
+    .optional()
+    .describe('Where the legend sits and what it lists.'),
   style: z
     .strictObject({
-      interpolation: z.enum(['linear', 'smooth', 'stepped']).optional(),
+      interpolation: z
+        .enum(['linear', 'smooth', 'stepped'])
+        .optional()
+        .describe(
+          'How lines and areas join their points: straight, curved or in steps. Absent means `linear`.'
+        ),
       fitting: z
         .strictObject({
-          kind: z.enum([
-            'none',
-            'zero',
-            'linear',
-            'carry',
-            'lookahead',
-            'average',
-            'nearest',
-          ]),
-          emphasize: z.boolean().optional(),
-          extend: z.enum(['none', 'zero', 'nearest']).optional(),
+          kind: z
+            .enum([
+              'none',
+              'zero',
+              'linear',
+              'carry',
+              'lookahead',
+              'average',
+              'nearest',
+            ])
+            .describe(
+              'What stands in for a missing value: `none` leaves a gap, `zero` is 0, `linear` a straight line between its neighbors, `carry` the value before it, `lookahead` the value after it, `average` its neighbors’ mean, and `nearest` the closer neighbor’s value.'
+            ),
+          emphasize: z
+            .boolean()
+            .optional()
+            .describe(
+              'Draws fitted stretches at full strength, as measured ones draw. Absent means false: the renderer draws fitted stretches apart from measured ones.'
+            ),
+          extend: z
+            .enum(['none', 'zero', 'nearest'])
+            .optional()
+            .describe(
+              'What a series draws before its first value and after its last: nothing, 0, or the nearest value. Absent means `none`.'
+            ),
         })
         .optional()
-        .describe('How lines and areas cross missing values.'),
-      points: z.enum(['auto', 'visible', 'hidden']).optional(),
+        .describe(
+          'How lines and areas cross missing values. Absent means gaps stay gaps.'
+        ),
+      points: z
+        .enum(['auto', 'visible', 'hidden'])
+        .optional()
+        .describe(
+          'Whether lines and areas mark each value with a point. `auto` shows points where they have room. Absent means `auto`.'
+        ),
       areaOpacity: z
         .number()
         .min(0)
@@ -332,9 +511,23 @@ const xyChartObjectSchema = z.object({
         .describe(
           'The opacity of area fills, from 0 (transparent) to 1 (opaque). Absent means 0.3.'
         ),
-      areaFill: z.enum(['solid', 'gradient']).optional(),
-      barMinimumHeight: z.number().min(0).optional(),
-      barValueLabels: z.boolean().optional(),
+      areaFill: z
+        .enum(['solid', 'gradient'])
+        .optional()
+        .describe(
+          '`gradient` fades an area’s fill toward its baseline. Absent means `gradient`.'
+        ),
+      barMinimumHeight: z
+        .number()
+        .min(0)
+        .optional()
+        .describe(
+          'The least length a bar with a value draws at, in pixels. Absent means 1.'
+        ),
+      barValueLabels: z
+        .boolean()
+        .optional()
+        .describe('Prints each bar’s value on it. Absent means false.'),
       partialBuckets: z
         .strictObject({ from: dateOrNumberSchema, to: dateOrNumberSchema })
         .optional()
@@ -343,13 +536,16 @@ const xyChartObjectSchema = z.object({
         ),
       currentTime: dateOrNumberSchema
         .optional()
-        .describe('Where to draw the current time marker.'),
+        .describe(
+          'Where to draw the current time marker. Absent means no marker.'
+        ),
     })
-    .optional(),
+    .optional()
+    .describe('Options every series shares.'),
 });
 
 const toTime = (value: number | string): number =>
-  typeof value === 'number' ? value : Date.parse(value);
+  typeof value === 'number' ? value : (isoDateTimeEpoch(value) ?? Number.NaN);
 
 type XyChartInput = z.infer<typeof xyChartObjectSchema>;
 type XyLayer = XyChartInput['layers'][number];

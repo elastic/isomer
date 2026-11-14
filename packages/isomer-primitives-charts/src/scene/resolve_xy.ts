@@ -842,14 +842,16 @@ export const resolveXy = (
           const color = event.color
             ? resolveColor(event.color, scheme)
             : chrome.textSubdued;
-          const time = (value: number | string) => toEpoch(value) ?? 0;
           const when = (value: number) =>
             resolution.formatAs(
               value,
               xScale === 'ordinal' ? DEFAULT_FORMATS.date : xFormat
             );
           if (event.kind === 'point') {
-            const at = time(event.at);
+            const at = toEpoch(event.at);
+            if (at === undefined) {
+              return [];
+            }
             return [
               {
                 kind: 'point',
@@ -868,8 +870,11 @@ export const resolveXy = (
               },
             ];
           }
-          const from = time(event.from);
-          const to = time(event.to);
+          const from = toEpoch(event.from);
+          const to = toEpoch(event.to);
+          if (from === undefined || to === undefined) {
+            return [];
+          }
           return [
             {
               kind: 'range',

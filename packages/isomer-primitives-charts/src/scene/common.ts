@@ -100,8 +100,12 @@ const isEmpty = (cell: Cell | undefined) =>
   cell === '' ||
   (Array.isArray(cell) && cell.length === 0);
 
+// `rows` formats every cell, and only the text surfaces and an accessible
+// table read it, so it is built on first read, from the node's data as it is
+// then, and kept.
 const buildTable = (resolution: Resolution): SceneTable => {
   const { data } = resolution;
+  let rows: SceneTable['rows'] | undefined;
   return {
     columns: data.columns.map(({ id, label, type, role }, index) => ({
       id,
@@ -110,11 +114,14 @@ const buildTable = (resolution: Resolution): SceneTable => {
       role,
       empty: data.rows.every((row) => isEmpty(row[index])),
     })),
-    rows: data.rows.map((cells, row) => ({
-      row,
-      cells: data.columns.map(({ id }) => resolution.text(id, row)),
-      values: cells,
-    })),
+    get rows() {
+      rows ??= data.rows.map((cells, row) => ({
+        row,
+        cells: data.columns.map(({ id }) => resolution.text(id, row)),
+        values: cells,
+      }));
+      return rows;
+    },
   };
 };
 
