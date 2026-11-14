@@ -38,6 +38,77 @@ Values and defaults, where a field is absent:
 | `layout.valueAlignment`, `layout.secondaryAlignment` | `left`, `center`, `right`    | `right`      |
 | `layout.valueSizing`                                 | `auto`, `fill`               | `auto`       |
 
+## Example
+
+The fewest fields that validate and draw, one value from one row:
+
+<!-- node-example -->
+
+```ts
+import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requests: MetricNode = {
+  type: 'metric',
+  data: {
+    columns: [
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [[14074]],
+  },
+  value: { column: 'count' },
+};
+```
+
+A typical panel, a titled percentage compared with last week's and colored by the direction of the change:
+
+<!-- node-example -->
+
+```ts
+import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
+
+const errorRate: MetricNode = {
+  type: 'metric',
+  title: 'Error rate',
+  data: {
+    columns: [
+      {
+        id: 'rate',
+        label: 'Error rate',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'percent', maximumFractionDigits: 1 },
+      },
+      {
+        id: 'previous',
+        label: 'Last week',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'percent', maximumFractionDigits: 1 },
+      },
+    ],
+    rows: [[0.021, 0.034]],
+  },
+  value: { column: 'rate', subtitle: 'Past 24 hours' },
+  secondary: {
+    column: 'previous',
+    showLabel: true,
+    compare: {
+      to: 'primary',
+      colors: {
+        increase: { light: '#E7664C', dark: '#E7664C' },
+        decrease: { light: '#54B399', dark: '#54B399' },
+        neutral: { token: 'textSubdued' },
+      },
+    },
+  },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.

@@ -19,6 +19,84 @@ Words sized by value, on the [chart core](core.md). Lens's tag cloud materialize
 
 A `colors.byKey` key names a tag by its `tags` cell, as a key part (the missing bucket is `\null`); a tag with none takes the default categorical palette by the first row it shows in, as Lens ranks it. A missing metric value draws the word at the smallest size. Words that do not fit are left out, as Lens leaves them. A chart with no rows says "No results found".
 
+## Example
+
+The fewest fields that validate and draw, three words in the default palette:
+
+<!-- node-example -->
+
+```ts
+import type { TagCloudNode } from '@elastic/isomer-primitives-charts/schema';
+
+const logVolume: TagCloudNode = {
+  type: 'tagCloud',
+  data: {
+    columns: [
+      {
+        id: 'service',
+        label: 'service.name',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['checkout', 9120],
+      ['search', 6310],
+      ['cart', 4870],
+    ],
+  },
+  tags: { column: 'service' },
+  metric: { column: 'count' },
+};
+```
+
+A typical panel, titled, with words turned a quarter turn on a square-root scale, smaller fonts, colors for both schemes by tag, and selectable words:
+
+<!-- node-example -->
+
+```ts
+import type { TagCloudNode } from '@elastic/isomer-primitives-charts/schema';
+
+const errorsByType: TagCloudNode = {
+  type: 'tagCloud',
+  title: 'Errors by type',
+  data: {
+    columns: [
+      { id: 'error', label: 'error.type', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['TimeoutError', 812],
+      ['ConnectionReset', 431],
+      ['Other', 620],
+    ],
+  },
+  tags: { column: 'error' },
+  metric: { column: 'count' },
+  scale: 'squareRoot',
+  orientation: 'rightAngled',
+  fontSize: { min: 14, max: 40 },
+  colors: {
+    byKey: {
+      TimeoutError: { light: '#C61E25', dark: '#F6726A' },
+      Other: { light: '#5A6D8C', dark: '#98A8C3' },
+    },
+  },
+  interactions: { select: ['tag'] },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.
