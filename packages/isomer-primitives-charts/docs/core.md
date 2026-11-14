@@ -68,6 +68,7 @@ Formats are ECMA-402 `Intl` options, formatted in the locale and time zone the c
 Rules:
 
 - A date format uses `dateStyle` and `timeStyle`, or individual date and time fields, not both.
+- A date format's `timeZone` is an IANA time zone or an offset that `Intl.DateTimeFormat` accepts.
 
 A host whose formats have no portable equivalent, such as Kibana's field formats, maps each to the nearest portable one or sends `data.display` strings; it never formats at render time.
 
@@ -78,11 +79,11 @@ A host whose formats have no portable equivalent, such as Kibana's field formats
 ```ts
 type ColorValue =
   | { light: string; dark: string }            // data colors: always concrete
-  | { token: ChromeToken }                     // chrome only
+  | { token: 'text' | 'textSubdued' | 'axis' | 'gridLine' | 'background' | 'border' } // chrome only
   | { palette: 'categorical'; index: number }; // charts authored with no palette of their own
 ```
 
-Colors are `#rgb`, `#rrggbb` or `#rrggbbaa`. `ChromeToken` is one of `text`, `textSubdued`, `axis`, `gridLine`, `background` and `border`. The scheme is always chosen explicitly when a node is drawn, so a renderer never relies on CSS `light-dark()` alone.
+Colors are `#rgb`, `#rrggbb` or `#rrggbbaa`. The scheme is always chosen explicitly when a node is drawn, so a renderer never relies on CSS `light-dark()` alone.
 
 `colors.byKey` maps a series or category key to a color; each chart states what its keys are (`metric` by its `breakdown` cell, `xyChart` by series), and each key part is escaped so a missing cell (`\null`) never collides with the string "null". `colors.bands` colors by value range: `from` is inclusive, `to` exclusive except on the last band, and an absent bound is open. Each band with both bounds has `from` below `to`, and bands ascend without overlapping.
 
