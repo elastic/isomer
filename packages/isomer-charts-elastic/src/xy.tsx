@@ -55,6 +55,7 @@ import { ariaDescriptionOf } from './accessibility';
 import {
   isXyDatum,
   legendSelect,
+  offers,
   seriesOf,
   type XyDatum,
   xyHandlers,
@@ -681,10 +682,7 @@ export const xySpecs = (
   env: SceneRenderEnv,
   options: ElasticChartsOptions
 ): ReactNode => {
-  const offersLegend =
-    env.onEvent !== undefined &&
-    env.nodeId !== undefined &&
-    scene.interactions.select.includes('legend');
+  const offersLegend = offers(scene, env, 'legend');
   const continuous = SCALE[scene.axes.x.scale] !== ScaleType.Ordinal;
   const xDomain = xDomainOf(scene);
   return (

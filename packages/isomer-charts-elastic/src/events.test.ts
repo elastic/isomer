@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+import type {
+  PartitionElementEvent,
+  XYChartElementEvent,
+} from '@elastic/charts';
 import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
 import {
   type ChartEvent,
@@ -54,7 +58,7 @@ const listen = () => {
 };
 
 /** An element as Elastic Charts' `onElementClick` reports it: geometry value and series identifier. */
-const element = (seriesKey: string, mark: number) => {
+const element = (seriesKey: string, mark: number): XYChartElementEvent => {
   const index = seriesOf(xyInteractiveScene).findIndex(
     ({ key }) => key === seriesKey
   );
@@ -64,6 +68,7 @@ const element = (seriesKey: string, mark: number) => {
     {
       specId: `series-${index}`,
       key: `series-${index}`,
+      xAccessor: 'x',
       yAccessor: 'y',
       splitAccessors: new Map(),
       seriesKeys: ['y'],
@@ -100,6 +105,8 @@ describe('xy events from Elastic Charts callbacks', () => {
     xyHandlers(xyInteractiveScene, env).onProjectionClick?.({
       x: START + HOUR + 20 * 60_000,
       y: [],
+      smVerticalValue: null,
+      smHorizontalValue: null,
     });
     expect(events).toEqual([expected('Select an x category')]);
   });
@@ -194,7 +201,7 @@ describe('partition events', () => {
   const scene = resolveChart(node, { scheme: 'light' });
 
   /** What Elastic Charts' `onElementClick` reports for a slice: its path's layer values. */
-  const clicked = (...keys: string[]) => [
+  const clicked = (...keys: string[]): PartitionElementEvent[] => [
     [
       keys.map((key, depth) => ({
         groupByRollup: key,
