@@ -56,6 +56,7 @@ import {
   isXyDatum,
   legendSelect,
   seriesOf,
+  seriesSpecId,
   type XyDatum,
   xyHandlers,
 } from './events';
@@ -311,7 +312,7 @@ const seriesElement = (
   const stacked = series.stack !== undefined;
   const continuous = xScale !== ScaleType.Ordinal;
   const common = {
-    id: `series-${index}`,
+    id: seriesSpecId(series),
     name: series.label,
     groupId: series.axis,
     color: series.color,
@@ -601,8 +602,8 @@ const legendAction =
     series: readonly { specId: string }[];
     label: string;
   }) => {
-    const index = Number(series[0]?.specId.replace('series-', ''));
-    const owner = seriesOf(scene)[index];
+    const specId = series[0]?.specId;
+    const owner = seriesOf(scene).find((one) => seriesSpecId(one) === specId);
     if (owner === undefined) {
       return null;
     }
@@ -640,10 +641,7 @@ export const layerZIndex = (scene: XyScene, position: number): number => {
   return beneath ? position - scene.layers.length : position + 1;
 };
 
-/**
- * The Scene's layers in spec order. Each kind keeps its own index, so a
- * series' spec id is its position in {@link seriesOf}.
- */
+/** The Scene's layers in spec order. Each kind keeps its own index. */
 const layerElements = (scene: XyScene): ReactNode[] => {
   const next = { series: 0, referenceLine: 0, annotation: 0 };
   return scene.layers.flatMap((layer, position) => {
