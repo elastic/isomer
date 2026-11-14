@@ -16,6 +16,80 @@ Rows and columns to read exactly, on the [chart core](core.md). Lens data tables
 | `density` | `compact`, `default` or `expanded` |
 | `interactions`, `emphasis` | Selectable `cell`s, a link, the starting `initial.sort`, and static highlights: [Interactions](interactions.md) |
 
+## Example
+
+The fewest fields that validate and draw, every data column in data order:
+
+<!-- node-example -->
+
+```ts
+import type { DataTableNode } from '@elastic/isomer-primitives-charts/schema';
+
+const hosts: DataTableNode = {
+  type: 'dataTable',
+  data: {
+    columns: [
+      { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['web-01', 4120],
+      ['web-02', 6310],
+    ],
+  },
+};
+```
+
+A typical panel, a titled table with a total in the footer, bars in one column, selectable cells, and rows that start sorted by count:
+
+<!-- node-example -->
+
+```ts
+import type { DataTableNode } from '@elastic/isomer-primitives-charts/schema';
+
+const topHosts: DataTableNode = {
+  type: 'dataTable',
+  title: 'Top hosts',
+  data: {
+    columns: [
+      { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+      {
+        id: 'bytes',
+        label: 'Sum of bytes',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'bytes', maximumFractionDigits: 1 },
+      },
+    ],
+    rows: [
+      ['web-01', 4120, 81920000],
+      ['web-02', 6310, 120400000],
+      ['db-01', 1904, 9830400],
+    ],
+  },
+  columns: [
+    { column: 'host' },
+    { column: 'count', summary: { kind: 'sum' } },
+    { column: 'bytes', decoration: { kind: 'bar' } },
+  ],
+  interactions: {
+    select: ['cell'],
+    initial: { sort: { column: 'count', direction: 'desc' } },
+  },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.

@@ -39,6 +39,28 @@ Rows are never reordered, so a selection can refer to them by index. `null` is a
 
 `role` says what a column is for. `dimension` columns identify a row (buckets, categories, time) and `metric` columns measure it. Dimensions lead text summaries, a phone layout picks its row header from the first one, and they are what a selection targets.
 
+A complete `data` with one column of each type follows. `host` and `seen` are `dimension` columns, which say which row this is, and `requests` and `healthy` are `metric` columns, which measure it. A `date` cell is epoch milliseconds or an ISO 8601 date-time with a UTC offset, `Z` or `+hh:mm`.
+
+<!-- data-example -->
+
+```ts
+import type { ChartData } from '@elastic/isomer-primitives-charts/schema';
+
+const data: ChartData = {
+  columns: [
+    { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+    { id: 'seen', label: 'Last seen', type: 'date', role: 'dimension' },
+    { id: 'requests', label: 'Requests', type: 'number', role: 'metric' },
+    { id: 'healthy', label: 'Healthy', type: 'boolean', role: 'metric' },
+  ],
+  rows: [
+    ['web-01', '2026-11-03T09:15:00+01:00', 4120, true],
+    ['web-02', '2026-11-03T08:15:00Z', 6310, false],
+    ['db-01', null, null, null],
+  ],
+};
+```
+
 `source`, on a column or on the table, is opaque to Isomer. A host keeps there what it needs to act on a selection, such as Kibana `Datatable` meta, so it can rebuild a filter from a selected cell.
 
 `missing` is the text for cells a format cannot show: a missing (`null`) cell, an empty string, and a number-like value that is not a number. Absent texts are `(null)`, `(blank)` and `NaN`, Kibana's; a host whose source shows them differently states its own.
