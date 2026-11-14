@@ -411,8 +411,27 @@ describe('debugStateProblems', () => {
         ...state,
         heatmap: { ...state.heatmap!, cells: [{ ...first!, fill }, ...rest] },
       }).filter((problem) => problem.includes('is filled'));
-    expect(filled('rgba(170, 187, 204, 1)')).toEqual([]);
-    for (const fill of ['none', 'currentColor', 'rgba(171, 187, 204, 1)']) {
+    for (const fill of [
+      'rgba(170, 187, 204, 1)',
+      'rgb(170,187,204)',
+      'rgb(170 187 204 / 0.5)',
+      '#AABBCC',
+      '#abcf',
+    ]) {
+      expect(filled(fill), fill).toEqual([]);
+    }
+    for (const fill of [
+      'none',
+      'currentColor',
+      'rgba(171, 187, 204, 1)',
+      'rgb(170, 187)',
+      'rgb(170 187 204 128)',
+      'rgb(170 187 / 204)',
+      'rgb(170, 187 204)',
+      'rgb(170, 187, 2040)',
+      'rgb(67%, 73%, 80%)',
+      'rgba(170, 187, 204, 1) junk',
+    ]) {
       expect(filled(fill), fill).toEqual([
         `cell ${originalIndex} is filled ${fill}, not #abc`,
       ]);

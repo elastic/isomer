@@ -293,20 +293,44 @@ const partitionProblems = (
   ];
 };
 
-/** A `#rgb[a]`, `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`; `undefined` for any other paint. */
+const NUMBER = String.raw`(\d+(?:\.\d+)?|\.\d+)`;
+const SHORT_HEX = /^#([\da-f])([\da-f])([\da-f])[\da-f]?$/i;
+const LONG_HEX = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})(?:[\da-f]{2})?$/i;
+const COMMA_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s*,\s*${NUMBER}\s*,\s*${NUMBER}\s*(?:,\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+const SPACE_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s+${NUMBER}\s+${NUMBER}\s*(?:/\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+
+/**
+ * A color's channels, as `r,g,b`, its alpha apart: `#rgb[a]`, `#rrggbb[aa]`,
+ * `rgb[a](r, g, b[, a])` or `rgb[a](r g b[ / a])` with channels from 0 to 255;
+ * `undefined` for any other paint.
+ */
 const rgbOf = (color: string): string | undefined => {
-  const hex = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i.exec(color)?.[1];
-  const channels = hex
-    ? (hex.length < 6
-        ? [...hex].map((digit) => digit + digit)
-        : (hex.match(/../g) ?? [])
-      ).map((pair) => parseInt(pair, 16))
-    : (/^rgba?\(([^)]*)\)$/i.exec(color)?.[1]?.match(/\d*\.?\d+/g) ?? []).map(
-        Number
-      );
-  return channels.length < 3
-    ? undefined
-    : channels.slice(0, 3).map(Math.round).join(',');
+  const short = SHORT_HEX.exec(color);
+  if (short) {
+    return short
+      .slice(1, 4)
+      .map((digit) => parseInt(digit + digit, 16))
+      .join(',');
+  }
+  const long = LONG_HEX.exec(color);
+  if (long) {
+    return long
+      .slice(1, 4)
+      .map((pair) => parseInt(pair, 16))
+      .join(',');
+  }
+  const channels = (COMMA_RGB.exec(color) ?? SPACE_RGB.exec(color))
+    ?.slice(1, 4)
+    .map((channel) => Math.round(Number(channel)));
+  return channels?.every((channel) => channel <= 255)
+    ? channels.join(',')
+    : undefined;
 };
 
 const sameColor = (drawn: string, color: string): boolean => {
