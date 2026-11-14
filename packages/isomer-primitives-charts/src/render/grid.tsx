@@ -57,7 +57,7 @@ const rowsHeight = (rows: number) =>
   rows === 0 ? 0 : rows * rowHeight + (rows - 1) * gap;
 
 const extent = (panels: readonly GridPanel[]) =>
-  Math.max(0, ...panels.map(({ y, h }) => y + h));
+  panels.reduce((rows, { y, h }) => Math.max(rows, y + h), 0);
 
 interface Block {
   /** Absent for the top-level panels. */
