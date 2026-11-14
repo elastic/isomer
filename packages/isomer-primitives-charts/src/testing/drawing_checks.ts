@@ -40,67 +40,67 @@ export interface DrawingReading {
 /** Reads a drawing back; one per engine. */
 export type DrawingReader = (drawing: DrawnScene) => DrawingReading;
 
-const HEX = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/i;
-const RGB = /^rgba?\(([^)]*)\)$/i;
-const CHANNEL = /^\d*\.?\d+%?$/;
+const NUMBER = String.raw`(\d+(?:\.\d+)?|\.\d+)`;
+const SHORT_HEX = /^#([\da-f])([\da-f])([\da-f])[\da-f]?$/i;
+const LONG_HEX = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})(?:[\da-f]{2})?$/i;
+const COMMA_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s*,\s*${NUMBER}\s*,\s*${NUMBER}\s*(?:,\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+const SPACE_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s+${NUMBER}\s+${NUMBER}\s*(?:/\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
 
-const hexChannels = (digits: string): number[] =>
-  (digits.length < 6
-    ? [...digits].map((digit) => digit + digit)
-    : (digits.match(/../g) ?? [])
-  )
-    .slice(0, 3)
-    .map((pair) => parseInt(pair, 16));
-
-const rgbChannels = (channels: string): number[] =>
-  channels
-    .trim()
-    .split(/[\s,/]+/)
-    .slice(0, 3)
-    .map((channel) =>
-      !CHANNEL.test(channel)
-        ? NaN
-        : channel.endsWith('%')
-          ? parseFloat(channel) * 2.55
-          : Number(channel)
-    );
+/** The three channels of a paint in exactly one of the notations {@link rgbOf} reads. */
+const channelsOf = (paint: string): number[] | undefined => {
+  const short = SHORT_HEX.exec(paint);
+  if (short) {
+    return short.slice(1, 4).map((digit) => parseInt(digit + digit, 16));
+  }
+  const long = LONG_HEX.exec(paint);
+  if (long) {
+    return long.slice(1, 4).map((pair) => parseInt(pair, 16));
+  }
+  const channels = (COMMA_RGB.exec(paint) ?? SPACE_RGB.exec(paint))
+    ?.slice(1, 4)
+    .map((channel) => Math.round(Number(channel)));
+  return channels?.every((channel) => channel <= 255) ? channels : undefined;
+};
 
 let unread = 0;
 
 /**
- * A `#rgb[a]`, `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`,
- * its alpha apart. Any other paint, such as `none` or `currentColor`, reads
- * as a string no other call returns, so it equals no color and no paint.
+ * A color's channels, as `r,g,b`, its alpha apart: `#rgb[a]`, `#rrggbb[aa]`,
+ * `rgb[a](r, g, b[, a])` or `rgb[a](r g b[ / a])` with channels from 0 to 255.
+ * Any other paint, such as `none`, reads as a string no other call returns,
+ * so it equals no color and no paint.
  */
-export const rgbOf = (color: string): string => {
-  const paint = color.trim();
-  const hex = HEX.exec(paint)?.[1];
-  const channels = hex
-    ? hexChannels(hex)
-    : rgbChannels(RGB.exec(paint)?.[1] ?? '');
-  return channels.length === 3 && channels.every(Number.isFinite)
-    ? channels.map(Math.round).join(',')
-    : `unread ${unread++}`;
+export const rgbOf = (color: string): string =>
+  channelsOf(color.trim())?.join(',') ?? `unread ${unread++}`;
+
+const NAMED: Readonly<Record<string, string>> = {
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  nbsp: String.fromCodePoint(0xa0),
+  quot: '"',
 };
+const REFERENCE = /&(?:#(\d+)|#[xX]([\da-fA-F]+)|(amp|apos|gt|lt|nbsp|quot));/g;
 
-const character = (code: number, reference: string) =>
-  code <= 0x10ffff ? String.fromCodePoint(code) : reference;
-
-/** Markup text with its entities decoded. */
+/** Markup text with its character references decoded, each once. */
 export const unescapeMarkup = (text: string): string =>
-  text
-    .replace(/&#(\d+);/g, (reference, code: string) =>
-      character(Number(code), reference)
-    )
-    .replace(/&#x([\da-f]+);/gi, (reference, code: string) =>
-      character(parseInt(code, 16), reference)
-    )
-    .replace(/&nbsp;/g, String.fromCodePoint(0xa0))
-    .replace(/&quot;/g, '"')
-    .replace(/&#?39;|&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  text.replace(
+    REFERENCE,
+    (reference, decimal?: string, hex?: string, name?: string) => {
+      if (name !== undefined) {
+        return NAMED[name]!;
+      }
+      const code = decimal === undefined ? parseInt(hex!, 16) : Number(decimal);
+      return code <= 0x10ffff ? String.fromCodePoint(code) : reference;
+    }
+  );
 
 // An engine may break a string across lines, even mid-word.
 const squash = (text: string) => text.replace(/\s+/g, '');
@@ -134,32 +134,38 @@ export const textDrawn = (texts: readonly string[], value: string): boolean => {
   return whole === '' || spelled(texts.map(squash), whole);
 };
 
-/** The `drawn` words that are no `known` word, whole, cut with an ellipsis, or broken across consecutive words. */
+/**
+ * The `drawn` words left over when the rest divide into `known` words, each
+ * whole, cut with an ellipsis, or broken across consecutive words: the fewest
+ * any such division leaves.
+ */
 const strayWords = (
   drawn: readonly string[],
   known: readonly string[]
-): string[] => {
-  const strays: string[] = [];
-  for (let at = 0; at < drawn.length;) {
+): readonly string[] => {
+  const isKnown = (shown: string) =>
+    known.includes(shown) ||
+    (shown.endsWith('…') &&
+      known.some((word) => word.startsWith(shown.slice(0, -1))));
+  // `fewest[at]` is the strays among the words from `at` on.
+  const fewest: (readonly string[])[] = [];
+  fewest[drawn.length] = [];
+  for (let at = drawn.length - 1; at >= 0; at--) {
+    let best = [drawn[at]!, ...fewest[at + 1]!];
     let shown = '';
-    let end = at;
-    let found = false;
-    while (!found && end < drawn.length) {
-      shown += drawn[end++];
-      const cut = shown.endsWith('…') ? shown.slice(0, -1) : undefined;
-      found =
-        known.includes(shown) ||
-        (cut !== undefined && known.some((word) => word.startsWith(cut)));
+    for (let end = at; end < drawn.length; end++) {
+      shown += drawn[end];
+      const rest = fewest[end + 1]!;
+      if (isKnown(shown) && rest.length < best.length) {
+        best = [...rest];
+      }
       if (!known.some((word) => word.startsWith(shown))) {
         break;
       }
     }
-    if (!found) {
-      strays.push(drawn[at]!);
-    }
-    at = found ? end : at + 1;
+    fewest[at] = best;
   }
-  return strays;
+  return fewest[0]!;
 };
 
 /** The accessible description a drawing of `scene` carries: its summary, then its authored description. */

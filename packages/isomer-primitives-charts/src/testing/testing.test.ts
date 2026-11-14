@@ -260,6 +260,67 @@ describe('the static renderer checks', () => {
     );
   });
 
+  const strays = (problems: readonly string[]) =>
+    problems.filter((problem) => problem.includes(' is drawn but '));
+
+  it('pass a partition label cut with an ellipsis or broken across runs', () => {
+    const drawing = drawn.find(
+      ({ scene }) => scene.kind === 'partition' && !scene.empty
+    )!;
+    const { label } = (drawing.scene as PartitionScene).nodes[0]!;
+    expect(label).toMatch(/^\S{3,}$/);
+    const span = `<span>${label}</span>`;
+    expect(drawing.markup).toContain(span);
+    const [start, end] = [label.slice(0, 2), label.slice(2)];
+    for (const drawnAs of [
+      `<span>${start}…</span>`,
+      `<span>${start}</span><span>${end}</span>`,
+      `<span>${start}</span><span>${end.slice(0, 1)}…</span>`,
+    ]) {
+      expect(
+        mutated(drawing, (markup) => markup.replaceAll(span, drawnAs)),
+        drawnAs
+      ).toEqual([]);
+    }
+  });
+
+  it('divide a partition’s words into its labels where one label starts another', () => {
+    const drawing = drawn.find(
+      ({ scene }) => scene.kind === 'partition' && !scene.empty
+    )!;
+    const scene = drawing.scene as PartitionScene;
+    const [node] = scene.nodes;
+    const named: DrawnScene = {
+      ...drawing,
+      scene: {
+        ...scene,
+        nodes: [
+          ...scene.nodes,
+          { ...node!, label: 'Java', share: 0, children: [] },
+          { ...node!, label: 'JavaScript', share: 0, children: [] },
+        ],
+      },
+    };
+    const drawingWords = (...words: string[]) =>
+      strays(
+        mutated(named, (markup) =>
+          markup.replace(
+            '</figure>',
+            `${words.map((word) => `<span>${word}</span>`).join('')}</figure>`
+          )
+        )
+      );
+    expect(drawingWords('Java', 'Script')).toEqual([]);
+    expect(drawingWords('Java', 'Java', 'Script')).toEqual([]);
+    expect(drawingWords('Java', 'Scr…', 'Java')).toEqual([]);
+    expect(drawingWords('Java', 'Scrip', 'Java')).toEqual([
+      `"Scrip" is drawn but is no slice's or legend item's text`,
+    ]);
+    expect(drawingWords('Script', 'Java')).toEqual([
+      `"Script" is drawn but is no slice's or legend item's text`,
+    ]);
+  });
+
   it('fail a drawing at another size, without a description or on another background', () => {
     const drawing = first('partition');
     const { width } = drawing.scene.size!;
@@ -344,30 +405,75 @@ describe('the static renderer checks', () => {
     expect(textDrawn(['Requests'], '')).toBe(true);
   });
 
-  it('read a color’s channels in any hex or `rgb()` notation, and match no other paint', () => {
-    for (const color of [
-      '#abc',
-      '#ABCD',
-      '#aabbcc',
-      '#aabbcc80',
-      'rgb(170,187,204)',
-      'RGB(170 187 204)',
-      'rgba(170, 187, 204, 0.5)',
-      'rgb(170 187 204 / 50%)',
-    ]) {
-      expect(rgbOf(color), color).toBe('170,187,204');
-    }
-    for (const paint of ['none', 'currentColor', '#abcde', 'rgb(1 2)', '']) {
-      expect(rgbOf(paint), paint).not.toBe(rgbOf(paint));
-    }
+  it.each([
+    '#abc',
+    '#ABCD',
+    '#aabbcc',
+    '#aabbcc80',
+    'rgb(170,187,204)',
+    'RGB( 170 , 187 , 204 )',
+    'rgba(170, 187, 204, 0.5)',
+    'rgba(170, 187, 204, 50%)',
+    'rgb(170 187 204)',
+    'rgb(170 187 204 / 0.5)',
+    'rgba(170 187 204/50%)',
+    'rgb(169.6, 187.4, 204)',
+    ' #aabbcc ',
+  ])('read the channels of %s', (color) => {
+    expect(rgbOf(color)).toBe('170,187,204');
   });
 
-  it('decode astral character references and `&nbsp;`', () => {
-    expect(unescapeMarkup('&#128512; &#x1F600;')).toBe('\u{1F600} \u{1F600}');
-    expect(unescapeMarkup('5&nbsp;ms')).toBe(
-      `5${String.fromCodePoint(0xa0)}ms`
-    );
-    expect(unescapeMarkup('&amp;nbsp; &#1114112;')).toBe('&nbsp; &#1114112;');
+  it.each([
+    'none',
+    'currentColor',
+    'url(#fill)',
+    '',
+    '#ab',
+    '#abcde',
+    '#aabbccd',
+    '#aabbcg',
+    '#aabbcc junk',
+    'rgb(170 187)',
+    'rgb(170, 187)',
+    'rgb(170 187 204 128)',
+    'rgb(170, 187, 204, 0.5, 1)',
+    'rgb(170 187 / 204)',
+    'rgb(170 / 187 204)',
+    'rgb(170 187 204 /)',
+    'rgb(170, 187 204)',
+    'rgb(170 187, 204)',
+    'rgb(170, 187, 204 / 0.5)',
+    'rgb(170 187 204, 0.5)',
+    'rgb(170,, 187, 204)',
+    'rgb(256, 187, 204)',
+    'rgb(-1, 187, 204)',
+    'rgb(67%, 73%, 80%)',
+    'rgb(50% 50% 50%)',
+    'rgb(170, 187, 204) junk',
+    'rgb(170, 187, 204',
+    'hsl(210, 25%, 73%)',
+  ])('read %s as no color, equal to nothing', (paint) => {
+    const read = rgbOf(paint);
+    expect(read).not.toMatch(/^\d+,\d+,\d+$/);
+    expect(rgbOf(paint)).not.toBe(read);
+  });
+
+  it.each([
+    ['&#128512; &#x1F600; &#X1f600;', '\u{1F600} \u{1F600} \u{1F600}'],
+    ['5&nbsp;ms', `5${String.fromCodePoint(0xa0)}ms`],
+    ['&lt;a href=&quot;b&quot;&gt; &apos;c&#39; &amp;', `<a href="b"> 'c' &`],
+    ['&#38;nbsp;', '&nbsp;'],
+    ['&#x26;lt;', '&lt;'],
+    ['&amp;nbsp;', '&nbsp;'],
+    ['&amp;lt;', '&lt;'],
+    ['&amp;#60;', '&#60;'],
+    ['&amp;amp;', '&amp;'],
+    ['&#1114112; &bogus; &NBSP; &', '&#1114112; &bogus; &NBSP; &'],
+  ])('decode each character reference of %s once', (markup, text) => {
+    expect(unescapeMarkup(markup)).toBe(text);
+  });
+
+  it('accept text read back through its character references', () => {
     expect(
       textDrawn([unescapeMarkup('Up &#x1F600;&nbsp;now')], 'Up \u{1F600} now')
     ).toBe(true);
