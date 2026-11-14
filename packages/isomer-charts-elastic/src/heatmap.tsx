@@ -17,16 +17,9 @@ import {
   Heatmap,
   type HeatmapBandsColorScale,
   type PartialTheme,
-  Position,
   ScaleType,
   Settings,
   Tooltip,
-  TooltipContainer,
-  TooltipTable,
-  TooltipTableBody,
-  TooltipTableCell,
-  TooltipTableColorCell,
-  TooltipTableRow,
 } from '@elastic/charts';
 import {
   formatAxisValue,
@@ -34,26 +27,12 @@ import {
   type SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import { heatmapHandlers } from './events';
+import { LEGEND_SIZE, POSITION } from './legend';
 import type { ElasticChartsOptions } from './options';
-import { chromeTheme, kibanaBaseTheme } from './theme';
-
-const POSITION = {
-  top: Position.Top,
-  bottom: Position.Bottom,
-  left: Position.Left,
-  right: Position.Right,
-} as const;
-
-/** Kibana's `LegendSizeToPixels`. */
-const LEGEND_SIZE = {
-  auto: undefined,
-  s: 80,
-  m: 130,
-  l: 180,
-  xl: 230,
-} as const;
+import { commonSettings } from './settings';
+import { chromeTheme } from './theme';
+import { SceneTooltipTable } from './tooltip';
 
 /** What each datum this engine passes Elastic Charts carries. */
 export interface HeatmapDatum {
@@ -188,21 +167,7 @@ export const heatmapTooltip = (scene: HeatmapScene): CustomTooltip => {
     if (!cell) {
       return null;
     }
-    return (
-      <TooltipContainer>
-        <TooltipTable gridTemplateColumns="auto auto auto">
-          <TooltipTableBody>
-            {cell.tooltip.entries.map(({ label, value, color }, index) => (
-              <TooltipTableRow key={index}>
-                <TooltipTableColorCell color={color ?? 'transparent'} />
-                <TooltipTableCell>{label}</TooltipTableCell>
-                <TooltipTableCell>{value}</TooltipTableCell>
-              </TooltipTableRow>
-            ))}
-          </TooltipTableBody>
-        </TooltipTable>
-      </TooltipContainer>
-    );
+    return <SceneTooltipTable entries={cell.tooltip.entries} />;
   };
 };
 
@@ -221,12 +186,8 @@ export const heatmapSpecs = (
     <>
       <Tooltip customTooltip={heatmapTooltip(scene)} />
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={heatmapTheme(scene)}
-        locale={scene.locale}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
         {...(x.scale === 'time' && x.domain ? { xDomain: x.domain } : {})}
         showLegend={legend.visible}
         legendPosition={POSITION[legend.position]}

@@ -31,16 +31,8 @@ import {
   Settings,
   StackMode,
   Tooltip,
-  TooltipContainer,
-  TooltipHeader,
-  TooltipTable,
-  TooltipTableBody,
-  TooltipTableCell,
-  TooltipTableColorCell,
-  TooltipTableRow,
 } from '@elastic/charts';
 import {
-  cls,
   formatAxisValue,
   type SceneAnnotation,
   type SceneAxis,
@@ -51,7 +43,6 @@ import {
   type XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import {
   isXyDatum,
   legendSelect,
@@ -59,16 +50,11 @@ import {
   type XyDatum,
   xyHandlers,
 } from './events';
+import { LEGEND_SIZE, legendActionButtons, POSITION } from './legend';
 import type { ElasticChartsOptions } from './options';
-import { elasticModule } from './styles';
+import { commonSettings } from './settings';
 import { chromeTheme, kibanaBaseTheme } from './theme';
-
-const POSITION = {
-  top: Position.Top,
-  bottom: Position.Bottom,
-  left: Position.Left,
-  right: Position.Right,
-} as const;
+import { SceneTooltipTable } from './tooltip';
 
 /** Value axes are continuous; an ordinal or time value axis draws linear. */
 const VALUE_SCALE = {
@@ -107,15 +93,6 @@ const POINTS = {
   auto: 'auto',
   visible: 'always',
   hidden: 'never',
-} as const;
-
-/** Kibana's `LegendSizeToPixels`. */
-const LEGEND_SIZE = {
-  auto: undefined,
-  s: 80,
-  m: 130,
-  l: 180,
-  xl: 230,
 } as const;
 
 const INSIDE = {
@@ -572,22 +549,7 @@ export const sceneTooltip = (scene: XyScene): CustomTooltip => {
       value: mark.label,
       color: owner.color,
     }));
-    return (
-      <TooltipContainer>
-        {header === undefined ? null : <TooltipHeader>{header}</TooltipHeader>}
-        <TooltipTable gridTemplateColumns="auto auto auto">
-          <TooltipTableBody>
-            {entries.map(({ label, value, color }, index) => (
-              <TooltipTableRow key={index}>
-                <TooltipTableColorCell color={color ?? 'transparent'} />
-                <TooltipTableCell>{label}</TooltipTableCell>
-                <TooltipTableCell>{value}</TooltipTableCell>
-              </TooltipTableRow>
-            ))}
-          </TooltipTableBody>
-        </TooltipTable>
-      </TooltipContainer>
-    );
+    return <SceneTooltipTable {...{ header, entries }} />;
   };
 };
 
@@ -606,21 +568,8 @@ const legendAction =
     if (owner === undefined) {
       return null;
     }
-    return (
-      <span className={cls(env, elasticModule.handles.legendAction)}>
-        <button
-          type="button"
-          aria-label={`Filter for ${label}`}
-          onClick={() => legendSelect(scene, env, owner, false)}>
-          +
-        </button>
-        <button
-          type="button"
-          aria-label={`Filter out ${label}`}
-          onClick={() => legendSelect(scene, env, owner, true)}>
-          −
-        </button>
-      </span>
+    return legendActionButtons(env, label, (negate) =>
+      legendSelect(scene, env, owner, negate)
     );
   };
 
@@ -691,14 +640,10 @@ export const xySpecs = (
     <>
       <Tooltip customTooltip={sceneTooltip(scene)} />
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={xyTheme(scene)}
-        locale={scene.locale}
         rotation={scene.orientation === 'horizontal' ? 90 : 0}
         {...(xDomain === undefined ? {} : { xDomain })}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
         allowBrushingLastHistogramBin={continuous}
         {...legendProps(scene.legend)}
         {...(offersLegend
