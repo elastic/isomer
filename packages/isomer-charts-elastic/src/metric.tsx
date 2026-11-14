@@ -149,30 +149,28 @@ const TooltipLabelled = ({
  * Without a badge, Elastic Charts recolors secondary-metric props to its
  * contrast color, so the text is drawn as an element in the Scene's color.
  */
-const plainSecondary = (
-  { text, color, label, labelPlacement }: PlainSecondaryProps,
-  styles: Styles
-) => {
-  const PlainSecondary = () =>
-    label !== undefined && labelPlacement === 'tooltip' ? (
-      <TooltipLabelled label={label} color={color} styles={styles}>
-        {text}
-      </TooltipLabelled>
-    ) : (
-      <span
-        className={secondaryClass(styles)}
-        style={varStyle(vars.ink, { color })}>
-        {label !== undefined && labelPlacement === 'before' ? (
-          <span className="echSecondaryMetric__label">{label} </span>
-        ) : null}
-        {text}
-        {label !== undefined && labelPlacement === 'after' ? (
-          <span className="echSecondaryMetric__label"> {label}</span>
-        ) : null}
-      </span>
-    );
-  return PlainSecondary;
-};
+const PlainSecondary = ({
+  secondary: { text, color, label, labelPlacement },
+  styles,
+}: {
+  secondary: PlainSecondaryProps;
+  styles: Styles;
+}) =>
+  label !== undefined && labelPlacement === 'tooltip' ? (
+    <TooltipLabelled {...{ label, color, styles }}>{text}</TooltipLabelled>
+  ) : (
+    <span
+      className={secondaryClass(styles)}
+      style={varStyle(vars.ink, { color })}>
+      {label !== undefined && labelPlacement === 'before' ? (
+        <span className="echSecondaryMetric__label">{label} </span>
+      ) : null}
+      {text}
+      {label !== undefined && labelPlacement === 'after' ? (
+        <span className="echSecondaryMetric__label"> {label}</span>
+      ) : null}
+    </span>
+  );
 
 const secondaryOf = (
   { secondary }: MetricTile,
@@ -185,7 +183,7 @@ const secondaryOf = (
   // Headless Elastic Charts draws props, never an element, so off the browser
   // plain secondary text goes as props, in Elastic Charts' contrast color.
   if (badge === undefined && env.environment === 'browser') {
-    return plainSecondary(secondary, env);
+    return <PlainSecondary secondary={secondary} styles={env} />;
   }
   if (badge === undefined) {
     return {
