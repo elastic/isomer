@@ -17,6 +17,7 @@ import {
   describe,
   fractionAlong,
   keyPart,
+  NO_RESULTS,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
@@ -356,14 +357,17 @@ export const resolveMetric = (
         );
   const layout = node.layout ?? {};
 
-  const sentence =
+  const empty =
     tiles.length === 0
-      ? `${valueColumn.label} has no data.`
-      : breakdownColumn
-        ? `${valueColumn.label} by ${breakdownColumn.label}: ${tiles
-            .map(({ title, value }) => `${title} ${value.text}`)
-            .join(', ')}.`
-        : `${valueColumn.label} is ${tiles[0]!.value.text}.`;
+      ? { reason: 'noResults' as const, text: NO_RESULTS }
+      : undefined;
+  const sentence = empty
+    ? `${valueColumn.label} has no data.`
+    : breakdownColumn
+      ? `${valueColumn.label} by ${breakdownColumn.label}: ${tiles
+          .map(({ title, value }) => `${title} ${value.text}`)
+          .join(', ')}.`
+      : `${valueColumn.label} is ${tiles[0]!.value.text}.`;
 
   return {
     kind: 'metric',
@@ -389,5 +393,6 @@ export const resolveMetric = (
         : {}),
     },
     tiles,
+    ...(empty ? { empty } : {}),
   };
 };

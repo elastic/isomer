@@ -17,6 +17,7 @@ import {
   describe,
   keyPart,
   LABEL_ROTATION,
+  NO_RESULTS,
   type Resolution,
   type ResolveChartOptions,
   resolveInteractions,
@@ -82,7 +83,9 @@ const bucketWidthOf = (
  * A time x axis's ticks, from the domain and bucket Elastic Charts computes
  * from the drawn marks (`mergeXDomain`): the marks' extent or the custom
  * domain; their {@link bucketWidthOf}; and one bucket more where bars fill
- * buckets, as `xy.tsx` turns on histogram mode. Absent when no mark has a time.
+ * buckets, as `xy.tsx` turns on histogram mode. Absent when no mark has a time,
+ * when one x and no stated interval leave the bucket unknown, and when no
+ * raster fits the span.
  */
 const timeTicksOf = (
   series: readonly XySeries[],
@@ -108,10 +111,10 @@ const timeTicksOf = (
       )
     ),
   ].sort((a, b) => a - b);
-  if (xs.length === 0) {
+  const interval = bucketWidthOf(xs, statedInterval);
+  if (xs.length === 0 || interval === undefined) {
     return {};
   }
-  const interval = bucketWidthOf(xs, statedInterval) ?? 1;
   const custom =
     domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
   const min = custom?.min ?? xs[0]!;
@@ -125,17 +128,16 @@ const timeTicksOf = (
   const extend =
     bars.length > 0 &&
     bars.some(({ stack }) => stack !== undefined || bars.length <= 1);
-  return {
-    timeTicks: resolveTimeTicks({
-      min,
-      max,
-      interval,
-      extend,
-      locale,
-      timeZone,
-      ...(maxWidth === undefined ? {} : { maxWidth }),
-    }),
-  };
+  const timeTicks = resolveTimeTicks({
+    min,
+    max,
+    interval,
+    extend,
+    locale,
+    timeZone,
+    ...(maxWidth === undefined ? {} : { maxWidth }),
+  });
+  return timeTicks ? { timeTicks } : {};
 };
 
 // Style for nodes that state none.
@@ -952,6 +954,10 @@ export const resolveXy = (
     dimensions.length ? ` by ${dimensions.join(' and ')}` : ''
   }${range}.`;
 
+  const empty = series.some(({ marks }) => marks.some(({ y }) => y !== null))
+    ? undefined
+    : { reason: 'noResults' as const, text: NO_RESULTS };
+
   const y = yAxis('y');
   const y2 = yAxis('y2');
   const currentTime =
@@ -1004,5 +1010,6 @@ export const resolveXy = (
     },
     barMinimumHeight: node.style?.barMinimumHeight ?? DEFAULTS.barMinimumHeight,
     ...(currentTime === undefined ? {} : { currentTime }),
+    ...(empty ? { empty } : {}),
   };
 };

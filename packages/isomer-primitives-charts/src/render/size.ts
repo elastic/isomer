@@ -28,6 +28,16 @@ export interface ChartSizeSpec {
 
 const { chart } = CHARTS_THEME;
 
+const nominalSizes = new WeakSet<SceneSize>();
+
+/** Marks `size` as laid out from a nominal width, where the container's width is the drawn one. */
+export const markNominalSize = (size: SceneSize): void => {
+  nominalSizes.add(size);
+};
+
+export const isNominalSize = (size: SceneSize | undefined): boolean =>
+  size !== undefined && nominalSizes.has(size);
+
 /** The size spec of a Scene's kind; none for a kind that sizes itself, such as a table. */
 export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
   switch (scene.kind) {

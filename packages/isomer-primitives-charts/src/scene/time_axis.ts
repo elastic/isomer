@@ -869,7 +869,8 @@ export interface TimeTicksInput {
 
 /**
  * The two-row time axis Elastic Charts draws for a domain and bucket, at every
- * plot width: one band per change in the rasters it picks.
+ * plot width: one band per change in the rasters it picks. Absent when no
+ * raster fits at any width: the span outruns the coarsest, or the bucket is wider.
  */
 export const resolveTimeTicks = ({
   min,
@@ -879,7 +880,7 @@ export const resolveTimeTicks = ({
   locale,
   timeZone,
   maxWidth,
-}: TimeTicksInput): SceneTimeTicks => {
+}: TimeTicksInput): SceneTimeTicks | undefined => {
   const { all, select } = createRasters(locale, timeZone);
   const fromS = min / 1000;
   const binS = interval / 1000;
@@ -941,6 +942,9 @@ export const resolveTimeTicks = ({
     }
     return layers;
   };
+  if (!Number.isFinite(threshold(all[0]!, MAX_TIME_TICK_COUNT))) {
+    return undefined;
+  }
   const bands: SceneTimeBand[] = [{ from: 0, layers: [] }];
   let from = 0;
   for (let count = 1; count <= all.length; count++) {
