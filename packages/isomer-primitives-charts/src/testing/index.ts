@@ -8,13 +8,11 @@
 export {
   type DrawnExamples,
   type DrawnScene,
-  SCHEMES,
   drawExamples,
 } from './draw_examples';
 export {
   type DrawingReader,
   type DrawingReading,
-  CHECKED_KINDS,
   coverageProblems,
   drawingProblems,
   rgbOf,

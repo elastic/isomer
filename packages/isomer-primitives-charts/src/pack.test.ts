@@ -16,12 +16,12 @@ import type {
   ChartNode,
   ChartsRenderContext,
   ReactSceneRenderer,
-  ResolveSceneOptions,
 } from './render/context';
 import { CHART_FAILURE_TEXT } from './render/failure';
 import { sceneModule } from './render/scene_styles';
 import { chartSize, chartSizeSpec } from './render/size';
 import { CHARTS_THEME } from './render/theme';
+import type { ResolveChartOptions } from './scene/common';
 import {
   metricSingleValueScene,
   xyInteractiveScene,
@@ -37,8 +37,8 @@ import type { XyChartNode } from './schema/xy_chart';
 
 // The resolver does not exist yet: resolve the two examples that have
 // hand-written Scenes, and record what each call was asked for.
-const resolved: ResolveSceneOptions[] = [];
-const resolveScene = (node: ChartNode, options: ResolveSceneOptions): Scene => {
+const resolved: ResolveChartOptions[] = [];
+const resolveScene = (node: ChartNode, options: ResolveChartOptions): Scene => {
   resolved.push(options);
   if (node.type === 'metric' && node.title === metricSingleValue.title) {
     return { ...metricSingleValueScene, scheme: options.scheme };
@@ -361,10 +361,10 @@ describe("a Scene's link and emphasis notes", () => {
   const { link } = xyInteractiveScene.interactions;
   const [note] = xyInteractiveScene.interactions.emphasis;
   const seen: ChartNode[] = [];
-  const sizes: (ResolveSceneOptions['size'] | undefined)[] = [];
+  const sizes: (ResolveChartOptions['size'] | undefined)[] = [];
   const resolveInteractive = (
     node: ChartNode,
-    { scheme, size }: ResolveSceneOptions
+    { scheme, size }: ResolveChartOptions
   ): Scene => {
     seen.push(node);
     sizes.push(size);
