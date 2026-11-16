@@ -12,6 +12,7 @@ import type {
   SurfaceMap,
 } from '@elastic/isomer-sdk';
 
+import type { ResolveChartOptions } from '../scene/common';
 import type { ChartNode } from '../scene/resolve';
 import type {
   ColorScheme,
@@ -23,20 +24,10 @@ import type {
 
 export type { ChartNode };
 
-/** What a Scene is resolved for. */
-export interface ResolveSceneOptions {
-  readonly scheme: ColorScheme;
-  readonly size?: SceneSize;
-  /** Absent: the resolver's default. */
-  readonly locale?: string;
-  /** Absent: each date format's own time zone. */
-  readonly timeZone?: string;
-}
-
 /** Turns a chart node into the Scene its renderers draw. */
 export type SceneResolver = (
   node: ChartNode,
-  options: ResolveSceneOptions
+  options: ResolveChartOptions
 ) => Scene;
 
 /** A renderer the `react` and `snapshot` surfaces can use. */
@@ -59,7 +50,7 @@ export interface ChartsRenderContext extends StyledRenderContext {
   readonly scheme?: ColorScheme;
   readonly locale?: string;
   readonly timeZone?: string;
-  /** The box a container gives a chart. Absent: the renderer's default size. */
+  /** The box a container gives a chart. Absent: the chart's size spec. */
   readonly size?: SceneSize;
 }
 

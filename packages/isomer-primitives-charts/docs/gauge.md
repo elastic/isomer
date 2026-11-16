@@ -22,6 +22,88 @@ One value against a scale from `min` to `max`, on the [chart core](core.md). Len
 
 A gauge with no value says "No results found"; one whose `min` equals its `max` says "Minimum and maximum values may not be equal"; one whose `min` is above its `max`, "Minimum value may not be greater than maximum value", as Lens does.
 
+## Example
+
+The fewest fields that validate and draw, a bullet whose scale runs from 0 to the value rounded up:
+
+<!-- node-example -->
+
+```ts
+import type { GaugeNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requestsToday: GaugeNode = {
+  type: 'gauge',
+  shape: 'horizontalBullet',
+  data: {
+    columns: [
+      {
+        id: 'requests',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [[8412]],
+  },
+  value: { column: 'requests' },
+};
+```
+
+A typical panel, a titled semicircle from 0 to 100 in three bands, with a goal and ticks at the band edges:
+
+<!-- node-example -->
+
+```ts
+import type { GaugeNode } from '@elastic/isomer-primitives-charts/schema';
+
+const cpuUtilization: GaugeNode = {
+  type: 'gauge',
+  title: 'CPU utilization',
+  shape: 'semiCircle',
+  data: {
+    columns: [
+      {
+        id: 'cpu',
+        label: 'Mean CPU',
+        type: 'number',
+        role: 'metric',
+        format: {
+          kind: 'percent',
+          fractional: false,
+          maximumFractionDigits: 0,
+        },
+      },
+      { id: 'min', label: 'Minimum', type: 'number', role: 'metric' },
+      { id: 'max', label: 'Maximum', type: 'number', role: 'metric' },
+      {
+        id: 'goal',
+        label: 'Target',
+        type: 'number',
+        role: 'metric',
+        format: {
+          kind: 'percent',
+          fractional: false,
+          maximumFractionDigits: 0,
+        },
+      },
+    ],
+    rows: [[72, 0, 100, 80]],
+  },
+  value: { column: 'cpu' },
+  min: { column: 'min' },
+  max: { column: 'max' },
+  goal: { column: 'goal' },
+  colors: {
+    bands: [
+      { from: 0, to: 60, color: { light: '#24C292', dark: '#24C292' } },
+      { from: 60, to: 85, color: { light: '#FCD883', dark: '#EAAE01' } },
+      { from: 85, to: 100, color: { light: '#F6726A', dark: '#F6726A' } },
+    ],
+  },
+  ticks: 'bands',
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.

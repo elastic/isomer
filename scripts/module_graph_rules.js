@@ -44,8 +44,8 @@ export const RULES = {
         CHARTS_CONTRACT_FORBIDDEN,
       ])
     ),
-    // The runtime and `react-dom/server` are `./testing`'s optional peers alone.
-    '.': ['@elastic/isomer-runtime', 'react-dom/server'],
+    // The runtime and `react-dom` are `./testing`'s optional peers alone.
+    '.': ['@elastic/isomer-runtime', 'react-dom'],
   },
 };
 

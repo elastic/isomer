@@ -350,7 +350,7 @@ const xAxisSchema = z.strictObject({
     .positive()
     .optional()
     .describe(
-      'The bucket width in x units, such as milliseconds on a `temporal` axis, from the aggregation that built the x column. It decides which buckets cross `style.partialBuckets` and how wide an engine draws bars. Absent means the smallest spacing between x values. Ignored on an `ordinal` axis.'
+      'The bucket width in x units, such as milliseconds on a `temporal` axis, from the aggregation that built the x column. It decides which buckets cross `style.partialBuckets` and how wide an engine draws bars. A value wider than the smallest spacing between x values yields to that spacing, which absent also means. Ignored on an `ordinal` axis.'
     ),
 });
 
