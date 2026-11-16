@@ -74,7 +74,10 @@ describe('TableView', () => {
         ),
         ...scene.columns.flatMap(({ footer }) => (footer ? [footer] : [])),
         ...(scene.paging
-          ? [scene.paging.rowsPerPage, ...scene.paging.pageLabels]
+          ? [
+              scene.paging.rowsPerPage,
+              ...scene.paging.pages.map(({ label }) => label),
+            ]
           : []),
         ...(scene.rows.length === 0 ? [scene.emptyText] : []),
       ];
@@ -177,6 +180,29 @@ describe('TableView', () => {
     expect(tableHeight(scene)).toBe(
       titleHeight + (1 + scene.paging!.pageSize + 1 + 1) * rowHeight
     );
+  });
+
+  it('draws a bounded pager for 10,000 pages', () => {
+    const scene = tableOf({
+      type: 'dataTable',
+      data: {
+        columns: [{ id: 'n', label: 'n', type: 'number', role: 'metric' }],
+        rows: Array.from({ length: 100_000 }, (_, i) => [i]),
+      },
+      pageSize: 10,
+    });
+    const pager = /<div data-part="pager".*?<\/div>/.exec(markup(scene))![0];
+    const texts = [...pager.matchAll(/>([^<]+)</g)].map(([, text]) => text);
+    expect(texts).toEqual([
+      'Rows per page: 10',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '…',
+      '10000',
+    ]);
   });
 
   it('counts the description and notes in its height', () => {
