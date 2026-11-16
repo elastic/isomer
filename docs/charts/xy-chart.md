@@ -51,11 +51,115 @@ Values and defaults, where a field is absent:
 
 A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y: [{ column, axis?, color? }], splitBy?, rows? }`. Every data layer uses the same `x` column; when it is absent, every row draws at one x position. When layers come from different source tables, the tables are appended to `data` in layer order, each layer names its `[start, end)` row range, and each table's x field maps to the one x column, in one date encoding when it is a `date` column.
 
-`axes.x.interval` is the bucket width in x units, milliseconds on a time axis, which a materializer reads from the aggregation that built the x column, as Kibana's `calculateMinInterval` does. A bucket draws as partial when it crosses an edge of `style.partialBuckets`, and an engine sizes bars by the interval, as Elastic Charts' `minInterval` does. Without it, the resolver takes each layer's smallest spacing between x values for partial buckets, and the engine infers its own. It is a fixed width, so calendar months and years, and days across a daylight-saving change, are approximate, as `minInterval` is. It is ignored on an ordinal axis.
+`axes.x.interval` is the bucket width in x units, milliseconds on a time axis, which a materializer reads from the aggregation that built the x column, as Kibana's `calculateMinInterval` does. A bucket draws as partial when it crosses an edge of `style.partialBuckets`, and an engine sizes bars by the interval, as Elastic Charts' `minInterval` does. The resolver has one rule for a bucket's width over a set of x values: the stated interval, unless it is wider than the smallest spacing between those x values, which is used then, as it is when the node states none. It applies the rule to each layer's x values for partial buckets, and to every drawn x value for the [time axis](#time-axis), so a chart whose layers share their x values has one bucket width, and one that mixes hourly and daily layers measures each layer's buckets by its own spacing and draws the axis by the smallest spacing among all their x values. A layer with a single x value and no stated interval has no bucket width, and its mark is partial only outside the range. Without a stated interval, the engine infers its own. It is a fixed width, so calendar months and years, and days across a daylight-saving change, are approximate, as `minInterval` is. It is ignored on an ordinal axis.
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Both can carry a [glyph](core.md#glyphs) `icon`. Neither carries rows, so neither is ever selected.
 
-A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has `splitBy`. Series that share a key, such as two layers plotting one y column, share its `colors.byKey` entry and hidden state. The y column id and the split cell are each a key part: the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, which no string produces.
+A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has `splitBy`. Series that share a key, such as two layers plotting one y column, share its `colors.byKey` entry and hidden state. The y column id and the split cell are each a key part. A key part is the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, and a multivalue cell is `\` followed by the key part of its JSON text, such as `\["a"]`; no string produces either.
+
+## Example
+
+The fewest fields that validate and draw, one line over a time axis:
+
+<!-- node-example -->
+
+```ts
+import type { XyChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requestsOverTime: XyChartNode = {
+  type: 'xyChart',
+  data: {
+    columns: [
+      { id: 'time', label: '@timestamp', type: 'date', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['2026-11-03T00:00:00Z', 120],
+      ['2026-11-03T01:00:00Z', 98],
+      ['2026-11-03T02:00:00Z', 143],
+    ],
+  },
+  layers: [{ kind: 'data', mark: 'line', x: 'time', y: [{ column: 'count' }] }],
+};
+```
+
+A typical panel, hourly bars stacked by status with a color per series, a legend below, and marks, series and a time range a reader can select:
+
+<!-- node-example -->
+
+```ts
+import type { XyChartNode } from '@elastic/isomer-primitives-charts/schema';
+
+const responsesByStatus: XyChartNode = {
+  type: 'xyChart',
+  title: 'Responses by status',
+  data: {
+    columns: [
+      {
+        id: 'time',
+        label: '@timestamp per hour',
+        type: 'date',
+        role: 'dimension',
+        format: {
+          kind: 'date',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: 'UTC',
+        },
+      },
+      {
+        id: 'status',
+        label: 'response.code',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['2026-11-03T00:00:00Z', '200', 802],
+      ['2026-11-03T00:00:00Z', '404', 41],
+      ['2026-11-03T01:00:00Z', '200', 911],
+      ['2026-11-03T01:00:00Z', '404', 37],
+    ],
+  },
+  layers: [
+    {
+      kind: 'data',
+      mark: 'bar',
+      stack: 'stacked',
+      x: 'time',
+      y: [{ column: 'count' }],
+      splitBy: 'status',
+    },
+  ],
+  axes: {
+    x: { scale: 'temporal', interval: 3600000 },
+    y: { title: 'Requests' },
+  },
+  colors: {
+    byKey: {
+      '200': { light: '#54B399', dark: '#54B399' },
+      '404': { light: '#D6BF57', dark: '#D6BF57' },
+    },
+  },
+  legend: { position: 'bottom' },
+  interactions: {
+    select: ['datum', 'series'],
+    brush: { column: 'time' },
+  },
+};
+```
 
 Rules:
 
@@ -82,7 +186,7 @@ On a vertical chart with a `temporal` x scale, the x axis draws as Lens's does: 
 | --------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | A time axis           | `axes.x.scale: 'temporal'`, and `orientation: 'vertical'`                                         | Lens's x scale is `time` (`isTimeChart`: a date histogram x). A date x that Lens draws on an `ordinal` scale states `ordinal`. Horizontal bars (`orientation: 'horizontal'`) get no multi-layer axis, in Lens or here: their ticks print in the x column's format, to which the materializer maps Lens's x formatter (`dateFormat:scaled`) |
 | The domain            | `axes.x.domain: { kind: 'custom', min, max }`                                                     | `getXDomain`'s `extendedDomain` (`Settings.xDomain`), unchanged: with lines and areas, `max` is already one bucket past the last; with bars it is not, and the resolver adds the bucket as Elastic Charts does. Without a domain, the resolver spans the drawn x values, as Elastic Charts does when Lens passes `NaN` bounds              |
-| The bucket            | `axes.x.interval`, in milliseconds                                                                | `extendedDomain.minInterval`: for calendar units (`d`, `w`, `M`, `y`), `getAdjustedInterval`'s value, not the nominal one. A stated interval wider than the data's smallest spacing yields to that spacing, as `minInterval` does                                                                                                          |
+| The bucket            | `axes.x.interval`, in milliseconds                                                                | `extendedDomain.minInterval`: for calendar units (`d`, `w`, `M`, `y`), `getAdjustedInterval`'s value, not the nominal one. A stated interval wider than the drawn x values' smallest spacing yields to that spacing, as `minInterval` does and as partial buckets do                                                                       |
 | The zone and language | The x column format's `timeZone`, else `resolveChart`'s `timeZone`; and `resolveChart`'s `locale` | `dateFormat:tz`, resolved to an IANA zone (`Browser` becomes the viewer's zone), which Lens gives each series as `timeZone`; and `i18n.getLocale()`, which Lens gives `Settings.locale`                                                                                                                                                    |
 
 The x column's own date format does not change the axis labels, nor do `dateFormat:scaled` or `dateFormat:dow`: Elastic Charts labels a multi-layer axis with its own `Intl` formats, and Lens passes no `dow`, so weeks start on Monday. The column's format still prints table cells, tooltips and selections. `axes.x.labelOrientation` does not apply either: the labels draw level, as Lens passes its multi-layer axis no `labelsOrientation`.

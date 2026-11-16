@@ -7,6 +7,7 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
+import { BANDS_RANGE_RULE, checkBandsRange } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import {
@@ -27,6 +28,7 @@ export const LEGACY_METRIC_RULES = {
   distinct:
     'Each `metrics` column is named once, and the `breakdown` column is not one of them.',
   oneRow: 'Without a `breakdown`, `data` holds at most one row.',
+  bandsRange: BANDS_RANGE_RULE,
 } as const;
 
 /** The type steps of Lens's legacy metric, smallest first. */
@@ -97,7 +99,7 @@ const legacyMetricObjectSchema = z.object({
     .enum(['absolute', 'percentage'])
     .optional()
     .describe(
-      'Whether band bounds are values, or percentages of the range a column’s values span: from its least to its greatest, or for a lone value from 0 to twice it (from -50 to 100 for 0). Absent means `absolute`.'
+      `Whether band bounds are values, or percentages of the range a column’s values span: from its least to its greatest, or for a lone value from 0 to twice it (from -50 to 100 for 0). Absent means \`absolute\`. ${LEGACY_METRIC_RULES.bandsRange}`
     ),
 });
 
@@ -152,12 +154,14 @@ export const legacyMetricSchema = legacyMetricObjectSchema
             message: `${LEGACY_METRIC_RULES.oneRow} It holds ${node.data.rows.length}.`,
           });
         }
+        checkBandsRange(node, context);
         checkInteractions(node, context);
       },
       [
         COLUMN_REF_RULE,
         LEGACY_METRIC_RULES.distinct,
         LEGACY_METRIC_RULES.oneRow,
+        LEGACY_METRIC_RULES.bandsRange,
         INTERACTION_RULES.emphasisRows,
       ]
     )

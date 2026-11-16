@@ -329,7 +329,7 @@ export interface SceneTimeBand {
 export interface SceneTimeTicks {
   /** In epoch milliseconds; `max` runs one bucket past the last x where bars fill buckets. */
   readonly domain: { readonly min: number; readonly max: number };
-  /** The bucket width, in milliseconds. */
+  /** The bucket width, in milliseconds: the axis's `interval`, unless the marks' smallest x spacing is narrower. */
   readonly interval: number;
   /** By ascending `from`; the first is from 0. */
   readonly bands: readonly SceneTimeBand[];
@@ -345,7 +345,7 @@ export interface XyMark {
   /** The value as displayed, such as in a bar label or tooltip. */
   readonly label: string;
   readonly description: string;
-  /** The mark falls in a partial bucket at an edge of the queried range. */
+  /** The mark's bucket crosses an edge of the queried range. Its width is the x axis's `interval`, unless its layer's smallest x spacing is narrower. */
   readonly partial?: boolean;
   /** The `datum` selection, when the node offers it. */
   readonly selection?: SceneSelection;
