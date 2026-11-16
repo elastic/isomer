@@ -310,16 +310,22 @@ describe('xy rows without an x', () => {
 });
 
 describe('xy partial buckets', () => {
-  it('measures each layer by its own spacing', () => {
-    const HOUR = 3_600_000;
-    const DAY = 24 * HOUR;
-    const scene = resolve(
+  const HOUR = 3_600_000;
+  const DAY = 24 * HOUR;
+  const columns = [
+    { id: 'x', label: 'X', type: 'date', role: 'dimension' },
+    { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+  ] as const;
+  const partialsOf = (scene: XyScene) =>
+    seriesIn(scene).map(({ marks }) =>
+      marks.map(({ partial }) => partial ?? false)
+    );
+  // An hourly line at DAY and DAY + HOUR, and daily bars at 0 and DAY, queried to DAY + 12 h.
+  const twoLayers = (interval?: number) =>
+    resolve(
       xy({
         data: {
-          columns: [
-            { id: 'x', label: 'X', type: 'date', role: 'dimension' },
-            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
-          ],
+          columns: [...columns],
           rows: [
             [DAY, 1],
             [DAY + HOUR, 2],
@@ -343,18 +349,57 @@ describe('xy partial buckets', () => {
             rows: [2, 4],
           },
         ],
+        ...(interval === undefined ? {} : { axes: { x: { interval } } }),
         style: { partialBuckets: { from: 0, to: DAY + 12 * HOUR } },
       })
     );
-    const [hourly, daily] = seriesIn(scene);
-    expect(hourly!.marks.map(({ partial }) => partial ?? false)).toEqual([
-      false,
-      false,
+
+  it('measures each layer by its own spacing, and the axis by the smallest', () => {
+    const scene = twoLayers();
+    expect(partialsOf(scene)).toEqual([
+      [false, false],
+      [false, true],
     ]);
-    expect(daily!.marks.map(({ partial }) => partial ?? false)).toEqual([
-      false,
-      true,
+    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
+  });
+
+  it('narrows a stated interval to each layer’s spacing', () => {
+    const scene = twoLayers(2 * DAY);
+    expect(partialsOf(scene)).toEqual([
+      [false, false],
+      [false, true],
     ]);
+    expect(scene.axes.x.interval).toBe(2 * DAY);
+    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
+  });
+
+  it('keeps a stated interval no wider than a layer’s spacing', () => {
+    // Daily bars measured as 12 h buckets end at 12:00 and DAY + 12 h, inside the range.
+    const scene = twoLayers(HOUR / 2);
+    expect(partialsOf(scene)).toEqual([
+      [false, false],
+      [false, false],
+    ]);
+    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR / 2);
+  });
+
+  it('measures hourly marks under a stated daily interval as hourly, as the axis does', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [...columns],
+          rows: [0, 1, 2, 3, 4, 5].map((hour) => [hour * HOUR, hour]),
+        },
+        axes: { x: { interval: DAY } },
+        style: { partialBuckets: { from: 0, to: 5 * HOUR + HOUR / 2 } },
+      })
+    );
+    // Only the 05:00 bucket, which ends at 06:00, crosses 05:30.
+    expect(partialsOf(scene)).toEqual([
+      [false, false, false, false, false, true],
+    ]);
+    expect(scene.axes.x.interval).toBe(DAY);
+    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
   });
 });
 
