@@ -98,9 +98,11 @@ type SceneSelection = {
       series: { layer: number; y: number };
       seriesKey: string;
     }
-  | { target: 'category' | 'cell' | 'tile' | 'slice' | 'tag' }
+  | { target: 'category' | 'cell' | 'tile' | 'slice' | 'mark' | 'region' | 'tag' }
 );
 ```
+
+No Scene of this pack carries a `mark` or `region` selection: those targets are for [packs that build on the chart core](interactions.md#interactions).
 
 | Target     | Carried by                                                                                                                    |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -124,7 +126,7 @@ A renderer raises events with two helpers, so every renderer raises the same eve
 
 ```ts
 interface SceneRenderer<TOutput = unknown> {
-  id: string; // 'elastic-charts', 'isomer-svg', 'echarts', …
+  id: string; // such as 'elastic-charts', the Elastic Charts engine's
   environments: Array<'browser' | 'node'>;
   sized?: boolean; // draws a fixed-size picture at the Scene's size
   fluid?: boolean; // fills its container
