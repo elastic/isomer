@@ -10,6 +10,7 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 import {
   BANDS_RANGE_RULE,
   checkBandsRange,
+  COLOR_VALUE_FORMS,
   colorValueSchema,
   KEY_PART_RULE,
 } from './colors';
@@ -136,7 +137,9 @@ const metricObjectSchema = z.object({
         .optional()
         .describe('Text under each tile’s title. Absent means none.'),
       color: z
-        .union([colorValueSchema, z.literal('bands')])
+        .union([colorValueSchema, z.literal('bands')], {
+          error: () => `must be \`"bands"\`, ${COLOR_VALUE_FORMS}`,
+        })
         .optional()
         .describe(
           'A static color, or `bands` to color by `colors.bands`. Absent means the default.'

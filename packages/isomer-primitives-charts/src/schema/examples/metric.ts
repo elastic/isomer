@@ -369,4 +369,25 @@ export const metricExamples: PrimitiveExample<MetricNode>[] = [
       ],
     },
   },
+  {
+    name: 'No rows',
+    description: 'No data: the chart says there are no results.',
+    node: {
+      type: 'metric',
+      title: 'Requests',
+      data: {
+        columns: [
+          {
+            id: 'count',
+            label: 'Count of records',
+            type: 'number',
+            role: 'metric',
+            format: NUMBER,
+          },
+        ],
+        rows: [],
+      },
+      value: { column: 'count' },
+    },
+  },
 ];
