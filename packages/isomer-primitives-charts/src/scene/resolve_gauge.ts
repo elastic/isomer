@@ -48,7 +48,9 @@ export const niceMax = (min: number, max: number): number => {
   const spacing = niceNumber(niceNumber(offsetMax - min) / 4);
   const nice = Math.ceil(Math.ceil(offsetMax / spacing) * spacing);
   // Where the offset rounds away and `max` is `min`, there is no span to step.
-  return Number.isFinite(nice) ? nice : Math.ceil(nextUp(max));
+  return Number.isFinite(nice)
+    ? nice
+    : Math.min(Number.MAX_VALUE, Math.ceil(nextUp(max)));
 };
 
 /** Lens's `getTicksLabels`: the ascending edges, without any within a tenth of the scale of its neighbor or the last. */
