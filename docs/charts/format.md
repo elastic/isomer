@@ -1,6 +1,6 @@
 ---
 navigation_title: Format
-description: "How chart values print: portable formats as ECMA-402 Intl options, applied by the Scene resolver."
+description: 'How chart values print: portable formats as ECMA-402 Intl options, applied by the Scene resolver.'
 ---
 
 # Format
@@ -9,14 +9,14 @@ The Scene resolver turns each cell and its [`PortableFormat`](core.md#portablefo
 
 Formats are `Intl` options, so they mean the same thing in any JavaScript host and follow the chart's `locale`:
 
-| `kind` | How |
-| --- | --- |
-| `number` | `Intl.NumberFormat` with the format's fraction digits, `signDisplay`, `useGrouping` and `notation` |
-| `percent` | `Intl.NumberFormat`'s `percent` style. A `percent` with `fractional: false` holds percentages, not fractions |
-| `bytes`, `bits` | The largest unit the value, rounded to the format's fraction digits, is at least one of (bytes up to petabytes, bits up to terabits), by `base` 1024 for bytes and 1000 for bits unless stated, with `Intl.NumberFormat`'s unit names |
-| `duration` | The value in `output`, or with `auto` (the default) in the largest unit the value, rounded to the format's fraction digits, is at least one of, nanoseconds up to years, with `Intl.NumberFormat`'s unit names. Zero stays in its input unit, and zero picoseconds prints in nanoseconds. A month is 30 days and a year 365 |
-| `date` | `Intl.DateTimeFormat` with the format's styles or fields, in the format's `timeZone` or the chart's. With neither styles nor fields, a medium date and time. Cells are epoch milliseconds or ISO 8601 date-times with a UTC offset |
-| `text` | The value as a string |
+| `kind`          | How                                                                                                                                                                                                                                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `number`        | `Intl.NumberFormat` with the format's fraction digits, `signDisplay`, `useGrouping` and `notation`                                                                                                                                                                                                                          |
+| `percent`       | `Intl.NumberFormat`'s `percent` style. A `percent` with `fractional: false` holds percentages, not fractions                                                                                                                                                                                                                |
+| `bytes`, `bits` | The largest unit the value, rounded to the format's fraction digits, is at least one of (bytes up to petabytes, bits up to terabits), by `base` 1024 for bytes and 1000 for bits unless stated, with `Intl.NumberFormat`'s unit names                                                                                       |
+| `duration`      | The value in `output`, or with `auto` (the default) in the largest unit the value, rounded to the format's fraction digits, is at least one of, nanoseconds up to years, with `Intl.NumberFormat`'s unit names. Zero stays in its input unit, and zero picoseconds prints in nanoseconds. A month is 30 days and a year 365 |
+| `date`          | `Intl.DateTimeFormat` with the format's styles or fields, in the format's `timeZone` or the chart's. With neither styles nor fields, a medium date and time. Cells are epoch milliseconds or ISO 8601 date-times with a UTC offset                                                                                          |
+| `text`          | The value as a string                                                                                                                                                                                                                                                                                                       |
 
 A missing value, an empty string and a value that is not a number in a numeric format print the node's [`data.missing`](core.md#data) text, by default `(null)`, `(blank)` and `NaN`. A multivalue cell becomes a JSON array of its formatted values, such as `["1,000","2,000"]`. A `suffix` is appended to the whole result, but not to a missing or empty value's text. Zero never prints as `-0` unless the format's `signDisplay` is `always`.
 
@@ -30,4 +30,4 @@ Unsupported or invalid locale tags fall back to English, independent of the host
 
 ## Time zones and environments
 
-Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A Scene resolved on a server carries a vertical chart's time-axis labels in [`timeTicks`](scene.md#time-axes), so an engine that draws them needs no time-zone support. An engine that labels ticks itself still does: the Elastic Charts engine labels its multi-layer time axis with `Intl.DateTimeFormat` in the axis's `timeZone`, and every engine labels a horizontal chart's time axis with `formatAxisValue`.
+Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server, except its time-axis labels: an engine labels the ticks it chooses where it runs, with `formatAxisValue` or, on a time axis with `twoRows`, as Lens does, so a time axis needs time-zone support there too.

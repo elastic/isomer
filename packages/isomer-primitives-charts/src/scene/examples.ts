@@ -147,6 +147,7 @@ export const xyTimeSeriesScene: XyScene = {
       showTicks: true,
       showGrid: true,
       labelRotation: 0,
+      twoRows: true,
     },
     y: {
       id: 'y',

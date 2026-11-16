@@ -8,9 +8,10 @@
 // An xy Scene as Kibana's xy visualization draws it
 // (`expression_xy/public/components/xy_chart.tsx` and `helpers/data_layers.tsx`):
 // one Elastic Charts `Chart` with a series per Scene series and an axis per
-// Scene axis. Colors, text, draw order and time-axis ticks are the Scene's;
-// Elastic Charts computes other ticks, domains, stacks and point density from
-// its intent, and labels those ticks through `formatAxisValue`.
+// Scene axis. Colors, text and draw order are the Scene's; Elastic Charts
+// computes ticks, domains, stacks and point density from its intent, and labels
+// ticks through `formatAxisValue`, except a `twoRows` time axis, which it labels
+// as Lens's.
 
 import type { ReactNode } from 'react';
 import {
@@ -197,15 +198,13 @@ const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
     },
   };
   if (axis.id === 'x') {
-    // A Scene time axis is Elastic Charts' multi-layer one (its default
-    // `timeAxisLayerCount: 2`), with only tick visibility styled, as Lens's
-    // `xAxisStyle` styles it (`expression_xy/public/components/xy_chart.tsx`):
-    // Elastic Charts picks the same rasters the resolver did and labels them itself.
+    // A `twoRows` axis is Elastic Charts' multi-layer time axis, which picks
+    // and labels its own ticks, as Lens's (`expression_xy/public/components/xy_chart.tsx`).
     return (
       <Axis
         key={axis.id}
         {...shared}
-        {...(axis.timeTicks ? {} : { timeAxisLayerCount: 0 })}
+        {...(axis.twoRows ? {} : { timeAxisLayerCount: 0 })}
       />
     );
   }

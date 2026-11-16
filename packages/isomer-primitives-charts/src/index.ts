@@ -31,7 +31,6 @@ export {
 export { formatAxisValue } from './scene/format_axis';
 export { type ChartNode, resolveChart } from './scene/resolve';
 export { selectSceneRenderer } from './scene/select';
-export { timeTicksAt } from './scene/time_axis';
 export {
   type AxisId,
   type ColorScheme,
@@ -74,10 +73,6 @@ export {
   type SceneSize,
   type SceneSource,
   type SceneTable,
-  type SceneTimeBand,
-  type SceneTimeLayer,
-  type SceneTimeTick,
-  type SceneTimeTicks,
   type SceneTooltip,
   type SceneTooltipEntry,
   type TableAlignment,

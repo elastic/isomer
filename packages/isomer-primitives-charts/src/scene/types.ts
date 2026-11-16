@@ -266,7 +266,7 @@ export type SceneDomain =
     }
   | { readonly kind: 'custom'; readonly min: number; readonly max: number };
 
-/** One axis of an xy Scene, stated as intent: the engine chooses its ticks from `format` and `domain`, except a time axis's `timeTicks`. */
+/** One axis of an xy Scene, stated as intent: the engine chooses its ticks from `format` and `domain`. */
 export interface SceneAxis {
   readonly id: AxisId;
   readonly position: 'top' | 'bottom' | 'left' | 'right';
@@ -282,60 +282,14 @@ export interface SceneAxis {
   readonly title?: string;
   readonly showTicks: boolean;
   readonly showGrid: boolean;
-  /** Tick label rotation in degrees; 0 on an axis with `timeTicks`. */
+  /** Tick label rotation in degrees; 0 on an axis with `twoRows`. */
   readonly labelRotation: 0 | -45 | -90;
   /**
-   * On a vertical chart's time x axis, the two-row axis Lens draws: the ticks
-   * and labels at every plot width. A renderer draws these rather than
-   * choosing ticks. Absent where the resolver cannot state one, and the engine
-   * labels its own ticks through `formatAxisValue`.
+   * On a vertical chart's time x axis, draw Lens's two-row time axis, whose
+   * ticks and labels the engine chooses. Absent where Elastic Charts' rasters
+   * cannot label the axis ([Scene](../../docs/scene.md)).
    */
-  readonly timeTicks?: SceneTimeTicks;
-}
-
-/** One tick of a {@link SceneTimeLayer}. */
-export interface SceneTimeTick {
-  /** Where the tick's interval starts, in epoch milliseconds. One before the domain draws at the domain's start. */
-  readonly at: number;
-  /** Empty on an unlabeled layer. */
-  readonly label: string;
-}
-
-/** One raster of a time axis: ticks at one interval, such as every hour or every day. */
-export interface SceneTimeLayer {
-  /**
-   * The label row: 0 holds the minor labels, beside the plot, such as `14:00`;
-   * 1 the major labels below them, such as `November 3, 2026`. -1 is an
-   * unlabeled raster finer than both.
-   */
-  readonly row: -1 | 0 | 1;
-  readonly labeled: boolean;
-  /** Draws a grid line at each tick, where the axis shows a grid. */
-  readonly grid: boolean;
-  /** In time order. */
-  readonly ticks: readonly SceneTimeTick[];
-}
-
-/** What a time axis draws from one plot width up to the next band's `from`. */
-export interface SceneTimeBand {
-  /** The narrowest plot width, in CSS pixels, the band is drawn at. */
-  readonly from: number;
-  /** Finest first. */
-  readonly layers: readonly SceneTimeLayer[];
-}
-
-/**
- * A time axis's ticks for every plot width, as Elastic Charts' multi-layer time
- * axis picks them from the domain, bucket, time zone and locale. A renderer
- * draws the band for its plot width (`timeTicksAt`).
- */
-export interface SceneTimeTicks {
-  /** In epoch milliseconds; `max` runs one bucket past the last x where bars fill buckets. */
-  readonly domain: { readonly min: number; readonly max: number };
-  /** The bucket width, in milliseconds: the axis's `interval`, unless the marks' smallest x spacing is narrower. */
-  readonly interval: number;
-  /** By ascending `from`; the first is from 0. */
-  readonly bands: readonly SceneTimeBand[];
+  readonly twoRows?: true;
 }
 
 /** One drawn datum: a point, a bar or an area vertex. */

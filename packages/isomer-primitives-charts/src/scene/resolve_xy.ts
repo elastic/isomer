@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../coordinates';
+import { continuousScaleOf, coordinateOf } from '../coordinates';
 import { toEpoch } from '../format/date';
 import { DEFAULT_FORMATS } from '../format/format';
 import type { Cell } from '../schema/data';
@@ -26,7 +26,6 @@ import {
   toNumber,
 } from './common';
 import { categoricalColor, keyColor, resolveColor } from './theme';
-import { resolveTimeTicks } from './time_axis';
 import type {
   SceneAnnotation,
   SceneAxis,
@@ -46,9 +45,6 @@ type XScale = 'ordinal' | 'time' | 'linear';
 type Statistic = NonNullable<
   NonNullable<XyChartNode['legend']>['statistics']
 >[number];
-type XDomainConfig = NonNullable<
-  NonNullable<XyChartNode['axes']>['x']
->['domain'];
 
 // A gap past the largest double stops at it.
 const bounded = (value: number) =>
@@ -79,65 +75,34 @@ const bucketWidthOf = (
     : stated;
 };
 
+// Elastic Charts' coarsest time raster, of which an axis draws at most 50 (`MAX_TIME_TICK_COUNT`).
+const DECADE = 10 * 365.25 * 86_400_000;
+// Elastic Charts lets a bucket run this much wider than a raster's interval, so calendar decades fit.
+const WIDTH_FUDGE = 1.05;
+
 /**
- * A time x axis's ticks, from the domain and bucket Elastic Charts computes
- * from the drawn marks (`mergeXDomain`): the marks' extent or the custom
- * domain; their {@link bucketWidthOf}; and one bucket more where bars fill
- * buckets, as `xy.tsx` turns on histogram mode. Absent when no mark has a time,
- * when one x and no stated interval leave the bucket unknown, and when no
- * raster fits the span.
+ * Whether Elastic Charts' time rasters can label an axis over these ascending
+ * x times: its bucket is known and within a decade, and it spans no more than
+ * 50 decades, one bucket past the last x where bars fill buckets.
  */
-const timeTicksOf = (
-  series: readonly XySeries[],
-  statedInterval: number | undefined,
-  {
-    domain,
-    locale,
-    timeZone,
-    maxWidth,
-  }: {
-    domain: XDomainConfig;
-    locale: string;
-    timeZone: string;
-    maxWidth: number | undefined;
-  }
-): Pick<SceneAxis, 'timeTicks'> => {
-  const xs = [
-    ...new Set(
-      series.flatMap(({ marks }) =>
-        marks.flatMap(({ x }) =>
-          typeof x === 'number' && Number.isFinite(x) ? [x] : []
-        )
-      )
-    ),
-  ].sort((a, b) => a - b);
-  const interval = bucketWidthOf(xs, statedInterval);
-  if (xs.length === 0 || interval === undefined) {
-    return {};
+const rastersFit = (
+  xs: readonly number[],
+  stated: number | undefined,
+  domain: NonNullable<NonNullable<XyChartNode['axes']>['x']>['domain'],
+  fillsBuckets: boolean
+): boolean => {
+  const bucket = bucketWidthOf(xs, stated);
+  if (
+    xs.length === 0 ||
+    bucket === undefined ||
+    bucket / WIDTH_FUDGE > DECADE
+  ) {
+    return false;
   }
   const custom =
     domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
-  const min = custom?.min ?? xs[0]!;
-  const max = custom?.max ?? xs.at(-1)!;
-  // Rasters reach a decade or a bucket past the domain, which must stay a valid `Date`.
-  const reach = 2 * interval + 1e12;
-  if (min - reach < -MAX_EPOCH || max + reach > MAX_EPOCH) {
-    return {};
-  }
-  const bars = series.filter(({ mark }) => mark === 'bar');
-  const extend =
-    bars.length > 0 &&
-    bars.some(({ stack }) => stack !== undefined || bars.length <= 1);
-  const timeTicks = resolveTimeTicks({
-    min,
-    max,
-    interval,
-    extend,
-    locale,
-    timeZone,
-    ...(maxWidth === undefined ? {} : { maxWidth }),
-  });
-  return timeTicks ? { timeTicks } : {};
+  const max = (custom?.max ?? xs.at(-1)!) + (fillsBuckets ? bucket : 0);
+  return max - (custom?.min ?? xs[0]!) <= 50 * DECADE;
 };
 
 // Style for nodes that state none.
@@ -737,16 +702,17 @@ export const resolveXy = (
   };
 
   const xConfig = node.axes?.x;
-  const xTimeTicks =
-    xScale === 'time' && !horizontal
-      ? timeTicksOf(series, statedInterval, {
-          domain: xConfig?.domain,
-          locale: resolution.locale,
-          timeZone:
-            xFormat.kind === 'date' ? (xFormat.timeZone ?? timeZone) : timeZone,
-          maxWidth: options.size?.width,
-        })
-      : {};
+  // Bars fill buckets where the engine draws them in histogram mode: stacked, or the only bar series.
+  const bars = series.filter(({ mark }) => mark === 'bar');
+  const twoRows =
+    xScale === 'time' &&
+    !horizontal &&
+    rastersFit(
+      numericXs,
+      statedInterval,
+      xConfig?.domain,
+      bars.some(({ stack }) => stack !== undefined || bars.length <= 1)
+    );
   const xAxis: SceneAxis = {
     id: 'x',
     position: horizontal ? 'left' : 'bottom',
@@ -778,11 +744,11 @@ export const resolveXy = (
     ...(xConfig?.title === undefined ? {} : { title: xConfig.title }),
     showTicks: xConfig?.ticks ?? true,
     showGrid: xConfig?.grid ?? true,
-    // Lens's multi-layer time axis takes no `labelsOrientation`.
-    labelRotation: xTimeTicks.timeTicks
+    // Lens's two-row time axis takes no `labelsOrientation`.
+    labelRotation: twoRows
       ? 0
       : LABEL_ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
-    ...xTimeTicks,
+    ...(twoRows ? { twoRows: true as const } : {}),
   };
 
   const legendConfig = node.legend;

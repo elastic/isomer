@@ -48,6 +48,7 @@ import {
   partitionChartExamples,
   tagCloudExamples,
   xyChartExamples,
+  type XyChartNode,
 } from '@elastic/isomer-primitives-charts/schema';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -191,15 +192,11 @@ const debugStateIn = (container: HTMLElement): DebugState => {
   return JSON.parse(raw) as DebugState;
 };
 
-/** Every label the Scene gives a time tick at `value`, in any band. */
-const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
-  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
-    layers.flatMap(({ ticks }) =>
-      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
-    )
-  );
-
-/** Each drawn label is the category's label, a Scene time tick's, or the value through `formatAxisValue`. */
+/**
+ * Each drawn label is the category's label, or the value through
+ * `formatAxisValue`; a `twoRows` axis is Lens's two rows, which Elastic Charts
+ * labels itself, so not every label is `formatAxisValue`'s.
+ */
 const expectLabelsFromScene = (
   drawn: { labels: string[]; values: unknown[] } | undefined,
   axis: SceneAxis,
@@ -215,11 +212,16 @@ const expectLabelsFromScene = (
     (label, index) => [drawn!.values[index], label] as const
   );
   expect(shown.length).toBeGreaterThan(0);
+  if (axis.twoRows) {
+    expect(
+      shown.some(
+        ([value, label]) =>
+          label !== formatAxisValue(scene, axis, value as number)
+      )
+    ).toBe(true);
+    return;
+  }
   for (const [value, label] of shown) {
-    if (axis.timeTicks) {
-      expect(timeLabels(axis, value)).toContain(label);
-      continue;
-    }
     expect(label).toBe(
       categories.get(value) ?? formatAxisValue(scene, axis, value as number)
     );
@@ -256,6 +258,60 @@ describe('elastic-charts renderer: xy', () => {
     expectLabelsFromScene(state.axes?.y[0], scene.axes.y!, scene);
     expect(state.axes?.y[0]?.title).toBe(scene.axes.y?.title);
   });
+
+  const byTheMinute = xyChartExamples.find(
+    ({ name }) => name === 'Time axis by the minute'
+  )!.node;
+  const resolveXy = (node: XyChartNode) =>
+    resolveChart(node, { scheme: 'light', size: SIZE });
+
+  it('draws a time axis’s minor and major rows, as Lens does', async () => {
+    const { labels } = (await debugState(resolveXy(byTheMinute))).axes!.x[0]!;
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        '23:15',
+        '00:00',
+        'November 3, 2026',
+        'November 4, 2026',
+      ])
+    );
+  });
+
+  it.each([
+    [
+      'one x value and no interval',
+      {
+        ...byTheMinute,
+        axes: { x: { scale: 'temporal', labelOrientation: 'angled' } },
+        data: { ...byTheMinute.data, rows: byTheMinute.data.rows.slice(0, 1) },
+      },
+    ],
+    [
+      'six centuries',
+      {
+        ...byTheMinute,
+        axes: { x: { scale: 'temporal', labelOrientation: 'angled' } },
+        data: {
+          ...byTheMinute.data,
+          rows: [Date.UTC(1426, 0), Date.UTC(1427, 0), Date.UTC(2026, 0)].map(
+            (at) => [at, 1]
+          ),
+        },
+      },
+    ],
+  ] as const)(
+    'labels one row through `formatAxisValue` for %s',
+    async (_, node) => {
+      const scene = resolveXy(node);
+      expect(scene.axes.x.twoRows).toBeUndefined();
+      expect(scene.axes.x.labelRotation).toBe(-45);
+      expectLabelsFromScene(
+        (await debugState(scene)).axes?.x[0],
+        scene.axes.x,
+        scene
+      );
+    }
+  );
 
   it('draws legend items in the Scene’s order, names and colors', async () => {
     const state = await debugState(xyInteractiveScene);

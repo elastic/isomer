@@ -21,7 +21,6 @@ export {
 } from './examples';
 export { formatAxisValue } from './format_axis';
 export { selectSceneRenderer } from './select';
-export { timeTicksAt } from './time_axis';
 export {
   type AxisId,
   type ColorScheme,
@@ -64,10 +63,6 @@ export {
   type SceneSize,
   type SceneSource,
   type SceneTable,
-  type SceneTimeBand,
-  type SceneTimeLayer,
-  type SceneTimeTick,
-  type SceneTimeTicks,
   type SceneTooltip,
   type SceneTooltipEntry,
   type TableAlignment,
