@@ -669,6 +669,57 @@ describe('elastic-charts renderer: metric', () => {
     expect(shadow.querySelector('.echSecondaryMetric__tooltip')).toBeNull();
   });
 
+  it('keeps an open secondary tooltip and its focus when the host draws again', async () => {
+    const [tile] = metricSingleValueScene.tiles;
+    const sceneWith = (text: string): MetricScene => ({
+      ...metricSingleValueScene,
+      tiles: [
+        {
+          ...tile!,
+          secondary: {
+            text,
+            color: '#ff00ff',
+            label: 'last week',
+            labelPlacement: 'tooltip',
+          },
+        },
+      ],
+    });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const render = async (scene: MetricScene) => {
+      act(() => {
+        root.render(
+          renderer.render(scene, { environment: 'browser' }) as never
+        );
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    };
+    roots.push(() => {
+      act(() => root.unmount());
+      container.remove();
+    });
+    const trigger = () =>
+      container.querySelector<HTMLElement>('.echSecondaryMetric[tabindex="0"]');
+    const tooltip = () =>
+      document.querySelector('.echSecondaryMetric__tooltip')?.textContent;
+
+    await render(sceneWith('+5%'));
+    const first = trigger();
+    expect(first).not.toBeNull();
+    act(() => first!.focus());
+    expect(tooltip()).toBe('last week');
+
+    await render(sceneWith('+6%'));
+    expect(trigger()).toBe(first);
+    expect(first!.textContent).toContain('+6%');
+    expect(document.activeElement).toBe(first);
+    expect(tooltip()).toBe('last week');
+  });
+
   it('prints the Scene’s title and value', async () => {
     const container = await draw(metricSingleValueScene);
     const [tile] = metricSingleValueScene.tiles;
