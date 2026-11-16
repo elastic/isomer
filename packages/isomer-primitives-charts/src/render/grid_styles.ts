@@ -84,6 +84,7 @@ export const gridModule = createVarsModule(
     body: css`
       flex: 1;
       min-height: 0;
+      overflow: hidden;
     `,
     collapsed: css`
       display: none;

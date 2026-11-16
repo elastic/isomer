@@ -55,6 +55,8 @@ A `data` layer is `{ kind: 'data', mark: 'line' | 'area' | 'bar', stack?, x?, y:
 
 Reference lines sit at fixed values; annotations are points or ranges at fixed times. Both can carry a [glyph](core.md#glyphs) `icon`. Neither carries rows, so neither is ever selected.
 
+A chart whose data layers hold no y value, with no rows or with every y cell missing, says "No results found" in place of the plot; its reference lines and annotations are not drawn.
+
 A series key, for `colors.byKey` and `interactions.initial.hiddenSeries`, is the y column id without `splitBy`; with `splitBy` it is the split cell, which for a `date` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has `splitBy`. Series that share a key, such as two layers plotting one y column, share its `colors.byKey` entry and hidden state. The y column id and the split cell are each a key part. A key part is the value as a string with each `\` and `:` preceded by `\`; a missing (null) cell is the key part `\null`, and a multivalue cell is `\` followed by the key part of its JSON text, such as `\["a"]`; no string produces either.
 
 ## Example
@@ -190,3 +192,5 @@ On a vertical chart with a `temporal` x scale, the x axis draws as Lens's does: 
 | The zone and language | The x column format's `timeZone`, else `resolveChart`'s `timeZone`; and `resolveChart`'s `locale` | `dateFormat:tz`, resolved to an IANA zone (`Browser` becomes the viewer's zone), which Lens gives each series as `timeZone`; and `i18n.getLocale()`, which Lens gives `Settings.locale`                                                                                                                                                    |
 
 The x column's own date format does not change the axis labels, nor do `dateFormat:scaled` or `dateFormat:dow`: Elastic Charts labels a multi-layer axis with its own `Intl` formats, and Lens passes no `dow`, so weeks start on Monday. The column's format still prints table cells, tooltips and selections. `axes.x.labelOrientation` does not apply either: the labels draw level, as Lens passes its multi-layer axis no `labelsOrientation`.
+
+A chart with a single x value states `axes.x.interval`: without it nothing tells the bucket's width, so the Scene carries no time ticks and the axis labels in the x column's format, as it does when the domain spans more than about 500 years ([Time axes](scene.md#time-axes)).

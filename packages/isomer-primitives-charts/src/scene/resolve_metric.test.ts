@@ -494,3 +494,29 @@ describe('metric bounds and identity', () => {
     ).toHaveLength(2);
   });
 });
+
+describe('a metric with nothing to draw', () => {
+  const resolve = (rows: MetricNode['data']['rows']) => {
+    const node = buckets();
+    return resolveChart(
+      { ...node, data: { ...node.data, rows } },
+      { scheme: 'light' }
+    );
+  };
+
+  it('says so with no rows', () => {
+    const scene = resolve([]);
+    expect(scene.tiles).toEqual([]);
+    expect(scene.empty).toEqual({
+      reason: 'noResults',
+      text: 'No results found',
+    });
+  });
+
+  it('draws a tile for a row, whether or not its value is missing', () => {
+    expect(resolve([['a', 10]])).not.toHaveProperty('empty');
+    const missing = resolve([['a', null]]);
+    expect(missing).not.toHaveProperty('empty');
+    expect(missing.tiles).toHaveLength(1);
+  });
+});

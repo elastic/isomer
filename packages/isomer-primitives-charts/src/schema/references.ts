@@ -57,6 +57,10 @@ export const checkColumnReferences = (
     (data?.columns ?? []).map((column) => [column.id, column])
   );
   for (const { path, id, types, single, rule } of references) {
+    // A reference of the wrong shape is reported by its own field.
+    if (typeof id !== 'string') {
+      continue;
+    }
     const column = byId.get(id);
     if (!column) {
       context.addIssue({

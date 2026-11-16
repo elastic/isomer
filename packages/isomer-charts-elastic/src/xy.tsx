@@ -707,12 +707,15 @@ export const xyTheme = (scene: XyScene): PartialTheme => ({
     : {}),
 });
 
-/** An xy Scene's spec elements, for `<Chart>` or headless drawing. */
+/** An xy Scene's spec elements, for `<Chart>` or headless drawing; `null` when it is empty. */
 export const xySpecs = (
   scene: XyScene,
   env: SceneRenderEnv,
   options: ElasticChartsOptions
 ): ReactNode => {
+  if (scene.empty) {
+    return null;
+  }
   const offersLegend = offers(scene, env, 'legend');
   const continuous = SCALE[scene.axes.x.scale] !== ScaleType.Ordinal;
   const xDomain = xDomainOf(scene);
