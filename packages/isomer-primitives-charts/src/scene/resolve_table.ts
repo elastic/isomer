@@ -24,6 +24,7 @@ import type { PortableFormat } from '../schema/format';
 import {
   createResolution,
   describe,
+  fractionAlong,
   keyPart,
   type Resolution,
   type ResolveChartOptions,
@@ -50,13 +51,13 @@ import type {
 } from './types';
 
 /** Kibana's dash for a missing value in a table (`NULL_PLACEHOLDER`). */
-export const TABLE_MISSING_TEXT = '-';
+const TABLE_MISSING_TEXT = '-';
 
 /** Lens's empty table message (`charts.noDataLabel`). */
 export const TABLE_EMPTY_TEXT = 'No results found';
 
 /** Lens's summary labels (`getSummaryRowOptions`). */
-export const SUMMARY_LABELS: Readonly<Record<DataTableSummary, string>> = {
+const SUMMARY_LABELS: Readonly<Record<DataTableSummary, string>> = {
   count: 'Value count',
   sum: 'Sum',
   avg: 'Average',
@@ -398,7 +399,7 @@ export const resolveTable = (
       }
       const [min, max] = domain;
       const clamp = (value: number) => Math.min(max, Math.max(min, value));
-      const at = (value: number) => (clamp(value) - min) / (max - min);
+      const at = (value: number) => fractionAlong(min, max, clamp(value));
       const baseline = decoration.baseline ?? 0;
       return {
         ...base,

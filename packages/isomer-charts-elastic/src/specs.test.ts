@@ -40,6 +40,15 @@ const specProps = (scene: XyScene, id: string): Record<string, unknown> => {
   return props!;
 };
 
+/** The `theme` an xy Scene passes `Settings`. */
+const settingsTheme = (scene: XyScene): Record<string, unknown> => {
+  const settings = specElements(
+    sceneSpecs(scene, { environment: 'browser' })
+  ).find((element) => 'baseTheme' in element);
+  expect(settings).toBeDefined();
+  return settings!.theme as Record<string, unknown>;
+};
+
 describe('sceneSpecs', () => {
   it('draws xy layers in the Scene order, each kind keeping its own index', () => {
     const [first, second, third] = seriesOf(xyInteractiveScene);
@@ -259,6 +268,54 @@ describe('sceneSpecs', () => {
       'twenty',
       'thirty',
     ]);
+  });
+
+  // Expectations are Kibana's, from `expression_xy/public/components`:
+  // `displayValueSettings` in `data_layers.tsx`, `getValueLabelsStyling` in `xy_chart.tsx`.
+  it.each([
+    {
+      orientation: 'vertical' as const,
+      alignment: { horizontal: 'center' },
+      offsetX: 0,
+      offsetY: -10,
+    },
+    {
+      orientation: 'horizontal' as const,
+      alignment: { vertical: 'middle' },
+      offsetX: 10,
+      offsetY: 0,
+    },
+  ])(
+    'places bar value labels as Kibana does on a $orientation chart',
+    ({ orientation, ...placement }) => {
+      const scene: XyScene = {
+        ...xyInteractiveScene,
+        orientation,
+        layers: xyInteractiveScene.layers.map((layer) =>
+          layer.kind === 'series'
+            ? { ...layer, series: { ...layer.series, valueLabels: true } }
+            : layer
+        ),
+      };
+      expect(seriesOf(scene)[0]!.mark).toBe('bar');
+      expect(specProps(scene, 'series-0').displayValueSettings).toMatchObject({
+        showValueLabel: true,
+        isAlternatingValueLabel: false,
+        overflowConstraints: ['chartEdges', 'barGeometry'],
+      });
+      expect(settingsTheme(scene).barSeriesStyle).toEqual({
+        displayValue: {
+          fontSize: { min: 10, max: 12 },
+          fill: { textBorder: 0 },
+          ...placement,
+        },
+      });
+    }
+  );
+
+  it('leaves the bar display-value style to the base theme without value labels', () => {
+    expect(seriesOf(xyInteractiveScene).some((s) => s.valueLabels)).toBe(false);
+    expect(settingsTheme(xyInteractiveScene).barSeriesStyle).toBe(undefined);
   });
 
   it.each([

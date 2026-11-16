@@ -9,13 +9,18 @@ Every chart primitive's `react` renderer is a shim. It resolves the node to a [S
 
 ```ts
 import {
+  type ReactSceneRenderer,
   chartsPack,
   createChartsPack,
 } from '@elastic/isomer-primitives-charts';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
 
 createIsomerRuntime({ packs: [chartsPack] });
 
-const imagePack = createChartsPack({ sceneRenderers: [elasticChartsNode] });
+// A host's own renderer that draws on Node; the pack ships none.
+declare const hostImageRenderer: ReactSceneRenderer;
+
+const imagePack = createChartsPack({ sceneRenderers: [hostImageRenderer] });
 ```
 
 `chartsPack` registers `metric`, `legacyMetric`, `xyChart`, `dataTable`, `partitionChart`, `heatmap`, `gauge`, `tagCloud`, `grid` and `unsupported` with their defaults: charts resolve with [`resolveChart`](scene.md#resolvechart) and draw with the pack's fallback, the Scene's summary sentence, until a host registers an engine. `createChartsPack` takes the pack's renderer preferences, and a `resolveScene` in place of `resolveChart`, with the same signature: `(node, { scheme, size?, locale?, timeZone? }) => Scene`.
@@ -65,11 +70,11 @@ A host that loads the charts pack without a style adapter names the runtime's ty
 
 When the context carries `onEvent`, the shim passes the renderer an `onEvent` that wraps each `ChartEvent` with `toActionEvent`. Without it the renderer gets none and the chart is not interactive.
 
-The shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors), and draws the Scene's `link` below the chart in the Scene's text and background colors, on one line `CHARTS_THEME.chart.linkHeight` pixels tall that clips a longer label, so every renderer gets it without drawing it. A host or grid panel `size` holds that line: the chart resolves for the height left above it.
+The shim puts the renderer's output in one `div` that carries the [node anchor](../sdk/rendering.md#node-anchors), and draws the Scene's `link` below the chart in the Scene's text and background colors, on one line 18 px tall that clips a longer label, so every renderer gets it without drawing it. A host or grid panel `size` holds that line: the chart resolves for the height left above it.
 
 ## Chart size
 
-A chart in a grid panel draws in the box the panel leaves it, and a host can pass any chart a `size`. Without either, a chart takes its kind's size spec, as Lens's chart size specs do. Every length comes from `CHARTS_THEME.chart`:
+A chart in a grid panel draws in the box the panel leaves it, and a host can pass any chart a `size`. Without either, a chart takes its kind's size spec, as Lens's chart size specs do. Every length is the pack theme's:
 
 | Kind                                  | Spec                                                                                                                                                                                                   |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -84,7 +89,7 @@ A chart in a grid panel draws in the box the panel leaves it, and a host can pas
 | `legacyMetric`                        | 16:9, at least as tall as its tiles' estimated boxes wrapped into rows at the chart's width. Lens fills its container instead, as for an `xyChart`                                                     |
 | `dataTable`                           | None: the table is its rows tall                                                                                                                                                                       |
 
-In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at `CHARTS_THEME.chart.width` (480 px), and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` and `legacyMetric` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
+In a browser, a `fluid` renderer's `div` takes the spec as CSS (`width: 100%`, `aspect-ratio`, `min-height`, `max-width`, from the `chartsScene-sized` class), and the renderer fills it; any other renderer, such as the summary fallback, sizes itself. On Node there is no container to fill, and a `sized` renderer draws a fixed-size picture wherever it runs, so in either case the chart resolves for the spec's box at the pack theme's chart width, 480 px, and `metric`, `xyChart`, `partitionChart`, `heatmap`, `gauge`, `tagCloud` and `legacyMetric` report that box's height, plus the link line when there is a link, to `snapshot` frames as `metrics.snapshotHeight`. A `sized` renderer gets a `dataTable` at that width and its rows' height.
 
 ## Styling
 
@@ -131,7 +136,7 @@ Two gates hold the pack to its Scenes over every example, nested in a `grid` or 
 
 - `drawExamples(renderers, environment?)` draws every example of the pack with `renderers` first, in both schemes, through the `react` surface, nested charts included, and returns each drawing (`DrawnScene`: the example, scheme, Scene and markup), every Scene the pack resolved, and the examples.
 - `coverageProblems(drawn, supports)` lists every Scene of a kind the renderer supports that an example did not draw, and every supported kind with no content check.
-- `drawingProblems(drawing, reading)` lists where a drawing differs from its Scene: its box, accessible name and description (`sceneDescription`), background, and what its kind draws: an xy chart's axis titles and series colors; a metric's tile titles, subtitles, values and secondary text; a partition's slice colors, legend items and values, no word that is none of its slices' or legend's, or an empty chart's note alone; a heatmap's axis titles, cell colors and legend bands, or an empty chart's note alone. Text may be cut with an ellipsis (`textDrawn`).
+- `drawingProblems(drawing, reading)` lists where a drawing differs from its Scene: its box, accessible name and description (`sceneDescription`), background, and what its kind draws: an xy chart's axis titles and series colors; a metric's tile titles, subtitles, values and secondary text; a partition's slice colors, legend items and values, no word that is none of its slices' or legend's, or an empty chart's note alone; a heatmap's axis titles, cell colors and legend bands, or an empty chart's note alone. A string is drawn (`textDrawn`) when it is one whole entry of the reading's `texts`, or consecutive entries that are its lines, whitespace apart; text that does not fit may be its start and an ellipsis. A string inside a longer entry is not drawn, so read each run of text as its own entry. A partition's words follow the same rule: they divide into words of its slices' and legend items' text, each whole, cut with an ellipsis, or broken across consecutive words. Colors compare by their red, green and blue channels (`rgbOf`), read from exactly these notations: `#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`, `rgb(r, g, b)` or `rgba(r, g, b, a)` with commas, and `rgb(r g b)` or `rgb(r g b / a)` with spaces, each channel a number from 0 to 255. Alpha is not compared. Any other paint matches no color and no other paint: `none`, `currentColor`, a percentage channel, which no renderer here emits, or anything malformed.
 
 Each engine reads its own output into a `DrawingReading` (its size, name, description, background, the strings drawn and the colors painted), with `unescapeMarkup` and `rgbOf` to help. Read what the markup draws wherever it can: an engine that draws into bitmaps can only report what its engine says it drew, which is weaker evidence than text and paint in the markup. Ticks are each engine's to choose, so these checks leave them to the engine's own.
 
@@ -139,9 +144,9 @@ Each engine reads its own output into a `DrawingReading` (its size, name, descri
 
 ## `grid`
 
-A `grid` draws its panels on 48 columns with CSS grid, one row unit `CHARTS_THEME.grid.rowHeight` pixels tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below, clipped to what the panel leaves it. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
+A `grid` draws its panels on 48 columns with CSS grid, one row unit 20 px tall. A grid's or panel's title and description are its header, each one line of text, and the node draws below, clipped to what the panel leaves it. Panels are in [reading order](grid.md) in the markup, so a screen reader and the one-column layout read them alike.
 
-When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` from the host, the grid keeps 48 columns and sizes each panel's node for `CHARTS_THEME.grid.nominalWidth`, the content width of `chartsFrame`, 928 px, so a chart still fits its panel's height and a grid on `snapshot` fits its page; a browser lays the grid out fluidly, so the renderer of such a node is told `fillWidth`, and the pack's table and legacy metric fill their panel's width instead of drawing at the nominal one. A host that wants one column on a narrow screen measures the grid and passes its `size`, which every panel's node draws at exactly. A grid nested in a panel of such a grid keeps 48 columns too: only a width that comes from the host switches a grid to one column.
+When the context carries a `size` narrower than 768 px, the grid draws one column in reading order instead. Each panel's node gets a context with the `size` its panel leaves it, and draws at that size. Without a `size` from the host, the grid keeps 48 columns and sizes each panel's node for the grid's nominal width, the content width of `chartsFrame`, 928 px, so a chart still fits its panel's height and a grid on `snapshot` fits its page; a browser lays the grid out fluidly, so the renderer of such a node is told `fillWidth`, and the pack's table and legacy metric fill their panel's width instead of drawing at the nominal one. A host that wants one column on a narrow screen measures the grid and passes its `size`, which every panel's node draws at exactly. A grid nested in a panel of such a grid keeps 48 columns too: only a width that comes from the host switches a grid to one column.
 
 On `snapshot`, each nested node receives the frame theme, so charts inside a grid draw the frame's scheme. `metrics.snapshotHeight` sums the grid's header, the rows, section headers and gaps at full width. Text, Markdown and Slack list the panels in reading order under their section titles; a collapsed section is its title alone. On `react`, each panel of a collapsed section is a hidden, empty element carrying its node anchor, so anchors pair with the grid's `children`, which keep every panel for validation.
 
@@ -163,7 +168,7 @@ runtime.surfaces.snapshot.render(composition, {
 });
 ```
 
-The page is 960 px wide with 16 px of padding, so its content is 928 px, the grid's nominal width. It draws the composition's title and subtitle, one line each at 20 px and 14 px, then each body node, in a column with 16 px between each. Its sizing is `content`: the image is as tall as the page lays out, and `estimateHeight` is the padding, the title and subtitle lines, each node's `metrics.snapshotHeight` and the gaps between them. Every length is in `CHARTS_THEME.frame`.
+The page is 960 px wide with 16 px of padding, so its content is 928 px, the grid's nominal width. It draws the composition's title and subtitle, one line each at 20 px and 14 px, then each body node, in a column with 16 px between each. Its sizing is `content`: the image is as tall as the page lays out, and `estimateHeight` is the padding, the title and subtitle lines, each node's `metrics.snapshotHeight` and the gaps between them. Every length is the pack theme's.
 
 Its theme, `ChartsFrameTheme`, is `{ scheme, background, text }` per mode: the scheme charts resolve for, and the page's background and text colors from the Scene's chrome for that scheme. [A runtime's frames share one theme type](../runtime/frame.md#a-runtime-is-homogeneous-in-its-theme), so a runtime that registers `chartsFrame` beside another frame gives that frame's theme these keys too.
 
