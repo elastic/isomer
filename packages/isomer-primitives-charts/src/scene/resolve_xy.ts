@@ -77,24 +77,32 @@ const bucketWidthOf = (
 
 // Elastic Charts' coarsest time raster, of which an axis draws at most 50 (`MAX_TIME_TICK_COUNT`).
 const DECADE = 10 * 365.25 * 86_400_000;
+// Elastic Charts lets a bucket run this much wider than a raster's interval, so calendar decades fit.
+const WIDTH_FUDGE = 1.05;
 
 /**
  * Whether Elastic Charts' time rasters can label an axis over these ascending
- * x times: its bucket is known and no wider than a decade, and it spans no more
- * than 50 decades.
+ * x times: its bucket is known and within a decade, and it spans no more than
+ * 50 decades, one bucket past the last x where bars fill buckets.
  */
 const rastersFit = (
   xs: readonly number[],
   stated: number | undefined,
-  domain: NonNullable<NonNullable<XyChartNode['axes']>['x']>['domain']
+  domain: NonNullable<NonNullable<XyChartNode['axes']>['x']>['domain'],
+  fillsBuckets: boolean
 ): boolean => {
   const bucket = bucketWidthOf(xs, stated);
-  if (xs.length === 0 || bucket === undefined || bucket > DECADE) {
+  if (
+    xs.length === 0 ||
+    bucket === undefined ||
+    bucket / WIDTH_FUDGE > DECADE
+  ) {
     return false;
   }
   const custom =
     domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
-  return (custom?.max ?? xs.at(-1)!) - (custom?.min ?? xs[0]!) <= 50 * DECADE;
+  const max = (custom?.max ?? xs.at(-1)!) + (fillsBuckets ? bucket : 0);
+  return max - (custom?.min ?? xs[0]!) <= 50 * DECADE;
 };
 
 // Style for nodes that state none.
@@ -694,10 +702,17 @@ export const resolveXy = (
   };
 
   const xConfig = node.axes?.x;
+  // Bars fill buckets where the engine draws them in histogram mode: stacked, or the only bar series.
+  const bars = series.filter(({ mark }) => mark === 'bar');
   const twoRows =
     xScale === 'time' &&
     !horizontal &&
-    rastersFit(numericXs, statedInterval, xConfig?.domain);
+    rastersFit(
+      numericXs,
+      statedInterval,
+      xConfig?.domain,
+      bars.some(({ stack }) => stack !== undefined || bars.length <= 1)
+    );
   const xAxis: SceneAxis = {
     id: 'x',
     position: horizontal ? 'left' : 'bottom',

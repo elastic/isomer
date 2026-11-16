@@ -404,11 +404,13 @@ describe('xy time axis rows', () => {
   const xAxisOf = (
     times: readonly number[],
     orientation: 'vertical' | 'horizontal',
-    x: NonNullable<XyChartNode['axes']>['x'] = {}
+    x: NonNullable<XyChartNode['axes']>['x'] = {},
+    mark: 'line' | 'bar' = 'line'
   ) =>
     resolve(
       xy({
         orientation,
+        layers: [{ kind: 'data', mark, x: 'x', y: [{ column: 'y' }] }],
         data: {
           columns: [
             { id: 'x', label: 'X', type: 'number', role: 'dimension' },
@@ -430,6 +432,11 @@ describe('xy time axis rows', () => {
       'yearly marks under a decade bucket',
       [at, at + YEAR],
       { interval: 10 * YEAR },
+    ],
+    [
+      'a calendar decade, a day longer than ten Julian years',
+      [2000, 2010].map((year) => Date.UTC(year, 0)),
+      {},
     ],
   ] as const)(
     'draws a vertical chart’s time axis on two rows, level whatever `labelOrientation` states, for %s',
@@ -460,6 +467,13 @@ describe('xy time axis rows', () => {
       expect(axis.labelRotation).toBe(-45);
     }
   );
+
+  it('counts the bucket a single bar series fills past its last x toward the span', () => {
+    const start = at - 500 * YEAR + YEAR / 2;
+    const times = [start, start + YEAR, at];
+    expect(xAxisOf(times, 'vertical', {}, 'line').twoRows).toBe(true);
+    expect(xAxisOf(times, 'vertical', {}, 'bar').twoRows).toBeUndefined();
+  });
 
   it('keeps one row and `labelOrientation` on a vertical chart’s linear x axis', () => {
     const axis = xAxisOf([0, 1, 2], 'vertical', { scale: 'linear' });

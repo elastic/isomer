@@ -287,8 +287,7 @@ export interface SceneAxis {
   /**
    * On a vertical chart's time x axis, draw Lens's two-row time axis, whose
    * ticks and labels the engine chooses. Absent where Elastic Charts' rasters
-   * cannot label the axis: a single x with no stated interval, a bucket wider
-   * than a decade, or a span past 50 decades.
+   * cannot label the axis ([Scene](../../docs/scene.md)).
    */
   readonly twoRows?: true;
 }
