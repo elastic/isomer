@@ -15,6 +15,7 @@ import {
   cellKey,
   createResolution,
   describe,
+  fractionAlong,
   keyPart,
   type ResolveChartOptions,
   resolveInteractions,
@@ -127,11 +128,7 @@ export const resolveMetric = (
       } else if (breakdownId === undefined) {
         position = value === 0 ? Number.NaN : 50;
       } else {
-        const span = highest - lowest;
-        position = Number.isFinite(span)
-          ? ((value - lowest) / span) * 100
-          : // Halves keep a span across the largest doubles finite.
-            ((value / 2 - lowest / 2) / (highest / 2 - lowest / 2)) * 100;
+        position = fractionAlong(lowest, highest, value) * 100;
       }
       // An empty range reads as its bottom.
       if (!Number.isFinite(position)) {
