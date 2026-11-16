@@ -22,7 +22,7 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `formats` | any number | Formats the host ships beyond the runtime's own, reported by `getCapabilities`: a rasterizer's list, such as a takumi backend's `formats`. |
 | `views` | any number | Views pre-registered on the runtime's view registry. |
 | `rendererOverrides` | per type, per surface | One renderer replaced without forking a pack. |
-| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to one Distillate adapter over the packs' distilleries, or else the one pack adapter; required to choose when a pack adapter sits beside another pack's adapter or distillery, and when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
+| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to one Distillate adapter over the packs' distilleries, or else the one pack adapter; required to choose when a pack adapter sits beside another pack's adapter or distillery, and when any pack declares `collectStyles` and no pack `styleAdapter` serves it, since the Distillate adapter never runs the hook. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring schema and declarations `getAuthoringContext` returns: the SDK's `AuthoringJsonSchemaOptions` plus `jsx`. |
 | `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the packs' budget: per limit, the largest any pack declares, never below the SDK's default. Each limit set here replaces that limit alone; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
@@ -31,7 +31,7 @@ A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each
 
 `styleAdapter` is the runtime's only CSS seam, and a host normally omits it. Packs declare their Distillate distillery, and one adapter styles every pack through them all; a pack styled without Distillate ships its own adapter instead, which runs only when it is the one source. `styleAdapter` replaces them all, which is how a host styles every pack with one engine or supplies a no-op for CSS it does not want; see [Surfaces](surfaces.md).
 
-A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
+A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws, as does one the packs' distilleries would style, since the Distillate adapter never runs the hook — the silent drop is the likelier footgun.
 
 A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the adapter that styles it. Omitting the tag on either side opts out.
 

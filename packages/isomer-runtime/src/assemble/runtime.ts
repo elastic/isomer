@@ -115,8 +115,8 @@ export interface IsomerRuntimeOptions<
    * when a CSS-bearing pack should emit no CSS.
    *
    * Required when a pack `styleAdapter` sits beside another pack's adapter or
-   * distillery, and when any pack declares `collectStyles` and no pack (or this
-   * option) supplies an adapter.
+   * distillery, and when any pack declares `collectStyles` and no pack
+   * `styleAdapter` serves it: the Distillate adapter never runs the hook.
    */
   styleAdapter?: HTMLStyleAdapter<
     PrimitiveNode,
