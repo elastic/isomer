@@ -282,8 +282,15 @@ export interface SceneAxis {
   readonly title?: string;
   readonly showTicks: boolean;
   readonly showGrid: boolean;
-  /** Tick label rotation in degrees; 0 on a vertical chart's time x axis, which draws as Lens's two rows. */
+  /** Tick label rotation in degrees; 0 on an axis with `twoRows`. */
   readonly labelRotation: 0 | -45 | -90;
+  /**
+   * On a vertical chart's time x axis, draw Lens's two-row time axis, whose
+   * ticks and labels the engine chooses. Absent where Elastic Charts' rasters
+   * cannot label the axis: a single x with no stated interval, a bucket wider
+   * than a decade, or a span past 50 decades.
+   */
+  readonly twoRows?: true;
 }
 
 /** One drawn datum: a point, a bar or an area vertex. */

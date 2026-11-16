@@ -30,4 +30,4 @@ Unsupported or invalid locale tags fall back to English, independent of the host
 
 ## Time zones and environments
 
-Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server, except its time-axis labels: an engine labels the ticks it chooses where it runs, with `formatAxisValue` or, on a vertical chart's two-row time axis, as Lens does, so a time axis needs time-zone support there too.
+Formatting needs `Intl.NumberFormat` and `Intl.DateTimeFormat` with time-zone support, as browsers and Node.js have. An unknown time zone throws a `RangeError` rather than formatting in another zone. A client whose `Intl` lacks time zones renders a Scene resolved on a server, except its time-axis labels: an engine labels the ticks it chooses where it runs, with `formatAxisValue` or, on a time axis with `twoRows`, as Lens does, so a time axis needs time-zone support there too.

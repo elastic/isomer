@@ -75,6 +75,28 @@ const bucketWidthOf = (
     : stated;
 };
 
+// Elastic Charts' coarsest time raster, of which an axis draws at most 50 (`MAX_TIME_TICK_COUNT`).
+const DECADE = 10 * 365.25 * 86_400_000;
+
+/**
+ * Whether Elastic Charts' time rasters can label an axis over these ascending
+ * x times: its bucket is known and no wider than a decade, and it spans no more
+ * than 50 decades.
+ */
+const rastersFit = (
+  xs: readonly number[],
+  stated: number | undefined,
+  domain: NonNullable<NonNullable<XyChartNode['axes']>['x']>['domain']
+): boolean => {
+  const bucket = bucketWidthOf(xs, stated);
+  if (xs.length === 0 || bucket === undefined || bucket > DECADE) {
+    return false;
+  }
+  const custom =
+    domain?.kind === 'custom' && domain.min <= domain.max ? domain : undefined;
+  return (custom?.max ?? xs.at(-1)!) - (custom?.min ?? xs[0]!) <= 50 * DECADE;
+};
+
 // Style for nodes that state none.
 const DEFAULTS = {
   areaOpacity: 0.3,
@@ -672,6 +694,10 @@ export const resolveXy = (
   };
 
   const xConfig = node.axes?.x;
+  const twoRows =
+    xScale === 'time' &&
+    !horizontal &&
+    rastersFit(numericXs, statedInterval, xConfig?.domain);
   const xAxis: SceneAxis = {
     id: 'x',
     position: horizontal ? 'left' : 'bottom',
@@ -704,10 +730,10 @@ export const resolveXy = (
     showTicks: xConfig?.ticks ?? true,
     showGrid: xConfig?.grid ?? true,
     // Lens's two-row time axis takes no `labelsOrientation`.
-    labelRotation:
-      xScale === 'time' && !horizontal
-        ? 0
-        : LABEL_ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+    labelRotation: twoRows
+      ? 0
+      : LABEL_ROTATION[xConfig?.labelOrientation ?? 'horizontal'],
+    ...(twoRows ? { twoRows: true as const } : {}),
   };
 
   const legendConfig = node.legend;

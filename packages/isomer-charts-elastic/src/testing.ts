@@ -22,7 +22,6 @@ import {
 
 import { seriesOf } from './events';
 import { slicesOf } from './partition';
-import { isTwoRowTimeAxis } from './xy';
 
 /** A drawn tick's expected label: its category's label, or the value through `formatAxisValue`. */
 const sceneLabel = (scene: XyScene, axis: SceneAxis, value: unknown) =>
@@ -55,7 +54,7 @@ const xyProblems = (scene: XyScene, state: DebugState): string[] => {
       problems.push(`axis "${id}" is drawn but is none of the Scene's`);
       continue;
     }
-    if (isTwoRowTimeAxis(axis)) {
+    if (axis.twoRows) {
       continue;
     }
     labels.forEach((label, index) => {
@@ -276,8 +275,8 @@ const gaugeProblems = (scene: GaugeScene, state: DebugState): string[] => {
  * chart's tick labels, series and legend items, a partition's slices, a heat
  * map's cells, positions and bands, a gauge's bullet. A metric or tag cloud
  * has no `DebugState` in Elastic Charts, so it is checked by its text alone.
- * A vertical chart's time axis is labeled by Elastic Charts, so its labels are
- * not checked.
+ * A `twoRows` time axis is labeled by Elastic Charts, so its labels are not
+ * checked.
  */
 export const debugStateProblems = (
   scene: Scene,

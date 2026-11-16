@@ -10,8 +10,8 @@
 // one Elastic Charts `Chart` with a series per Scene series and an axis per
 // Scene axis. Colors, text and draw order are the Scene's; Elastic Charts
 // computes ticks, domains, stacks and point density from its intent, and labels
-// ticks through `formatAxisValue`, except a vertical chart's time axis, which it
-// labels as Lens's.
+// ticks through `formatAxisValue`, except a `twoRows` time axis, which it labels
+// as Lens's.
 
 import type { ReactNode } from 'react';
 import {
@@ -184,10 +184,6 @@ const yDomainOf = (axis: SceneAxis, scene: XyScene) => {
   };
 };
 
-/** A vertical chart's time x axis, which draws as Lens's two rows with Elastic Charts' own labels. */
-export const isTwoRowTimeAxis = ({ id, scale, position }: SceneAxis) =>
-  id === 'x' && scale === 'time' && position === 'bottom';
-
 const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
   const shared = {
     id: axis.id,
@@ -201,14 +197,13 @@ const axisElement = (axis: SceneAxis, scene: XyScene): ReactNode => {
     },
   };
   if (axis.id === 'x') {
-    // A vertical chart's time axis is Elastic Charts' multi-layer one, which
-    // picks and labels its own ticks, as Lens's
-    // (`expression_xy/public/components/xy_chart.tsx`).
+    // A `twoRows` axis is Elastic Charts' multi-layer time axis, which picks
+    // and labels its own ticks, as Lens's (`expression_xy/public/components/xy_chart.tsx`).
     return (
       <Axis
         key={axis.id}
         {...shared}
-        {...(isTwoRowTimeAxis(axis) ? {} : { timeAxisLayerCount: 0 })}
+        {...(axis.twoRows ? {} : { timeAxisLayerCount: 0 })}
       />
     );
   }

@@ -193,4 +193,4 @@ On a vertical chart with a `temporal` x scale, the x axis draws as Lens's does: 
 
 The x column's own date format does not change the axis labels, nor do `dateFormat:scaled` or `dateFormat:dow`: Elastic Charts labels a multi-layer axis with its own `Intl` formats, and Lens passes no `dow`, so weeks start on Monday. The column's format still prints table cells, tooltips and selections. `axes.x.labelOrientation` does not apply either: the labels draw level, as Lens passes its multi-layer axis no `labelsOrientation`.
 
-A chart with a single x value states `axes.x.interval`: without it nothing tells the bucket's width.
+A chart with a single x value states `axes.x.interval`: without it nothing tells the bucket's width, so the axis draws one row in the x column's format, at `labelOrientation`, as it does when the bucket is wider than a decade or the axis spans more than 50 decades, which Elastic Charts' time rasters cannot label.

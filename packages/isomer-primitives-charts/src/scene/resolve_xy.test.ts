@@ -399,6 +399,75 @@ describe('xy partial buckets', () => {
   });
 });
 
+describe('xy time axis rows', () => {
+  const YEAR = 365.25 * 24 * 3_600_000;
+  const xAxisOf = (
+    times: readonly number[],
+    orientation: 'vertical' | 'horizontal',
+    x: NonNullable<XyChartNode['axes']>['x'] = {}
+  ) =>
+    resolve(
+      xy({
+        orientation,
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'dimension' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: times.map((at, index) => [at, index]),
+        },
+        axes: { x: { scale: 'temporal', labelOrientation: 'angled', ...x } },
+      })
+    ).axes.x;
+  const at = Date.UTC(2026, 10, 3);
+  const hourly = [0, 1, 2, 3].map((hour) => at + hour * 3_600_000);
+
+  it.each([
+    ['hourly marks', hourly, {}],
+    ['one mark with a stated interval', [at], { interval: 3_600_000 }],
+    ['four centuries', [at - 400 * YEAR, at - 399 * YEAR, at], {}],
+    [
+      'yearly marks under a decade bucket',
+      [at, at + YEAR],
+      { interval: 10 * YEAR },
+    ],
+  ] as const)(
+    'draws a vertical chart’s time axis on two rows, level whatever `labelOrientation` states, for %s',
+    (_, times, x) => {
+      const vertical = xAxisOf(times, 'vertical', x);
+      expect(vertical.twoRows).toBe(true);
+      expect(vertical.labelRotation).toBe(0);
+      const horizontal = xAxisOf(times, 'horizontal', x);
+      expect(horizontal.twoRows).toBeUndefined();
+      expect(horizontal.labelRotation).toBe(-45);
+    }
+  );
+
+  it.each([
+    ['one mark and no interval', [at], {}],
+    ['six centuries', [at - 600 * YEAR, at - 599 * YEAR, at], {}],
+    [
+      'a custom domain of six centuries',
+      hourly,
+      { domain: { kind: 'custom', min: at - 600 * YEAR, max: at } },
+    ],
+    ['a bucket of twenty years', [at - 40 * YEAR, at - 20 * YEAR, at], {}],
+  ] as const)(
+    'keeps one row and `labelOrientation` where no time raster fits, for %s',
+    (_, times, x) => {
+      const axis = xAxisOf(times, 'vertical', x);
+      expect(axis.twoRows).toBeUndefined();
+      expect(axis.labelRotation).toBe(-45);
+    }
+  );
+
+  it('keeps one row and `labelOrientation` on a vertical chart’s linear x axis', () => {
+    const axis = xAxisOf([0, 1, 2], 'vertical', { scale: 'linear' });
+    expect(axis.twoRows).toBeUndefined();
+    expect(axis.labelRotation).toBe(-45);
+  });
+});
+
 describe('xy time axis over a non-date column', () => {
   it('prints dates on the axis and in category labels', () => {
     const scene = resolve(

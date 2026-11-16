@@ -142,7 +142,7 @@ describe('debugStateProblems', () => {
 
   // Elastic Charts labels a two-row time axis itself, so take an x axis it does not.
   const xy = scenes.find(
-    ({ scene }) => scene.kind === 'xy' && scene.axes.x.scale !== 'time'
+    ({ scene }) => scene.kind === 'xy' && !scene.axes.x.twoRows
   )!.scene as XyScene;
   const partition = scenes.find(({ scene }) => scene.kind === 'partition')!
     .scene as PartitionScene;
