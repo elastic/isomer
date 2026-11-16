@@ -145,7 +145,10 @@ export const SLACK_FIELD_LIMITS = {
   },
   multi_static_select: {
     chars: { action_id: actionId, placeholder },
-    counts: { options: 'optionsPerSelect' },
+    counts: {
+      options: 'optionsPerSelect',
+      option_groups: 'optionGroupsPerSelect',
+    },
   },
   option: {
     chars: {

@@ -74,8 +74,9 @@ const controlProblems = (
         ...optionsProblems(where, element.options),
       ];
     case 'static_select':
+    case 'multi_static_select':
       return [
-        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS.static_select),
+        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS[element.type]),
         ...optionsProblems(where, element.options),
         ...list(element.option_groups).flatMap((group, index) => {
           const groupWhere = `${where} option_groups[${index}]`;
@@ -84,15 +85,6 @@ const controlProblems = (
             ...optionsProblems(groupWhere, group.options),
           ];
         }),
-      ];
-    case 'multi_static_select':
-      return [
-        ...fieldLimitProblems(
-          where,
-          element,
-          SLACK_FIELD_LIMITS.multi_static_select
-        ),
-        ...optionsProblems(where, element.options),
       ];
     default:
       return [];

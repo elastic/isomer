@@ -277,18 +277,20 @@ const charCases: CharCase[] = [
     where: 'blocks[0] (actions) elements[0] placeholder',
   },
   // https://docs.slack.dev/reference/block-kit/composition-objects/option-group-object
-  {
-    name: 'option group label',
-    max: 75,
-    fit: 'clamp',
-    block: (text) =>
-      actions({
-        type: 'static_select',
-        action_id: 'a',
-        option_groups: [{ label: plain(text), options: [option()] }],
-      }),
-    where: 'blocks[0] (actions) elements[0] option_groups[0] label',
-  },
+  ...(['static_select', 'multi_static_select'] as const).map(
+    (type): CharCase => ({
+      name: `${type} option group label`,
+      max: 75,
+      fit: 'clamp',
+      block: (text) =>
+        actions({
+          type,
+          action_id: 'a',
+          option_groups: [{ label: plain(text), options: [option()] }],
+        }),
+      where: 'blocks[0] (actions) elements[0] option_groups[0] label',
+    })
+  ),
 ];
 
 describe('Slack field character limits', () => {
@@ -457,32 +459,34 @@ const countCases: CountCase[] = [
     where: 'blocks[0] (actions) elements[0] options',
     largest: menuOptions,
   },
-  {
-    name: 'select option groups',
-    max: 100,
-    block: (count) =>
-      actions({
-        type: 'static_select',
-        action_id: 'a',
-        option_groups: Array.from({ length: count }, (_, index) => ({
-          label: plain('g'),
-          options: [option({ value: `v${index}` })],
-        })),
-      }),
-    where: 'blocks[0] (actions) elements[0] option_groups',
-    largest: (blocks) =>
-      Math.max(
-        ...blocks.flatMap((block) =>
-          block.type === 'actions'
-            ? block.elements.map((element) =>
-                element.type === 'static_select'
-                  ? (element.option_groups?.length ?? 0)
-                  : 0
-              )
-            : []
-        )
-      ),
-  },
+  ...(['static_select', 'multi_static_select'] as const).map(
+    (type): CountCase => ({
+      name: `${type} option groups`,
+      max: 100,
+      block: (count) =>
+        actions({
+          type,
+          action_id: 'a',
+          option_groups: Array.from({ length: count }, (_, index) => ({
+            label: plain('g'),
+            options: [option({ value: `v${index}` })],
+          })),
+        }),
+      where: 'blocks[0] (actions) elements[0] option_groups',
+      largest: (blocks) =>
+        Math.max(
+          ...blocks.flatMap((block) =>
+            block.type === 'actions'
+              ? block.elements.map((element) =>
+                  element.type === type
+                    ? (element.option_groups?.length ?? 0)
+                    : 0
+                )
+              : []
+          )
+        ),
+    })
+  ),
   // https://docs.slack.dev/reference/block-kit/composition-objects/option-group-object
   {
     name: 'option group options',

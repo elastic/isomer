@@ -25,8 +25,10 @@ import {
   type SlackHeaderBlock,
   type SlackImageElement,
   type SlackMrkdwnTextObject,
+  type SlackMultiStaticSelectElement,
   type SlackOptionObject,
   type SlackSectionBlock,
+  type SlackStaticSelectElement,
 } from './blocks';
 import { containerWithChildren, isContainer } from './container';
 import { fitFields, SLACK_FIELD_LIMITS, withinCharLimit } from './field_limits';
@@ -159,6 +161,11 @@ const fitImageElement = (image: SlackImageElement): SlackImageElement =>
 const fitOption = (option: SlackOptionObject): SlackOptionObject =>
   fitFields(option, SLACK_FIELD_LIMITS.option);
 
+const isSelect = (
+  element: SlackActionElement
+): element is SlackStaticSelectElement | SlackMultiStaticSelectElement =>
+  element.type === 'static_select' || element.type === 'multi_static_select';
+
 const fitControl = (element: SlackActionElement): SlackActionElement => {
   if (element.type === 'button') {
     return fitFields(element, SLACK_FIELD_LIMITS.button);
@@ -168,12 +175,12 @@ const fitControl = (element: SlackActionElement): SlackActionElement => {
   if (menu.options) {
     menu.options = menu.options.slice(0, maxOptions).map(fitOption);
   }
-  if (menu.type === 'static_select' && menu.option_groups) {
+  if (isSelect(menu) && menu.option_groups) {
     const { optionGroup } = SLACK_FIELD_LIMITS;
     menu.option_groups = menu.option_groups
       .slice(
         0,
-        SLACK_LIMITS[SLACK_FIELD_LIMITS.static_select.counts.option_groups]
+        SLACK_LIMITS[SLACK_FIELD_LIMITS[menu.type].counts.option_groups]
       )
       .map((group) => {
         const fitted = fitFields(group, optionGroup);
@@ -190,7 +197,7 @@ const fitControl = (element: SlackActionElement): SlackActionElement => {
   const emitted = new Map(
     [
       ...(menu.options ?? []),
-      ...((menu.type === 'static_select' && menu.option_groups) || []).flatMap(
+      ...((isSelect(menu) && menu.option_groups) || []).flatMap(
         ({ options }) => options
       ),
     ].map((option) => [option.value, option])
