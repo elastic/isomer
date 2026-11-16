@@ -23,6 +23,75 @@ It is its own primitive, not a [`metric`](metric.md) variant. Kibana draws it wi
 
 With `colors.bands`, a tile of a `number` column is colored by the band its value falls in; a tile of any other column, or with no value, is not, as Lens colors only numbers. A lone tile's background color fills the whole chart, as Lens's `colorFullBackground` does; several tiles each fill their own box. On a colored background the value and label are in the panel's text color, as Kibana leaves them, unless EUI's `isColorDark` finds the color dark, as Kibana's `needsLightText` does: then they are in EUI's `emptyShade`, the chrome background (white in light, and `#111C2C` in dark, as Kibana writes it). `colors.byKey` is not read. A chart with no rows says "No results found".
 
+## Example
+
+The fewest fields that validate and draw, one value from one row:
+
+<!-- node-example -->
+
+```ts
+import type { LegacyMetricNode } from '@elastic/isomer-primitives-charts/schema';
+
+const requests: LegacyMetricNode = {
+  type: 'legacyMetric',
+  data: {
+    columns: [
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [[14074]],
+  },
+  metrics: [{ column: 'count' }],
+};
+```
+
+A typical panel, one tile per host with each value's text colored by where it falls between the least and the greatest:
+
+<!-- node-example -->
+
+```ts
+import type { LegacyMetricNode } from '@elastic/isomer-primitives-charts/schema';
+
+const memoryByHost: LegacyMetricNode = {
+  type: 'legacyMetric',
+  title: 'Memory used by host',
+  data: {
+    columns: [
+      { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+      {
+        id: 'used',
+        label: 'Memory used',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'bytes', maximumFractionDigits: 1 },
+      },
+    ],
+    rows: [
+      ['web-01', 412000000000],
+      ['web-02', 98000000000],
+      ['Other', 1250000000000],
+    ],
+  },
+  metrics: [{ column: 'used' }],
+  breakdown: { column: 'host' },
+  size: 's',
+  applyColorTo: 'value',
+  bandsRange: 'percentage',
+  colors: {
+    bands: [
+      { to: 33, color: { light: '#209280', dark: '#209280' } },
+      { from: 33, to: 66, color: { light: '#D6BF57', dark: '#D6BF57' } },
+      { from: 66, color: { light: '#CC5642', dark: '#CC5642' } },
+    ],
+  },
+  interactions: { select: ['tile'] },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.
