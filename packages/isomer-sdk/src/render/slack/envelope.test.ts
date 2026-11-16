@@ -920,6 +920,28 @@ describe('Slack envelope transforms', () => {
     expect(textOf(blocks)).toContain('Aside');
   });
 
+  it('keeps every character of a long node it degrades, top level or nested', () => {
+    // Slack's section text maximum is 3000: https://docs.slack.dev/reference/block-kit/blocks/section-block
+    const body = `${'a'.repeat(3000)}${'b'.repeat(3000)}c`;
+    const { blocks } = renderPostable(
+      {
+        type: 'view',
+        body: [
+          { type: 'caption', body } satisfies CaptionNode,
+          {
+            type: 'group',
+            items: [
+              { type: 'note', body: 'n' },
+              { type: 'caption', body },
+            ],
+          } satisfies GroupNode,
+        ],
+      },
+      degradingDispatcher()
+    );
+    expect(textOf(blocks).split(body)).toHaveLength(3);
+  });
+
   it('clamps the alt text it records for an upload, not just the block', () => {
     const label = 'L'.repeat(SLACK_LIMITS.imageAltTextChars + 50);
     const { assets } = renderPostable(
