@@ -22,9 +22,8 @@ import {
   type SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import type { ElasticChartsOptions } from './options';
-import { kibanaBaseTheme } from './theme';
+import { commonSettings } from './settings';
 
 /** Kibana's `getSubtypeByGaugeType`. */
 const SUBTYPE = {
@@ -84,12 +83,8 @@ export const gaugeSpecs = (
   return (
     <>
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={{ background: { color: scene.chrome.background } }}
-        locale={scene.locale}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
       />
       <Bullet
         id="gauge"

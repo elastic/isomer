@@ -18,7 +18,9 @@ import type { HeatmapNode } from '../schema/heatmap';
 import {
   createResolution,
   describe,
+  LABEL_ROTATION,
   nextUp,
+  NO_RESULTS,
   percentAlong,
   type Resolution,
   type ResolveChartOptions,
@@ -37,11 +39,6 @@ import type {
   SceneColor,
   SceneSelection,
 } from './types';
-
-/** Lens's text for a heat map with nothing to draw. */
-const NO_RESULTS = 'No results found';
-
-const ROTATION = { horizontal: 0, angled: -45, vertical: -90 } as const;
 
 /** Lens's default bands: its palette in equal steps of the value range, the last open above. */
 const DEFAULT_BANDS: readonly ColorBand[] = HEATMAP_PALETTE.map(
@@ -251,7 +248,8 @@ export const resolveHeatmap = (
         }
       : {}),
     showLabels: axisConfig?.x?.labels ?? true,
-    labelRotation: ROTATION[axisConfig?.x?.labelOrientation ?? 'horizontal'],
+    labelRotation:
+      LABEL_ROTATION[axisConfig?.x?.labelOrientation ?? 'horizontal'],
     categories: xOrder.map((position) => category(position, time)),
   };
   const yAxis: HeatmapAxis = {
