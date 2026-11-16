@@ -22,14 +22,11 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
-import type {
-  ChartNode,
-  ChartsRenderContext,
-  ResolveSceneOptions,
-} from './render/context';
+import type { ChartNode, ChartsRenderContext } from './render/context';
 import { gridSnapshotHeight } from './render/grid';
 import { gridModule } from './render/grid_styles';
 import { CHARTS_THEME } from './render/theme';
+import type { ResolveChartOptions } from './scene/common';
 import { metricSingleValueScene } from './scene/examples';
 import { resolveChart } from './scene/resolve';
 import type { Scene } from './scene/types';
@@ -351,8 +348,8 @@ describe('unsupported', () => {
 });
 
 describe('grid', () => {
-  const resolved: ResolveSceneOptions[] = [];
-  const resolveScene = (_: ChartNode, options: ResolveSceneOptions): Scene => {
+  const resolved: ResolveChartOptions[] = [];
+  const resolveScene = (_: ChartNode, options: ResolveChartOptions): Scene => {
     resolved.push(options);
     return { ...metricSingleValueScene, scheme: options.scheme };
   };

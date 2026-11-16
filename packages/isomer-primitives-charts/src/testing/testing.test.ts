@@ -11,7 +11,6 @@ import { describe, expect, it } from 'vitest';
 import type { ReactSceneRenderer } from '../render/context';
 import type { HeatmapScene, MetricScene, Scene, XyScene } from '../scene/types';
 import {
-  CHECKED_KINDS,
   coverageProblems,
   drawExamples,
   drawingProblems,
@@ -21,6 +20,8 @@ import {
   textDrawn,
   unescapeMarkup,
 } from '.';
+
+import { CHECKED_KINDS } from './drawing_checks';
 
 const COLOR = /^(#[\da-f]{6}([\da-f]{2})?|rgba?\([^)]*\))$/i;
 

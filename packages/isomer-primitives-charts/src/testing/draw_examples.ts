@@ -27,7 +27,7 @@ import type {
   SceneKind,
 } from '../scene/types';
 
-export const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
+const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 
 /** One Scene a renderer drew for an example, and its markup. */
 export interface DrawnScene {
