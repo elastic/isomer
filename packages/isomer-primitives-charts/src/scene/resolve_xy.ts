@@ -50,6 +50,7 @@ type XDomainConfig = NonNullable<
 
 /** The largest epoch milliseconds a `Date` holds. */
 const MAX_DATE = 8.64e15;
+const NO_RESULTS = 'No results found';
 
 // A gap past the largest double stops at it.
 const bounded = (value: number) =>
@@ -961,6 +962,10 @@ export const resolveXy = (
     dimensions.length ? ` by ${dimensions.join(' and ')}` : ''
   }${range}.`;
 
+  const empty = series.some(({ marks }) => marks.some(({ y }) => y !== null))
+    ? undefined
+    : { reason: 'noResults' as const, text: NO_RESULTS };
+
   const y = yAxis('y');
   const y2 = yAxis('y2');
   const currentTime =
@@ -1013,5 +1018,6 @@ export const resolveXy = (
     },
     barMinimumHeight: node.style?.barMinimumHeight ?? DEFAULTS.barMinimumHeight,
     ...(currentTime === undefined ? {} : { currentTime }),
+    ...(empty ? { empty } : {}),
   };
 };
