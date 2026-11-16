@@ -13,6 +13,7 @@ import { isoDateTimeEpoch } from '../iso_date_time';
 import { colorValueSchema, KEY_PART_RULE } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
+import { type Cell, cellMatchesColumn } from './data';
 import {
   brushingInteractionsSchemaFor,
   checkInteractions,
@@ -652,14 +653,18 @@ const checkXCoordinates = (node: XyChartInput, context: Issues) => {
   );
   const x = dataLayers[0]?.x;
   const column = node.data.columns.findIndex(({ id }) => id === x);
-  const type = node.data.columns[column]?.type;
-  if (type === undefined) {
+  const xColumn = node.data.columns[column];
+  if (xColumn === undefined) {
     return;
   }
+  const { type } = xColumn;
   const scale = node.axes?.x?.scale ?? continuousScaleOf(type);
   if (scale !== 'linear' && scale !== 'temporal') {
     return;
   }
+  // On the scale its column type implies, a mistyped cell is `DATA_RULES.cellType`'s to report.
+  const reportedByCellType = (value: Cell) =>
+    scale === continuousScaleOf(type) && !cellMatchesColumn(xColumn, value);
   const drawn = (row: number) =>
     dataLayers.some(({ rows }) => {
       const [start, end] = rows ?? [0, node.data.rows.length];
@@ -672,6 +677,7 @@ const checkXCoordinates = (node: XyChartInput, context: Issues) => {
       value !== null &&
       value !== undefined &&
       !Array.isArray(value) &&
+      !reportedByCellType(value) &&
       coordinateOf(value, scale) === undefined
     ) {
       context.addIssue({

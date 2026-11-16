@@ -23,7 +23,8 @@ import { createChartsPack } from '../pack';
 import { resolveChart } from '../scene/resolve';
 import { SCENE_KINDS } from '../scene/types';
 
-import type { ReactSceneRenderer } from './context';
+import type { ChartNode, ReactSceneRenderer } from './context';
+import { createSceneCache } from './scene_cache';
 
 // Nodes by content: a sanitized copy of a node is the same chart.
 const resolves: { node: string; options: string }[] = [];
@@ -256,5 +257,35 @@ describe('scene cache', () => {
     drawReact(node, { environment });
     drawReact(node, { environment });
     expect(draws).toHaveLength(1);
+  });
+
+  it('draws afresh for another `fillWidth`, and gives each its own drawing', () => {
+    const node = examples.find(({ label }) => label.startsWith('metric '))!
+      .composition.body[0]!;
+    const scene = resolveChart(node as ChartNode, { scheme: 'light' });
+    const drawn: boolean[] = [];
+    const renderer: ReactSceneRenderer = {
+      ...counting,
+      render: (_, { fillWidth = false }) => {
+        drawn.push(fillWidth);
+        return fillWidth ? 'fills' : 'fixed';
+      },
+    };
+    const cache = createSceneCache();
+    const receivers = { styles: undefined, events: undefined };
+    const draw = (fillWidth?: true) =>
+      cache.draw(
+        scene,
+        renderer,
+        { environment: 'node', ...(fillWidth && { fillWidth }) },
+        receivers
+      );
+    expect([draw(true), draw(), draw(true), draw()]).toEqual([
+      'fills',
+      'fixed',
+      'fills',
+      'fixed',
+    ]);
+    expect(drawn).toEqual([true, false]);
   });
 });

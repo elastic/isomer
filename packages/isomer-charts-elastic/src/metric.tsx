@@ -279,18 +279,19 @@ export const metricTheme = (scene: MetricScene): PartialTheme => {
   };
 };
 
-/** A metric Scene's spec elements, for `<Chart>` or headless drawing. */
+/** A metric Scene's spec elements, for `<Chart>` or headless drawing; `null` when it is empty. */
 export const metricSpecs = (
   scene: MetricScene,
   env: SceneRenderEnv,
   options: ElasticChartsOptions
-): ReactNode => (
-  <>
-    <Settings
-      {...commonSettings(scene, options)}
-      theme={metricTheme(scene)}
-      {...metricHandlers(scene, env)}
-    />
-    <Metric id="metric" data={metricGrid(scene, env)} />
-  </>
-);
+): ReactNode =>
+  scene.empty ? null : (
+    <>
+      <Settings
+        {...commonSettings(scene, options)}
+        theme={metricTheme(scene)}
+        {...metricHandlers(scene, env)}
+      />
+      <Metric id="metric" data={metricGrid(scene, env)} />
+    </>
+  );

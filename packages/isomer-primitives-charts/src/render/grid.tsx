@@ -40,6 +40,7 @@ import type { ChartsReactEnv, ChartsRenderContext } from './context';
 import { definePrimitive } from './define';
 import { gridModule } from './grid_styles';
 import { gridIcon } from './icons';
+import { isNominalSize, markNominalSize } from './size';
 import { cls, px, varStyle } from './styles';
 import { CHARTS_THEME } from './theme';
 
@@ -93,13 +94,10 @@ const headerOf = ({
 const shown = ({ section, entries }: Block) =>
   section?.collapsed ? [] : entries;
 
-/** Sizes laid out from `nominalWidth` rather than a host's width, which never switch a grid to one column. */
-const nominalSizes = new WeakSet<SceneSize>();
-
 /** The width the host gave this grid, directly or through its containers. */
 const hostWidth = (context: ChartsRenderContext | undefined) => {
   const size = context?.size;
-  return size && !nominalSizes.has(size) ? size.width : undefined;
+  return size && !isNominalSize(size) ? size.width : undefined;
 };
 
 /** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
@@ -118,7 +116,7 @@ const childContext = (
   const height = Math.max(0, rowsHeight(panel.h) - headerOf(panel));
   const size: SceneSize = { width, height };
   if (hostWidth(context) === undefined) {
-    nominalSizes.add(size);
+    markNominalSize(size);
   }
   return context ? contextWith(context, 'size', size) : { size };
 };
