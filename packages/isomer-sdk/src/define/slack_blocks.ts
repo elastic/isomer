@@ -234,7 +234,8 @@ export interface SlackMultiStaticSelectElement {
   type: 'multi_static_select';
   action_id: string;
   placeholder?: SlackPlainTextObject;
-  options: SlackOptionObject[];
+  options?: SlackOptionObject[];
+  option_groups?: SlackOptionGroup[];
   initial_options?: SlackOptionObject[];
   max_selected_items?: number;
 }

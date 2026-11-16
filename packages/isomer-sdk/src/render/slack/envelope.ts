@@ -19,31 +19,33 @@ import {
   SLACK_LIMITS,
   type SlackActionElement,
   type SlackBlock,
+  type SlackButtonElement,
   type SlackContainerBlock,
   type SlackContextBlock,
   type SlackHeaderBlock,
+  type SlackImageElement,
   type SlackMrkdwnTextObject,
+  type SlackMultiStaticSelectElement,
   type SlackOptionObject,
-  type SlackRichTextBlockElement,
-  type SlackRichTextInline,
-  type SlackRichTextSection,
-  type SlackRichTextText,
   type SlackSectionBlock,
-  type SlackTableBlock,
-  type SlackTableCell,
-  type SlackTextObject,
+  type SlackStaticSelectElement,
 } from './blocks';
 import { containerWithChildren, isContainer } from './container';
+import { fitFields, SLACK_FIELD_LIMITS, withinCharLimit } from './field_limits';
 import {
   assertSlackBaseUrl,
   clampMrkdwn,
-  clampSlackText,
-  cutSlackValue,
   escapeMrkdwn,
   formatHeaderText,
   italic,
   type SlackLinkOptions,
 } from './format';
+import {
+  degradeTable,
+  fitsTableShape,
+  splitRichTextElement,
+  tableCharCount,
+} from './rich_text';
 import { isUnmodeledSlackBlock } from './unmodeled';
 
 /**
@@ -150,118 +152,58 @@ export const renderSlackEnvelope = <TNode extends PrimitiveNode>(
   };
 };
 
-const clampText = <TText extends SlackTextObject>(
-  text: TText,
-  max: number
-): TText =>
-  text.text.length <= max
-    ? text
-    : {
-        ...text,
-        text: (text.type === 'mrkdwn' ? clampMrkdwn : clampSlackText)(
-          text.text,
-          max
-        ),
-      };
+const fitsImageUrl = (image: { image_url?: string }): boolean =>
+  withinCharLimit(image.image_url, SLACK_FIELD_LIMITS.image.chars.image_url);
 
-const fitsImageUrl = ({ image_url }: { image_url?: string }): boolean =>
-  image_url === undefined || image_url.length <= SLACK_LIMITS.imageUrlChars;
+const fitImageElement = (image: SlackImageElement): SlackImageElement =>
+  fitFields(image, SLACK_FIELD_LIMITS.imageElement);
 
-const clampAlt = <TImage extends { alt_text: string }>(
-  image: TImage
-): TImage =>
-  image.alt_text.length <= SLACK_LIMITS.imageAltTextChars
-    ? image
-    : {
-        ...image,
-        alt_text: clampSlackText(
-          image.alt_text,
-          SLACK_LIMITS.imageAltTextChars
-        ),
-      };
+const fitOption = (option: SlackOptionObject): SlackOptionObject =>
+  fitFields(option, SLACK_FIELD_LIMITS.option);
 
-// A cut URL would point somewhere else, so one past the limit is dropped.
-const withoutLongUrl = <T extends { url?: string }>(element: T): T => {
-  if (
-    element.url === undefined ||
-    element.url.length <= SLACK_LIMITS.urlChars
-  ) {
-    return element;
-  }
-  const { url: _dropped, ...rest } = element;
-  return rest as T;
-};
+const isSelect = (
+  element: SlackActionElement
+): element is SlackStaticSelectElement | SlackMultiStaticSelectElement =>
+  element.type === 'static_select' || element.type === 'multi_static_select';
 
-const optionValue = (value: string): string =>
-  cutSlackValue(value, SLACK_LIMITS.optionValueChars);
-
-const clampOption = (option: SlackOptionObject): SlackOptionObject =>
-  withoutLongUrl({
-    ...option,
-    text: clampText(option.text, SLACK_LIMITS.optionTextChars),
-    value: optionValue(option.value),
-    ...(option.description && {
-      description: clampText(option.description, SLACK_LIMITS.optionTextChars),
-    }),
-  });
-
-const clampControl = (element: SlackActionElement): SlackActionElement => {
-  const actionId =
-    element.action_id === undefined
-      ? {}
-      : {
-          action_id: cutSlackValue(
-            element.action_id,
-            SLACK_LIMITS.actionIdChars
-          ),
-        };
+const fitControl = (element: SlackActionElement): SlackActionElement => {
   if (element.type === 'button') {
-    return withoutLongUrl({
-      ...element,
-      ...actionId,
-      text: clampText(element.text, SLACK_LIMITS.buttonTextChars),
-      ...(element.value !== undefined && {
-        value: cutSlackValue(element.value, SLACK_LIMITS.buttonValueChars),
-      }),
-    });
+    return fitFields(element, SLACK_FIELD_LIMITS.button);
   }
-  const menu = { ...element, ...actionId };
-  const maxOptions =
-    menu.type === 'overflow'
-      ? SLACK_LIMITS.optionsPerOverflow
-      : menu.type === 'radio_buttons' || menu.type === 'checkboxes'
-        ? SLACK_LIMITS.optionsPerChoice
-        : SLACK_LIMITS.optionsPerSelect;
+  const menu = fitMenuFields(element);
+  const maxOptions = SLACK_LIMITS[SLACK_FIELD_LIMITS[menu.type].counts.options];
   if (menu.options) {
-    menu.options = menu.options.slice(0, maxOptions).map(clampOption);
+    menu.options = menu.options.slice(0, maxOptions).map(fitOption);
   }
-  if ('placeholder' in menu && menu.placeholder) {
-    menu.placeholder = clampText(
-      menu.placeholder,
-      SLACK_LIMITS.placeholderChars
-    );
-  }
-  if ('option_groups' in menu && menu.option_groups) {
+  if (isSelect(menu) && menu.option_groups) {
+    const { optionGroup } = SLACK_FIELD_LIMITS;
     menu.option_groups = menu.option_groups
-      .slice(0, SLACK_LIMITS.optionGroupsPerSelect)
-      .map((group) => ({
-        ...group,
-        label: clampText(group.label, SLACK_LIMITS.optionGroupLabelChars),
-        options: group.options.slice(0, maxOptions).map(clampOption),
-      }));
+      .slice(
+        0,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS[menu.type].counts.option_groups]
+      )
+      .map((group) => {
+        const fitted = fitFields(group, optionGroup);
+        return {
+          ...fitted,
+          options: fitted.options
+            .slice(0, SLACK_LIMITS[optionGroup.counts.options])
+            .map(fitOption),
+        };
+      });
   }
   // Slack requires an initial option to equal one it emits, so each is
   // replaced by the emitted option of the same value, or dropped.
   const emitted = new Map(
     [
       ...(menu.options ?? []),
-      ...(('option_groups' in menu && menu.option_groups) || []).flatMap(
+      ...((isSelect(menu) && menu.option_groups) || []).flatMap(
         ({ options }) => options
       ),
     ].map((option) => [option.value, option])
   );
   if ('initial_option' in menu && menu.initial_option) {
-    const match = emitted.get(optionValue(menu.initial_option.value));
+    const match = emitted.get(fitOption(menu.initial_option).value);
     if (match) {
       menu.initial_option = match;
     } else {
@@ -269,8 +211,8 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
     }
   }
   if ('initial_options' in menu && menu.initial_options) {
-    const matches = menu.initial_options.flatMap(({ value }) => {
-      const match = emitted.get(optionValue(value));
+    const matches = menu.initial_options.flatMap((option) => {
+      const match = emitted.get(fitOption(option).value);
       return match ? [match] : [];
     });
     if (matches.length > 0) {
@@ -281,6 +223,26 @@ const clampControl = (element: SlackActionElement): SlackActionElement => {
   }
   return menu;
 };
+
+const fitMenuFields = (
+  menu: Exclude<SlackActionElement, SlackButtonElement>
+): Exclude<SlackActionElement, SlackButtonElement> => {
+  switch (menu.type) {
+    case 'overflow':
+      return fitFields(menu, SLACK_FIELD_LIMITS.overflow);
+    case 'radio_buttons':
+      return fitFields(menu, SLACK_FIELD_LIMITS.radio_buttons);
+    case 'checkboxes':
+      return fitFields(menu, SLACK_FIELD_LIMITS.checkboxes);
+    case 'static_select':
+      return fitFields(menu, SLACK_FIELD_LIMITS.static_select);
+    case 'multi_static_select':
+      return fitFields(menu, SLACK_FIELD_LIMITS.multi_static_select);
+  }
+};
+
+const FIELDS_PER_SECTION =
+  SLACK_LIMITS[SLACK_FIELD_LIMITS.section.counts.fields];
 
 const chunks = <T>(items: readonly T[], size: number): T[][] =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
@@ -300,25 +262,25 @@ const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
         block.child_blocks.flatMap(splitBlockCounts)
       );
     case 'context':
-      return chunks(block.elements, SLACK_LIMITS.contextElements).map(
-        (elements, index) =>
-          index === 0 ? { ...block, elements } : { type: 'context', elements }
+      return chunks(
+        block.elements,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.context.counts.elements]
+      ).map((elements, index) =>
+        index === 0 ? { ...block, elements } : { type: 'context', elements }
       );
     case 'actions':
-      return chunks(block.elements, SLACK_LIMITS.buttonsPerActions).map(
-        (elements, index) =>
-          index === 0 ? { ...block, elements } : { type: 'actions', elements }
+      return chunks(
+        block.elements,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.actions.counts.elements]
+      ).map((elements, index) =>
+        index === 0 ? { ...block, elements } : { type: 'actions', elements }
       );
     case 'section': {
-      if (
-        !block.fields ||
-        block.fields.length <= SLACK_LIMITS.fieldsPerSection
-      ) {
+      if (!block.fields || block.fields.length <= FIELDS_PER_SECTION) {
         return [block];
       }
-      return chunks(block.fields, SLACK_LIMITS.fieldsPerSection).map(
-        (fields, index) =>
-          index === 0 ? { ...block, fields } : { type: 'section', fields }
+      return chunks(block.fields, FIELDS_PER_SECTION).map((fields, index) =>
+        index === 0 ? { ...block, fields } : { type: 'section', fields }
       );
     }
     default:
@@ -368,28 +330,22 @@ const fitBlock = (block: SlackBlock): SlackBlock[] => {
   }
   return block.type === 'container'
     ? fitContainer(block)
-    : fitImageUrls(block).map(clampBlockText);
+    : fitImageUrls(block).map(fitBlockText);
 };
 
 const fitContainer = (container: SlackContainerBlock): SlackBlock[] => {
-  const { title, rich_text_title, subtitle, icon, child_blocks } = container;
+  const { rich_text_title, icon, child_blocks } = container;
   const fitted: SlackContainerBlock = {
-    ...container,
-    ...(title && {
-      title: clampText(title, SLACK_LIMITS.containerTitleChars),
-    }),
+    ...fitFields(container, SLACK_FIELD_LIMITS.container),
     ...(rich_text_title && {
       rich_text_title: {
         ...rich_text_title,
         elements: rich_text_title.elements.flatMap(splitRichTextElement),
       },
     }),
-    ...(subtitle && {
-      subtitle: clampText(subtitle, SLACK_LIMITS.containerSubtitleChars),
-    }),
   };
   if (icon && fitsImageUrl(icon)) {
-    fitted.icon = clampAlt(icon);
+    fitted.icon = fitImageElement(icon);
   } else {
     delete fitted.icon;
   }
@@ -398,29 +354,18 @@ const fitContainer = (container: SlackContainerBlock): SlackBlock[] => {
 
 // Pack renderers build their own blocks, and one overlong text makes Slack
 // reject the whole message.
-const clampBlockText = (block: SlackBlock): SlackBlock => {
+const fitBlockText = (block: SlackBlock): SlackBlock => {
   switch (block.type) {
     case 'header':
-      return {
-        ...block,
-        text: clampText(block.text, SLACK_LIMITS.headerTextChars),
-      };
+      return fitFields(block, SLACK_FIELD_LIMITS.header);
     case 'section':
       return {
-        ...block,
-        ...(block.text && {
-          text: clampText(block.text, SLACK_LIMITS.sectionTextChars),
-        }),
-        ...(block.fields && {
-          fields: block.fields.map((field) =>
-            clampText(field, SLACK_LIMITS.sectionFieldChars)
-          ),
-        }),
+        ...fitFields(block, SLACK_FIELD_LIMITS.section),
         ...(block.accessory && {
           accessory:
             block.accessory.type === 'image'
-              ? clampAlt(block.accessory)
-              : clampControl(block.accessory),
+              ? fitImageElement(block.accessory)
+              : fitControl(block.accessory),
         }),
       };
     case 'rich_text':
@@ -429,40 +374,21 @@ const clampBlockText = (block: SlackBlock): SlackBlock => {
         elements: block.elements.flatMap(splitRichTextElement),
       };
     case 'context':
-      return {
-        ...block,
-        elements: block.elements.map((element) =>
-          element.type === 'image'
-            ? clampAlt(element)
-            : clampText(element, SLACK_LIMITS.contextElementChars)
-        ),
-      };
+      return fitFields(
+        {
+          ...block,
+          elements: block.elements.map((element) =>
+            element.type === 'image' ? fitImageElement(element) : element
+          ),
+        },
+        SLACK_FIELD_LIMITS.context
+      );
     case 'image':
-      return {
-        ...clampAlt(block),
-        ...(block.title && {
-          title: clampText(block.title, SLACK_LIMITS.imageTitleChars),
-        }),
-      };
+      return fitFields(block, SLACK_FIELD_LIMITS.image);
     case 'video':
-      return {
-        ...block,
-        title: clampText(block.title, SLACK_LIMITS.videoTitleChars),
-        ...(block.description && {
-          description: clampText(
-            block.description,
-            SLACK_LIMITS.videoDescriptionChars
-          ),
-        }),
-        ...(block.author_name !== undefined && {
-          author_name: clampSlackText(
-            block.author_name,
-            SLACK_LIMITS.videoAuthorNameChars
-          ),
-        }),
-      };
+      return fitFields(block, SLACK_FIELD_LIMITS.video);
     case 'actions':
-      return { ...block, elements: block.elements.map(clampControl) };
+      return { ...block, elements: block.elements.map(fitControl) };
     default:
       return block;
   }
@@ -498,7 +424,10 @@ const contextBlock = (lines: ReadonlyArray<string>): SlackContextBlock => ({
     .filter((line): line is string => line !== undefined && line.length > 0)
     .map((text) => ({
       type: 'mrkdwn',
-      text: clampMrkdwn(text, SLACK_LIMITS.contextElementChars),
+      text: clampMrkdwn(
+        text,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.context.chars.elements.limit]
+      ),
     })),
 });
 
@@ -551,7 +480,7 @@ const coalesceFieldSections = (blocks: readonly SlackBlock[]): SlackBlock[] => {
         if (
           !isFieldsOnly(next) ||
           next.fields.length !== 1 ||
-          fields.length >= SLACK_LIMITS.fieldsPerSection
+          fields.length >= FIELDS_PER_SECTION
         ) {
           break;
         }
@@ -615,205 +544,6 @@ const truncateWithNotice = (blocks: SlackBlock[]): SlackBlock[] => {
   );
   return kept;
 };
-
-const richTextInlineText = (inline: SlackRichTextInline): string =>
-  inline.type === 'link' ? (inline.text ?? inline.url) : inline.text;
-
-const richTextElementText = (element: SlackRichTextBlockElement): string =>
-  element.type === 'rich_text_list'
-    ? element.elements.map(richTextElementText).join('')
-    : element.elements.map(richTextInlineText).join('');
-
-const tableCellText = (cell: SlackTableCell): string =>
-  cell.type === 'raw_text'
-    ? cell.text
-    : cell.elements.map(richTextElementText).join('');
-
-const tableCharCount = (block: SlackTableBlock): number =>
-  block.rows.reduce(
-    (total, row) =>
-      total + row.reduce((sum, cell) => sum + tableCellText(cell).length, 0),
-    0
-  );
-
-const textRun = (text: string): SlackRichTextText => ({ type: 'text', text });
-
-const richSection = (
-  elements: SlackRichTextInline[]
-): SlackRichTextSection => ({ type: 'rich_text_section', elements });
-
-const rowBreak = (): SlackRichTextSection => richSection([textRun('\n')]);
-
-const cellElements = (
-  cell: SlackTableCell | undefined
-): SlackRichTextBlockElement[] => {
-  if (cell?.type === 'rich_text') {
-    return cell.elements.filter(({ elements }) => elements.length > 0);
-  }
-  return cell?.text ? [richSection([textRun(cell.text)])] : [];
-};
-
-const boldInline = (inline: SlackRichTextInline): SlackRichTextInline => ({
-  ...inline,
-  style: { ...inline.style, bold: true },
-});
-
-const boldElement = (
-  element: SlackRichTextBlockElement
-): SlackRichTextBlockElement =>
-  element.type === 'rich_text_list'
-    ? {
-        ...element,
-        elements: element.elements.map((item) => ({
-          ...item,
-          elements: item.elements.map(boldInline),
-        })),
-      }
-    : { ...element, elements: element.elements.map(boldInline) };
-
-const isBlank = (cell: SlackTableCell | undefined): boolean =>
-  cell === undefined || tableCellText(cell).trim() === '';
-
-// A one-section heading leads its cell as `heading: `; any other heading keeps
-// its blocks, bold, above the cell. A blank heading leaves the cell alone.
-const columnElements = (
-  heading: SlackTableCell | undefined,
-  cell: SlackTableCell | undefined
-): SlackRichTextBlockElement[] => {
-  const body = cellElements(cell);
-  if (isBlank(heading)) {
-    return body;
-  }
-  const head = cellElements(heading);
-  const [only] = head;
-  if (head.length !== 1 || only?.type !== 'rich_text_section') {
-    return [...head.map(boldElement), ...body];
-  }
-  const lead = [...only.elements.map(boldInline), textRun(': ')];
-  const [first, ...rest] = body;
-  return first?.type === 'rich_text_section'
-    ? [richSection([...lead, ...first.elements]), ...rest]
-    : [richSection(lead), ...body];
-};
-
-const endsLine = (element: SlackRichTextBlockElement): boolean =>
-  /[\n\r\u2028\u2029]$/u.test(richTextElementText(element));
-
-// Slack runs adjacent sections together, so a section followed by another ends
-// its line unless its rendered text already does.
-const breakSections = (
-  elements: readonly SlackRichTextBlockElement[]
-): SlackRichTextBlockElement[] =>
-  elements.map((element, index) =>
-    element.type === 'rich_text_section' &&
-    elements[index + 1]?.type === 'rich_text_section' &&
-    !endsLine(element)
-      ? richSection([...element.elements, textRun('\n')])
-      : element
-  );
-
-// Graphemes, and the code points of any grapheme past `max`.
-const textUnits = (text: string, max: number): string[] =>
-  Array.from(
-    new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(text),
-    ({ segment }) => (segment.length > max ? Array.from(segment) : [segment])
-  ).flat();
-
-/**
- * A section, quote, or preformatted element past `sectionTextChars` as adjacent ones of its type, with nothing added between them; a list comes back as is.
- * A link or tag no longer than that stays whole; anything longer splits at grapheme boundaries into inlines of its own type, a link's label (or URL) across links to the same URL.
- */
-const splitRichTextElement = (
-  element: SlackRichTextBlockElement
-): SlackRichTextBlockElement[] => {
-  const max = SLACK_LIMITS.sectionTextChars;
-  if (
-    element.type === 'rich_text_list' ||
-    richTextElementText(element).length <= max
-  ) {
-    return [element];
-  }
-  const chunks: SlackRichTextInline[][] = [];
-  let chunk: SlackRichTextInline[] = [];
-  let room: number = max;
-  const flush = (): void => {
-    if (chunk.length > 0) {
-      chunks.push(chunk);
-    }
-    chunk = [];
-    room = max;
-  };
-  for (const inline of element.elements) {
-    const whole = richTextInlineText(inline);
-    if (inline.type !== 'text' && whole.length <= max) {
-      if (whole.length > room) {
-        flush();
-      }
-      chunk.push(inline);
-      room -= whole.length;
-      continue;
-    }
-    let text = '';
-    for (const unit of textUnits(whole, max)) {
-      if (text.length + unit.length > room) {
-        if (text) {
-          chunk.push({ ...inline, text });
-        }
-        flush();
-        text = '';
-      }
-      text += unit;
-    }
-    if (text) {
-      chunk.push({ ...inline, text });
-      room -= text.length;
-    }
-  }
-  flush();
-  return chunks.map((elements) => ({ ...element, elements }));
-};
-
-// A table Slack would reject is replaced by one `rich_text` block. Each row's
-// columns run `heading: cell` to the wider of the header and the row, and a
-// blank section parts the rows. A cell keeps its inlines, styles, and blocks; a
-// table whose rows past the header have no cells prints its headings, and one
-// with nothing to print is dropped.
-const degradeTable = ({
-  rows: [header = [], ...body],
-}: SlackTableBlock): SlackBlock[] => {
-  const rows = body.filter((row) => row.length > 0);
-  const pieces =
-    rows.length === 0
-      ? [
-          header
-            .filter((heading) => !isBlank(heading))
-            .flatMap((heading) => cellElements(heading).map(boldElement)),
-        ]
-      : rows.map((row) =>
-          Array.from(
-            { length: Math.max(header.length, row.length) },
-            (_, column) => columnElements(header[column], row[column])
-          ).flat()
-        );
-  const elements = pieces
-    .filter((piece) => piece.length > 0)
-    .flatMap((piece, index) => (index > 0 ? [rowBreak(), ...piece] : piece));
-  return elements.length === 0
-    ? []
-    : [
-        {
-          type: 'rich_text',
-          elements: breakSections(elements).flatMap(splitRichTextElement),
-        },
-      ];
-};
-
-const fitsTableShape = ({ rows }: SlackTableBlock): boolean =>
-  rows.length > 0 &&
-  rows.length <= SLACK_LIMITS.tableRows &&
-  rows.every(
-    (row) => row.length > 0 && row.length <= SLACK_LIMITS.tableColumns
-  );
 
 // Slack counts table cell characters across the whole message, not per block,
 // so a composition whose tables individually fit can still be rejected. In

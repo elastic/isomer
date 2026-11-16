@@ -12,6 +12,7 @@ import {
   type SlackContainerChildBlock,
   type SlackHeaderLevel,
 } from './blocks';
+import { SLACK_FIELD_LIMITS } from './field_limits';
 import { formatHeaderText } from './format';
 import { isUnmodeledSlackBlock } from './unmodeled';
 
@@ -68,7 +69,8 @@ export const containerWithChildren = (
   );
   const refitted = { ...container, child_blocks };
   return child_blocks.length === 0 ||
-    child_blocks.length > SLACK_LIMITS.containerChildBlocks
+    child_blocks.length >
+      SLACK_LIMITS[SLACK_FIELD_LIMITS.container.counts.child_blocks]
     ? unwrapContainer(refitted, level)
     : [refitted];
 };

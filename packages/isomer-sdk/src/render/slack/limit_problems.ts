@@ -11,157 +11,83 @@ import type {
   SlackOptionObject,
   SlackRichTextBlock,
   SlackRichTextBlockElement,
-  SlackRichTextInline,
   SlackSectionAccessory,
-  SlackTableCell,
 } from './blocks';
 import { SLACK_LIMITS } from './blocks';
+import {
+  fieldLimitProblems,
+  overCharLimit,
+  overCount,
+  RICH_TEXT_ELEMENT_LIMIT,
+  SLACK_FIELD_LIMITS,
+} from './field_limits';
+import { richTextElementText, tableCharCount } from './rich_text';
 import { isModeledSlackBlockType, isUnmodeledSlackBlock } from './unmodeled';
 
 const list = <T>(value: readonly T[] | undefined): readonly T[] => value ?? [];
 
-const overLength = (
-  where: string,
-  text: string | undefined,
-  limit: number
-): string[] =>
-  typeof text === 'string' && text.length > limit
-    ? [`${where} has ${text.length} characters; Slack allows ${limit}.`]
-    : [];
-
-const overCount = (where: string, count: number, limit: number): string[] =>
-  count > limit ? [`${where} has ${count}; Slack allows ${limit}.`] : [];
-
 const empty = (where: string, count: number): string[] =>
   count === 0 ? [`${where} is empty; Slack requires at least 1.`] : [];
 
-const inlineText = (inline: SlackRichTextInline): string =>
-  inline.type === 'link' ? (inline.text ?? inline.url) : inline.text;
-
-const richTextText = (element: SlackRichTextBlockElement): string =>
-  element.type === 'rich_text_list'
-    ? list(element.elements).map(richTextText).join('')
-    : list(element.elements).map(inlineText).join('');
-
-const cellText = (cell: SlackTableCell): string =>
-  cell.type === 'raw_text'
-    ? cell.text
-    : list(cell.elements).map(richTextText).join('');
-
-const imageProblems = (
-  where: string,
-  { image_url, alt_text }: { image_url?: string; alt_text?: string }
-): string[] => [
-  ...overLength(`${where} image_url`, image_url, SLACK_LIMITS.imageUrlChars),
-  ...overLength(`${where} alt_text`, alt_text, SLACK_LIMITS.imageAltTextChars),
-];
-
-const optionProblems = (
-  where: string,
-  { text, value, description, url }: SlackOptionObject
-): string[] => [
-  ...overLength(`${where} text`, text?.text, SLACK_LIMITS.optionTextChars),
-  ...overLength(`${where} value`, value, SLACK_LIMITS.optionValueChars),
-  ...overLength(
-    `${where} description`,
-    description?.text,
-    SLACK_LIMITS.optionTextChars
-  ),
-  ...overLength(`${where} url`, url, SLACK_LIMITS.urlChars),
-];
+const {
+  actions,
+  container,
+  context,
+  header,
+  image,
+  imageElement,
+  option,
+  optionGroup,
+  section,
+  table,
+  video,
+} = SLACK_FIELD_LIMITS;
 
 const optionsProblems = (
   where: string,
-  options: readonly SlackOptionObject[] | undefined,
-  limit: number
-): string[] => [
-  ...overCount(`${where} options`, list(options).length, limit),
-  ...list(options).flatMap((option, index) =>
-    optionProblems(`${where} options[${index}]`, option)
-  ),
-];
+  options: readonly SlackOptionObject[] | undefined
+): string[] =>
+  list(options).flatMap((entry, index) =>
+    fieldLimitProblems(`${where} options[${index}]`, entry, option)
+  );
 
 const controlProblems = (
   where: string,
   element: SlackActionElement
 ): string[] => {
-  const actionId = overLength(
-    `${where} action_id`,
-    element.action_id,
-    SLACK_LIMITS.actionIdChars
-  );
   switch (element.type) {
     case 'button':
-      return [
-        ...actionId,
-        ...overLength(
-          `${where} text`,
-          element.text?.text,
-          SLACK_LIMITS.buttonTextChars
-        ),
-        ...overLength(
-          `${where} value`,
-          element.value,
-          SLACK_LIMITS.buttonValueChars
-        ),
-        ...overLength(`${where} url`, element.url, SLACK_LIMITS.urlChars),
-      ];
+      return fieldLimitProblems(where, element, SLACK_FIELD_LIMITS.button);
     case 'overflow':
       return [
-        ...actionId,
-        ...optionsProblems(
-          where,
-          element.options,
-          SLACK_LIMITS.optionsPerOverflow
-        ),
+        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS.overflow),
+        ...optionsProblems(where, element.options),
       ];
     case 'radio_buttons':
+      return [
+        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS.radio_buttons),
+        ...optionsProblems(where, element.options),
+      ];
     case 'checkboxes':
       return [
-        ...actionId,
-        ...optionsProblems(
-          where,
-          element.options,
-          SLACK_LIMITS.optionsPerChoice
-        ),
+        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS.checkboxes),
+        ...optionsProblems(where, element.options),
       ];
     case 'static_select':
-    case 'multi_static_select': {
-      const groups =
-        element.type === 'static_select' ? list(element.option_groups) : [];
+    case 'multi_static_select':
       return [
-        ...actionId,
-        ...overLength(
-          `${where} placeholder`,
-          element.placeholder?.text,
-          SLACK_LIMITS.placeholderChars
-        ),
-        ...optionsProblems(
-          where,
-          element.options,
-          SLACK_LIMITS.optionsPerSelect
-        ),
-        ...overCount(
-          `${where} option_groups`,
-          groups.length,
-          SLACK_LIMITS.optionGroupsPerSelect
-        ),
-        ...groups.flatMap(({ label, options }, index) => [
-          ...overLength(
-            `${where} option_groups[${index}] label`,
-            label?.text,
-            SLACK_LIMITS.optionGroupLabelChars
-          ),
-          ...optionsProblems(
-            `${where} option_groups[${index}]`,
-            options,
-            SLACK_LIMITS.optionsPerSelect
-          ),
-        ]),
+        ...fieldLimitProblems(where, element, SLACK_FIELD_LIMITS[element.type]),
+        ...optionsProblems(where, element.options),
+        ...list(element.option_groups).flatMap((group, index) => {
+          const groupWhere = `${where} option_groups[${index}]`;
+          return [
+            ...fieldLimitProblems(groupWhere, group, optionGroup),
+            ...optionsProblems(groupWhere, group.options),
+          ];
+        }),
       ];
-    }
     default:
-      return actionId;
+      return [];
   }
 };
 
@@ -170,13 +96,13 @@ const accessoryProblems = (
   accessory: SlackSectionAccessory
 ): string[] =>
   accessory.type === 'image'
-    ? imageProblems(where, accessory)
+    ? fieldLimitProblems(where, accessory, imageElement)
     : controlProblems(where, accessory);
 
 const richTextProblems = (
   where: string,
   element: SlackRichTextBlockElement,
-  textLimit: number | undefined
+  topLevel: boolean
 ): string[] => {
   if (element.type === 'rich_text_list') {
     return overCount(
@@ -185,19 +111,23 @@ const richTextProblems = (
       SLACK_LIMITS.richTextListMaxIndent
     );
   }
-  return textLimit === undefined
-    ? []
-    : overLength(`${where} text`, richTextText(element), textLimit);
+  return topLevel
+    ? overCharLimit(
+        `${where} text`,
+        richTextElementText(element),
+        SLACK_LIMITS[RICH_TEXT_ELEMENT_LIMIT]
+      )
+    : [];
 };
 
-/** Only a top-level element has a `textLimit`; list items and table cells count toward the message's budgets alone. */
+/** Only a top-level element has a text limit; list items and table cells count toward the message's budgets alone. */
 const richTextBlockProblems = (
   where: string,
   { elements }: SlackRichTextBlock,
-  textLimit?: number
+  topLevel: boolean
 ): string[] =>
   list(elements).flatMap((element, elementIndex) =>
-    richTextProblems(`${where} elements[${elementIndex}]`, element, textLimit)
+    richTextProblems(`${where} elements[${elementIndex}]`, element, topLevel)
   );
 
 interface LocatedBlock {
@@ -225,29 +155,17 @@ const blockProblems = ({ where, block }: LocatedBlock): string[] => {
     case 'container': {
       const children = list(block.child_blocks);
       return [
-        ...overLength(
-          `${where} title`,
-          block.title?.text,
-          SLACK_LIMITS.containerTitleChars
-        ),
-        ...overLength(
-          `${where} subtitle`,
-          block.subtitle?.text,
-          SLACK_LIMITS.containerSubtitleChars
-        ),
-        ...(block.icon ? imageProblems(`${where} icon`, block.icon) : []),
+        ...fieldLimitProblems(where, block, container),
+        ...(block.icon
+          ? fieldLimitProblems(`${where} icon`, block.icon, imageElement)
+          : []),
         ...(block.rich_text_title
           ? richTextBlockProblems(
               `${where} rich_text_title`,
               block.rich_text_title,
-              SLACK_LIMITS.sectionTextChars
+              true
             )
           : []),
-        ...overCount(
-          `${where} child_blocks`,
-          children.length,
-          SLACK_LIMITS.containerChildBlocks
-        ),
         ...empty(`${where} child_blocks`, children.length),
         ...children.flatMap(({ type }, childIndex) =>
           (type as string) === 'container'
@@ -259,101 +177,44 @@ const blockProblems = ({ where, block }: LocatedBlock): string[] => {
       ];
     }
     case 'header':
-      return overLength(
-        `${where} text`,
-        block.text?.text,
-        SLACK_LIMITS.headerTextChars
-      );
-    case 'section': {
-      const fields = list(block.fields);
+      return fieldLimitProblems(where, block, header);
+    case 'section':
       return [
-        ...overLength(
-          `${where} text`,
-          block.text?.text,
-          SLACK_LIMITS.sectionTextChars
-        ),
-        ...overCount(
-          `${where} fields`,
-          fields.length,
-          SLACK_LIMITS.fieldsPerSection
-        ),
-        ...fields.flatMap((field, fieldIndex) =>
-          overLength(
-            `${where} fields[${fieldIndex}]`,
-            field?.text,
-            SLACK_LIMITS.sectionFieldChars
-          )
-        ),
+        ...fieldLimitProblems(where, block, section),
         ...(block.accessory
           ? accessoryProblems(`${where} accessory`, block.accessory)
           : []),
       ];
-    }
-    case 'context': {
-      const elements = list(block.elements);
+    case 'context':
       return [
-        ...overCount(
-          `${where} elements`,
-          elements.length,
-          SLACK_LIMITS.contextElements
-        ),
-        ...elements.flatMap((element, elementIndex) =>
+        ...fieldLimitProblems(where, block, context),
+        ...list(block.elements).flatMap((element, elementIndex) =>
           element.type === 'image'
-            ? imageProblems(`${where} elements[${elementIndex}]`, element)
-            : overLength(
+            ? fieldLimitProblems(
                 `${where} elements[${elementIndex}]`,
-                element.text,
-                SLACK_LIMITS.contextElementChars
+                element,
+                imageElement
               )
+            : []
         ),
       ];
-    }
-    case 'actions': {
-      const elements = list(block.elements);
+    case 'actions':
       return [
-        ...overCount(
-          `${where} elements`,
-          elements.length,
-          SLACK_LIMITS.buttonsPerActions
-        ),
-        ...elements.flatMap((element, elementIndex) =>
+        ...fieldLimitProblems(where, block, actions),
+        ...list(block.elements).flatMap((element, elementIndex) =>
           controlProblems(`${where} elements[${elementIndex}]`, element)
         ),
       ];
-    }
     case 'image':
-      return [
-        ...imageProblems(where, block),
-        ...overLength(
-          `${where} title`,
-          block.title?.text,
-          SLACK_LIMITS.imageTitleChars
-        ),
-      ];
+      return fieldLimitProblems(where, block, image);
     case 'video':
-      return [
-        ...overLength(
-          `${where} title`,
-          block.title?.text,
-          SLACK_LIMITS.videoTitleChars
-        ),
-        ...overLength(
-          `${where} description`,
-          block.description?.text,
-          SLACK_LIMITS.videoDescriptionChars
-        ),
-        ...overLength(
-          `${where} author_name`,
-          block.author_name,
-          SLACK_LIMITS.videoAuthorNameChars
-        ),
-      ];
+      return fieldLimitProblems(where, block, video);
     case 'rich_text':
-      return richTextBlockProblems(where, block, SLACK_LIMITS.sectionTextChars);
+      return richTextBlockProblems(where, block, true);
     case 'table': {
       const rows = list(block.rows);
       return [
-        ...overCount(`${where} rows`, rows.length, SLACK_LIMITS.tableRows),
+        ...fieldLimitProblems(where, block, table),
         ...empty(`${where} rows`, rows.length),
         ...rows.flatMap((row, rowIndex) => [
           ...overCount(
@@ -366,7 +227,8 @@ const blockProblems = ({ where, block }: LocatedBlock): string[] => {
             cell.type === 'rich_text'
               ? richTextBlockProblems(
                   `${where} rows[${rowIndex}][${cellIndex}]`,
-                  cell
+                  cell,
+                  false
                 )
               : []
           ),
@@ -388,16 +250,7 @@ const overTableText = (length: number): string[] =>
 const tableTextLength = (blocks: readonly SlackBlock[]): number =>
   blocks.reduce(
     (total, block) =>
-      block.type === 'table'
-        ? list(block.rows).reduce(
-            (sum, row) =>
-              list(row).reduce(
-                (cells, cell) => cells + cellText(cell).length,
-                sum
-              ),
-            total
-          )
-        : total,
+      block.type === 'table' ? total + tableCharCount(block) : total,
     0
   );
 
@@ -436,7 +289,7 @@ export const slackLimitProblems = ({
       blocks.length,
       SLACK_LIMITS.blocksPerMessage
     ),
-    ...overLength('The fallback text', text, SLACK_LIMITS.fallbackTextChars),
+    ...overCharLimit('The fallback text', text, SLACK_LIMITS.fallbackTextChars),
     ...overTableText(tableTextLength(all.map(({ block }) => block))),
     ...all.flatMap(blockProblems),
     ...all.flatMap(staleWrapperProblems),
