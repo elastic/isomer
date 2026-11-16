@@ -191,15 +191,11 @@ const debugStateIn = (container: HTMLElement): DebugState => {
   return JSON.parse(raw) as DebugState;
 };
 
-/** Every label the Scene gives a time tick at `value`, in any band. */
-const timeLabels = ({ timeTicks }: SceneAxis, value: unknown): string[] =>
-  (timeTicks?.bands ?? []).flatMap(({ layers }) =>
-    layers.flatMap(({ ticks }) =>
-      ticks.flatMap(({ at, label }) => (at === value ? [label] : []))
-    )
-  );
-
-/** Each drawn label is the category's label, a Scene time tick's, or the value through `formatAxisValue`. */
+/**
+ * Each drawn label is the category's label, or the value through
+ * `formatAxisValue`; a vertical chart's time axis is Lens's two rows, which
+ * Elastic Charts labels itself, so not every label is `formatAxisValue`'s.
+ */
 const expectLabelsFromScene = (
   drawn: { labels: string[]; values: unknown[] } | undefined,
   axis: SceneAxis,
@@ -215,11 +211,16 @@ const expectLabelsFromScene = (
     (label, index) => [drawn!.values[index], label] as const
   );
   expect(shown.length).toBeGreaterThan(0);
+  if (axis.id === 'x' && axis.scale === 'time' && axis.position === 'bottom') {
+    expect(
+      shown.some(
+        ([value, label]) =>
+          label !== formatAxisValue(scene, axis, value as number)
+      )
+    ).toBe(true);
+    return;
+  }
   for (const [value, label] of shown) {
-    if (axis.timeTicks) {
-      expect(timeLabels(axis, value)).toContain(label);
-      continue;
-    }
     expect(label).toBe(
       categories.get(value) ?? formatAxisValue(scene, axis, value as number)
     );

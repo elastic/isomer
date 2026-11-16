@@ -354,13 +354,12 @@ describe('xy partial buckets', () => {
       })
     );
 
-  it('measures each layer by its own spacing, and the axis by the smallest', () => {
+  it('measures each layer by its own spacing', () => {
     const scene = twoLayers();
     expect(partialsOf(scene)).toEqual([
       [false, false],
       [false, true],
     ]);
-    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
   });
 
   it('narrows a stated interval to each layer’s spacing', () => {
@@ -370,7 +369,6 @@ describe('xy partial buckets', () => {
       [false, true],
     ]);
     expect(scene.axes.x.interval).toBe(2 * DAY);
-    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
   });
 
   it('keeps a stated interval no wider than a layer’s spacing', () => {
@@ -380,7 +378,6 @@ describe('xy partial buckets', () => {
       [false, false],
       [false, false],
     ]);
-    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR / 2);
   });
 
   it('measures hourly marks under a stated daily interval as hourly, as the axis does', () => {
@@ -399,7 +396,6 @@ describe('xy partial buckets', () => {
       [false, false, false, false, false, true],
     ]);
     expect(scene.axes.x.interval).toBe(DAY);
-    expect(scene.axes.x.timeTicks?.interval).toBe(HOUR);
   });
 });
 

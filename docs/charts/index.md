@@ -9,29 +9,29 @@ description: Chart primitives on one shared core, a dashboard grid, and an unsup
 
 A chart node is self-contained: its data is inline and typed, its data colors are concrete for both color schemes, and its formats come from one closed portable set. Whoever builds the node, a Kibana materializer or an agent, resolves everything a renderer would otherwise have to decide. Renderers translate; they never pick a data color or sort, and they format only through `formatAxisValue`. The chart engine chooses ticks, domains, stacks and point density from the intent the Scene states, except a vertical chart's time axis, whose two rows of ticks the Scene holds.
 
-| Primitive | Holds |
-| --- | --- |
-| [`metric`](metric.md) | One headline value, or one tile per row, with an optional secondary value, progress bar or trend line |
-| [`legacyMetric`](legacy-metric.md) | Large values with a label above or below each, as Lens's legacy metric draws them |
-| [`xyChart`](xy-chart.md) | Lines, areas and bars over a shared x axis, with reference lines and annotations |
-| [`dataTable`](data-table.md) | Rows and columns to read exactly, with colored cells, bars, sorting, paging and a summary row |
-| [`partitionChart`](partition-chart.md) | Parts of a whole as a pie, donut, treemap, mosaic or waffle, in up to three layers |
-| [`heatmap`](heatmap.md) | Cells by two dimensions, colored by value bands |
-| [`gauge`](gauge.md) | One value on a scale, as a bullet or a dial, with colored ranges and a goal |
-| [`tagCloud`](tag-cloud.md) | Words sized by value |
-| [`grid`](grid.md) | Titled panels on a 48-column grid, in optional sections |
-| [`unsupported`](unsupported.md) | A visible placeholder with a reason and a link |
+| Primitive                              | Holds                                                                                                 |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| [`metric`](metric.md)                  | One headline value, or one tile per row, with an optional secondary value, progress bar or trend line |
+| [`legacyMetric`](legacy-metric.md)     | Large values with a label above or below each, as Lens's legacy metric draws them                     |
+| [`xyChart`](xy-chart.md)               | Lines, areas and bars over a shared x axis, with reference lines and annotations                      |
+| [`dataTable`](data-table.md)           | Rows and columns to read exactly, with colored cells, bars, sorting, paging and a summary row         |
+| [`partitionChart`](partition-chart.md) | Parts of a whole as a pie, donut, treemap, mosaic or waffle, in up to three layers                    |
+| [`heatmap`](heatmap.md)                | Cells by two dimensions, colored by value bands                                                       |
+| [`gauge`](gauge.md)                    | One value on a scale, as a bullet or a dial, with colored ranges and a goal                           |
+| [`tagCloud`](tag-cloud.md)             | Words sized by value                                                                                  |
+| [`grid`](grid.md)                      | Titled panels on a 48-column grid, in optional sections                                               |
+| [`unsupported`](unsupported.md)        | A visible placeholder with a reason and a link                                                        |
 
 Every chart primitive shares the [chart core](core.md): `title`, `description`, `data`, `colors`, `source` and `losses`, and declares its [interactions](interactions.md).
 
 ## Entries
 
-| Entry | Holds |
-| --- | --- |
-| `@elastic/isomer-primitives-charts/schema` | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer. |
-| `@elastic/isomer-primitives-charts/scene` | The [Scene](scene.md) types every renderer reads, the event helpers, `formatAxisValue` for tick labels, `timeTicksAt` for a time axis's ticks at a plot width, the [`CHART_GLYPHS`](core.md#glyphs) table, the `SceneRenderer` interface, and the [style helpers](rendering.md#styling) a chart engine authors its own rules with: `createVarsModule`, `varStyle`, `px`, `cls`, and the `LocalVarGroup` and `StyleHandle` types. |
-| `@elastic/isomer-primitives-charts/resolve` | [`resolveChart`](scene.md#resolvechart), which builds a Scene from a node. |
-| `@elastic/isomer-primitives-charts` | Everything above, plus the pack itself: `chartsPack`, [`createChartsPack`](rendering.md), its render context types, and the [size spec](rendering.md#chart-size) a renderer draws an unsized chart at. It imports React. |
+| Entry                                       | Holds                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `@elastic/isomer-primitives-charts/schema`  | The contracts: Zod schemas, node types, catalog entries and named examples. It imports no renderer.                                                                                                                                                                                                                                                                       |
+| `@elastic/isomer-primitives-charts/scene`   | The [Scene](scene.md) types every renderer reads, the event helpers, `formatAxisValue` for tick labels, the [`CHART_GLYPHS`](core.md#glyphs) table, the `SceneRenderer` interface, and the [style helpers](rendering.md#styling) a chart engine authors its own rules with: `createVarsModule`, `varStyle`, `px`, `cls`, and the `LocalVarGroup` and `StyleHandle` types. |
+| `@elastic/isomer-primitives-charts/resolve` | [`resolveChart`](scene.md#resolvechart), which builds a Scene from a node.                                                                                                                                                                                                                                                                                                |
+| `@elastic/isomer-primitives-charts`         | Everything above, plus the pack itself: `chartsPack`, [`createChartsPack`](rendering.md), its render context types, and the [size spec](rendering.md#chart-size) a renderer draws an unsized chart at. It imports React.                                                                                                                                                  |
 
 ```ts
 import {
