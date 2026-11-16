@@ -141,13 +141,16 @@ const BarCell = ({
 /**
  * Draws a table Scene as an HTML table, in the browser and on `snapshot`.
  * `styles` resolves its classes; absent, they are their readable names.
+ * With `fillWidth`, the table is as wide as its container, not the Scene.
  */
 export const TableView = ({
   scene,
   styles,
+  fillWidth = false,
 }: {
   scene: TableScene;
   styles?: Classes;
+  fillWidth?: boolean;
 }): ReactNode => {
   const { density, chrome } = scene;
   const shown = shownRows(scene);
@@ -180,7 +183,7 @@ export const TableView = ({
     <div
       className={cls(styles, table.root, table.font[density])}
       style={varStyle(vars.box, {
-        width: scene.size && px(scene.size.width),
+        width: scene.size && !fillWidth ? px(scene.size.width) : undefined,
         height: px(tableHeight(scene)),
         ink: chrome.text,
         fill: chrome.background,
@@ -360,5 +363,11 @@ export const tableSceneRenderer: ReactSceneRenderer = {
   environments: ['browser', 'node'],
   supports: (kind) => kind === 'table',
   render: (scene, env) =>
-    scene.kind === 'table' ? <TableView scene={scene} styles={env} /> : null,
+    scene.kind === 'table' ? (
+      <TableView
+        scene={scene}
+        styles={env}
+        fillWidth={env.fillWidth === true}
+      />
+    ) : null,
 };

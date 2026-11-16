@@ -28,7 +28,7 @@ export interface SceneCache {
     options: ResolveChartOptions,
     resolveScene: SceneResolver
   ) => Scene;
-  /** `renderer.render(scene, env)`, once per Scene, renderer, environment, style scope and event receiver. */
+  /** `renderer.render(scene, env)`, once per Scene, renderer, environment, `fillWidth`, style scope and event receiver. */
   readonly draw: (
     scene: Scene,
     renderer: ReactSceneRenderer,
@@ -50,6 +50,7 @@ export interface DrawingReceivers {
 interface Drawing extends DrawingReceivers {
   readonly renderer: ReactSceneRenderer;
   readonly environment: SceneRenderEnv['environment'];
+  readonly fillWidth: boolean;
   readonly nodeId: string | undefined;
   readonly drawn: ReactNode;
 }
@@ -136,6 +137,7 @@ export const createSceneCache = (): SceneCache => {
         (drawing) =>
           drawing.renderer === renderer &&
           drawing.environment === env.environment &&
+          drawing.fillWidth === Boolean(env.fillWidth) &&
           drawing.nodeId === env.nodeId &&
           drawing.styles === styles &&
           drawing.events === events
@@ -147,6 +149,7 @@ export const createSceneCache = (): SceneCache => {
       drawn.push({
         renderer,
         environment: env.environment,
+        fillWidth: Boolean(env.fillWidth),
         nodeId: env.nodeId,
         styles,
         events,

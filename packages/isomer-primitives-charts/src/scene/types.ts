@@ -248,6 +248,8 @@ export interface MetricScene extends SceneBase {
   readonly layout: MetricLayout;
   /** In `data` order. */
   readonly tiles: readonly MetricTile[];
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }
 
 /** An xy Scene's axis: the category axis, or the primary or secondary value axis. */
@@ -285,7 +287,8 @@ export interface SceneAxis {
   /**
    * On a vertical chart's time x axis, the two-row axis Lens draws: the ticks
    * and labels at every plot width. A renderer draws these rather than
-   * choosing ticks.
+   * choosing ticks. Absent where the resolver cannot state one, and the engine
+   * labels its own ticks through `formatAxisValue`.
    */
   readonly timeTicks?: SceneTimeTicks;
 }
@@ -501,6 +504,8 @@ export interface XyScene extends SceneBase {
   readonly barMinimumHeight: number;
   /** A helper mark: the current-time marker, in epoch milliseconds. */
   readonly currentTime?: number;
+  /** Present when there is nothing to draw: the reason, and the text to draw instead. */
+  readonly empty?: { readonly reason: 'noResults'; readonly text: string };
 }
 
 /** How a table column aligns its cells. */
@@ -948,6 +953,8 @@ export type SceneEnvironment = 'browser' | 'node';
 /** What a renderer is told about where it draws, beside the Scene itself. */
 export interface SceneRenderEnv {
   readonly environment: SceneEnvironment;
+  /** True when the Scene's `size.width` is a layout estimate and the container's width is the drawn one, which a renderer that can fills. */
+  readonly fillWidth?: boolean;
   /** The node's `id`, which events name. A renderer raises no event for a node without one. */
   readonly nodeId?: string;
   /** Receives every raised event. Absent means the chart offers no interaction. */
