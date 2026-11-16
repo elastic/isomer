@@ -83,6 +83,14 @@ describe('resolveGauge: bounds', () => {
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
   });
 
+  it('ends at the largest double for a value there', () => {
+    const scene = resolve(gauge([Number.MAX_VALUE, null, null, null]));
+    expect(scene).toMatchObject({ min: 0, max: Number.MAX_VALUE });
+    expect(scene.bands).toMatchObject([{ start: 0, end: Number.MAX_VALUE }]);
+    expect(scene.empty).toBeUndefined();
+    expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
+  });
+
   it('reads the first row with a value', () => {
     const node = gauge([null, null, null, null]);
     node.data.rows.push([7, null, null, null], [9, null, null, null]);
