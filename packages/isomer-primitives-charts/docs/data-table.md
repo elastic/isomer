@@ -16,6 +16,80 @@ Rows and columns to read exactly, on the [chart core](core.md). Lens data tables
 | `density` | `compact`, `default` or `expanded` |
 | `interactions`, `emphasis` | Selectable `cell`s, a link, the starting `initial.sort`, and static highlights: [Interactions](interactions.md) |
 
+## Example
+
+The fewest fields that validate and draw, every data column in data order:
+
+<!-- node-example -->
+
+```ts
+import type { DataTableNode } from '@elastic/isomer-primitives-charts/schema';
+
+const hosts: DataTableNode = {
+  type: 'dataTable',
+  data: {
+    columns: [
+      { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+    ],
+    rows: [
+      ['web-01', 4120],
+      ['web-02', 6310],
+    ],
+  },
+};
+```
+
+A typical panel, a titled table with a total in the footer, bars in one column, selectable cells, and rows that start sorted by count:
+
+<!-- node-example -->
+
+```ts
+import type { DataTableNode } from '@elastic/isomer-primitives-charts/schema';
+
+const topHosts: DataTableNode = {
+  type: 'dataTable',
+  title: 'Top hosts',
+  data: {
+    columns: [
+      { id: 'host', label: 'host.name', type: 'string', role: 'dimension' },
+      {
+        id: 'count',
+        label: 'Count of records',
+        type: 'number',
+        role: 'metric',
+      },
+      {
+        id: 'bytes',
+        label: 'Sum of bytes',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'bytes', maximumFractionDigits: 1 },
+      },
+    ],
+    rows: [
+      ['web-01', 4120, 81920000],
+      ['web-02', 6310, 120400000],
+      ['db-01', 1904, 9830400],
+    ],
+  },
+  columns: [
+    { column: 'host' },
+    { column: 'count', summary: { kind: 'sum' } },
+    { column: 'bytes', decoration: { kind: 'bar' } },
+  ],
+  interactions: {
+    select: ['cell'],
+    initial: { sort: { column: 'count', direction: 'desc' } },
+  },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.
@@ -39,6 +113,6 @@ The Scene's `kind` is `table`. Expected values come from Lens's datatable and Ki
 
 ## Surfaces
 
-No chart engine draws a table, so the pack does: its table renderer draws the title and description, the first page in the starting order as an HTML table, then each emphasis note, the same in the browser and on `snapshot`; the chart's link draws below it, as for every chart. The table is laid out as Lens's data grid: a shaded header, horizontal rules, the row header's cells as row headers, emphasized rows filled, the footer and the pager. Every color is the Scene's and every length is `CHARTS_THEME`'s. A host renderer that supports the `table` kind replaces it. Without a Scene `size`, the table is its title, description, header, first page, footer, pager and notes tall, and `snapshotHeight` reports that height plus any link line; with one, it draws the rows that fit. Text and Markdown write the summary and the table, footer row last, in `data` order. Slack gets the summary, description and notes as rich text, which the envelope splits rather than cuts, then a native `table` block of the Scene's strings in the starting order, capped at Slack's 100 rows and 20 columns, rather than a picture, then the link. Interactive sorting, paging and cell selection in the browser belong to the interactive renderers.
+No chart engine draws a table, so the pack does: its table renderer draws the title and description, the first page in the starting order as an HTML table, then each emphasis note, the same in the browser and on `snapshot`; the chart's link draws below it, as for every chart. The table is laid out as Lens's data grid: a shaded header, horizontal rules, the row header's cells as row headers, emphasized rows filled, the footer and the pager. Every color is the Scene's and every length is the pack theme's. A host renderer that supports the `table` kind replaces it. Without a Scene `size`, the table is its title, description, header, first page, footer, pager and notes tall, and `snapshotHeight` reports that height plus any link line; with one, it draws the rows that fit. Text and Markdown write the summary and the table, footer row last, in `data` order. Slack gets the summary, description and notes as rich text, which the envelope splits rather than cuts, then a native `table` block of the Scene's strings in the starting order, capped at Slack's 100 rows and 20 columns, rather than a picture, then the link. Interactive sorting, paging and cell selection in the browser belong to the interactive renderers.
 
 `dataTableExamples` covers a sorted table with an Other bucket, every decoration, missing, blank, multivalue and all-empty cells, paging with a summary, huge, tiny and negative values, chosen columns with pre-rendered values and provenance, and no rows.

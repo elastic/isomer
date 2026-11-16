@@ -983,3 +983,23 @@ describe('dataTable', () => {
     expect(texts).toContain('Most requested');
   });
 });
+
+describe('a grid with more panels than a call takes arguments', () => {
+  it('still measures its height', () => {
+    const snapshotHeight = chartsPack.primitives.find(
+      ({ type }) => type === 'grid'
+    )!.metrics?.snapshotHeight as (node: GridNode, env: object) => number;
+    const node: GridNode = {
+      type: 'grid',
+      panels: Array.from({ length: 200_000 }, (_, y) => ({
+        x: 0,
+        y,
+        w: 12,
+        h: 1,
+        node: { type: 'unsupported', title: 'Map', reason: 'Not supported' },
+      })),
+    };
+    // 200,000 rows of 20 px with an 8 px gap between them.
+    expect(snapshotHeight(node, {})).toBe(200_000 * 20 + 199_999 * 8);
+  });
+});

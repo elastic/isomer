@@ -21,6 +21,102 @@ Cells by an `x` and a `y` dimension, colored by value, on the [chart core](core.
 
 With no `colors.bands`, values take five temperature colors (EUI's `euiPaletteForTemperature(5)`) in equal steps from the smallest value to the largest, the last open above, as Lens's default palette does. A cell whose value is missing or not a number is left empty, and a row whose `x` or `y` cell is missing is not drawn, nor its position, as Elastic Charts leaves it out of Lens's heat map; a value in no band is drawn transparent. `colors.byKey` does not apply. A chart with no value to draw says "No results found".
 
+## Example
+
+The fewest fields that validate and draw, cells by two categories in the default palette:
+
+<!-- node-example -->
+
+```ts
+import type { HeatmapNode } from '@elastic/isomer-primitives-charts/schema';
+
+const errorsByService: HeatmapNode = {
+  type: 'heatmap',
+  data: {
+    columns: [
+      {
+        id: 'service',
+        label: 'service.name',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'region',
+        label: 'cloud.region',
+        type: 'string',
+        role: 'dimension',
+      },
+      { id: 'errors', label: 'Error rate', type: 'number', role: 'metric' },
+    ],
+    rows: [
+      ['checkout', 'us-east-1', 0.012],
+      ['checkout', 'eu-west-1', 0.031],
+      ['search', 'us-east-1', 0.067],
+      ['search', 'eu-west-1', 0.022],
+    ],
+  },
+  x: { column: 'service' },
+  y: { column: 'region' },
+  value: { column: 'errors' },
+};
+```
+
+A typical panel, the same cells with a title, stated bands for both schemes, values written in the cells, axis titles, the legend below and selectable cells:
+
+<!-- node-example -->
+
+```ts
+import type { HeatmapNode } from '@elastic/isomer-primitives-charts/schema';
+
+const errorsByServiceAndRegion: HeatmapNode = {
+  type: 'heatmap',
+  title: 'Errors by service and region',
+  data: {
+    columns: [
+      {
+        id: 'service',
+        label: 'service.name',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'region',
+        label: 'cloud.region',
+        type: 'string',
+        role: 'dimension',
+      },
+      {
+        id: 'errors',
+        label: 'Error rate',
+        type: 'number',
+        role: 'metric',
+        format: { kind: 'percent', maximumFractionDigits: 1 },
+      },
+    ],
+    rows: [
+      ['checkout', 'us-east-1', 0.012],
+      ['checkout', 'eu-west-1', 0.031],
+      ['search', 'us-east-1', 0.067],
+      ['search', 'eu-west-1', 0.022],
+    ],
+  },
+  x: { column: 'service' },
+  y: { column: 'region' },
+  value: { column: 'errors' },
+  colors: {
+    bands: [
+      { from: 0, to: 0.01, color: { light: '#CFE1FF', dark: '#1D3E73' } },
+      { from: 0.01, to: 0.05, color: { light: '#FCD883', dark: '#8A6A0A' } },
+      { from: 0.05, color: { light: '#F6726A', dark: '#C61E25' } },
+    ],
+  },
+  cellLabels: true,
+  axes: { x: { title: 'Service' }, y: { title: 'Region' } },
+  legend: { position: 'bottom' },
+  interactions: { select: ['cell'] },
+};
+```
+
 Rules:
 
 - Every column reference names a column in `data.columns`.
