@@ -417,7 +417,10 @@ const contextBlock = (lines: ReadonlyArray<string>): SlackContextBlock => ({
     .filter((line): line is string => line !== undefined && line.length > 0)
     .map((text) => ({
       type: 'mrkdwn',
-      text: clampMrkdwn(text, SLACK_LIMITS.contextElementChars),
+      text: clampMrkdwn(
+        text,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.context.chars.elements.limit]
+      ),
     })),
 });
 

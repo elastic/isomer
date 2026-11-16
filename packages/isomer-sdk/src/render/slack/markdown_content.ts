@@ -427,11 +427,9 @@ const toSlackBlocks = (
  * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
  * as `rich_text`, tables as `table` blocks, and thematic breaks as `divider`
  * blocks. A quote is one level, and inside a list item its blocks are the
- * item's. A run of rich-text blocks shares one `rich_text` block. Source from
- * `md.authored` is parsed as GFM and translated the same way.
- *
- * Text past Slack's limits splits and a table past its shape prints as rich
- * text, as `renderSlackEnvelope` fits them; nothing is cut.
+ * item's. A run of rich-text blocks shares one `rich_text` block, and text past
+ * Slack's limits splits, as `renderSlackEnvelope` splits it, rather than being
+ * cut. Source from `md.authored` is parsed as GFM and translated the same way.
  */
 export const markdownContentToSlackBlocks = (
   content: MarkdownContent,
