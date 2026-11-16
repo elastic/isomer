@@ -331,6 +331,9 @@ importers:
       '@elastic/isomer-image-takumi':
         specifier: workspace:*
         version: link:../isomer-image-takumi
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
       '@elastic/isomer-runtime':
         specifier: workspace:*
         version: link:../isomer-runtime

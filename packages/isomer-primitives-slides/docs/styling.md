@@ -2,9 +2,9 @@
 
 ## Distillate collection
 
-This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `createDistillateStyleAdapter(slideDistillery)`, from `src/theme/style_adapter.ts`, as the `styleAdapter` to `definePrimitivePack`: it records those handles and `renderStyles` emits the Distillate stylesheet. Class names are Distillate's readable names, since a compact name depends on the complete collected set, which does not exist until the markup naming it is written.
+This pack authors CSS with [Distillate](https://elastic.github.io/distillate/), Elastic's typed CSS engine with render-driven style collection. React renderers call `cls(context, ...handles)` so class names resolve through the HTML adapter's `resolveClassName`. `src/pack.ts` passes `slideDistillery` as the `distillery` to `definePrimitivePack`, and the runtime styles the pack through the SDK's Distillate adapter, which records those handles and emits the Distillate stylesheet. Class names are Distillate's readable names, since a compact name depends on the complete collected set, which does not exist until the markup naming it is written.
 
-Used rules are discovered while rendering, via `resolveClassName`. The adapter is part of the pack, so a host supplies nothing:
+Used rules are discovered while rendering, via `resolveClassName`. The distillery is part of the pack, so a host supplies nothing:
 
 ```ts
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
@@ -16,11 +16,9 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-Loaded alongside another pack that declares a `styleAdapter`, each adapter styles its own pack's nodes and the runtime joins their stylesheets. A pack with no adapter of its own is styled by the first pack that has one, which is this one when it comes first.
+Loaded alongside another pack that declares a `distillery`, such as the charts pack, the one adapter records each handle in its own distillery and joins their stylesheets in pack order. No primitive here declares a `collectStyles` hook: every handle reaches the collector through `resolveClassName`.
 
-The adapter declares `styleCollector: 'distillate'`, and the pack takes that tag from it. No primitive here declares a `collectStyles` hook — every handle reaches the collector through `resolveClassName` — so the tag never refuses this pack. It names the collector the adapter builds, so a runtime refuses to let it serve another pack whose `collectStyles` hooks declare a different tag.
-
-Pass `styleAdapter` on the runtime to replace the one pack adapter, this one included, which is how a host renders HTML with no CSS at all.
+Pass `styleAdapter` on the runtime to replace the packs' styling, which is how a host renders HTML with no CSS at all.
 
 ## The React surface
 

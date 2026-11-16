@@ -23,7 +23,8 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
-| `styleAdapter`    | Optional. The HTML CSS for this pack's own nodes.                              |
+| `distillery`      | Optional. The Distillate distillery the pack's styles are authored in.         |
+| `styleAdapter`    | Optional. The HTML CSS for a pack styled without Distillate.                   |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
 | `authoring`       | Optional. `describe` and index `groups` for agents.                            |
 | `inputBudget`     | Optional. The input budget the pack's compositions need; see below.            |

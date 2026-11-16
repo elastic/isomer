@@ -10,11 +10,9 @@ import {
   createDistillery,
   type LocalVarGroup,
   type StyleHandle,
-  type StylesCollector,
   type StylesObject,
 } from '@elastic/distillate';
-import type { PrimitiveNode, StyledRenderContext } from '@elastic/isomer-sdk';
-import type { HTMLStyleAdapter } from '@elastic/isomer-sdk/html';
+import type { StyledRenderContext } from '@elastic/isomer-sdk';
 
 // Guarded so the pack loads as unbundled browser ESM, where `process` is absent.
 const dev =
@@ -32,33 +30,6 @@ export const chartsDistillery = createDistillery({
   themeScope: ':root',
   theme: {},
 });
-
-// A value, not a method, so `contextWith` views pass it through unchanged.
-const STYLE_SCOPE = Symbol.for('isomer.charts.styleScope');
-
-/** The collector a render context's classes record into, for a context the pack's adapter made. */
-export const styleScopeOf = (context: unknown): object | undefined =>
-  typeof context === 'object' && context !== null
-    ? (Reflect.get(context, STYLE_SCOPE) as object | undefined)
-    : undefined;
-
-/** The pack's HTML style adapter: records the handles a render resolves and emits their rules. */
-export const chartsStyleAdapter: HTMLStyleAdapter<
-  PrimitiveNode,
-  StylesCollector
-> = {
-  styleCollector: 'distillate',
-  createCollector: () => chartsDistillery.artifactCollector('readable'),
-  createRenderContext: (collector) => ({
-    resolveClassName: (...handles) => {
-      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
-      collector.useHandles(handles as unknown as readonly StyleHandle[]);
-      return handles.map(({ readableName }) => readableName).join(' ');
-    },
-    [STYLE_SCOPE]: collector,
-  }),
-  renderStyles: (collector) => chartsDistillery.renderStyles(collector),
-};
 
 type Authoring = Parameters<
   Parameters<typeof chartsDistillery.createStyleModule>[1]

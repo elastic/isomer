@@ -31,7 +31,7 @@ runtime.surfaces.markdown.render(composition);
 runtime.surfaces.snapshot.render(composition, { theme: 'light' });
 ```
 
-The pack ships its own style adapter, which the runtime combines with any other styled pack's. `slide` is the host's chosen name for `slideDeckFrame`, not a field the pack fixes.
+The pack declares its Distillate distillery, which the runtime styles beside any other pack's. `slide` is the host's chosen name for `slideDeckFrame`, not a field the pack fixes.
 
 ## Docs
 

@@ -58,7 +58,9 @@ CSS is not the SDK's. A pack supplies an `HTMLStyleAdapter`, and the SDK calls i
 
 `createRenderContext` must return a complete context, because `TContext` is the pack's own type. The HTML surface never writes to it and hands renderers a view of it rather than a copy, so a frozen or class-instance context keeps its methods and private state. Whether renderers emit [node anchors](#node-anchors) during an HTML render is the surface's decision, whatever the context's `anchors` says. The HTML adapter's default `TContext` is `StyledRenderContext` (`resolveClassName`, `cssVarRef`). `PrimitiveRenderContext` itself is `enhancements`, `anchors`, and `onEvent`.
 
-A pack puts its adapter on `definePrimitivePack({ styleAdapter })` so a host gets it without asking. The SDK ships no adapter for any CSS engine; the slides pack's `src/theme/style_adapter.ts` is a [Distillate](https://elastic.github.io/distillate/) one to copy.
+A pack authored in [Distillate](https://elastic.github.io/distillate/) declares its distillery, `definePrimitivePack({ distillery })`, rather than an adapter. `createDistillateStyleAdapter(distilleries)` on `./html` is the one adapter for every such pack: each handle a renderer resolves is recorded by the distillery whose registry owns its module, a handle none owns by the first, and the stylesheet joins each distillery's rules in order, a distillery listed twice once. Class names are readable names, since a compact name depends on the complete collected set. Every context one render makes carries the same `styleScopeOf` token, for a renderer that caches its output across the two passes.
+
+A pack styled any other way puts its adapter on `definePrimitivePack({ styleAdapter })` so a host gets it without asking.
 
 A primitive contributes CSS through `collectStyles(node, { styles, context })`. The adapter's `collectViewStyles` still walks the body via the dispatcher's positional `collectStyles(node, styles, context)`.
 

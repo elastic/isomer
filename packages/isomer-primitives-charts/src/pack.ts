@@ -12,7 +12,7 @@ import type { ChartFailureHandler } from './render/failure';
 import { gridPrimitive } from './render/grid';
 import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { defineChartPrimitives } from './render/primitives';
-import { chartsDistillery, chartsStyleAdapter } from './render/styles';
+import { chartsDistillery } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
 import { tableSceneRenderer } from './render/table';
 import { unsupportedPrimitive } from './render/unsupported';
@@ -97,7 +97,7 @@ export const createChartsPack = ({
       gridPrimitive,
       unsupportedPrimitive,
     ],
-    styleAdapter: chartsStyleAdapter,
+    distillery: chartsDistillery,
   });
 
 /**

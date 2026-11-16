@@ -14,7 +14,7 @@ sources:
 
 # Definition
 
-HTML rendering and the `HTMLStyleAdapter` contract. Loading this entry is what pulls `react-dom/server`.[^barrel] See [`./html`](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#html) in the API reference.
+HTML rendering, the `HTMLStyleAdapter` contract, and `createDistillateStyleAdapter`, the one adapter for packs that declare a `distillery`. Loading this entry is what pulls `react-dom/server`.[^barrel] See [`./html`](https://github.com/elastic/isomer/blob/main/packages/isomer-sdk/docs/api.md#html) in the API reference.
 
 Related: [rendering](/sdk/concepts/rendering.md), [root](/sdk/entry-points/root.md).
 

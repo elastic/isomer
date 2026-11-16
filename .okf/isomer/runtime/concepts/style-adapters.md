@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Style adapters
-description: The HTML surface runs the host adapter if supplied, otherwise each pack's own, composed.
+description: The HTML surface runs the host adapter if supplied, otherwise one Distillate adapter over the packs' distilleries.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
 tags: [isomer, runtime, css]
 status: stable
@@ -9,7 +9,7 @@ stale_after: 2027-03-18
 sources:
   - id: adapter
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
-    title: resolveStyling
+    title: resolveStyleAdapter
   - id: docs
     resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/docs/packs.md
     title: Runtime packs
@@ -17,12 +17,12 @@ sources:
 
 # Definition
 
-The HTML and `snapshot` surfaces run the host's style adapter if one was passed, otherwise each pack's own. See the package doc on packs.[^docs]
+The HTML and `snapshot` surfaces run the host's style adapter if one was passed, otherwise one adapter built from the packs. See the package doc on packs.[^docs]
 
-Two or more pack adapters compose: each gets its own collector, a pack's `react` renderers read its own adapter's render context wherever they are nested, with the fields a surface or container layered on carried over, and the stylesheet and each adapter's scoped script join theirs in pack order. A pack without an adapter is styled by the first pack that has one, and throws `AMBIGUOUS_STYLE_ADAPTER` if it declares `collectStyles`.[^adapter]
+Packs that declare a `distillery` share the SDK's `createDistillateStyleAdapter`: every renderer gets the same context, each handle is recorded by the distillery whose registry owns its module, and the stylesheet joins each distillery's rules in pack order. A pack that declares `collectStyles` beside them throws `INCOMPATIBLE_STYLE_COLLECTOR`, since that adapter never runs the hook. A pack `styleAdapter` runs only as the one pack-level style source; beside another pack's adapter or distillery it throws `AMBIGUOUS_STYLE_ADAPTER` unless the host passes `styleAdapter`.[^adapter]
 
 Related: [pack composition](/runtime/concepts/packs.md), [rendering](/sdk/concepts/rendering.md).
 
-[^adapter]: resolveStyling
+[^adapter]: resolveStyleAdapter
 
 [^docs]: Runtime packs

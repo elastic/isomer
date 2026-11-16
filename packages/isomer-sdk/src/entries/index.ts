@@ -75,9 +75,12 @@ export {
 } from '../define';
 export {
   type AnyPrimitivePack,
+  type DistilleryCollector,
+  type DistilleryHandle,
   type EnhancementDefinition,
   type HostCapabilities,
   type PackAuthoringOptions,
+  type PackDistillery,
   type PackInputBudget,
   type PrimitiveGroup,
   type PrimitivePack,
@@ -101,6 +104,7 @@ export {
   formatDisplayValue,
   layoutRoom,
   nodeAnchor,
+  styleScopeOf,
   withNodeAnchors,
   withoutAnchors,
 } from '../render';

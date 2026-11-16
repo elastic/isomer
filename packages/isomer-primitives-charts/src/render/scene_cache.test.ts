@@ -7,6 +7,7 @@
 
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { createDistillery } from '@elastic/distillate';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import {
   type Composition,
@@ -163,11 +164,11 @@ describe('scene cache', () => {
               },
             }),
           ],
-          styleAdapter: {
-            createCollector: () => ({}),
-            createRenderContext: () => ({ resolveClassName: () => '' }),
-            renderStyles: () => '',
-          },
+          distillery: createDistillery({
+            prefix: 'styled',
+            themeScope: ':root',
+            theme: {},
+          }),
         }),
       ],
       frames: { charts: chartsFrame },

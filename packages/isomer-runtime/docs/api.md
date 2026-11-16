@@ -19,7 +19,7 @@ Everything `@elastic/isomer-runtime` exports from its entry point and its `./tes
 | `formats` | `readonly string[]` | Formats the host ships beyond the runtime's own, reported by `getCapabilities().formats`; a rasterizer's list, e.g. a takumi backend's `formats`. |
 | `views` | `readonly RegisteredView[]` | Pre-registered on the runtime's view registry. |
 | `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
-| `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces the pack's adapter. Defaults to the one pack adapter. Required when two packs declare one, or when any pack declares `collectStyles` and no adapter is otherwise available. |
+| `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces the packs' styling. Defaults to one Distillate adapter over every pack's `distillery`, or else the one pack adapter. Required when a pack adapter sits beside another pack's adapter or distillery, or when any pack declares `collectStyles` and no pack `styleAdapter` serves it, since the Distillate adapter never runs the hook. |
 | `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
 | `authoring` | `RuntimeAuthoringOptions` | Options for the authoring schema and declarations `getAuthoringContext` returns. |
 | `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Each limit set replaces the packs' budget for that limit: the largest any pack declares, never below the SDK default. |
