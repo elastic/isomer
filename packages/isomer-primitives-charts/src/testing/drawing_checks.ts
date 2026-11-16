@@ -40,56 +40,132 @@ export interface DrawingReading {
 /** Reads a drawing back; one per engine. */
 export type DrawingReader = (drawing: DrawnScene) => DrawingReading;
 
-/** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
-export const rgbOf = (color: string): string => {
-  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
-  return hex
-    ? hex
-        .slice(1, 4)
-        .map((pair) => parseInt(pair, 16))
-        .join(',')
-    : (/^rgba?\(([^)]*)\)/.exec(color)?.[1] ?? color)
-        .split(',')
-        .slice(0, 3)
-        .map((channel) => Number(channel.trim()))
-        .join(',');
+const NUMBER = String.raw`(\d+(?:\.\d+)?|\.\d+)`;
+const SHORT_HEX = /^#([\da-f])([\da-f])([\da-f])[\da-f]?$/i;
+const LONG_HEX = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})(?:[\da-f]{2})?$/i;
+const COMMA_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s*,\s*${NUMBER}\s*,\s*${NUMBER}\s*(?:,\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+const SPACE_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s+${NUMBER}\s+${NUMBER}\s*(?:/\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+
+/** The three channels of a paint in exactly one of the notations {@link rgbOf} reads. */
+const channelsOf = (paint: string): number[] | undefined => {
+  const short = SHORT_HEX.exec(paint);
+  if (short) {
+    return short.slice(1, 4).map((digit) => parseInt(digit + digit, 16));
+  }
+  const long = LONG_HEX.exec(paint);
+  if (long) {
+    return long.slice(1, 4).map((pair) => parseInt(pair, 16));
+  }
+  const channels = (COMMA_RGB.exec(paint) ?? SPACE_RGB.exec(paint))
+    ?.slice(1, 4)
+    .map((channel) => Math.round(Number(channel)));
+  return channels?.every((channel) => channel <= 255) ? channels : undefined;
 };
 
-/** Markup text with its entities decoded. */
+let unread = 0;
+
+/**
+ * A color's channels, as `r,g,b`, its alpha apart: `#rgb[a]`, `#rrggbb[aa]`,
+ * `rgb[a](r, g, b[, a])` or `rgb[a](r g b[ / a])` with channels from 0 to 255.
+ * Any other paint, such as `none`, reads as a string no other call returns,
+ * so it equals no color and no paint.
+ */
+export const rgbOf = (color: string): string =>
+  channelsOf(color.trim())?.join(',') ?? `unread ${unread++}`;
+
+const NAMED: Readonly<Record<string, string>> = {
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  nbsp: String.fromCodePoint(0xa0),
+  quot: '"',
+};
+const REFERENCE = /&(?:#(\d+)|#[xX]([\da-fA-F]+)|(amp|apos|gt|lt|nbsp|quot));/g;
+
+/** Markup text with its character references decoded, each once. */
 export const unescapeMarkup = (text: string): string =>
-  text
-    .replace(/&#(\d+);/g, (_, code: string) =>
-      String.fromCharCode(Number(code))
-    )
-    .replace(/&#x([\da-f]+);/gi, (_, code: string) =>
-      String.fromCharCode(parseInt(code, 16))
-    )
-    .replace(/&quot;/g, '"')
-    .replace(/&#?39;|&apos;/g, "'")
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&');
+  text.replace(
+    REFERENCE,
+    (reference, decimal?: string, hex?: string, name?: string) => {
+      if (name !== undefined) {
+        return NAMED[name]!;
+      }
+      const code = decimal === undefined ? parseInt(hex!, 16) : Number(decimal);
+      return code <= 0x10ffff ? String.fromCodePoint(code) : reference;
+    }
+  );
 
 // An engine may break a string across lines, even mid-word.
 const squash = (text: string) => text.replace(/\s+/g, '');
 
+/** Whether the runs from some run on spell `whole`, or its start and an ellipsis. */
+const spelled = (runs: readonly string[], whole: string): boolean =>
+  runs.some((_, start) => {
+    let shown = '';
+    for (const run of runs.slice(start)) {
+      shown += run;
+      if (shown === whole) {
+        return true;
+      }
+      if (run.endsWith('…')) {
+        return shown.length > 1 && whole.startsWith(shown.slice(0, -1));
+      }
+      if (!whole.startsWith(shown)) {
+        return false;
+      }
+    }
+    return false;
+  });
+
 /**
- * Whether `value` is drawn whole, or, where it does not fit, its start on one
- * or more lines and an ellipsis.
+ * Whether `value` is drawn: one whole entry of `texts`, or consecutive entries
+ * that are its lines, or, where it does not fit, its start on one or more
+ * lines and an ellipsis. Whitespace apart; an empty `value` has nothing to draw.
  */
 export const textDrawn = (texts: readonly string[], value: string): boolean => {
   const whole = squash(value);
-  if (squash(texts.join('')).includes(whole)) {
-    return true;
+  return whole === '' || spelled(texts.map(squash), whole);
+};
+
+/**
+ * The `drawn` words left over when the rest divide into `known` words, each
+ * whole, cut with an ellipsis, or broken across consecutive words: the fewest
+ * any such division leaves.
+ */
+const strayWords = (
+  drawn: readonly string[],
+  known: readonly string[]
+): readonly string[] => {
+  const isKnown = (shown: string) =>
+    known.includes(shown) ||
+    (shown.endsWith('…') &&
+      known.some((word) => word.startsWith(shown.slice(0, -1))));
+  // `fewest[at]` is the strays among the words from `at` on.
+  const fewest: (readonly string[])[] = [];
+  fewest[drawn.length] = [];
+  for (let at = drawn.length - 1; at >= 0; at--) {
+    let best = [drawn[at]!, ...fewest[at + 1]!];
+    let shown = '';
+    for (let end = at; end < drawn.length; end++) {
+      shown += drawn[end];
+      const rest = fewest[end + 1]!;
+      if (isKnown(shown) && rest.length < best.length) {
+        best = [...rest];
+      }
+      if (!known.some((word) => word.startsWith(shown))) {
+        break;
+      }
+    }
+    fewest[at] = best;
   }
-  return texts.some(
-    (text, end) =>
-      text.endsWith('…') &&
-      texts.slice(0, end + 1).some((_, start) => {
-        const shown = squash(texts.slice(start, end + 1).join('')).slice(0, -1);
-        return shown.length > 0 && whole.startsWith(shown);
-      })
-  );
+  return fewest[0]!;
 };
 
 /** The accessible description a drawing of `scene` carries: its summary, then its authored description. */
@@ -180,16 +256,14 @@ const KIND_CHECKS: Partial<Record<SceneKind, Check>> = {
           ...(value ? drawnText(reading, 'legend value', value) : []),
         ]
       ),
-      ...reading.texts
-        .flatMap((text) => text.split(/\s+/))
-        .filter(
-          (word) =>
-            word !== '' &&
-            !words.some((known) => known.includes(word.replace(/…$/, '')))
-        )
-        .map(
-          (word) => `"${word}" is drawn but is no slice's or legend item's text`
-        ),
+      ...strayWords(
+        reading.texts
+          .flatMap((text) => text.split(/\s+/))
+          .filter((word) => word !== ''),
+        words
+      ).map(
+        (word) => `"${word}" is drawn but is no slice's or legend item's text`
+      ),
     ];
   },
   heatmap: (scene, reading) => {
