@@ -47,6 +47,7 @@ Rules:
 - Trend column references name a column in `background.data.columns`.
 - Without a `breakdown`, `data` holds at most one row.
 - A `bands` color needs `colors.bands`.
+- A `bandsRange` needs `colors.bands`.
 - A trend `breakdown` needs a `breakdown` on the metric.
 - Emphasis rows are indexes into `data.rows`.
 

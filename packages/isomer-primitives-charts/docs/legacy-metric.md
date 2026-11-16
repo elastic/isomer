@@ -28,6 +28,7 @@ Rules:
 - Every column reference names a column in `data.columns`.
 - Each `metrics` column is named once, and the `breakdown` column is not one of them.
 - Without a `breakdown`, `data` holds at most one row.
+- A `bandsRange` needs `colors.bands`.
 - Emphasis rows are indexes into `data.rows`.
 
 ## How it resolves
