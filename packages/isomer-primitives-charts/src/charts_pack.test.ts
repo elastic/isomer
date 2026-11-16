@@ -324,7 +324,7 @@ describe('unsupported', () => {
     expect(html).toContain(`href="${unsupportedVega.link?.href}"`);
   });
 
-  it('styles through its own adapter, emitting only the rules it draws', () => {
+  it('styles through its distillery, emitting only the rules it draws', () => {
     const { body, css } = runtime.surfaces.html.render(view(unsupportedVega));
     expect(body).toContain('class="chartsUnsupported-root"');
     expect(css).toContain('.chartsUnsupported-root{');

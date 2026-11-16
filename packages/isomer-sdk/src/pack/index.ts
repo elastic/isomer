@@ -11,6 +11,11 @@ export {
   describeCapabilities,
 } from './capabilities';
 export { composePacks } from './compose';
+export {
+  type DistilleryCollector,
+  type DistilleryHandle,
+  type PackDistillery,
+} from './distillery';
 export { type EnhancementDefinition, scopeScript } from './enhancements';
 export {
   type AnyPrimitivePack,

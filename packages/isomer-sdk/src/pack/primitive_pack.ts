@@ -16,6 +16,7 @@ import type {
   OptionalSurface,
 } from '../define/primitive_module';
 
+import type { PackDistillery } from './distillery';
 import type { EnhancementDefinition } from './enhancements';
 
 /**
@@ -100,9 +101,15 @@ export interface PrimitivePackInput {
    */
   slackAssetTypes?: readonly string[];
   /**
-   * Default HTML style adapter for this pack's nodes. A runtime that omits
-   * `styleAdapter` runs each pack's own and joins their stylesheets. Pass
-   * `styleAdapter` on the runtime to replace them all.
+   * The Distillate distillery this pack's styles are authored in. A runtime
+   * that omits `styleAdapter` styles every pack through one adapter over all
+   * of its packs' distilleries.
+   */
+  distillery?: PackDistillery;
+  /**
+   * Default HTML style adapter for a pack styled without Distillate. A runtime
+   * runs it only when no other pack declares a `styleAdapter` or a
+   * `distillery`; pass `styleAdapter` on the runtime to choose otherwise.
    */
   styleAdapter?: PackStyleAdapter;
   /**
@@ -168,6 +175,8 @@ export interface PrimitivePack<TTheme = unknown> {
   readonly enhancements: readonly EnhancementDefinition[];
   /** See {@link PrimitivePackInput.slackAssetTypes}. */
   readonly slackAssetTypes: ReadonlySet<string>;
+  /** See {@link PrimitivePackInput.distillery}. */
+  readonly distillery?: PackDistillery;
   /** See {@link PrimitivePackInput.styleAdapter}. */
   readonly styleAdapter?: PackStyleAdapter;
   /** See {@link PrimitivePackInput.styleCollector}. */
@@ -233,6 +242,7 @@ export const definePrimitivePack = <TTheme = unknown>(
     icons: iconsByType(input.primitives),
     enhancements: input.enhancements ?? [],
     slackAssetTypes: new Set(input.slackAssetTypes ?? []),
+    ...(input.distillery !== undefined ? { distillery: input.distillery } : {}),
     ...(input.styleAdapter !== undefined
       ? { styleAdapter: input.styleAdapter }
       : {}),

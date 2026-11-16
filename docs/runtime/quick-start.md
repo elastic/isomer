@@ -35,7 +35,7 @@ export const runtime = createIsomerRuntime({
 });
 ```
 
-The pack ships its own style adapter, so the runtime has CSS without being told. A host composing CSS-bearing packs that declare no adapter supplies `styleAdapter`; see [Runtime](runtime.md).
+The pack declares its Distillate distillery, so the runtime has CSS without being told. A host composing CSS-bearing packs that declare no adapter supplies `styleAdapter`; see [Runtime](runtime.md).
 
 ## 3. Write a composition
 

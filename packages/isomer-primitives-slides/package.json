@@ -49,6 +49,7 @@
     "@elastic/eui": "123.1.0",
     "@elastic/eui-theme-borealis": "8.1.0",
     "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-primitives-charts": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-studio": "workspace:*",
     "@emotion/css": "11.13.5",

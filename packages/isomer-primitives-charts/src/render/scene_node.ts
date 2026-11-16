@@ -10,7 +10,11 @@
 // thing drawn here.
 
 import { createElement, type ReactNode } from 'react';
-import { nodeAnchor, sanitizeNavigationHref } from '@elastic/isomer-sdk';
+import {
+  nodeAnchor,
+  sanitizeNavigationHref,
+  styleScopeOf,
+} from '@elastic/isomer-sdk';
 
 import { selectSceneRenderer } from '../scene/select';
 import type {
@@ -36,7 +40,7 @@ import {
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeVars, isNominalSize } from './size';
-import { cls, styleScopeOf, varStyle } from './styles';
+import { cls, varStyle } from './styles';
 import { summarySceneRenderer } from './summary_renderer';
 import { tableHeight } from './table';
 import { CHARTS_THEME } from './theme';

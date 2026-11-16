@@ -6,17 +6,17 @@
  */
 
 import type { StyleHandle } from '@elastic/isomer-sdk';
+import { createDistillateStyleAdapter } from '@elastic/isomer-sdk/html';
 import { describe, expect, it } from 'vitest';
 
 import { slideDistillery } from './distillery';
 import { deckRootModule, layoutModule } from './modules';
-import { createDistillateStyleAdapter } from './style_adapter';
 
 const fill = layoutModule.handles.fill as unknown as StyleHandle;
 const deckRoot = deckRootModule.handles.root as unknown as StyleHandle;
 
 const render = (handle: StyleHandle, scheme?: 'light' | 'dark') => {
-  const adapter = createDistillateStyleAdapter(slideDistillery);
+  const adapter = createDistillateStyleAdapter([slideDistillery]);
   const collector = adapter.createCollector({});
   const { resolveClassName } = adapter.createRenderContext(collector, {});
   const className = resolveClassName?.(handle) ?? '';
@@ -26,7 +26,7 @@ const render = (handle: StyleHandle, scheme?: 'light' | 'dark') => {
   };
 };
 
-describe('createDistillateStyleAdapter', () => {
+describe('slideDistillery through the Distillate style adapter', () => {
   it('writes the class names its stylesheet defines', () => {
     const { className, css } = render(fill);
 

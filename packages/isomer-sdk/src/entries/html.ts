@@ -6,11 +6,13 @@
  */
 
 export {
+  type DistilleryCollectors,
   type EnhancementDefinition,
   type HTMLRenderDispatcher,
   type HTMLRenderOptions,
   type HTMLRenderResult,
   type HTMLStyleAdapter,
   collectHTMLStyles,
+  createDistillateStyleAdapter,
   renderHTMLWithDispatcher,
 } from '../render/html';

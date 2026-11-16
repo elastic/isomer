@@ -17,7 +17,8 @@ Packs are built by `definePrimitivePack` in the SDK, not here — see [the pack 
 | `surfaces` | Which optional surfaces every primitive implements (only `slack`) |
 | `enhancements` | Progressive enhancements the HTML surface may apply, by id |
 | `slackAssetTypes` | Which node types are pictures, so Slack uploads them instead of approximating them |
-| `styleAdapter` | Optional. The HTML CSS for its own nodes |
+| `distillery` | Optional. The Distillate distillery its styles are authored in |
+| `styleAdapter` | Optional. The HTML CSS for a pack styled without Distillate |
 | `styleCollector` | Optional. The collector shape its `collectStyles` hooks expect |
 | `TTheme` | The palette its `snapshot` renderers require, as `definePrimitivePack<T>`'s type argument |
 
@@ -40,11 +41,11 @@ What replaced frame ownership is a type-level bound rather than a runtime check 
 
 ## Styling packs
 
-A pack ships its own `styleAdapter`, and each pack's adapter styles that pack's nodes: it gets its own collector, its renderers get its own render context wherever they are nested, with the fields a surface or container layered on carried over, and the stylesheet and scripts join every adapter's in pack order, each script scoped on its own. A pack without one is styled by the first pack that has one. Passing `styleAdapter` on the runtime replaces them all.
+A pack authored in Distillate declares its `distillery`, and the runtime styles every pack through one adapter over all of them: each handle is recorded by the distillery that owns it, wherever its node is nested, and the stylesheet joins each distillery's rules in pack order. A pack with neither field is styled by that adapter too. A pack styled another way declares a `styleAdapter`, which the runtime runs only when no other pack declares an adapter or a distillery; otherwise construction throws `AMBIGUOUS_STYLE_ADAPTER`. Passing `styleAdapter` on the runtime replaces them all.
 
 A pack is also CSS-bearing when any of its primitives declare `collectStyles`; construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
-A CSS-bearing pack should also declare `styleCollector`, naming the collector shape its hooks mutate — the slides pack's Distillate adapter publishes `'distillate'`. Adapters publish the same tag, and construction throws when they disagree. Without it the mismatch surfaces as a corrupted collector at render instead.
+A CSS-bearing pack should also declare `styleCollector`, naming the collector shape its hooks mutate. Adapters publish the same tag, and construction throws when they disagree. Without it the mismatch surfaces as a corrupted collector at render instead.
 
 A host that wants a CSS-bearing pack on text or Slack only supplies a no-op adapter, which replaces the pack's; see [Surfaces](surfaces.md).
 

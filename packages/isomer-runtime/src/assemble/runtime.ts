@@ -65,7 +65,7 @@ import {
   applyRendererOverrides,
   type RuntimeRendererOverrides,
 } from './overrides';
-import { resolveStyling } from './style_adapter';
+import { resolveStyleAdapter } from './style_adapter';
 
 /** The frames a runtime can draw with, keyed by the name a render asks for. */
 export type FrameMap<TTheme> = Readonly<Record<string, Frame<TTheme>>>;
@@ -110,12 +110,12 @@ export interface IsomerRuntimeOptions<
   /**
    * The HTML surface's CSS and class-name strategy.
    *
-   * Defaults to the packs' own adapters: each styles its own pack's nodes, and
-   * a pack without one is styled by the first pack that has one. Passing this
-   * replaces them all, such as a no-op when a CSS-bearing pack should emit no
-   * CSS.
+   * Defaults to one Distillate adapter over every pack's `distillery`, or else
+   * the one pack `styleAdapter`. Passing this replaces them, such as a no-op
+   * when a CSS-bearing pack should emit no CSS.
    *
-   * Required when any pack declares `collectStyles` and no pack (or this
+   * Required when a pack `styleAdapter` sits beside another pack's adapter or
+   * distillery, and when any pack declares `collectStyles` and no pack (or this
    * option) supplies an adapter.
    */
   styleAdapter?: HTMLStyleAdapter<
@@ -251,15 +251,16 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
 >(
   options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme>
 ): IsomerRuntime<THostContext, TRenderContext, TTheme> => {
-  const { adapter: styleAdapter, packs } = resolveStyling(
-    applyRendererOverrides(options.packs, options.rendererOverrides),
-    options.styleAdapter
-  );
+  const styleAdapter = resolveStyleAdapter(options.packs, options.styleAdapter);
   assertRuntimePacks(options.packs, styleAdapter);
   const frames = bindFrames(options.frames);
   const defaultFrame = resolveDefaultFrame(
     options.frames && frames,
     options.defaultFrame
+  );
+  const packs = applyRendererOverrides(
+    options.packs,
+    options.rendererOverrides
   );
   const { definitions, enhancements, slackAssetTypes } = composePacks(packs);
   const dispatcher = createPrimitiveDispatcher<

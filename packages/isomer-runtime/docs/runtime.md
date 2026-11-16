@@ -22,14 +22,14 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `formats` | any number | Formats the host ships beyond the runtime's own, reported by `getCapabilities`: a rasterizer's list, such as a takumi backend's `formats`. |
 | `views` | any number | Views pre-registered on the runtime's view registry. |
 | `rendererOverrides` | per type, per surface | One renderer replaced without forking a pack. |
-| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the one pack adapter; required to choose when two packs declare one, and when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
+| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to one Distillate adapter over the packs' distilleries, or else the one pack adapter; required to choose when a pack adapter sits beside another pack's adapter or distillery, and when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring schema and declarations `getAuthoringContext` returns: the SDK's `AuthoringJsonSchemaOptions` plus `jsx`. |
 | `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the packs' budget: per limit, the largest any pack declares, never below the SDK's default. Each limit set here replaces that limit alone; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `snapshot` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
-`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and each styles its own pack's nodes; a pack without one is styled by the first pack that has one. `styleAdapter` replaces them all, which is how a host styles every pack with one engine or supplies a no-op for CSS it does not want; see [Surfaces](surfaces.md).
+`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. Packs declare their Distillate distillery, and one adapter styles every pack through them all; a pack styled without Distillate ships its own adapter instead, which runs only when it is the one source. `styleAdapter` replaces them all, which is how a host styles every pack with one engine or supplies a no-op for CSS it does not want; see [Surfaces](surfaces.md).
 
 A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
 
@@ -88,7 +88,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | `defaultFrame` is one the runtime holds | `UNKNOWN_FRAME` | `defaultFrame "…" is not one of the supplied frames (…)` |
 | Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
 | A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
-| A pack without a `styleAdapter` collects no styles beside two packs that declare one, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `pack "…" primitive "…" collects styles, but packs … each declare a styleAdapter` |
+| A pack `styleAdapter` is the only pack-level style source, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `pack "…"'s styleAdapter and … each style the HTML surface` |
 | Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
 Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.

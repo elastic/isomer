@@ -24,3 +24,4 @@ export {
   type PrimitiveDispatcher,
   createPrimitiveDispatcher,
 } from './primitive_dispatch';
+export { styleScopeOf } from './style_scope';
