@@ -71,6 +71,19 @@ export const resolveColor = (
     : hex;
 };
 
+/** The color `byKey` states for `key`, concrete for `scheme`, if any. */
+export const keyColor = (
+  byKey: Readonly<Record<string, ColorValue>> | undefined,
+  key: string | undefined,
+  scheme: ColorScheme
+): SceneColor | undefined => {
+  const stated =
+    byKey && key !== undefined && Object.hasOwn(byKey, key)
+      ? byKey[key]
+      : undefined;
+  return stated ? resolveColor(stated, scheme) : undefined;
+};
+
 const channel = (hex: string, offset: number) => {
   const full =
     hex.length === 4

@@ -17,13 +17,14 @@ import {
   createResolution,
   describe,
   keyPart,
+  NO_RESULTS,
   type ResolveChartOptions,
   resolveInteractions,
   sceneBase,
   titled,
   toNumber,
 } from './common';
-import { categoricalColor, mixLch, resolveColor, TRANSPARENT } from './theme';
+import { categoricalColor, keyColor, mixLch, TRANSPARENT } from './theme';
 import type {
   PartitionLayer,
   PartitionLegendItem,
@@ -40,9 +41,6 @@ const DEFAULTS = {
   categories: 'auto',
   values: 'percent',
 } as const;
-
-/** Lens's text for a partition chart with nothing to draw. */
-const NO_RESULTS = 'No results found';
 
 /** The metric layer's name, for descriptions. */
 const METRIC_LAYER = 'Metric';
@@ -308,11 +306,10 @@ export const resolvePartition = (
   // A stated color names a key part; the category takes it in every column.
   const categoryColor = ({ part, identity }: Draft): SceneColor => {
     const named = statedColors.get(identity) ?? part;
-    const stated =
-      colors && Object.hasOwn(colors, named) ? colors[named] : undefined;
-    return stated
-      ? resolveColor(stated, scheme)
-      : categoricalColor(ranks.get(identity) ?? 0);
+    return (
+      keyColor(colors, named, scheme) ??
+      categoricalColor(ranks.get(identity) ?? 0)
+    );
   };
   const colorOf = (path: readonly Draft[]): SceneColor => {
     const slice = path[path.length - 1]!;
