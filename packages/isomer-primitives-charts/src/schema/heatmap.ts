@@ -7,7 +7,7 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { colorValueSchema } from './colors';
+import { BANDS_RANGE_RULE, checkBandsRange, colorValueSchema } from './colors';
 import { chartCoreShape } from './core';
 import { crossSuperRefine } from './cross_field';
 import {
@@ -33,7 +33,7 @@ export const HEATMAP_RULES = {
   domain:
     'Only a `date` `x` column has an `axes.x.domain`, and a `custom` one has `min` below `max`.',
   brushColumn: 'A `brush` column is the `x` column, and a `date` column.',
-  bandsRange: 'A `bandsRange` needs `colors.bands`.',
+  bandsRange: BANDS_RANGE_RULE,
 } as const;
 
 const HEATMAP_DESCRIPTION = [
@@ -266,13 +266,7 @@ export const heatmapSchema = heatmapObjectSchema
             }
           });
         }
-        if (node.bandsRange !== undefined && !node.colors?.bands?.length) {
-          context.addIssue({
-            code: 'custom',
-            path: ['bandsRange'],
-            message: HEATMAP_RULES.bandsRange,
-          });
-        }
+        checkBandsRange(node, context);
         checkInteractions(node, context, {
           brushColumns: xType === 'date' ? [node.x.column] : [],
           brushRule: HEATMAP_RULES.brushColumn,

@@ -316,6 +316,21 @@ describe('dataTable bars', () => {
     }
   });
 
+  it('keeps fractions finite across the largest doubles', () => {
+    const scene = resolve(
+      table([column('n', 'number')], [[-1e308], [1e308]], {
+        columns: [{ column: 'n', decoration: { kind: 'bar' } }],
+      })
+    );
+    expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
+    expect(
+      scene.rows.map(({ cells }) => [cells[0]?.bar?.from, cells[0]?.bar?.to])
+    ).toEqual([
+      [0, 0.5],
+      [0.5, 1],
+    ]);
+  });
+
   it('spans a column longer than a call takes arguments', () => {
     const values = Array.from({ length: LONG_COLUMN }, (_, i) => i);
     const scene = resolve(

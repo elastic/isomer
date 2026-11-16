@@ -293,19 +293,49 @@ const partitionProblems = (
   ];
 };
 
-/** A `#rrggbb[aa]` or `rgb[a](…)` color's channels, as `r,g,b`. */
-const rgbOf = (color: string): string => {
-  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})/i.exec(color);
-  if (hex) {
-    return hex
+const NUMBER = String.raw`(\d+(?:\.\d+)?|\.\d+)`;
+const SHORT_HEX = /^#([\da-f])([\da-f])([\da-f])[\da-f]?$/i;
+const LONG_HEX = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})(?:[\da-f]{2})?$/i;
+const COMMA_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s*,\s*${NUMBER}\s*,\s*${NUMBER}\s*(?:,\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+const SPACE_RGB = new RegExp(
+  String.raw`^rgba?\(\s*${NUMBER}\s+${NUMBER}\s+${NUMBER}\s*(?:/\s*${NUMBER}%?\s*)?\)$`,
+  'i'
+);
+
+/**
+ * A color's channels, as `r,g,b`, its alpha apart: `#rgb[a]`, `#rrggbb[aa]`,
+ * `rgb[a](r, g, b[, a])` or `rgb[a](r g b[ / a])` with channels from 0 to 255;
+ * `undefined` for any other paint.
+ */
+const rgbOf = (color: string): string | undefined => {
+  const short = SHORT_HEX.exec(color);
+  if (short) {
+    return short
       .slice(1, 4)
-      .map((channel) => parseInt(channel, 16))
+      .map((digit) => parseInt(digit + digit, 16))
       .join(',');
   }
-  return (color.match(/\d+(?:\.\d+)?/g) ?? [])
-    .slice(0, 3)
-    .map((channel) => String(Math.round(Number(channel))))
-    .join(',');
+  const long = LONG_HEX.exec(color);
+  if (long) {
+    return long
+      .slice(1, 4)
+      .map((pair) => parseInt(pair, 16))
+      .join(',');
+  }
+  const channels = (COMMA_RGB.exec(color) ?? SPACE_RGB.exec(color))
+    ?.slice(1, 4)
+    .map((channel) => Math.round(Number(channel)));
+  return channels?.every((channel) => channel <= 255)
+    ? channels.join(',')
+    : undefined;
+};
+
+const sameColor = (drawn: string, color: string): boolean => {
+  const channels = rgbOf(drawn);
+  return channels !== undefined && channels === rgbOf(color);
 };
 
 const heatmapProblems = (scene: HeatmapScene, state: DebugState): string[] => {
@@ -326,7 +356,7 @@ const heatmapProblems = (scene: HeatmapScene, state: DebugState): string[] => {
     }
     // A cell in no band is transparent, whatever channels it names.
     const clear = /^#[\da-f]{6}00$/i.test(cell.color);
-    if (clear ? !fill.endsWith(', 0)') : rgbOf(fill) !== rgbOf(cell.color)) {
+    if (clear ? !fill.endsWith(', 0)') : !sameColor(fill, cell.color)) {
       problems.push(`cell ${index} is filled ${fill}, not ${cell.color}`);
     }
     if (formatted !== '' && formatted !== cell.valueText) {
