@@ -40,14 +40,19 @@ A `collectStyles` hook mutates whatever collector the serving adapter created, a
 The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as a `chartsPack` whose renderers read a `ChartsRenderContext` would. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
 
 ```ts
-import { type ChartsRenderContext, type ChartsTheme, cardFrame, chartsPack } from './charts';
+import {
+  type ChartsFrameTheme,
+  type ChartsRenderContext,
+  chartsFrame,
+  chartsPack,
+} from '@elastic/isomer-primitives-charts';
 
-const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsFrameTheme>({
   packs: [chartsPack],
-  frames: { card: cardFrame },
+  frames: { charts: chartsFrame },
 });
 
-runtime.surfaces.react.render(composition, { context: { resolveClassName } });
+runtime.surfaces.react.render(composition, { context: { scheme: 'dark' } });
 ```
 
 `unknown` in the first position keeps the host context unconstrained; pass the type views build with instead when the runtime registers views. Omitting the positional form is fine for a runtime that never passes a narrowed `context` to `react.render`.

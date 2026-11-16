@@ -48,6 +48,8 @@ const expectRule = (
   });
 };
 
+const BANDS_RANGE_SENTENCE = 'A `bandsRange` needs `colors.bands`.';
+
 const number = (id: string) => ({
   id,
   label: id,
@@ -231,6 +233,15 @@ describe('chart data', () => {
 
 describe('color bands', () => {
   const color = { light: '#000000', dark: '#ffffff' };
+
+  it('states one bandsRange rule on every primitive that takes one', () => {
+    expect([
+      GAUGE_RULES.bandsRange,
+      HEATMAP_RULES.bandsRange,
+      LEGACY_METRIC_RULES.bandsRange,
+      METRIC_RULES.bandsRange,
+    ]).toEqual(Array(4).fill(BANDS_RANGE_SENTENCE));
+  });
 
   it.each([
     ['reversed bounds', [{ from: 5, to: 1, color }]],
@@ -422,11 +433,31 @@ describe('metric', () => {
     );
   });
 
-  it('accepts percentage bands on a lone metric', () => {
+  it('takes a bandsRange only with bands', () => {
+    expectRule(
+      'metric',
+      metric({ value: { column: 'v', bandsRange: 'percentage' } }),
+      BANDS_RANGE_SENTENCE,
+      'value.bandsRange'
+    );
+    expectRule(
+      'metric',
+      metric({
+        value: { column: 'v', color: 'bands', bandsRange: 'absolute' },
+        colors: { bands: [] },
+      }),
+      BANDS_RANGE_SENTENCE,
+      'value.bandsRange'
+    );
     expect(
       issuesOf(
         'metric',
-        metric({ value: { column: 'v', bandsRange: 'percentage' } })
+        metric({
+          value: { column: 'v', color: 'bands', bandsRange: 'percentage' },
+          colors: {
+            bands: [{ from: 0, color: { light: '#000', dark: '#fff' } }],
+          },
+        })
       )
     ).toEqual([]);
   });
@@ -1266,7 +1297,7 @@ describe('heatmap', () => {
     expectRule(
       'heatmap',
       heatmap({ bandsRange: 'percentage' }),
-      HEATMAP_RULES.bandsRange,
+      BANDS_RANGE_SENTENCE,
       'bandsRange'
     );
     expect(
@@ -1360,7 +1391,7 @@ describe('gauge', () => {
     expectRule(
       'gauge',
       gauge({ bandsRange: 'percentage' }),
-      GAUGE_RULES.bandsRange,
+      BANDS_RANGE_SENTENCE,
       'bandsRange'
     );
     expect(
@@ -1490,6 +1521,26 @@ describe('legacyMetric', () => {
       issuesOf(
         'legacyMetric',
         legacy({ metrics: [{ column: 't' }, { column: 'n' }] })
+      )
+    ).toEqual([]);
+  });
+
+  it('takes a bandsRange only with bands', () => {
+    expectRule(
+      'legacyMetric',
+      legacy({ bandsRange: 'percentage' }),
+      BANDS_RANGE_SENTENCE,
+      'bandsRange'
+    );
+    expect(
+      issuesOf(
+        'legacyMetric',
+        legacy({
+          bandsRange: 'percentage',
+          colors: {
+            bands: [{ from: 0, color: { light: '#000', dark: '#fff' } }],
+          },
+        })
       )
     ).toEqual([]);
   });

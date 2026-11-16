@@ -22,6 +22,8 @@ import {
   CurveType,
   type CustomTooltip,
   Fit,
+  HorizontalAlignment,
+  LabelOverflowConstraint,
   LineAnnotation,
   LineSeries,
   type PartialTheme,
@@ -31,6 +33,7 @@ import {
   Settings,
   StackMode,
   Tooltip,
+  VerticalAlignment,
 } from '@elastic/charts';
 import {
   formatAxisValue,
@@ -94,6 +97,27 @@ const POINTS = {
   visible: 'always',
   hidden: 'never',
 } as const;
+
+/** Kibana's bar `displayValueSettings`, `expression_xy/public/components/data_layers.tsx`. */
+const VALUE_LABEL_SETTINGS = {
+  showValueLabel: true,
+  isAlternatingValueLabel: false,
+  overflowConstraints: [
+    LabelOverflowConstraint.ChartEdges,
+    LabelOverflowConstraint.BarGeometry,
+  ],
+};
+
+/** Kibana's `getValueLabelsStyling`. */
+const valueLabelStyle = (horizontal: boolean) => ({
+  fontSize: { min: 10, max: 12 },
+  fill: { textBorder: 0 },
+  alignment: horizontal
+    ? { vertical: VerticalAlignment.Middle }
+    : { horizontal: HorizontalAlignment.Center },
+  offsetX: horizontal ? 10 : 0,
+  offsetY: horizontal ? 0 : -10,
+});
 
 const INSIDE = {
   top_left: { vAlign: Position.Top, hAlign: Position.Left },
@@ -309,7 +333,7 @@ const seriesElement = (
     ...(series.valueLabels
       ? {
           displayValueSettings: {
-            showValueLabel: true,
+            ...VALUE_LABEL_SETTINGS,
             valueFormatter: valueLabeler(series, scene, yAxis),
           },
         }
@@ -618,10 +642,17 @@ const layerElements = (scene: XyScene): ReactNode[] => {
   });
 };
 
-/** The base theme's overrides: the Scene's chrome and legend truncation. */
+/** The base theme's overrides: the Scene's chrome, legend truncation and, with value labels, their style. */
 export const xyTheme = (scene: XyScene): PartialTheme => ({
   ...chromeTheme(scene.chrome),
   legend: { labelOptions: { maxLines: scene.legend.maxLines } },
+  ...(seriesOf(scene).some(({ valueLabels }) => valueLabels)
+    ? {
+        barSeriesStyle: {
+          displayValue: valueLabelStyle(scene.orientation === 'horizontal'),
+        },
+      }
+    : {}),
 });
 
 /** An xy Scene's spec elements, for `<Chart>` or headless drawing. */
