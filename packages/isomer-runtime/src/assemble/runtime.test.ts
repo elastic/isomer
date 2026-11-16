@@ -1477,6 +1477,53 @@ describe('createIsomerRuntime', () => {
       expect(css).toBe('.plain-plain{}');
     });
 
+    it.each([
+      ['an emotion collector', { styleCollector: 'emotion' }],
+      ['no collector tag', {}],
+    ])(
+      'refuses a pack whose collectStyles the distilleries would never run, with %s, unless the host supplies an adapter',
+      (_, tag) => {
+        const collecting = () => [
+          twoPacks()[0]!,
+          definePrimitivePack({
+            id: 'test.three',
+            surfaces: [],
+            primitives: [
+              definePrimitive<PlainNode>({
+                ...plainPrimitive,
+                collectStyles: () => undefined,
+              }),
+            ],
+            ...tag,
+          }),
+        ];
+
+        try {
+          createIsomerRuntime({ packs: collecting() });
+          expect.unreachable();
+        } catch (error) {
+          expect(error).toMatchObject({
+            name: 'IsomerError',
+            code: 'INCOMPATIBLE_STYLE_COLLECTOR',
+          });
+          expect((error as Error).message).toContain(
+            'pack "test.three" primitive "plain" declares collectStyles'
+          );
+        }
+
+        expect(() =>
+          createIsomerRuntime({
+            packs: collecting(),
+            styleAdapter: {
+              createCollector: () => ({}),
+              createRenderContext: () => ({}),
+              renderStyles: () => '',
+            },
+          })
+        ).not.toThrow();
+      }
+    );
+
     const adapterPack = (id: string, primitive: AnyPrimitiveDefinition) =>
       definePrimitivePack({
         id,

@@ -89,6 +89,7 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
 | A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
 | A pack `styleAdapter` is the only pack-level style source, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `pack "…"'s styleAdapter and … each style the HTML surface` |
+| No pack declares `collectStyles` when the packs' distilleries style the runtime, unless the host passes `styleAdapter` | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" declares collectStyles, which the Distillate style adapter never runs` |
 | Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
 Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.

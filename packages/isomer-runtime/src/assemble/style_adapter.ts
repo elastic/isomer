@@ -59,6 +59,7 @@ export const resolveStyleAdapter = <TRenderContext>(
     );
   }
   if (distilleries.length > 0) {
+    assertNoCollectingPacks(packs);
     return createDistillateStyleAdapter(
       distilleries
     ) as unknown as ResolvedAdapter<TRenderContext>;
@@ -72,6 +73,21 @@ export const resolveStyleAdapter = <TRenderContext>(
     tag: owner.styleAdapter.styleCollector,
   });
   return owner.styleAdapter as ResolvedAdapter<TRenderContext>;
+};
+
+/** Throws for a pack that declares `collectStyles`, which the Distillate adapter never runs. */
+const assertNoCollectingPacks = (packs: readonly AnyPrimitivePack[]): void => {
+  for (const pack of packs) {
+    const collecting = pack.primitives.find(
+      (definition) => definition.collectStyles !== undefined
+    );
+    if (collecting !== undefined) {
+      throw new IsomerError(
+        'INCOMPATIBLE_STYLE_COLLECTOR',
+        `runtime: pack "${pack.id}" primitive "${collecting.type}" declares collectStyles, which the Distillate style adapter never runs; supply a styleAdapter that does`
+      );
+    }
+  }
 };
 
 interface CollectorSource {

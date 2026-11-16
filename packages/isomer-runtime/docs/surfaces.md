@@ -148,7 +148,7 @@ createIsomerRuntime({
 });
 ```
 
-A pack that declares neither field is styled by that adapter too. A pack `styleAdapter` beside another pack's adapter or distillery throws `AMBIGUOUS_STYLE_ADAPTER`; pass `styleAdapter` on `createIsomerRuntime` to replace them all with one that serves every pack.
+A pack that declares neither field is styled by that adapter too, unless it declares `collectStyles`, which the Distillate adapter never runs: that throws `INCOMPATIBLE_STYLE_COLLECTOR`. A pack `styleAdapter` beside another pack's adapter or distillery throws `AMBIGUOUS_STYLE_ADAPTER`; pass `styleAdapter` on `createIsomerRuntime` to replace them all with one that serves every pack.
 
 `styleCollector` is a second, independent check: if a pack declares one (naming the collector shape its `collectStyles` hooks expect) and the adapter the runtime runs creates a differently-tagged collector, construction throws `INCOMPATIBLE_STYLE_COLLECTOR` instead of corrupting the collector silently at render time. The fix is a `styleAdapter` every pack was written against.
 
