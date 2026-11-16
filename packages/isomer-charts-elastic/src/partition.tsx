@@ -20,29 +20,22 @@ import {
   Partition,
   type PartitionLayer,
   PartitionLayout,
-  Position,
   Settings,
   type ShapeTreeNode,
   Tooltip,
-  TooltipContainer,
-  TooltipTable,
-  TooltipTableBody,
-  TooltipTableCell,
-  TooltipTableColorCell,
-  TooltipTableRow,
 } from '@elastic/charts';
 import {
-  cls,
   type PartitionNode,
   type PartitionScene,
   type SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import { partitionHandlers, partitionLegendSelect } from './events';
+import { LEGEND_SIZE, legendActionButtons, POSITION } from './legend';
 import type { ElasticChartsOptions } from './options';
-import { elasticModule } from './styles';
-import { chromeTheme, kibanaBaseTheme } from './theme';
+import { commonSettings } from './settings';
+import { chromeTheme } from './theme';
+import { SceneTooltipTable } from './tooltip';
 
 const LAYOUT = {
   pie: PartitionLayout.sunburst,
@@ -50,22 +43,6 @@ const LAYOUT = {
   treemap: PartitionLayout.treemap,
   mosaic: PartitionLayout.mosaic,
   waffle: PartitionLayout.waffle,
-} as const;
-
-const POSITION = {
-  top: Position.Top,
-  bottom: Position.Bottom,
-  left: Position.Left,
-  right: Position.Right,
-} as const;
-
-/** Kibana's `LegendSizeToPixels`. */
-const LEGEND_SIZE = {
-  auto: undefined,
-  s: 80,
-  m: 130,
-  l: 180,
-  xl: 230,
 } as const;
 
 /** What each datum this engine passes Elastic Charts carries: one Scene leaf. */
@@ -113,10 +90,9 @@ export const partitionData = (scene: PartitionScene): PartitionDatum[] => {
 export const engineSums = (scene: PartitionScene): Map<string, number> => {
   const sums = new Map<string, number>();
   for (const { keys, value } of partitionData(scene)) {
-    keys.forEach((_, depth) => {
-      const key = keys[depth]!;
+    for (const key of keys) {
       sums.set(key, (sums.get(key) ?? 0) + value);
-    });
+    }
   }
   return sums;
 };
@@ -178,21 +154,7 @@ export const partitionTooltip = (scene: PartitionScene): CustomTooltip => {
     if (!slice) {
       return null;
     }
-    return (
-      <TooltipContainer>
-        <TooltipTable gridTemplateColumns="auto auto auto">
-          <TooltipTableBody>
-            {slice.tooltip.entries.map(({ label, value, color }, index) => (
-              <TooltipTableRow key={index}>
-                <TooltipTableColorCell color={color ?? 'transparent'} />
-                <TooltipTableCell>{label}</TooltipTableCell>
-                <TooltipTableCell>{value}</TooltipTableCell>
-              </TooltipTableRow>
-            ))}
-          </TooltipTableBody>
-        </TooltipTable>
-      </TooltipContainer>
-    );
+    return <SceneTooltipTable entries={slice.tooltip.entries} />;
   };
 };
 
@@ -271,21 +233,8 @@ const legendAction =
     if (typeof key !== 'string') {
       return null;
     }
-    return (
-      <span className={cls(env, elasticModule.handles.legendAction)}>
-        <button
-          type="button"
-          aria-label={`Filter for ${label}`}
-          onClick={() => partitionLegendSelect(scene, env, key, false)}>
-          +
-        </button>
-        <button
-          type="button"
-          aria-label={`Filter out ${label}`}
-          onClick={() => partitionLegendSelect(scene, env, key, true)}>
-          −
-        </button>
-      </span>
+    return legendActionButtons(env, label, (negate) =>
+      partitionLegendSelect(scene, env, key, negate)
     );
   };
 
@@ -313,12 +262,8 @@ export const partitionSpecs = (
     <>
       <Tooltip customTooltip={partitionTooltip(scene)} />
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={partitionTheme(scene)}
-        locale={scene.locale}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
         showLegend={legend.visible}
         legendPosition={POSITION[legend.position]}
         {...(size === undefined ? {} : { legendSize: size })}

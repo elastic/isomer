@@ -29,11 +29,11 @@ import {
   varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { ariaDescriptionOf } from './accessibility';
 import { metricHandlers } from './events';
 import type { ElasticChartsOptions } from './options';
+import { commonSettings } from './settings';
 import { elasticModule } from './styles';
-import { chromeTheme, kibanaBaseTheme } from './theme';
+import { chromeTheme } from './theme';
 
 type PlainSecondaryProps = NonNullable<MetricTile['secondary']>;
 
@@ -288,12 +288,8 @@ export const metricSpecs = (
   scene.empty ? null : (
     <>
       <Settings
-        baseTheme={kibanaBaseTheme(scene.scheme)}
+        {...commonSettings(scene, options)}
         theme={metricTheme(scene)}
-        locale={scene.locale}
-        debugState={options.debugState ?? false}
-        {...(scene.title === undefined ? {} : { ariaLabel: scene.title })}
-        ariaDescription={ariaDescriptionOf(scene)}
         {...metricHandlers(scene, env)}
       />
       <Metric id="metric" data={metricGrid(scene, env)} />
