@@ -15,6 +15,7 @@ import type { ReactNode } from 'react';
 import {
   type CustomTooltip,
   type Datum,
+  type LegendActionProps,
   LegendValue,
   type PartialTheme,
   Partition,
@@ -211,13 +212,7 @@ const partitionLayers = (scene: PartitionScene): PartitionLayer[] => {
 /** "Filter for" and "Filter out" beside each legend item, as Kibana's legend action offers them. */
 const legendAction =
   (scene: PartitionScene, env: SceneRenderEnv) =>
-  ({
-    series,
-    label,
-  }: {
-    series: readonly { key: unknown }[];
-    label: string;
-  }) => {
+  ({ series, label }: LegendActionProps) => {
     const key = series[0]?.key;
     if (typeof key !== 'string') {
       return null;
