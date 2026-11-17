@@ -28,19 +28,10 @@ import {
 } from './authoring_types';
 import type { StudioExample } from './read_examples';
 import { readExamples } from './read_examples';
+import { STUDIO_SURFACES } from './surface_catalog';
 
 /** A surface the runtime can expose. */
 export type StudioSurface = keyof RuntimeSurfaces;
-
-/** Display names in display order, exhaustive over the runtime's surfaces so a new one fails the type check here. */
-export const SURFACE_LABELS: Readonly<Record<StudioSurface, string>> = {
-  react: 'React',
-  html: 'HTML',
-  slack: 'Slack',
-  markdown: 'Markdown',
-  text: 'Text',
-  snapshot: 'Snapshot',
-};
 
 /** The runtime's catalog entry for a primitive, plus what the Studio derives for display. */
 export interface PrimitiveDoc extends PrimitiveCatalogEntry {
@@ -70,18 +61,12 @@ export const humanize = (type: string): string => {
   return words.charAt(0).toUpperCase() + words.slice(1);
 };
 
-const isStudioSurface = (name: string): name is StudioSurface =>
-  name in SURFACE_LABELS;
-
-/** Surfaces present on `runtime.surfaces`, in {@link SURFACE_LABELS} order; `snapshot` is absent without frames. */
+/** Surfaces present on `runtime.surfaces`, in {@link STUDIO_SURFACES} order; `snapshot` is absent without frames. */
 export const runtimeSurfaces = (
   runtime: Pick<StudioRuntime, 'surfaces'>
 ): StudioSurface[] => {
   const { surfaces } = runtime;
-  return Object.keys(SURFACE_LABELS).filter(
-    (name): name is StudioSurface =>
-      isStudioSurface(name) && surfaces[name] !== undefined
-  );
+  return STUDIO_SURFACES.filter((name) => surfaces[name] !== undefined);
 };
 
 /** Everything the Studio shows about a runtime, read from its public API. */

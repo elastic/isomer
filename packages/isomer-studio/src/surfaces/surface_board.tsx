@@ -10,26 +10,24 @@ import React, { useMemo, useState } from 'react';
 import { EuiIcon, EuiText, useEuiTheme } from '@elastic/eui';
 import type { Composition, ValidationResult } from '@elastic/isomer-sdk';
 import { createChildNodeWalker } from '@elastic/isomer-sdk';
-import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
+import type { StudioAppSurface } from '../config';
+import {
+  isBrowserSurface,
+  isVisualSurface,
+  outputLabel,
+  SURFACE_CATALOG,
+} from '../model/surface_catalog';
 import { useStudio } from '../studio_context';
 
 import { applicableEnhancements } from './applicable_enhancements';
 import { EnhancementSelect } from './enhancement_select';
-import { PngSurface } from './png_surface';
 import { usePreviewBackground } from './preview_background';
 import type { PreviewZoom } from './scaled_preview';
+import { SURFACE_ICONS } from './surface_logos';
 import type { SurfaceView } from './surface_preview';
-import { SurfacePreview } from './surface_preview';
-import type { PreviewSurface } from './surface_select';
-import {
-  isVisualSurface,
-  outputLabel,
-  PREVIEW_ICONS,
-  PREVIEW_LABELS,
-  SURFACE_NOTES,
-} from './surface_select';
+import { SurfaceRender } from './surface_render';
 
 interface RenderProps {
   composition: Composition;
@@ -39,41 +37,6 @@ interface RenderProps {
   enhancements?: readonly string[] | undefined;
   errorHref?: string | undefined;
 }
-
-const SurfaceRender = ({
-  surface,
-  composition,
-  validation,
-  view,
-  zoom,
-  errorHref,
-  frameCss,
-  enhancements,
-}: RenderProps & {
-  surface: PreviewSurface;
-  frameCss?: SerializedStyles | undefined;
-}) => {
-  const { rasterizePng } = useStudio();
-  if (surface !== 'png') {
-    return (
-      <SurfacePreview
-        {...{
-          surface,
-          composition,
-          validation,
-          view,
-          zoom,
-          frameCss,
-          enhancements,
-          errorHref,
-        }}
-      />
-    );
-  }
-  return rasterizePng ? (
-    <PngSurface {...{ composition, rasterizePng, zoom, frameCss }} />
-  ) : null;
-};
 
 const SurfaceCard = ({
   surface,
@@ -88,7 +51,7 @@ const SurfaceCard = ({
   zoom = 'fit',
   fullSize = false,
 }: Omit<RenderProps, 'zoom'> & {
-  surface: PreviewSurface;
+  surface: StudioAppSurface;
   controls?: ReactNode;
   title?: string;
   note?: string | undefined;
@@ -96,7 +59,7 @@ const SurfaceCard = ({
   fullSize?: boolean;
 }) => {
   const { euiTheme } = useEuiTheme();
-  const label = title ?? PREVIEW_LABELS[surface];
+  const label = title ?? SURFACE_CATALOG[surface].label;
   const clipsRender = view === 'render' && isVisualSurface(surface);
   const background = usePreviewBackground();
 
@@ -122,7 +85,7 @@ const SurfaceCard = ({
           background: ${euiTheme.colors.backgroundBasePlain};
           border-bottom: ${euiTheme.border.thin};
         `}>
-        <EuiIcon type={PREVIEW_ICONS[surface]} size="m" aria-hidden={true} />
+        <EuiIcon type={SURFACE_ICONS[surface]} size="m" aria-hidden={true} />
         <EuiText size="xs">
           <h3
             css={css`
@@ -144,8 +107,8 @@ const SurfaceCard = ({
             text-overflow: ellipsis;
             white-space: nowrap;
           `}
-          title={note ?? SURFACE_NOTES[surface]}>
-          {note ?? SURFACE_NOTES[surface]}
+          title={note ?? SURFACE_CATALOG[surface].note}>
+          {note ?? SURFACE_CATALOG[surface].note}
         </EuiText>
         {controls ? (
           <div
@@ -211,12 +174,8 @@ const SurfaceCard = ({
 };
 
 export interface SurfaceBoardProps extends RenderProps {
-  surfaces: readonly PreviewSurface[];
+  surfaces: readonly StudioAppSurface[];
 }
-
-type BrowserSurface = 'react' | 'html' | 'snapshot';
-const isBrowserSurface = (surface: PreviewSurface): surface is BrowserSurface =>
-  surface === 'react' || surface === 'html' || surface === 'snapshot';
 
 /** One surface at full size, or several in a vertical list. */
 export const SurfaceBoard = ({
@@ -278,7 +237,7 @@ export const SurfaceBoard = ({
             white-space: nowrap;
             border: 0;
           `}>
-          {PREVIEW_LABELS[only]} preview
+          {SURFACE_CATALOG[only].label} preview
         </h2>
         <SurfaceRender
           surface={only}
@@ -288,7 +247,7 @@ export const SurfaceBoard = ({
     );
   }
 
-  const renderCards = (items: readonly PreviewSurface[]) =>
+  const renderCards = (items: readonly StudioAppSurface[]) =>
     items.map((surface) => (
       <SurfaceCard
         key={surface}

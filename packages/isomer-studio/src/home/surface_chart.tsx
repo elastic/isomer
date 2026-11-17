@@ -10,12 +10,9 @@ import { EuiIcon, transparentize, useEuiShadow } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { IsomerMark } from '../chrome/isomer_mark';
-import type { PreviewSurface } from '../surfaces/surface_select';
-import {
-  PREVIEW_ICONS,
-  PREVIEW_LABELS,
-  SURFACE_NOTES,
-} from '../surfaces/surface_select';
+import type { StudioAppSurface } from '../config';
+import { SURFACE_CATALOG } from '../model/surface_catalog';
+import { SURFACE_ICONS } from '../surfaces/surface_logos';
 
 import { CONTENT_WIDTH, useHome, WIDE } from './tokens';
 
@@ -41,7 +38,7 @@ const spotsFor = (count: number): number[] =>
 export const SurfaceChart = ({
   surfaces,
 }: {
-  surfaces: readonly PreviewSurface[];
+  surfaces: readonly StudioAppSurface[];
 }) => {
   const home = useHome();
   const {
@@ -342,16 +339,16 @@ export const SurfaceChart = ({
               ))}
             </svg>
             {surfaces.map((surface, index) => {
-              const text = `${surface}: ${SURFACE_NOTES[surface]}`;
+              const text = `${surface}: ${SURFACE_CATALOG[surface].note}`;
               return (
                 <div
                   key={surface}
                   css={card(spots[index] ?? 50)}
                   tabIndex={0}
-                  aria-label={PREVIEW_LABELS[surface]}
+                  aria-label={SURFACE_CATALOG[surface].label}
                   onMouseEnter={() => setNote(text)}
                   onFocus={() => setNote(text)}>
-                  <EuiIcon type={PREVIEW_ICONS[surface]} size="xl" />
+                  <EuiIcon type={SURFACE_ICONS[surface]} size="xl" />
                   <span>
                     {surface === 'snapshot'
                       ? 'snap'

@@ -23,6 +23,7 @@ import { useStudio } from '../studio_context';
 import { ExamplePicker } from '../surfaces/example_picker';
 import { SurfaceBoard } from '../surfaces/surface_board';
 import type { SurfaceView } from '../surfaces/surface_preview';
+import { VIEW_OPTIONS } from '../surfaces/surface_preview';
 import {
   previewSurfaces,
   SurfaceSelect,
@@ -33,10 +34,9 @@ import { ExampleSource } from './example_source';
 
 type ExamplesView = SurfaceView | 'example';
 
-const EXAMPLE_VIEW_OPTIONS: { id: ExamplesView; label: string }[] = [
+const EXAMPLE_VIEW_OPTIONS: readonly { id: ExamplesView; label: string }[] = [
   { id: 'example', label: 'Example source' },
-  { id: 'render', label: 'Rendered' },
-  { id: 'source', label: 'Output source' },
+  ...VIEW_OPTIONS,
 ];
 
 const isExamplesView = (id: string): id is ExamplesView =>

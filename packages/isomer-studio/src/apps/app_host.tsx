@@ -19,8 +19,9 @@ import { css } from '@emotion/react';
 
 import type { StudioApp, StudioAppProps } from '../config';
 import { useStudio } from '../studio_context';
-import { AppPreview } from '../surfaces/app_preview';
-import { AppSurface, appSurfaces } from '../surfaces/app_surface';
+
+import { AppPreview } from './app_preview';
+import { AppSurface, appSurfaces } from './app_surface';
 
 type AppPage = ComponentType<StudioAppProps>;
 

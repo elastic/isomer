@@ -7,10 +7,8 @@
 
 import type { Composition } from '@elastic/isomer-sdk';
 
+import { isRecord } from './is_record';
 import { sha256Hex } from './sha256';
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
 
 /** JSON with sorted keys and no whitespace, dropping `undefined` properties as `JSON.stringify` does. */
 export const canonicalJson = (value: unknown): string => {

@@ -11,9 +11,8 @@ import type { Composition } from '@elastic/isomer-sdk';
 
 import type { StudioPreviewProps } from '../config';
 import { useStudio } from '../studio_context';
-
-import { ReactSurface } from './react_surface';
-import { ScaledPreview } from './scaled_preview';
+import { ReactSurface } from '../surfaces/react_surface';
+import { ScaledPreview } from '../surfaces/scaled_preview';
 
 type Composed = { composition: Composition } | { error: unknown };
 
