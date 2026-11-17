@@ -171,7 +171,13 @@ const Layout = ({
         `}>
         <ConfigProblems problems={configProblems} />
         <HomeView
-          {...{ title, onSelectPrimitive, colorMode, onColorModeChange }}
+          {...{
+            title,
+            onSelectPrimitive,
+            colorMode,
+            onColorModeChange,
+            composeParams,
+          }}
         />
       </main>
     );

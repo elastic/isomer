@@ -40,6 +40,7 @@ import {
 import { Glyph, PrimitiveGlyph } from '../chrome/primitive_glyph';
 import { PrimitiveSearch } from '../chrome/primitive_search';
 import { formatLocation, formatRoute, GALLERY } from '../chrome/route';
+import type { ComposeParams } from '../model/compose_link';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { pickFeatured } from '../model/featured';
 import { SURFACE_CATALOG } from '../model/surface_catalog';
@@ -79,10 +80,14 @@ const FeaturedPreview = ({
 }) => {
   const { compose } = useStudio();
   const [example] = examples;
-  const composition = useMemo(
-    () => (example ? compose([example.node]) : undefined),
-    [compose, example]
-  );
+  // A config's `compose` or `previewExample` that throws leaves this card on its glyph, not Home blank.
+  const composition = useMemo(() => {
+    try {
+      return example ? compose([example.node]) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [compose, example]);
   return composition ? (
     <div
       aria-hidden={true}
@@ -192,11 +197,14 @@ export const HomeView = ({
   onSelectPrimitive,
   colorMode,
   onColorModeChange,
+  composeParams,
 }: {
   title: string;
   onSelectPrimitive: (type: string) => void;
   colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
+  /** What the composer last showed, so Compose reopens it. */
+  composeParams?: ComposeParams | undefined;
 }) => {
   const {
     runtime: { packs },
@@ -241,7 +249,7 @@ export const HomeView = ({
             <EuiSpacer size="l" />
             <PrimitiveSearch
               size="large"
-              placeholder="Search primitives by name, purpose or prop"
+              placeholder="Search primitives by name or purpose"
               {...{ onSelectPrimitive }}
             />
           </EuiFlexItem>
@@ -290,7 +298,10 @@ export const HomeView = ({
                     css={fullWidth}
                     size="s"
                     iconType={ComposeIcon}
-                    href={formatLocation({ compose: true, params: {} })}>
+                    href={formatLocation({
+                      compose: true,
+                      params: composeParams ?? {},
+                    })}>
                     Compose
                   </EuiButtonEmpty>
                 </EuiFlexItem>

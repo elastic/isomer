@@ -949,7 +949,10 @@ test.describe('static build', () => {
     const search = page.getByLabel('Search primitives');
     await expect(search).toHaveCount(1);
     await expect(home.getByLabel('Search primitives')).toBeVisible();
-    await expect(page.locator('header')).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Studio mode' })).toHaveCount(
+      0
+    );
+    await expect(page.getByRole('link', { name: / home$/ })).toHaveCount(0);
 
     await page.locator('body').click({ position: { x: 1, y: 1 } });
     await page.keyboard.press('Control+K');

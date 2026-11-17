@@ -19,6 +19,7 @@ import { FEATURED_COUNT } from '../config';
 import { componentsPack } from '../fixtures/components_pack';
 import { createShim } from '../model/compile_jsx';
 import { defaultCompose } from '../model/compose_example';
+import type { ComposeParams } from '../model/compose_link';
 import { describeRuntime } from '../model/describe_runtime';
 import type { StudioContextValue } from '../studio_context';
 import { StudioContextProvider } from '../studio_context';
@@ -55,11 +56,15 @@ const renderHome = ({
   featured,
   current = runtime,
   onColorModeChange = vi.fn(),
+  compose = (nodes) => defaultCompose(nodes, { theme: 'light' }),
+  composeParams,
 }: {
   apps?: readonly StudioApp[];
   featured?: readonly string[];
   current?: typeof runtime;
   onColorModeChange?: (colorMode: ColorModePreference) => void;
+  compose?: StudioContextValue['compose'];
+  composeParams?: ComposeParams;
 } = {}) => {
   const value: StudioContextValue = {
     runtime: current,
@@ -69,7 +74,7 @@ const renderHome = ({
     shim: createShim(current.primitives),
     schemaFor: () => undefined,
     theme: 'light',
-    compose: (nodes) => defaultCompose(nodes, { theme: 'light' }),
+    compose,
   };
   render(
     <EuiProvider colorMode="light">
@@ -78,7 +83,7 @@ const renderHome = ({
           title="Isomer Studio"
           onSelectPrimitive={vi.fn()}
           colorMode="system"
-          {...{ onColorModeChange }}
+          {...{ onColorModeChange, composeParams }}
         />
       </StudioContextProvider>
     </EuiProvider>
@@ -128,6 +133,25 @@ describe('HomeView', () => {
     ).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(within(modes).getByRole('button', { name: 'Dark' }));
     expect(onColorModeChange).toHaveBeenCalledWith('dark');
+  });
+
+  it('reopens what the composer last showed from Compose', () => {
+    renderHome({ composeParams: { example: { type: 'callout', index: 0 } } });
+    expect(screen.getByRole('link', { name: 'Compose' })).toHaveAttribute(
+      'href',
+      '#/compose?example=callout%2F0'
+    );
+  });
+
+  it('keeps Home usable when composing a featured example throws', () => {
+    renderHome({
+      featured: ['statGroup', 'callout'],
+      compose: () => {
+        throw new Error('broken example');
+      },
+    });
+    expect(featuredCards()).toHaveLength(2);
+    expect(screen.getByLabelText('Search primitives')).toBeInTheDocument();
   });
 
   it('features the configured primitives in order, each with a preview and Reference and Workbench links', () => {

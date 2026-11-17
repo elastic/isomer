@@ -21,7 +21,7 @@ The `isomer-studio` binary runs `init`, `dev`, `build` and `check`, whose flags 
 
 `build` replaces a non-empty `--out` only when a previous build's `.isomer-studio-build` marker is there, and the dev server answers only requests whose `Host` is loopback.
 
-The interface calls the primitive learning area **Reference** and the composition editor **Workbench**. Their stable routes remain `#/docs/<type>/<example>` and `#/dev/<type>/<example>`; `#/docs/gallery`, `#/docs/gallery/<group>` (which scrolls to that authoring group's heading), `#/home` (also an empty or unknown hash, and an unknown app id), and `#/app/<id>/<path>` are unchanged. Home renders in the main panel without the nav, in the current color mode. The mark returns to Home from anywhere. On Home the hero's search replaces the header's (one field, one ⌘K listener per page); either opens a primitive in the mode last used.
+The interface calls the primitive learning area **Reference** and the composition editor **Workbench**. Their stable routes remain `#/docs/<type>/<example>` and `#/dev/<type>/<example>`; `#/docs/gallery`, `#/docs/gallery/<group>` (which scrolls to that authoring group's heading), `#/home` (also an empty or unknown hash, and an unknown app id), and `#/app/<id>/<path>` are unchanged. Home is a full page without the header or the nav, in the current color mode, with its own color mode switch. The header's mark returns to Home from every other page. Home's hero search and the header search each own ⌘K on their pages, and either opens a primitive in the mode last used.
 
 Related: [config contract](/studio/concepts/config-contract.md), [public contract](/studio/reference/public-contract.md).
 
