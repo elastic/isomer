@@ -8,12 +8,12 @@
 export {
   type HostCapabilities,
   type PrimitiveDescriptions,
+  type PropDescriptor,
   type RuntimeAuthoringContext,
   type RuntimeAuthoringOptions,
   type SurfaceSupport,
 } from './authoring';
 export { type RuntimeRendererOverrides } from './overrides';
-export { type PropDescriptor } from './prop_descriptors';
 export {
   type CreateIsomerRuntime,
   type FrameMap,

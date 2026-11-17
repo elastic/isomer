@@ -5,7 +5,14 @@
  * 2.0.
  */
 
-import type { JsonSchema } from '../registry';
+import {
+  isJsonObject,
+  type JsonObject,
+  ownDef,
+  parseDefRef,
+} from '../validate/json_helpers';
+
+import { ANONYMOUS_DEF } from './schema_to_typescript';
 
 /** One property of a primitive, flattened from the authoring JSON Schema. */
 export interface PropDescriptor {
@@ -19,8 +26,6 @@ export interface PropDescriptor {
   description?: string;
 }
 
-type Node = Record<string, unknown>;
-
 interface Shape {
   type: string;
   kind: PropDescriptor['kind'];
@@ -30,20 +35,10 @@ interface Shape {
   nullable?: boolean;
 }
 
-const DEF_PREFIX = '#/$defs/';
-// Ids zod generates for a reused schema that nobody named.
-const ANONYMOUS_DEF = /^__schema\d+$/;
+const refId = ({ $ref }: JsonObject): string | undefined => parseDefRef($ref);
 
-const isNode = (value: unknown): value is Node =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
-
-const refId = (node: Node): string | undefined =>
-  typeof node.$ref === 'string' && node.$ref.startsWith(DEF_PREFIX)
-    ? node.$ref.slice(DEF_PREFIX.length)
-    : undefined;
-
-const ownDescription = (node: Node): string | undefined =>
-  typeof node.description === 'string' ? node.description : undefined;
+const ownDescription = ({ description }: JsonObject): string | undefined =>
+  typeof description === 'string' ? description : undefined;
 
 const withDescription = (shape: Shape, description?: string): Shape =>
   description === undefined ? shape : { ...shape, description };
@@ -51,29 +46,32 @@ const withDescription = (shape: Shape, description?: string): Shape =>
 const isLiteral = (value: unknown): value is string | number | boolean =>
   ['string', 'number', 'boolean'].includes(typeof value);
 
-const followRefs = (defs: Node, node: unknown): Node | undefined => {
+const followRefs = (
+  defs: JsonObject,
+  node: unknown
+): JsonObject | undefined => {
   const seen = new Set<string>();
   let current = node;
-  while (isNode(current)) {
+  while (isJsonObject(current)) {
     const id = refId(current);
     if (id === undefined) {
       return current;
     }
-    if (seen.has(id) || !Object.hasOwn(defs, id)) {
+    if (seen.has(id)) {
       return undefined;
     }
     seen.add(id);
-    current = defs[id];
+    current = ownDef(defs, id);
   }
   return undefined;
 };
 
 const isNullSchema = (node: unknown): boolean =>
-  isNode(node) &&
+  isJsonObject(node) &&
   (node.type === 'null' ||
     (Object.hasOwn(node, 'const') && node.const === null));
 
-const isNullVariant = (defs: Node, variant: unknown): boolean =>
+const isNullVariant = (defs: JsonObject, variant: unknown): boolean =>
   isNullSchema(followRefs(defs, variant));
 
 const orNull = (shape: Shape, nullable: boolean): Shape =>
@@ -115,14 +113,14 @@ const literalsOf = (values: readonly unknown[]): Shape => {
 };
 
 const describeUnion = (
-  defs: Node,
+  defs: JsonObject,
   variants: readonly unknown[],
   seen: ReadonlySet<string>
 ): Shape => {
   const parts = variants
     .filter((variant) => !isNullVariant(defs, variant))
     .map((variant): Shape =>
-      isNode(variant)
+      isJsonObject(variant)
         ? describeSchema(defs, variant, seen)
         : { type: 'unknown', kind: 'other' }
     );
@@ -147,15 +145,15 @@ const describeUnion = (
 };
 
 const describeSchema = (
-  defs: Node,
-  node: Node,
+  defs: JsonObject,
+  node: JsonObject,
   seen: ReadonlySet<string>
 ): Shape => {
   const id = refId(node);
   if (id !== undefined) {
-    const target = Object.hasOwn(defs, id) ? defs[id] : undefined;
+    const target = ownDef(defs, id);
     const named = !ANONYMOUS_DEF.test(id);
-    if (!isNode(target) || seen.has(id)) {
+    if (!isJsonObject(target) || seen.has(id)) {
       return { type: named ? id : 'unknown', kind: 'other' };
     }
     const inner = describeSchema(defs, target, new Set(seen).add(id));
@@ -187,7 +185,7 @@ const describeSchema = (
       case 'null':
         return { type: 'null', kind: 'other' };
       case 'array': {
-        const item = isNode(node.items)
+        const item = isJsonObject(node.items)
           ? displayType(describeSchema(defs, node.items, seen))
           : 'unknown';
         return {
@@ -198,7 +196,7 @@ const describeSchema = (
       case 'object':
         return { type: 'object', kind: 'object' };
       default:
-        return isNode(node.properties)
+        return isJsonObject(node.properties)
           ? { type: 'object', kind: 'object' }
           : { type: 'unknown', kind: 'other' };
     }
@@ -208,23 +206,20 @@ const describeSchema = (
 
 /** A {@link PropDescriptor} list per type, read from `schema`'s `$defs`; empty for a type with no object properties. */
 export const describeProps = (
-  schema: JsonSchema,
+  schema: JsonObject,
   types: readonly string[]
 ): Record<string, PropDescriptor[]> => {
-  const defs = isNode(schema.$defs) ? schema.$defs : {};
+  const defs = isJsonObject(schema.$defs) ? schema.$defs : {};
   return Object.fromEntries(
     types.map((type) => {
-      const def = followRefs(
-        defs,
-        Object.hasOwn(defs, type) ? defs[type] : undefined
-      );
-      const properties = isNode(def?.properties) ? def.properties : {};
+      const def = followRefs(defs, ownDef(defs, type));
+      const properties = isJsonObject(def?.properties) ? def.properties : {};
       const required = new Set(
         Array.isArray(def?.required) ? def.required : []
       );
       const props = Object.entries(properties).flatMap(
         ([name, value]): PropDescriptor[] => {
-          if (!isNode(value)) {
+          if (!isJsonObject(value)) {
             return [];
           }
           const shape = describeSchema(defs, value, new Set());
