@@ -215,14 +215,9 @@ const reactPreview = (page: Page) => page.locator('[title="HTML preview"]');
 
 const navigateApp = async (page: Page, url: string) => {
   await page.goto(url);
-  await expect(
-    page.getByRole('heading', {
-      level: 1,
-      name: 'What are we rendering today?',
-    })
-  ).toBeVisible();
   await page
-    .getByRole('link', { name: new RegExp(`^${APP_TITLE}\\b`) })
+    .getByTestId('home')
+    .getByRole('link', { name: APP_TITLE, exact: true })
     .click();
   await expect(page).toHaveURL(new RegExp(`#/app/${APP_ID}/$`));
   await page.goto(`${url}#/dev`);
@@ -916,232 +911,111 @@ test.describe('static build', () => {
     ).toContainText('title');
   });
 
-  for (const width of [320, 390, 768, 900, 901, 1043, 1399, 1400, 1920]) {
-    test(`keeps Home's surface chart readable at ${width}px`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto(site.url);
-      const section = page.getByRole('region', {
-        name: 'One composition, every surface',
-      });
-      await expect(section).toBeVisible();
-      await expect(
-        section.getByRole('heading', {
-          level: 2,
-          name: 'Author once, render anywhere.',
-        })
-      ).toBeVisible();
-      const layout = await section.evaluate((element) => {
-        const body = element.lastElementChild!;
-        const [blurb, chart] = Array.from(body.children);
-        const blurbBox = blurb!.getBoundingClientRect();
-        const chartBox = chart!.getBoundingClientRect();
-        const items = Array.from(
-          chart!.querySelectorAll<HTMLElement>('[tabindex="0"]')
-        );
-        const boxes = items.map((item) => item.getBoundingClientRect());
-        const overlaps = (a: DOMRect, b: DOMRect) =>
-          a.left < b.right &&
-          a.right > b.left &&
-          a.top < b.bottom &&
-          a.bottom > b.top;
-        return {
-          copyOverlapsChart: overlaps(blurbBox, chartBox),
-          itemsOverlap: boxes.some((box, index) =>
-            boxes.slice(index + 1).some((other) => overlaps(box, other))
-          ),
-          itemsFit: boxes.every(
-            (box) =>
-              box.left >= chartBox.left - 1 && box.right <= chartBox.right + 1
-          ),
-          labelSizes: items
-            .slice(1)
-            .map((item) => parseFloat(getComputedStyle(item).fontSize)),
-          connectedCards: Array.from(
-            chart!.querySelectorAll('svg[data-surface-connections]')
-          ).some((svg) => {
-            if (getComputedStyle(svg).display === 'none') {
-              return false;
-            }
-            return (
-              svg.querySelectorAll('path').length === items.length - 1 ||
-              svg.querySelectorAll('line').length === items.length + 1
-            );
-          }),
-          wrappedEndpointsMatch: Array.from(
-            chart!.querySelectorAll<SVGPathElement>(
-              'svg[data-surface-connections="wrapped"] > path'
-            )
-          ).every((path, index) => {
-            if (getComputedStyle(path.ownerSVGElement!).display === 'none') {
-              return true;
-            }
-            const svgBox = path.ownerSVGElement!.getBoundingClientRect();
-            const endpoint = path.getPointAtLength(path.getTotalLength());
-            const box = boxes[index + 1]!;
-            return (
-              Math.abs(svgBox.left + endpoint.x - box.left - box.width / 2) <
-                1 && Math.abs(svgBox.top + endpoint.y - box.top) < 1
-            );
-          }),
-          overflows: element.scrollWidth > element.clientWidth,
-        };
-      });
-      expect(layout.copyOverlapsChart).toBe(false);
-      expect(layout.itemsOverlap).toBe(false);
-      expect(layout.itemsFit).toBe(true);
-      expect(layout.connectedCards).toBe(true);
-      expect(layout.wrappedEndpointsMatch).toBe(true);
-      expect(layout.overflows).toBe(false);
-      expect(layout.labelSizes.length).toBeGreaterThan(0);
-      // EUI's rem sizes over the 14px root land a hair under whole pixels, e.g. 10.9998px for 11px.
-      expect(layout.labelSizes.every((size) => Math.round(size) >= 11)).toBe(
-        true
+  test('opens the gallery, the Workbench and the composer from Home, and returns from #/home and the mark', async ({
+    page,
+  }) => {
+    const problems = watchProblems(page);
+    await page.goto(site.url);
+    const home = page.getByTestId('home');
+    await expect(home.getByRole('heading', { level: 1 })).toBeVisible();
+
+    await home.getByRole('link', { name: 'Browse primitives' }).click();
+    await expect(page).toHaveURL(/#\/docs\/gallery$/);
+    await expect(home).toBeHidden();
+
+    await page.goto(`${site.url}#/home`);
+    await home.getByRole('link', { name: 'Open the Workbench' }).click();
+    await expect(page).toHaveURL(/#\/dev\/[^/]+\/0$/);
+    await expectMonacoReady(page);
+
+    await page.getByRole('link', { name: / home$/ }).click();
+    await expect(page).toHaveURL(/#\/home$/);
+    await home.getByRole('link', { name: 'Compose' }).click();
+    await expect(page).toHaveURL(/#\/compose/);
+    await expect(home).toBeHidden();
+    expect(problems).toEqual([]);
+  });
+
+  test("links each featured card to its primitive's Reference and Workbench", async ({
+    page,
+  }) => {
+    // Without a configured `featured`, each visit to Home draws again, so each check reads a fresh card.
+    const firstCard = async () => {
+      await page.goto(`${site.url}#/home`);
+      const card = page.getByTestId('featured-primitive').first();
+      const label = (await card.getByRole('heading').innerText()).trim();
+      const href = await card
+        .getByRole('link', { name: 'Reference' })
+        .getAttribute('href');
+      expect(href).toMatch(/^#\/docs\/[^/]+\/0$/);
+      return { card, label, type: href!.split('/')[2]! };
+    };
+
+    const reference = await firstCard();
+    await reference.card.getByRole('link', { name: 'Reference' }).click();
+    await expect(page).toHaveURL(new RegExp(`#/docs/${reference.type}/0$`));
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: reference.label,
+        exact: true,
+      })
+    ).toBeVisible();
+
+    const workbench = await firstCard();
+    await workbench.card.getByRole('link', { name: 'Workbench' }).click();
+    await expect(page).toHaveURL(new RegExp(`#/dev/${workbench.type}/0$`));
+    await expectMonacoReady(page);
+  });
+
+  test('summarizes the packs, apps, views and surfaces the config loaded', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}#/home`);
+    const home = page.getByTestId('home');
+    await expect(
+      home.getByRole('region', { name: 'Primitive packs' }).locator('dt')
+    ).not.toHaveCount(0);
+    await expect(
+      home
+        .getByRole('region', { name: 'Apps' })
+        .getByRole('link', { name: APP_TITLE })
+    ).toHaveAttribute('href', `#/app/${APP_ID}/`);
+    const views = home.getByRole('region', { name: 'Views' });
+    await expect(
+      views.getByText('No views registered').or(views.locator('dt').first())
+    ).toBeVisible();
+    await expect(
+      home.getByRole('region', { name: 'Surfaces' }).getByText('React', {
+        exact: true,
+      })
+    ).toBeVisible();
+  });
+
+  for (const colorScheme of ['light', 'dark'] as const) {
+    test(`follows the ${colorScheme} color mode on Home`, async ({ page }) => {
+      await page.emulateMedia({ colorScheme });
+      await page.goto(`${site.url}#/home`);
+      const lightness = (color: string) => {
+        const [r, g, b] = color.match(/\d+/g)!.map(Number);
+        return (r! + g! + b!) / 3;
+      };
+      const panel = page.getByRole('main');
+      await expect(panel.getByTestId('home')).toBeVisible();
+      const background = lightness(
+        await panel.evaluate(
+          (element) => getComputedStyle(element).backgroundColor
+        )
       );
-      const tiles = await page
-        .getByRole('region', { name: 'Featured primitives', exact: true })
-        .evaluate((featured) => {
-          const content = featured.parentElement!;
-          const narrow = content.clientWidth < 620;
-          const groups = [
-            featured,
-            content.querySelector(
-              'section[aria-labelledby="isomer-studio-applications"]'
-            )!,
-            content.querySelector(
-              'section[aria-labelledby="isomer-studio-learn"]'
-            )!,
-          ];
-          return {
-            narrow,
-            stacked: groups.every((group) => {
-              const boxes = Array.from(group.lastElementChild!.children)
-                .map((child) => child.getBoundingClientRect())
-                .filter((box) => box.width > 0 && box.height > 0);
-              return boxes.every(
-                (box, index) =>
-                  index === 0 || box.top >= boxes[index - 1]!.bottom - 1
-              );
-            }),
-            pagerVisible:
-              getComputedStyle(featured.querySelector('button')!.parentElement!)
-                .display !== 'none',
-          };
-        });
-      expect(tiles.stacked).toBe(tiles.narrow);
-      expect(tiles.pagerVisible).toBe(true);
-      const firstTile = page.getByTestId('featured-primitive').first();
-      await firstTile.getByRole('link', { name: 'Reference →' }).focus();
-      await page.keyboard.press('Tab');
-      const workbench = firstTile.getByRole('link', { name: 'Workbench →' });
-      await expect(workbench).toBeFocused();
-      // Home's focus ring is the dark theme's heading color, Borealis #E3E8F2.
-      await expect(workbench).toHaveCSS('outline-color', 'rgb(227, 232, 242)');
-      await expect(workbench).toHaveCSS('outline-style', 'solid');
-      await expect(workbench.locator('..')).toHaveCSS('opacity', '1');
+      const heading = lightness(
+        await panel
+          .getByRole('heading', { level: 1 })
+          .evaluate((element) => getComputedStyle(element).color)
+      );
+      expect(background > 128).toBe(colorScheme === 'light');
+      expect(Math.abs(background - heading)).toBeGreaterThan(128);
     });
   }
-
-  test('respects reduced motion for chart feedback and featured paging', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1920, height: 900 });
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto(site.url);
-    const chart = page.getByRole('region', {
-      name: 'One composition, every surface',
-    });
-    const items = chart.locator('[tabindex="0"]');
-    for (const index of [0, 1]) {
-      const item = items.nth(index);
-      await item.focus();
-      await expect(item).toHaveCSS('transition-duration', '0s');
-      await expect(item).toHaveCSS('transform', 'none');
-      await expect(item).toHaveCSS('scale', 'none');
-      await item.hover();
-      await expect(item).toHaveCSS('transform', 'none');
-      await expect(item).toHaveCSS('scale', 'none');
-    }
-    const featured = page.getByRole('region', {
-      name: 'Featured primitives',
-      exact: true,
-    });
-    const next = featured.getByRole('button', { name: 'Next primitives' });
-    const strip = featured.locator(':scope > div:last-child');
-    await strip.evaluate((element) => {
-      element.scrollBy = (options?: ScrollToOptions | number) => {
-        element.setAttribute(
-          'data-scroll-behavior',
-          typeof options === 'object' ? String(options.behavior) : 'number'
-        );
-      };
-    });
-    if (await next.isEnabled()) {
-      await next.click();
-      await expect(strip).toHaveAttribute('data-scroll-behavior', 'instant');
-    }
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
-    if (await next.isEnabled()) {
-      await next.click();
-      await expect(strip).toHaveAttribute('data-scroll-behavior', 'smooth');
-    }
-    await items.nth(1).focus();
-    await items.nth(1).hover();
-    // The card's transition is euiTheme.animation.fast.
-    await expect(items.nth(1)).toHaveCSS('transition-duration', '0.15s');
-    await expect(items.nth(1)).not.toHaveCSS('transform', 'none');
-  });
-
-  test('pages stacked featured tiles three at a time and preserves desktop browsing', async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 900 });
-    await page.goto(site.url);
-    const featured = page.getByRole('region', {
-      name: 'Featured primitives',
-      exact: true,
-    });
-    const tiles = featured.locator(':scope > div:last-child > *');
-    const visible = featured.locator(':scope > div:last-child > :visible');
-    const previous = featured.getByRole('button', {
-      name: 'Previous primitives',
-    });
-    const next = featured.getByRole('button', { name: 'Next primitives' });
-    const count = await tiles.count();
-    expect(count).toBeGreaterThan(0);
-    await expect(previous).toBeDisabled();
-    for (let offset = 0; offset < count; offset += 3) {
-      await expect(visible).toHaveCount(Math.min(3, count - offset));
-      expect(await visible.allTextContents()).toEqual(
-        (await tiles.allTextContents()).slice(offset, offset + 3)
-      );
-      if (offset + 3 < count) {
-        await next.click();
-      }
-    }
-    await expect(next).toBeDisabled();
-    await expect(
-      featured.getByRole('link', { name: /Open the gallery/ })
-    ).toBeVisible();
-    if (count <= 3) {
-      await expect(previous).toBeDisabled();
-      await page.setViewportSize({ width: 1920, height: 900 });
-      await expect(visible).toHaveCount(count);
-      return;
-    }
-    await previous.click();
-    await expect(next).toBeEnabled();
-    await page.setViewportSize({ width: 1920, height: 900 });
-    await expect(visible).toHaveCount(count);
-    await expect(previous).toBeDisabled();
-    await expect(next).toBeEnabled();
-    await next.click();
-    await expect(previous).toBeEnabled();
-    await page.setViewportSize({ width: 390, height: 900 });
-    await expect(visible).toHaveCount(3);
-    await expect(next).toBeEnabled();
-  });
 });
 
 test.describe('decks', () => {

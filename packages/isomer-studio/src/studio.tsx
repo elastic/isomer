@@ -6,12 +6,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import {
-  EuiCallOut,
-  EuiProvider,
-  EuiThemeProvider,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiProvider, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
 
@@ -19,6 +14,7 @@ import { AppHost } from './apps/app_host';
 import { useAccent } from './chrome/accent';
 import type { ColorModePreference } from './chrome/color_mode';
 import { useColorMode } from './chrome/color_mode';
+import { ConfigProblems } from './chrome/config_problems';
 import { DEV_TINT } from './chrome/dev_tint';
 import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
@@ -30,7 +26,6 @@ import {
   isHomeRoute,
   useStudioRoute,
 } from './chrome/route';
-import type { ShellLook } from './chrome/shell_background';
 import { ShellBackdrop } from './chrome/shell_background';
 import type { StudioApp } from './config';
 import { ComposeView } from './dev/compose_view';
@@ -92,7 +87,6 @@ const Layout = ({
   const { euiTheme } = useEuiTheme();
   const {
     apps,
-    featured,
     docs: { primitives },
   } = useStudio();
   const home = isHomeRoute(location);
@@ -102,8 +96,8 @@ const Layout = ({
   const { page } = route;
   const composing = isComposeRoute(location);
   const mode = app || home ? undefined : composing ? 'dev' : route.mode;
-  const look: ShellLook = home ? 'home' : (mode ?? 'docs');
-  const accent = useAccent(look === 'home' ? 'docs' : look);
+  const look = mode ?? 'docs';
+  const accent = useAccent(look);
   const [isCompactNav, setCompactNav] = useState(
     () => compactNavQuery()?.matches ?? false
   );
@@ -147,15 +141,18 @@ const Layout = ({
     transition: grid-template-columns ${euiTheme.animation.normal}
       ${euiTheme.animation.resistance};
   `;
-  const main = css`
-    grid-column: 2;
+  const panel = css`
     min-height: 0;
-    margin: 0 ${euiTheme.size.m} ${euiTheme.size.m} 0;
+    margin: 0 ${euiTheme.size.m} ${euiTheme.size.m};
     /* Contain absolute descendants (EUI screen-reader text) so they cannot overflow the shell. */
     position: relative;
     overflow: auto;
     border-radius: ${euiTheme.border.radius.frame};
     background: ${euiTheme.colors.backgroundBasePlain};
+  `;
+  const main = css`
+    grid-column: 2;
+    margin-left: 0;
   `;
 
   const onSelectPrimitive = useCallback(
@@ -171,7 +168,6 @@ const Layout = ({
           {...{
             title,
             mode,
-            home,
             appTitle: app?.title,
             colorMode,
             onColorModeChange,
@@ -182,12 +178,16 @@ const Layout = ({
         />
       </EuiThemeProvider>
       {home ? (
-        <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
-          <HomeView
-            {...{ title, featured, configProblems }}
-            router={{ route, navigate }}
-          />
-        </EuiThemeProvider>
+        <main
+          css={[
+            panel,
+            css`
+              flex: 1;
+            `,
+          ]}>
+          <ConfigProblems problems={configProblems} />
+          <HomeView {...{ title }} />
+        </main>
       ) : (
         <div css={body}>
           <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
@@ -211,20 +211,8 @@ const Layout = ({
               onSelectApp={openApp}
             />
           </EuiThemeProvider>
-          <main css={main}>
-            {configProblems.length ? (
-              <EuiCallOut
-                announceOnMount
-                color="danger"
-                iconType="error"
-                title="The config is invalid; the Studio keeps the last valid one">
-                <ul>
-                  {configProblems.map((problem) => (
-                    <li key={problem}>{problem}</li>
-                  ))}
-                </ul>
-              </EuiCallOut>
-            ) : null}
+          <main css={[panel, main]}>
+            <ConfigProblems problems={configProblems} />
             {app && isAppRoute(location) ? (
               <AppHost
                 key={app.id}

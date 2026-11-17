@@ -45,33 +45,24 @@ describe('IsomerStudio', () => {
   it('opens Home on an empty hash, and returns to it from the mark', async () => {
     window.location.hash = '';
     render(<IsomerStudio {...{ runtime }} />);
+    const home = await screen.findByTestId('home');
     expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What are we rendering today?',
-      })
+      within(home).getByRole('heading', { level: 1, name: 'Isomer Studio' })
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Reference' })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toContainElement(home);
     expect(
       screen.queryByRole('navigation', { name: 'Primitives' })
     ).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: /Open the workbench/ }));
+    fireEvent.click(
+      within(home).getByRole('link', { name: 'Open the Workbench' })
+    );
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/0'));
     expect(await findEditor()).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Reference' })
-    ).toBeInTheDocument();
+    expect(screen.queryByTestId('home')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What are we rendering today?',
-      })
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(window.location.hash).toBe('#/home');
   });
 
@@ -79,7 +70,8 @@ describe('IsomerStudio', () => {
     window.location.hash = '#/docs/divider/0';
     render(<IsomerStudio {...{ runtime }} />);
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
-    const search = await screen.findByLabelText('Search primitives');
+    await screen.findByTestId('home');
+    const search = screen.getByLabelText('Search primitives');
     fireEvent.focus(search);
     fireEvent.change(search, { target: { value: 'health' } });
     fireEvent.click(await screen.findByRole('option', { name: /Health/ }));
