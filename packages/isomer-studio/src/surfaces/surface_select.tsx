@@ -108,19 +108,6 @@ export const surfaceSummary = (
     : selected.map(outputLabel).join(', ');
 };
 
-export const surfaceNote = (
-  showing: readonly PreviewSurface[],
-  available: number
-): string => {
-  const [only] = showing;
-  if (showing.length === 1 && only) {
-    return SURFACE_NOTES[only];
-  }
-  return showing.length === available
-    ? `All ${available} outputs from the same props. Pick an output above to inspect one at full size, or several to compare.`
-    : `Comparing ${showing.length} outputs from the same props.`;
-};
-
 /** Adds host PNG output, optionally consolidating browser renders as HTML. */
 export const previewSurfaces = (
   supported: readonly StudioSurface[],

@@ -69,9 +69,7 @@ const followRefs = (defs: Node, node: unknown): Node | undefined => {
 };
 
 const isNullSchema = (node: unknown): boolean =>
-  isNode(node) &&
-  (node.type === 'null' ||
-    (Object.hasOwn(node, 'const') && node.const === null));
+  isNode(node) && node.type === 'null';
 
 const isNullVariant = (defs: Node, variant: unknown): boolean =>
   isNullSchema(followRefs(defs, variant));

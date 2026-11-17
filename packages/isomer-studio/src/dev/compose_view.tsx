@@ -68,7 +68,7 @@ const HEADING = {
 };
 
 /** JSON when the source opens like a JSON object or array, JSX otherwise. */
-export const guessFormat = (source: string): ComposeFormat =>
+const guessFormat = (source: string): ComposeFormat =>
   /^\s*[[{]/.test(source) ? 'json' : 'jsx';
 
 /** A composed example as a draft, without the theme the Studio composed it in. */
@@ -133,7 +133,7 @@ const loadParams = async (
 };
 
 /** Surfaces every top-level primitive in the draft renders to, or all of them for an empty draft. */
-export const draftSurfaces = (
+const draftSurfaces = (
   { primitives, surfaces }: Pick<RuntimeDocs, 'primitives' | 'surfaces'>,
   composition: Composition
 ): StudioSurface[] => {
