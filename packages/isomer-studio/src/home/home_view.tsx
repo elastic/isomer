@@ -58,6 +58,10 @@ const heroCopy = css`
   min-width: min(100%, 360px);
 `;
 
+const fullWidth = css`
+  inline-size: 100%;
+`;
+
 const cardStyles = css`
   min-width: 0;
 `;
@@ -280,26 +284,27 @@ export const HomeView = ({
                 </EuiButton>
               </EuiFlexGroup>
               <EuiSpacer size="s" />
-              <EuiFlexGroup
-                justifyContent="spaceBetween"
-                responsive={false}
-                gutterSize="s">
-                <EuiButtonEmpty
-                  size="s"
-                  flush="left"
-                  iconType={ComposeIcon}
-                  href={formatLocation({ compose: true, params: {} })}>
-                  Compose
-                </EuiButtonEmpty>
-                <EuiButtonEmpty
-                  size="s"
-                  flush="right"
-                  iconType="external"
-                  iconSide="right"
-                  href={DOCS_URL}
-                  target="_blank">
-                  Isomer docs
-                </EuiButtonEmpty>
+              <EuiFlexGroup responsive={false} gutterSize="s">
+                <EuiFlexItem>
+                  <EuiButtonEmpty
+                    css={fullWidth}
+                    size="s"
+                    iconType={ComposeIcon}
+                    href={formatLocation({ compose: true, params: {} })}>
+                    Compose
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem>
+                  <EuiButtonEmpty
+                    css={fullWidth}
+                    size="s"
+                    iconType="external"
+                    iconSide="right"
+                    href={DOCS_URL}
+                    target="_blank">
+                    Isomer docs
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
               </EuiFlexGroup>
             </EuiPanel>
           </EuiFlexItem>
