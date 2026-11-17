@@ -11,9 +11,9 @@ import { EuiIcon } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { Glyph } from '../chrome/primitive_glyph';
+import type { StudioAppSurface } from '../config';
 import { useStudio } from '../studio_context';
-import type { PreviewSurface } from '../surfaces/surface_select';
-import { PREVIEW_ICONS } from '../surfaces/surface_select';
+import { SURFACE_ICONS } from '../surfaces/surface_logos';
 
 import { APPS_DOCS_URL, STUDIO_CONFIG_DOCS_URL, VIEWS_DOCS_URL } from './links';
 import type { Home } from './tokens';
@@ -136,7 +136,7 @@ const Empty = ({
 export const LoadedPanel = ({
   surfaces,
 }: {
-  surfaces: readonly PreviewSurface[];
+  surfaces: readonly StudioAppSurface[];
 }) => {
   const home = useHome();
   const {
@@ -255,7 +255,7 @@ export const LoadedPanel = ({
                 font-size: ${fontSize('xs')};
                 color: ${color.heading};
               `}>
-              <EuiIcon type={PREVIEW_ICONS[surface]} size="m" />
+              <EuiIcon type={SURFACE_ICONS[surface]} size="m" />
               {surface}
             </span>
           ))}

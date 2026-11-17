@@ -5,10 +5,9 @@
  * 2.0.
  */
 
-export const APP_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
+import { isRecord } from './is_record';
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
+export const APP_ID_PATTERN = /^[a-z][a-z0-9-]*$/;
 
 const label = (index: number, id: unknown) =>
   typeof id === 'string' ? `apps[${index}] ("${id}")` : `apps[${index}]`;

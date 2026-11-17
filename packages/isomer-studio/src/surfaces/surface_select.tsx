@@ -18,60 +18,26 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
+import type { StudioAppSurface } from '../config';
 import type { StudioSurface } from '../model/describe_runtime';
-import { SURFACE_LABELS } from '../model/describe_runtime';
+import { outputLabel } from '../model/surface_catalog';
 
-import { PngLogo } from './surface_logos';
-import { SURFACE_ICONS } from './surface_preview';
-
-/** A runtime surface, or the host's PNG of the snapshot surface. */
-export type PreviewSurface = StudioSurface | 'png';
+import { SURFACE_ICONS } from './surface_logos';
 
 /** Every surface, or an explicit subset in display order. */
-export type SurfaceSelection = 'all' | readonly PreviewSurface[];
+export type SurfaceSelection = 'all' | readonly StudioAppSurface[];
 
 interface SurfaceOptionData {
-  surface: PreviewSurface;
+  surface: StudioAppSurface;
 }
 
 type SurfaceOption = EuiSelectableOption<SurfaceOptionData>;
 
-export const PREVIEW_LABELS: Readonly<Record<PreviewSurface, string>> = {
-  ...SURFACE_LABELS,
-  png: 'PNG',
-};
-
-/** The picker consolidates HTML, React, and Snapshot into one Web output. */
-export const outputLabel = (surface: PreviewSurface): string =>
-  surface === 'html' ? 'Web' : PREVIEW_LABELS[surface];
-
-export const PREVIEW_ICONS: Readonly<Record<PreviewSurface, IconType>> = {
-  ...SURFACE_ICONS,
-  png: PngLogo,
-};
-
-export const SURFACE_NOTES: Readonly<Record<PreviewSurface, string>> = {
-  react: 'Live React, styled by the host.',
-  html: 'HTML and its stylesheet in shadow DOM.',
-  slack: 'Block Kit, drawn as Slack would.',
-  markdown: 'Markdown for chat and docs.',
-  text: 'Plain text with no markup.',
-  snapshot: 'The React render with the pack stylesheet, laid out for an image.',
-  png: 'The snapshot, rasterized by the host.',
-};
-
-/** Surfaces drawn at a fixed layout width, which a card shows as a scaled 16:9 frame. */
-export const isVisualSurface = (surface: PreviewSurface): boolean =>
-  surface === 'react' ||
-  surface === 'html' ||
-  surface === 'snapshot' ||
-  surface === 'png';
-
 /** `selection` in `surfaces` order. An empty or stale subset shows every surface. */
 export const resolveSurfaces = (
-  surfaces: readonly PreviewSurface[],
+  surfaces: readonly StudioAppSurface[],
   selection: SurfaceSelection
-): PreviewSurface[] => {
+): StudioAppSurface[] => {
   if (selection === 'all') {
     return [...surfaces];
   }
@@ -81,10 +47,10 @@ export const resolveSurfaces = (
 
 /** From every surface, choosing one shows only it; otherwise the choice toggles, and removing the last shows every surface. */
 export const toggleSurface = (
-  surfaces: readonly PreviewSurface[],
-  selected: readonly PreviewSurface[],
-  surface: PreviewSurface
-): PreviewSurface[] => {
+  surfaces: readonly StudioAppSurface[],
+  selected: readonly StudioAppSurface[],
+  surface: StudioAppSurface
+): StudioAppSurface[] => {
   if (selected.length === surfaces.length) {
     return [surface];
   }
@@ -96,8 +62,8 @@ export const toggleSurface = (
 };
 
 export const surfaceSummary = (
-  selected: readonly PreviewSurface[],
-  surfaces: readonly PreviewSurface[]
+  selected: readonly StudioAppSurface[],
+  surfaces: readonly StudioAppSurface[]
 ): string => {
   if (selected.length === surfaces.length) {
     return `${surfaces.length} outputs`;
@@ -113,8 +79,8 @@ export const previewSurfaces = (
   supported: readonly StudioSurface[],
   canRasterize: boolean,
   consolidateBrowser = false
-): PreviewSurface[] =>
-  supported.flatMap((surface): PreviewSurface[] => {
+): StudioAppSurface[] =>
+  supported.flatMap((surface): StudioAppSurface[] => {
     if (
       consolidateBrowser &&
       supported.includes('html') &&
@@ -138,11 +104,11 @@ const Option = ({ icon, label }: { icon: IconType; label: string }) => (
 
 /** The surfaces to show, and a setter that stores a full selection as `'all'`. */
 export const useSurfaceSelection = (
-  surfaces: readonly PreviewSurface[],
+  surfaces: readonly StudioAppSurface[],
   initial: SurfaceSelection
 ) => {
   const [selection, setSelection] = useState<SurfaceSelection>(initial);
-  const select = (next: readonly PreviewSurface[]) =>
+  const select = (next: readonly StudioAppSurface[]) =>
     setSelection(next.length === surfaces.length ? 'all' : next);
   return { showing: resolveSurfaces(surfaces, selection), select };
 };
@@ -156,9 +122,9 @@ export const SurfaceSelect = ({
   onChange,
   anchorPosition = 'downLeft',
 }: {
-  surfaces: readonly PreviewSurface[];
-  selected: readonly PreviewSurface[];
-  onChange: (selected: readonly PreviewSurface[]) => void;
+  surfaces: readonly StudioAppSurface[];
+  selected: readonly StudioAppSurface[];
+  onChange: (selected: readonly StudioAppSurface[]) => void;
   anchorPosition?: 'downLeft' | 'downRight';
 }) => {
   const { euiTheme } = useEuiTheme();
@@ -217,7 +183,7 @@ export const SurfaceSelect = ({
           }
           listProps={{ bordered: false }}
           renderOption={({ surface, label }) => (
-            <Option icon={PREVIEW_ICONS[surface]} {...{ label }} />
+            <Option icon={SURFACE_ICONS[surface]} {...{ label }} />
           )}>
           {(list) => list}
         </EuiSelectable>

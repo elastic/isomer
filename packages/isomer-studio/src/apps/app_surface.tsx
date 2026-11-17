@@ -12,20 +12,19 @@ import type {
   StudioRuntime,
   StudioSurfaceProps,
 } from '../config';
-import { runtimeSurfaces, SURFACE_LABELS } from '../model/describe_runtime';
+import { runtimeSurfaces } from '../model/describe_runtime';
+import { SURFACE_CATALOG } from '../model/surface_catalog';
 import { useStudio } from '../studio_context';
+import { SurfaceRender } from '../surfaces/surface_render';
 
-import { PngSurface } from './png_surface';
-import { SurfacePreview } from './surface_preview';
-
-/** The surfaces {@link AppSurface} can show, in the Studio's order, with `png` after `snapshot` when the host rasterizes. */
+/** The surfaces {@link AppSurface} can show, in the Studio's order, then `png` when the host rasterizes. */
 export const appSurfaces = (
   runtime: Pick<StudioRuntime, 'surfaces'>,
   hasPng: boolean
-): { id: StudioAppSurface; label: string }[] => [
-  ...runtimeSurfaces(runtime).map((id) => ({ id, label: SURFACE_LABELS[id] })),
-  ...(hasPng ? [{ id: 'png' as const, label: 'PNG' }] : []),
-];
+): { id: StudioAppSurface; label: string }[] =>
+  [...runtimeSurfaces(runtime), ...(hasPng ? ['png' as const] : [])].map(
+    (id) => ({ id, label: SURFACE_CATALOG[id].label })
+  );
 
 /** The `Surface` an app receives, read from context so its identity never changes. */
 export const AppSurface = ({
@@ -35,18 +34,13 @@ export const AppSurface = ({
   zoom = 'fit',
   heading,
 }: StudioSurfaceProps) => {
-  const { runtime, rasterizePng } = useStudio();
+  const { runtime } = useStudio();
   const validation = useMemo(
     () => runtime.validate(composition),
     [runtime, composition]
   );
-  if (surface === 'png') {
-    return rasterizePng ? (
-      <PngSurface {...{ composition, rasterizePng, zoom }} />
-    ) : null;
-  }
   return (
-    <SurfacePreview
+    <SurfaceRender
       {...{ surface, composition, validation, view, zoom, heading }}
     />
   );
