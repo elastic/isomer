@@ -9,17 +9,14 @@ import type { SnapshotRenderOptions } from '@elastic/isomer-runtime';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { createTakumiImageBackend, type TakumiImageBackend } from './backend';
-import type {
-  PngRuntime,
-  PngValidationResult,
-  SnapshotOptions,
-} from './render_png';
+import type { PngRuntime, SnapshotOptions } from './render_png';
 import { renderPng } from './render_png';
+import type { ValidationResult } from './validation';
 
 const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
 
 /** Stands in for `IsomerRuntime`: validates by a simple rule, renders a fixed box. */
-const runtimeReturning = (validation: PngValidationResult): PngRuntime => ({
+const runtimeReturning = (validation: ValidationResult): PngRuntime => ({
   validate: (composition) => ({ ...validation, composition }),
   surfaces: {
     snapshot: {
@@ -118,7 +115,7 @@ describe('renderPng', () => {
 
   it('throws rather than draw the input when the runtime returns no copy', async () => {
     const drawn: unknown[] = [];
-    const runtimeWith = (validation: PngValidationResult): PngRuntime => ({
+    const runtimeWith = (validation: ValidationResult): PngRuntime => ({
       validate: () => ({ ...validation, composition: undefined }),
       surfaces: {
         snapshot: {
