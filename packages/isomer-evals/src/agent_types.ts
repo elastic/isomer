@@ -129,7 +129,7 @@ export interface AgentEvalCaseResult {
   valid: boolean;
   /** The answer's parse error, or its validation and frame errors. */
   errors: readonly string[];
-  /** Absent when the case has no `expected` or the answer did not parse. */
+  /** Absent when the case has no `expected`; a miss using nothing when no answer parsed. */
   expected?: ExpectedPrimitivesScore | undefined;
 }
 

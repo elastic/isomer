@@ -208,7 +208,7 @@ A tool is an `AgentEvalTool`: a name, a description, a Zod `inputSchema`, offere
 | `repeat` | `1` | Runs per case; model runs vary, so compare means. |
 | `concurrency` | `1` | Runs in flight at once. |
 
-A case's `expected` node types are scored as in `runEvals`: `scoreExpectedPrimitives` counts a hit when any of them appears as a node anywhere in the answer's tree. Unlike `runEvals`, an agent answer that parsed but failed validation is still scored for it. `AgentEvalReport.totals` reports finished and valid runs, expected-primitive hits, and per-run means of turns, input and output tokens, tool-result bytes, and calls to each tool.
+A case's `expected` node types are scored as in `runEvals`: `scoreExpectedPrimitives` counts a hit when any of them appears as a node anywhere in the answer's tree. Unlike `runEvals`, an agent answer that parsed but failed validation is still scored for it; a run that ends without a parsed answer is a miss that used nothing. `AgentEvalReport.totals` reports finished and valid runs, expected-primitive hits, and per-run means of turns, input and output tokens, tool-result bytes, and calls to each tool.
 
 ## API
 

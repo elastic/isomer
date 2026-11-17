@@ -49,63 +49,15 @@ The server runs on Vite. When the config or anything it imports changes, the Stu
 
 ### Comparing outputs
 
-Workbench combines browser renders in one **Web** panel, labeled **HTML / React /
-Snapshot** beneath its title, without a per-panel dropdown. HTML and its stylesheet
-render in a shadow root, not an iframe; its links open in a new tab so following one
-never unloads the draft. PNG stays separate; Slack, Markdown and
-Text appear below. The **Outputs** menu lists these displayed outputs rather than
-separate React and Snapshot entries when HTML is available. Workbench starts with every
-output selected; pick one to inspect it at full size, or add others to compare.
-Runtimes without HTML retain their React or Snapshot output.
+Workbench combines browser renders in one **Web** panel, labeled **HTML / React / Snapshot** beneath its title. HTML and its stylesheet render in a shadow root, not an iframe, and its links open in a new tab so following one never unloads the draft. PNG stays separate; Slack, Markdown and Text appear below. When HTML is available, the **Outputs** menu lists the Web panel instead of separate React and Snapshot entries; runtimes without HTML keep their React or Snapshot output. Workbench starts with every output selected: pick one to inspect it at full size, or add others to compare. Output previews always form a single vertical list.
 
-**Enhancements**, aligned at the right of the Web header, is off by default.
-The menu tests each registered enhancement's `appliesTo` predicate against the
-current composition, including nested primitives through the runtime's child
-walker. Only applicable enhancements appear. A dropdown showing the selected and
-applicable counts (such as **Enhancements (0/1)**) lets you enable each
-independently. Each is listed by its `name` and `description`, falling back to its
-id (such as `slideCopy` or `slideBuilds`) when it has no `name`.
-Enhancements without a script are host-driven;
-selecting one enables its render-time behavior but does not supply host controls
-such as advancing a slide build. Scripted enhancements run on the HTML preview through the SDK's
-host-run enhancement helper. Turning them off
-remounts the unenhanced preview so script-created elements and listeners do not
-linger. Only explicitly requested pack scripts run; embedded script elements are
-not executed. The controls are disabled for Snapshot, in Source view, when no
-enhancements are registered, or for a React-only preview without
-`createReactContext` or `stylesheet`. Snapshot retains its fixed frame, theme resolution and
-visibility rules. Sharing a panel is not a claim of pixel equality.
+**Enhancements**, at the right of the Web header, is off by default. The menu lists each registered enhancement whose `appliesTo` predicate matches the current composition, including nested primitives through the runtime's child walker, by its `name` and `description` (or its id, such as `slideCopy`, when it has no `name`). A dropdown showing the selected and applicable counts, such as **Enhancements (0/1)**, enables each independently. An enhancement without a script is host-driven: selecting it enables its render-time behavior but supplies no host controls, such as advancing a slide build. Scripted enhancements run on the HTML preview through the SDK's host-run enhancement helper, and turning one off remounts the unenhanced preview so script-created elements and listeners do not linger. Only explicitly requested pack scripts run; embedded script elements are not executed. The controls are disabled for Snapshot, in Source view, when no enhancements are registered, and for a React-only preview without `createReactContext` or `stylesheet`. Snapshot keeps its fixed frame, theme resolution and visibility rules.
 
-Studio does not install or launch a headless browser to capture previews.
-It does not report pixel-difference percentages or infer matching outputs.
-DOM or markup similarity is not proof of identical rendered
-pixels. PNG previews still use Takumi, not a browser screenshot.
+Sharing a panel is not a claim of pixel equality. Studio does not launch a headless browser to capture previews, report pixel differences or infer matching outputs; PNG previews use Takumi, not a browser screenshot.
 
-The editor, outputs, and prop drawer share one panel, with a resizer between
-the borderless columns and independent scrolling in each. Its bottom strip has **Props** at the
-left and validity at the right. Copy sits beside the source-format controls in
-the editor as a compact icon with a tooltip. Output previews always form a
-single vertical list, even in wide columns. Each output has a solid header against
-the recessed output canvas in both color modes. The shared footer owns its top
-divider; the editor has no additional bottom border.
-**Props** toggles a full-width drawer, collapsed by default. Component
-tabs select one schema-derived table for the selected primitive or its branded
-JSX child components (including nested members).
-It also includes other primitives in the draft and their children, rather than
-offering a `+ Prop` action that edits only the first node. Tables are read-only;
-edit props in JSX or JSON. Name, type and description columns use proportional
-widths and top-aligned cells. The drawer sits outside the editor/output resizer,
-so adjusting the split does not narrow the reference.
-The 72-pixel collapsed navigation rail uses full-opacity white icons in centered,
-32-pixel buttons. Its toggle stays fixed while the grouped entries scroll
-vertically when they exceed the available height.
-The white sidebar toggle sits beside the filter, using `transitionRightIn` to
-collapse and `transitionLeftIn` to expand. At 1120 pixels or narrower, navigation
-starts collapsed, expands over the content when toggled, and does not expand on
-hover. Component tabs replace prop section
-headings and label the active table for assistive technology.
-Slack's preview padding uses the message canvas
-background in both color modes.
+The editor and outputs share one panel with a resizer between them, and each scrolls independently. Copy sits beside the source-format controls in the editor. The bottom strip has **Props** at the left and validity at the right. **Props** toggles a full-width, read-only drawer, collapsed by default and outside the resizer, so adjusting the split does not narrow it. Its component tabs select one schema-derived table for each primitive in the draft or its branded JSX child components, including nested members, and label the active table for assistive technology. Edit props in JSX or JSON.
+
+At 1120 pixels or narrower, navigation starts collapsed to a rail, expands over the content when toggled, and does not expand on hover. The rail's toggle stays fixed while its entries scroll.
 
 ## `build`
 
