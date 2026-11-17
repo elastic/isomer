@@ -25,6 +25,7 @@ import {
   Fit,
   HorizontalAlignment,
   LabelOverflowConstraint,
+  type LegendActionProps,
   LineAnnotation,
   LineSeries,
   type PartialTheme,
@@ -296,12 +297,16 @@ const gradient = (stacked: boolean) => {
   };
 };
 
+/** Kibana's `getFitLineConfig`, `helpers/data_layers.tsx`. */
 const FIT_LINE = {
   visible: true,
   stroke: ColorVariant.Series,
   opacity: 1,
   dash: [],
 };
+
+/** Kibana's emphasized fit area: the series' fill opacity, else 0.5, `helpers/data_layers.tsx`. */
+const fitAreaOpacity = (areaOpacity: number) => areaOpacity || 0.5;
 
 const seriesElement = (
   series: XySeries,
@@ -391,7 +396,7 @@ const seriesElement = (
         ...(fitting.emphasize
           ? {
               fit: {
-                area: { opacity: series.areaOpacity || 0.5 },
+                area: { opacity: fitAreaOpacity(series.areaOpacity) },
                 line: FIT_LINE,
               },
             }
@@ -408,6 +413,9 @@ const dashOf = (style: 'solid' | 'dashed' | 'dotted', width: number) =>
     : style === 'dotted'
       ? [width, width]
       : undefined;
+
+/** Kibana's reference-line fill, `reference_lines/reference_line_annotations.tsx`. */
+const REFERENCE_FILL_OPACITY = 0.1;
 
 const referenceLineElements = (
   line: SceneReferenceLine,
@@ -456,7 +464,7 @@ const referenceLineElements = (
             coordinates: onX ? { x0: from, x1: to } : { y0: from, y1: to },
           },
         ]}
-        style={{ fill: line.color, opacity: 0.1 }}
+        style={{ fill: line.color, opacity: REFERENCE_FILL_OPACITY }}
       />
     );
   }
@@ -581,13 +589,7 @@ export const sceneTooltip = (scene: XyScene): CustomTooltip => {
 /** "Filter for" and "Filter out" beside each legend item, as Kibana's legend action offers them. */
 const legendAction =
   (scene: XyScene, env: SceneRenderEnv) =>
-  ({
-    series,
-    label,
-  }: {
-    series: readonly { specId: string }[];
-    label: string;
-  }) => {
+  ({ series, label }: LegendActionProps) => {
     const specId = series[0]?.specId;
     const owner = seriesOf(scene).find((one) => seriesSpecId(one) === specId);
     if (owner === undefined) {
