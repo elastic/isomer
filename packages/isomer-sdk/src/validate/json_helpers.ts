@@ -15,6 +15,10 @@ export const DEF_PREFIX = '#/$defs/';
 export const isJsonObject = (value: unknown): value is JsonObject =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
+/** A schema that accepts only `null`; zod writes `type: 'null'` for `z.null()` and `z.literal(null)` alike. */
+export const isNullSchema = (node: unknown): boolean =>
+  isJsonObject(node) && node.type === 'null';
+
 /** The `$defs` id a local `$ref` points at, or `undefined`. */
 export const parseDefRef = (ref: unknown): string | undefined =>
   typeof ref === 'string' && ref.startsWith(DEF_PREFIX)

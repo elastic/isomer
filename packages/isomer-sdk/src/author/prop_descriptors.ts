@@ -7,6 +7,7 @@
 
 import {
   isJsonObject,
+  isNullSchema,
   type JsonObject,
   ownDef,
   parseDefRef,
@@ -65,11 +66,6 @@ const followRefs = (
   }
   return undefined;
 };
-
-const isNullSchema = (node: unknown): boolean =>
-  isJsonObject(node) &&
-  (node.type === 'null' ||
-    (Object.hasOwn(node, 'const') && node.const === null));
 
 const isNullVariant = (defs: JsonObject, variant: unknown): boolean =>
   isNullSchema(followRefs(defs, variant));
