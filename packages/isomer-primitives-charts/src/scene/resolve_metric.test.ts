@@ -317,7 +317,7 @@ describe('metric bounds and identity', () => {
     node.value.bandsRange = 'percentage';
     node.colors = {
       bands: [
-        { to: 50, color: blue },
+        { from: 10, to: 50, color: blue },
         { from: 50, color: red },
       ],
     };

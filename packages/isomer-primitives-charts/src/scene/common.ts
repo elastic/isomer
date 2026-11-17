@@ -218,7 +218,12 @@ export const percentAlong = (
   percent: number
 ): number => {
   const span = high - low;
-  return Number.isFinite(span) ? low + (span * percent) / 100 : Number.NaN;
+  if (!Number.isFinite(span)) {
+    return Number.NaN;
+  }
+  const exact = low + (span * percent) / 100;
+  // `span * percent` can pass the largest double where the result does not.
+  return Number.isFinite(exact) ? exact : low + span * (percent / 100);
 };
 
 /** Where `value` lies from `low` (0) to `high` (1); `NaN` where their span passes the largest double. */

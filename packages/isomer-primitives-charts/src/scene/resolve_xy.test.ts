@@ -1151,6 +1151,25 @@ describe('visibility, cell identity and bounds', () => {
     expect(values[4]).not.toBe('(null)');
   });
 
+  it('reads a difference percentage past the largest double as missing', () => {
+    const scene = resolve(
+      xy({
+        data: {
+          columns: [
+            { id: 'x', label: 'X', type: 'number', role: 'metric' },
+            { id: 'y', label: 'Y', type: 'number', role: 'metric' },
+          ],
+          rows: [
+            [0, -Number.MAX_VALUE],
+            [1, Number.MAX_VALUE],
+          ],
+        },
+        legend: { statistics: ['difference_percentage'] },
+      })
+    );
+    expect(scene.legend.items[0]!.statistics[0]!.value).toBe('(null)');
+  });
+
   it('keeps the median of two subnormal values', () => {
     const scene = resolve(
       xy({

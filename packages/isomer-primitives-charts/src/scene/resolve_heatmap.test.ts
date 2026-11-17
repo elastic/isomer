@@ -152,14 +152,14 @@ describe('resolveHeatmap: bands', () => {
   it('drops percentage bands whose bounds pass the largest double', () => {
     const scene = (values: number[]) =>
       resolve(node(values.map((one, index) => [String(index), 'p', one])));
-    for (const values of [
-      [0, 1e308],
-      [-1e308, 0, 1e308],
-    ]) {
-      const { bands, cells } = scene(values);
-      expect(bands).toEqual([]);
-      expect(cells.every(({ color }) => color === TRANSPARENT)).toBe(true);
-    }
+    const { bands, cells } = scene([-1e308, 0, 1e308]);
+    expect(bands).toEqual([]);
+    expect(cells.every(({ color }) => color === TRANSPARENT)).toBe(true);
+
+    const near = scene([0, 1e308]);
+    expect(near.bands.at(-1)?.start).toBeLessThan(1e308);
+    expect(near.bands.every(({ start }) => Number.isFinite(start))).toBe(true);
+    expect(near.cells.some(({ color }) => color === TRANSPARENT)).toBe(false);
   });
 
   it('spans a table too long to spread into an argument list', () => {
