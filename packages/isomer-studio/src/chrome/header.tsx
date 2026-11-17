@@ -35,6 +35,8 @@ export interface StudioHeaderProps {
   mode: StudioMode | undefined;
   /** The open app's title, shown in place of the mode's name. */
   appTitle?: string | undefined;
+  /** False where the page has its own primitive search, such as Home. */
+  hasSearch?: boolean | undefined;
   colorMode: ColorModePreference;
   onModeChange: (mode: StudioMode) => void;
   onColorModeChange: (colorMode: ColorModePreference) => void;
@@ -85,6 +87,7 @@ export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
   appTitle,
+  hasSearch = true,
   colorMode,
   onModeChange,
   onColorModeChange,
@@ -225,7 +228,7 @@ export const StudioHeader = ({
             gap: ${euiTheme.size.s};
           `,
         ]}>
-        <PrimitiveSearch {...{ onSelectPrimitive }} />
+        {hasSearch ? <PrimitiveSearch {...{ onSelectPrimitive }} /> : null}
         <ColorModePicker {...{ colorMode, onColorModeChange }} />
       </div>
     </header>

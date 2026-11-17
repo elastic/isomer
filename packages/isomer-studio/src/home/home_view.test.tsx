@@ -71,7 +71,7 @@ const renderHome = ({
   render(
     <EuiProvider colorMode="light">
       <StudioContextProvider {...{ value }}>
-        <HomeView title="Isomer Studio" />
+        <HomeView title="Isomer Studio" onSelectPrimitive={vi.fn()} />
       </StudioContextProvider>
     </EuiProvider>
   );

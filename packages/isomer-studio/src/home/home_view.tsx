@@ -35,6 +35,7 @@ import {
   VIEWS_DOCS_URL,
 } from '../chrome/links';
 import { Glyph, PrimitiveGlyph } from '../chrome/primitive_glyph';
+import { PrimitiveSearch } from '../chrome/primitive_search';
 import { formatLocation, formatRoute, GALLERY } from '../chrome/route';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { pickFeatured } from '../model/featured';
@@ -179,7 +180,13 @@ const Missing = ({
 );
 
 /** The landing page: what this Studio is for, where to start, featured primitives and what the config loaded. */
-export const HomeView = ({ title }: { title: string }) => {
+export const HomeView = ({
+  title,
+  onSelectPrimitive,
+}: {
+  title: string;
+  onSelectPrimitive: (type: string) => void;
+}) => {
   const {
     runtime: { packs },
     apps,
@@ -214,6 +221,12 @@ export const HomeView = ({ title }: { title: string }) => {
                 composition render on every surface your product speaks.
               </p>
             </EuiText>
+            <EuiSpacer size="l" />
+            <PrimitiveSearch
+              size="large"
+              placeholder="Search primitives by name, purpose or prop"
+              {...{ onSelectPrimitive }}
+            />
             <EuiSpacer size="l" />
             <EuiFlexGroup gutterSize="m" alignItems="center" wrap>
               <EuiButton

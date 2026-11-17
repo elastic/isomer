@@ -941,6 +941,43 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('searches primitives from the hero, which replaces the header search on Home', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}#/home`);
+    const home = page.getByTestId('home');
+    const search = page.getByLabel('Search primitives');
+    await expect(search).toHaveCount(1);
+    await expect(home.getByLabel('Search primitives')).toBeVisible();
+    await expect(
+      page.locator('header').getByLabel('Search primitives')
+    ).toHaveCount(0);
+
+    await page.locator('body').click({ position: { x: 1, y: 1 } });
+    await page.keyboard.press('Control+K');
+    await expect(search).toBeFocused();
+
+    // Read both at once: a config without `featured` can redraw the cards.
+    const { label, type } = await home
+      .getByTestId('featured-primitive')
+      .first()
+      .evaluate((card) => ({
+        label: card.querySelector('h3')!.textContent.trim(),
+        type: card
+          .querySelector('a[href^="#/docs/"]')!
+          .getAttribute('href')!
+          .split('/')[2]!,
+      }));
+    await search.fill(type);
+    await page.getByRole('option').filter({ hasText: label }).first().click();
+    // The header search opens a primitive in the mode last used, and so does Home's.
+    await expect(page).toHaveURL(new RegExp(`#/(docs|dev)/${type}/0$`));
+    await expect(home).toBeHidden();
+    await expect(
+      page.locator('header').getByLabel('Search primitives')
+    ).toBeVisible();
+  });
+
   test("links each featured card to its primitive's Reference and Workbench", async ({
     page,
   }) => {

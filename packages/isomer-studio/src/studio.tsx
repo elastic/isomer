@@ -172,6 +172,7 @@ const Layout = ({
             colorMode,
             onColorModeChange,
             onSelectPrimitive,
+            hasSearch: !home,
           }}
           onModeChange={(next) => navigate({ mode: next })}
           onHome={goHome}
@@ -186,7 +187,7 @@ const Layout = ({
             `,
           ]}>
           <ConfigProblems problems={configProblems} />
-          <HomeView {...{ title }} />
+          <HomeView {...{ title, onSelectPrimitive }} />
         </main>
       ) : (
         <div css={body}>

@@ -73,8 +73,9 @@ describe('IsomerStudio', () => {
     window.location.hash = '#/docs/divider/0';
     render(<IsomerStudio {...{ runtime }} />);
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
-    await screen.findByTestId('home');
+    const home = await screen.findByTestId('home');
     const search = screen.getByLabelText('Search primitives');
+    expect(home).toContainElement(search);
     fireEvent.focus(search);
     fireEvent.change(search, { target: { value: 'health' } });
     fireEvent.click(await screen.findByRole('option', { name: /Health/ }));
@@ -82,6 +83,7 @@ describe('IsomerStudio', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Health' })
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('Search primitives')).not.toBe(search);
   });
 
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {
