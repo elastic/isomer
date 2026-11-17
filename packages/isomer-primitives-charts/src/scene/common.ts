@@ -211,30 +211,24 @@ export const toNumber = (cell: Cell | undefined): number | undefined => {
     : undefined;
 };
 
-/** The value `percent` of the way from `low` to `high`, even where their span overflows. */
+/** The value `percent` of the way from `low` to `high`; not finite where it or their span passes the largest double. */
 export const percentAlong = (
   low: number,
   high: number,
   percent: number
 ): number => {
-  const exact = low + ((high - low) * percent) / 100;
-  if (Number.isFinite(exact)) {
-    return exact;
-  }
-  const share = percent / 100;
-  return low * (1 - share) + high * share;
+  const span = high - low;
+  return Number.isFinite(span) ? low + (span * percent) / 100 : Number.NaN;
 };
 
-/** Where `value` lies from `low` (0) to `high` (1), even where their span overflows. */
+/** Where `value` lies from `low` (0) to `high` (1); `NaN` where their span passes the largest double. */
 export const fractionAlong = (
   low: number,
   high: number,
   value: number
 ): number => {
   const span = high - low;
-  return Number.isFinite(span)
-    ? (value - low) / span
-    : (value / 2 - low / 2) / (high / 2 - low / 2);
+  return Number.isFinite(span) ? (value - low) / span : Number.NaN;
 };
 
 /** The least double above `value`. */

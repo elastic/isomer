@@ -385,11 +385,11 @@ describe('resolveLegacyMetric', () => {
         ['b', 0, 0],
         ['c', 1e308, 0],
       ],
-      'red',
+      'green',
       1,
     ],
   ] as const)(
-    'places percentage bands without overflow at the ends of a number (%#)',
+    'places percentage bands at the ends of a number, a range past it reading as the bottom (%#)',
     (rows, expected, tile) => {
       const scene = resolveChart(
         legacy(rows as unknown as Cell[][], {

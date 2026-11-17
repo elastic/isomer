@@ -17,6 +17,7 @@ import type { HeatmapNode } from '../schema/heatmap';
 import { nextUp } from './common';
 import { brushEvent } from './events';
 import { resolveChart } from './resolve';
+import { TRANSPARENT } from './theme';
 import type { HeatmapScene } from './types';
 
 const HOUR = 3_600_000;
@@ -148,17 +149,17 @@ describe('resolveHeatmap: bands', () => {
     expect(scene.cells.every(({ color }) => color === '#888888')).toBe(true);
   });
 
-  it('places percentage bounds across the largest doubles without overflowing', () => {
-    const colors = (values: number[]) =>
-      resolve(
-        node(values.map((one, index) => [String(index), 'p', one]))
-      ).cells.map(({ color }) => color);
-    expect(colors([0, 1e308])).toEqual([TEMPERATURE[0], TEMPERATURE[4]]);
-    expect(colors([-1e308, 0, 1e308])).toEqual([
-      TEMPERATURE[0],
-      TEMPERATURE[2],
-      TEMPERATURE[4],
-    ]);
+  it('drops percentage bands whose bounds pass the largest double', () => {
+    const scene = (values: number[]) =>
+      resolve(node(values.map((one, index) => [String(index), 'p', one])));
+    for (const values of [
+      [0, 1e308],
+      [-1e308, 0, 1e308],
+    ]) {
+      const { bands, cells } = scene(values);
+      expect(bands).toEqual([]);
+      expect(cells.every(({ color }) => color === TRANSPARENT)).toBe(true);
+    }
   });
 
   it('spans a table too long to spread into an argument list', () => {

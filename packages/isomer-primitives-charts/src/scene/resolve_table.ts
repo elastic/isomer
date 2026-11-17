@@ -174,11 +174,11 @@ const keyColor = (
   return byKeyColor(colors.byKey, keyPart(value), scheme);
 };
 
-/** A bar's `[min, max]`, as Lens's `getProgressBarDomain`. */
+/** A bar's `[min, max]`, as Lens's `getProgressBarDomain`; none where its span passes the largest double. */
 const barDomain = (
   decoration: Extract<DataTableColumn['decoration'], { kind: 'bar' }>,
   values: readonly number[]
-): [number, number] => {
+): [number, number] | undefined => {
   // Lens's `getFallbackDataBounds` when the column holds no number.
   const low = values.length ? values.reduce((a, b) => Math.min(a, b)) : 0;
   const high = values.length ? values.reduce((a, b) => Math.max(a, b)) : 100;
@@ -201,7 +201,7 @@ const barDomain = (
       max = min + step;
     }
   }
-  return [min, max];
+  return Number.isFinite(max - min) ? [min, max] : undefined;
 };
 
 /**

@@ -73,7 +73,7 @@ describe('resolveTagCloud', () => {
     ).toBe(0);
   });
 
-  it('weighs words across the largest doubles without overflowing', () => {
+  it('weighs words across a range past the largest double at nothing', () => {
     expect(
       resolveChart(
         cloud([
@@ -83,7 +83,7 @@ describe('resolveTagCloud', () => {
         ]),
         { scheme: 'light' }
       ).words.map(({ weight }) => weight)
-    ).toEqual([0, 0.5, 1]);
+    ).toEqual([0, 0, 0]);
   });
 
   it('weighs a table too long to spread into an argument list', () => {
