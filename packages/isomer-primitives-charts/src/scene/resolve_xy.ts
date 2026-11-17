@@ -46,10 +46,6 @@ type DataLayer = Extract<XyChartNode['layers'][number], { kind: 'data' }>;
 type XScale = 'ordinal' | 'time' | 'linear';
 type YAxisId = 'y' | 'y2';
 
-// A gap past the largest double stops at it.
-const bounded = (value: number) =>
-  Math.max(-Number.MAX_VALUE, Math.min(Number.MAX_VALUE, value));
-
 /**
  * The bucket width over ascending distinct x values, as Elastic Charts'
  * `minInterval` is: the stated interval, unless it is wider than their
@@ -63,7 +59,7 @@ const bucketWidthOf = (
     if (at === 0) {
       return smallest;
     }
-    const gap = bounded(x - xs[at - 1]!);
+    const gap = x - xs[at - 1]!;
     return gap > 0 && (smallest === undefined || gap < smallest)
       ? gap
       : smallest;

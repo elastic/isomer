@@ -58,12 +58,7 @@ export const slicesOf = (
 ): readonly PartitionNode[] =>
   nodes.flatMap((node) => [node, ...slicesOf(node.children)]);
 
-/**
- * The Scene's leaves, depth first in draw order: the data Elastic Charts sums.
- * Each weighs its `value`, or its `share` where the values' sum is past
- * `Number.MAX_VALUE`, so Elastic Charts lays slices out in the Scene's
- * proportions either way.
- */
+/** The Scene's leaves, depth first in draw order, each weighing its `value`: the data Elastic Charts sums. */
 export const partitionData = (scene: PartitionScene): PartitionDatum[] => {
   const leaves: { keys: string[]; node: PartitionNode }[] = [];
   const walk = (nodes: readonly PartitionNode[], keys: readonly string[]) => {
@@ -77,13 +72,7 @@ export const partitionData = (scene: PartitionScene): PartitionDatum[] => {
     }
   };
   walk(scene.nodes, []);
-  const byShare = !Number.isFinite(
-    leaves.reduce((sum, { node }) => sum + node.value, 0)
-  );
-  return leaves.map(({ keys, node }) => ({
-    keys,
-    value: byShare ? node.share : node.value,
-  }));
+  return leaves.map(({ keys, node }) => ({ keys, value: node.value }));
 };
 
 /** Each slice's sum as Elastic Charts adds it from {@link partitionData}, by key. */

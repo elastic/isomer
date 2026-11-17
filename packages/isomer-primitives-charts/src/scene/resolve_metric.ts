@@ -15,7 +15,6 @@ import {
   cellKey,
   createResolution,
   describe,
-  fractionAlong,
   keyPart,
   NO_RESULTS,
   type ResolveChartOptions,
@@ -116,9 +115,9 @@ export const resolveMetric = (
       } else if (breakdownId === undefined) {
         position = value === 0 ? Number.NaN : 50;
       } else {
-        position = fractionAlong(lowest, highest, value) * 100;
+        position = ((value - lowest) / (highest - lowest)) * 100;
       }
-      // An empty range reads as its bottom.
+      // An empty range, or one past the largest double, reads as its bottom.
       if (!Number.isFinite(position)) {
         position = bands[0]?.from ?? Number.NEGATIVE_INFINITY;
       }

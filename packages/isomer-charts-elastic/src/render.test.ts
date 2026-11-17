@@ -1219,49 +1219,6 @@ describe('elastic-charts renderer: partition order and text', () => {
       parent!.valueText
     );
   });
-
-  it('lays out sums past the largest number in their shares, with their legend values', async () => {
-    const scene = resolveChart(
-      {
-        type: 'partitionChart',
-        shape: 'pie',
-        groups: [{ column: 'g' }],
-        metrics: [{ column: 'v' }],
-        legend: { values: true, visibility: 'visible' },
-        data: {
-          columns: [
-            { id: 'g', label: 'g', type: 'string', role: 'dimension' },
-            { id: 'v', label: 'v', type: 'number', role: 'metric' },
-          ],
-          rows: [
-            ['a', Number.MAX_VALUE],
-            ['a', Number.MAX_VALUE],
-            ['b', Number.MAX_VALUE],
-            ['b', Number.MAX_VALUE],
-            ['c', Number.MAX_VALUE],
-          ],
-        },
-      },
-      { scheme: 'light', size: SIZE }
-    );
-    if (scene.kind !== 'partition') {
-      throw new Error('expected a partition Scene');
-    }
-    const container = await draw(scene);
-    const drawn = new Map(
-      (debugStateIn(container).partition?.[0]?.partitions ?? []).map(
-        ({ name, value }) => [name, value]
-      )
-    );
-    const total = [...drawn.values()].reduce((sum, value) => sum + value, 0);
-    expect(Number.isFinite(total)).toBe(true);
-    for (const { key, share } of scene.nodes) {
-      expect(drawn.get(key)! / total).toBeCloseTo(share, 12);
-    }
-    expect(legendOf(container).map(({ value }) => value)).toEqual(
-      scene.legend.items.map(({ value }) => value)
-    );
-  });
 });
 
 describe('elastic-charts renderer', () => {

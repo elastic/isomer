@@ -1123,7 +1123,7 @@ describe('visibility, cell identity and bounds', () => {
     ).toMatch(/^11:30\s?AM$/);
   });
 
-  it('keeps legend averages, medians and deviations finite near the largest double', () => {
+  it('reads legend statistics past the largest double as missing', () => {
     const scene = resolve(
       xy({
         data: {
@@ -1136,12 +1136,19 @@ describe('visibility, cell identity and bounds', () => {
             [1, Number.MAX_VALUE],
           ],
         },
-        legend: { statistics: ['avg', 'median', 'standard_deviation'] },
+        legend: {
+          statistics: ['avg', 'median', 'standard_deviation', 'total', 'max'],
+        },
       })
     );
-    expect(
-      scene.legend.items[0]?.statistics.map(({ value }) => value.includes('∞'))
-    ).toEqual([false, false, false]);
+    const values = scene.legend.items[0]!.statistics.map(({ value }) => value);
+    expect(values.slice(0, 4)).toEqual([
+      '(null)',
+      '(null)',
+      '(null)',
+      '(null)',
+    ]);
+    expect(values[4]).not.toBe('(null)');
   });
 
   it('keeps the median of two subnormal values', () => {

@@ -41,32 +41,14 @@ const median = (values: number[]) => {
   if (sorted.length % 2) {
     return sorted[middle]!;
   }
-  const low = sorted[middle - 1]!;
-  const high = sorted[middle]!;
-  // Halves keep a sum past the largest double finite.
-  return Number.isFinite(low + high) ? (low + high) / 2 : low / 2 + high / 2;
+  return (sorted[middle - 1]! + sorted[middle]!) / 2;
 };
 
-// The mean and variance, in units of the largest magnitude when a sum would pass the largest double.
 const moments = (values: number[]) => {
-  const largest = values.reduce(
-    (most, value) => Math.max(most, Math.abs(value)),
-    0
-  );
-  const unit = Number.isFinite(
-    values.reduce((sum, value) => sum + value * value, 0)
-  )
-    ? 1
-    : largest;
-  const scaled = values.map((value) => value / unit);
-  const mean = scaled.reduce((sum, value) => sum + value, 0) / scaled.length;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
   const variance =
-    scaled.reduce((sum, value) => sum + (value - mean) ** 2, 0) / scaled.length;
-  return {
-    mean: mean * unit,
-    deviation: Math.sqrt(variance) * unit,
-    variance: variance * unit * unit,
-  };
+    values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  return { mean, deviation: Math.sqrt(variance), variance };
 };
 
 const statistic = (
@@ -81,8 +63,11 @@ const statistic = (
   const { mean, deviation, variance } = moments(present);
   const first = present[0];
   const last = present[present.length - 1];
+  // A sum past the largest double reads as missing, as a series with no values does.
+  const finite = (number: number | null | undefined) =>
+    typeof number === 'number' && Number.isFinite(number) ? number : null;
   const value = (number: number | null | undefined) =>
-    resolution.valueText(yColumn, number ?? null);
+    resolution.valueText(yColumn, finite(number));
   const cellText = (index: number | undefined) =>
     index === undefined ? value(null) : resolution.text(yColumn, rows[index]!);
   const presentIndexes = ys.flatMap((y, index) => (y === null ? [] : [index]));
@@ -126,7 +111,7 @@ const statistic = (
       return resolution.formatAs(
         first === undefined || last === undefined || first === 0
           ? null
-          : (last - first) / first,
+          : finite((last - first) / first),
         DEFAULT_FORMATS.percent
       );
     case 'count':
