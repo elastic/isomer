@@ -305,7 +305,7 @@ const FIT_LINE = {
   dash: [],
 };
 
-/** Kibana's emphasized fit area: the series' fill opacity, else 0.5, `helpers/data_layers.tsx`. */
+/** Kibana's emphasized-fit area opacity, `helpers/data_layers.tsx`. */
 const fitAreaOpacity = (areaOpacity: number) => areaOpacity || 0.5;
 
 const seriesElement = (
