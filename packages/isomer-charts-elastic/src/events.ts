@@ -21,6 +21,7 @@ import {
   type ChartEvent,
   type HeatmapScene,
   type MetricScene,
+  type PartitionNode,
   type PartitionScene,
   type SceneRenderEnv,
   selectEvent,
@@ -31,8 +32,6 @@ import {
   type XyScene,
   type XySeries,
 } from '@elastic/isomer-primitives-charts/scene';
-
-import { sliceByKey } from './partition';
 
 /** What each datum this engine passes Elastic Charts carries, so a hit names its mark. */
 export interface XyDatum {
@@ -224,6 +223,19 @@ export const metricHandlers = (
   };
 };
 
+const sliceNamed = (
+  nodes: readonly PartitionNode[],
+  key: string
+): PartitionNode | undefined => {
+  for (const node of nodes) {
+    const found = node.key === key ? node : sliceNamed(node.children, key);
+    if (found) {
+      return found;
+    }
+  }
+  return undefined;
+};
+
 /** The handlers this engine passes Elastic Charts for a partition Scene; empty when the chart offers nothing. */
 export const partitionHandlers = (
   scene: PartitionScene,
@@ -241,7 +253,7 @@ export const partitionHandlers = (
         : undefined;
       const selection =
         typeof key === 'string'
-          ? sliceByKey(scene).get(key)?.selection
+          ? sliceNamed(scene.nodes, key)?.selection
           : undefined;
       if (selection) {
         raise(env, selectEvent(env.nodeId, selection));
