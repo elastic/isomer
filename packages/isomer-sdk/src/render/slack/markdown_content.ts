@@ -23,6 +23,7 @@ import type {
 
 import type { MarkdownContent } from '../../define/markdown_content';
 import { gfmBlocks, resolvedMarkdownBlocks } from '../markdown/blocks';
+import { footnoteLabel, plainText } from '../markdown/plain_text';
 
 import {
   SLACK_LIMITS,
@@ -40,25 +41,7 @@ import {
   type SlackLinkOptions,
   slackLinkUrl,
 } from './format';
-
-const footnoteLabel = ({
-  identifier,
-  label,
-}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
-  `[^${label ?? identifier}]`;
-
-const plainText = (node: Nodes): string => {
-  if ('value' in node) {
-    return node.value;
-  }
-  if (node.type === 'image') {
-    return node.alt ?? '';
-  }
-  if (node.type === 'footnoteReference') {
-    return footnoteLabel(node);
-  }
-  return 'children' in node ? node.children.map(plainText).join('') : '';
-};
+import { richTextInlineText } from './rich_text_text';
 
 const styled = (style: SlackRichTextStyle): SlackRichTextStyle | undefined =>
   Object.keys(style).length === 0 ? undefined : style;
@@ -119,9 +102,6 @@ const inline = (
     }
   });
 
-const inlineText = (element: SlackRichTextInline): string =>
-  element.type === 'link' ? (element.text ?? element.url) : element.text;
-
 // The envelope leaves rich text alone, so a section keeps to the budget of a
 // `section` block's text.
 const clampInline = (
@@ -131,14 +111,15 @@ const clampInline = (
   const kept: SlackRichTextInline[] = [];
   let spent = 0;
   for (const element of elements) {
-    const length = inlineText(element).length;
+    const length = richTextInlineText(element).length;
     const rest = budget - spent;
     if (length <= rest) {
       kept.push(element);
       spent += length;
       continue;
     }
-    const text = rest > 0 ? clampSlackText(inlineText(element), rest) : '';
+    const text =
+      rest > 0 ? clampSlackText(richTextInlineText(element), rest) : '';
     if (text !== '') {
       kept.push({ ...element, text });
     }
