@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-// Escapes script text for an inline `<script>`, where composition data in an
-// adapter's script could otherwise close the element early.
+// Escapes script text for an inline `<script>`, where composition data in an adapter's script could otherwise close the element early.
 
 import {
   type Comment as JavaScriptComment,
