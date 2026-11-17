@@ -118,7 +118,7 @@ export const resolveMetric = (
       } else {
         position = fractionAlong(lowest, highest, value) * 100;
       }
-      // An empty range reads as its bottom.
+      // An empty range, or one past the largest double, reads as its bottom.
       if (!Number.isFinite(position)) {
         position = bands[0]?.from ?? Number.NEGATIVE_INFINITY;
       }

@@ -292,7 +292,12 @@ export const resolveHeatmap = (
       const start = absolute(from);
       const top = absolute(to);
       const end = top === undefined ? undefined : last ? nextUp(top) : top;
-      if (start !== undefined && end !== undefined && !(start < end)) {
+      if (
+        (start !== undefined && end !== undefined && !(start < end)) ||
+        [start, top].some(
+          (bound) => bound !== undefined && !Number.isFinite(bound)
+        )
+      ) {
         return [];
       }
       const label =

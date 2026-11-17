@@ -133,48 +133,25 @@ describe('resolvePartition', () => {
     expect(outer!.children[0]!.color).toBe('#65D1CC99');
   });
 
-  it('keeps sums past the largest number finite, with their shares', () => {
+  it('leaves a chart whose total passes the largest number empty', () => {
     const scene = resolve(
       chart({
         data: {
           columns: [string('g'), number('v')],
           rows: [
             ['a', Number.MAX_VALUE],
-            ['a', Number.MAX_VALUE],
             ['b', Number.MAX_VALUE],
-            ['b', Number.MAX_VALUE],
-            ['c', Number.MAX_VALUE],
           ],
         },
       })
     );
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
-    expect(scene.total).toBe(Number.MAX_VALUE);
-    expect(
-      scene.nodes.map(({ label, value, share }) => [label, value, share])
-    ).toEqual([
-      ['a', Number.MAX_VALUE, 0.4],
-      ['b', Number.MAX_VALUE, 0.4],
-      ['c', Number.MAX_VALUE, 0.2],
-    ]);
-  });
-
-  it('orders sums past the largest number largest first', () => {
-    const scene = resolve(
-      chart({
-        data: {
-          columns: [string('g'), number('v')],
-          rows: [
-            ['small', Number.MAX_VALUE],
-            ['small', Number.MAX_VALUE],
-            ['large', Number.MAX_VALUE],
-            ['large', Number.MAX_VALUE],
-            ['large', Number.MAX_VALUE],
-          ],
-        },
-      })
-    );
-    expect(scene.nodes.map(({ label }) => label)).toEqual(['large', 'small']);
+    expect(scene).toMatchObject({
+      total: 0,
+      nodes: [],
+      legend: { visible: false, items: [] },
+      empty: { reason: 'noResults', text: 'No results found' },
+    });
   });
 
   it('orders thousands of metrics in metric order', () => {

@@ -152,7 +152,7 @@ describe('resolveGauge: bands and ticks', () => {
     ).toBe(true);
   });
 
-  it('places percentage band edges across the largest doubles without overflowing', () => {
+  it('leaves percentage bands off a scale past the largest double', () => {
     const scene = resolve(
       gauge([0, -1e308, 1e308, null], {
         min: { column: 'lo' },
@@ -167,8 +167,7 @@ describe('resolveGauge: bands and ticks', () => {
       })
     );
     expect(scene.bands).toEqual([
-      { start: -1e308, end: 0, color: '#0000FF' },
-      { start: 0, end: 1e308, color: '#FF0000' },
+      { start: -1e308, end: 1e308, color: TRANSPARENT },
     ]);
   });
 
