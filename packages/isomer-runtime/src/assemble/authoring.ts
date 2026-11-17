@@ -21,13 +21,13 @@ import {
   authoringBodySchema,
   type AuthoringDeclarationsOptions,
   buildAuthoringDeclarations,
+  describeProps,
+  type PropDescriptor,
 } from '@elastic/isomer-sdk/author';
 
 import type { JsonSchema, RegisteredViewSummary } from '../registry';
 
-import { describeProps, type PropDescriptor } from './prop_descriptors';
-
-export type { HostCapabilities, SurfaceSupport };
+export type { HostCapabilities, PropDescriptor, SurfaceSupport };
 
 /** Options for the authoring material `getAuthoringContext` returns. */
 export interface RuntimeAuthoringOptions

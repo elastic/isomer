@@ -42,3 +42,4 @@ export {
   buildAuthoringPrompt,
   formatPrimitiveEntry,
 } from './prompt';
+export { type PropDescriptor, describeProps } from './prop_descriptors';

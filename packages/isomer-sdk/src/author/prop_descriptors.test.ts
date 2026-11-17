@@ -88,6 +88,7 @@ const schema = {
           ],
         },
         nullEnumValue: { anyOf: [{ const: 'null' }, { const: 'x' }] },
+        constNullEnum: { anyOf: [{ enum: ['a', 'b'] }, { const: null }] },
         numbers: { enum: [1, 2] },
         flagOn: { const: true },
         mixedLiterals: { enum: ['a', 1] },
@@ -221,6 +222,14 @@ describe('describeProps', () => {
     expect(prop('nullableMixed')).toMatchObject({
       type: 'string | number | null',
       kind: 'other',
+    });
+  });
+
+  it('treats a `const: null` member as null', () => {
+    expect(prop('constNullEnum')).toMatchObject({
+      type: 'a | b | null',
+      kind: 'enum',
+      values: ['a', 'b'],
     });
   });
 
