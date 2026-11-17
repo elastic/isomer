@@ -83,13 +83,17 @@ const featuredCards = () =>
   within(region('Featured primitives')).getAllByTestId('featured-primitive');
 
 describe('HomeView', () => {
-  it('leads with the title and links to the gallery, the Workbench, the composer and the docs', () => {
+  it('leads with what the Studio is for, names it, and links to the gallery, the Workbench, the composer and the docs', () => {
     renderHome();
     expect(
-      screen.getByRole('heading', { level: 1, name: 'Isomer Studio' })
+      screen.getByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
     ).toBeInTheDocument();
+    expect(screen.getByText('Isomer Studio')).toBeVisible();
     expect(
-      screen.getByText(/Learn each primitive of components/)
+      screen.getByText(/Learn every primitive of components/)
     ).toBeVisible();
     expect(
       screen.getByRole('link', { name: 'Browse primitives' })
@@ -167,14 +171,21 @@ describe('HomeView', () => {
     expect(views).toHaveTextContent('Every service and how it is doing.');
   });
 
-  it('lists the packs and surfaces the runtime loaded', () => {
+  it('lists the packs the runtime loaded', () => {
     renderHome();
     const packs = region('Primitive packs');
     expect(packs).toHaveTextContent('components');
     expect(packs).toHaveTextContent('4 primitives · 2 groups');
-    const surfaces = region('Surfaces');
-    expect(surfaces).toHaveTextContent('React');
-    expect(surfaces).toHaveTextContent('Plain text with no markup.');
-    expect(surfaces).not.toHaveTextContent('Snapshot');
+  });
+
+  it('shows one tile per surface the runtime renders', () => {
+    renderHome();
+    const strip = region('Author once, render anywhere');
+    expect(
+      within(strip)
+        .getAllByTestId('home-surface')
+        .map((tile) => within(tile).getByRole('heading').textContent)
+    ).toEqual(['React', 'HTML', 'Slack', 'Markdown', 'Text']);
+    expect(strip).toHaveTextContent('Plain text with no markup.');
   });
 });

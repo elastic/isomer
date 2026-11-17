@@ -7,7 +7,7 @@ description: A gallery, per-primitive Reference, a composition Workbench and a p
 
 `@elastic/isomer-studio` is a learning and testing shell for any Isomer pack. Run it in a pack's package directory, and it shows:
 
-- a Home page with where to start, featured primitives with live previews, and what the runtime loaded;
+- a Home page with what the Studio is for, where to start, featured primitives with live previews, the surfaces the runtime renders, and what it loaded;
 - a gallery of every primitive, grouped as the pack's authoring groups are, whose React previews mount as they near the viewport;
 - a Reference page per primitive, with its purpose, guidance, props and live examples to teach its use;
 - a Workbench for editing a composition and seeing its live preview;
@@ -52,11 +52,11 @@ That is enough for a pack whose primitives render inside a plain `view`. A pack 
 
 ## The app
 
-![Home: the hero, featured primitives with live previews, and what the config loaded](images/home.png)
+![Home: the hero, featured primitives with live previews, the surfaces, and what the config loaded](images/home.png)
 
 ![The Reference page for the slides pack's pipeline primitive](images/reference.png)
 
-- **Home.** An empty or unknown hash, `#/home`, and the mark in the header open Home, in the main panel without the primitive nav and in the current color mode. It leads with the config's title, what the Studio is for, a count of primitives, groups and surfaces, and links to the gallery, the Workbench, the composition editor and the Isomer documentation. Below are the featured primitives (the config's `featured`, or six drawn at random), each with a live preview of its first example and links to its Reference page and the Workbench, then what the config loaded: packs, apps, views and surfaces. With no apps or no views, that section says how to add them and links to the documentation. The header's search finds any primitive from Home, as from every page.
+- **Home.** An empty or unknown hash, `#/home`, and the mark in the header open Home, in the main panel without the primitive nav and in the current color mode. It leads with the config's title, the question the Studio answers, what it is for, a count of primitives, groups and surfaces, and links to the gallery, the Workbench, the composition editor and the Isomer documentation. Below are the featured primitives (the config's `featured`, or six drawn at random), each with a live preview of its first example and links to its Reference page and the Workbench; then one composition, every surface: a tile for each surface the runtime renders, with what it is; then what the config loaded: packs, apps and views. With no apps or no views, that section says how to add them and links to the documentation. The header's search finds any primitive from Home, as from every page.
 - **Navigation.** With one pack, the sidebar lists primitives under that pack's authoring groups, in the pack's group order and alphabetically within each group. With more than one pack, each pack is a heading and its groups follow. Primitives no group claims are listed last, under Uncategorized. Each group collapses, the browser remembers which are closed, and a filter opens every group it matches. Resting the pointer on a name shows its first example and purpose.
 - **Surfaces.** The Workbench preview starts with every output selected, in one column at every width. The Outputs menu checks the outputs to compare: with every output selected, choosing one shows it at full size, and choosing another adds it. Rendered or Output source applies to every card at once. The Reference example card starts on the first surface, with the example picker on the left and the same menu on the right. Its view selector switches among Rendered, Output source, and Example source; the latter shows the example as JSX or JSON.
 - **Zoom.** With one surface picked, the preview's zoom menu scales the React, HTML, Snapshot and PNG previews: Fit width shrinks a preview to the panel's width and never enlarges it, and fixed levels run from 50% to 200%.

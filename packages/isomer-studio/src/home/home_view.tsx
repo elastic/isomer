@@ -200,14 +200,18 @@ export const HomeView = ({ title }: { title: string }) => {
       <EuiPageSection restrictWidth={WIDTH} paddingSize="xl">
         <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
           <EuiFlexItem grow={2} css={heroCopy}>
+            <EuiText size="s" color="subdued">
+              <strong>{title}</strong>
+            </EuiText>
+            <EuiSpacer size="xs" />
             <EuiTitle size="l">
-              <h1>{title}</h1>
+              <h1>What are we rendering today?</h1>
             </EuiTitle>
             <EuiSpacer size="s" />
-            <EuiText color="subdued">
+            <EuiText size="m">
               <p>
-                Learn each primitive of {packNames}, edit its examples in the
-                Workbench, and see them on every surface the runtime renders.
+                Learn every primitive of {packNames}, edit it live, and see one
+                composition render on every surface your product speaks.
               </p>
             </EuiText>
             <EuiSpacer size="l" />
@@ -282,6 +286,48 @@ export const HomeView = ({ title }: { title: string }) => {
 
       <EuiPageSection
         restrictWidth={WIDTH}
+        aria-labelledby="isomer-studio-surfaces">
+        <EuiFlexGroup gutterSize="xl" wrap>
+          <EuiFlexItem grow={1} css={heroCopy}>
+            <EuiTitle size="m">
+              <h2 id="isomer-studio-surfaces">Author once, render anywhere</h2>
+            </EuiTitle>
+            <EuiSpacer size="s" />
+            <EuiText color="subdued">
+              <p>
+                Isomer turns one typed composition into every surface your
+                product speaks. These are the ones this runtime renders.
+              </p>
+              <p>
+                Hosts keep their data, authorization and routing. Isomer owns
+                the contract, the primitive catalog, validation and rendering.
+              </p>
+            </EuiText>
+          </EuiFlexItem>
+          <EuiFlexItem grow={2}>
+            <EuiFlexGrid columns={4} gutterSize="m">
+              {surfaces.map((surface) => (
+                <EuiCard
+                  key={surface}
+                  data-testid="home-surface"
+                  css={cardStyles}
+                  layout="vertical"
+                  paddingSize="s"
+                  titleElement="h3"
+                  titleSize="xs"
+                  icon={<EuiIcon type={SURFACE_ICONS[surface]} size="xl" />}
+                  title={SURFACE_CATALOG[surface].label}
+                  description={SURFACE_CATALOG[surface].note}
+                />
+              ))}
+            </EuiFlexGrid>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPageSection>
+
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        color="subdued"
         aria-labelledby="isomer-studio-loaded">
         <EuiTitle size="m">
           <h2 id="isomer-studio-loaded">Loaded in this Studio</h2>
@@ -297,7 +343,7 @@ export const HomeView = ({ title }: { title: string }) => {
           </p>
         </EuiText>
         <EuiSpacer />
-        <EuiFlexGrid columns={2} gutterSize="l">
+        <EuiFlexGrid columns={3} gutterSize="l">
           <Loaded title="Primitive packs" count={packs.length}>
             <EuiDescriptionList
               compressed
@@ -361,21 +407,6 @@ export const HomeView = ({ title }: { title: string }) => {
                 on <code>runtime.viewRegistry</code>.
               </Missing>
             )}
-          </Loaded>
-          <Loaded title="Surfaces" count={surfaces.length}>
-            <EuiDescriptionList
-              compressed
-              type="responsiveColumn"
-              listItems={surfaces.map((surface) => ({
-                title: (
-                  <>
-                    <EuiIcon type={SURFACE_ICONS[surface]} />{' '}
-                    {SURFACE_CATALOG[surface].label}
-                  </>
-                ),
-                description: SURFACE_CATALOG[surface].note,
-              }))}
-            />
           </Loaded>
         </EuiFlexGrid>
       </EuiPageSection>

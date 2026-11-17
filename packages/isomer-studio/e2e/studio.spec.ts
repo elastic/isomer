@@ -917,7 +917,12 @@ test.describe('static build', () => {
     const problems = watchProblems(page);
     await page.goto(site.url);
     const home = page.getByTestId('home');
-    await expect(home.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(
+      home.getByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
+    ).toBeVisible();
 
     await home.getByRole('link', { name: 'Browse primitives' }).click();
     await expect(page).toHaveURL(/#\/docs\/gallery$/);
@@ -968,7 +973,22 @@ test.describe('static build', () => {
     await expectMonacoReady(page);
   });
 
-  test('summarizes the packs, apps, views and surfaces the config loaded', async ({
+  test('shows a tile for each surface the runtime renders', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}#/home`);
+    const home = page.getByTestId('home');
+    const tiles = home
+      .getByRole('region', { name: 'Author once, render anywhere' })
+      .getByTestId('home-surface');
+    const labels = await tiles.getByRole('heading').allInnerTexts();
+    expect(labels).toEqual(
+      expect.arrayContaining(['React', 'HTML', 'Slack', 'Markdown', 'Text'])
+    );
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  test('summarizes the packs, apps and views the config loaded', async ({
     page,
   }) => {
     await page.goto(`${site.url}#/home`);
@@ -984,11 +1004,6 @@ test.describe('static build', () => {
     const views = home.getByRole('region', { name: 'Views' });
     await expect(
       views.getByText('No views registered').or(views.locator('dt').first())
-    ).toBeVisible();
-    await expect(
-      home.getByRole('region', { name: 'Surfaces' }).getByText('React', {
-        exact: true,
-      })
     ).toBeVisible();
   });
 

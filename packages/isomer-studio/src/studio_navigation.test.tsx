@@ -47,7 +47,10 @@ describe('IsomerStudio', () => {
     render(<IsomerStudio {...{ runtime }} />);
     const home = await screen.findByTestId('home');
     expect(
-      within(home).getByRole('heading', { level: 1, name: 'Isomer Studio' })
+      within(home).getByRole('heading', {
+        level: 1,
+        name: 'What are we rendering today?',
+      })
     ).toBeInTheDocument();
     expect(screen.getByRole('main')).toContainElement(home);
     expect(
