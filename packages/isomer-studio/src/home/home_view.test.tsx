@@ -9,9 +9,10 @@ import React from 'react';
 import { EuiProvider } from '@elastic/eui';
 import { createIsomerRuntime, defineView } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { z } from 'zod';
 
+import type { ColorModePreference } from '../chrome/color_mode';
 import { APPS_DOCS_URL, DOCS_URL, VIEWS_DOCS_URL } from '../chrome/links';
 import type { StudioApp } from '../config';
 import { FEATURED_COUNT } from '../config';
@@ -53,10 +54,12 @@ const renderHome = ({
   apps = [],
   featured,
   current = runtime,
+  onColorModeChange = vi.fn(),
 }: {
   apps?: readonly StudioApp[];
   featured?: readonly string[];
   current?: typeof runtime;
+  onColorModeChange?: (colorMode: ColorModePreference) => void;
 } = {}) => {
   const value: StudioContextValue = {
     runtime: current,
@@ -71,7 +74,12 @@ const renderHome = ({
   render(
     <EuiProvider colorMode="light">
       <StudioContextProvider {...{ value }}>
-        <HomeView title="Isomer Studio" onSelectPrimitive={vi.fn()} />
+        <HomeView
+          title="Isomer Studio"
+          onSelectPrimitive={vi.fn()}
+          colorMode="system"
+          {...{ onColorModeChange }}
+        />
       </StudioContextProvider>
     </EuiProvider>
   );
@@ -109,6 +117,17 @@ describe('HomeView', () => {
       'href',
       DOCS_URL
     );
+  });
+
+  it('offers the color mode, since Home has no header', () => {
+    const onColorModeChange = vi.fn();
+    renderHome({ onColorModeChange });
+    const modes = screen.getByRole('group', { name: 'Color mode' });
+    expect(
+      within(modes).getByRole('button', { name: 'System' })
+    ).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(within(modes).getByRole('button', { name: 'Dark' }));
+    expect(onColorModeChange).toHaveBeenCalledWith('dark');
   });
 
   it('features the configured primitives in order, each with a preview and Reference and Workbench links', () => {

@@ -16,6 +16,7 @@ import {
   EuiFlexGrid,
   EuiFlexGroup,
   EuiFlexItem,
+  EuiHorizontalRule,
   EuiIcon,
   EuiLink,
   EuiPageSection,
@@ -27,6 +28,8 @@ import {
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
+import type { ColorModePreference } from '../chrome/color_mode';
+import { ColorModePicker } from '../chrome/color_mode_picker';
 import { ComposeIcon } from '../chrome/compose_icon';
 import {
   APPS_DOCS_URL,
@@ -179,13 +182,17 @@ const Missing = ({
   />
 );
 
-/** The landing page: what this Studio is for, where to start, featured primitives and what the config loaded. */
+/** The landing page, without the app's header: what this Studio is for, where to start, featured primitives and what the config loaded. */
 export const HomeView = ({
   title,
   onSelectPrimitive,
+  colorMode,
+  onColorModeChange,
 }: {
   title: string;
   onSelectPrimitive: (type: string) => void;
+  colorMode: ColorModePreference;
+  onColorModeChange: (colorMode: ColorModePreference) => void;
 }) => {
   const {
     runtime: { packs },
@@ -205,12 +212,18 @@ export const HomeView = ({
   return (
     <div data-testid="home">
       <EuiPageSection restrictWidth={WIDTH} paddingSize="xl">
+        <EuiFlexGroup
+          justifyContent="spaceBetween"
+          alignItems="center"
+          responsive={false}>
+          <EuiText size="s" color="subdued">
+            <strong>{title}</strong>
+          </EuiText>
+          <ColorModePicker {...{ colorMode, onColorModeChange }} />
+        </EuiFlexGroup>
+        <EuiSpacer size="xl" />
         <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
           <EuiFlexItem grow={2} css={heroCopy}>
-            <EuiText size="s" color="subdued">
-              <strong>{title}</strong>
-            </EuiText>
-            <EuiSpacer size="xs" />
             <EuiTitle size="l">
               <h1>What are we rendering today?</h1>
             </EuiTitle>
@@ -229,48 +242,66 @@ export const HomeView = ({
             />
           </EuiFlexItem>
           <EuiFlexItem grow={1} css={heroCopy}>
-            <EuiFlexGroup responsive={false} gutterSize="l">
-              <EuiStat
-                title={primitives.length}
-                description="Primitives"
-                reverse
-                titleSize="l"
-              />
-              <EuiStat
-                title={groups.length}
-                description="Groups"
-                reverse
-                titleSize="l"
-              />
-              <EuiStat
-                title={surfaces.length}
-                description="Surfaces"
-                reverse
-                titleSize="l"
-              />
-            </EuiFlexGroup>
-            <EuiSpacer size="l" />
-            <EuiFlexGroup gutterSize="s" alignItems="center" wrap>
-              <EuiButton
-                fill
-                iconType="apps"
-                href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}>
-                Browse primitives
-              </EuiButton>
-              <EuiButton
-                iconType="code"
-                href={formatRoute({ mode: 'dev', page: first, example: 0 })}>
-                Open the Workbench
-              </EuiButton>
-              <EuiButtonEmpty
-                iconType={ComposeIcon}
-                href={formatLocation({ compose: true, params: {} })}>
-                Compose
-              </EuiButtonEmpty>
-              <EuiLink href={DOCS_URL} target="_blank" external>
-                Isomer docs
-              </EuiLink>
-            </EuiFlexGroup>
+            <EuiPanel hasBorder paddingSize="l">
+              <EuiFlexGroup responsive={false} gutterSize="m">
+                {[
+                  { count: primitives.length, label: 'Primitives' },
+                  { count: groups.length, label: 'Groups' },
+                  { count: surfaces.length, label: 'Surfaces' },
+                ].map(({ count, label }) => (
+                  <EuiFlexItem key={label}>
+                    <EuiStat
+                      title={count}
+                      description={label}
+                      reverse
+                      titleSize="m"
+                    />
+                  </EuiFlexItem>
+                ))}
+              </EuiFlexGroup>
+              <EuiHorizontalRule margin="m" />
+              <EuiFlexGroup direction="column" gutterSize="s">
+                <EuiButton
+                  fill
+                  fullWidth
+                  iconType="apps"
+                  href={formatRoute({
+                    mode: 'docs',
+                    page: GALLERY,
+                    example: 0,
+                  })}>
+                  Browse primitives
+                </EuiButton>
+                <EuiButton
+                  fullWidth
+                  iconType="code"
+                  href={formatRoute({ mode: 'dev', page: first, example: 0 })}>
+                  Open the Workbench
+                </EuiButton>
+              </EuiFlexGroup>
+              <EuiSpacer size="s" />
+              <EuiFlexGroup
+                justifyContent="spaceBetween"
+                responsive={false}
+                gutterSize="s">
+                <EuiButtonEmpty
+                  size="s"
+                  flush="left"
+                  iconType={ComposeIcon}
+                  href={formatLocation({ compose: true, params: {} })}>
+                  Compose
+                </EuiButtonEmpty>
+                <EuiButtonEmpty
+                  size="s"
+                  flush="right"
+                  iconType="external"
+                  iconSide="right"
+                  href={DOCS_URL}
+                  target="_blank">
+                  Isomer docs
+                </EuiButtonEmpty>
+              </EuiFlexGroup>
+            </EuiPanel>
           </EuiFlexItem>
         </EuiFlexGroup>
       </EuiPageSection>

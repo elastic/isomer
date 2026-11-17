@@ -6,16 +6,11 @@
  */
 
 import React from 'react';
-import {
-  EuiButton,
-  EuiButtonGroup,
-  EuiButtonIcon,
-  EuiText,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiButton, EuiButtonGroup, EuiText, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import type { ColorModePreference } from './color_mode';
+import { ColorModePicker } from './color_mode_picker';
 import { IsomerMark } from './isomer_mark';
 import { PrimitiveSearch } from './primitive_search';
 import type { StudioMode } from './route';
@@ -31,12 +26,10 @@ const isMode = (id: string): id is StudioMode =>
 export interface StudioHeaderProps {
   /** Defaults to "Isomer Studio". */
   title?: string | undefined;
-  /** Absent on Home or while an app is open, which selects neither mode. */
+  /** Absent while an app is open, which selects neither mode. */
   mode: StudioMode | undefined;
   /** The open app's title, shown in place of the mode's name. */
   appTitle?: string | undefined;
-  /** False where the page has its own primitive search, such as Home. */
-  hasSearch?: boolean | undefined;
   colorMode: ColorModePreference;
   onModeChange: (mode: StudioMode) => void;
   onColorModeChange: (colorMode: ColorModePreference) => void;
@@ -44,50 +37,11 @@ export interface StudioHeaderProps {
   onHome: () => void;
 }
 
-const COLOR_MODES: {
-  id: ColorModePreference;
-  label: string;
-  iconType: 'sun' | 'moon' | 'display';
-}[] = [
-  { id: 'system', label: 'System', iconType: 'display' },
-  { id: 'light', label: 'Light', iconType: 'sun' },
-  { id: 'dark', label: 'Dark', iconType: 'moon' },
-];
-
-const isColorMode = (id: string): id is ColorModePreference =>
-  COLOR_MODES.some((option) => option.id === id);
-
-const ColorModePicker = ({
-  colorMode,
-  onColorModeChange,
-}: Pick<StudioHeaderProps, 'colorMode' | 'onColorModeChange'>) => (
-  <EuiButtonGroup
-    css={css`
-      flex: none;
-    `}
-    legend="Color mode"
-    buttonSize="s"
-    variant="selection"
-    idSelected={colorMode}
-    display="highlighted"
-    onChange={(id) => isColorMode(id) && onColorModeChange(id)}>
-    {COLOR_MODES.map(({ id, label, iconType }) => (
-      <EuiButtonIcon
-        key={id}
-        {...{ id, iconType }}
-        aria-label={label}
-        title={label}
-      />
-    ))}
-  </EuiButtonGroup>
-);
-
 /** Title, the Workbench/Reference switch, search and color mode. The mark and title link to Home. */
 export const StudioHeader = ({
   title = 'Isomer Studio',
   mode,
   appTitle,
-  hasSearch = true,
   colorMode,
   onModeChange,
   onColorModeChange,
@@ -228,7 +182,7 @@ export const StudioHeader = ({
             gap: ${euiTheme.size.s};
           `,
         ]}>
-        {hasSearch ? <PrimitiveSearch {...{ onSelectPrimitive }} /> : null}
+        <PrimitiveSearch {...{ onSelectPrimitive }} />
         <ColorModePicker {...{ colorMode, onColorModeChange }} />
       </div>
     </header>

@@ -160,6 +160,23 @@ const Layout = ({
     [navigate]
   );
 
+  if (home) {
+    return (
+      <main
+        css={css`
+          height: 100vh;
+          overflow: auto;
+          color: ${euiTheme.colors.textParagraph};
+          background: ${euiTheme.colors.backgroundBasePlain};
+        `}>
+        <ConfigProblems problems={configProblems} />
+        <HomeView
+          {...{ title, onSelectPrimitive, colorMode, onColorModeChange }}
+        />
+      </main>
+    );
+  }
+
   return (
     <div css={shell}>
       <ShellBackdrop {...{ look }} />
@@ -172,85 +189,67 @@ const Layout = ({
             colorMode,
             onColorModeChange,
             onSelectPrimitive,
-            hasSearch: !home,
           }}
           onModeChange={(next) => navigate({ mode: next })}
           onHome={goHome}
         />
       </EuiThemeProvider>
-      {home ? (
-        <main
-          css={[
-            panel,
-            css`
-              flex: 1;
-            `,
-          ]}>
+      <div css={body}>
+        <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
+          <StudioNav
+            {...{ page }}
+            app={app?.id}
+            isComposing={composing}
+            // Reopens the draft the composer last wrote, so the URL keeps sharing it.
+            onCompose={() => openComposer(composeParams)}
+            appPath={isAppRoute(location) ? location.path : undefined}
+            isOpen={isNavOpen}
+            isCompact={isCompactNav}
+            onToggle={() => setNavOpen((open) => !open)}
+            onSelect={(next) =>
+              navigate(
+                next === GALLERY
+                  ? { mode: 'docs', page: GALLERY }
+                  : { page: next, example: 0 }
+              )
+            }
+            onSelectApp={openApp}
+          />
+        </EuiThemeProvider>
+        <main css={[panel, main]}>
           <ConfigProblems problems={configProblems} />
-          <HomeView {...{ title, onSelectPrimitive }} />
+          {app && isAppRoute(location) ? (
+            <AppHost key={app.id} path={location.path} {...{ app, openApp }} />
+          ) : null}
+          {!primitives.length ? null : (
+            <>
+              {composeParams ? (
+                <div hidden={!composing} css={fill}>
+                  <ComposeView
+                    params={composeParams}
+                    stacked={isCompactNav}
+                    {...{ openComposer, replaceComposer }}
+                  />
+                </div>
+              ) : null}
+              {devRoute ? (
+                <div hidden={mode !== 'dev' || composing} css={fill}>
+                  <DevView
+                    route={devRoute}
+                    stacked={isCompactNav}
+                    {...{ navigate, openComposer }}
+                  />
+                </div>
+              ) : null}
+              {mode !== 'docs' ? null : page === GALLERY ? (
+                <GalleryView group={route.group} />
+              ) : (
+                <DocsView {...{ route, navigate, accent }} />
+              )}
+            </>
+          )}
         </main>
-      ) : (
-        <div css={body}>
-          <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
-            <StudioNav
-              {...{ page }}
-              app={app?.id}
-              isComposing={composing}
-              // Reopens the draft the composer last wrote, so the URL keeps sharing it.
-              onCompose={() => openComposer(composeParams)}
-              appPath={isAppRoute(location) ? location.path : undefined}
-              isOpen={isNavOpen}
-              isCompact={isCompactNav}
-              onToggle={() => setNavOpen((open) => !open)}
-              onSelect={(next) =>
-                navigate(
-                  next === GALLERY
-                    ? { mode: 'docs', page: GALLERY }
-                    : { page: next, example: 0 }
-                )
-              }
-              onSelectApp={openApp}
-            />
-          </EuiThemeProvider>
-          <main css={[panel, main]}>
-            <ConfigProblems problems={configProblems} />
-            {app && isAppRoute(location) ? (
-              <AppHost
-                key={app.id}
-                path={location.path}
-                {...{ app, openApp }}
-              />
-            ) : null}
-            {!primitives.length ? null : (
-              <>
-                {composeParams ? (
-                  <div hidden={!composing} css={fill}>
-                    <ComposeView
-                      params={composeParams}
-                      stacked={isCompactNav}
-                      {...{ openComposer, replaceComposer }}
-                    />
-                  </div>
-                ) : null}
-                {devRoute ? (
-                  <div hidden={mode !== 'dev' || composing} css={fill}>
-                    <DevView
-                      route={devRoute}
-                      stacked={isCompactNav}
-                      {...{ navigate, openComposer }}
-                    />
-                  </div>
-                ) : null}
-                {mode !== 'docs' ? null : page === GALLERY ? (
-                  <GalleryView group={route.group} />
-                ) : (
-                  <DocsView {...{ route, navigate, accent }} />
-                )}
-              </>
-            )}
-          </main>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

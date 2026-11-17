@@ -56,6 +56,7 @@ describe('IsomerStudio', () => {
     expect(
       screen.queryByRole('navigation', { name: 'Primitives' })
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 
     fireEvent.click(
       within(home).getByRole('link', { name: 'Open the Workbench' })

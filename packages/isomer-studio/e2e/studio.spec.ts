@@ -941,7 +941,7 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
-  test('searches primitives from the hero, which replaces the header search on Home', async ({
+  test('searches primitives from the hero on Home, which has no header', async ({
     page,
   }) => {
     await page.goto(`${site.url}#/home`);
@@ -949,9 +949,7 @@ test.describe('static build', () => {
     const search = page.getByLabel('Search primitives');
     await expect(search).toHaveCount(1);
     await expect(home.getByLabel('Search primitives')).toBeVisible();
-    await expect(
-      page.locator('header').getByLabel('Search primitives')
-    ).toHaveCount(0);
+    await expect(page.locator('header')).toHaveCount(0);
 
     await page.locator('body').click({ position: { x: 1, y: 1 } });
     await page.keyboard.press('Control+K');
