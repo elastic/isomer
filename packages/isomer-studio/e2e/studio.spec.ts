@@ -957,7 +957,6 @@ test.describe('static build', () => {
     await page.keyboard.press('Control+K');
     await expect(search).toBeFocused();
 
-    // Read both at once: a config without `featured` can redraw the cards.
     const { label, type } = await home
       .getByTestId('featured-primitive')
       .first()

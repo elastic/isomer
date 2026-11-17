@@ -227,30 +227,8 @@ export const HomeView = ({
               placeholder="Search primitives by name, purpose or prop"
               {...{ onSelectPrimitive }}
             />
-            <EuiSpacer size="l" />
-            <EuiFlexGroup gutterSize="m" alignItems="center" wrap>
-              <EuiButton
-                fill
-                iconType="apps"
-                href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}>
-                Browse primitives
-              </EuiButton>
-              <EuiButton
-                iconType="code"
-                href={formatRoute({ mode: 'dev', page: first, example: 0 })}>
-                Open the Workbench
-              </EuiButton>
-              <EuiButtonEmpty
-                iconType={ComposeIcon}
-                href={formatLocation({ compose: true, params: {} })}>
-                Compose
-              </EuiButtonEmpty>
-              <EuiLink href={DOCS_URL} target="_blank" external>
-                Isomer docs
-              </EuiLink>
-            </EuiFlexGroup>
           </EuiFlexItem>
-          <EuiFlexItem grow={1}>
+          <EuiFlexItem grow={1} css={heroCopy}>
             <EuiFlexGroup responsive={false} gutterSize="l">
               <EuiStat
                 title={primitives.length}
@@ -270,6 +248,28 @@ export const HomeView = ({
                 reverse
                 titleSize="l"
               />
+            </EuiFlexGroup>
+            <EuiSpacer size="l" />
+            <EuiFlexGroup gutterSize="s" alignItems="center" wrap>
+              <EuiButton
+                fill
+                iconType="apps"
+                href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}>
+                Browse primitives
+              </EuiButton>
+              <EuiButton
+                iconType="code"
+                href={formatRoute({ mode: 'dev', page: first, example: 0 })}>
+                Open the Workbench
+              </EuiButton>
+              <EuiButtonEmpty
+                iconType={ComposeIcon}
+                href={formatLocation({ compose: true, params: {} })}>
+                Compose
+              </EuiButtonEmpty>
+              <EuiLink href={DOCS_URL} target="_blank" external>
+                Isomer docs
+              </EuiLink>
             </EuiFlexGroup>
           </EuiFlexItem>
         </EuiFlexGroup>
