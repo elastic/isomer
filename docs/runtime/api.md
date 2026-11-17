@@ -156,5 +156,5 @@ The anchor case asserts every node renders an anchor, so a pack's `react` render
 | Conformance harness factory (`./testing`) | `src/testing/conformance_harness.ts` |
 | Style-adapter composition | `src/assemble/style_adapter.ts` |
 | Coverage of this page against the entry point | `src/api_reference.test.ts` |
-| Composition and render behaviour | `src/assemble/runtime.test.ts` |
+| Composition and render behaviour, one file per concern over shared `runtime.fixtures.ts` | `src/assemble/runtime_*.test.ts` |
 | Registry behaviour | `src/registry/view_registry.test.ts` |
