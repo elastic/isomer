@@ -10,15 +10,16 @@ import { escapeMrkdwn, type SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { withBuild } from '../../builds/types';
 import {
+  markdownCaption,
   richTextSection,
   slackBold,
-  slackCaption,
   slackCodePanel,
+  slackLabelCaption,
   slackRichText,
   slackSection,
+  textCaption,
 } from '../../render';
 import { richTextRun } from '../../render/marks';
-import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -43,7 +44,7 @@ const speaker = (role: SlideTranscriptTurn['role']): string =>
 
 export const text = ({ label, turns }: SlideTranscriptNode): string =>
   [
-    label && oneLine(label).toUpperCase(),
+    label && textCaption(label),
     ...turns.map(
       ({ role, text: said }) =>
         `${speaker(role)}${glyph.termJoiner.value}${turnLines(said).join('\n')}`
@@ -53,7 +54,7 @@ export const text = ({ label, turns }: SlideTranscriptNode): string =>
     .join('\n');
 
 export const markdown = ({ label, turns }: SlideTranscriptNode) => [
-  ...(label ? [md.paragraph(md.strong(label.toUpperCase()))] : []),
+  ...(label ? [markdownCaption(label)] : []),
   ...turns.flatMap(({ format, role, text: said }) => [
     md.paragraph(md.strong(speaker(role))),
     format === 'code'
@@ -67,7 +68,7 @@ export const markdown = ({ label, turns }: SlideTranscriptNode) => [
 ];
 
 export const slack = ({ label, turns }: SlideTranscriptNode): SlackBlock[] => [
-  ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
+  ...(label ? [slackLabelCaption(label)] : []),
   ...turns.map(({ format, role, text: said }): SlackBlock => {
     const lines = turnLines(said).join('\n');
     if (format === 'code') {

@@ -6,19 +6,19 @@
  */
 
 import type { PdfInput, TakumiPdfBackend, TakumiPdfOptions } from './backend';
+import type { SnapshotOptions } from './render_png';
 import {
   checkedForDrawing,
-  type PngCheckedValidationResult,
-  type PngValidationResult,
-  type SnapshotOptions,
-} from './render_png';
+  type CheckedValidationResult,
+  type ValidationResult,
+} from './validation';
 
 /**
  * The slice of `IsomerRuntime` this helper needs, declared structurally like
  * {@link PdfInput}. A runtime built with `frames` satisfies it.
  */
 export interface PdfRuntime {
-  validate(composition: unknown): PngCheckedValidationResult;
+  validate(composition: unknown): CheckedValidationResult;
   surfaces: {
     snapshot: {
       renderPages(
@@ -42,7 +42,7 @@ export interface RenderPdfResult {
   width: number;
   height: number;
   /** One per composition, in order. */
-  validations: PngValidationResult[];
+  validations: ValidationResult[];
 }
 
 /**
