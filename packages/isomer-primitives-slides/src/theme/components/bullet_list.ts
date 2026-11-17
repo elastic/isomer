@@ -14,7 +14,7 @@ export const bulletList = {
   rowPadding: paddingXy(space.px20, literal('0')),
   markerGap: space.px24,
   item: type.bodyL,
-  // As wide as the check, one `bodyL` line tall.
+  // As wide as the check, one `bodyL` line tall (32 × 1.4).
   markerWidth: space.px24,
   markerHeight: px(45),
   dotSize: px(12),
@@ -23,6 +23,8 @@ export const bulletList = {
   checkWidth: px(11),
   checkHeight: px(22),
   checkStroke: stroke.rail,
+  /** Text only; the image draws a dot, and Markdown and Slack their own bullet. */
+  dotGlyph: literal('-'),
   crossGlyph: literal('×'),
   /** Text and Markdown only; the image draws the check from borders. */
   checkGlyph: literal('✓'),

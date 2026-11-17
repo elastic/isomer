@@ -8,9 +8,8 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { markdownCaption, slackCaption } from '../../render';
+import { markdownCaption, slackLabelCaption, textCaption } from '../../render';
 import { richTextRun as run } from '../../render/marks';
-import { oneLine } from '../../render/one_line';
 import { slackTable, textTable } from '../../render/table';
 import { definePrimitive } from '../define';
 
@@ -35,7 +34,7 @@ export const text = (node: SlideTableNode): string => {
       ...rows,
     ])
   );
-  return label ? `${oneLine(label).toUpperCase()}\n${table}` : table;
+  return label ? `${textCaption(label)}\n${table}` : table;
 };
 
 /** One GFM pipe table per group, under its label. */
@@ -61,7 +60,7 @@ export const markdown = (node: SlideTableNode) => {
 export const slack = (node: SlideTableNode): SlackBlock[] => {
   const { label, rowHeaders } = node;
   return [
-    ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
+    ...(label ? [slackLabelCaption(label)] : []),
     slackTable(
       heads(node).map((column) => [run(column)]),
       tableGroups(node).flatMap(({ label: group, rows }) => [
