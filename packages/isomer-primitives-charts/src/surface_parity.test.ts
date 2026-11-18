@@ -428,10 +428,7 @@ describe('surface parity', () => {
       const read = readSlack(output.blocks);
       for (const { scene } of scenes) {
         expectInOrder(squash(read.text), sentencesOf(scene).map(squash));
-        const table = tableOf(scene, slackOrder(scene), SLACK_TABLE);
-        if (table) {
-          expect(read.tables).toContainEqual(table);
-        }
+        expectSlackTable(read, scene);
         const { link } = scene.interactions;
         if (link) {
           expect(read.links).toContainEqual(link);
@@ -478,10 +475,7 @@ describe('surface parity', () => {
           continue;
         }
         expectInOrder(squash(read.text), sentencesOf(scene).map(squash));
-        const table = tableOf(scene, slackOrder(scene), SLACK_TABLE);
-        if (table) {
-          expect(read.tables).toContainEqual(table);
-        }
+        expectSlackTable(read, scene);
       }
     }
   );
@@ -492,9 +486,39 @@ const SLACK_TABLE = {
   columns: SLACK_LIMITS.tableColumns,
 };
 
-/** Slack's table is in the order a table first shows its rows; any other Scene's in `data` order. */
-const slackOrder = (scene: Scene): readonly number[] | undefined =>
-  scene.kind === 'table' ? scene.order : undefined;
+/**
+ * A table Scene is a native table in its starting order, cut to Slack's caps.
+ * Any other Scene's table, in `data` order, is native when it fits those caps and rich text holding every cell as `heading: cell` when it does not.
+ */
+const expectSlackTable = (
+  { text, tables }: ReturnType<typeof readSlack>,
+  scene: Scene
+) => {
+  const table =
+    scene.kind === 'table'
+      ? tableOf(scene, scene.order, SLACK_TABLE)
+      : tableOf(scene);
+  if (!table) {
+    return;
+  }
+  const fits =
+    table.length <= SLACK_TABLE.rows &&
+    table.every((row) => row.length <= SLACK_TABLE.columns);
+  if (fits) {
+    expect(tables).toContainEqual(table);
+  } else {
+    const [header = [], ...body] = table;
+    expectInOrder(
+      squash(text),
+      body.flatMap((row) =>
+        row.map((cell, column) => {
+          const heading = header[column] ?? '';
+          return squash(heading.trim() ? `${heading}: ${cell}` : cell);
+        })
+      )
+    );
+  }
+};
 
 const textOf = (node: Nodes): string =>
   'value' in node

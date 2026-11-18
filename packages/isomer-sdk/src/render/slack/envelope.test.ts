@@ -920,6 +920,28 @@ describe('Slack envelope transforms', () => {
     expect(textOf(blocks)).toContain('Aside');
   });
 
+  it('keeps every character of a long node it degrades, top level or nested', () => {
+    // Slack's section text maximum is 3000: https://docs.slack.dev/reference/block-kit/blocks/section-block
+    const body = `${'a'.repeat(3000)}${'b'.repeat(3000)}c`;
+    const { blocks } = renderPostable(
+      {
+        type: 'view',
+        body: [
+          { type: 'caption', body } satisfies CaptionNode,
+          {
+            type: 'group',
+            items: [
+              { type: 'note', body: 'n' },
+              { type: 'caption', body },
+            ],
+          } satisfies GroupNode,
+        ],
+      },
+      degradingDispatcher()
+    );
+    expect(textOf(blocks).split(body)).toHaveLength(3);
+  });
+
   it('clamps the alt text it records for an upload, not just the block', () => {
     const label = 'L'.repeat(SLACK_LIMITS.imageAltTextChars + 50);
     const { assets } = renderPostable(
@@ -1020,6 +1042,43 @@ describe('Slack envelope count limits', () => {
       ]
     ).toEqual([SLACK_LIMITS.optionsPerChoice, undefined]);
   });
+
+  it.each(['static_select', 'multi_static_select'] as const)(
+    'fits a %s option group and keeps an initial option from it',
+    (type) => {
+      // Slack's option label maximum is 75: https://docs.slack.dev/reference/block-kit/composition-objects/option-object
+      const grouped = { ...option('o'), value: 'v'.repeat(151) };
+      const initial =
+        type === 'static_select'
+          ? { initial_option: grouped }
+          : { initial_options: [grouped] };
+      const [block] = render([
+        {
+          type: 'actions',
+          elements: [
+            {
+              type,
+              action_id: 's',
+              option_groups: [
+                { label: plain('g'.repeat(76)), options: [grouped] },
+              ],
+              ...initial,
+            },
+          ],
+        },
+      ]).filter((b) => b.type === 'actions');
+      const [element] = block?.type === 'actions' ? block.elements : [];
+      const fitted = { ...grouped, value: 'v'.repeat(150) };
+      expect(element).toMatchObject({
+        option_groups: [
+          { label: { text: `${'g'.repeat(74)}…` }, options: [fitted] },
+        ],
+        ...(type === 'static_select'
+          ? { initial_option: fitted }
+          : { initial_options: [fitted] }),
+      });
+    }
+  );
 
   it('drops an image whose URL is past the URL limit', () => {
     const image_url = `https://x.test/${'a'.repeat(SLACK_LIMITS.imageUrlChars)}`;
