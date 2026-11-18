@@ -488,7 +488,7 @@ const SLACK_TABLE = {
 
 /**
  * A table Scene is a native table in its starting order, cut to Slack's caps.
- * Any other Scene's table, in `data` order, is native when it fits those caps and rich text holding every cell when it does not.
+ * Any other Scene's table, in `data` order, is native when it fits those caps and rich text holding every cell as `heading: cell` when it does not.
  */
 const expectSlackTable = (
   { text, tables }: ReturnType<typeof readSlack>,
@@ -507,7 +507,16 @@ const expectSlackTable = (
   if (fits) {
     expect(tables).toContainEqual(table);
   } else {
-    expectInOrder(squash(text), table.slice(1).flat().map(squash));
+    const [header = [], ...body] = table;
+    expectInOrder(
+      squash(text),
+      body.flatMap((row) =>
+        row.map((cell, column) => {
+          const heading = header[column] ?? '';
+          return squash(heading.trim() ? `${heading}: ${cell}` : cell);
+        })
+      )
+    );
   }
 };
 
