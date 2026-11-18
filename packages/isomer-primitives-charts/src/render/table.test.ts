@@ -229,9 +229,7 @@ describe('TableView', () => {
       expect(html).toContain(`data-part="${part}"`);
     }
     for (const text of [scene.title, scene.description, 'Most requested']) {
-      expect(html).toMatch(
-        new RegExp(`>${escaped(text!).replace(/[[\]]/g, '\\$&')}<`)
-      );
+      expect(html).toContain(`>${escaped(text!)}<`);
     }
   });
 
