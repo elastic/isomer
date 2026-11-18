@@ -120,7 +120,7 @@ const ExampleTile = ({
   </EuiPanel>
 );
 
-/** A heading id the Home page's category chips can scroll to. */
+/** The id of a group's heading, which `#/docs/gallery/<group>` scrolls to. */
 export const galleryGroupId = (title: string): string =>
   `isomer-studio-gallery-${encodeURIComponent(title)}`;
 

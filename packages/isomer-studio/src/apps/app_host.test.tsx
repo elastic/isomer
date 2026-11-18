@@ -191,12 +191,7 @@ describe('Studio apps', () => {
     rerender(<IsomerStudio {...{ runtime }} apps={[]} />);
 
     await waitFor(() => expect(window.location.hash).toBe('#/home'));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What are we rendering today?',
-      })
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(screen.queryByText(/^count/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Deck' })).toBeNull();
   });

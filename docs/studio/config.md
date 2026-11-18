@@ -67,7 +67,7 @@ Toggling it in `dev` hot-updates in place, keeping the route and the editor's dr
 
 ## Featured primitives
 
-Home opens with a strip of featured primitives, each with a link to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:
+Home features a few primitives, each as a card with a live preview of its first example and links to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:
 
 ```ts
 export default defineStudioConfig({
@@ -80,7 +80,7 @@ Without `featured`, Home draws six primitives at random each time it loads, so a
 
 ## Apps
 
-An app is a whole page of the Studio, such as a deck viewer. Each one gets a top-level nav entry beside Gallery, a tile on Home, and a route at `#/app/<id>/`.
+An app is a whole page of the Studio, such as a deck viewer. Each one gets a top-level nav entry beside Gallery, a link on Home, and a route at `#/app/<id>/`.
 
 ```ts
 export default defineStudioConfig({
@@ -99,8 +99,8 @@ export default defineStudioConfig({
 | Field         | Required | What it does                                                                                                                        |
 | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `id`          | Yes      | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config.                                                     |
-| `title`       | Yes      | The nav entry, the header's label while the app is open, and the Home tile's title.                                                 |
-| `description` | No       | One line under the title on the Home tile and in Home's Loaded panel.                                                               |
+| `title`       | Yes      | The nav entry, the header's label while the app is open, and the link on Home.                                                      |
+| `description` | No       | One line under the app's link on Home.                                                                                              |
 | `icon`        | No       | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav and Home show the title's initial. |
 | `load`        | Yes      | Imports a module whose default export is the app's page.                                                                            |
 | `pages`       | No       | Nav rows under the app's own row. See [Pages](#pages).                                                                              |
