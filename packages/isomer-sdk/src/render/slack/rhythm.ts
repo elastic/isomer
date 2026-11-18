@@ -12,7 +12,11 @@ import {
   type SlackSectionBlock,
 } from './blocks';
 import { containerWithChildren, isContainer } from './container';
+import { SLACK_FIELD_LIMITS } from './field_limits';
 import { isUnmodeledSlackBlock } from './unmodeled';
+
+const FIELDS_PER_SECTION =
+  SLACK_LIMITS[SLACK_FIELD_LIMITS.section.counts.fields];
 
 const SLACK_SPACER_TEXT = ' ';
 
@@ -65,7 +69,7 @@ export const coalesceFieldSections = (
         if (
           !isFieldsOnly(next) ||
           next.fields.length !== 1 ||
-          fields.length >= SLACK_LIMITS.fieldsPerSection
+          fields.length >= FIELDS_PER_SECTION
         ) {
           break;
         }

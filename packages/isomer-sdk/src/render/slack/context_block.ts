@@ -6,6 +6,7 @@
  */
 
 import { SLACK_LIMITS, type SlackContextBlock } from './blocks';
+import { SLACK_FIELD_LIMITS } from './field_limits';
 import { clampMrkdwn } from './format';
 
 export const contextBlock = (
@@ -16,6 +17,9 @@ export const contextBlock = (
     .filter((line): line is string => line !== undefined && line.length > 0)
     .map((text) => ({
       type: 'mrkdwn',
-      text: clampMrkdwn(text, SLACK_LIMITS.contextElementChars),
+      text: clampMrkdwn(
+        text,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.context.chars.elements.limit]
+      ),
     })),
 });

@@ -7,7 +7,11 @@
 
 import { SLACK_LIMITS, type SlackBlock } from './blocks';
 import { containerWithChildren } from './container';
+import { SLACK_FIELD_LIMITS } from './field_limits';
 import { isUnmodeledSlackBlock } from './unmodeled';
+
+const FIELDS_PER_SECTION =
+  SLACK_LIMITS[SLACK_FIELD_LIMITS.section.counts.fields];
 
 const chunks = <T>(items: readonly T[], size: number): T[][] =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, index) =>
@@ -27,25 +31,25 @@ export const splitBlockCounts = (block: SlackBlock): SlackBlock[] => {
         block.child_blocks.flatMap(splitBlockCounts)
       );
     case 'context':
-      return chunks(block.elements, SLACK_LIMITS.contextElements).map(
-        (elements, index) =>
-          index === 0 ? { ...block, elements } : { type: 'context', elements }
+      return chunks(
+        block.elements,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.context.counts.elements]
+      ).map((elements, index) =>
+        index === 0 ? { ...block, elements } : { type: 'context', elements }
       );
     case 'actions':
-      return chunks(block.elements, SLACK_LIMITS.buttonsPerActions).map(
-        (elements, index) =>
-          index === 0 ? { ...block, elements } : { type: 'actions', elements }
+      return chunks(
+        block.elements,
+        SLACK_LIMITS[SLACK_FIELD_LIMITS.actions.counts.elements]
+      ).map((elements, index) =>
+        index === 0 ? { ...block, elements } : { type: 'actions', elements }
       );
     case 'section': {
-      if (
-        !block.fields ||
-        block.fields.length <= SLACK_LIMITS.fieldsPerSection
-      ) {
+      if (!block.fields || block.fields.length <= FIELDS_PER_SECTION) {
         return [block];
       }
-      return chunks(block.fields, SLACK_LIMITS.fieldsPerSection).map(
-        (fields, index) =>
-          index === 0 ? { ...block, fields } : { type: 'section', fields }
+      return chunks(block.fields, FIELDS_PER_SECTION).map((fields, index) =>
+        index === 0 ? { ...block, fields } : { type: 'section', fields }
       );
     }
     default:

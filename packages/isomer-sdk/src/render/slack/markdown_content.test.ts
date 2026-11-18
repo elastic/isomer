@@ -16,6 +16,7 @@ import {
   type SlackRichTextBlockElement,
   type SlackRichTextInline,
 } from './blocks';
+import { slackLimitProblems } from './limit_problems';
 import {
   gfmToSlackBlocks,
   markdownContentToSlackBlocks,
@@ -505,15 +506,43 @@ describe('markdownContentToSlackBlocks', () => {
     ]);
   });
 
-  it('clamps a section to the section text budget', () => {
-    const [block] = markdownContentToSlackBlocks(
-      md.paragraph('a'.repeat(SLACK_LIMITS.sectionTextChars), md.strong('b'))
+  // Slack's section text maximum is 3000: https://docs.slack.dev/reference/block-kit/blocks/section-block
+  it('splits a section past the section text budget, keeping all of it', () => {
+    const blocks = markdownContentToSlackBlocks(
+      md.paragraph('a'.repeat(3000), md.strong('b'))
     );
-    expect(block).toMatchObject({
-      elements: [
-        { elements: [{ text: 'a'.repeat(SLACK_LIMITS.sectionTextChars) }] },
-      ],
-    });
+    expect(outline(blocks)).toEqual([
+      `section: ${'a'.repeat(3000)}`,
+      'section: [bold:b]',
+    ]);
+    expect(slackLimitProblems({ text: 't', blocks })).toEqual([]);
+  });
+
+  it('splits code and a quote past the budget, keeping all of them', () => {
+    const blocks = markdownContentToSlackBlocks([
+      md.codeBlock('c'.repeat(3001)),
+      md.blockquote(md.paragraph('q'.repeat(3001))),
+    ]);
+    expect(outline(blocks)).toEqual([
+      `preformatted: ${'c'.repeat(3000)}`,
+      'preformatted: c',
+      `quote: ${'q'.repeat(3000)}`,
+      'quote: q',
+    ]);
+    expect(slackLimitProblems({ text: 't', blocks })).toEqual([]);
+  });
+
+  it('keeps a long list item and table cell whole, which Slack does not cap', () => {
+    const long = 'l'.repeat(3001);
+    const blocks = markdownContentToSlackBlocks([
+      md.list([long]),
+      md.table(['h'], [[md.strong(long)]]),
+    ]);
+    expect(outline(blocks)).toEqual([
+      `list: ${long}`,
+      `table: h / section: [bold:${long}]`,
+    ]);
+    expect(slackLimitProblems({ text: 't', blocks })).toEqual([]);
   });
 
   it('keeps a full section and its line break within the budget', () => {
@@ -553,19 +582,25 @@ describe('markdownContentToSlackBlocks', () => {
     expect(JSON.stringify(block)).not.toContain('offset');
   });
 
-  it('keeps a first grapheme when one character of the budget is left', () => {
+  it('splits at a grapheme, moving a link that does not fit whole to the next section', () => {
     const budget = SLACK_LIMITS.sectionTextChars;
     const [styled] = markdownContentToSlackBlocks(
       md.paragraph('a'.repeat(budget - 1), md.strong('bc'))
     );
     expect(styled).toMatchObject({
-      elements: [{ elements: [{}, { text: 'b', style: { bold: true } }] }],
+      elements: [
+        { elements: [{}, { text: 'b', style: { bold: true } }] },
+        { elements: [{ text: 'c', style: { bold: true } }] },
+      ],
     });
     const [bare] = markdownContentToSlackBlocks(
       md.paragraph('a'.repeat(budget - 1), md.link('', 'https://a.b'))
     );
     expect(bare).toMatchObject({
-      elements: [{ elements: [{}, { type: 'link', text: 'h' }] }],
+      elements: [
+        { elements: [{ text: 'a'.repeat(budget - 1) }] },
+        { elements: [{ type: 'link', url: 'https://a.b' }] },
+      ],
     });
   });
 
@@ -653,30 +688,44 @@ describe('markdownContentToSlackBlocks', () => {
     }
   });
 
-  it.each([0, 1])(
-    'keeps a table to the row and column limits, %i past each',
-    (over) => {
-      const columns = Array.from(
-        { length: SLACK_LIMITS.tableColumns + over },
-        (_, index) => `c${index}`
+  // Slack allows 100 rows of 20 cells: https://docs.slack.dev/reference/block-kit/blocks/table-block
+  it('keeps a table at the row and column limits', () => {
+    const columns = Array.from({ length: 20 }, (_, index) => `c${index}`);
+    const rows = Array.from({ length: 99 }, (_, index) =>
+      columns.map(() => String(index))
+    );
+    const [table, ...rest] = markdownContentToSlackBlocks(
+      md.table(columns, rows)
+    );
+    expect(rest).toEqual([]);
+    if (table?.type !== 'table') {
+      throw new Error('expected a table');
+    }
+    expect(table.rows).toHaveLength(100);
+    expect(table.rows.every((row) => row.length === 20)).toBe(true);
+    expect(table.column_settings).toHaveLength(20);
+  });
+
+  it.each([
+    ['column', 21, 99],
+    ['row', 20, 100],
+  ])(
+    'prints every cell of a table one %s past the limits as rich text',
+    (_, width, bodyRows) => {
+      const columns = Array.from({ length: width }, (__, index) => `c${index}`);
+      const rows = Array.from({ length: bodyRows }, (__, row) =>
+        columns.map((___, column) => `r${row}c${column}`)
       );
-      const rows = Array.from(
-        { length: SLACK_LIMITS.tableRows - 1 + over },
-        (_, index) => columns.map(() => String(index))
-      );
-      const [table] = markdownContentToSlackBlocks(md.table(columns, rows));
-      if (table?.type !== 'table') {
-        throw new Error('expected a table');
+      const blocks = markdownContentToSlackBlocks(md.table(columns, rows));
+      expect(blocks.map(({ type }) => type)).toEqual(['rich_text']);
+      const text = JSON.stringify(blocks);
+      for (const [row, cells] of rows.entries()) {
+        for (const column of cells.keys()) {
+          expect(text).toContain(`"r${row}c${column}"`);
+        }
       }
-      expect(table.rows).toHaveLength(SLACK_LIMITS.tableRows);
-      expect(
-        table.rows.every((row) => row.length === SLACK_LIMITS.tableColumns)
-      ).toBe(true);
-      expect(table.column_settings).toHaveLength(SLACK_LIMITS.tableColumns);
-      expect(table.rows[0]?.at(-1)).toEqual({
-        type: 'raw_text',
-        text: `c${SLACK_LIMITS.tableColumns - 1}`,
-      });
+      expect(text).toContain(`"c${width - 1}"`);
+      expect(slackLimitProblems({ text: 't', blocks })).toEqual([]);
     }
   );
 
@@ -873,9 +922,10 @@ describe('gfmToSlackBlocks', () => {
 
   it('prints source past the parse budget as literal paragraphs', () => {
     const blocks = gfmToSlackBlocks(`${'**x** '.repeat(4_000)}\n\n_y_`);
-    const [first, second] = outline(blocks);
-    expect(first).toMatch(/^section: \*\*x\*\* \*\*x\*\*/);
-    expect(second).toBe('section: _y_');
+    const sections = outline(blocks);
+    expect(sections[0]).toMatch(/^section: \*\*x\*\* \*\*x\*\*/);
+    expect(sections.join('').match(/\*\*x\*\*/g)).toHaveLength(4_000);
+    expect(sections.at(-1)).toBe('section: _y_');
   });
 
   it('prints authored source past the parse budget as the string path did', () => {
@@ -885,9 +935,10 @@ describe('gfmToSlackBlocks', () => {
     expect(markdownContentToSlackBlocks(authored)).toEqual(
       gfmToSlackBlocks(source)
     );
-    const [first, second] = outline(markdownContentToSlackBlocks(authored));
-    expect(first).toMatch(/^section: <tag> \[label\] \\ x/);
-    expect(second).toBe('section: end <b>');
+    const sections = outline(markdownContentToSlackBlocks(authored));
+    expect(sections[0]).toMatch(/^section: <tag> \[label\] \\ x/);
+    expect(sections.join('').match(/x/g)).toHaveLength(9_000);
+    expect(sections.at(-1)).toBe('section: end <b>');
   });
 
   it('never parses inert authored source, even once CRLF shrinks it under budget', () => {

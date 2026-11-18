@@ -11,8 +11,8 @@ import type {
   SlackAssetRequest,
 } from '../../define/slack_assets';
 
-import { SLACK_LIMITS } from './blocks';
-import { clampSlackText, isAbsoluteHttpUrl } from './format';
+import { fitFields, SLACK_FIELD_LIMITS } from './field_limits';
+import { isAbsoluteHttpUrl } from './format';
 
 export type { SlackAssetCollector, SlackAssetRequest };
 
@@ -41,7 +41,8 @@ export const createSlackAssetCollector = <
       requests.push({
         ref,
         node,
-        altText: clampSlackText(altText, SLACK_LIMITS.imageAltTextChars),
+        altText: fitFields({ alt_text: altText }, SLACK_FIELD_LIMITS.image)
+          .alt_text,
       });
       return ref;
     },

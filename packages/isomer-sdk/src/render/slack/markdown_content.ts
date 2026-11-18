@@ -37,11 +37,15 @@ import {
 } from './blocks';
 import {
   assertSlackBaseUrl,
-  clampSlackText,
   type SlackLinkOptions,
   slackLinkUrl,
 } from './format';
-import { richTextInlineText } from './rich_text_text';
+import {
+  breakSections,
+  degradeTable,
+  fitsTableShape,
+  splitRichTextElement,
+} from './rich_text';
 
 const styled = (style: SlackRichTextStyle): SlackRichTextStyle | undefined =>
   Object.keys(style).length === 0 ? undefined : style;
@@ -102,38 +106,8 @@ const inline = (
     }
   });
 
-// The envelope leaves rich text alone, so a section keeps to the budget of a
-// `section` block's text.
-const clampInline = (
-  elements: readonly SlackRichTextInline[],
-  budget: number = SLACK_LIMITS.sectionTextChars
-): SlackRichTextInline[] => {
-  const kept: SlackRichTextInline[] = [];
-  let spent = 0;
-  for (const element of elements) {
-    const length = richTextInlineText(element).length;
-    const rest = budget - spent;
-    if (length <= rest) {
-      kept.push(element);
-      spent += length;
-      continue;
-    }
-    const text =
-      rest > 0 ? clampSlackText(richTextInlineText(element), rest) : '';
-    if (text !== '') {
-      kept.push({ ...element, text });
-    }
-    break;
-  }
-  return kept;
-};
-
-const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] => {
-  const clamped = clampInline(elements);
-  return clamped.length === 0
-    ? []
-    : [{ type: 'rich_text_section', elements: clamped }];
-};
+const section = (elements: SlackRichTextInline[]): SlackRichTextSection[] =>
+  elements.length === 0 ? [] : [{ type: 'rich_text_section', elements }];
 
 type Piece = SlackRichTextBlockElement | SlackBlock;
 
@@ -263,29 +237,25 @@ const tableCell = (cell: PhrasingContent[]): SlackTableCell => {
 };
 
 // Slack rejects a row with no cells, so such rows are dropped, and a table
-// whose header has none prints nothing.
-const tableBlock = (table: Table): SlackTableBlock[] => {
-  const rows = table.children
-    .slice(0, SLACK_LIMITS.tableRows)
-    .map((row) =>
-      row.children
-        .slice(0, SLACK_LIMITS.tableColumns)
-        .map((cell) => tableCell(cell.children))
-    );
+// whose header has none prints nothing. A table past Slack's row or column
+// limit prints as rich text, as the envelope prints it.
+const tableBlock = (table: Table): SlackBlock[] => {
+  const rows = table.children.map((row) =>
+    row.children.map((cell) => tableCell(cell.children))
+  );
   const [header] = rows;
   if (header === undefined || header.length === 0) {
     return [];
   }
-  return [
-    {
-      type: 'table',
-      rows: rows.filter((cells) => cells.length > 0),
-      column_settings: header.map((_cell, index) => ({
-        align: table.align?.[index] ?? 'left',
-        is_wrapped: true,
-      })),
-    },
-  ];
+  const block: SlackTableBlock = {
+    type: 'table',
+    rows: rows.filter((cells) => cells.length > 0),
+    column_settings: header.map((_cell, index) => ({
+      align: table.align?.[index] ?? 'left',
+      is_wrapped: true,
+    })),
+  };
+  return fitsTableShape(block) ? [block] : degradeTable(block);
 };
 
 // A footnote's label leads its first paragraph.
@@ -332,7 +302,7 @@ const quotePieces = (quote: Blockquote): Piece[] => {
   const out: Piece[] = [];
   let runs: SlackRichTextInline[] = [];
   const flush = (): void => {
-    const elements = clampInline(runs);
+    const elements = runs;
     runs = [];
     if (elements.length > 0) {
       out.push({ type: 'rich_text_quote', elements });
@@ -370,10 +340,7 @@ const blockPieces = (node: RootContent): Piece[] => {
         : [
             {
               type: 'rich_text_preformatted',
-              elements: textElement(
-                clampSlackText(node.value, SLACK_LIMITS.sectionTextChars),
-                {}
-              ),
+              elements: textElement(node.value, {}),
             },
           ];
     case 'list':
@@ -417,25 +384,9 @@ const toSlackBlocks = (
   let elements: SlackRichTextBlockElement[] = [];
   const flush = (): void => {
     if (elements.length > 0) {
-      // A section followed by another ends in a line break, so paragraphs
-      // never run together.
       blocks.push({
         type: 'rich_text',
-        elements: elements.map((element, index) =>
-          element.type === 'rich_text_section' &&
-          elements[index + 1]?.type === 'rich_text_section'
-            ? {
-                ...element,
-                elements: [
-                  ...clampInline(
-                    element.elements,
-                    SLACK_LIMITS.sectionTextChars - 1
-                  ),
-                  { type: 'text', text: '\n' },
-                ],
-              }
-            : element
-        ),
+        elements: breakSections(elements).flatMap(splitRichTextElement),
       });
     }
     elements = [];
@@ -458,8 +409,9 @@ const toSlackBlocks = (
  * Builder content as Block Kit: paragraphs, headings, lists, quotes, and code
  * as `rich_text`, tables as `table` blocks, and thematic breaks as `divider`
  * blocks. A quote is one level, and inside a list item its blocks are the
- * item's. A run of rich-text blocks shares one `rich_text` block. Source from
- * `md.authored` is parsed as GFM and translated the same way.
+ * item's. A run of rich-text blocks shares one `rich_text` block, and text past
+ * Slack's limits splits, as `renderSlackEnvelope` splits it, rather than being
+ * cut. Source from `md.authored` is parsed as GFM and translated the same way.
  */
 export const markdownContentToSlackBlocks = (
   content: MarkdownContent,

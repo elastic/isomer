@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
+import { STRUCTURED_VALUE_FORMATS } from '../composition/structured_value';
 import type {
   AnyPrimitiveDefinition,
   PrimitiveNode,
@@ -16,6 +17,7 @@ import {
   definePrimitive,
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
+import { structuredValueSchema as rootStructuredValueSchema } from '../entries';
 
 import {
   authoringSchemaSubset,
@@ -181,6 +183,31 @@ describe('buildAuthoringJsonSchema', () => {
     expect(Array.isArray((defs.tone as { enum?: unknown }).enum)).toBe(true);
     expect(defs.bodyNode).toBeTypeOf('object');
     expect(defs.metric).toBeTypeOf('object');
+  });
+
+  it("names a pack's own union with the root entry's structuredValueSchema as structuredValue", () => {
+    const field = define({
+      type: 'field',
+      catalog: {
+        type: 'field',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.object({
+        type: z.literal('field'),
+        value: z.union([z.string().max(1000), rootStructuredValueSchema]),
+      }),
+      renderers,
+    });
+    const defs = collectDefs(buildAuthoringJsonSchema([field]));
+
+    expect(JSON.stringify(defs.field)).toContain('"#/$defs/structuredValue"');
+    expect(defs.structuredValue).toMatchObject({
+      properties: { format: { enum: [...STRUCTURED_VALUE_FORMATS] } },
+    });
   });
 
   it('inlines bare scalar defs and flattens ref-only hops', () => {

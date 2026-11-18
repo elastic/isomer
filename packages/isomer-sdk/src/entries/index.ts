@@ -142,5 +142,6 @@ export {
   sanitizeNavigationHref,
   sanitizeParsedAssetUrl,
   sanitizeParsedNavigationHref,
+  structuredValueSchema,
   warningsForSurface,
 } from '../validate';
