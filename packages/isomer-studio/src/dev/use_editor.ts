@@ -128,8 +128,6 @@ export interface EditorState {
   source: string;
   setSource: (source: string) => void;
   nodes: PrimitiveNode[];
-  /** Applies a quick edit to the draft's nodes and reprints the source, unless the draft doesn't parse or compose. */
-  editNodes: (edit: (nodes: PrimitiveNode[]) => PrimitiveNode[]) => void;
   parseError?: string | undefined;
   isParsing: boolean;
   /** True while JSX from an untrusted source waits, unevaluated, for {@link EditorState.trust}. */
@@ -294,24 +292,6 @@ export const useEditor = (
     [reset, withDraft]
   );
 
-  const editNodes = useCallback(
-    (edit: (body: PrimitiveNode[]) => PrimitiveNode[]) =>
-      withDraft((current) => {
-        const next = { ...current, nodes: edit(current.nodes) };
-        if (scope === 'body') {
-          try {
-            compose(next.nodes);
-          } catch (error) {
-            setParseError(errorMessage(error));
-            setParsing(false);
-            return;
-          }
-        }
-        reset(next, format);
-      }),
-    [compose, format, reset, scope, withDraft]
-  );
-
   const setSource = useCallback(
     (next: string) => {
       setSourceState(next);
@@ -360,7 +340,6 @@ export const useEditor = (
     source,
     setSource,
     nodes: draft.nodes,
-    editNodes,
     parseError,
     isParsing: isParsing && !isHeld,
     isHeld,

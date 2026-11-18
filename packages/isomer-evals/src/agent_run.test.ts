@@ -264,6 +264,38 @@ describe('runAgentEvals', () => {
     });
   });
 
+  it('reports a run without a parsed answer as a missed expected primitive', async () => {
+    const report = await runAgentEvals({
+      runtime: stubRuntime,
+      tools,
+      corpus: [
+        ...corpus,
+        { id: 'two', prompt: 'Note it.', expected: ['callout'] },
+        { id: 'open', prompt: 'Anything.' },
+      ],
+      maxTurns: 2,
+      step: ({ messages }) => {
+        const [first] = messages;
+        const prompt = first?.role === 'user' ? first.text : '';
+        return Promise.resolve(
+          prompt === 'How many?'
+            ? { text: '', toolCalls: [call('guide')] }
+            : { text: 'not json', toolCalls: [] }
+        );
+      },
+    });
+    expect(report.results.map(({ expected }) => expected)).toEqual([
+      { hit: false, used: [] },
+      { hit: false, used: [] },
+      undefined,
+    ]);
+    expect(report.totals).toMatchObject({ expectedHits: 0, expectedRuns: 2 });
+    const text = formatAgentReport(report);
+    expect(text).toContain('one #0: used none');
+    expect(text).toContain('two #0: used none');
+    expect(text).not.toContain('open #0: used');
+  });
+
   it('records what a throwing step threw and stops', async () => {
     const report = await runAgentEvals({
       runtime: stubRuntime,

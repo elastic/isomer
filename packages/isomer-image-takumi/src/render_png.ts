@@ -10,46 +10,11 @@ import type {
   TakumiImageBackend,
   TakumiRenderOptions,
 } from './backend';
-
-/** A validation result shaped like the SDK's `ValidationResult`, declared structurally. */
-export interface PngValidationResult {
-  valid: boolean;
-  errors: readonly unknown[];
-}
-
-/** What `runtime.validate` returns: findings, and the copy they describe, `undefined` only for refused input. */
-export type PngCheckedValidationResult = PngValidationResult & {
-  composition: unknown;
-};
-
-/**
- * Splits a {@link PngCheckedValidationResult} into the copy to draw and the findings to report.
- *
- * Throws rather than draw the caller's value: shaped as the SDK's
- * `CompositionValidationError` when the runtime refused the input, and a plain
- * `Error` when the runtime returned no copy at all.
- */
-export const checkedForDrawing = (
-  caller: string,
-  { composition, ...validation }: PngCheckedValidationResult
-): { checked: unknown; validation: PngValidationResult } => {
-  if (composition !== undefined) {
-    return { checked: composition, validation };
-  }
-  if (validation.valid) {
-    throw new Error(
-      `${caller}: runtime.validate returned no checked composition to draw`
-    );
-  }
-  throw Object.assign(
-    new Error(`${caller}: the runtime refused the composition before parsing`),
-    {
-      name: 'CompositionValidationError',
-      code: 'COMPOSITION_INVALID',
-      errors: validation.errors,
-    }
-  );
-};
+import {
+  checkedForDrawing,
+  type CheckedValidationResult,
+  type ValidationResult,
+} from './validation';
 
 /**
  * The `snapshot` surface's per-render options, mirroring the runtime's
@@ -73,7 +38,7 @@ export interface SnapshotOptions {
  * runtime built with `frames` carries `SnapshotSurface` there and satisfies this.
  */
 export interface PngRuntime {
-  validate(composition: unknown): PngCheckedValidationResult;
+  validate(composition: unknown): CheckedValidationResult;
   surfaces: {
     snapshot: {
       render(
@@ -100,7 +65,7 @@ export interface RenderPngResult {
    */
   width: number;
   height: number;
-  validation: PngValidationResult;
+  validation: ValidationResult;
 }
 
 /**

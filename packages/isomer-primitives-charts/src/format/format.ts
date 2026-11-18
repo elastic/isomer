@@ -90,7 +90,7 @@ const prettyString = (value: Scalar | object, missing: MissingText) => {
   return String(value);
 };
 
-const toNumber = (value: Scalar): number | undefined => {
+const parseNumber = (value: Scalar): number | undefined => {
   if (typeof value === 'number') {
     return value;
   }
@@ -166,7 +166,7 @@ const formatScalar = (
     case 'bytes':
     case 'bits':
     case 'duration': {
-      const number = toNumber(value);
+      const number = parseNumber(value);
       if (number === undefined) {
         return prettyString(value, missing);
       }

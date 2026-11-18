@@ -8,8 +8,7 @@
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import { slackCodePanel } from '../../render';
-import { oneLine } from '../../render/one_line';
+import { markdownCaption, slackCodePanel, textCaption } from '../../render';
 import { slideDistillery } from '../../theme/distillery';
 import { definePrimitive } from '../define';
 
@@ -25,13 +24,13 @@ export type { SlideCommandNode } from './schema';
 const prompt = slideDistillery.tokens.command.prompt.value;
 
 export const text = ({ label, command }: SlideCommandNode): string =>
-  [label && oneLine(label).toUpperCase(), `${prompt} ${command}`]
+  [label && textCaption(label), `${prompt} ${command}`]
     .filter(Boolean)
     .join('\n');
 
 /** A `sh` fence without the prompt, so it pastes. */
 export const markdown = ({ label, command }: SlideCommandNode) => [
-  ...(label ? [md.paragraph(md.strong(label.toUpperCase()))] : []),
+  ...(label ? [markdownCaption(label)] : []),
   md.codeBlock(command, 'sh'),
 ];
 

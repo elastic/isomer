@@ -307,7 +307,7 @@ describe('metric trends', () => {
 describe('metric bounds and identity', () => {
   const max = Number.MAX_VALUE;
 
-  it('colors percentage bands across the largest doubles', () => {
+  it('colors percentage bands as the bottom band across a range past the largest double', () => {
     const node = buckets();
     node.data.rows = [
       ['lo', -max],
@@ -317,7 +317,7 @@ describe('metric bounds and identity', () => {
     node.value.bandsRange = 'percentage';
     node.colors = {
       bands: [
-        { to: 50, color: blue },
+        { from: 10, to: 50, color: blue },
         { from: 50, color: red },
       ],
     };
@@ -325,7 +325,7 @@ describe('metric bounds and identity', () => {
       resolveChart(node, { scheme: 'light' }).tiles.map(
         ({ background }) => background
       )
-    ).toEqual(['#0000FF', '#FF0000']);
+    ).toEqual(['#0000FF', '#0000FF']);
   });
 
   it('colors percentage bands across subnormal values', () => {

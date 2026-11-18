@@ -60,17 +60,8 @@ interface Draft {
   readonly first: number;
   /** A leaf's own sum; 0 on an inner slice. */
   own: number;
-  /** `own` times {@link SCALE}, so a sum past `Number.MAX_VALUE` still has shares. */
-  scaled: number;
   readonly children: Map<string, Draft>;
 }
-
-/**
- * A power of two small enough that no table's sum, scaled by it, overflows:
- * every value is at most `Number.MAX_VALUE`, about 2^1024. Exact, since it
- * only shifts the exponent.
- */
-const SCALE = 2 ** -1000;
 
 const draft = (
   identity: string,
@@ -88,7 +79,6 @@ const draft = (
   rows: [],
   first,
   own: 0,
-  scaled: 0,
   children: new Map(),
 });
 
@@ -177,7 +167,6 @@ export const resolvePartition = (
         parent = child;
       }
       parent.own += Math.max(0, value);
-      parent.scaled += Math.max(0, value) * SCALE;
       order += 1;
     });
   });
@@ -185,32 +174,20 @@ export const resolvePartition = (
   // Draw order within a layer, as Lens sorts: a mosaic's columns, and a lone
   // mosaic layer, keep row order; the metric layer keeps metric order; every
   // other layer runs largest first, ties in row order.
-  const sumsOf = new Map<Draft, { own: number; scaled: number }>();
-  const sumOf = (slice: Draft): { own: number; scaled: number } => {
+  const sumsOf = new Map<Draft, number>();
+  const sumOf = (slice: Draft): number => {
     let sum = sumsOf.get(slice);
     if (sum === undefined) {
       sum =
         slice.children.size === 0
-          ? { own: slice.own, scaled: slice.scaled }
+          ? slice.own
           : [...slice.children.values()].reduce(
-              (total, child) => {
-                const each = sumOf(child);
-                return {
-                  own: total.own + each.own,
-                  scaled: total.scaled + each.scaled,
-                };
-              },
-              { own: 0, scaled: 0 }
+              (total, child) => total + sumOf(child),
+              0
             );
       sumsOf.set(slice, sum);
     }
     return sum;
-  };
-  /** How much larger `b` is than `a`; by scaled sums where both are past `Number.MAX_VALUE`. */
-  const larger = (a: Draft, b: Draft): number => {
-    const [x, y] = [sumOf(a), sumOf(b)];
-    const difference = y.own - x.own;
-    return Number.isNaN(difference) ? y.scaled - x.scaled : difference;
   };
   const metricRank = new Map(metrics.map((metric, rank) => [metric, rank]));
   const sorted = (slices: Iterable<Draft>): Draft[] =>
@@ -221,7 +198,7 @@ export const resolvePartition = (
       if (shape === 'mosaic' && (a.depth === 1 || groups.length === 1)) {
         return a.first - b.first;
       }
-      return larger(a, b) || a.first - b.first;
+      return sumOf(b) - sumOf(a) || a.first - b.first;
     });
 
   // Leaves in draw order, depth first: what an engine sums, in this order.
@@ -237,17 +214,12 @@ export const resolvePartition = (
   };
   collect(root.children.values());
   const total = leaves.reduce((sum, leaf) => sum + leaf.own, 0);
-  const scaledTotal = leaves.reduce((sum, leaf) => sum + leaf.scaled, 0);
   // Each slice's sum, adding its leaves in draw order as `total` does.
-  const sums = new Map<Draft, { own: number; scaled: number }>();
+  const sums = new Map<Draft, number>();
   const addLeaves = (slice: Draft, ancestors: readonly Draft[]) => {
     if (slice.children.size === 0) {
       for (const each of [...ancestors, slice]) {
-        const sum = sums.get(each) ?? { own: 0, scaled: 0 };
-        sums.set(each, {
-          own: sum.own + slice.own,
-          scaled: sum.scaled + slice.scaled,
-        });
+        sums.set(each, (sums.get(each) ?? 0) + slice.own);
       }
       return;
     }
@@ -263,7 +235,7 @@ export const resolvePartition = (
         reason: 'negative' as const,
         text: `${shape.charAt(0).toUpperCase()}${shape.slice(1)} chart can't render with negative values.`,
       }
-    : total <= 0
+    : total <= 0 || !Number.isFinite(total)
       ? { reason: 'noResults' as const, text: NO_RESULTS }
       : undefined;
 
@@ -328,8 +300,7 @@ export const resolvePartition = (
     path: readonly Draft[]
   ): PartitionNode => {
     const own = [...path, slice];
-    const sum = sums.get(slice) ?? { own: 0, scaled: 0 };
-    const value = Math.min(sum.own, Number.MAX_VALUE);
+    const value = sums.get(slice) ?? 0;
     const metric = slice.metric ?? metrics[0]!;
     const [onlyRow] = slice.rows;
     const display =
@@ -339,12 +310,7 @@ export const resolvePartition = (
         ? data.display?.[metric]?.[onlyRow]
         : undefined;
     const valueText = display ?? resolution.valueText(metric, value);
-    // Past `Number.MAX_VALUE` the sums are infinite; their scaled sums are not.
-    const share = !(total > 0)
-      ? 0
-      : Number.isFinite(total)
-        ? value / total
-        : sum.scaled / scaledTotal;
+    const share = value / total;
     const percentText = resolution.formatAs(share, percentFormat);
     const groupPath = own.filter(({ metric: part }) => part === undefined);
     const columns = groups.slice(0, groupPath.length);
@@ -471,7 +437,7 @@ export const resolvePartition = (
     shape,
     layers,
     nodes,
-    total: empty ? 0 : Math.min(total, Number.MAX_VALUE),
+    total: empty ? 0 : total,
     labels: { categories, values },
     donutHole: shape === 'donut' ? (node.donutHole ?? DEFAULTS.donutHole) : 0,
     legend: {

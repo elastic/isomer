@@ -148,17 +148,23 @@ export const runAgentEvals = async ({
       ),
       usage,
     };
+    const unanswered = {
+      ...base,
+      parsed: false,
+      valid: false,
+      ...(evalCase.expected === undefined
+        ? {}
+        : { expected: { hit: false, used: [] } }),
+    };
     if (answer === undefined) {
       return {
-        ...base,
-        parsed: false,
-        valid: false,
+        ...unanswered,
         errors: [error ?? `no answer within ${maxTurns} turns`],
       };
     }
     const attempt = parseGenerated(answer);
     if (!attempt.parsed) {
-      return { ...base, parsed: false, valid: false, errors: [attempt.error] };
+      return { ...unanswered, errors: [attempt.error] };
     }
     const check = checkComposition(runtime, attempt.value, frame);
     return {
@@ -204,10 +210,7 @@ export const runAgentEvals = async ({
       finished: results.filter(({ finished }) => finished).length,
       valid: results.filter(({ valid }) => valid).length,
       expectedHits: scored.filter(({ expected }) => expected?.hit).length,
-      expectedRuns: results.filter(
-        ({ caseId }) =>
-          corpus.find(({ id }) => id === caseId)?.expected !== undefined
-      ).length,
+      expectedRuns: scored.length,
       meanTurns: mean(results.map(({ turns }) => turns)),
       meanInputTokens: mean(results.map(({ usage }) => usage.inputTokens)),
       meanOutputTokens: mean(results.map(({ usage }) => usage.outputTokens)),

@@ -9,7 +9,12 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { withBuild } from '../../builds/types';
-import { markdownCaption, slackCaption, slackMarksContext } from '../../render';
+import {
+  markdownCaption,
+  slackLabelCaption,
+  slackMarksContext,
+  textCaption,
+} from '../../render';
 import {
   marksMarkdown,
   marksRichText,
@@ -33,7 +38,7 @@ const termJoiner = slideDistillery.tokens.glyph.termJoiner.value;
 
 export const text = ({ label, items, footnote }: SlideListNode): string =>
   [
-    label && oneLine(label).toUpperCase(),
+    label && textCaption(label),
     items
       .map(({ term, body }) =>
         term
@@ -64,7 +69,7 @@ export const slack = ({
   items,
   footnote,
 }: SlideListNode): SlackBlock[] => [
-  ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
+  ...(label ? [slackLabelCaption(label)] : []),
   {
     type: 'rich_text',
     elements: [

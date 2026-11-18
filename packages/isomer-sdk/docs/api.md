@@ -118,6 +118,8 @@ JSX: `fromChildren`, `fromTextChildren`, `fromNodeChildren`, the brands they put
 
 Editor declarations: `buildAuthoringDeclarations` (`AuthoringDeclarationsOptions`), an ambient `.d.ts` module for an authoring schema's primitives and, with `jsx`, their JSX components; `authoringBodySchema`, an authoring schema's `body` as a schema of its own, carrying the `$defs` it reaches.
 
+Props tables: `describeProps` (`schema, types`), each type's properties in an authoring schema as `PropDescriptor`s, the list the runtime's [`describePrimitives`](../../isomer-runtime/docs/authoring-context.md) returns as `props`.
+
 Model output: `checkComposition` (`runtime, value, frame?`) parses a value of unknown shape through the runtime's `parse`, so schema defaults and transforms apply, validates the parsed copy once through its `validate`, then applies the frame's body rule, as a `CompositionCheck`: `{ valid: true, composition }` with the copy `validate` checked, or `{ valid: false, errors }`, where a frame rule's error has an empty path and `composition` is kept when only the frame's rule failed. Both carry `warnings`.
 
 Agent prompts: `buildAuthoringPrompt` (`AuthoringPromptContext`), `formatPrimitiveEntry` (one full catalog bullet), `AuthoringProfileId`, `AuthoringViewSummary`. `WithNodeFields` is on the root entry, next to `definePrimitive`.

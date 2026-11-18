@@ -316,18 +316,16 @@ describe('dataTable bars', () => {
     }
   });
 
-  it('keeps fractions finite across the largest doubles', () => {
+  it('draws no bar on a column whose range passes the largest double', () => {
     const scene = resolve(
       table([column('n', 'number')], [[-1e308], [1e308]], {
         columns: [{ column: 'n', decoration: { kind: 'bar' } }],
       })
     );
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
-    expect(
-      scene.rows.map(({ cells }) => [cells[0]?.bar?.from, cells[0]?.bar?.to])
-    ).toEqual([
-      [0, 0.5],
-      [0.5, 1],
+    expect(scene.rows.map(({ cells }) => cells[0]?.bar)).toEqual([
+      undefined,
+      undefined,
     ]);
   });
 

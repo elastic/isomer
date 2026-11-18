@@ -11,6 +11,8 @@ export {
   renderSlackChildren,
   renderTextChildren,
   slackCaption,
+  slackLabelCaption,
+  textCaption,
 } from './children';
 export { cls } from './cls';
 export type {

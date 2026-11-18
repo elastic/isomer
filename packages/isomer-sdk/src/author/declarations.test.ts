@@ -1029,6 +1029,36 @@ describe('buildAuthoringDeclarations', () => {
     reactTypesTimeout
   );
 
+  it('reads through a nullable def, whether it writes `null` as a type or a const', () => {
+    const declare = (nullMember: Record<string, unknown>) =>
+      buildAuthoringDeclarations(
+        {
+          $defs: {
+            bodyNode: { oneOf: [{ $ref: '#/$defs/note' }] },
+            note: {
+              anyOf: [
+                {
+                  type: 'object',
+                  properties: {
+                    type: { const: 'note' },
+                    text: { type: 'string' },
+                  },
+                  required: ['type', 'text'],
+                },
+                nullMember,
+              ],
+            },
+          },
+        },
+        [note],
+        { jsx: true }
+      );
+
+    const fromConst = declare({ const: null });
+    expect(fromConst).toMatch(/interface NoteProps \{[^]*?text: string;/);
+    expect(fromConst).toBe(declare({ type: 'null' }));
+  });
+
   it('declares an empty catalog as never', () => {
     const declarations = buildAuthoringDeclarations(
       { $defs: { bodyNode: { oneOf: [] } } },
