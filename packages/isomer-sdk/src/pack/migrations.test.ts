@@ -192,6 +192,20 @@ describe('a pack’s migrations', () => {
     );
   });
 
+  it('reports a non-enumerable migration step as missing', () => {
+    const migrations = Object.defineProperty({ 2: identityStep }, '1', {
+      value: identityStep,
+    });
+    expect(() =>
+      definePrimitivePack({
+        id: 'notes',
+        version: 3,
+        primitives: [leaf('note')],
+        migrations,
+      })
+    ).toThrow(isomerError('INVALID_PACK_MIGRATIONS', '; missing 1'));
+  });
+
   it('reports a huge gap without enumerating it', () => {
     expect(
       thrown(() =>
@@ -358,6 +372,43 @@ describe('a pack that predates versions', () => {
 });
 
 describe('source vocabulary declarations', () => {
+  it.each(['factory', 'compose'] as const)(
+    'rejects non-enumerable transform source keys through %s',
+    (entry) => {
+      const children = Object.defineProperty({ note: () => [] }, 'retired', {
+        value: () => [],
+      });
+      const migrations: PackMigrations = {
+        1: { children, nodes: { retired: (node) => node } },
+      };
+      const input = {
+        id: 'notes',
+        version: 2,
+        primitives: [leaf('note')],
+        migrations,
+      };
+      expect(() =>
+        entry === 'factory'
+          ? definePrimitivePack(input)
+          : composePacks([
+              {
+                ...definePrimitivePack({
+                  id: 'notes',
+                  primitives: input.primitives,
+                }),
+                version: 2,
+                migrations,
+              },
+            ])
+      ).toThrow(
+        isomerError(
+          'INVALID_PACK_MIGRATIONS',
+          'nodes.retired is not declared in children'
+        )
+      );
+    }
+  );
+
   it.each([
     {},
     { children: {} },

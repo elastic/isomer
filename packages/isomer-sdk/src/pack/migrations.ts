@@ -101,13 +101,10 @@ const invalidMigrations = (id: string, detail: string): IsomerError =>
 const MISSING_LISTED = 5;
 
 /** The first missing steps, so the scan stays bounded by the keys a pack supplies. */
-const listMissing = (
-  migrations: Record<string, unknown>,
-  count: number
-): string => {
+const listMissing = (steps: ReadonlySet<string>, count: number): string => {
   const listed: number[] = [];
   for (let step = 1; listed.length < Math.min(count, MISSING_LISTED); step++) {
-    if (!Object.hasOwn(migrations, String(step))) {
+    if (!steps.has(String(step))) {
       listed.push(step);
     }
   }
@@ -142,7 +139,7 @@ export const assertPackMigrations = (
       version === 1 ? 'none, at version 1' : `exactly 1..${version - 1}`;
     throw invalidMigrations(
       id,
-      `migrations keys must be ${range}, one per step to version ${version}${missingCount > 0 ? `; missing ${listMissing(migrations, missingCount)}` : ''}${unexpected.length > 0 ? `; unexpected ${unexpected.map((key) => JSON.stringify(key)).join(', ')}` : ''}`
+      `migrations keys must be ${range}, one per step to version ${version}${missingCount > 0 ? `; missing ${listMissing(new Set(steps), missingCount)}` : ''}${unexpected.length > 0 ? `; unexpected ${unexpected.map((key) => JSON.stringify(key)).join(', ')}` : ''}`
     );
   }
   for (const step of steps) {
@@ -152,17 +149,15 @@ export const assertPackMigrations = (
     }
     assertFunctions(id, step, 'nodes', migration.nodes);
     assertFunctions(id, step, 'children', migration.children);
-    if (
-      !isRecord(migration.children) ||
-      Object.keys(migration.children).length === 0
-    ) {
+    const sourceTypes = new Set(Object.keys(migration.children ?? {}));
+    if (sourceTypes.size === 0) {
       throw invalidMigrations(
         id,
         `migrations[${step}].children must declare the complete non-empty source vocabulary`
       );
     }
     for (const type of Object.keys(migration.nodes ?? {})) {
-      if (!Object.hasOwn(migration.children, type)) {
+      if (!sourceTypes.has(type)) {
         throw invalidMigrations(
           id,
           `migrations[${step}].nodes.${type} is not declared in children`
