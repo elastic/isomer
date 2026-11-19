@@ -7,6 +7,12 @@
 
 import { build } from 'esbuild';
 
+/** Reported when a reached module loads one by a computed specifier, which no graph can follow. */
+export const OPAQUE_LOAD = '<opaque module load>';
+
+// `createRequire`'s only source, so a hoisted or aliased loader cannot hide behind it.
+const MODULE_LOADERS = ['module', 'node:module'];
+
 const MARKDOWN_PARSERS = [
   'mdast-util-from-markdown',
   'mdast-util-gfm',
@@ -24,6 +30,8 @@ const CHARTS_CONTRACT_FORBIDDEN = [
   { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
   // Its own entries are external to the check, so what they reach would go unchecked.
   '@elastic/isomer-primitives-charts',
+  ...MODULE_LOADERS,
+  OPAQUE_LOAD,
 ];
 
 /**
@@ -49,6 +57,8 @@ export const RULES = {
       '@elastic/isomer-runtime',
       'react-dom',
       '@elastic/isomer-primitives-charts',
+      ...MODULE_LOADERS,
+      OPAQUE_LOAD,
     ],
   },
 };
@@ -65,22 +75,34 @@ export const matchesForbidden = (specifier, rule) =>
     ? coversPackage(specifier, rule)
     : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
-/** Every bare specifier reachable from `entryFile` through its relative imports. */
+// Over esbuild's normalized output, minus its `//` path comments: any `require` token and `import()` of anything but a string.
+const OPAQUE_LOAD_PATTERN = /\brequire\b|__require|\bimport\(\s*(?![`'"])/;
+const hasOpaqueLoad = (text) =>
+  OPAQUE_LOAD_PATTERN.test(text.replace(/^\s*\/\/.*$/gm, ''));
+
+/** Every bare specifier reachable from `entryFile` through its relative imports, plus `OPAQUE_LOAD` when a reached module loads by a computed specifier. */
 const reachableBareSpecifiers = async (entryFile) => {
-  const { metafile } = await build({
+  const { metafile, outputFiles } = await build({
     entryPoints: [entryFile],
     bundle: true,
     write: false,
     metafile: true,
     packages: 'external',
     platform: 'neutral',
+    format: 'esm',
+    legalComments: 'none',
     logLevel: 'silent',
+    outdir: 'out',
   });
-  return new Set(
+  const specifiers = new Set(
     Object.values(metafile.inputs).flatMap(({ imports }) =>
       imports.filter(({ external }) => external).map(({ path }) => path)
     )
   );
+  if (outputFiles.some(({ text }) => hasOpaqueLoad(text))) {
+    specifiers.add(OPAQUE_LOAD);
+  }
+  return specifiers;
 };
 
 /** The specifiers reachable from `entryFile` that `forbidden` rules out. */

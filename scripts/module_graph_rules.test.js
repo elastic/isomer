@@ -144,6 +144,43 @@ describe('charts .', () => {
   });
 });
 
+describe.each(['./schema', './scene', './resolve', '.'])(
+  'charts %s loaders',
+  (entryKey) => {
+    const forbidden = RULES['@elastic/isomer-primitives-charts'][entryKey];
+    const entryWith = (code) => {
+      entries += 1;
+      const entry = join(fixtures, `loader_${entries}.js`);
+      writeFileSync(entry, code);
+      return entry;
+    };
+
+    it.each([
+      'export const a = (name) => import(name);',
+      'export const a = (name) => module.require(name);',
+      "export const a = (name) => module['require'](name);",
+      'const r = require;\nexport const a = (name) => r(name);',
+      "import { createRequire } from 'node:module';\nexport const r = createRequire(import.meta.url);",
+      "import * as nm from 'node:module';\nexport const r = nm['createRequire'](import.meta.url);",
+    ])('rejects a loader the graph cannot follow: %s', async (code) => {
+      expect(
+        (await forbiddenReachable(entryWith(code), forbidden)).length
+      ).toBeGreaterThan(0);
+    });
+
+    it('allows literal dynamic imports of allowed packages and plain calls', async () => {
+      expect(
+        await forbiddenReachable(
+          entryWith(
+            "export const a = () => import('zod');\nexport const s = Symbol.for('@elastic/isomer-primitives-charts/style-scope');"
+          ),
+          forbidden
+        )
+      ).toEqual([]);
+    });
+  }
+);
+
 describe('SDK ./schema', () => {
   const forbidden = RULES['@elastic/isomer-sdk']['./schema'];
 
