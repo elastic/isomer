@@ -71,6 +71,9 @@ describe('charts barrel imports', () => {
     'export const load = () => import(`@elastic/isomer-primitives-charts/testing`);\n',
     "export const load = () => require('@elastic/isomer-primitives-charts');\n",
     "export type Lazy = import('@elastic/isomer-primitives-charts/scene').Scene;\n",
+    'export const load = (name: string) => import(name);\n',
+    "import { createRequire } from 'node:module';\n",
+    'export const req = createRequire(import.meta.url);\n',
   ])('rejects a self-import by any load: %s', async (code) => {
     const [{ messages }] = await eslint.lintText(code, {
       filePath: `${SRC}/render/probe.ts`,
@@ -78,6 +81,14 @@ describe('charts barrel imports', () => {
     expect(messages.map(({ ruleId }) => ruleId)).toEqual([
       'no-restricted-syntax',
     ]);
+  });
+
+  it('allows calls that are not module loads', async () => {
+    const [{ messages }] = await eslint.lintText(
+      "export const s = Symbol.for('@elastic/isomer-primitives-charts/style-scope');\n",
+      { filePath: `${SRC}/render/probe.ts` }
+    );
+    expect(messages).toEqual([]);
   });
 
   it('exempts tests', async () => {

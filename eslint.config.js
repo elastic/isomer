@@ -26,12 +26,12 @@ const CHARTS_PACK_BEYOND_SCENE =
   '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
 
 // `no-restricted-syntax` entries for each way to load `regex` other than a static import: `import()`, `require` or any call, so a `createRequire` result under another name is covered, and `import()` types.
-const loadsOf = (regex, message) =>
+const loadsOf = (regex, message, callee = '') =>
   [
     'ImportExpression > Literal.source[value=PATH]',
     'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
-    'CallExpression > Literal.arguments[value=PATH]',
-    'CallExpression > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]',
+    `CallExpression${callee} > Literal.arguments[value=PATH]`,
+    `CallExpression${callee} > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]`,
     'TSImportType Literal[value=PATH]',
   ].map((selector) => ({
     selector: selector.replace('PATH', `/${regex.replaceAll('/', '\\/')}/`),
@@ -389,7 +389,20 @@ export default tseslint.config(
     rules: {
       'no-restricted-syntax': [
         'error',
-        ...loadsOf(CHARTS_SELF_IMPORT.regex, CHARTS_SELF_IMPORT.message),
+        ...loadsOf(
+          CHARTS_SELF_IMPORT.regex,
+          CHARTS_SELF_IMPORT.message,
+          ':matches([callee.name="require"], [callee.object.name="require"])'
+        ),
+        ...[
+          'ImportExpression:not([source.type="Literal"], [source.expressions.length=0])',
+          'CallExpression[callee.name="createRequire"]',
+          'ImportSpecifier[imported.name="createRequire"]',
+        ].map((selector) => ({
+          selector,
+          message:
+            'Import modules by literal specifier, with no `createRequire`, so the self-import check can see them (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+        })),
       ],
     },
   },
