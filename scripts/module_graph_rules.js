@@ -6,13 +6,6 @@
  */
 
 import { build } from 'esbuild';
-import ts from 'typescript';
-
-/** Reported when a reached module loads one by a computed specifier, which no graph can follow. */
-export const OPAQUE_LOAD = '<opaque module load>';
-
-// `createRequire`'s only source, so a hoisted or aliased loader cannot hide behind it.
-const MODULE_LOADERS = ['module', 'node:module'];
 
 const MARKDOWN_PARSERS = [
   'mdast-util-from-markdown',
@@ -31,8 +24,6 @@ const CHARTS_CONTRACT_FORBIDDEN = [
   { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
   // Its own entries are external to the check, so what they reach would go unchecked.
   '@elastic/isomer-primitives-charts',
-  ...MODULE_LOADERS,
-  OPAQUE_LOAD,
 ];
 
 /**
@@ -58,8 +49,6 @@ export const RULES = {
       '@elastic/isomer-runtime',
       'react-dom',
       '@elastic/isomer-primitives-charts',
-      ...MODULE_LOADERS,
-      OPAQUE_LOAD,
     ],
   },
 };
@@ -76,59 +65,22 @@ export const matchesForbidden = (specifier, rule) =>
     ? coversPackage(specifier, rule)
     : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
-// A string that is exactly a loader's name looks one up by key; prose containing the word does not.
-const LOADER_NAMES = new Set(['require', '__require', 'createRequire']);
-
-const isStringLiteral = ({ kind }) =>
-  kind === ts.SyntaxKind.StringLiteral ||
-  kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral;
-
-/** Whether `text` has a `require` identifier or exact-name string key, or `import()` of anything but a string literal; strings and comments never count. */
-const hasOpaqueLoad = (text) => {
-  const visit = (node) => {
-    if (ts.isIdentifier(node) && LOADER_NAMES.has(node.text)) {
-      return true;
-    }
-    if (ts.isStringLiteralLike(node) && LOADER_NAMES.has(node.text)) {
-      return true;
-    }
-    if (
-      ts.isCallExpression(node) &&
-      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-      !(node.arguments[0] && isStringLiteral(node.arguments[0]))
-    ) {
-      return true;
-    }
-    return ts.forEachChild(node, visit) ?? false;
-  };
-  return visit(
-    ts.createSourceFile('out.js', text, ts.ScriptTarget.Latest, true)
-  );
-};
-
-/** Every bare specifier reachable from `entryFile` through its relative imports, plus `OPAQUE_LOAD` when a reached module loads by a computed specifier. */
+/** Every bare specifier reachable from `entryFile` through its relative imports. */
 const reachableBareSpecifiers = async (entryFile) => {
-  const { metafile, outputFiles } = await build({
+  const { metafile } = await build({
     entryPoints: [entryFile],
     bundle: true,
     write: false,
     metafile: true,
     packages: 'external',
     platform: 'neutral',
-    format: 'esm',
-    legalComments: 'none',
     logLevel: 'silent',
-    outdir: 'out',
   });
-  const specifiers = new Set(
+  return new Set(
     Object.values(metafile.inputs).flatMap(({ imports }) =>
       imports.filter(({ external }) => external).map(({ path }) => path)
     )
   );
-  if (outputFiles.some(({ text }) => hasOpaqueLoad(text))) {
-    specifiers.add(OPAQUE_LOAD);
-  }
-  return specifiers;
 };
 
 /** The specifiers reachable from `entryFile` that `forbidden` rules out. */

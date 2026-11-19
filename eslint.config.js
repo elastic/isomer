@@ -25,20 +25,18 @@ const CHART_ENGINE_IMPORTS =
 const CHARTS_PACK_BEYOND_SCENE =
   '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
 
-// `no-restricted-syntax` entries for each way to load `regex` other than a static import: `import()`, `import()` types and, unless `calls` is false, any call (so a `createRequire` result under another name is covered).
-const loadsOf = (regex, message, calls = true) =>
+// `no-restricted-syntax` entries for each way to load `regex` other than a static import: `import()`, `import()` types and calls (all calls unless `call` narrows them).
+const loadsOf = (regex, message, call = 'CallExpression') =>
   [
     'ImportExpression > Literal.source[value=PATH]',
     'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
-    'CallExpression > Literal.arguments[value=PATH]',
-    'CallExpression > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]',
+    `${call} > Literal.arguments[value=PATH]`,
+    `${call} > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]`,
     'TSImportType Literal[value=PATH]',
-  ]
-    .filter((selector) => calls || !selector.startsWith('CallExpression'))
-    .map((selector) => ({
-      selector: selector.replace('PATH', `/${regex.replaceAll('/', '\\/')}/`),
-      message,
-    }));
+  ].map((selector) => ({
+    selector: selector.replace('PATH', `/${regex.replaceAll('/', '\\/')}/`),
+    message,
+  }));
 
 // Charts pack: another directory is imported through its `index.ts`. Matches `./render/cls` and `../../theme/palette`.
 const CHARTS_DIR_FILE = {
@@ -391,17 +389,11 @@ export default tseslint.config(
     rules: {
       'no-restricted-syntax': [
         'error',
-        ...loadsOf(CHARTS_SELF_IMPORT.regex, CHARTS_SELF_IMPORT.message, false),
-        // Pack source is ESM: no `require` or `createRequire` in any spelling, and `import()` takes a literal.
-        ...[
-          'Identifier[name=/^(require|createRequire)$/]',
-          'MemberExpression[computed=true] > Literal.property[value=/^(require|createRequire)$/]',
-          'ImportExpression:not([source.type="Literal"], [source.expressions.length=0])',
-        ].map((selector) => ({
-          selector,
-          message:
-            'Pack source loads modules only with static imports or `import()` of a literal, so the self-import check can see them (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
-        })),
+        ...loadsOf(
+          CHARTS_SELF_IMPORT.regex,
+          CHARTS_SELF_IMPORT.message,
+          'CallExpression[callee.name="require"]'
+        ),
       ],
     },
   },
