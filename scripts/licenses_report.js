@@ -16,7 +16,11 @@ import {
 import { createRequire } from 'node:module';
 import { dirname, join, relative } from 'node:path';
 
-import { repoRoot, workspacePackages } from './workspace_packages.js';
+import {
+  isPublishable,
+  repoRoot,
+  workspacePackages,
+} from './workspace_packages.js';
 
 const require = createRequire(import.meta.url);
 const checkOnly = process.argv.includes('--check');
@@ -360,11 +364,12 @@ const runtimeEntries = [];
 const sourceEntries = [];
 
 for (const pkg of packages) {
-  // A private package publishes nothing, so its `dependencies` reach no
+  // A package that never publishes has `dependencies` that reach no
   // consumer and belong in the source/build section rather than the
   // distribution one. They still have to appear: the tree is the tree.
-  const dependencyEntries =
-    pkg.manifest.private === true ? sourceEntries : runtimeEntries;
+  const dependencyEntries = isPublishable(pkg.manifest)
+    ? runtimeEntries
+    : sourceEntries;
   for (const [name, range] of Object.entries(pkg.manifest.dependencies ?? {})) {
     if (workspaceNames.has(name) || isWorkspaceProtocol(range)) {
       continue;
@@ -517,7 +522,7 @@ const writeOrCheck = (path, contents, label) => {
 const rootLicensePath = join(repoRoot, 'LICENSE.txt');
 const rootLicense = readFileSync(rootLicensePath, 'utf-8');
 
-// A private package is never installed on its own, so a copy of the
+// A package that never publishes is never installed on its own, so a copy of the
 // workspace-wide report or `NOTICE.txt` in its directory would claim to cover
 // dependencies it may not actually pull in.
 const removeStaleOrCheck = (path, label) => {
@@ -538,10 +543,11 @@ const reportOk = writeOrCheck(reportPath, report, 'THIRD_PARTY_LICENSES.md');
 const noticeOk = writeOrCheck(noticePath, notice, 'NOTICE.txt');
 const packageLegalOk = packages
   .flatMap((pkg) => {
-    const rows =
-      pkg.manifest.private === true ? [] : collect(distributionEntries(pkg));
+    const rows = isPublishable(pkg.manifest)
+      ? collect(distributionEntries(pkg))
+      : [];
     return [
-      pkg.manifest.private === true
+      !isPublishable(pkg.manifest)
         ? removeStaleOrCheck(
             join(pkg.dir, 'THIRD_PARTY_LICENSES.md'),
             `${pkg.folder}/THIRD_PARTY_LICENSES.md`
@@ -551,7 +557,7 @@ const packageLegalOk = packages
             packageReport(pkg.manifest.name, rows),
             `${pkg.folder}/THIRD_PARTY_LICENSES.md`
           ),
-      pkg.manifest.private === true
+      !isPublishable(pkg.manifest)
         ? removeStaleOrCheck(
             join(pkg.dir, 'NOTICE.txt'),
             `${pkg.folder}/NOTICE.txt`

@@ -12,10 +12,8 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -23,46 +21,37 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import semver from 'semver';
 
-import { repoRoot, workspacePackages } from './workspace_packages.js';
+import { checkDeclarations } from './packed_declarations.js';
+import {
+  consumerEnv,
+  failOnWarning,
+  linkDirectory,
+  requireEntries,
+  requireWithoutPeers,
+} from './packed_require.js';
+import {
+  isPublishable,
+  repoRoot,
+  unpublishableReferences,
+  workspacePackages,
+} from './workspace_packages.js';
 
 const workspace = workspacePackages();
-const privateNames = new Set(
-  workspace
-    .filter(({ manifest }) => manifest.private === true)
-    .map(({ manifest }) => manifest.name)
-);
-
-// Every package that publishes: the packed tarball of each must import with
+// Every package that publishes, or will once seeded: the packed tarball of each must import with
 // only its declared dependencies and required peers beside it.
-const publishing = workspace.filter(
-  ({ manifest }) => manifest.private !== true
-);
+const publishing = workspace.filter(({ manifest }) => isPublishable(manifest));
 const packageNames = publishing.map(({ manifest }) => manifest.name);
 
-// A published package cannot reach one that never publishes.
-const privateReferences = publishing.flatMap(({ manifest }) =>
-  ['dependencies', 'peerDependencies', 'optionalDependencies'].flatMap(
-    (field) =>
-      Object.keys(manifest[field] ?? {})
-        .filter((name) => privateNames.has(name))
-        .map((name) => `${manifest.name} ${field} lists private ${name}`)
-  )
+const references = unpublishableReferences(
+  workspace.map(({ manifest }) => manifest)
 );
-if (privateReferences.length > 0) {
-  for (const reference of privateReferences) {
+if (references.length > 0) {
+  for (const reference of references) {
     console.error(reference);
   }
   process.exit(1);
 }
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
-
-const linkDirectory = (target, path) => {
-  if (existsSync(path)) {
-    return;
-  }
-  mkdirSync(dirname(path), { recursive: true });
-  symlinkSync(target, path, process.platform === 'win32' ? 'junction' : 'dir');
-};
 
 const packPackage = (packageName) => {
   const folder = packageName.slice(packageName.lastIndexOf('/') + 1);
@@ -82,11 +71,6 @@ const packPackage = (packageName) => {
   const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8'));
   return { dir, manifest, sourceDir };
 };
-
-// Fails an import on any process warning, such as the `ExperimentalWarning`
-// Node 22.12 prints when `require()` loads an ES module.
-const failOnWarning =
-  "process.on('warning', (warning) => { console.error(warning); process.exitCode = 1; });";
 
 /** Where pnpm installed `dependency` for the workspace package, or `undefined`. */
 const installedDependency = (pkg, dependency) =>
@@ -126,13 +110,19 @@ const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
     key === '.' ? name : `${name}/${key.slice(2)}`
   );
 
-const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
-
 /** Entries that only Node loads, so they bundle for Node alone. */
 const NODE_ONLY_ENTRIES = new Set([
   '@elastic/isomer-image-takumi',
   '@elastic/isomer-runtime/testing',
   '@elastic/isomer-sdk/testing',
+]);
+
+/** Entries that load optional peers, and those peers; every other entry imports without them. */
+const OPTIONAL_PEER_ENTRIES = new Map([
+  [
+    '@elastic/isomer-primitives-charts/testing',
+    ['@elastic/isomer-runtime', 'react-dom'],
+  ],
 ]);
 
 /**
@@ -238,15 +228,52 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     const specifiers = exportSpecifiers(pkg.manifest);
 
-    // Node loads the CommonJS build.
-    execFileSync(
-      process.execPath,
-      [
-        '--eval',
-        `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
-      ],
-      { cwd: consumerDir, stdio: 'inherit' }
+    // Node loads the CommonJS build, with optional peers only for the entries that need them.
+    const plainEntries = specifiers.filter(
+      (specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)
     );
+    const optionalPeerEntries = specifiers.filter((specifier) =>
+      OPTIONAL_PEER_ENTRIES.has(specifier)
+    );
+    const optionalPeers = new Set(
+      optionalPeerEntries.flatMap((specifier) =>
+        OPTIONAL_PEER_ENTRIES.get(specifier)
+      )
+    );
+    const typesPackages = new Map(
+      ['node', 'react'].map((types) => [
+        types,
+        resolve(repoRoot, 'node_modules', '@types', types),
+      ])
+    );
+    if (optionalPeers.size === 0) {
+      requireEntries(plainEntries, consumerDir);
+    } else {
+      const isolatedConsumer = requireWithoutPeers(
+        pkg,
+        plainEntries,
+        optionalPeers,
+        tempDir,
+        packages,
+        typesPackages
+      );
+      for (const [types, dir] of typesPackages) {
+        linkDirectory(
+          dir,
+          join(isolatedConsumer, 'node_modules', '@types', types)
+        );
+      }
+      checkDeclarations(plainEntries, isolatedConsumer);
+    }
+    for (const peer of optionalPeers) {
+      linkDirectory(
+        packages.get(peer)?.dir ?? resolve(repoRoot, 'node_modules', peer),
+        join(pkg.dir, 'node_modules', peer)
+      );
+    }
+    if (optionalPeerEntries.length > 0) {
+      requireEntries(optionalPeerEntries, consumerDir);
+    }
 
     // The ESM build is for bundlers: each entry must bundle, and the Node bundle must import.
     const bundleDir = join(pkg.dir, '.esm-check');
@@ -271,7 +298,7 @@ try {
               '--eval',
               `${failOnWarning} await import(${JSON.stringify(pathToFileURL(outfile).href)})`,
             ],
-            { cwd: consumerDir, stdio: 'inherit' }
+            { cwd: consumerDir, env: consumerEnv(), stdio: 'inherit' }
           );
         }
       }
@@ -329,8 +356,7 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     );
   }
 
-  // A consumer compiles every published declaration with `skipLibCheck` off,
-  // against whichever `@types/react` this install has.
+  // Declarations compile with `skipLibCheck` off against the installed React types.
   for (const types of ['node', 'react', 'react-dom']) {
     linkDirectory(
       resolve(repoRoot, 'node_modules', '@types', types),
@@ -343,46 +369,12 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     return exportSpecifiers(pkg.manifest);
   });
   mkdirSync(typesConsumerDir, { recursive: true });
-  // takumi's own dependencies publish their subpath types through `exports` alone, which `node10` cannot read.
-  const node10Unresolvable = new Set(['@elastic/isomer-image-takumi']);
-  const resolutions = [
-    ['commonjs', 'node10'],
-    ['nodenext', 'nodenext'],
-    ['esnext', 'bundler'],
-  ];
-  for (const [module, moduleResolution] of resolutions) {
-    const checked = specifiers.filter(
-      (specifier) =>
-        moduleResolution !== 'node10' || !node10Unresolvable.has(specifier)
-    );
-    writeFileSync(
-      join(typesConsumerDir, 'index.ts'),
-      `${checked.map((specifier, index) => `import type * as entry${index} from '${specifier}';`).join('\n')}\nexport type { ${checked.map((_, index) => `entry${index}`).join(', ')} };\n`
-    );
-    writeFileSync(
-      join(typesConsumerDir, 'tsconfig.json'),
-      JSON.stringify({
-        compilerOptions: {
-          module,
-          moduleResolution,
-          target: 'es2022',
-          lib: ['es2023', 'dom'],
-          strict: true,
-          skipLibCheck: false,
-          esModuleInterop: true,
-          noEmit: true,
-          types: ['node'],
-        },
-        files: ['index.ts'],
-      })
-    );
-    execFileSync(process.execPath, [tsc, '-p', typesConsumerDir], {
-      stdio: 'inherit',
-    });
-    console.log(
-      `Packed declarations of ${checked.length} entry points compile under ${moduleResolution} resolution.`
-    );
-  }
+  // Takumi's dependencies expose subpath types through `exports`, which `node10` cannot read.
+  checkDeclarations(
+    specifiers,
+    typesConsumerDir,
+    new Set(['@elastic/isomer-image-takumi'])
+  );
 
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.

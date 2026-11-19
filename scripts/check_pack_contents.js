@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
 import { missingPackedFiles } from './packed_files.js';
-import { workspacePackages } from './workspace_packages.js';
+import { isPublishable, workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
 
@@ -59,8 +59,7 @@ let allPassed = true;
 for (const pkg of workspacePackages()) {
   const { exports: exportMap, name, files: filesField } = pkg.manifest;
 
-  // Skip private packages and packages without a files field.
-  if (pkg.manifest.private === true || !filesField) {
+  if (!isPublishable(pkg.manifest) || !filesField) {
     continue;
   }
 
