@@ -777,11 +777,28 @@ describe('createIsomerRuntime', () => {
     expect(context.primitives.map((entry) => entry.type)).toEqual(['note']);
   });
 
+  it('preserves a prototype-named pack stamp through parsing', () => {
+    const pack = definePrimitivePack({
+      id: '__proto__',
+      primitives: [notePrimitive],
+    });
+    const runtime = createIsomerRuntime({ packs: [pack] });
+    const { packs } = runtime.getCapabilities();
+    const parsed = runtime.parse({ ...view('Hello'), packs });
+    expect(parsed.valid).toBe(true);
+    expect(parsed.composition?.packs).toEqual(packs);
+    expect(parsed.composition?.packs).not.toBe(packs);
+    expect(Object.hasOwn(parsed.composition?.packs ?? {}, '__proto__')).toBe(
+      true
+    );
+  });
+
   it('describes capabilities from registered primitive definitions', () => {
     const runtime = createIsomerRuntime({ packs: [packOf(notePrimitive)] });
 
     expect(runtime.getCapabilities()).toEqual({
       primitives: ['note'],
+      packs: { test: 1 },
       surfaces: ['react', 'html', 'text', 'markdown', 'slack'],
       formats: ['react', 'html', 'text', 'markdown', 'slack'],
       support: {

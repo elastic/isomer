@@ -128,6 +128,35 @@ const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
 
 const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
 
+// A pack literal as the 0.3.0 SDK built it, with no `version`, `migrations` or
+// `contract`: it must still typecheck and compose, as version 1.
+const LEGACY_PRIMITIVE = `definePrimitive<PrimitiveNode>({
+  type: 'banner',
+  catalog: { type: 'banner', purpose: '', useWhen: [], avoidWhen: [], example: {} },
+  examples: [],
+  schema: z.object({ type: z.literal('banner') }),
+  renderers: { react: () => null, text: () => 'banner', markdown: () => [] },
+})`;
+const LEGACY_PACK = `{
+  id: 'legacy',
+  surfaces: [],
+  primitives: [banner],
+  types: new Set(['banner']),
+  enhancements: [],
+  slackAssetTypes: new Set(),
+}`;
+const LEGACY_PACK_TS = `import { definePrimitive, z, type PrimitiveNode, type PrimitivePack } from '@elastic/isomer-sdk';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+
+const banner = ${LEGACY_PRIMITIVE};
+export const legacyPack: PrimitivePack = ${LEGACY_PACK};
+export const runtime = createIsomerRuntime({ packs: [legacyPack] });
+`;
+const LEGACY_PACK_RUN = `const banner = ${LEGACY_PRIMITIVE.replace('<PrimitiveNode>', '')};
+const runtime = createIsomerRuntime({ packs: [${LEGACY_PACK}] });
+if (runtime.getCapabilities().packs?.legacy !== 1) throw new Error('a pack built before versions did not compose as version 1');
+if (!runtime.validate({ type: 'view', body: [{ type: 'banner' }] }).valid) throw new Error('a pack built before versions did not validate its node');`;
+
 /** Entries that only Node loads, so they bundle for Node alone. */
 const NODE_ONLY_ENTRIES = new Set([
   '@elastic/isomer-image-takumi',
@@ -350,6 +379,12 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     ['nodenext', 'nodenext'],
     ['esnext', 'bundler'],
   ];
+  const sdkName = '@elastic/isomer-sdk';
+  const runtimeName = '@elastic/isomer-runtime';
+  const legacyPackChecked = packages.has(sdkName) && packages.has(runtimeName);
+  if (legacyPackChecked) {
+    writeFileSync(join(typesConsumerDir, 'legacy_pack.ts'), LEGACY_PACK_TS);
+  }
   for (const [module, moduleResolution] of resolutions) {
     const checked = specifiers.filter(
       (specifier) =>
@@ -373,7 +408,12 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
           noEmit: true,
           types: ['node'],
         },
-        files: ['index.ts'],
+        files: [
+          'index.ts',
+          ...(legacyPackChecked && moduleResolution !== 'node10'
+            ? ['legacy_pack.ts']
+            : []),
+        ],
       })
     );
     execFileSync(process.execPath, [tsc, '-p', typesConsumerDir], {
@@ -384,9 +424,53 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     );
   }
 
+  if (legacyPackChecked) {
+    console.log(
+      'A pack literal shaped as the 0.3.0 SDK built it typechecks under nodenext and bundler resolution.'
+    );
+    const runtimeConsumerDir = join(tempDir, 'consumers', runtimeName);
+    linkDirectory(
+      packages.get(sdkName).dir,
+      join(runtimeConsumerDir, 'node_modules', sdkName)
+    );
+    execFileSync(
+      process.execPath,
+      [
+        '--eval',
+        `${failOnWarning} const { definePrimitive, z } = require('${sdkName}'); const { createIsomerRuntime } = require('${runtimeName}');\n${LEGACY_PACK_RUN}`,
+      ],
+      { cwd: runtimeConsumerDir, stdio: 'inherit' }
+    );
+    writeFileSync(
+      join(runtimeConsumerDir, 'legacy_pack.mjs'),
+      `import { definePrimitive, z } from '${sdkName}';\nimport { createIsomerRuntime } from '${runtimeName}';\n${LEGACY_PACK_RUN}\n`
+    );
+    const runtimePkg = packages.get(runtimeName);
+    const legacyBundle = join(runtimePkg.dir, '.esm-check', 'legacy.node.mjs');
+    await bundleEsm(
+      './legacy_pack.mjs',
+      runtimeConsumerDir,
+      { peerDependencies: runtimePkg.manifest.peerDependencies },
+      'node',
+      legacyBundle
+    );
+    execFileSync(
+      process.execPath,
+      [
+        '--input-type=module',
+        '--eval',
+        `${failOnWarning} await import(${JSON.stringify(pathToFileURL(legacyBundle).href)})`,
+      ],
+      { cwd: runtimeConsumerDir, stdio: 'inherit' }
+    );
+    rmSync(dirname(legacyBundle), { force: true, recursive: true });
+    console.log(
+      `${runtimeName}: the packed runtime composed that pack as version 1 through an ESM bundle and require.`
+    );
+  }
+
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.
-  const sdkName = '@elastic/isomer-sdk';
   const sdkConsumerDir = join(tempDir, 'consumers', sdkName);
   const primitivesDir = join(tempDir, 'registration', 'primitives');
   mkdirSync(join(primitivesDir, 'demo'), { recursive: true });

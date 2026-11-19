@@ -54,6 +54,17 @@ const pack = (
   });
 
 describe('composePacks', () => {
+  it('rejects repeated definitions in a structural pack', () => {
+    const original = pack('notes', ['note']);
+    const structural = {
+      ...original,
+      primitives: [leaf('note'), leaf('note')],
+    };
+    expect(() => composePacks([structural])).toThrow(
+      expect.objectContaining({ code: 'DUPLICATE_PRIMITIVE_TYPE' })
+    );
+  });
+
   it('rejects two packs with one id', () => {
     expect(() =>
       composePacks([pack('notes', ['note']), pack('notes', ['memo'])])

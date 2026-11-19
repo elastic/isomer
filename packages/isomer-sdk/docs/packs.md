@@ -19,6 +19,8 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | Field             | Effect                                                                         |
 | ----------------- | ------------------------------------------------------------------------------ |
 | `id`              | Names the pack in capability reports and errors. Unique across composed packs. |
+| `version`         | Optional. The vocabulary's version, a positive integer; absent means 1.        |
+| `migrations`      | Optional. One step per earlier version; keys exactly `1 .. version - 1`.       |
 | `surfaces`        | The optional surfaces (only `slack`) every primitive here implements.          |
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
@@ -29,7 +31,7 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 
 `surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
 
-What comes back adds `types`, a set for duplicate detection across packs, and `icons`, each primitive's [icon](primitives.md#names-and-icons) by type for the primitives that declare one, so a host listing them need not walk `primitives`. `composePacks` builds one such map from every pack's definitions, so a pack built by an SDK without `icons` composes too. Both are frozen null-prototype dictionaries, so an absent type, even `constructor`, reads `undefined`. It also normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
+What comes back adds `contract`, the `PACK_CONTRACT_VERSION` it was built for, `types`, the types it registers now, and `icons`, each primitive's [icon](primitives.md#names-and-icons) by type for the primitives that declare one, so a host listing them need not walk `primitives`. `composePacks` builds one such map from every pack's definitions, so a pack built by an SDK without `icons` composes too. Both are frozen null-prototype dictionaries, so an absent type, even `constructor`, reads `undefined`. It also normalizes the two optional fields. `styleCollector` is read from `styleAdapter.styleCollector` when the pack does not set it; set it only for a pack whose hooks collect into a shape its adapter does not create.
 
 ## `surfaces` reports an intent
 
@@ -38,6 +40,65 @@ What comes back adds `types`, a set for duplicate detection across packs, and `i
 There is nothing to declare for `snapshot`. Every pack reaches the `snapshot` surface through its `react` renderers, and whether a runtime _has_ that surface depends on a frame, which is a host input rather than a pack's to promise.
 
 A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `composePacks` reports the cross-pack case, and a pack `id` two packs share throws `DUPLICATE_PACK_ID`. A `slackAssetTypes` entry the pack does not register throws `UNKNOWN_PRIMITIVE_TYPE`, as an unknown type in `authoring.groups` does.
+
+## `version` and `migrations`
+
+`version` is the vocabulary's version: a positive integer, absent meaning 1. Raise it on any change after which a previously valid document no longer validates, or means something else:
+
+- a tighter limit;
+- a layout change that takes room a document used;
+- a change in meaning with the same JSON shape.
+
+Adding an optional field does not raise it. The cost, which is accepted: a runtime that predates the field reports `unrecognized key` rather than "newer than me".
+
+`migrations` holds one step for each earlier version: key `k` carries a document from `k` to `k + 1`, so the keys are exactly `1 .. version - 1`.
+
+```ts
+export const obsPack = definePrimitivePack({
+  id: 'obs',
+  version: 2,
+  migrations: { 1: obsV1 },
+  primitives: [obsMetric, obsAlertList, obsSection],
+});
+```
+
+A step is a `PackMigration`. Its required `children` map declares the complete vocabulary at the source version, with one entry per node type, including unchanged types and leaves:
+
+| Field         | Effect                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `nodes`       | Old type to transform. Returning `null` deletes the node.                                                                                        |
+| `children`    | Required, non-empty source vocabulary. Each accessor returns that type's child slots; leaves return `[]`. Includes embedded authored-node slots. |
+| `composition` | Optional whole-document step, run after `nodes`. Its historical types must also be declared in `children`.                                       |
+
+```ts
+const obsV1: PackMigration = {
+  children: {
+    oldMetric: () => [],
+    panel: (node) => (node as ObsV1Panel).items.map((child, index) => ({ node: child, path: `items[${index}]` })),
+  },
+  nodes: { oldMetric: (node) => ({ ...node, type: 'obsMetric' }) },
+};
+```
+
+Source declarations are historical data: keep their accessors independent of current primitive definitions and include every declared child slot, including embedded authored-node bodies. A walker at source version `k` uses only `migrations[k].children` for that pack, without falling back to current definitions. Current definitions apply only after the pack reaches its current version. This lets a v1→v2 step keep walking `items` even after v3 renames the field to `contents`, without editing the v1→v2 step.
+
+Migration maps use own enumerable string keys. Each `nodes` key must occur in that step's `children` map. A composition-only migration must declare its source vocabulary too, even when it has no per-node transforms. A callback must preserve foreign-pack nodes and the pack stamp; pack migrations run independently and cannot depend on the order packs are composed. The execution engine and its enforcement belong to the upgrade API; this layer checks declarations, not callback behavior.
+
+A `version` that is not a positive integer throws `INVALID_PACK_VERSION`. Missing, extra, or malformed steps, missing or empty source vocabularies, and node transforms outside their declared source vocabulary throw `INVALID_PACK_MIGRATIONS`. `composePacks` runs both checks again, for a pack that did not come from `definePrimitivePack`.
+
+### Ownership
+
+A pack owns its current types plus every type declared in any step's source vocabulary (`ownedTypes(pack)`), including types handled only by `composition`. Within one pack, a step may name a current type, as a same-name field migration does, and a type may recur across steps. Across composed packs, owned types must not overlap: `composePacks` throws `DUPLICATE_PRIMITIVE_TYPE` and names both packs and the step, as in `primitive type "alertList" registered by "obs" (historical, migrations[1]) and "sec"`. A stored document can still hold a retired name, so it is never reused with another meaning.
+
+### The pack contract
+
+`PACK_CONTRACT_VERSION` is the shape of `PrimitiveDefinition` and `PrimitivePack` this SDK runs. It is raised only when they change in a way that stops a pack built by an earlier SDK from running. `definePrimitivePack` records it on the pack as `contract`, and `composePacks` throws `INCOMPATIBLE_PACK_CONTRACT` for a pack built for another one.
+
+A pack built by an SDK that predates versions has no `version`, `migrations`, or `contract`. All three are optional on `PrimitivePack`, and `composePacks` reads them as 1, none, and 1, so such a pack still composes.
+
+### The stamp
+
+A composition records the version each pack's nodes were written in, in the envelope's `packs`: `{ "type": "view", "packs": { "slides": 2, "obs": 1 }, "body": [...] }`. See [Composition](composition.md#the-pack-stamp). `describeCapabilities` reports each pack's version by id as `packs`.
 
 ## `slackAssetTypes`
 

@@ -39,6 +39,34 @@ export const metaSchema = z.object({
     .optional(),
 });
 
+const packVersionSchema = z.int().min(1);
+const packVersionsRecord = z.record(z.string(), packVersionSchema);
+const packVersionsJsonSchema = z.toJSONSchema(packVersionsRecord);
+delete packVersionsJsonSchema.$schema;
+
+// Zod records discard `__proto__` before validating it.
+const packVersionsSchema = z
+  .custom<Record<string, number>>()
+  .superRefine((value, ctx) => {
+    const result = packVersionsRecord.safeParse(value, { reportInput: true });
+    if (!result.success) {
+      result.error.issues.forEach((issue) => ctx.addIssue({ ...issue }));
+      return;
+    }
+    if (Object.hasOwn(value, '__proto__')) {
+      const version = packVersionSchema.safeParse(value['__proto__'], {
+        reportInput: true,
+      });
+      if (!version.success) {
+        version.error.issues.forEach((issue) =>
+          ctx.addIssue({ ...issue, path: ['__proto__', ...issue.path] })
+        );
+      }
+    }
+  })
+  .overwrite((versions) => ({ ...versions }))
+  .meta(packVersionsJsonSchema);
+
 /** Options for the `Composition` envelope schema a body-node union is wrapped in. */
 export interface CompositionSchemaOptions {
   /** The union the envelope's `body` array holds, as {@link resolveVocabulary} builds it. */
@@ -60,6 +88,7 @@ export const buildCompositionSchema = ({
     .object({
       type: z.literal('view', { error: 'type must be "view"' }),
       version: z.literal(1).optional(),
+      packs: packVersionsSchema.optional(),
       title: z.string().optional(),
       subtitle: z.string().optional(),
       theme: renderThemeSchema.optional(),

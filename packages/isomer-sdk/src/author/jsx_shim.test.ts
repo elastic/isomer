@@ -99,6 +99,27 @@ describe('buildJsxShim', () => {
     });
   });
 
+  it('drops a pack stamp, which an author never writes', () => {
+    expectTypeOf<Parameters<typeof Composition>[0]>().not.toHaveProperty(
+      'packs'
+    );
+    const spec = toComposition(
+      createElement(
+        Composition,
+        { title: 'Stamped', packs: { notes: 2 } } as Parameters<
+          typeof Composition
+        >[0],
+        createElement(Note, { body: 'Hello' })
+      )
+    );
+
+    expect(spec).toEqual({
+      type: 'view',
+      title: 'Stamped',
+      body: [{ type: 'note', body: 'Hello' }],
+    });
+  });
+
   it('maps JSX children onto a unique child-array field from children()', () => {
     const spec = toComposition(
       createElement(

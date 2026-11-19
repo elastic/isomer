@@ -44,12 +44,13 @@ export type AuthorComposition<TNode extends PrimitiveNode = PrimitiveNode> =
   };
 
 /**
- * Props of the shim's root element: the composition fields minus `type`, with
- * `body` given either as an array or as JSX children.
+ * Props of the shim's root element: the composition fields minus `type` and
+ * the unauthored `packs` stamp, with `body` given either as an array or as JSX
+ * children.
  */
 export interface CompositionAuthorProps<
   TNode extends PrimitiveNode = PrimitiveNode,
-> extends Omit<AuthorComposition<TNode>, 'type' | 'body'> {
+> extends Omit<AuthorComposition<TNode>, 'type' | 'body' | 'packs'> {
   /** Wins outright when present: `children` are then ignored, not merged. */
   body?: TNode[];
   /** Parsed into `body` only when `body` is absent. Each child must be an authoring element of a registered primitive type. */
