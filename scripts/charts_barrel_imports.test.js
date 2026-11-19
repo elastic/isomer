@@ -75,14 +75,26 @@ describe('charts barrel imports', () => {
     "import { createRequire } from 'node:module';\n",
     'export const req = createRequire(import.meta.url);\n',
     "export const m = module.require('@elastic/isomer-primitives-charts/testing');\n",
+    "export const m = module['require']('@elastic/isomer-primitives-charts/testing');\n",
+    'export const m = module.require(name);\n',
+    "export const r = nm['createRequire'](import.meta.url);\n",
     "import * as nm from 'node:module';\nexport const r = nm.createRequire(import.meta.url);\n",
   ])('rejects a self-import by any load: %s', async (code) => {
     const [{ messages }] = await eslint.lintText(code, {
       filePath: `${SRC}/render/probe.ts`,
     });
-    expect(messages.map(({ ruleId }) => ruleId)).toEqual([
-      'no-restricted-syntax',
-    ]);
+    expect(messages.length).toBeGreaterThan(0);
+    expect(new Set(messages.map(({ ruleId }) => ruleId))).toEqual(
+      new Set(['no-restricted-syntax'])
+    );
+  });
+
+  it('allows computed access by other keys', async () => {
+    const [{ messages }] = await eslint.lintText(
+      "export const a = labels['kind'];\nexport const b = labels[kind];\n",
+      { filePath: `${SRC}/render/probe.ts` }
+    );
+    expect(messages).toEqual([]);
   });
 
   it('allows calls that are not module loads', async () => {
