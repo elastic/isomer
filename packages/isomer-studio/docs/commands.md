@@ -57,7 +57,7 @@ Sharing a panel is not a claim of pixel equality. Studio does not launch a headl
 
 The editor and outputs share one panel with a resizer between them, and each scrolls independently. Copy sits beside the source-format controls in the editor. The bottom strip has **Props** at the left and validity at the right. **Props** toggles a full-width, read-only drawer, collapsed by default and outside the resizer, so adjusting the split does not narrow it. Its component tabs select one schema-derived table for each primitive in the draft or its branded JSX child components, including nested members, and label the active table for assistive technology. Edit props in JSX or JSON.
 
-At 1120 pixels or narrower, navigation starts collapsed to a rail, expands over the content when toggled, and does not expand on hover. The rail's toggle stays fixed while its entries scroll.
+From 641 to 1120 pixels wide, navigation starts collapsed to a rail, expands over the content when toggled, and does not expand on hover. The rail's toggle stays fixed while its entries scroll. At 640 pixels or narrower there is no rail: the header's menu button opens navigation over a dimmed page. Until it closes, keyboard focus stays inside it and screen readers skip the page behind it. Controls outside it do not respond while it is open. Picking a page, pressing Escape, its collapse button, the menu button again, or a tap anywhere outside it closes it and returns focus to the menu button, and going Back or Forward closes it too. The color mode switch becomes one button that steps through System, Light and Dark.
 
 ## `build`
 
