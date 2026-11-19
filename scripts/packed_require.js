@@ -46,13 +46,15 @@ export const requireEntries = (specifiers, consumerDir) =>
 /**
  * Copies the packed dependency graph into a staging directory, linking each copy only to its declared dependencies and required peers.
  * Only `pkg` is exposed in the consumer's `node_modules`.
+ * `typesPackages` (`@types/*` name to directory) are visible to the staged copies, whose declarations resolve from the staging directory.
  */
 export const requireWithoutPeers = (
   pkg,
   specifiers,
   peers,
   workDir,
-  packedPackages = new Map()
+  packedPackages = new Map(),
+  typesPackages = new Map()
 ) => {
   const consumerDir = join(workDir, 'isolated-consumers', pkg.manifest.name);
   const stagingDir = join(workDir, 'isolated-staging', pkg.manifest.name);
@@ -97,6 +99,9 @@ export const requireWithoutPeers = (
     }
     return isolatedDir;
   };
+  for (const [name, dir] of typesPackages) {
+    linkDirectory(dir, join(stagingDir, 'node_modules', '@types', name));
+  }
   linkDirectory(
     copyPackage(pkg),
     join(consumerDir, 'node_modules', pkg.manifest.name)

@@ -240,6 +240,12 @@ try {
         OPTIONAL_PEER_ENTRIES.get(specifier)
       )
     );
+    const typesPackages = new Map(
+      ['node', 'react'].map((types) => [
+        types,
+        resolve(repoRoot, 'node_modules', '@types', types),
+      ])
+    );
     if (optionalPeers.size === 0) {
       requireEntries(plainEntries, consumerDir);
     } else {
@@ -248,11 +254,12 @@ try {
         plainEntries,
         optionalPeers,
         tempDir,
-        packages
+        packages,
+        typesPackages
       );
-      for (const types of ['node', 'react']) {
+      for (const [types, dir] of typesPackages) {
         linkDirectory(
-          resolve(repoRoot, 'node_modules', '@types', types),
+          dir,
           join(isolatedConsumer, 'node_modules', '@types', types)
         );
       }

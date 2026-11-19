@@ -117,6 +117,54 @@ describe('requireWithoutPeers', () => {
     );
   });
 
+  it('resolves declaration-only types from staged copies', () => {
+    const require = createRequire(import.meta.url);
+    const nodeTypes = dirname(require.resolve('@types/node/package.json'));
+    const typesDir = join(root, 'installed', 'fixture-types');
+    writePackage(
+      typesDir,
+      { name: '@types/fixture-types', types: 'index.d.ts' },
+      { 'index.d.ts': 'export type Value = number;' }
+    );
+    writeFileSync(
+      join(pkg.dir, 'index.d.ts'),
+      "export type { Value } from 'fixture-types';"
+    );
+    const run = (workDir, typesPackages) => {
+      const consumer = requireWithoutPeers(
+        pkg,
+        ['fixture-pack'],
+        new Set(['fixture-peer']),
+        join(root, workDir),
+        new Map(),
+        typesPackages
+      );
+      linkDirectory(
+        nodeTypes,
+        join(consumer, 'node_modules', '@types', 'node')
+      );
+      linkDirectory(
+        typesDir,
+        join(consumer, 'node_modules', '@types', 'fixture-types')
+      );
+      return consumer;
+    };
+    expect(() =>
+      checkDeclarations(
+        ['fixture-pack'],
+        run('with', new Map([['fixture-types', typesDir]]))
+      )
+    ).not.toThrow();
+    const errors = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect(() =>
+        checkDeclarations(['fixture-pack'], run('without', new Map()))
+      ).toThrow('Packed declarations fail');
+    } finally {
+      errors.mockRestore();
+    }
+  }, 30000);
+
   it('fails an entry that loads an optional peer linked into the package', () => {
     expect(() =>
       requireEntries(['fixture-pack/peer'], join(root, 'consumer'))
