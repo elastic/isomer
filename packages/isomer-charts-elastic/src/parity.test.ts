@@ -40,7 +40,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { type Composition, primitiveExamples } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
-import { seriesOf, seriesSpecId, type XyDatum } from './events';
+import { seriesOf, seriesSpecId, type XyDatum } from './charts/xy/events';
 import { sceneSpecs } from './specs';
 
 /**

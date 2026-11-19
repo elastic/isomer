@@ -8,8 +8,8 @@
 import { serializeMarkdown } from '@elastic/isomer-sdk/markdown';
 import { describe, expect, it } from 'vitest';
 
+import type { XyScene } from '../primitives/xy_chart/scene';
 import { xyTimeSeriesScene } from '../scene/examples';
-import type { XyScene } from '../scene/types';
 
 import { sceneToMarkdown, sceneToText } from './scene_text';
 

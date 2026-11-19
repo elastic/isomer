@@ -12,6 +12,10 @@ import type { ActionEventRef, Composition } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
+import { dataTableTopHosts } from './primitives/data_table/examples';
+import { metricSingleValue } from './primitives/metric/examples';
+import { xyInteractive, xyTimeSeries } from './primitives/xy_chart/examples';
+import type { XyChartNode } from './primitives/xy_chart/schema';
 import type {
   ChartNode,
   ChartsRenderContext,
@@ -21,7 +25,7 @@ import { CHART_FAILURE_TEXT } from './render/failure';
 import { sceneModule } from './render/scene_styles';
 import { chartSize, chartSizeSpec } from './render/size';
 import { CHARTS_THEME } from './render/theme';
-import type { ResolveChartOptions } from './scene/common';
+import type { ResolveChartOptions } from './resolve/common';
 import {
   metricSingleValueScene,
   xyInteractiveScene,
@@ -29,11 +33,7 @@ import {
 } from './scene/examples';
 import { selectSceneRenderer } from './scene/select';
 import type { Scene, SceneRenderEnv } from './scene/types';
-import { dataTableTopHosts } from './schema/examples/data_table';
 import { chartEventExamples } from './schema/examples/events';
-import { metricSingleValue } from './schema/examples/metric';
-import { xyInteractive, xyTimeSeries } from './schema/examples/xy_chart';
-import type { XyChartNode } from './schema/xy_chart';
 
 // The resolver does not exist yet: resolve the two examples that have
 // hand-written Scenes, and record what each call was asked for.

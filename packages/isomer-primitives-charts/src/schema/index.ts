@@ -6,18 +6,94 @@
  */
 
 export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
+export { dataTableCatalog } from '../primitives/data_table/catalog';
+export { dataTableExamples } from '../primitives/data_table/examples';
 export {
-  dataTableCatalog,
-  gaugeCatalog,
-  gridCatalog,
-  heatmapCatalog,
-  legacyMetricCatalog,
-  metricCatalog,
-  partitionChartCatalog,
-  tagCloudCatalog,
-  unsupportedCatalog,
-  xyChartCatalog,
-} from './catalog';
+  type DataTableColumn,
+  type DataTableNode,
+  type DataTableSummary,
+  DATA_TABLE_KEY_RULE,
+  DATA_TABLE_RULES,
+  DATA_TABLE_SUMMARIES,
+  dataTableSchema,
+} from '../primitives/data_table/schema';
+export { gaugeCatalog } from '../primitives/gauge/catalog';
+export { gaugeExamples } from '../primitives/gauge/examples';
+export {
+  type GaugeNode,
+  type GaugeShape,
+  GAUGE_RULES,
+  GAUGE_SHAPES,
+  gaugeSchema,
+} from '../primitives/gauge/schema';
+export { gridCatalog } from '../primitives/grid/catalog';
+export { gridExamples } from '../primitives/grid/examples';
+export {
+  type GridNode,
+  type GridPanel,
+  type GridReadingEntry,
+  type GridSection,
+  GRID_COLUMNS,
+  GRID_RULES,
+  GRID_SINGLE_COLUMN_BELOW,
+  gridReadingOrder,
+  gridSchema,
+  gridSchemaFor,
+} from '../primitives/grid/schema';
+export { heatmapCatalog } from '../primitives/heatmap/catalog';
+export { heatmapExamples } from '../primitives/heatmap/examples';
+export {
+  type HeatmapNode,
+  HEATMAP_RULES,
+  heatmapSchema,
+} from '../primitives/heatmap/schema';
+export { legacyMetricCatalog } from '../primitives/legacy_metric/catalog';
+export { legacyMetricExamples } from '../primitives/legacy_metric/examples';
+export {
+  type LegacyMetricNode,
+  LEGACY_METRIC_RULES,
+  LEGACY_METRIC_SIZES,
+  legacyMetricSchema,
+} from '../primitives/legacy_metric/schema';
+export { metricCatalog } from '../primitives/metric/catalog';
+export { metricExamples } from '../primitives/metric/examples';
+export {
+  type MetricNode,
+  METRIC_RULES,
+  metricSchema,
+} from '../primitives/metric/schema';
+export { partitionChartCatalog } from '../primitives/partition_chart/catalog';
+export { partitionChartExamples } from '../primitives/partition_chart/examples';
+export {
+  type PartitionChartNode,
+  type PartitionShape,
+  PARTITION_KEY_RULE,
+  PARTITION_MAX_GROUPS,
+  PARTITION_RULES,
+  PARTITION_SHAPES,
+  partitionChartSchema,
+} from '../primitives/partition_chart/schema';
+export { tagCloudCatalog } from '../primitives/tag_cloud/catalog';
+export { tagCloudExamples } from '../primitives/tag_cloud/examples';
+export {
+  type TagCloudNode,
+  TAG_CLOUD_KEY_RULE,
+  TAG_CLOUD_RULES,
+  tagCloudSchema,
+} from '../primitives/tag_cloud/schema';
+export { unsupportedCatalog } from '../primitives/unsupported/catalog';
+export { unsupportedExamples } from '../primitives/unsupported/examples';
+export {
+  type UnsupportedNode,
+  unsupportedSchema,
+} from '../primitives/unsupported/schema';
+export { xyChartCatalog } from '../primitives/xy_chart/catalog';
+export { xyChartExamples } from '../primitives/xy_chart/examples';
+export {
+  type XyChartNode,
+  XY_RULES,
+  xyChartSchema,
+} from '../primitives/xy_chart/schema';
 export {
   type ChartColors,
   type ColorBand,
@@ -36,15 +112,6 @@ export {
   cellSchema,
   chartDataSchema,
 } from './data';
-export {
-  type DataTableColumn,
-  type DataTableNode,
-  type DataTableSummary,
-  DATA_TABLE_KEY_RULE,
-  DATA_TABLE_RULES,
-  DATA_TABLE_SUMMARIES,
-  dataTableSchema,
-} from './data_table';
 export {
   type ChartBrushEvent,
   type ChartEvent,
@@ -67,17 +134,7 @@ export {
   selectSchema,
   toActionEvent,
 } from './events';
-export { dataTableExamples } from './examples/data_table';
 export { chartEventExamples } from './examples/events';
-export { gaugeExamples } from './examples/gauge';
-export { gridExamples } from './examples/grid';
-export { heatmapExamples } from './examples/heatmap';
-export { legacyMetricExamples } from './examples/legacy_metric';
-export { metricExamples } from './examples/metric';
-export { partitionChartExamples } from './examples/partition_chart';
-export { tagCloudExamples } from './examples/tag_cloud';
-export { unsupportedExamples } from './examples/unsupported';
-export { xyChartExamples } from './examples/xy_chart';
 export {
   type DurationOutputUnit,
   type DurationUnit,
@@ -85,43 +142,7 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './format';
-export {
-  type GaugeNode,
-  type GaugeShape,
-  GAUGE_RULES,
-  GAUGE_SHAPES,
-  gaugeSchema,
-} from './gauge';
-export {
-  type GridNode,
-  type GridPanel,
-  type GridReadingEntry,
-  type GridSection,
-  GRID_COLUMNS,
-  GRID_RULES,
-  GRID_SINGLE_COLUMN_BELOW,
-  gridReadingOrder,
-  gridSchema,
-  gridSchemaFor,
-} from './grid';
-export { type HeatmapNode, HEATMAP_RULES, heatmapSchema } from './heatmap';
 export { glyphSchema } from './icons';
-export {
-  type LegacyMetricNode,
-  LEGACY_METRIC_RULES,
-  LEGACY_METRIC_SIZES,
-  legacyMetricSchema,
-} from './legacy_metric';
-export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
-export {
-  type PartitionChartNode,
-  type PartitionShape,
-  PARTITION_KEY_RULE,
-  PARTITION_MAX_GROUPS,
-  PARTITION_RULES,
-  PARTITION_SHAPES,
-  partitionChartSchema,
-} from './partition_chart';
 export {
   type Loss,
   type Provenance,
@@ -129,11 +150,3 @@ export {
   provenanceSchema,
 } from './provenance';
 export { type ColumnReference, columnRefSchema } from './references';
-export {
-  type TagCloudNode,
-  TAG_CLOUD_KEY_RULE,
-  TAG_CLOUD_RULES,
-  tagCloudSchema,
-} from './tag_cloud';
-export { type UnsupportedNode, unsupportedSchema } from './unsupported';
-export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';

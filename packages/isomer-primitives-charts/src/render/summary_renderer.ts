@@ -7,7 +7,7 @@
 
 import { createElement, Fragment } from 'react';
 
-import { SCENE_KINDS } from '../scene/types';
+import { SCENE_KINDS } from '../scene/base';
 import { described, sceneNotes } from '../text/scene_text';
 
 import type { ReactSceneRenderer } from './context';

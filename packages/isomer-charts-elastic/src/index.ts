@@ -5,9 +5,9 @@
  * 2.0.
  */
 
-export type { ElasticChartsOptions } from './options';
 export {
   ELASTIC_CHARTS_VERSION,
   createElasticChartsRenderer,
 } from './renderer';
-export { elasticChartsStylesheet } from './styles';
+export type { ElasticChartsOptions } from './shared/options';
+export { elasticChartsStylesheet } from './shared/styles';

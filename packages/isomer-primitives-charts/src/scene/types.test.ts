@@ -7,23 +7,19 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { metricSingleValue } from '../primitives/metric/examples';
+import type { PartitionNode } from '../primitives/partition_chart/scene';
+import { xyInteractive, xyTimeSeries } from '../primitives/xy_chart/examples';
+import type { XyScene } from '../primitives/xy_chart/scene';
 import type { ChartData } from '../schema/data';
-import { metricSingleValue } from '../schema/examples/metric';
-import { xyInteractive, xyTimeSeries } from '../schema/examples/xy_chart';
 
+import type { SceneSelection, SceneSource } from './base';
 import {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './examples';
-import type {
-  PartitionNode,
-  Scene,
-  SceneRenderer,
-  SceneSelection,
-  SceneSource,
-  XyScene,
-} from './types';
+import type { Scene, SceneRenderer } from './types';
 
 /** Every slice of a partition Scene, depth first. */
 const slicesOf = (nodes: readonly PartitionNode[]): PartitionNode[] =>

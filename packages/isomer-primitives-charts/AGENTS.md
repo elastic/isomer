@@ -7,7 +7,7 @@ Read the [root instructions](../../AGENTS.md) first.
 - Any contract: [Charts](docs/index.md) and the page for the primitive, starting with the [chart core](docs/core.md).
 - The Scene or a renderer: [Scene](docs/scene.md).
 - The pack, its render context, or renderer selection: [Rendering](docs/rendering.md).
-- The resolver: [`resolveChart`](docs/scene.md#resolvechart). Colors it supplies itself come only from `src/scene/theme.ts`.
+- The resolver: [`resolveChart`](docs/scene.md#resolvechart). Colors it supplies itself come only from `src/resolve/theme.ts`.
 - Formatting: [Format](docs/format.md). Formats are `Intl` options and formatting is internal to the pack: the resolver, and `formatAxisValue` for the ticks an engine chooses. A host never formats at render time: host-specific formats, such as Kibana's field formats, map to a portable format or arrive as `data.display` strings.
 - A container, or anything nested in `grid`: the SDK's [Primitives](../isomer-sdk/docs/primitives.md#containers-schemafor-and-children).
 
@@ -22,6 +22,8 @@ Expected values (formats, colors, orderings) come from this package's documented
 ## Module rules
 
 `./schema`, `./scene` and `./resolve` reach no React, Elastic Charts, runtime or Markdown parser; schemas import the SDK through `@elastic/isomer-sdk/schema`, never another SDK entry. `pnpm check:module-graph` enforces it, and `scripts/module_graph_rules.test.js` tests its rules. `./testing` alone reaches the runtime and `react-dom`, its optional peers; `.` never does. Chart engines (`@elastic/isomer-charts-*`) import only `./scene`, which holds the Scene types and event helpers, statically, with `import()` or with `require`, and never by a path into the pack; ESLint enforces it, and `scripts/chart_engine_imports.test.js` tests the rule.
+
+Each primitive is a folder under `src/primitives/`: its `schema`, `examples` and `catalog` (for `./schema`), `scene` (for `./scene`), `resolve` (for `./resolve`), and any in-pack `react` renderer, with their tests. Its `index.ts` exports only what `src/render/primitives.ts` defines it from, and reaches neither its resolver nor React; the entry barrels pick from its files, so `./schema` reaches nothing a primitive's `index.ts` adds. What several primitives share stays in `src/schema/`, `src/scene/`, `src/resolve/` and `src/render/`.
 
 ## Evidence required
 

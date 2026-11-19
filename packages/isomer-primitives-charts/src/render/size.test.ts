@@ -7,12 +7,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { wrappedHeight } from '../scene/common';
+import { gaugeExamples } from '../primitives/gauge/examples';
+import { legacyMetricExamples } from '../primitives/legacy_metric/examples';
+import type { MetricScene } from '../primitives/metric/scene';
+import type { XyScene } from '../primitives/xy_chart/scene';
+import { wrappedHeight } from '../resolve/common';
+import { resolveChart } from '../resolve/resolve_chart';
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
-import { resolveChart } from '../scene/resolve';
-import type { MetricScene, XyScene } from '../scene/types';
-import { gaugeExamples } from '../schema/examples/gauge';
-import { legacyMetricExamples } from '../schema/examples/legacy_metric';
 
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
 import { CHARTS_THEME } from './theme';

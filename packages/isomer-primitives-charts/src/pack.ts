@@ -7,16 +7,16 @@
 
 import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
+import { tableSceneRenderer } from './primitives/data_table/react';
+import { gridPrimitive } from './primitives/grid/react';
+import { legacyMetricSceneRenderer } from './primitives/legacy_metric/react';
+import { unsupportedPrimitive } from './primitives/unsupported/react';
 import type { ReactSceneRenderer, SceneResolver } from './render/context';
 import type { ChartFailureHandler } from './render/failure';
-import { gridPrimitive } from './render/grid';
-import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { defineChartPrimitives } from './render/primitives';
 import { chartsDistillery } from './render/styles';
 import { summarySceneRenderer } from './render/summary_renderer';
-import { tableSceneRenderer } from './render/table';
-import { unsupportedPrimitive } from './render/unsupported';
-import { resolveChart } from './scene/resolve';
+import { resolveChart } from './resolve/resolve_chart';
 
 /** What {@link createChartsPack} builds the pack with. Every field is optional. */
 export interface ChartsPackOptions {

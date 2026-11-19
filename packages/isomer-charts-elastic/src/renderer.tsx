@@ -17,11 +17,11 @@ import {
   varStyle,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { emptyTextOf } from './empty';
-import type { ElasticChartsOptions } from './options';
+import { TagCloudChart } from './charts/tag_cloud/tag_cloud';
+import { emptyTextOf } from './shared/empty';
+import type { ElasticChartsOptions } from './shared/options';
+import { elasticModule } from './shared/styles';
 import { sceneSpecs } from './specs';
-import { elasticModule } from './styles';
-import { TagCloudChart } from './tag_cloud';
 
 /** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
 export const ELASTIC_CHARTS_VERSION = '73.3.2';

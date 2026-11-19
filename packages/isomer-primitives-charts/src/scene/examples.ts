@@ -7,17 +7,12 @@
 
 // Hand-written Scenes for schema examples, so a renderer can be built and tested without the resolver.
 
+import type { MetricScene } from '../primitives/metric/scene';
+import type { XyMark, XyScene, XySeries } from '../primitives/xy_chart/scene';
 import type { Cell } from '../schema/data';
 import type { PortableFormat } from '../schema/format';
 
-import type {
-  MetricScene,
-  SceneChrome,
-  SceneSelection,
-  XyMark,
-  XyScene,
-  XySeries,
-} from './types';
+import type { SceneChrome, SceneSelection } from './base';
 
 const HOURLY: PortableFormat = {
   kind: 'date',

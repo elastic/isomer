@@ -9,33 +9,46 @@ import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
-import type { Scene, TableScene } from '../scene/types';
 import {
   dataTableCatalog,
-  gaugeCatalog,
+  dataTableExamples,
+  type DataTableNode,
+  dataTableSchema,
+  tableHeight,
+  type TableScene,
+} from '../primitives/data_table';
+import { gaugeCatalog, gaugeExamples, gaugeSchema } from '../primitives/gauge';
+import {
   heatmapCatalog,
+  heatmapExamples,
+  heatmapSchema,
+} from '../primitives/heatmap';
+import {
   legacyMetricCatalog,
+  legacyMetricExamples,
+  legacyMetricSchema,
+} from '../primitives/legacy_metric';
+import {
   metricCatalog,
+  metricExamples,
+  metricSchema,
+} from '../primitives/metric';
+import {
   partitionChartCatalog,
+  partitionChartExamples,
+  partitionChartSchema,
+} from '../primitives/partition_chart';
+import {
   tagCloudCatalog,
+  tagCloudExamples,
+  tagCloudSchema,
+} from '../primitives/tag_cloud';
+import {
   xyChartCatalog,
-} from '../schema/catalog';
-import { type DataTableNode, dataTableSchema } from '../schema/data_table';
-import { dataTableExamples } from '../schema/examples/data_table';
-import { gaugeExamples } from '../schema/examples/gauge';
-import { heatmapExamples } from '../schema/examples/heatmap';
-import { legacyMetricExamples } from '../schema/examples/legacy_metric';
-import { metricExamples } from '../schema/examples/metric';
-import { partitionChartExamples } from '../schema/examples/partition_chart';
-import { tagCloudExamples } from '../schema/examples/tag_cloud';
-import { xyChartExamples } from '../schema/examples/xy_chart';
-import { gaugeSchema } from '../schema/gauge';
-import { heatmapSchema } from '../schema/heatmap';
-import { legacyMetricSchema } from '../schema/legacy_metric';
-import { metricSchema } from '../schema/metric';
-import { partitionChartSchema } from '../schema/partition_chart';
-import { tagCloudSchema } from '../schema/tag_cloud';
-import { xyChartSchema } from '../schema/xy_chart';
+  xyChartExamples,
+  xyChartSchema,
+} from '../primitives/xy_chart';
+import type { Scene } from '../scene/types';
 import { sceneToMarkdown, sceneToText } from '../text/scene_text';
 import { tableSceneToSlack } from '../text/slack_table';
 
@@ -60,7 +73,6 @@ import {
   type SceneShimConfig,
 } from './scene_node';
 import { chartSize, chartSizeSpec } from './size';
-import { tableHeight } from './table';
 
 // Surfaces without a render context resolve for the light scheme: their output
 // carries text, not colors.

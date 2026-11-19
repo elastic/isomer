@@ -5,5 +5,5 @@
  * 2.0.
  */
 
-export { type ResolveChartOptions } from '../scene/common';
-export { type ChartNode, resolveChart } from '../scene/resolve';
+export { type ResolveChartOptions } from './common';
+export { type ChartNode, resolveChart } from './resolve_chart';

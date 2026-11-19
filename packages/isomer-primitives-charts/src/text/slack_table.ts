@@ -12,7 +12,7 @@ import {
   type SlackRichTextSection,
 } from '@elastic/isomer-sdk/slack';
 
-import type { TableScene } from '../scene/types';
+import type { TableScene } from '../primitives/data_table/scene';
 
 import { described, sceneNotes } from './scene_text';
 

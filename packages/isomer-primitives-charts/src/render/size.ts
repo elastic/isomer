@@ -10,8 +10,9 @@
 // `CHARTS_THEME.chart`. A browser applies a spec as CSS; Node, which has no
 // container to fill, turns it into a box at the theme's width.
 
-import { wrappedHeight } from '../scene/common';
-import type { Scene, SceneSize } from '../scene/types';
+import { wrappedHeight } from '../resolve/common';
+import type { SceneSize } from '../scene/base';
+import type { Scene } from '../scene/types';
 import { sceneNotes } from '../text/scene_text';
 
 import { CHARTS_THEME } from './theme';

@@ -12,8 +12,8 @@
 import type { Frame } from '@elastic/isomer-sdk';
 
 import { CHARTS_THEME } from './render/theme';
-import { CHART_CHROME } from './scene/theme';
-import type { ColorScheme } from './scene/types';
+import { CHART_CHROME } from './resolve/theme';
+import type { ColorScheme } from './scene/base';
 
 /** The palette {@link chartsFrame} draws with, per scheme. */
 export interface ChartsFrameTheme {

@@ -20,12 +20,8 @@ import type {
   ReactSceneRenderer,
 } from '../render/context';
 import { resolveChart } from '../resolve';
-import type {
-  ColorScheme,
-  Scene,
-  SceneEnvironment,
-  SceneKind,
-} from '../scene/types';
+import type { ColorScheme, SceneKind } from '../scene/base';
+import type { Scene, SceneEnvironment } from '../scene/types';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 

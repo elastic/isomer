@@ -16,11 +16,11 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import { chartsPack, chartsStylesheet } from '../src/pack';
+import { dataTableTopHosts } from '../src/primitives/data_table/examples';
+import type { GridNode } from '../src/primitives/grid/schema';
+import { legacyMetricSingleValue } from '../src/primitives/legacy_metric/examples';
+import { metricSingleValue } from '../src/primitives/metric/examples';
 import type { ChartsRenderContext } from '../src/render/context';
-import { dataTableTopHosts } from '../src/schema/examples/data_table';
-import { legacyMetricSingleValue } from '../src/schema/examples/legacy_metric';
-import { metricSingleValue } from '../src/schema/examples/metric';
-import type { GridNode } from '../src/schema/grid';
 
 const linked = {
   ...metricSingleValue,

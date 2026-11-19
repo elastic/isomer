@@ -10,7 +10,8 @@
 
 import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
 
-import type { Scene, SceneTable } from '../scene/types';
+import type { SceneTable } from '../scene/base';
+import type { Scene } from '../scene/types';
 
 /** The authored description, when the node has one. */
 export const described = ({ description }: Scene): string[] =>

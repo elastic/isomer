@@ -15,38 +15,40 @@ import {
   z,
 } from '@elastic/isomer-sdk';
 
+import { dataTableCatalog } from '../primitives/data_table/catalog';
+import { dataTableExamples } from '../primitives/data_table/examples';
+import { dataTableSchema } from '../primitives/data_table/schema';
+import { gaugeCatalog } from '../primitives/gauge/catalog';
+import { gaugeExamples } from '../primitives/gauge/examples';
+import { gaugeSchema } from '../primitives/gauge/schema';
+import { gridCatalog } from '../primitives/grid/catalog';
+import { gridExamples } from '../primitives/grid/examples';
 import {
-  dataTableCatalog,
-  gaugeCatalog,
-  gridCatalog,
-  heatmapCatalog,
-  legacyMetricCatalog,
-  metricCatalog,
-  partitionChartCatalog,
-  tagCloudCatalog,
-  unsupportedCatalog,
-  xyChartCatalog,
-} from './catalog';
-import { dataTableSchema } from './data_table';
-import { dataTableExamples } from './examples/data_table';
-import { gaugeExamples } from './examples/gauge';
-import { gridExamples } from './examples/grid';
-import { heatmapExamples } from './examples/heatmap';
-import { legacyMetricExamples } from './examples/legacy_metric';
-import { metricExamples } from './examples/metric';
-import { partitionChartExamples } from './examples/partition_chart';
-import { tagCloudExamples } from './examples/tag_cloud';
-import { unsupportedExamples } from './examples/unsupported';
-import { xyChartExamples } from './examples/xy_chart';
-import { gaugeSchema } from './gauge';
-import { type GridNode, gridSchema, gridSchemaFor } from './grid';
-import { heatmapSchema } from './heatmap';
-import { legacyMetricSchema } from './legacy_metric';
-import { metricSchema } from './metric';
-import { partitionChartSchema } from './partition_chart';
-import { tagCloudSchema } from './tag_cloud';
-import { unsupportedSchema } from './unsupported';
-import { xyChartSchema } from './xy_chart';
+  type GridNode,
+  gridSchema,
+  gridSchemaFor,
+} from '../primitives/grid/schema';
+import { heatmapCatalog } from '../primitives/heatmap/catalog';
+import { heatmapExamples } from '../primitives/heatmap/examples';
+import { heatmapSchema } from '../primitives/heatmap/schema';
+import { legacyMetricCatalog } from '../primitives/legacy_metric/catalog';
+import { legacyMetricExamples } from '../primitives/legacy_metric/examples';
+import { legacyMetricSchema } from '../primitives/legacy_metric/schema';
+import { metricCatalog } from '../primitives/metric/catalog';
+import { metricExamples } from '../primitives/metric/examples';
+import { metricSchema } from '../primitives/metric/schema';
+import { partitionChartCatalog } from '../primitives/partition_chart/catalog';
+import { partitionChartExamples } from '../primitives/partition_chart/examples';
+import { partitionChartSchema } from '../primitives/partition_chart/schema';
+import { tagCloudCatalog } from '../primitives/tag_cloud/catalog';
+import { tagCloudExamples } from '../primitives/tag_cloud/examples';
+import { tagCloudSchema } from '../primitives/tag_cloud/schema';
+import { unsupportedCatalog } from '../primitives/unsupported/catalog';
+import { unsupportedExamples } from '../primitives/unsupported/examples';
+import { unsupportedSchema } from '../primitives/unsupported/schema';
+import { xyChartCatalog } from '../primitives/xy_chart/catalog';
+import { xyChartExamples } from '../primitives/xy_chart/examples';
+import { xyChartSchema } from '../primitives/xy_chart/schema';
 
 const renderers = {
   react: () => null,
