@@ -157,6 +157,8 @@ describe.each(['./schema', './scene', './resolve', '.'])(
 
     it.each([
       'export const a = (name) => import(name);',
+      'export const a = (name) => import(`@elastic/isomer-primitives-charts/${name}`);',
+      'export const a = (name) => import(`${name}`);',
       'export const a = (name) => module.require(name);',
       "export const a = (name) => module['require'](name);",
       'const r = require;\nexport const a = (name) => r(name);',
@@ -166,6 +168,17 @@ describe.each(['./schema', './scene', './resolve', '.'])(
       expect(
         (await forbiddenReachable(entryWith(code), forbidden)).length
       ).toBeGreaterThan(0);
+    });
+
+    it('allows the word require in strings, templates and comments', async () => {
+      expect(
+        await forbiddenReachable(
+          entryWith(
+            "// require\nexport const a = 'Some charts require data.';\nexport const b = `charts require ${a}`;"
+          ),
+          forbidden
+        )
+      ).toEqual([]);
     });
 
     it('allows literal dynamic imports of allowed packages and plain calls', async () => {

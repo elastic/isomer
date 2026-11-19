@@ -6,6 +6,7 @@
  */
 
 import { build } from 'esbuild';
+import ts from 'typescript';
 
 /** Reported when a reached module loads one by a computed specifier, which no graph can follow. */
 export const OPAQUE_LOAD = '<opaque module load>';
@@ -75,10 +76,39 @@ export const matchesForbidden = (specifier, rule) =>
     ? coversPackage(specifier, rule)
     : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
-// Over esbuild's normalized output, minus its `//` path comments: any `require` token and `import()` of anything but a string.
-const OPAQUE_LOAD_PATTERN = /\brequire\b|__require|\bimport\(\s*(?![`'"])/;
-const hasOpaqueLoad = (text) =>
-  OPAQUE_LOAD_PATTERN.test(text.replace(/^\s*\/\/.*$/gm, ''));
+const isStringLiteral = ({ kind }) =>
+  kind === ts.SyntaxKind.StringLiteral ||
+  kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral;
+
+/** Whether `text` has a `require` identifier or key, or `import()` of anything but a string literal; strings and comments never count. */
+const hasOpaqueLoad = (text) => {
+  const visit = (node) => {
+    if (
+      ts.isIdentifier(node) &&
+      (node.text === 'require' || node.text === '__require')
+    ) {
+      return true;
+    }
+    if (
+      ts.isElementAccessExpression(node) &&
+      ts.isStringLiteralLike(node.argumentExpression) &&
+      node.argumentExpression.text === 'require'
+    ) {
+      return true;
+    }
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      !(node.arguments[0] && isStringLiteral(node.arguments[0]))
+    ) {
+      return true;
+    }
+    return ts.forEachChild(node, visit) ?? false;
+  };
+  return visit(
+    ts.createSourceFile('out.js', text, ts.ScriptTarget.Latest, true)
+  );
+};
 
 /** Every bare specifier reachable from `entryFile` through its relative imports, plus `OPAQUE_LOAD` when a reached module loads by a computed specifier. */
 const reachableBareSpecifiers = async (entryFile) => {
