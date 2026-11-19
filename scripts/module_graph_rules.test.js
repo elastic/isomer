@@ -66,6 +66,8 @@ describe.each(['./schema', './scene', './resolve'])('charts %s', (entryKey) => {
     'mdast-util-gfm',
     'mdast-util-to-markdown',
     'micromark-extension-gfm',
+    '@elastic/isomer-primitives-charts',
+    '@elastic/isomer-primitives-charts/scene',
   ])('rejects %s, directly or through a relative module', async (specifier) => {
     expect(
       await forbiddenReachable(entryImporting(specifier), forbidden)

@@ -45,13 +45,19 @@ const CHARTS_PRIMITIVES = readdirSync(
   { withFileTypes: true }
 )
   .filter((entry) => entry.isDirectory())
-  .map(({ name }) => name);
-// A primitive's `index.ts`, which imports the shared directories and `primitives/defaults.ts` back.
+  .map(({ name }) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+// A primitive's `index.ts`, which imports the shared directories and `primitives/defaults.ts` back, with or without an extension.
 const chartsPrimitiveBarrel = (prefix) => ({
-  regex: `^${prefix}(${CHARTS_PRIMITIVES.join('|')})(/index)?$`,
+  regex: `^${prefix}(${CHARTS_PRIMITIVES.join('|')})(/index)?(\\.[cm]?[jt]sx?)?$`,
   message:
     "Import a primitive's files here: its index.ts depends on this module, or reaches React (packages/isomer-primitives-charts/AGENTS.md#module-rules).",
 });
+// The pack's own entries, which the module graph check treats as external and does not follow.
+const CHARTS_SELF_IMPORT = {
+  regex: '^@elastic/isomer-primitives-charts(/|$)',
+  message:
+    'Import the pack through relative paths, not its own package entries (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
 const chartsBarrels = (files, patterns, ignores = []) => ({
   files,
   ignores: [
@@ -59,7 +65,12 @@ const chartsBarrels = (files, patterns, ignores = []) => ({
     `${CHARTS_SRC}/**/*.fixtures.ts`,
     ...ignores,
   ],
-  rules: { 'no-restricted-imports': ['error', { patterns }] },
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      { patterns: [...patterns, CHARTS_SELF_IMPORT] },
+    ],
+  },
 });
 
 const namedSpecifiers = (typeGroup, valueGroup) => [

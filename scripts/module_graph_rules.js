@@ -22,6 +22,8 @@ const CHARTS_CONTRACT_FORBIDDEN = [
   '@elastic/isomer-runtime',
   ...MARKDOWN_PARSERS,
   { under: '@elastic/isomer-sdk', except: '@elastic/isomer-sdk/schema' },
+  // Its own entries are external to the check, so what they reach would go unchecked.
+  '@elastic/isomer-primitives-charts',
 ];
 
 /**
