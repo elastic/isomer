@@ -76,24 +76,20 @@ export const matchesForbidden = (specifier, rule) =>
     ? coversPackage(specifier, rule)
     : coversPackage(specifier, rule.under) && specifier !== rule.except;
 
+// A string that is exactly a loader's name looks one up by key; prose containing the word does not.
+const LOADER_NAMES = new Set(['require', '__require', 'createRequire']);
+
 const isStringLiteral = ({ kind }) =>
   kind === ts.SyntaxKind.StringLiteral ||
   kind === ts.SyntaxKind.NoSubstitutionTemplateLiteral;
 
-/** Whether `text` has a `require` identifier or key, or `import()` of anything but a string literal; strings and comments never count. */
+/** Whether `text` has a `require` identifier or exact-name string key, or `import()` of anything but a string literal; strings and comments never count. */
 const hasOpaqueLoad = (text) => {
   const visit = (node) => {
-    if (
-      ts.isIdentifier(node) &&
-      (node.text === 'require' || node.text === '__require')
-    ) {
+    if (ts.isIdentifier(node) && LOADER_NAMES.has(node.text)) {
       return true;
     }
-    if (
-      ts.isElementAccessExpression(node) &&
-      ts.isStringLiteralLike(node.argumentExpression) &&
-      node.argumentExpression.text === 'require'
-    ) {
+    if (ts.isStringLiteralLike(node) && LOADER_NAMES.has(node.text)) {
       return true;
     }
     if (

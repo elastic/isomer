@@ -161,6 +161,7 @@ describe.each(['./schema', './scene', './resolve', '.'])(
       'export const a = (name) => import(`${name}`);',
       'export const a = (name) => module.require(name);',
       "export const a = (name) => module['require'](name);",
+      "export const a = (name) => Reflect.get(module, 'require').call(module, name);",
       'const r = require;\nexport const a = (name) => r(name);',
       "import { createRequire } from 'node:module';\nexport const r = createRequire(import.meta.url);",
       "import * as nm from 'node:module';\nexport const r = nm['createRequire'](import.meta.url);",
