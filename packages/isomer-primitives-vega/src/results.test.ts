@@ -353,6 +353,7 @@ describe('vega results', () => {
       '%s draws the same from pruned results',
       (_name, { mode, spec }) => {
         const input = asResults(mode, spec);
+        expect(svgOf(input)).toBe(svgOf({ mode, spec, ...SIZE }));
         const pruned = pruneVegaResults(input, THEMES);
         // Pruning that couldn't prove itself returns the input; every corpus chart should prove itself.
         expect(pruned).not.toBe(input);

@@ -106,15 +106,16 @@ The size limits bound the rest, parsing and memory: 250,000 characters of spec, 
 | --- | --- | --- | --- | --- |
 | Every example, light and dark, 1× | 213 | 93 | 12 | 3.2 |
 | One cold PNG, 2× | 135 | 17 | 40 | 5.3 |
-| `budget-marks`: a scatter plot at the 5,000-element cap, 2× | 241 | 50 | 143 | 2,080 |
+| `budget-marks`: a scatter plot at the 5,000-element cap, 2× | 225 | 101 | 143 | 2,080 |
 | `budget-spec`: a line through a spec at 250,000 characters, 2× | 188 | 67 | 280 | 310 |
 | `budget-data`: a line through 10,000 rows of `data`, 2× | 183 | 63 | 226 | 16 |
+| `budget-results`: a line through a search response stamped as 250,000 characters of results, 2× | 173 | 50 | 290 | 25 |
 | `over-marks`: a 250,000-character scatter plot past the cap, drawn as a note | 176 | 56 | 255 | 3.7 |
 | 16 PNGs at 2× through a limiter of 2 | 233 | 113 | 14 | 18 |
 
-`budget-marks` finds its point count by drawing, so its loaded RSS includes those draws. A render service still runs each render under its own time limit.
+The script finds `budget-marks`'s point count before any measured process starts, and fails a run that drew anything but a chart, or for `over-marks` the mark-cap note, so a chart Vega fails to draw never passes as a cheaper note.
 
-Linux pays more for the same work, so read Linux for a server: on CI's Linux x64 runners, one cold PNG peaked at 135 MB and every other scenario at 294–364 MB, about 170 MB over loaded (66 MB for `budget-marks`).
+Linux pays more for the same work, so read Linux for a server: on CI's Linux x64 runners, one cold PNG peaked at 135 MB and every other scenario at 294–364 MB, about 170 MB over loaded.
 
 `pnpm --filter @elastic/isomer-primitives-vega bench:check`, part of `pnpm check:memory`, runs every scenario three times and fails when a median is over its bound in the script. A bound is about 1.5× the larger of the macOS and Linux x64 medians, with a floor for `one`'s small delta, so a runner's variance passes and a doubling fails.
 

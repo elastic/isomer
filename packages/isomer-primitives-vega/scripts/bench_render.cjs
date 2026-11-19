@@ -32,6 +32,10 @@ const SCENARIOS = {
   'budget-data': {
     about: 'one line through `data` at the row limit, at 2×',
   },
+  'budget-results': {
+    about:
+      'one line through a stamped search response at the results limit, at 2×',
+  },
   'over-marks': {
     about:
       'a scatter plot at the character limit, past the mark cap: drawn as a note',
@@ -51,12 +55,26 @@ const SCENARIOS = {
 const BOUNDS = {
   examples: { peakRssMb: 450, renderRssMb: 260 },
   one: { peakRssMb: 210, renderRssMb: 40 },
-  'budget-marks': { peakRssMb: 550, renderRssMb: 100 },
+  'budget-marks': { peakRssMb: 550, renderRssMb: 270 },
   'budget-spec': { peakRssMb: 460, renderRssMb: 270 },
   'budget-data': { peakRssMb: 450, renderRssMb: 260 },
+  'budget-results': { peakRssMb: 450, renderRssMb: 260 },
   'over-marks': { peakRssMb: 450, renderRssMb: 260 },
   'burst-limited': { peakRssMb: 460, renderRssMb: 270 },
 };
+
+const point = (index) => ({
+  x: (index * 7919) % 10007,
+  y: Math.round(5000 + 4000 * Math.sin(index / 50)),
+});
+const xy = (mark, values) => ({
+  data: { values },
+  mark,
+  encoding: {
+    x: { field: 'x', type: 'quantitative' },
+    y: { field: 'y', type: 'quantitative' },
+  },
+});
 
 const mb = (bytes) => bytes / 1024 / 1024;
 
@@ -88,7 +106,7 @@ const limit = (inFlight) => {
   };
 };
 
-const child = async (scenario) => {
+const child = async (scenario, points) => {
   const started = process.hrtime.bigint();
   const ms = (from, to = process.hrtime.bigint()) => Number(to - from) / 1e6;
 
@@ -96,11 +114,8 @@ const child = async (scenario) => {
   const { chartsFrame } = require('@elastic/isomer-primitives-charts');
   const {
     MAX_DATA_ROWS,
-    MAX_DRAWN_ITEMS,
+    MAX_RESULTS_CHARS,
     MAX_SPEC_CHARS,
-    renderVegaSvg,
-    toVegaSpec,
-    VEGA_THEMES,
     vegaExamples,
     vegaPack,
   } = require('@elastic/isomer-primitives-vega');
@@ -124,18 +139,6 @@ const child = async (scenario) => {
     formats: takumi.formats,
   });
 
-  const point = (index) => ({
-    x: (index * 7919) % 10007,
-    y: Math.round(5000 + 4000 * Math.sin(index / 50)),
-  });
-  const xy = (mark, values) => ({
-    data: { values },
-    mark,
-    encoding: {
-      x: { field: 'x', type: 'quantitative' },
-      y: { field: 'y', type: 'quantitative' },
-    },
-  });
   /** As many points as fit in the spec limit. */
   const atSpecLimit = (mark) => {
     const perPoint = JSON.stringify(point(12345)).length + 1;
@@ -151,42 +154,48 @@ const child = async (scenario) => {
       ),
     };
   };
-  /** The most points that draw: the cap, less the root group and the axes. */
-  const atMarkLimit = () => {
-    const probe = (count) => {
-      const input = {
-        mode: 'vega-lite',
-        spec: xy(
-          'point',
-          Array.from({ length: count }, (_, i) => point(i))
-        ),
-        width: 480,
-        height: 270,
-      };
-      try {
-        renderVegaSvg(toVegaSpec(input, VEGA_THEMES.light), input);
-        return true;
-      } catch {
-        return false;
-      }
-    };
-    let low = 0;
-    let high = MAX_DRAWN_ITEMS;
-    while (low < high) {
-      const mid = Math.ceil((low + high) / 2);
-      if (probe(mid)) {
-        low = mid;
-      } else {
-        high = mid - 1;
-      }
-    }
+  /** A scatter plot of `points`, the most that draw under the cap, which the parent finds. */
+  const atMarkLimit = () => ({
+    type: 'vega',
+    mode: 'vega-lite',
+    description: `${points} points.`,
+    spec: xy(
+      'point',
+      Array.from({ length: points }, (_, index) => point(index))
+    ),
+  });
+  /** A line through a search response stamped as a result, as a materializer hands a Kibana panel over. */
+  const atResultsLimit = () => {
+    const bucket = (index) => ({
+      key: 1_772_323_200_000 + index * 60_000,
+      doc_count: point(index).y,
+    });
+    const response = (buckets) => ({
+      aggregations: { per_minute: { buckets } },
+    });
+    const stamped = (buckets) => [
+      { path: ['data'], values: response(buckets), scope: 'static' },
+    ];
+    const perBucket = JSON.stringify(bucket(12345)).length + 1;
+    const base = JSON.stringify(stamped([])).length;
+    const count = Math.floor((MAX_RESULTS_CHARS - base) / perBucket) - 100;
     return {
       type: 'vega',
       mode: 'vega-lite',
-      description: `${low} points.`,
-      spec: xy(
-        'point',
-        Array.from({ length: low }, (_, index) => point(index))
+      description: `${count} buckets.`,
+      spec: {
+        data: {
+          url: { index: 'logs', body: { size: 0 } },
+          format: { property: 'aggregations.per_minute.buckets' },
+        },
+        mark: 'line',
+        encoding: {
+          x: { field: 'key', type: 'temporal' },
+          y: { field: 'doc_count', type: 'quantitative' },
+        },
+      },
+      results: stamped(
+        Array.from({ length: count }, (_, index) => bucket(index))
       ),
     };
   };
@@ -223,8 +232,11 @@ const child = async (scenario) => {
       { node: atSpecLimit('line'), theme: 'light', scale: 2 },
     ],
     'budget-data': () => [{ node: atRowLimit(), theme: 'light', scale: 2 }],
+    'budget-results': () => [
+      { node: atResultsLimit(), theme: 'light', scale: 2 },
+    ],
     'over-marks': () => [
-      { node: atSpecLimit('point'), theme: 'light', scale: 2 },
+      { node: atSpecLimit('point'), theme: 'light', scale: 2, note: true },
     ],
     'burst-limited': () => atScale2(16),
   }[scenario]();
@@ -236,7 +248,7 @@ const child = async (scenario) => {
   const draws = [];
   const rasters = [];
   let firstChart;
-  const render = async ({ node, theme, scale }) => {
+  const render = async ({ node, theme, scale, note = false }) => {
     const drawStart = process.hrtime.bigint();
     const validation = runtime.validate({ type: 'view', body: [node] });
     if (!validation.valid) {
@@ -249,6 +261,17 @@ const child = async (scenario) => {
       theme,
     });
     draws.push(ms(drawStart));
+    // A chart Vega fails to draw becomes a cheaper note, which would pass the bounds unmeasured.
+    const drew = input.html.includes('data-isomer-vega-error=')
+      ? input.html.includes('data-isomer-vega-error="vega: the chart draws ')
+        ? 'note'
+        : 'error'
+      : 'chart';
+    if (drew !== (note ? 'note' : 'chart')) {
+      throw new Error(
+        `${scenario}: expected ${note ? 'the mark-cap note' : 'a chart'}, drew ${input.html.slice(0, 300)}`
+      );
+    }
     const rasterStart = process.hrtime.bigint();
     await takumi.png(await takumi.fit(input), { scale });
     rasters.push(ms(rasterStart));
@@ -280,6 +303,44 @@ const child = async (scenario) => {
   );
 };
 
+/** The most points of the scatter plot that draw: the cap, less the root group and the axes. */
+const pointsAtMarkCap = () => {
+  const {
+    MAX_DRAWN_ITEMS,
+    renderVegaSvg,
+    toVegaSpec,
+    VEGA_THEMES,
+  } = require('@elastic/isomer-primitives-vega');
+  const draws = (count) => {
+    const input = {
+      mode: 'vega-lite',
+      spec: xy(
+        'point',
+        Array.from({ length: count }, (_, index) => point(index))
+      ),
+      width: 480,
+      height: 270,
+    };
+    try {
+      renderVegaSvg(toVegaSpec(input, VEGA_THEMES.light), input);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  let low = 0;
+  let high = MAX_DRAWN_ITEMS;
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2);
+    if (draws(mid)) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+  return low;
+};
+
 const parent = () => {
   const args = process.argv.slice(2);
   const option = (name, fallback) => {
@@ -297,6 +358,8 @@ const parent = () => {
       throw new Error(`unknown scenario ${scenario}`);
     }
   }
+  // Found here, so no measured process draws the probes.
+  const points = scenarios.includes('budget-marks') ? pointsAtMarkCap() : 0;
   const results = scenarios.flatMap((scenario) =>
     Array.from({ length: runs }, () => {
       const run = spawnSync(
@@ -307,6 +370,7 @@ const parent = () => {
           __filename,
           '--child',
           scenario,
+          String(points),
         ],
         { encoding: 'utf8', maxBuffer: 1 << 24 }
       );
@@ -380,7 +444,7 @@ module.exports = { BOUNDS };
 
 if (require.main === module) {
   if (process.argv[2] === '--child') {
-    child(process.argv[3]).catch((error) => {
+    child(process.argv[3], Number(process.argv[4])).catch((error) => {
       process.stderr.write(`${error.stack}\n`);
       process.exit(1);
     });

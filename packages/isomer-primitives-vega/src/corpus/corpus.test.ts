@@ -23,14 +23,50 @@ import { vegaLiteSpecs } from './vega_lite.fixtures';
 
 const SIZE = { width: 480, height: 300 };
 
-/** The drawing without the root tag, which the pack resizes, and with def ids unnumbered. */
+const TAG = /<[^>]*>/g;
+
+/**
+ * `svg` with each def id renamed by the order it is defined in, in `id` attributes and in attribute values that
+ * are a `url(#…)` reference, so two drawings compare one-to-one whatever their ids. A reference to no
+ * definition fails the test.
+ */
+const canonicalIds = (svg: string) => {
+  const names = new Map<string, string>();
+  for (const [tag] of svg.matchAll(TAG)) {
+    for (const [, id] of tag.matchAll(/\sid="([^"]*)"/g)) {
+      names.set(id!, `def${names.size + 1}`);
+    }
+  }
+  return svg.replace(TAG, (tag) =>
+    tag
+      .replace(
+        /(\sid=")([^"]*)"/g,
+        (_match, lead: string, id: string) => `${lead}${names.get(id)}"`
+      )
+      .replace(/="url\(#([^)"]*)\)"/g, (_match, id: string) => {
+        const name = names.get(id);
+        expect(name, `url(#${id}) names no definition`).toBeDefined();
+        return `="url(#${name})"`;
+      })
+  );
+};
+
+/** The root tag's `width` and `height`, which the pack sets to the box it draws in. */
+const rootSize = (svg: string) => {
+  const root = /^<svg[^>]*>/.exec(svg)?.[0] ?? '';
+  return {
+    width: Number(/\swidth="([^"]*)"/.exec(root)?.[1]),
+    height: Number(/\sheight="([^"]*)"/.exec(root)?.[1]),
+  };
+};
+
+/** The drawing as compared: its root tag without `width` and `height`, its def ids canonical. */
 const drawing = (svg: string) =>
-  svg
-    .replace(/^<svg[^>]*>/, '')
-    .replace(
-      /(id="|url\(#)(?:isomer-vega-[a-z0-9]+-)?((?:p_)?gradient_|clip)\d+/g,
-      '$1$2N'
-    );
+  canonicalIds(
+    svg.replace(/^<svg[^>]*>/, (root) =>
+      root.replace(/\s(?:width|height)="[^"]*"/g, '')
+    )
+  );
 
 /**
  * Vega's own output: `view.toSVG()` through the interpreter. The code generator is not compared:
@@ -76,6 +112,7 @@ describe.each(corpus)('the %s corpus', (_source, specs) => {
         return;
       }
       expect(renderVegaSvg(vegaSpec, SIZE).svg).toBe(svg);
+      expect(rootSize(svg)).toEqual(SIZE);
       expect(drawing(await reference(vegaSpec))).toBe(drawing(svg));
     }
   );
