@@ -13,7 +13,7 @@ const isKnownChartsError = (diagnostic) =>
 
 export const splitDiagnostics = (output) => {
   // Each diagnostic starts at column zero; its continuation lines are indented.
-  const diagnostics = output.split('\n').reduce((all, line) => {
+  const diagnostics = output.split(/\r?\n/).reduce((all, line) => {
     if (line === '') {
       return all;
     }

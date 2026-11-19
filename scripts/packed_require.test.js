@@ -75,6 +75,48 @@ describe('requireWithoutPeers', () => {
     ).not.toThrow();
   });
 
+  it('hides a transitive packed dependency the entry does not declare', () => {
+    const transitiveDir = join(root, 'installed', 'fixture-transitive');
+    const transitive = {
+      dir: transitiveDir,
+      manifest: { name: 'fixture-transitive', main: 'index.js' },
+    };
+    writePackage(transitiveDir, transitive.manifest, { 'index.js': '' });
+    const dependencyDir = join(root, 'installed', 'fixture-dep');
+    const dependency = {
+      dir: dependencyDir,
+      manifest: {
+        name: 'fixture-dep',
+        main: 'index.js',
+        dependencies: { 'fixture-transitive': '1.0.0' },
+      },
+    };
+    writePackage(dependencyDir, dependency.manifest, {
+      'index.js': "require('fixture-transitive');\n",
+    });
+    linkDirectory(
+      transitiveDir,
+      join(dependencyDir, 'node_modules', 'fixture-transitive')
+    );
+    writeFileSync(join(pkg.dir, 'peer.js'), "require('fixture-transitive');\n");
+    const packed = new Map([
+      ['fixture-dep', dependency],
+      ['fixture-transitive', transitive],
+    ]);
+    const run = (specifier) =>
+      requireWithoutPeers(
+        pkg,
+        [specifier],
+        new Set(['fixture-peer']),
+        join(root, 'work'),
+        packed
+      );
+    expect(() => run('fixture-pack')).not.toThrow();
+    expect(() => run('fixture-pack/peer')).toThrow(
+      "Cannot find module 'fixture-transitive'"
+    );
+  });
+
   it('fails an entry that loads an optional peer linked into the package', () => {
     expect(() =>
       requireEntries(['fixture-pack/peer'], join(root, 'consumer'))

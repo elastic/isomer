@@ -43,7 +43,10 @@ export const requireEntries = (specifiers, consumerDir) =>
     { cwd: consumerDir, env: consumerEnv(), encoding: 'utf-8' }
   );
 
-/** Copies the packed dependency graph with only declared dependencies and required peers. */
+/**
+ * Copies the packed dependency graph into a staging directory, linking each copy only to its declared dependencies and required peers.
+ * Only `pkg` is exposed in the consumer's `node_modules`.
+ */
 export const requireWithoutPeers = (
   pkg,
   specifiers,
@@ -52,6 +55,7 @@ export const requireWithoutPeers = (
   packedPackages = new Map()
 ) => {
   const consumerDir = join(workDir, 'isolated-consumers', pkg.manifest.name);
+  const stagingDir = join(workDir, 'isolated-staging', pkg.manifest.name);
   const copies = new Map();
   const copyPackage = (source) => {
     const { dir, manifest } = source;
@@ -64,7 +68,7 @@ export const requireWithoutPeers = (
     if (copies.has(dir)) {
       return copies.get(dir);
     }
-    const isolatedDir = join(consumerDir, 'node_modules', name);
+    const isolatedDir = join(stagingDir, name);
     copies.set(dir, isolatedDir);
     const ownModules = join(dir, 'node_modules');
     cpSync(dir, isolatedDir, {
@@ -93,7 +97,10 @@ export const requireWithoutPeers = (
     }
     return isolatedDir;
   };
-  copyPackage(pkg);
+  linkDirectory(
+    copyPackage(pkg),
+    join(consumerDir, 'node_modules', pkg.manifest.name)
+  );
   execFileSync(
     process.execPath,
     [

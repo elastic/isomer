@@ -26,6 +26,12 @@ describe('splitDiagnostics', () => {
     });
   });
 
+  it('matches the known error in CRLF output and returns it without `\r`', () => {
+    expect(
+      splitDiagnostics(`${ELASTIC_CHARTS}\r\n${PACKED_ISOMER}\r\n`)
+    ).toEqual({ errors: [PACKED_ISOMER], known: [ELASTIC_CHARTS] });
+  });
+
   it('rejects errors in packed and linked Isomer declarations and the consumer', () => {
     expect(
       splitDiagnostics(
