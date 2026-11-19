@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+export { type LiveVegaNode, startLiveView } from './live';
+export { LiveChart } from './live_chart';
 export { inertLoader } from './loader';
 export {
   type VegaChartInput,

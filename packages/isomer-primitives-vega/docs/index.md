@@ -23,6 +23,7 @@ const runtime = createIsomerRuntime({
 | --- | --- |
 | `@elastic/isomer-primitives-vega/schema` | The contract: `vegaSchema`, `VegaNode`, `vegaCatalog`, the examples, and the spec rules. It reaches no Vega, React or runtime, so a client that cannot load Vega, such as a React Native app, validates nodes with it. |
 | `@elastic/isomer-primitives-vega` | Everything above, the pack, `renderVegaSvg` and `toVegaSpec` for a host that draws on a server, `pruneVegaResults` for a materializer, the theme and `vegaStylesheet`. It reaches Vega and React. |
+| `@elastic/isomer-primitives-vega/client` | `hydrateVega`, which makes `html` output live in a browser. |
 
 `vegaSchema` checks everything but whether Vega parses the spec. The pack's primitive validates with `vegaPrimitiveSchema`, which adds that check, so validate through a runtime that registers the pack.
 
@@ -81,6 +82,10 @@ Events ride the SDK's `onEvent` as the charts pack's [`ChartEvent`](../../isomer
 
 - **`select: ['mark']`**: a click on a mark raises a `select` whose `target` is `mark`. `columns` are the dimension columns of `data` the mark's datum carries, by column id; `rows` are every row holding the datum's values in them. An aggregated mark, which keeps only its group-by fields, selects every row of its group. A datum that carries no dimension column, or matches no row, raises nothing.
 - **`brush: { column, signal }`**: each value of the named signal that is two numbers or dates, `[from, to]`, raises a `brush` on `column`, ordered and in the column's units. The spec decides when the signal changes, so a spec that sets it on release raises one brush per gesture.
+
+`markSelectEvent` and `signalBrushEvent` build these events from a datum and a signal value, for a host that runs its own view.
+
+Vega's own signals, tooltips and hover keep working in a live view; they are local inspection and raise nothing.
 
 ## Pages
 

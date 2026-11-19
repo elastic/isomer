@@ -5,7 +5,11 @@
  * 2.0.
  */
 
-export { VEGA_INPUT_BUDGET, vegaPack } from '../pack';
+export {
+  VEGA_INPUT_BUDGET,
+  vegaInteractiveEnhancement,
+  vegaPack,
+} from '../pack';
 export {
   type VegaData,
   type VegaNode,
@@ -18,6 +22,7 @@ export {
   MAX_RESULTS_CHARS,
   MAX_SPEC_CHARS,
   MIN_CHART_SIDE,
+  VEGA_INTERACTIVE,
   VEGA_RULES,
   brushExample,
   donutExample,
@@ -28,7 +33,9 @@ export {
   kibanaPanelExample,
   layeredExample,
   mapExample,
+  markSelectEvent,
   searchResponseExample,
+  signalBrushEvent,
   signalExample,
   timeSeriesExample,
   vegaCatalog,

@@ -1653,6 +1653,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `vega-selections` | 6.1.5 | BSD-3-Clause | `node_modules/.pnpm/vega-selections@6.1.5/node_modules/vega-selections` |  |
 | `vega-statistics` | 2.0.0 | BSD-3-Clause | `node_modules/.pnpm/vega-statistics@2.0.0/node_modules/vega-statistics` |  |
 | `vega-time` | 3.1.0 | BSD-3-Clause | `node_modules/.pnpm/vega-time@3.1.0/node_modules/vega-time` |  |
+| `vega-tooltip` | 1.1.0 | BSD-3-Clause | `node_modules/.pnpm/vega-tooltip@1.1.0/node_modules/vega-tooltip` |  |
 | `vega-transforms` | 5.1.0 | BSD-3-Clause | `node_modules/.pnpm/vega-transforms@5.1.0/node_modules/vega-transforms` |  |
 | `vega-typings` | 2.1.0 | BSD-3-Clause | `node_modules/.pnpm/vega-typings@2.1.0/node_modules/vega-typings` |  |
 | `vega-util` | 2.1.0 | BSD-3-Clause | `node_modules/.pnpm/vega-util@2.1.0/node_modules/vega-util` |  |
