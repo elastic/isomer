@@ -392,12 +392,13 @@ export default tseslint.config(
         ...loadsOf(
           CHARTS_SELF_IMPORT.regex,
           CHARTS_SELF_IMPORT.message,
-          ':matches([callee.name="require"], [callee.object.name="require"])'
+          ':matches([callee.name="require"], [callee.property.name="require"], [callee.object.name="require"])'
         ),
         ...[
           'ImportExpression:not([source.type="Literal"], [source.expressions.length=0])',
           'CallExpression[callee.name="createRequire"]',
           'ImportSpecifier[imported.name="createRequire"]',
+          'MemberExpression[property.name="createRequire"]',
         ].map((selector) => ({
           selector,
           message:
