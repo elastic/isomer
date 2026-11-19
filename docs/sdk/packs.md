@@ -62,21 +62,33 @@ export const obsPack = definePrimitivePack({
 });
 ```
 
-A step is a `PackMigration`, and every key in it is a node `type` as it was at the step's source version:
+A step is a `PackMigration`. Its required `children` map declares the complete vocabulary at the source version, with one entry per node type, including unchanged types and leaves:
 
-| Field         | Effect                                                                                                                                         |
-| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `nodes`       | Old type to transform. Returning `null` deletes the node.                                                                                      |
-| `children`    | Child slots at the source version, for every type whose slots differ from the current definition, including types that no longer exist.        |
-| `composition` | A whole-document step, run after `nodes`.                                                                                                      |
+| Field         | Effect                                                                                                                                           |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `nodes`       | Old type to transform. Returning `null` deletes the node.                                                                                        |
+| `children`    | Required, non-empty source vocabulary. Each accessor returns that type's child slots; leaves return `[]`. Includes embedded authored-node slots. |
+| `composition` | Optional whole-document step, run after `nodes`. Its historical types must also be declared in `children`.                                       |
 
-A renamed container needs a `children` entry even when its slots did not move: no current definition exists under the old name, so nothing else says where its children are.
+```ts
+const obsV1: PackMigration = {
+  children: {
+    oldMetric: () => [],
+    panel: (node) => (node as ObsV1Panel).items.map((child, index) => ({ node: child, path: `items[${index}]` })),
+  },
+  nodes: { oldMetric: (node) => ({ ...node, type: 'obsMetric' }) },
+};
+```
 
-A `version` that is not a positive integer throws `INVALID_PACK_VERSION`. Missing, extra, or malformed steps throw `INVALID_PACK_MIGRATIONS`. `composePacks` runs both checks again, for a pack that did not come from `definePrimitivePack`.
+Source declarations are historical data: keep their accessors independent of current primitive definitions and include every declared child slot, including embedded authored-node bodies. A walker at source version `k` uses only `migrations[k].children` for that pack, without falling back to current definitions. Current definitions apply only after the pack reaches its current version. This lets a v1→v2 step keep walking `items` even after v3 renames the field to `contents`, without editing the v1→v2 step.
+
+Each `nodes` key must be an own key of that step's `children`. A composition-only migration must declare its source vocabulary too, even when it has no per-node transforms. A callback must preserve foreign-pack nodes and the pack stamp; pack migrations run independently and cannot depend on the order packs are composed. The execution engine and its enforcement belong to the upgrade API; this layer checks declarations, not callback behavior.
+
+A `version` that is not a positive integer throws `INVALID_PACK_VERSION`. Missing, extra, or malformed steps, missing or empty source vocabularies, and node transforms outside their declared source vocabulary throw `INVALID_PACK_MIGRATIONS`. `composePacks` runs both checks again, for a pack that did not come from `definePrimitivePack`.
 
 ### Ownership
 
-A pack owns its current types plus every type any step names (`ownedTypes(pack)`). Within one pack, a step may name a current type, as a same-name field migration does, and a type may recur across steps. Across composed packs, owned types must not overlap: `composePacks` throws `DUPLICATE_PRIMITIVE_TYPE` and names both packs and the step, as in `primitive type "alertList" registered by "obs" (historical, migrations[1]) and "sec"`. A stored document can still hold a retired name, so it is never reused with another meaning.
+A pack owns its current types plus every type declared in any step's source vocabulary (`ownedTypes(pack)`), including types handled only by `composition`. Within one pack, a step may name a current type, as a same-name field migration does, and a type may recur across steps. Across composed packs, owned types must not overlap: `composePacks` throws `DUPLICATE_PRIMITIVE_TYPE` and names both packs and the step, as in `primitive type "alertList" registered by "obs" (historical, migrations[1]) and "sec"`. A stored document can still hold a retired name, so it is never reused with another meaning.
 
 ### The pack contract
 

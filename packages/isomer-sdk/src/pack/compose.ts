@@ -51,11 +51,14 @@ export const composePacks = (
     assertPackContract(pack);
     assertPackVersion(pack.id, pack.version);
     assertPackMigrations(pack.id, pack.version ?? 1, pack.migrations);
+    for (const { type } of pack.primitives) {
+      typeOwners.set(type, [...(typeOwners.get(type) ?? []), `"${pack.id}"`]);
+    }
     for (const [type, owned] of typeOwnership(pack)) {
-      const owner =
-        owned === 'current'
-          ? `"${pack.id}"`
-          : `"${pack.id}" (historical, migrations[${owned}])`;
+      if (owned === 'current') {
+        continue;
+      }
+      const owner = `"${pack.id}" (historical, migrations[${owned}])`;
       typeOwners.set(type, [...(typeOwners.get(type) ?? []), owner]);
     }
     for (const { id } of pack.enhancements) {

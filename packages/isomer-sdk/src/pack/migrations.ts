@@ -31,12 +31,8 @@ export interface PackMigration {
   nodes?: Readonly<
     Record<string, (node: PrimitiveNode) => PrimitiveNode | null>
   >;
-  /**
-   * Child slots at the source version, for every type whose slots differ from
-   * the current definition, including types that no longer exist. A renamed
-   * container needs one even when its slots did not move.
-   */
-  children?: Readonly<
+  /** Complete source vocabulary and child slots, including leaves as `() => []`. Independent of current definitions. */
+  children: Readonly<
     Record<string, (node: PrimitiveNode) => readonly ChildNodeRef[]>
   >;
   /** Whole-document step, run after `nodes`. */
@@ -157,6 +153,23 @@ export const assertPackMigrations = (
     assertFunctions(id, step, 'nodes', migration.nodes);
     assertFunctions(id, step, 'children', migration.children);
     if (
+      !isRecord(migration.children) ||
+      Object.keys(migration.children).length === 0
+    ) {
+      throw invalidMigrations(
+        id,
+        `migrations[${step}].children must declare the complete non-empty source vocabulary`
+      );
+    }
+    for (const type of Object.keys(migration.nodes ?? {})) {
+      if (!Object.hasOwn(migration.children, type)) {
+        throw invalidMigrations(
+          id,
+          `migrations[${step}].nodes.${type} is not declared in children`
+        );
+      }
+    }
+    if (
       migration.composition !== undefined &&
       typeof migration.composition !== 'function'
     ) {
@@ -184,7 +197,7 @@ export const assertPackContract = (pack: VersionedPack): void => {
 
 /**
  * Every type a pack owns, mapped to where it owns it: `current` for a type it
- * registers, otherwise the first step whose `nodes` or `children` names it.
+ * registers, otherwise the first step whose source vocabulary names it.
  */
 export const typeOwnership = (
   pack: VersionedPack
@@ -198,10 +211,7 @@ export const typeOwnership = (
     .sort((a, b) => a - b);
   for (const step of steps) {
     const migration = pack.migrations?.[step];
-    for (const type of [
-      ...Object.keys(migration?.nodes ?? {}),
-      ...Object.keys(migration?.children ?? {}),
-    ]) {
+    for (const type of Object.keys(migration?.children ?? {})) {
       if (!owned.has(type)) {
         owned.set(type, step);
       }

@@ -11,6 +11,9 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
+import { createChildNodeWalker } from '../composition/body_node_base';
+import type { Composition } from '../composition/composition';
+import { mapCompositionNodes } from '../composition/map_nodes';
 import {
   definePrimitive,
   type PrimitiveNode,
@@ -61,10 +64,14 @@ const isomerError = (code: string, message = '') =>
     message: expect.stringContaining(message) as unknown,
   }) as unknown;
 
+const sourceLeaves = (...types: string[]): PackMigration['children'] =>
+  Object.fromEntries(types.map((type) => [type, () => []]));
+const identityStep: PackMigration = { children: sourceLeaves('x') };
+
 const slidesPack = definePrimitivePack({
   id: 'slides',
   version: 2,
-  migrations: { 1: {} },
+  migrations: { 1: { children: sourceLeaves('slideFrame') } },
   primitives: [leaf('slideFrame')],
 });
 
@@ -81,14 +88,23 @@ const obsV1: PackMigration = {
     alertList: (node) => ({ ...node, type: 'obsAlertList' }),
     panel: (node) => ({ ...node, type: 'obsSection' }),
   },
-  children: { panel: () => [] },
+  children: sourceLeaves('metric', 'alertList', 'panel', 'sparkline'),
 };
 // Example 5: a same-name field migration, keyed by a type that still exists.
 const obsV2: PackMigration = {
+  children: sourceLeaves(
+    'obsMetric',
+    'obsAlertList',
+    'obsSection',
+    'sparkline'
+  ),
   nodes: { obsMetric: (node) => node },
 };
 // Example 6: retiring a primitive.
-const obsV3: PackMigration = { nodes: { sparkline: () => null } };
+const obsV3: PackMigration = {
+  children: obsV2.children,
+  nodes: { sparkline: () => null },
+};
 
 const obsV4Pack = definePrimitivePack({
   id: 'obs',
@@ -136,11 +152,15 @@ describe('a pack version', () => {
 
 describe('a pack’s migrations', () => {
   it.each<[string, number, PackMigrations]>([
-    ['a missing step', 3, { 1: {} }],
-    ['an extra step', 2, { 1: {}, 2: {}, 3: {} }],
-    ['a step 0', 2, { 0: {}, 1: {} }],
-    ['a step for the version itself', 3, { 1: {}, 2: {}, 3: {} }],
-    ['any step at version 1', 1, { 1: {} }],
+    ['a missing step', 3, { 1: identityStep }],
+    ['an extra step', 2, { 1: identityStep, 2: identityStep, 3: identityStep }],
+    ['a step 0', 2, { 0: identityStep, 1: identityStep }],
+    [
+      'a step for the version itself',
+      3,
+      { 1: identityStep, 2: identityStep, 3: identityStep },
+    ],
+    ['any step at version 1', 1, { 1: identityStep }],
   ])('rejects %s', (_, version, migrations) => {
     expect(
       thrown(() =>
@@ -160,7 +180,7 @@ describe('a pack’s migrations', () => {
         definePrimitivePack({
           id: 'obs',
           version: 3,
-          migrations: { 1: {}, 3: {} },
+          migrations: { 1: identityStep, 3: identityStep },
           primitives: [leaf('x')],
         })
       )
@@ -178,7 +198,7 @@ describe('a pack’s migrations', () => {
         definePrimitivePack({
           id: 'obs',
           version: Number.MAX_SAFE_INTEGER,
-          migrations: { 2: {} },
+          migrations: { 2: identityStep },
           primitives: [leaf('x')],
         })
       )
@@ -194,7 +214,10 @@ describe('a pack’s migrations', () => {
     ['a step that is not an object', null],
     ['a node transform that is not a function', { nodes: { metric: 1 } }],
     ['a children override that is not a function', { children: { panel: [] } }],
-    ['a composition step that is not a function', { composition: {} }],
+    [
+      'a composition step that is not a function',
+      { children: sourceLeaves('x'), composition: {} },
+    ],
   ])('rejects %s', (_, step) => {
     expect(
       thrown(() =>
@@ -213,8 +236,14 @@ describe('a pack’s migrations', () => {
       id: 'obs',
       version: 3,
       migrations: {
-        1: { nodes: { metric: (node) => node } },
-        2: { nodes: { metric: (node) => node } },
+        1: {
+          children: sourceLeaves('metric'),
+          nodes: { metric: (node) => node },
+        },
+        2: {
+          children: sourceLeaves('metric'),
+          nodes: { metric: (node) => node },
+        },
       },
       primitives: [leaf('metric')],
     });
@@ -262,7 +291,7 @@ describe('ownership', () => {
     const secPack = definePrimitivePack({
       id: 'sec',
       version: 3,
-      migrations: { 1: {}, 2: { children: { panel: () => [] } } },
+      migrations: { 1: identityStep, 2: { children: { panel: () => [] } } },
       primitives: [leaf('secPanel')],
     });
     expect(thrown(() => composePacks([obsV4Pack, secPack]))).toEqual(
@@ -327,3 +356,223 @@ describe('a pack that predates versions', () => {
     );
   });
 });
+
+describe('source vocabulary declarations', () => {
+  it.each([
+    {},
+    { children: {} },
+    { composition: (composition: unknown) => composition },
+  ])('rejects a step without its source vocabulary', (step) => {
+    expect(() =>
+      definePrimitivePack({
+        id: 'notes',
+        version: 2,
+        primitives: [leaf('note')],
+        migrations: { 1: step as PackMigration },
+      })
+    ).toThrow(expect.objectContaining({ code: 'INVALID_PACK_MIGRATIONS' }));
+  });
+
+  it('rejects transforms outside the declared source vocabulary', () => {
+    expect(() =>
+      definePrimitivePack({
+        id: 'notes',
+        version: 2,
+        primitives: [leaf('note')],
+        migrations: {
+          1: {
+            children: { note: () => [] },
+            nodes: { retired: (node) => node },
+          },
+        },
+      })
+    ).toThrow(expect.objectContaining({ code: 'INVALID_PACK_MIGRATIONS' }));
+  });
+
+  it('reserves historical types used only by a composition transform', () => {
+    const notes = definePrimitivePack({
+      id: 'notes',
+      version: 2,
+      primitives: [leaf('note')],
+      migrations: {
+        1: {
+          children: { retired: () => [] },
+          composition: (composition) => ({
+            ...composition,
+            body: composition.body.map((node) =>
+              node.type === 'retired' ? { ...node, type: 'note' } : node
+            ),
+          }),
+        },
+      },
+    });
+    const stored: Composition = {
+      type: 'view',
+      packs: { notes: 1, foreign: 3 },
+      body: [{ type: 'retired' }, { type: 'foreignNote' }],
+    };
+    expect(notes.migrations![1]!.composition!(stored)).toEqual({
+      ...stored,
+      body: [{ type: 'note' }, { type: 'foreignNote' }],
+    });
+    expect([...ownedTypes(notes)]).toEqual(['note', 'retired']);
+    expect(() =>
+      composePacks([
+        notes,
+        definePrimitivePack({ id: 'other', primitives: [leaf('retired')] }),
+      ])
+    ).toThrow(expect.objectContaining({ code: 'DUPLICATE_PRIMITIVE_TYPE' }));
+  });
+});
+
+describe('historical traversal across three versions', () => {
+  interface Panel extends PrimitiveNode {
+    type: 'panel';
+    items?: PrimitiveNode[];
+    contents?: PrimitiveNode[];
+    label?: string;
+  }
+  const items: PackMigration['children'][string] = (node) =>
+    (node as Panel).items!.map((child, index) => ({
+      node: child,
+      path: `items[${index}]`,
+    }));
+  const contents = (node: Panel) =>
+    node.contents!.map((child, index) => ({
+      node: child,
+      path: `contents[${index}]`,
+    }));
+  const first: PackMigration = {
+    children: { panel: items },
+    nodes: { panel: (node) => ({ ...node, label: 'v2' }) },
+  };
+  const second: PackMigration = {
+    children: { panel: items },
+    nodes: {
+      panel: (node) => {
+        const { items: children, ...rest } = node as Panel;
+        return { ...rest, contents: children };
+      },
+    },
+  };
+  const panel = definePrimitive<Panel>({
+    type: 'panel',
+    catalog: {
+      type: 'panel',
+      purpose: '',
+      useWhen: [],
+      avoidWhen: [],
+      example: {},
+    },
+    examples: [],
+    schema: z.object({
+      type: z.literal('panel'),
+      contents: z.array(z.looseObject({ type: z.string() })),
+      label: z.string(),
+    }),
+    children: contents,
+    renderers,
+  });
+  const panels = definePrimitivePack({
+    id: 'panels',
+    version: 3,
+    migrations: { 1: first, 2: second },
+    primitives: [panel],
+  });
+  const notes = definePrimitivePack({
+    id: 'notes',
+    version: 2,
+    migrations: {
+      1: {
+        children: sourceLeaves('oldNote'),
+        nodes: { oldNote: () => ({ type: 'note' }) },
+      },
+    },
+    primitives: [leaf('note')],
+  });
+
+  it.each([true, false])(
+    'keeps foreign children reachable, panel pack first: %s',
+    (panelFirst) => {
+      const input: Composition = {
+        type: 'view',
+        body: [{ type: 'panel', items: [{ type: 'oldNote' }] } as Panel],
+      };
+      expect(() =>
+        mapCompositionNodes(
+          input,
+          createChildNodeWalker([...panels.primitives, ...notes.primitives]),
+          (node) => node
+        )
+      ).toThrow();
+      let document = input;
+      const positions = new Map([
+        ['panels', 1],
+        ['notes', 1],
+      ]);
+      const order = panelFirst ? [panels, notes] : [notes, panels];
+      for (const pack of order) {
+        while (positions.get(pack.id)! < pack.version!) {
+          const step = pack.migrations![positions.get(pack.id)!]!;
+          const definitions = order.flatMap<{
+            type: string;
+            children?: unknown;
+          }>((held) => {
+            const source = held.migrations?.[positions.get(held.id)!];
+            return source
+              ? Object.entries(source.children).map(([type, children]) => ({
+                  type,
+                  children,
+                }))
+              : held.primitives;
+          });
+          document = mapCompositionNodes(
+            document,
+            createChildNodeWalker(definitions),
+            (node) => {
+              const transform = Object.hasOwn(step.nodes ?? {}, node.type)
+                ? step.nodes![node.type]
+                : undefined;
+              return transform ? transform(node)! : node;
+            }
+          );
+          positions.set(pack.id, positions.get(pack.id)! + 1);
+        }
+      }
+      expect(document).toEqual({
+        type: 'view',
+        body: [{ type: 'panel', label: 'v2', contents: [{ type: 'note' }] }],
+      });
+      expect(input).toEqual({
+        type: 'view',
+        body: [{ type: 'panel', items: [{ type: 'oldNote' }] }],
+      });
+      expect(first.children.panel).toBe(items);
+      expect(panel.children).toBe(contents);
+    }
+  );
+});
+
+it.each(['__proto__', 'constructor', 'toString'])(
+  'owns source type %s as an own key',
+  (type) => {
+    const pack = definePrimitivePack({
+      id: 'notes',
+      version: 2,
+      primitives: [leaf('note')],
+      migrations: {
+        1: {
+          children: { [type]: () => [] },
+          nodes: { [type]: () => ({ type: 'note' }) },
+        },
+      },
+    });
+    expect(ownedTypes(pack).has(type)).toBe(true);
+    expect(() =>
+      composePacks([
+        pack,
+        definePrimitivePack({ id: 'other', primitives: [leaf(type)] }),
+      ])
+    ).toThrow(expect.objectContaining({ code: 'DUPLICATE_PRIMITIVE_TYPE' }));
+  }
+);

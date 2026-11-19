@@ -73,7 +73,7 @@ export interface PrimitivePackInput {
   /**
    * The steps that carry a stored document from each earlier version to the
    * next: key `k` migrates `k` to `k + 1`, and the keys are exactly
-   * `1 .. version - 1`. Every type a step names stays owned by this pack.
+   * `1 .. version - 1`. Each step declares its complete source vocabulary in `children`.
    */
   migrations?: PackMigrations;
   /**
