@@ -8,13 +8,15 @@
 import { join } from 'node:path';
 
 import {
+  brushExample,
   VEGA_INTERACTIVE,
+  vegaGrammarExample,
   type VegaNode,
   vegaPack,
 } from '@elastic/isomer-primitives-vega';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { ActionEventRef } from '@elastic/isomer-sdk';
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 import { build } from 'esbuild';
 
 const HOVER_FILL = '#E7664C';
@@ -80,8 +82,29 @@ declare global {
   interface Window {
     IsomerVega: typeof import('../src/entries/client');
     events: ActionEventRef[];
+    views: readonly import('vega').View[];
   }
 }
+
+/** A page holding `chart` rendered to `html` with the enhancement, hydrated, its events and views on `window`. */
+const hydrated = async (page: Page, chart: VegaNode) => {
+  const runtime = createIsomerRuntime({ packs: [vegaPack] });
+  const { html } = runtime.surfaces.html.render(
+    { type: 'view', body: [chart] },
+    { enhancements: [VEGA_INTERACTIVE] }
+  );
+  const script = (await clientBundle()).replace(/<\/script/gi, '<\\/script');
+  await page.setContent(
+    `<!doctype html><html><body>${html}<script>${script}</script></body></html>`
+  );
+  await page.evaluate(async () => {
+    window.events = [];
+    ({ views: window.views } = await window.IsomerVega.hydrateVega(document, {
+      onEvent: (event) => window.events.push(event),
+    }));
+  });
+  expect(await page.evaluate(() => window.views.length)).toBe(1);
+};
 
 test('hydrates a server-rendered chart into a live view with tooltips, signals and chart events', async ({
   page,
@@ -144,4 +167,92 @@ test('hydrates a server-rendered chart into a live view with tooltips, signals a
     ]);
 
   expect(requests.filter((url) => !url.startsWith('about:'))).toEqual([]);
+});
+
+test('raises the range a reader drags across a hydrated chart as a brush', async ({
+  page,
+}) => {
+  await hydrated(page, brushExample);
+  const box = await page.locator('[data-isomer-vega-chart] svg').boundingBox();
+  if (!box) {
+    throw new Error('the live chart has no box');
+  }
+  const y = box.y + box.height / 2;
+  const [from, to] = [box.x + box.width * 0.3, box.x + box.width * 0.6];
+  await page.mouse.move(from, y);
+  await page.mouse.down();
+  await page.mouse.move(to, y, { steps: 5 });
+  await page.mouse.up();
+
+  // What the chart's x scale reads at the dragged pixels, and one pixel's worth of time.
+  const expected = await page.evaluate(
+    ([left, right]) => {
+      const [view] = window.views;
+      const svg = view!.container()!.querySelector('svg')!;
+      const [originX] = view!.origin();
+      const { left: padding } = view!.padding() as { left: number };
+      const x = view!.scale('x') as { invert: (px: number) => Date };
+      const at = (px: number) =>
+        +x.invert(px - svg.getBoundingClientRect().left - padding - originX);
+      return { range: [at(left!), at(right!)], pixel: at(1) - at(0) };
+    },
+    [from, to]
+  );
+  await expect
+    .poll(() => page.evaluate(() => window.events.at(-1)?.name))
+    .toBe('chart.brush');
+  const brush = await page.evaluate(() => window.events.at(-1)?.context);
+  expect(brush).toMatchObject({
+    kind: 'brush',
+    node: 'requests-brush',
+    column: 'day',
+  });
+  const range = (brush as { range: [number, number] }).range;
+  range.forEach((end, index) =>
+    expect(Math.abs(end - expected.range[index]!)).toBeLessThanOrEqual(
+      expected.pixel
+    )
+  );
+});
+
+test('keeps a `cursor` signal Vega applies from setting a URL cursor', async ({
+  page,
+}) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  await hydrated(page, {
+    ...vegaGrammarExample,
+    spec: {
+      ...vegaGrammarExample.spec,
+      signals: [
+        {
+          name: 'cursor',
+          value: 'default',
+          on: [
+            {
+              events: 'rect:pointerover',
+              update: "'url(https://evil.example/c.png), auto'",
+            },
+          ],
+        },
+      ],
+    },
+  });
+  const chart = page.locator('[data-isomer-vega-chart]');
+  await chart.locator('.mark-rect path').first().hover();
+  await expect
+    .poll(() =>
+      page.evaluate(() => JSON.stringify(window.views[0]!.signal('cursor')))
+    )
+    .toContain('url(');
+  expect(
+    await chart.evaluate((element) => getComputedStyle(element).cursor)
+  ).not.toContain('url(');
+  await page.evaluate(() =>
+    window.views[0]!.signal('cursor', 'pointer').runAsync()
+  );
+  expect(
+    await chart.evaluate((element) => getComputedStyle(element).cursor)
+  ).toBe('pointer');
+  expect(requests.filter((url) => url.includes('evil.example'))).toEqual([]);
 });

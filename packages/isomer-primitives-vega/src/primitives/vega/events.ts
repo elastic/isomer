@@ -19,8 +19,8 @@ import type {
 import type { VegaNode } from './schema';
 import { formatColumnValues } from './table_text';
 
-/** A cell as Vega holds it: dates as epoch milliseconds, so values compare. */
-const comparable = (value: unknown): unknown => {
+/** A date cell as Vega holds it, epoch milliseconds, so values compare. */
+const comparableDate = (value: unknown): unknown => {
   if (value instanceof Date) {
     return value.getTime();
   }
@@ -31,14 +31,21 @@ const comparable = (value: unknown): unknown => {
   return value;
 };
 
-const sameCell = (
-  column: ChartData['columns'][number],
-  a: unknown,
-  b: unknown
-) =>
+type Column = ChartData['columns'][number];
+
+const sameValue = (column: Column, a: unknown, b: unknown) =>
   column.type === 'date'
-    ? comparable(a) === comparable(b)
+    ? comparableDate(a) === comparableDate(b)
     : a === b || (a === null && b === undefined);
+
+/** A multivalue cell matches only the same list, element by element. */
+const sameCell = (column: Column, a: unknown, b: unknown) =>
+  column.multivalue
+    ? Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((value, index) => sameValue(column, value, b[index]))
+    : sameValue(column, a, b);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -54,7 +61,7 @@ const describe = (data: ChartData, values: Record<string, Cell>): string =>
 
 /**
  * The `mark` selection a click on `datum` raises: every row sharing the
- * datum's values in the dimension columns it carries. `undefined` when the
+ * datum's values in the dimension columns it carries, a multivalue one by its whole list. `undefined` when the
  * node offers no `mark` selection, has no `id` or `data`, or the datum
  * carries no dimension column or matches no row.
  */
@@ -72,8 +79,9 @@ export const markSelectEvent = (
     return undefined;
   }
   const columns = data.columns.filter(
-    ({ id: column, role, multivalue }) =>
-      role === 'dimension' && !multivalue && column in datum
+    ({ id: column, role }) =>
+      role === 'dimension' &&
+      Object.prototype.hasOwnProperty.call(datum, column)
   );
   if (columns.length === 0) {
     return undefined;
@@ -120,7 +128,10 @@ export const signalBrushEvent = (
   if (!data || !brush || id === undefined || !Array.isArray(value)) {
     return undefined;
   }
-  const range = value.map(comparable);
+  // Only numbers and dates: a string would be read as a date whatever the column's units.
+  const range = value.map((end: unknown) =>
+    end instanceof Date ? end.getTime() : end
+  );
   const [from, to] = range;
   if (
     range.length !== 2 ||

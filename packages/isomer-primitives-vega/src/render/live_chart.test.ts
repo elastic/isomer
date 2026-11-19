@@ -22,6 +22,7 @@ import {
   signalExample,
   vegaGrammarExample,
 } from '../primitives/vega/examples';
+import { MAX_DRAWN_ITEMS } from '../primitives/vega/schema';
 
 import * as live from './live';
 /** `react` exports `act` from 18.3; `react-dom/test-utils` covers earlier 18.x. */
@@ -223,14 +224,94 @@ describe('startLiveView', () => {
     view.finalize();
   });
 
-  it('draws at the size the server drew, not the spec’s own', async () => {
-    const { container, view } = await start(
-      { signals: [] },
-      '<svg width="321" height="123"></svg>'
-    );
-    const svg = container.querySelector('svg');
-    expect(svg?.style.width).toBe('321px');
-    expect(svg?.style.height).toBe('123px');
+  it('keeps the chart’s label, not Vega’s, and a group role once live', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<svg></svg>';
+    container.setAttribute('role', 'img');
+    container.setAttribute('aria-label', 'Errors by day.');
+    document.body.append(container);
+    const view = await live.startLiveView(container, spec);
+    expect(container.getAttribute('aria-label')).toBe('Errors by day.');
+    expect(container.getAttribute('role')).toBe('group');
+    expect(container.hasAttribute('aria-roledescription')).toBe(false);
     view.finalize();
+  });
+
+  it('skips a live draw past the mark cap, and refuses a first one', async () => {
+    const counted = (count: number) => ({
+      signals: [{ name: 'n', value: count }],
+      data: [
+        {
+          name: 'table',
+          transform: [{ type: 'sequence', start: 0, stop: { signal: 'n' } }],
+        },
+      ],
+      marks: [
+        {
+          type: 'symbol',
+          from: { data: 'table' },
+          encode: { enter: { x: { field: 'data' } } },
+        },
+      ],
+    });
+    const { container, view } = await start(counted(10));
+    expect(container.querySelectorAll('.mark-symbol path')).toHaveLength(10);
+    await view.signal('n', MAX_DRAWN_ITEMS + 1).runAsync();
+    expect(container.querySelectorAll('.mark-symbol path')).toHaveLength(10);
+    view.finalize();
+    await expect(start(counted(MAX_DRAWN_ITEMS + 1))).rejects.toThrow(
+      /mark cap/
+    );
+  });
+
+  it('puts the server’s SVG back when initializing the view throws', async () => {
+    vi.spyOn(View.prototype, 'initialize').mockImplementationOnce(() => {
+      throw new Error('boom');
+    });
+    const container = document.createElement('div');
+    container.innerHTML = '<svg data-server=""></svg>';
+    document.body.append(container);
+    await expect(live.startLiveView(container, spec)).rejects.toThrow('boom');
+    expect(container.innerHTML).toBe('<svg data-server=""></svg>');
+    vi.restoreAllMocks();
+  });
+
+  it('puts the server’s SVG back, not a finalized view’s, when a restart fails', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<svg data-server=""></svg>';
+    document.body.append(container);
+    const first = await live.startLiveView(container, spec);
+    vi.spyOn(View.prototype, 'runAsync').mockRejectedValueOnce(
+      new Error('boom')
+    );
+    await expect(live.startLiveView(container, spec)).rejects.toThrow('boom');
+    expect(container.innerHTML).toBe('<svg data-server=""></svg>');
+    first.finalize();
+    vi.restoreAllMocks();
+  });
+
+  it('stays live when the brush names a signal the spec lacks', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<svg></svg>';
+    document.body.append(container);
+    const view = await live.startLiveView(container, spec, {
+      onEvent: () => undefined,
+      node: {
+        ...brushExample,
+        interactions: { brush: { column: 'day', signal: 'missing' } },
+      },
+    });
+    expect(container.getAttribute('role')).toBe('group');
+    view.finalize();
+  });
+
+  it('keeps a chart the server scaled into its box static, since Vega would misplace the pointer', async () => {
+    const markup = '<svg width="321" height="123"></svg>';
+    const container = document.createElement('div');
+    container.innerHTML = markup;
+    document.body.append(container);
+    await expect(live.startLiveView(container, spec)).rejects.toThrow(/scaled/);
+    expect(container.innerHTML).toBe(markup);
+    expect(container.querySelector('svg')?.getAttribute('style')).toBeNull();
   });
 });

@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import type { ChartEvent } from '@elastic/isomer-primitives-charts/schema';
 
 import type { SpecObject } from '../schema';
@@ -36,9 +36,13 @@ export const LiveChart = ({
 }: LiveChartProps) => {
   const ref = useRef<HTMLDivElement>(null);
   const handler = useRef(onEvent);
-  handler.current = onEvent;
+  useEffect(() => {
+    handler.current = onEvent;
+  });
   const interactive = onEvent !== undefined;
   const key = JSON.stringify([spec, node]);
+  // One object per drawing: React 19 rewrites `innerHTML` whenever this prop's identity changes, over the live view.
+  const html = useMemo(() => ({ __html: svg }), [svg]);
   useEffect(() => {
     const container = ref.current;
     if (!container) {
@@ -48,6 +52,7 @@ export const LiveChart = ({
     let finalize: (() => void) | undefined;
     startLiveView(container, spec, {
       node,
+      serverSvg: svg,
       ...(interactive && {
         onEvent: (event: ChartEvent) => handler.current?.(event),
       }),
@@ -75,7 +80,7 @@ export const LiveChart = ({
       data-isomer-vega-chart=""
       role="img"
       aria-label={label}
-      dangerouslySetInnerHTML={{ __html: svg }}
+      dangerouslySetInnerHTML={html}
     />
   );
 };

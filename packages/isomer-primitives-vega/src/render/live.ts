@@ -15,11 +15,12 @@ import { type Loader, parse, renderModule, View } from 'vega';
 import { formatValue, Handler } from 'vega-tooltip';
 
 import { markSelectEvent, signalBrushEvent } from '../primitives/vega/events';
-import type { VegaNode } from '../primitives/vega/schema';
+import { MAX_DRAWN_ITEMS, type VegaNode } from '../primitives/vega/schema';
 import { hardenVegaSpec, type SpecObject } from '../schema';
 
 import { expressionEvaluator } from './interpreter';
-import { safeBackground, scrubScene } from './scene';
+import { countDrawn } from './render';
+import { KEYWORD, safeBackground, scrubScene } from './scene';
 
 const refuse = () => Promise.reject(new Error('vega: refused'));
 
@@ -47,7 +48,8 @@ const SCRUBBED_SVG = 'isomer-scrubbed-svg';
 
 /**
  * Registers, once, Vega's DOM SVG renderer with the server's scene scrub run
- * before every draw: signals and data re-set links and styles on each update.
+ * before every draw, since signals and data re-set links and styles on each
+ * update, and with no draw past the mark cap: the last drawing stays.
  */
 const registerScrubbedSvg = () => {
   // `vega-typings` declares only the two-argument registration form.
@@ -64,6 +66,9 @@ const registerScrubbedSvg = () => {
   }
   class ScrubbedSvgRenderer extends base.renderer {
     override _render(scene: unknown, markTypes: unknown) {
+      if (countDrawn(scene) > MAX_DRAWN_ITEMS) {
+        return this;
+      }
       scrubScene(scene);
       return super._render(scene, markTypes);
     }
@@ -88,34 +93,91 @@ const formatTooltip: NonNullable<
   return formatValue(value, valueToHtml, maxDepth, baseURL);
 };
 
-/** Keeps the cursor to a keyword, as the spec walk does: a `cursor` signal can still yield a `url(...)`. */
+/** The `cursor` accessors on `style`'s prototype chain, where a browser declares them. */
+const nativeCursor = (style: CSSStyleDeclaration) => {
+  for (
+    let proto = Object.getPrototypeOf(style) as object | null;
+    proto !== null;
+    proto = Object.getPrototypeOf(proto) as object | null
+  ) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'cursor');
+    if (descriptor?.get && descriptor.set) {
+      return descriptor;
+    }
+  }
+  return undefined;
+};
+
+/**
+ * Keeps the cursor Vega sets on `element` to a keyword, as the spec walk does: a `cursor` signal can still yield a
+ * `url(...)`. Defined on the element's own `style` whatever the browser's prototypes hold; Chromium declares no
+ * `cursor` accessor, so there it writes through `setProperty`.
+ */
 const guardCursor = (element: HTMLElement) => {
   const { style } = element;
-  const native = Object.getOwnPropertyDescriptor(
-    Object.getPrototypeOf(style) as object,
-    'cursor'
-  );
-  if (!native?.get || !native.set) {
-    return;
-  }
-  const accessors: PropertyDescriptor = native;
+  const native = nativeCursor(style);
   Object.defineProperty(style, 'cursor', {
     configurable: true,
-    get: () => accessors.get?.call(style) as string,
-    set: (value: unknown) =>
-      accessors.set?.call(
-        style,
-        typeof value === 'string' && /^[a-z-]+$/i.test(value) ? value : ''
-      ),
+    get: () =>
+      native?.get
+        ? (native.get.call(style) as string)
+        : style.getPropertyValue('cursor'),
+    set: (value: unknown) => {
+      const keyword =
+        typeof value === 'string' && KEYWORD.test(value) ? value : '';
+      if (native?.set) {
+        native.set.call(style, keyword);
+      } else {
+        style.setProperty('cursor', keyword);
+      }
+    },
   });
 };
 
-/** The size the server drew the chart at, which its `viewBox` scales into. */
-const drawnSize = (container: HTMLElement) => {
-  const svg = container.querySelector('svg');
-  const width = Number(svg?.getAttribute('width'));
-  const height = Number(svg?.getAttribute('height'));
-  return width > 0 && height > 0 ? { width, height } : undefined;
+/** The `width` and `height` of the root of `markup`, an SVG drawing. */
+const svgSize = (markup: string) => {
+  const template = document.createElement('template');
+  template.innerHTML = markup;
+  const svg = template.content.querySelector('svg');
+  return {
+    width: Number(svg?.getAttribute('width')),
+    height: Number(svg?.getAttribute('height')),
+  };
+};
+
+/**
+ * Whether the live drawing differs from the server's size, or its container is narrower and scales it down: Vega
+ * maps the pointer without CSS scaling, so a scaled view would brush and read `x()` at the wrong values.
+ */
+const isScaled = (container: HTMLElement, server: string) => {
+  const drawn = svgSize(server);
+  if (!(drawn.width > 0 && drawn.height > 0)) {
+    return false;
+  }
+  const live = container.querySelector('svg');
+  const differs = (side: 'width' | 'height') =>
+    Math.abs(Number(live?.getAttribute(side)) - drawn[side]) > 0.5;
+  return (
+    differs('width') ||
+    differs('height') ||
+    (container.clientWidth > 0 && container.clientWidth < drawn.width)
+  );
+};
+
+/** The view live in each container, so a new start replaces it rather than leaving it running. */
+const liveViews = new WeakMap<HTMLElement, View>();
+/** The server's drawing in each container, and its role, which a failed start puts back. */
+const serverDrawings = new WeakMap<
+  HTMLElement,
+  { svg: string; role: string | null }
+>();
+
+const setAttribute = (element: Element, name: string, value: string | null) => {
+  if (value === null) {
+    element.removeAttribute(name);
+  } else {
+    element.setAttribute(name, value);
+  }
 };
 
 /** What a live view raises events for: the node's `id`, `data` and `interactions`. */
@@ -125,19 +187,35 @@ export interface LiveViewOptions {
   /** Raises each chart event the node offers. Absent: the view raises none. */
   readonly onEvent?: (event: ChartEvent) => void;
   readonly node?: LiveVegaNode;
+  /** The server's SVG the container shows when no view is live. Absent: what it held before its first view. */
+  readonly serverSvg?: string;
 }
 
 /**
- * Draws `spec` into `container` as a live view, replacing what it holds, and
- * wires the node's `mark` selection and brush signal to `onEvent`. Resolves
- * once the first render is done; finalize the view to remove it. On failure the
- * view is finalized and `container` gets its markup back.
+ * Draws `spec` into `container` as a live view, replacing what it holds and any view live there, and wires the
+ * node's `mark` selection and brush signal to `onEvent`. Resolves once the first render is done; finalize the view
+ * to remove it. A view that fails to start, draws past the mark cap or would be scaled is finalized, and
+ * `container` gets the server's SVG back.
  */
 export const startLiveView = async (
   container: HTMLElement,
   spec: SpecObject,
-  { onEvent, node }: LiveViewOptions = {}
+  { onEvent, node, serverSvg }: LiveViewOptions = {}
 ): Promise<View> => {
+  const recorded = serverDrawings.get(container);
+  const server = {
+    svg: serverSvg ?? recorded?.svg ?? container.innerHTML,
+    role: recorded ? recorded.role : container.getAttribute('role'),
+  };
+  serverDrawings.set(container, server);
+  // Vega's `initialize` writes its own role and label on the container, over the chart's.
+  const label = container.getAttribute('aria-label');
+  const restoreAria = (role: string | null) => {
+    setAttribute(container, 'role', role);
+    setAttribute(container, 'aria-label', label);
+    container.removeAttribute('aria-roledescription');
+  };
+  liveViews.get(container)?.finalize();
   registerScrubbedSvg();
   const view = new View(parse(hardenVegaSpec(spec), undefined, { ast: true }), {
     // `vega-typings` lists only the built-in renderer names.
@@ -146,53 +224,67 @@ export const startLiveView = async (
     expr: expressionEvaluator,
     hover: true,
   });
+  liveViews.set(container, view);
+  let started = false;
+  // Nothing reaches the host from a view that may yet be rolled back.
+  const raise = (event: ChartEvent | undefined) => {
+    if (started && event) {
+      onEvent?.(event);
+    }
+  };
   view.tooltip(new Handler({ formatTooltip }).call);
   if (onEvent && node) {
     const target = node as VegaNode;
-    view.addEventListener('click', (_event, item) => {
-      const event = markSelectEvent(
-        target,
-        (item as { datum?: unknown } | null | undefined)?.datum
-      );
-      if (event) {
-        onEvent(event);
-      }
-    });
+    view.addEventListener('click', (_event, item) =>
+      raise(
+        markSelectEvent(
+          target,
+          (item as { datum?: unknown } | null | undefined)?.datum
+        )
+      )
+    );
     const brush = node.interactions?.brush;
     if (brush) {
-      view.addSignalListener(brush.signal, (_name, value) => {
-        const event = signalBrushEvent(target, value);
-        if (event) {
-          onEvent(event);
-        }
-      });
+      try {
+        view.addSignalListener(brush.signal, (_name, value) =>
+          raise(signalBrushEvent(target, value))
+        );
+      } catch {
+        // A spec without the signal raises no brush; the rest of the view stays live.
+      }
     }
   }
-  const markup = Array.from(container.childNodes);
-  const size = drawnSize(container);
-  container.replaceChildren();
-  // Bound inputs go in their own box: the chart's is an image to assistive technology.
-  const bindings = document.createElement('div');
-  view.initialize(container, bindings);
-  container.append(bindings);
-  bindings.style.lineHeight = 'normal';
-  guardCursor(container);
-  const drawn = Array.from(container.childNodes);
   try {
+    container.replaceChildren();
+    // Bound inputs go in their own box, outside the chart's image.
+    const bindings = document.createElement('div');
+    view.initialize(container, bindings);
+    container.append(bindings);
+    bindings.style.lineHeight = 'normal';
+    guardCursor(container);
     const run = await view.runAsync();
-    // The inputs are reachable only outside an image.
-    container.setAttribute('role', 'group');
-    const svg = container.querySelector('svg');
-    if (svg && size) {
-      svg.style.width = `${size.width}px`;
-      svg.style.height = `${size.height}px`;
+    if (liveViews.get(container) !== view) {
+      throw new Error('vega: a newer view took the container');
     }
+    if (
+      countDrawn((view.scenegraph() as unknown as { root: unknown }).root) >
+      MAX_DRAWN_ITEMS
+    ) {
+      throw new Error('vega: the live view draws past the mark cap');
+    }
+    if (isScaled(container, server.svg)) {
+      throw new Error('vega: the chart is scaled into its box');
+    }
+    // The bound inputs are reachable only outside an image.
+    restoreAria('group');
+    started = true;
     return run;
   } catch (error) {
     view.finalize();
-    // The server's markup comes back unless a newer view has taken the container.
-    if (drawn.every((child) => child.parentNode === container)) {
-      container.replaceChildren(...markup);
+    if (liveViews.get(container) === view) {
+      liveViews.delete(container);
+      container.innerHTML = server.svg;
+      restoreAria(server.role);
     }
     throw error;
   }

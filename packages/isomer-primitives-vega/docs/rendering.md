@@ -29,6 +29,10 @@ node → toVegaSpec (strip, bind data and results, compile Vega-Lite, theme, siz
 
 A chart with `results` or a `basemap` draws statically everywhere: a live view would lose the basemap, and hover over results pruned to the drawing would show nothing.
 
+A live view replaces the SVG only when it draws at the server's size, unscaled: Vega maps the pointer without CSS scaling, so a chart scaled into its box, such as a composite Vega-Lite view or one in a narrower container, keeps its SVG. A live view never draws past the 5,000-element cap: an update that would keeps the last drawing, and a first draw that would leaves the SVG. A view that cannot start leaves the SVG too, and a restart that fails puts it back.
+
+`hydrateVega` returns the live views and `dispose()`. Call `dispose()` before removing or replacing hydrated charts: removing their markup leaves Vega's listeners and timers running. Hydrating a chart again replaces its live view.
+
 A spec Vega cannot draw at render time draws a note in the chart's box instead: its title and description, with the reason in `data-isomer-vega-error`.
 
 React Native has no Vega. A host draws a native node on its server with `drawVegaNode(node, { width, height }, VEGA_THEMES[scheme])`, the SVG the `react` surface draws, basemap included, and draws the string with `react-native-svg`. It validates on the device with the `./schema` entry.
@@ -83,7 +87,8 @@ Specs are author-written code, so every layer treats them as untrusted:
 - **The loader** refuses every load, fetch and file read.
 - **The scene** loses every link and image source after the dataflow runs, and every style value a CSS parser could turn into a fetch, since a signal or a data row can set one. A fetching `background` becomes `transparent`, and the SVG is refused if any `url(` but a reference to its own defs survives.
 - **Expressions** run through `vega-interpreter`, never `new Function`, so charts render under `--disallow-code-generation-from-strings`.
-- **Events** cannot select elements outside the chart, and the cursor never styles the page. A live view sets only a keyword cursor, so a `cursor` signal cannot name an image, and a tooltip shows no `image` from the data.
+- **Events** cannot select elements outside the chart, and from the window a chart hears only the pointer events that carry on a drag, never keys or input. The cursor never styles the page. A live view sets only a keyword cursor, so a `cursor` signal cannot name an image, and a tooltip shows no `image` from the data.
+- **A live view** scrubs its scene before every draw, as the server does once, since a signal or data can set a link or a fetching style, an array included.
 - **A basemap** is only inline raster `data:` URIs, drawn beneath the chart, with its `attribution` on a line below.
 
 ## Loading Vega on Node
@@ -123,4 +128,4 @@ Linux pays more for the same work, so read Linux for a server: on CI's Linux x64
 
 ## Developing
 
-`pnpm --filter @elastic/isomer-primitives-vega studio` previews the pack in the Studio on every surface, with PNGs. The repository's Studio, `pnpm studio:dev`, shows it beside the other packs. `e2e/hydrate.spec.ts`, run by `pnpm test:browser`, hydrates a chart in Chromium and checks its tooltip, a hover signal, a click's `chart.select`, and that nothing is fetched.
+`pnpm --filter @elastic/isomer-primitives-vega studio` previews the pack in the Studio on every surface, with PNGs. The repository's Studio, `pnpm studio:dev`, shows it beside the other packs. `e2e/hydrate.spec.ts`, run by `pnpm test:browser`, hydrates charts in Chromium and checks a tooltip, a hover signal, a click's `chart.select`, a dragged `chart.brush`, a `cursor` signal naming an image, and that nothing is fetched.

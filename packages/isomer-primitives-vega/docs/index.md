@@ -80,8 +80,8 @@ const runtime = createIsomerRuntime({
 
 Events ride the SDK's `onEvent` as the charts pack's [`ChartEvent`](../../isomer-primitives-charts/docs/interactions.md#chartevent), and only for a node with an `id`. With no `onEvent`, a chart raises nothing. A static drawing raises nothing either: `select` and `brush` say what a live view of the chart, running Vega in a browser, raises.
 
-- **`select: ['mark']`**: a click on a mark raises a `select` whose `target` is `mark`. `columns` are the dimension columns of `data` the mark's datum carries, by column id; `rows` are every row holding the datum's values in them. An aggregated mark, which keeps only its group-by fields, selects every row of its group. A datum that carries no dimension column, or matches no row, raises nothing.
-- **`brush: { column, signal }`**: each value of the named signal that is two numbers or dates, `[from, to]`, raises a `brush` on `column`, ordered and in the column's units. The spec decides when the signal changes, so a spec that sets it on release raises one brush per gesture.
+- **`select: ['mark']`**: a click on a mark raises a `select` whose `target` is `mark`. `columns` are the dimension columns of `data` the mark's datum carries as its own fields, by column id; `rows` are every row holding the datum's values in them, a multivalue column's whole list. An aggregated mark, which keeps only its group-by fields, selects every row of its group. A datum that carries no dimension column, or matches no row, raises nothing.
+- **`brush: { column, signal }`**: each value of the named signal that is two numbers or `Date`s, `[from, to]`, raises a `brush` on `column`, ordered and in the column's units; strings raise nothing. The spec decides when the signal changes, so a spec that sets it on release raises one brush per gesture. A spec without the signal raises no brush, and the rest of the view stays live.
 
 `markSelectEvent` and `signalBrushEvent` build these events from a datum and a signal value, for a host that runs its own view.
 

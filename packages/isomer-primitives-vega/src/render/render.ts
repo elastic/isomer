@@ -369,7 +369,7 @@ interface SceneNode {
  * The SVG elements a scene draws: one per item, but one per line, area and
  * trail, whose items are the vertices of one path. Stops counting past the cap.
  */
-const countDrawn = (root: unknown): number => {
+export const countDrawn = (root: unknown): number => {
   let count = 0;
   const marks: unknown[] = [root];
   while (marks.length > 0 && count <= MAX_DRAWN_ITEMS) {

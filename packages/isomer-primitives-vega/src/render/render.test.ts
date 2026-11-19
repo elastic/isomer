@@ -391,6 +391,10 @@ describe('renderVegaSvg', () => {
         'a cursor image',
         { cursor: { value: 'url(https://evil/c.png), auto' } },
       ],
+      [
+        'a fill array a signal builds, which an attribute writes as its text',
+        { fill: { signal: "['url(https://evil/x#p)']" } },
+      ],
     ])('%s', (_name, encode) => {
       hostile(encode);
     });

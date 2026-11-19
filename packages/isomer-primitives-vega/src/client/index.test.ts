@@ -66,8 +66,9 @@ describe('hydrateVega', () => {
       ...mount(vegaExample).childNodes
     );
     const charts = root.querySelectorAll('[data-isomer-vega-chart]');
-    const [failing, unreadable] = Array.from(charts, (chart) =>
-      chart.querySelector('svg')
+    const [failing, unreadable] = Array.from(
+      charts,
+      (chart) => chart.innerHTML
     );
     root.querySelectorAll('script[data-isomer-vega-spec]')[1]!.textContent =
       '{';
@@ -76,8 +77,8 @@ describe('hydrateVega', () => {
     );
     const { views, dispose } = await hydrateVega(root);
     expect(views).toHaveLength(1);
-    expect(charts[0]?.querySelector('svg')).toBe(failing);
-    expect(charts[1]?.querySelector('svg')).toBe(unreadable);
+    expect(charts[0]?.innerHTML).toBe(failing);
+    expect(charts[1]?.innerHTML).toBe(unreadable);
     expect(views[0]?.container()).toBe(charts[2]);
     dispose();
     vi.restoreAllMocks();

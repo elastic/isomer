@@ -172,6 +172,26 @@ export const stripSpec = (spec: SpecObject): SpecObject =>
     walk(spec, [], 0, () => undefined, undefined) as SpecObject
   );
 
+/** The window events a chart may hear: those that carry on a drag begun on it, never keys or input. */
+const WINDOW_EVENTS = [
+  'mousemove',
+  'mouseup',
+  'pointermove',
+  'pointerup',
+  'touchmove',
+  'touchend',
+];
+
+/** The window events of {@link WINDOW_EVENTS} the spec itself allows: `false` and a narrower list stay as they are. */
+const windowEvents = (allowed: unknown): false | string[] => {
+  if (allowed === false) {
+    return false;
+  }
+  return Array.isArray(allowed)
+    ? WINDOW_EVENTS.filter((type) => allowed.includes(type))
+    : [...WINDOW_EVENTS];
+};
+
 const hardenStripped = (safe: SpecObject): SpecObject => {
   const config = isSpecObject(safe.config) ? safe.config : {};
   const events = isSpecObject(config.events) ? config.events : {};
@@ -179,15 +199,20 @@ const hardenStripped = (safe: SpecObject): SpecObject => {
     ...safe,
     config: {
       ...config,
-      events: { ...events, selector: false, globalCursor: false },
+      events: {
+        ...events,
+        selector: false,
+        globalCursor: false,
+        window: windowEvents(events.window),
+      },
     },
   };
 };
 
 /**
  * A compiled Vega spec as it may run: {@link stripSpec}ped, with event streams
- * barred from selecting elements outside the chart by CSS selector, and the
- * cursor kept off the page's `body`.
+ * barred from selecting elements outside the chart by CSS selector, hearing
+ * only pointer events from the window, and the cursor kept off the page's `body`.
  */
 export const hardenVegaSpec = (spec: SpecObject): SpecObject =>
   hardenStripped(stripSpec(spec));

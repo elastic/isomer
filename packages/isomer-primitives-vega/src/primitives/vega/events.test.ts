@@ -42,6 +42,60 @@ describe('markSelectEvent', () => {
     );
   });
 
+  it('matches a multivalue dimension by its whole list', () => {
+    const tagged: VegaNode = {
+      ...vegaExample,
+      data: {
+        columns: [
+          { id: 'day', label: 'Day', type: 'string', role: 'dimension' },
+          {
+            id: 'tags',
+            label: 'Tags',
+            type: 'string',
+            role: 'dimension',
+            multivalue: true,
+          },
+        ],
+        rows: [
+          ['Mon', ['a', 'b']],
+          ['Mon', ['a']],
+          ['Tue', ['a', 'b']],
+        ],
+      },
+    };
+    expect(markSelectEvent(tagged, { day: 'Mon', tags: ['a'] })?.rows).toEqual([
+      1,
+    ]);
+    expect(markSelectEvent(tagged, { tags: ['a', 'b'] })).toMatchObject({
+      rows: [0, 2],
+      columns: ['tags'],
+      values: { tags: ['a', 'b'] },
+    });
+    expect(markSelectEvent(tagged, { tags: 'a' })).toBeUndefined();
+  });
+
+  it('reads only the dimensions a datum carries itself, not ones it inherits', () => {
+    const node: VegaNode = {
+      ...vegaExample,
+      data: {
+        columns: [
+          { id: 'day', label: 'Day', type: 'string', role: 'dimension' },
+          {
+            id: 'constructor',
+            label: 'Kind',
+            type: 'string',
+            role: 'dimension',
+          },
+        ],
+        rows: [
+          ['Mon', 'a'],
+          ['Mon', 'b'],
+        ],
+      },
+    };
+    expect(markSelectEvent(node, { day: 'Mon' })?.rows).toEqual([0, 1]);
+  });
+
   it.each([
     ['a node without `mark` selection', brushExample, { day: START }],
     ['a node without an id', { ...vegaExample, id: undefined }, { day: 'Wed' }],
@@ -70,10 +124,13 @@ describe('signalBrushEvent', () => {
     expect(chartEventSchema.parse(event)).toEqual(event);
   });
 
-  it.each([[null], [[1]], [[1, 'x']], [[1, Number.NaN]]])(
-    'raises nothing for %j',
-    (value) => {
-      expect(signalBrushEvent(brushExample, value)).toBeUndefined();
-    }
-  );
+  it.each([
+    [null],
+    [[1]],
+    [[1, 'x']],
+    [[1, Number.NaN]],
+    [['2026-03-01', '2026-03-04']],
+  ])('raises nothing for %j', (value) => {
+    expect(signalBrushEvent(brushExample, value)).toBeUndefined();
+  });
 });
