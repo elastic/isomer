@@ -7,7 +7,6 @@
 
 import type { ReactNode } from 'react';
 import React, { useMemo } from 'react';
-import type { IconType } from '@elastic/eui';
 import {
   EuiButton,
   EuiButtonGroup,
@@ -22,7 +21,7 @@ import type { SerializedStyles } from '@emotion/react';
 import { css } from '@emotion/react';
 
 import type { StudioSurface } from '../model/describe_runtime';
-import { SURFACE_LABELS } from '../model/describe_runtime';
+import { SURFACE_CATALOG } from '../model/surface_catalog';
 import { useStudio } from '../studio_context';
 
 import { ShadowHtmlSurface } from './html_surface';
@@ -34,21 +33,11 @@ import { ScaledPreview } from './scaled_preview';
 import { blockKitBuilderUrl, SlackSurface } from './slack_surface';
 import { SnapshotSurface } from './snapshot_surface';
 import { SurfaceFrame } from './surface_frame';
-import { MarkdownLogo, ReactLogo, SnapshotLogo } from './surface_logos';
 import { MarkdownSurface, SourceView, TextSurface } from './text_surfaces';
 
 export type SurfaceView = 'render' | 'source';
 
-export const SURFACE_ICONS: Readonly<Record<StudioSurface, IconType>> = {
-  react: ReactLogo,
-  html: 'code',
-  snapshot: SnapshotLogo,
-  markdown: MarkdownLogo,
-  text: 'text',
-  slack: 'logoSlack',
-};
-
-const VIEW_OPTIONS: { id: SurfaceView; label: string }[] = [
+export const VIEW_OPTIONS: readonly { id: SurfaceView; label: string }[] = [
   { id: 'render', label: 'Rendered' },
   { id: 'source', label: 'Output source' },
 ];
@@ -130,7 +119,7 @@ const Rendered = ({
         <ScaledPreview {...{ zoom }}>
           <ShadowHtmlSurface
             html={source}
-            title={`${SURFACE_LABELS.html} preview`}
+            title={`${SURFACE_CATALOG.html.label} preview`}
             enhancementScript={output.enhancementScript}
           />
         </ScaledPreview>
@@ -250,7 +239,7 @@ export const SurfacePreview = ({
             size="s"
             color="warning"
             iconType="warning"
-            title={`${SURFACE_LABELS[surface]} warnings`}>
+            title={`${SURFACE_CATALOG[surface].label} warnings`}>
             <ul>
               {warnings.map(({ path, message }) => (
                 <li key={`${path}:${message}`}>

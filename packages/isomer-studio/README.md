@@ -51,9 +51,9 @@ To pin a version and type-check the config, install it: `npm install --save-dev 
 
 ## What it shows
 
-**Home** searches the pack's primitives, features a few, and lists what the config loaded: packs, views, apps and surfaces.
+**Home** says what the Studio is for, searches the pack's primitives, links to the gallery, the Workbench, the composition editor and the docs, features a few primitives with live previews, shows a tile for each surface the runtime renders, and lists what the config loaded: packs, apps and views.
 
-![Home, with the primitive search, featured primitives, apps, and the packs and surfaces loaded](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/home.png)
+![Home: the hero, featured primitives with live previews, the surfaces, and what the config loaded](https://raw.githubusercontent.com/elastic/isomer/main/packages/isomer-studio/docs/images/home.png)
 
 **Reference** teaches each primitive: its purpose, live examples on every surface, when to use it, and its props.
 

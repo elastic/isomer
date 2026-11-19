@@ -10,10 +10,8 @@
 
 import { createElement, Fragment, type ReactNode } from 'react';
 import type {
-  FootnoteDefinition,
   List,
   ListItem,
-  Nodes,
   PhrasingContent,
   RootContent,
   Table,
@@ -26,27 +24,9 @@ import {
   sanitizeParsedNavigationHref,
 } from '../../validate/url';
 import { resolvedMarkdownBlocks } from '../markdown/blocks';
+import { footnoteLabel, plainText } from '../markdown/plain_text';
 
 const HEADINGS = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'] as const;
-
-const footnoteLabel = ({
-  identifier,
-  label,
-}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
-  `[^${label ?? identifier}]`;
-
-const plainText = (node: Nodes): string => {
-  if ('value' in node) {
-    return node.value;
-  }
-  if (node.type === 'image') {
-    return node.alt ?? '';
-  }
-  if (node.type === 'footnoteReference') {
-    return footnoteLabel(node);
-  }
-  return 'children' in node ? node.children.map(plainText).join('') : '';
-};
 
 const keyed = (nodes: readonly ReactNode[]): ReactNode[] =>
   nodes.map((node, index) => createElement(Fragment, { key: index }, node));

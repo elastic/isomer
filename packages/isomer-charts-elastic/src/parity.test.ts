@@ -1,0 +1,587 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+// Event parity over every example: every gesture this engine maps, sent to the
+// callbacks and legend action its specs install on `Settings`, raises the
+// event of the Scene part it lands on, and nothing where the node offers none.
+
+import {
+  Children,
+  createElement,
+  Fragment,
+  isValidElement,
+  type ReactElement,
+  type ReactNode,
+} from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { Settings } from '@elastic/charts';
+import {
+  type ChartsRenderContext,
+  createChartsPack,
+} from '@elastic/isomer-primitives-charts';
+import { resolveChart } from '@elastic/isomer-primitives-charts/resolve';
+import {
+  brushEvent,
+  type ChartEvent,
+  type PartitionScene,
+  type Scene,
+  type SceneRenderEnv,
+  selectEvent,
+  type XyCategory,
+  xyInteractiveScene,
+  type XyScene,
+} from '@elastic/isomer-primitives-charts/scene';
+import type { MetricNode } from '@elastic/isomer-primitives-charts/schema';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
+import { type Composition, primitiveExamples } from '@elastic/isomer-sdk';
+import { describe, expect, it } from 'vitest';
+
+import { seriesOf, seriesSpecId, type XyDatum } from './charts/xy/events';
+import { sceneSpecs } from './specs';
+
+/**
+ * Every Scene the charts pack resolves for every example, nested charts
+ * included, recorded where the pack hands it to a renderer.
+ */
+const exampleScenes = (): { example: string; scene: Scene }[] => {
+  const scenes: { example: string; scene: Scene }[] = [];
+  let example = '';
+  const pack = createChartsPack({
+    sceneRenderers: [
+      {
+        id: 'recording',
+        environments: ['node'],
+        supports: (kind) => kind !== 'table',
+        render: (scene) => {
+          scenes.push({ example, scene });
+          return null;
+        },
+      },
+    ],
+  });
+  const runtime = createIsomerRuntime<unknown, ChartsRenderContext>({
+    packs: [pack],
+  });
+  for (const definition of pack.primitives) {
+    for (const { name, node } of primitiveExamples(definition)) {
+      example = `${definition.type}: ${name ?? '(unnamed)'}`;
+      const composition: Composition = { type: 'view', body: [node] };
+      renderToStaticMarkup(
+        createElement(
+          'div',
+          null,
+          runtime.surfaces.react.render(composition, {
+            context: { environment: 'node', scheme: 'light' },
+            heading: false,
+          })
+        )
+      );
+    }
+  }
+  return scenes;
+};
+
+// Every gesture the browser engine maps, built from what Elastic Charts
+// reports for it, and the event the Scene part it lands on carries.
+const NODE = 'parity';
+
+const listen = () => {
+  const events: ChartEvent[] = [];
+  return {
+    events,
+    env: {
+      environment: 'browser' as const,
+      nodeId: NODE,
+      onEvent: (event: ChartEvent) => events.push(event),
+    },
+  };
+};
+
+type Props = Record<string, unknown>;
+type Callback = (...args: unknown[]) => unknown;
+
+/** `node` and every element beneath it, fragments and children included. */
+const elementsOf = (node: ReactNode): ReactElement<Props>[] =>
+  Children.toArray(node).flatMap((child) => {
+    if (!isValidElement<Props>(child)) {
+      return [];
+    }
+    const nested = elementsOf(child.props.children as ReactNode);
+    return child.type === Fragment ? nested : [child, ...nested];
+  });
+
+/**
+ * What the browser engine installs for `scene`: the `Settings` callbacks and
+ * each series spec's id and data, read from the specs `<Chart>` is given.
+ */
+const installed = (scene: Scene, env: SceneRenderEnv) => {
+  const elements = elementsOf(sceneSpecs(scene, env));
+  const settings = elements.find(({ type }) => type === Settings)?.props;
+  expect(settings, 'a Settings spec').toBeDefined();
+  const callback = (name: string) => settings![name] as Callback | undefined;
+  const series = elements.flatMap(({ props }) =>
+    typeof props.id === 'string' && props.id.startsWith('series-')
+      ? [{ id: props.id, data: props.data as readonly XyDatum[] }]
+      : []
+  );
+  return { callback, series };
+};
+
+const gestures = (
+  scene: Scene
+): { gesture: string; raise: () => ChartEvent[]; expected: ChartEvent[] }[] => {
+  // An empty Scene draws its note alone, so it installs no handler.
+  if ('empty' in scene && scene.empty) {
+    return [];
+  }
+  if (scene.kind === 'metric') {
+    return scene.tiles.flatMap((tile, index) =>
+      tile.selection
+        ? [
+            {
+              gesture: `click tile ${index}`,
+              raise: () => {
+                const { events, env } = listen();
+                installed(scene, env).callback('onElementClick')?.([
+                  {
+                    type: 'metricElementEvent',
+                    rowIndex: Math.floor(index / scene.layout.columns),
+                    columnIndex: index % scene.layout.columns,
+                  },
+                ]);
+                return events;
+              },
+              expected: [selectEvent(NODE, tile.selection)],
+            },
+          ]
+        : []
+    );
+  }
+  if (scene.kind === 'partition') {
+    const offersSlices = scene.interactions.select.includes('slice');
+    const paths = (
+      nodes: PartitionScene['nodes'],
+      keys: readonly string[]
+    ): { keys: string[]; node: PartitionScene['nodes'][number] }[] =>
+      nodes.flatMap((node) => [
+        { keys: [...keys, node.key], node },
+        ...paths(node.children, [...keys, node.key]),
+      ]);
+    const slices = paths(scene.nodes, []).map(({ keys, node }) => ({
+      gesture: `click ${node.label}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            keys.map((key, depth) => ({
+              groupByRollup: key,
+              value: node.value,
+              depth: depth + 1,
+              sortIndex: 0,
+              path: [],
+              smAccessorValue: '',
+            })),
+            { specId: 'partition', key: 'spec{partition}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersSlices && node.selection
+          ? [selectEvent(NODE, node.selection)]
+          : [],
+    }));
+    // The buttons the installed legend action draws for each legend item.
+    const legend = scene.legend.items.flatMap((item) =>
+      [false, true].map((negate) => {
+        const gesture = `filter ${negate ? 'out' : 'for'} ${item.label}`;
+        return {
+          gesture,
+          raise: () => {
+            const { events, env } = listen();
+            const action = installed(scene, env).callback('legendAction');
+            if (action) {
+              const button = elementsOf(
+                action({
+                  series: [{ key: item.key }],
+                  label: item.label,
+                }) as ReactNode
+              ).find(
+                ({ type, props }) =>
+                  type === 'button' &&
+                  props['aria-label'] ===
+                    `Filter ${negate ? 'out' : 'for'} ${item.label}`
+              );
+              expect(button, `${gesture}: its button`).toBeDefined();
+              (button!.props.onClick as Callback)();
+            }
+            return events;
+          },
+          expected:
+            offersSlices && item.selection
+              ? [selectEvent(NODE, item.selection, negate)]
+              : [],
+        };
+      })
+    );
+    return [...slices, ...legend];
+  }
+  if (scene.kind === 'heatmap') {
+    const offersCells = scene.interactions.select.includes('cell');
+    const clicks = scene.cells.map((cell, index) => ({
+      gesture: `click ${cell.description}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            {
+              datum: {
+                x: cell.x,
+                y: cell.y,
+                value: cell.value,
+                originalIndex: index,
+              },
+              value: cell.value,
+              formatted: cell.valueText,
+            },
+            { specId: 'heatmap', key: 'spec{heatmap}' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersCells && cell.selection
+          ? [selectEvent(NODE, cell.selection)]
+          : [],
+    }));
+    const xs = scene.x.categories
+      .map(({ x }) => x)
+      .filter((x): x is number => typeof x === 'number');
+    const brush =
+      scene.x.scale === 'time' && xs.length > 1
+        ? [
+            {
+              gesture: 'brush across the time axis',
+              raise: () => {
+                const { events, env } = listen();
+                installed(scene, env).callback('onBrushEnd')?.({
+                  x: [xs[0]!, xs.at(-1)! + scene.x.interval!],
+                  y: [],
+                  cells: [],
+                });
+                return events;
+              },
+              expected: [
+                brushEvent(scene, NODE, [
+                  xs[0]!,
+                  xs.at(-1)! + scene.x.interval!,
+                ]),
+              ].flatMap((event) => (event ? [event] : [])),
+            },
+          ]
+        : [];
+    return [...clicks, ...brush];
+  }
+  if (scene.kind === 'tagCloud') {
+    const offersTags = scene.interactions.select.includes('tag');
+    return scene.words.map((word, index) => ({
+      gesture: `click ${word.text}`,
+      raise: () => {
+        const { events, env } = listen();
+        installed(scene, env).callback('onElementClick')?.([
+          [
+            { text: word.text, weight: word.weight, color: word.color, index },
+            { specId: 'tagCloud', key: 'tagCloud' },
+          ],
+        ]);
+        return events;
+      },
+      expected:
+        offersTags && word.selection ? [selectEvent(NODE, word.selection)] : [],
+    }));
+  }
+  if (scene.kind !== 'xy') {
+    return [];
+  }
+  const offers = (target: string) =>
+    (scene.interactions.select as readonly string[]).includes(target);
+  const categoryAt = (x: number | string) =>
+    scene.categories.find((category) => category.x === x);
+  const series = seriesOf(scene);
+  // Each Scene mark, and the datum at its x and y in its series' spec.
+  const marks = series.flatMap((one) =>
+    one.marks.map((mark) => {
+      const selection = offers('datum')
+        ? mark.selection
+        : offers('category')
+          ? categoryAt(mark.x)?.selection
+          : undefined;
+      const gesture = `click ${one.label} at ${String(mark.x)}`;
+      return {
+        gesture,
+        raise: () => {
+          const { events, env } = listen();
+          const { callback, series: specs } = installed(scene, env);
+          const spec = specs.find(({ id }) => id === seriesSpecId(one));
+          const datum = spec?.data.find(
+            ({ x, y }) => x === mark.x && y === mark.y
+          );
+          expect(datum, `${gesture}: its datum`).toBeDefined();
+          callback('onElementClick')?.([
+            [
+              { x: datum!.x, y: datum!.y, mark: null, accessor: 'y1', datum },
+              { specId: spec!.id, key: spec!.id },
+            ],
+          ]);
+          return events;
+        },
+        expected: selection ? [selectEvent(NODE, selection)] : [],
+      };
+    })
+  );
+  const categories = scene.categories.map((category) => ({
+    gesture: `click the plot at ${category.label}`,
+    raise: () => {
+      const { events, env } = listen();
+      installed(scene, env).callback('onProjectionClick')?.({ x: category.x });
+      return events;
+    },
+    expected:
+      offers('category') && category.selection
+        ? [selectEvent(NODE, category.selection)]
+        : [],
+  }));
+  const xs = scene.categories
+    .map(({ x }) => x)
+    .filter((x): x is number => typeof x === 'number');
+  const projected = (gesture: string, x: number, category?: XyCategory) => ({
+    gesture,
+    raise: () => {
+      const { events, env } = listen();
+      installed(scene, env).callback('onProjectionClick')?.({ x });
+      return events;
+    },
+    expected:
+      offers('category') && category?.selection
+        ? [selectEvent(NODE, category.selection)]
+        : [],
+  });
+  // Elastic Charts projects a click onto its bucket grid, data there or not:
+  // buckets of the stated interval, or the positions' smallest spacing if narrower.
+  const { interval } = scene.axes.x;
+  const bucket = xs.reduce(
+    (width, x, index) =>
+      index === 0 ? width : Math.min(width, x - xs[index - 1]!),
+    interval ?? Infinity
+  );
+  const buckets = xs.flatMap((x, index) => {
+    const next = xs[index + 1] ?? Infinity;
+    return [
+      ...(interval !== undefined
+        ? [
+            projected(
+              `click the plot inside the bucket at ${String(x)}`,
+              x + bucket / 2,
+              categoryAt(x)
+            ),
+          ]
+        : []),
+      ...(Number.isFinite(bucket) && next >= x + 2 * bucket
+        ? [
+            projected(
+              `click the plot in the empty bucket after ${String(x)}`,
+              x + bucket
+            ),
+          ]
+        : []),
+    ];
+  });
+  // The buttons the installed legend action draws for each series' item.
+  const legend = series.flatMap((one) =>
+    [false, true].map((negate) => {
+      const item = scene.legend.items.find(
+        ({ key, series: { layer, y } }) =>
+          key === one.key && layer === one.series.layer && y === one.series.y
+      );
+      const gesture = `filter ${negate ? 'out' : 'for'} ${one.label}`;
+      return {
+        gesture,
+        raise: () => {
+          const { events, env } = listen();
+          const { callback, series: specs } = installed(scene, env);
+          const action = callback('legendAction');
+          if (action) {
+            const spec = specs.find(({ id }) => id === seriesSpecId(one));
+            const button = elementsOf(
+              action({
+                series: [{ specId: spec!.id }],
+                label: one.label,
+              }) as ReactNode
+            ).find(
+              ({ type, props }) =>
+                type === 'button' &&
+                props['aria-label'] ===
+                  `Filter ${negate ? 'out' : 'for'} ${one.label}`
+            );
+            expect(button, `${gesture}: its button`).toBeDefined();
+            (button!.props.onClick as Callback)();
+          }
+          return events;
+        },
+        expected:
+          offers('legend') && item?.selection
+            ? [selectEvent(NODE, item.selection, negate)]
+            : [],
+      };
+    })
+  );
+  const brush =
+    xs.length > 1
+      ? [
+          {
+            gesture: 'brush across the x axis',
+            raise: () => {
+              const { events, env } = listen();
+              installed(scene, env).callback('onBrushEnd')?.({
+                x: [xs[0]!, xs.at(-1)!],
+              });
+              return events;
+            },
+            expected: [brushEvent(scene, NODE, [xs[0]!, xs.at(-1)!])].flatMap(
+              (event) => (event ? [event] : [])
+            ),
+          },
+        ]
+      : [];
+  return [...marks, ...categories, ...buckets, ...legend, ...brush];
+};
+
+describe('event parity over every example', () => {
+  // Each scheme resolves the same selections, so light is enough. No metric
+  // example offers `tile`, so each is also resolved offering it.
+  const tiles = primitiveExamples(
+    createChartsPack().primitives.find(({ type }) => type === 'metric')!
+  ).map(({ name, node }) => ({
+    example: `metric: ${name ?? '(unnamed)'}, offering tile`,
+    scene: resolveChart(
+      { ...node, interactions: { select: ['tile'] } } as MetricNode,
+      { scheme: 'light' }
+    ),
+  }));
+  const scenes = [...exampleScenes(), ...tiles];
+  const interactive = scenes.filter(
+    ({ scene }) =>
+      scene.interactions.select.length > 0 || scene.interactions.brush
+  );
+
+  it('covers examples that offer every target and a brush', () => {
+    const offered = new Set(
+      interactive.flatMap(({ scene }) => scene.interactions.select)
+    );
+    expect([...offered].sort()).toEqual(
+      expect.arrayContaining([
+        'category',
+        'cell',
+        'datum',
+        'legend',
+        'slice',
+        'tile',
+      ])
+    );
+    expect(interactive.some(({ scene }) => scene.interactions.brush)).toBe(
+      true
+    );
+  });
+
+  it.each(scenes.map((drawing) => ({ ...drawing, kind: drawing.scene.kind })))(
+    '$example: every gesture on the $kind raises the Scene’s event, and only where the node offers it',
+    ({ scene }) => {
+      for (const { gesture, raise, expected } of gestures(scene)) {
+        expect(raise(), gesture).toEqual(expected);
+      }
+    }
+  );
+});
+
+describe('series spec ids across a data refresh', () => {
+  const before = seriesOf(xyInteractiveScene);
+  const template = before[0]!;
+  // A refresh that brings a series ahead of the ones already drawn.
+  const refreshed: XyScene = {
+    ...xyInteractiveScene,
+    layers: [
+      {
+        kind: 'series',
+        series: {
+          ...template,
+          key: 'new',
+          label: 'New',
+          marks: template.marks.map(
+            ({ selection: _selection, ...mark }) => mark
+          ),
+        },
+      },
+      ...xyInteractiveScene.layers,
+    ],
+  };
+  const ids = (scene: XyScene) =>
+    installed(scene, listen().env).series.map(({ id }) => id);
+  const kept = [
+    'series-0-0-200',
+    'series-0-0-404',
+    'series-0-0-Other',
+    'series-0-0-\\null',
+  ];
+
+  it('keeps each series’ id when a new series sorts ahead of it', () => {
+    expect(ids(xyInteractiveScene)).toEqual(kept);
+    expect(ids(refreshed)).toEqual(['series-0-0-new', ...kept]);
+  });
+
+  it('gives two layers plotting one key their own ids', () => {
+    const twice: XyScene = {
+      ...xyInteractiveScene,
+      layers: [
+        { kind: 'series', series: template },
+        {
+          kind: 'series',
+          series: { ...template, series: { layer: 1, y: 0 } },
+        },
+      ],
+    };
+    expect(ids(twice)).toEqual([kept[0], `series-1-0-${template.key}`]);
+  });
+
+  it.each(before.map((one, index) => ({ one, id: kept[index]! })))(
+    '$id still names its series to the legend action and a click',
+    ({ one, id }) => {
+      const item = xyInteractiveScene.legend.items.find(
+        ({ key }) => key === one.key
+      );
+      const legend = listen();
+      const action = installed(refreshed, legend.env).callback('legendAction');
+      const button = elementsOf(
+        action!({ series: [{ specId: id }], label: one.label }) as ReactNode
+      ).find(({ props }) => props['aria-label'] === `Filter for ${one.label}`);
+      (button!.props.onClick as Callback)();
+      expect(legend.events).toEqual([selectEvent(NODE, item!.selection!)]);
+
+      const click = listen();
+      const { callback, series } = installed(refreshed, click.env);
+      const datum = series.find((spec) => spec.id === id)!.data[0]!;
+      callback('onElementClick')?.([
+        [
+          { x: datum.x, y: datum.y, mark: null, accessor: 'y1', datum },
+          { specId: id, key: id },
+        ],
+      ]);
+      expect(click.events).toEqual([
+        selectEvent(NODE, one.marks[0]!.selection!),
+      ]);
+    }
+  );
+});

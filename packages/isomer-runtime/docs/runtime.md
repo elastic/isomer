@@ -22,32 +22,37 @@ Build one per process, at module scope. It is a plain object with no lifecycle a
 | `formats` | any number | Formats the host ships beyond the runtime's own, reported by `getCapabilities`: a rasterizer's list, such as a takumi backend's `formats`. |
 | `views` | any number | Views pre-registered on the runtime's view registry. |
 | `rendererOverrides` | per type, per surface | One renderer replaced without forking a pack. |
-| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to the one pack adapter; required to choose when two packs declare one, and when any pack declares `collectStyles` and no pack (or this option) supplies an adapter. |
+| `styleAdapter` | at most one | The HTML surface's CSS and class-name strategy. Defaults to one Distillate adapter over the packs' distilleries, or else the one pack adapter; required to choose when a pack adapter sits beside another pack's adapter or distillery, and when any pack declares `collectStyles` and no pack `styleAdapter` serves it, since the Distillate adapter never runs the hook. |
 | `defaultAriaLabel` | one string | Fallback `aria-label` when the composition has neither `meta.ariaLabel` nor a `title`. Defaults to `'View'`. |
 | `authoring` | optional | Options for the authoring schema and declarations `getAuthoringContext` returns: the SDK's `AuthoringJsonSchemaOptions` plus `jsx`. |
-| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the SDK's; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
+| `inputBudget` | optional | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Defaults to the packs' budget: per limit, the largest any pack declares, never below the SDK's default. Each limit set here replaces that limit alone; see [the input budget](../../isomer-sdk/docs/composition.md#the-input-budget). |
 
 A runtime is homogeneous in its theme. `TTheme` resolves from the packs — each declares the palette its `snapshot` renderers read — and every frame in the map must supply it, so a mismatch is a compile error rather than a render-time failure. Packs wanting different palettes belong in different runtimes; see [Frame](frame.md).
 
-`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. A pack ships its own adapter, and a runtime styles with one: it runs the one composed pack's adapter for every pack, and two packs declaring one throw `AMBIGUOUS_STYLE_ADAPTER`, naming both. `styleAdapter` replaces the packs' adapter, which is how a host chooses between two or supplies a no-op for a pack whose CSS it does not want; see [Surfaces](surfaces.md).
+`styleAdapter` is the runtime's only CSS seam, and a host normally omits it. Packs declare their Distillate distillery, and one adapter styles every pack through them all; a pack styled without Distillate ships its own adapter instead, which runs only when it is the one source. `styleAdapter` replaces them all, which is how a host styles every pack with one engine or supplies a no-op for CSS it does not want; see [Surfaces](surfaces.md).
 
-A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws — the silent drop is the likelier footgun.
+A CSS-bearing pack (any primitive declaring `collectStyles`) with no adapter from either side also throws, as does one the packs' distilleries would style, since the Distillate adapter never runs the hook — the silent drop is the likelier footgun.
 
-A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the one adapter the runtime runs. Omitting the tag on either side opts out.
+A `collectStyles` hook mutates whatever collector the serving adapter created, and the runtime erases that type, so a pack written against a different engine composes cleanly and corrupts the collector at render. `styleCollector` on the pack and on the adapter names the shape each expects; a mismatch throws `INCOMPATIBLE_STYLE_COLLECTOR`, naming the pack, the primitive, and both collectors. Every pack must agree with the adapter that styles it. Omitting the tag on either side opts out.
 
 ## Typing the render context
 
 The factory has three type parameters: `THostContext` is what a view's `build` receives, `TRenderContext` is what a pack's `react` renderers receive, and `TTheme` is the palette. `TTheme` is inferred from `packs`. `TRenderContext` is inferred from `styleAdapter` alone, so a host that supplies none gets the SDK's `PrimitiveRenderContext` even when a pack narrows its context, as a `chartsPack` whose renderers read a `ChartsRenderContext` would. `react.render`'s `context` is then typed too wide to carry the pack's fields. Naming all three parameters positionally fixes the binding:
 
 ```ts
-import { type ChartsRenderContext, type ChartsTheme, cardFrame, chartsPack } from './charts';
+import {
+  type ChartsFrameTheme,
+  type ChartsRenderContext,
+  chartsFrame,
+  chartsPack,
+} from '@elastic/isomer-primitives-charts';
 
-const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsFrameTheme>({
   packs: [chartsPack],
-  frames: { card: cardFrame },
+  frames: { charts: chartsFrame },
 });
 
-runtime.surfaces.react.render(composition, { context: { resolveClassName } });
+runtime.surfaces.react.render(composition, { context: { scheme: 'dark' } });
 ```
 
 `unknown` in the first position keeps the host context unconstrained; pass the type views build with instead when the runtime registers views. Omitting the positional form is fine for a runtime that never passes a narrowed `context` to `react.render`.
@@ -83,7 +88,8 @@ Composition errors throw from `createIsomerRuntime` at host startup as `IsomerEr
 | `defaultFrame` is one the runtime holds | `UNKNOWN_FRAME` | `defaultFrame "…" is not one of the supplied frames (…)` |
 | Two or more frames name a default | `AMBIGUOUS_FRAME` | `2 frames supplied (…), so defaultFrame is required` |
 | A CSS-bearing pack has a `styleAdapter` | `MISSING_STYLE_ADAPTER` | `pack "…" primitive "…" declares collectStyles but no styleAdapter was supplied` |
-| At most one pack declares a `styleAdapter`, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `packs … each declare a styleAdapter, but a runtime styles with one` |
+| A pack `styleAdapter` is the only pack-level style source, unless the host passes one | `AMBIGUOUS_STYLE_ADAPTER` | `pack "…"'s styleAdapter and … each style the HTML surface` |
+| No pack declares `collectStyles` when the packs' distilleries style the runtime, unless the host passes `styleAdapter` | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" declares collectStyles, which the Distillate style adapter never runs` |
 | Every CSS-bearing pack's `styleCollector` matches its adapter's | `INCOMPATIBLE_STYLE_COLLECTOR` | `pack "…" primitive "…" collects styles into a "…" collector, but … creates a "…" one` |
 
 Duplicate pack ids, node types, and enhancement ids are the SDK's `composePacks` rules. The type and enhancement checks name every offender rather than failing on the first, so a bad three-pack composition reports all three at once.

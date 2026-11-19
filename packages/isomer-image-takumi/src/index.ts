@@ -29,13 +29,17 @@ export {
   renderPdf,
 } from './render_pdf';
 export {
-  type PngCheckedValidationResult,
   type PngRuntime,
-  type PngValidationResult,
   type RenderPngOptions,
   type RenderPngResult,
   type SnapshotOptions,
   renderPng,
 } from './render_png';
+export type {
+  CheckedValidationResult,
+  PngCheckedValidationResult,
+  PngValidationResult,
+  ValidationResult,
+} from './validation';
 export type { Font, FontDetails, FontLoader } from '@takumi-rs/core';
 export type { ImagesInput } from 'takumi-pdf';

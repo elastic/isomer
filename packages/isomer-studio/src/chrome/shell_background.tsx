@@ -10,8 +10,8 @@ import type { UseEuiTheme } from '@elastic/eui';
 import { EuiThemeProvider, transparentize, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
-/** Which shell the Studio shows: Workbench, Reference, or Home. */
-export type ShellLook = 'dev' | 'docs' | 'home';
+/** Which shell the Studio shows: Workbench, or Reference and everything else. */
+export type ShellLook = 'dev' | 'docs';
 
 /**
  * The shell's color under three glows in the logo's hues: one in the top corner, one in the bottom
@@ -33,12 +33,6 @@ export const shellBackground = (
       corner: colors.accentSecondary,
       foot: colors.warning,
       top: colors.primary,
-    },
-    home: {
-      base: colors.backgroundLightAssistance,
-      corner: colors.accentSecondary,
-      foot: colors.warning,
-      top: colors.accent,
     },
   }[look];
   return css`

@@ -21,6 +21,8 @@ import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { imagesProblem } from '../model/images';
+import { isRecord } from '../model/is_record';
+import { withSnapshotFrame } from '../model/snapshot_frame';
 
 import { PACKAGE_DIR, RUNS_FROM_SOURCE } from './app_bundle';
 import { importNative, moduleUrl } from './node_module.cjs';
@@ -59,9 +61,6 @@ export const resolveConfigPath = (cwd: string, config?: string): string => {
   }
   return found;
 };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
 
 const isStudioConfig = (value: unknown): value is StudioConfig =>
   isRecord(value) &&
@@ -270,7 +269,7 @@ export const studioConfigFrom = (
   if (config.apps?.length) {
     assertSingleEui(configPath);
   }
-  return config;
+  return withSnapshotFrame(config);
 };
 
 let registeredProject: string | undefined;

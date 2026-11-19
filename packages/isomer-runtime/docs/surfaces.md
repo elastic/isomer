@@ -57,12 +57,12 @@ The options argument, and `context` inside it, is optional only when omitting it
 `context` is typed by the runtime's `TRenderContext`, which is inferred from `styleAdapter` alone. A host that supplies no adapter and loads a pack that narrows its context, here a `chartsPack` whose renderers read a `ChartsRenderContext`, gets the SDK's `PrimitiveRenderContext` by inference, and a narrowed field in `context` is then an excess property. Name all three type parameters positionally to type it:
 
 ```ts
-const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsTheme>({
+const runtime = createIsomerRuntime<unknown, ChartsRenderContext, ChartsFrameTheme>({
   packs: [chartsPack],
-  frames: { card: cardFrame },
+  frames: { charts: chartsFrame },
 });
 
-runtime.surfaces.react.render(composition, { context: { resolveClassName } });
+runtime.surfaces.react.render(composition, { context: { scheme: 'dark' } });
 ```
 
 The first parameter is the host context views build with, the second the render context, the third the theme; [Runtime](runtime.md#typing-the-render-context) covers when each is worth naming.
@@ -121,7 +121,7 @@ const { warnings } = runtime.surfaces.snapshot.render(composition, { frame: 'car
 
 ## CSS: one adapter, or a deliberate no-op
 
-HTML rendering emits one `<style>` per document, from one adapter. A pack ships its own `styleAdapter`, so a host loading one styled pack supplies nothing. A pack is also CSS-bearing when any primitive declares `collectStyles`. Construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
+HTML rendering emits one `<style>` per document, from one adapter. A pack declares its Distillate `distillery`, or ships its own `styleAdapter`, so a host loading styled packs supplies nothing. A pack is also CSS-bearing when any primitive declares `collectStyles`. Construction throws if such a pack has no adapter at all, naming both the pack and the primitive.
 
 A host composing a CSS-bearing pack to render only text or Slack still has to answer for that CSS. The escape hatch is a no-op adapter — explicit rather than accidental:
 
@@ -136,19 +136,19 @@ const runtime = createIsomerRuntime({
 });
 ```
 
-A host adapter replaces the pack's.
+A host adapter replaces the packs'.
 
 ## Two styled packs
 
-A runtime styles with one adapter. Two packs that each declare a `styleAdapter` throw `AMBIGUOUS_STYLE_ADAPTER`, naming both:
+Packs that each declare a `distillery` share one adapter. Each handle a renderer resolves is recorded by the distillery that owns it, nested inside another pack's container or not, and the stylesheet joins each distillery's rules in pack order:
 
 ```ts
 createIsomerRuntime({
-  packs: [chartsPack, calloutsPack], // both declare styleAdapter: throws
+  packs: [slidesPack, chartsPack], // one adapter over both distilleries
 });
 ```
 
-Pass `styleAdapter` on `createIsomerRuntime` to choose the one adapter, and it serves every pack. A pack that declares no adapter is styled by whichever one the runtime runs.
+A pack that declares neither field is styled by that adapter too, unless it declares `collectStyles`, which the Distillate adapter never runs: that throws `INCOMPATIBLE_STYLE_COLLECTOR`. A pack `styleAdapter` beside another pack's adapter or distillery throws `AMBIGUOUS_STYLE_ADAPTER`; pass `styleAdapter` on `createIsomerRuntime` to replace them all with one that serves every pack.
 
 `styleCollector` is a second, independent check: if a pack declares one (naming the collector shape its `collectStyles` hooks expect) and the adapter the runtime runs creates a differently-tagged collector, construction throws `INCOMPATIBLE_STYLE_COLLECTOR` instead of corrupting the collector silently at render time. The fix is a `styleAdapter` every pack was written against.
 

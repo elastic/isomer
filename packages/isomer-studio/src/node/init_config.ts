@@ -8,6 +8,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 
+import { isRecord } from '../model/is_record';
+
 import type { ConfigLoader } from './load_config';
 import { createStudioImporter, findDefaultConfig } from './load_config';
 
@@ -15,9 +17,6 @@ import { createStudioImporter, findDefaultConfig } from './load_config';
 const SOURCE_ENTRIES = ['src/index', 'index'].flatMap((base) =>
   ['tsx', 'ts', 'jsx', 'js'].map((extension) => `${base}.${extension}`)
 );
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null;
 
 interface Manifest {
   name?: unknown;

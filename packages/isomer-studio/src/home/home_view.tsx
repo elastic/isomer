@@ -5,138 +5,213 @@
  * 2.0.
  */
 
+import type { ReactNode } from 'react';
 import React, { useMemo } from 'react';
-import { EuiCallOut, euiFontSize, EuiIcon, useEuiTheme } from '@elastic/eui';
+import {
+  EuiButton,
+  EuiButtonEmpty,
+  EuiCard,
+  EuiDescriptionList,
+  EuiEmptyPrompt,
+  EuiFlexGrid,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiHorizontalRule,
+  EuiIcon,
+  EuiLink,
+  EuiPageSection,
+  EuiPanel,
+  EuiSpacer,
+  EuiStat,
+  EuiText,
+  EuiTitle,
+} from '@elastic/eui';
 import { css } from '@emotion/react';
 
-import { PrimitiveGlyph } from '../chrome/primitive_glyph';
+import type { ColorModePreference } from '../chrome/color_mode';
+import { ColorModePicker } from '../chrome/color_mode_picker';
+import { ComposeIcon } from '../chrome/compose_icon';
+import {
+  APPS_DOCS_URL,
+  DOCS_URL,
+  STUDIO_CONFIG_DOCS_URL,
+  VIEWS_DOCS_URL,
+} from '../chrome/links';
+import { Glyph, PrimitiveGlyph } from '../chrome/primitive_glyph';
 import { PrimitiveSearch } from '../chrome/primitive_search';
-import type { StudioRouter } from '../chrome/route';
-import { formatRoute, GALLERY } from '../chrome/route';
+import { formatLocation, formatRoute, GALLERY } from '../chrome/route';
+import type { ComposeParams } from '../model/compose_link';
+import type { PrimitiveDoc } from '../model/describe_runtime';
 import { pickFeatured } from '../model/featured';
+import { SURFACE_CATALOG } from '../model/surface_catalog';
 import { useStudio } from '../studio_context';
+import { ReactSurface } from '../surfaces/react_surface';
+import { ScaledPreview } from '../surfaces/scaled_preview';
+import { SURFACE_ICONS } from '../surfaces/surface_logos';
 import { previewSurfaces } from '../surfaces/surface_select';
 
-import { AppsSection } from './apps_section';
-import { FeaturedStrip } from './featured_strip';
-import { DOCS_URL, LICENSE_URL, REPO_URL } from './links';
-import { LoadedPanel } from './loaded_panel';
-import { SurfaceChart } from './surface_chart';
-import {
-  CONTENT_WIDTH,
-  GUTTER,
-  HOME_NARROW,
-  PANEL_WIDTH,
-  TILE_COLUMNS,
-  useHome,
-  WIDE,
-  WIDE_CONTENT_WIDTH,
-} from './tokens';
+const WIDTH = 1200;
 
-export interface HomeViewProps {
-  title: string;
-  router: Pick<StudioRouter, 'route' | 'navigate'>;
-  /** The config's `featured`; without it Home draws at random. */
-  featured?: readonly string[] | undefined;
-  configProblems?: readonly string[] | undefined;
-}
+const plural = (count: number, noun: string) =>
+  `${count} ${count === 1 ? noun : `${noun}s`}`;
 
-const Door = ({
-  href,
-  external = false,
-  color,
-  tag,
-  title,
-  children,
-  action,
+const heroCopy = css`
+  min-width: min(100%, 360px);
+`;
+
+const fullWidth = css`
+  inline-size: 100%;
+`;
+
+const cardStyles = css`
+  min-width: 0;
+`;
+
+const previewStyles = css`
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+`;
+
+/** A featured primitive's first example, live and inert. */
+const FeaturedPreview = ({
+  doc: { type, examples },
 }: {
-  href: string;
-  external?: boolean;
-  color: string;
-  tag: string;
-  title: string;
-  children: string;
-  action: string;
+  doc: PrimitiveDoc;
 }) => {
-  const home = useHome();
-  const {
-    euiTheme: { size, border, font },
-    fontSize,
-  } = home;
-  return (
-    <a
-      href={href}
-      {...(external ? { target: '_blank', rel: 'noopener' } : {})}
-      css={css`
-        ${home.tile(3)};
-        ${home.actionCard};
-        min-height: 96px;
-        &:hover,
-        &:focus-visible {
-          border-color: ${color};
-        }
-        &:hover .isomer-studio-door-action {
-          text-decoration: underline;
-        }
-      `}>
-      <span css={home.tileTop}>
-        <b
-          css={css`
-            font-size: ${fontSize('m')};
-            font-weight: ${font.weight.bold};
-            color: ${home.color.heading};
-          `}>
-          {title}
-        </b>
-        <span
-          css={css`
-            margin-top: ${size.xxs};
-            font-size: ${fontSize('xxs')};
-            font-weight: ${font.weight.medium};
-            text-transform: uppercase;
-            padding: ${size.xxs} ${size.s};
-            border-radius: ${size.l};
-            border: ${border.width.thin} solid ${color};
-            color: ${color};
-            white-space: nowrap;
-          `}>
-          {tag}
-        </span>
-      </span>
-      <span css={home.tileDescription}>{children}</span>
-      <span
-        className="isomer-studio-door-action"
-        css={css`
-          margin-top: auto;
-          padding-top: ${size.xs};
-          font-size: ${fontSize('xs')};
-          font-weight: ${font.weight.medium};
-          color: ${color};
-        `}>
-        {action}
-      </span>
-    </a>
+  const { compose } = useStudio();
+  const [example] = examples;
+  // A config's `compose` or `previewExample` that throws leaves this card on its glyph, not Home blank.
+  const composition = useMemo(() => {
+    try {
+      return example ? compose([example.node]) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [compose, example]);
+  return composition ? (
+    <div
+      aria-hidden={true}
+      css={previewStyles}
+      ref={(element) => element?.setAttribute('inert', '')}>
+      <ScaledPreview>
+        <ReactSurface {...{ composition }} />
+      </ScaledPreview>
+    </div>
+  ) : (
+    <EuiFlexGroup
+      css={previewStyles}
+      justifyContent="center"
+      alignItems="center">
+      <PrimitiveGlyph {...{ type }} size={48} />
+    </EuiFlexGroup>
   );
 };
 
-/** The landing page: search, featured primitives, apps, where to go next, and what the runtime loaded. */
+const FeaturedCard = ({ doc }: { doc: PrimitiveDoc }) => {
+  const { type, label, group, purpose } = doc;
+  return (
+    <EuiCard
+      data-testid="featured-primitive"
+      css={cardStyles}
+      title={label}
+      titleElement="h3"
+      titleSize="xs"
+      textAlign="left"
+      paddingSize="m"
+      image={<FeaturedPreview {...{ doc }} />}
+      description={purpose}
+      footer={
+        <EuiFlexGroup gutterSize="s" responsive={false} wrap>
+          <EuiButtonEmpty
+            size="s"
+            iconType="document"
+            href={formatRoute({ mode: 'docs', page: type, example: 0 })}>
+            Reference
+          </EuiButtonEmpty>
+          <EuiButtonEmpty
+            size="s"
+            iconType="code"
+            href={formatRoute({ mode: 'dev', page: type, example: 0 })}>
+            Workbench
+          </EuiButtonEmpty>
+        </EuiFlexGroup>
+      }>
+      <EuiText size="xs" color="subdued">
+        <code>{group}</code>
+      </EuiText>
+    </EuiCard>
+  );
+};
+
+const Loaded = ({
+  title,
+  count,
+  children,
+}: {
+  title: string;
+  count: number;
+  children: ReactNode;
+}) => (
+  <EuiPanel hasBorder paddingSize="m">
+    <section aria-label={title}>
+      <EuiTitle size="xxs">
+        <h3>
+          {title} ({count})
+        </h3>
+      </EuiTitle>
+      <EuiSpacer size="s" />
+      {children}
+    </section>
+  </EuiPanel>
+);
+
+/** What is missing, how to add it, and where that is documented. */
+const Missing = ({
+  title,
+  href,
+  action,
+  children,
+}: {
+  title: string;
+  href: string;
+  action: string;
+  children: ReactNode;
+}) => (
+  <EuiEmptyPrompt
+    color="subdued"
+    paddingSize="s"
+    titleSize="xxs"
+    title={<h4>{title}</h4>}
+    body={<p>{children}</p>}
+    actions={
+      <EuiLink {...{ href }} target="_blank" external>
+        {action}
+      </EuiLink>
+    }
+  />
+);
+
+/** The landing page, without the app's header: what this Studio is for, where to start, featured primitives and what the config loaded. */
 export const HomeView = ({
   title,
-  router: { route, navigate },
-  featured: featuredTypes,
-  configProblems = [],
-}: HomeViewProps) => {
-  const theme = useEuiTheme();
-  const home = useHome();
+  onSelectPrimitive,
+  colorMode,
+  onColorModeChange,
+  composeParams,
+}: {
+  title: string;
+  onSelectPrimitive: (type: string) => void;
+  colorMode: ColorModePreference;
+  onColorModeChange: (colorMode: ColorModePreference) => void;
+  /** What the composer last showed, so Compose reopens it. */
+  composeParams?: ComposeParams | undefined;
+}) => {
   const {
-    euiTheme: { font, size, border, focus },
-    color,
-    fontSize,
-  } = home;
-  const {
-    docs: { primitives, groups, surfaces: supported },
-    rasterizePng,
+    runtime: { packs },
     apps,
+    featured: featuredTypes,
+    rasterizePng,
+    docs: { primitives, groups, views, surfaces: supported },
   } = useStudio();
   const featured = useMemo(
     () => pickFeatured(primitives, featuredTypes),
@@ -144,331 +219,257 @@ export const HomeView = ({
   );
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
   const first = groups[0]?.types[0] ?? primitives[0]?.type ?? '';
-  const year = new Date().getFullYear();
-
-  const page = css`
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    display: flex;
-    flex-direction: column;
-    color: ${color.paragraph};
-    font-size: ${fontSize('s')};
-    line-height: ${font.lineHeightMultiplier};
-    a:focus-visible,
-    button:focus-visible {
-      outline: ${focus.width} solid ${color.heading};
-      outline-offset: ${focus.width};
-    }
-  `;
-  const columns = css`
-    flex: 1;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) ${PANEL_WIDTH}px;
-    width: 100%;
-    max-width: ${WIDE_CONTENT_WIDTH + 5 * GUTTER + PANEL_WIDTH}px;
-    margin-inline: auto;
-    @media (max-width: 900px) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  `;
-  const main = css`
-    min-width: 0;
-    padding: ${size.l} ${GUTTER}px ${size.xxxl};
-    @media (max-width: 900px) {
-      padding-inline: ${size.base};
-    }
-  `;
-  const content = css`
-    container: isomer-home / inline-size;
-    display: flex;
-    flex-direction: column;
-    gap: ${size.xl};
-    max-width: ${CONTENT_WIDTH}px;
-    margin-inline: auto;
-    ${WIDE} {
-      max-width: ${WIDE_CONTENT_WIDTH}px;
-      ${TILE_COLUMNS}: 4;
-    }
-  `;
-  const aside = css`
-    display: flex;
-    flex-direction: column;
-    gap: ${size.l};
-    border-left: ${border.width.thin} solid ${color.line};
-    border-image: linear-gradient(
-        to bottom,
-        transparent,
-        ${color.line} ${size.xxxxl},
-        ${color.line} calc(100% - ${size.xxxxl}),
-        transparent
-      )
-      1;
-    padding: ${size.xxl} ${GUTTER}px ${size.xl} ${size.xl};
-    @media (max-width: 900px) {
-      border-image: none;
-      border-left: 0;
-      border-top: ${border.width.thin} solid ${color.line};
-      padding-inline: ${size.base};
-    }
-  `;
-  const chips = css`
-    display: flex;
-    flex-wrap: wrap;
-    gap: ${size.s};
-    margin-top: -${size.s};
-  `;
-  const chip = css`
-    display: inline-flex;
-    align-items: center;
-    gap: ${size.s};
-    padding: ${size.xs} ${size.m} ${size.xs} ${size.s};
-    border-radius: ${size.xl};
-    border: ${border.width.thin} solid ${color.line};
-    background: ${color.surface};
-    font-size: ${fontSize('xs')};
-    font-weight: ${font.weight.medium};
-    color: ${color.heading};
-    text-decoration: none;
-    &:hover,
-    &:focus-visible {
-      background: ${color.surfaceHover};
-      border-color: ${color.docs};
-      text-decoration: none;
-    }
-  `;
-  const footer = css`
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: ${size.s} ${size.l};
-    font-size: ${fontSize('xs')};
-    color: ${color.subdued};
-    padding: ${size.m} ${GUTTER}px;
-    a {
-      color: ${color.paragraph};
-      text-decoration: none;
-    }
-    a:hover {
-      color: ${color.heading};
-      text-decoration: underline;
-    }
-    @media (max-width: 900px) {
-      padding-inline: ${size.base};
-    }
-  `;
+  const packNames = new Intl.ListFormat('en').format(packs.map(({ id }) => id));
 
   return (
-    <div css={page} data-testid="home">
-      {configProblems.length ? (
-        <EuiCallOut
-          announceOnMount
-          color="danger"
-          iconType="error"
-          title="The config is invalid; the Studio keeps the last valid one">
-          <ul>
-            {configProblems.map((problem) => (
-              <li key={problem}>{problem}</li>
-            ))}
-          </ul>
-        </EuiCallOut>
-      ) : null}
-      <div css={columns}>
-        <main css={main}>
-          <div css={content}>
-            <div
-              css={css`
-                display: flex;
-                flex-direction: column;
-                gap: ${size.m};
-              `}>
-              <div
-                css={css`
-                  font-family: ${font.familyCode};
-                  font-size: ${fontSize('xs')};
-                  color: ${color.accent};
-                `}>
-                isomer{' '}
-                <span
-                  css={css`
-                    color: ${color.subdued};
-                  `}>
-                  n.
-                </span>{' '}
-                one formula, many forms
-              </div>
-              <h1
-                css={css`
-                  margin: 0;
-                  font-size: ${
-                    euiFontSize(theme, 'xxl', { customScale: 'xl' }).fontSize
-                  };
-                  font-weight: ${font.weight.bold};
-                  letter-spacing: -0.025em;
-                  line-height: 1.05;
-                  color: ${color.heading};
-                  text-wrap: balance;
-                  @media (max-width: 900px) {
-                    font-size: ${fontSize('xxl')};
-                  }
-                `}>
-                What are we rendering today?
-              </h1>
-              <p
-                css={css`
-                  margin: 0;
-                  font-size: ${fontSize('m')};
-                  text-wrap: pretty;
-                `}>
-                Isomer Studio is a workbench for primitives, primitive packs,
-                compositions, views, tools, and applications built on Isomer.
+    <div data-testid="home">
+      <EuiPageSection restrictWidth={WIDTH} paddingSize="xl">
+        <EuiFlexGroup
+          justifyContent="spaceBetween"
+          alignItems="center"
+          responsive={false}>
+          <EuiText size="s" color="subdued">
+            <strong>{title}</strong>
+          </EuiText>
+          <ColorModePicker {...{ colorMode, onColorModeChange }} />
+        </EuiFlexGroup>
+        <EuiSpacer size="xl" />
+        <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
+          <EuiFlexItem grow={2} css={heroCopy}>
+            <EuiTitle size="l">
+              <h1>What are we rendering today?</h1>
+            </EuiTitle>
+            <EuiSpacer size="s" />
+            <EuiText size="m">
+              <p>
+                Learn every primitive of {packNames}, edit it live, and see one
+                composition render on every surface your product speaks.
               </p>
-            </div>
-
+            </EuiText>
+            <EuiSpacer size="l" />
             <PrimitiveSearch
               size="large"
-              placeholder="Search primitives by name, purpose or prop"
-              onSelectPrimitive={(type) =>
-                navigate({ mode: route.mode, page: type, example: 0 })
-              }
+              placeholder="Search primitives by name or purpose"
+              {...{ onSelectPrimitive }}
             />
-
-            {groups.length ? (
-              <nav aria-label="Primitive categories" css={chips}>
-                {groups.map(({ title: group, types }) => (
-                  <a
-                    key={group}
-                    href={formatRoute({
-                      mode: 'docs',
-                      page: GALLERY,
-                      example: 0,
-                      group,
-                    })}
-                    css={chip}>
-                    {types[0] ? (
-                      <span
-                        css={css`
-                          color: ${color.paragraph};
-                        `}>
-                        <PrimitiveGlyph type={types[0]} size={16} />
-                      </span>
-                    ) : null}
-                    {group}
-                    <span
-                      css={css`
-                        font-family: ${font.familyCode};
-                        font-size: ${fontSize('xxs')};
-                        color: ${color.subdued};
-                      `}>
-                      {types.length}
-                    </span>
-                  </a>
+          </EuiFlexItem>
+          <EuiFlexItem grow={1} css={heroCopy}>
+            <EuiPanel hasBorder paddingSize="l">
+              <EuiFlexGroup responsive={false} gutterSize="m">
+                {[
+                  { count: primitives.length, label: 'Primitives' },
+                  { count: groups.length, label: 'Groups' },
+                  { count: surfaces.length, label: 'Surfaces' },
+                ].map(({ count, label }) => (
+                  <EuiFlexItem key={label}>
+                    <EuiStat
+                      title={count}
+                      description={label}
+                      reverse
+                      titleSize="m"
+                    />
+                  </EuiFlexItem>
                 ))}
-              </nav>
-            ) : null}
-
-            <FeaturedStrip {...{ featured }} total={primitives.length} />
-
-            <AppsSection {...{ apps }} />
-
-            <section
-              aria-labelledby="isomer-studio-learn"
-              css={css`
-                display: flex;
-                flex-direction: column;
-                gap: ${size.s};
-              `}>
-              <div css={home.sectionLabel}>
-                <h2 id="isomer-studio-learn" css={home.sectionHeading}>
-                  Learn more about Isomer
-                </h2>
-              </div>
-              <div
-                css={css`
-                  display: grid;
-                  grid-template-columns: repeat(3, minmax(0, 1fr));
-                  gap: ${size.m};
-                  ${HOME_NARROW} {
-                    grid-template-columns: minmax(0, 1fr);
-                  }
-                `}>
-                <Door
+              </EuiFlexGroup>
+              <EuiHorizontalRule margin="m" />
+              <EuiFlexGroup direction="column" gutterSize="s">
+                <EuiButton
+                  fill
+                  fullWidth
+                  iconType="apps"
                   href={formatRoute({
                     mode: 'docs',
                     page: GALLERY,
                     example: 0,
-                  })}
-                  color={color.docs}
-                  tag="Reference"
-                  title="Understand primitives"
-                  action="Browse reference →">
-                  Every primitive in the pack, with its purpose, props and
-                  examples.
-                </Door>
-                <Door
-                  href={formatRoute({ mode: 'dev', page: first, example: 0 })}
-                  color={color.dev}
-                  tag="Workbench"
-                  title="Experiment and edit"
-                  action="Open the workbench →">
-                  Edit a composition and watch it render on every surface the
-                  runtime has.
-                </Door>
-                <Door
-                  href={DOCS_URL}
-                  external
-                  color={color.accent}
-                  tag="Guide"
-                  title="Learn how Isomer works"
-                  action="Read the docs ↗">
-                  The composition contract, packs, surfaces and the agent tools.
-                </Door>
-              </div>
-            </section>
+                  })}>
+                  Browse primitives
+                </EuiButton>
+                <EuiButton
+                  fullWidth
+                  iconType="code"
+                  href={formatRoute({ mode: 'dev', page: first, example: 0 })}>
+                  Open the Workbench
+                </EuiButton>
+              </EuiFlexGroup>
+              <EuiSpacer size="s" />
+              <EuiFlexGroup responsive={false} gutterSize="s">
+                <EuiFlexItem>
+                  <EuiButtonEmpty
+                    css={fullWidth}
+                    size="s"
+                    iconType={ComposeIcon}
+                    href={formatLocation({
+                      compose: true,
+                      params: composeParams ?? {},
+                    })}>
+                    Compose
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+                <EuiFlexItem>
+                  <EuiButtonEmpty
+                    css={fullWidth}
+                    size="s"
+                    iconType="external"
+                    iconSide="right"
+                    href={DOCS_URL}
+                    target="_blank">
+                    Isomer docs
+                  </EuiButtonEmpty>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiPanel>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPageSection>
 
-            <SurfaceChart {...{ surfaces }} />
-          </div>
-        </main>
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        color="subdued"
+        aria-labelledby="isomer-studio-featured">
+        <EuiTitle size="m">
+          <h2 id="isomer-studio-featured">Featured primitives</h2>
+        </EuiTitle>
+        <EuiSpacer />
+        <EuiFlexGrid columns={3} gutterSize="l">
+          {featured.map((doc) => (
+            <FeaturedCard key={doc.type} {...{ doc }} />
+          ))}
+        </EuiFlexGrid>
+        <EuiSpacer />
+        <EuiButtonEmpty
+          iconType="sortRight"
+          iconSide="right"
+          href={formatRoute({ mode: 'docs', page: GALLERY, example: 0 })}>
+          All {plural(primitives.length, 'primitive')}
+        </EuiButtonEmpty>
+      </EuiPageSection>
 
-        <aside css={aside}>
-          <LoadedPanel {...{ surfaces }} />
-        </aside>
-      </div>
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        aria-labelledby="isomer-studio-surfaces">
+        <EuiFlexGroup gutterSize="xl" wrap>
+          <EuiFlexItem grow={1} css={heroCopy}>
+            <EuiTitle size="m">
+              <h2 id="isomer-studio-surfaces">Author once, render anywhere</h2>
+            </EuiTitle>
+            <EuiSpacer size="s" />
+            <EuiText color="subdued">
+              <p>
+                Isomer turns one typed composition into every surface your
+                product speaks. These are the ones this runtime renders.
+              </p>
+              <p>
+                Hosts keep their data, authorization and routing. Isomer owns
+                the contract, the primitive catalog, validation and rendering.
+              </p>
+            </EuiText>
+          </EuiFlexItem>
+          <EuiFlexItem grow={2}>
+            <EuiFlexGrid columns={4} gutterSize="m">
+              {surfaces.map((surface) => (
+                <EuiCard
+                  key={surface}
+                  data-testid="home-surface"
+                  css={cardStyles}
+                  layout="vertical"
+                  paddingSize="s"
+                  titleElement="h3"
+                  titleSize="xs"
+                  icon={<EuiIcon type={SURFACE_ICONS[surface]} size="xl" />}
+                  title={SURFACE_CATALOG[surface].label}
+                  description={SURFACE_CATALOG[surface].note}
+                />
+              ))}
+            </EuiFlexGrid>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiPageSection>
 
-      <footer css={footer}>
-        <span
-          css={css`
-            display: flex;
-            align-items: center;
-            gap: ${size.s};
-            color: ${color.heading};
-            font-weight: ${font.weight.medium};
-          `}>
-          <EuiIcon type="logoElastic" color="ghost" size="m" />
-          Built by Elastic
-        </span>
-        <span
-          css={css`
-            display: flex;
-            flex-wrap: wrap;
-            gap: ${size.xs} ${size.l};
-          `}>
-          <a href={REPO_URL} target="_blank" rel="noopener">
-            github.com/elastic/isomer ↗
-          </a>
-          <a href={DOCS_URL} target="_blank" rel="noopener">
-            Docs ↗
-          </a>
-          <a href={LICENSE_URL} target="_blank" rel="noopener">
-            Elastic License 2.0
-          </a>
-        </span>
-        <small>
-          © {year} Elasticsearch B.V. · {title}
-        </small>
-      </footer>
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        color="subdued"
+        aria-labelledby="isomer-studio-loaded">
+        <EuiTitle size="m">
+          <h2 id="isomer-studio-loaded">Loaded in this Studio</h2>
+        </EuiTitle>
+        <EuiSpacer size="s" />
+        <EuiText size="s" color="subdued">
+          <p>
+            Everything here comes from the Studio config: the runtime and its
+            packs, the apps, and which primitives are featured.{' '}
+            <EuiLink href={STUDIO_CONFIG_DOCS_URL} target="_blank" external>
+              Edit the config
+            </EuiLink>
+          </p>
+        </EuiText>
+        <EuiSpacer />
+        <EuiFlexGrid columns={3} gutterSize="l">
+          <Loaded title="Primitive packs" count={packs.length}>
+            <EuiDescriptionList
+              compressed
+              listItems={packs.map(({ id, primitives: types, authoring }) => {
+                const groupCount = authoring?.groups?.length ?? 0;
+                return {
+                  title: <code>{id}</code>,
+                  description: [
+                    plural(types.length, 'primitive'),
+                    ...(groupCount ? [plural(groupCount, 'group')] : []),
+                  ].join(' · '),
+                };
+              })}
+            />
+          </Loaded>
+          <Loaded title="Apps" count={apps.length}>
+            {apps.length ? (
+              <EuiDescriptionList
+                compressed
+                listItems={apps.map(
+                  ({ id, title: name, description, icon }) => ({
+                    title: (
+                      <EuiLink
+                        data-testid="home-app"
+                        href={formatLocation({ app: id, path: '' })}>
+                        <Glyph svg={icon?.svg} label={name} size={14} /> {name}
+                      </EuiLink>
+                    ),
+                    description: description ?? `Opens ${name}.`,
+                  })
+                )}
+              />
+            ) : (
+              <Missing
+                title="No apps configured"
+                href={APPS_DOCS_URL}
+                action="Read about apps">
+                An app is a page of the Studio that shows the pack in use: add{' '}
+                <code>{'{ id, title, description, load }'}</code> to the
+                config&apos;s <code>apps</code>.
+              </Missing>
+            )}
+          </Loaded>
+          <Loaded title="Views" count={views.length}>
+            {views.length ? (
+              <EuiDescriptionList
+                compressed
+                listItems={views.map(({ id, title: name, description }) => ({
+                  title: <code>{id}</code>,
+                  description: description || name,
+                }))}
+              />
+            ) : (
+              <Missing
+                title="No views registered"
+                href={VIEWS_DOCS_URL}
+                action="Read about views">
+                A view is a host-owned composition the runtime builds by id:
+                define one with <code>defineView</code> and pass it in{' '}
+                <code>{'createIsomerRuntime({ views })'}</code>, or register it
+                on <code>runtime.viewRegistry</code>.
+              </Missing>
+            )}
+          </Loaded>
+        </EuiFlexGrid>
+      </EuiPageSection>
     </div>
   );
 };

@@ -27,7 +27,7 @@ The sdk's stages import in one direction, `composition/` → `define/` → `pack
 
 ESLint enforces the boundary and forbids the sdk importing the runtime.[^agents][^eslint]
 
-`src/entries/*` choose which names reach which subpath. `pnpm check:module-graph` walks the built ESM graph from each declared entry and fails when a forbidden specifier is reachable. `react-dom` and `react-dom/server` must stay unreachable from `.`, `./text`, `./markdown`, `./slack`, and `./author`. Bare `react` is reachable through `render/primitive_dispatch`.[^entries][^module-graph]
+`src/entries/*` choose which names reach which subpath. `pnpm check:module-graph` walks the built ESM graph from each declared entry and fails when a forbidden specifier is reachable. `react-dom` and `react-dom/server` must stay unreachable from `.`, `./text`, `./markdown`, `./slack`, and `./author`. Bare `react` is reachable through `render/primitive_dispatch`.[^entries] `./schema` also excludes React and Markdown parsers. Charts `./schema`, `./scene` and `./resolve` exclude those dependencies and use only the SDK's `./schema` entry. Chart engines import only the charts `./scene` entry (ESLint).[^module-graph]
 
 Related: [root entry](/sdk/entry-points/root.md), [public contract](/sdk/reference/public-contract.md).
 

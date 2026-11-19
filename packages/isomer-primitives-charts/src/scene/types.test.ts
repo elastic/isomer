@@ -7,38 +7,49 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { metricSingleValue } from '../primitives/metric/examples';
+import type { PartitionNode } from '../primitives/partition_chart/scene';
+import { xyInteractive, xyTimeSeries } from '../primitives/xy_chart/examples';
+import type { XyScene } from '../primitives/xy_chart/scene';
 import type { ChartData } from '../schema/data';
-import { metricSingleValue } from '../schema/examples/metric';
-import { xyInteractive, xyTimeSeries } from '../schema/examples/xy_chart';
 
+import type { SceneSelection, SceneSource } from './base';
 import {
   metricSingleValueScene,
   xyInteractiveScene,
   xyTimeSeriesScene,
 } from './examples';
-import type {
-  Scene,
-  SceneRenderer,
-  SceneSelection,
-  SceneSource,
-  XyScene,
-} from './types';
+import type { Scene, SceneRenderer } from './types';
+
+/** Every slice of a partition Scene, depth first. */
+const slicesOf = (nodes: readonly PartitionNode[]): PartitionNode[] =>
+  nodes.flatMap((node) => [node, ...slicesOf(node.children)]);
 
 /** Every source a selectable part of the Scene carries. */
 const sourcesOf = (scene: Scene): SceneSource[] =>
-  scene.kind === 'metric'
+  scene.kind === 'metric' || scene.kind === 'legacyMetric'
     ? scene.tiles.map(({ source }) => source)
-    : [
-        ...scene.layers.flatMap((layer) =>
-          layer.kind === 'series'
-            ? [
-                layer.series.source,
-                ...layer.series.marks.map(({ source }) => source),
-              ]
-            : []
-        ),
-        ...scene.legend.items.map(({ source }) => source),
-      ];
+    : scene.kind === 'table'
+      ? scene.rows.flatMap(({ cells }) => cells.map(({ source }) => source))
+      : scene.kind === 'partition'
+        ? slicesOf(scene.nodes).map(({ source }) => source)
+        : scene.kind === 'heatmap'
+          ? scene.cells.map(({ source }) => source)
+          : scene.kind === 'gauge'
+            ? []
+            : scene.kind === 'tagCloud'
+              ? scene.words.map(({ source }) => source)
+              : [
+                  ...scene.layers.flatMap((layer) =>
+                    layer.kind === 'series'
+                      ? [
+                          layer.series.source,
+                          ...layer.series.marks.map(({ source }) => source),
+                        ]
+                      : []
+                  ),
+                  ...scene.legend.items.map(({ source }) => source),
+                ];
 
 const cases: { name: string; scene: Scene; data: ChartData }[] = [
   {
@@ -56,20 +67,37 @@ const cases: { name: string; scene: Scene; data: ChartData }[] = [
 
 /** Every selection the Scene offers. */
 const selectionsOf = (scene: Scene): SceneSelection[] =>
-  (scene.kind === 'metric'
+  (scene.kind === 'metric' || scene.kind === 'legacyMetric'
     ? scene.tiles.map(({ selection }) => selection)
-    : [
-        ...scene.categories.map(({ selection }) => selection),
-        ...scene.layers.flatMap((layer) =>
-          layer.kind === 'series'
-            ? [
-                layer.series.selection,
-                ...layer.series.marks.map(({ selection }) => selection),
-              ]
-            : []
-        ),
-        ...scene.legend.items.map(({ selection }) => selection),
-      ]
+    : scene.kind === 'table'
+      ? scene.rows.flatMap(({ cells }) =>
+          cells.map(({ selection }) => selection)
+        )
+      : scene.kind === 'partition'
+        ? [
+            ...slicesOf(scene.nodes).map(({ selection }) => selection),
+            ...scene.legend.items.map(({ selection }) => selection),
+          ]
+        : scene.kind === 'heatmap'
+          ? scene.cells.map(({ selection }) => selection)
+          : scene.kind === 'gauge'
+            ? []
+            : scene.kind === 'tagCloud'
+              ? scene.words.map(({ selection }) => selection)
+              : [
+                  ...scene.categories.map(({ selection }) => selection),
+                  ...scene.layers.flatMap((layer) =>
+                    layer.kind === 'series'
+                      ? [
+                          layer.series.selection,
+                          ...layer.series.marks.map(
+                            ({ selection }) => selection
+                          ),
+                        ]
+                      : []
+                  ),
+                  ...scene.legend.items.map(({ selection }) => selection),
+                ]
   ).filter((selection) => selection !== undefined);
 
 describe('Scene examples', () => {

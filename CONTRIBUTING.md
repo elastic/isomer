@@ -15,7 +15,7 @@ pnpm verify
 
 The Playwright install is a one-time step that downloads the Chromium `verify` drives; on Linux, add `--with-deps`.
 
-`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the ESM and CommonJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, and `pnpm licenses:report --check`. CI runs the same scripts, split across parallel jobs on Node 24: `verify:static` and `verify:packed`, each Vitest project, `test:browser`, and `check:studio-consumer`, which runs on Node 22.13.0, the `engines` floor, because consumers install the packed Studio on their own Node.
+`pnpm verify` is the full local gate: typecheck, lint (ESLint with Prettier as a rule, markdownlint, and license headers), tests, the ESM and CommonJS build, and the `check:*` scripts (export parity, package exports, emitted declarations, pack contents, module graph, packed consumer), the Studio's browser tests, `pnpm licenses:report --check`, and `check:memory`, which holds the charts pack's server-side PNGs, and each chart engine's, to peak-RSS bounds through `scripts/bench_charts.cjs`. CI runs the same scripts, split across parallel jobs on Node 24: `verify:static` and `verify:packed`, each Vitest project, `test:browser`, `check:memory`, and `check:studio-consumer`, which runs on Node 22.13.0, the `engines` floor, because consumers install the packed Studio on their own Node.
 
 `pnpm verify:fast` is the inner loop: the build, then typecheck, lint, and the license check side by side, then the tests, which resolve packages through their built `lib`. It skips the packed checks and the browser tests, so run `pnpm verify` before opening a PR, except for [prose-only changes](#prose-only-changes). ESLint caches results in `node_modules/.cache/eslint/` and rechecks only files whose content changed, so a type-aware rule can miss an error that a change in another file causes; delete the cache, or let CI's fresh run catch it.
 
@@ -26,7 +26,7 @@ Useful individual scripts:
 - `pnpm test` — unit tests
 - `pnpm lint` / `pnpm lint:fix` — ESLint (including Prettier) and markdownlint
 - `pnpm studio:dev` — the Studio for the root `isomer-studio.config.ts`, which gathers the in-repo packs, run from the Studio's TypeScript source so edits to the Studio and to the pack both hot-update without a reload. Extra flags pass through, for example `pnpm studio:dev --port 5180`. Run `pnpm build` once first; edits to the SDK or runtime need it again.
-- `pnpm test:browser` — the Studio's Playwright test of `dev` and a static build
+- `pnpm test:browser` — the Playwright tests in Chromium: the Studio's `dev` server and static build, and the charts pack's layout of chart sizes (`packages/isomer-primitives-charts/e2e`). Arguments filter both; a suite with no match is skipped, and the command fails only when neither matches
 - `pnpm check:studio-consumer` — installs the packed Studio with npm outside the workspace, then runs `check`, `build`, and the browser test against a consumer's own config
 - `pnpm build` — every package's ESM, CommonJS and declaration builds (see below)
 - `pnpm licenses:report` — regenerate `THIRD_PARTY_LICENSES.md` and `NOTICE.txt` for the workspace, and each published package's own, scoped to what a consumer installs with it for the workspace, and for each published package scoped to what a consumer installs with it

@@ -5,6 +5,10 @@
  * 2.0.
  */
 
+export {
+  type DistilleryCollectors,
+  createDistillateStyleAdapter,
+} from './distillate';
 export { type EnhancementDefinition } from './enhancements';
 export {
   type HTMLRenderDispatcher,

@@ -18,7 +18,7 @@ sources:
 
 The repository's conventions for commits, license headers, brands, errors, barrels, dependencies, the build, docs and pack drawing are listed in the agent instructions.[^agents]
 
-- `src/entries/*` are hand-curated. `pnpm check:module-graph` fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`. Bare `react` is reachable through `render/primitive_dispatch`.[^module-graph]
+- `src/entries/*` are hand-curated. `pnpm check:module-graph` fails when `react-dom` or `react-dom/server` is reachable from `.`, `./text`, `./markdown`, `./slack`, or `./author`. Bare `react` is reachable through `render/primitive_dispatch`. `./schema` also excludes React and Markdown parsers. Charts `./schema`, `./scene` and `./resolve` exclude those dependencies and use only the SDK's `./schema` entry. Chart engines import only the charts `./scene` entry (ESLint).[^module-graph]
 - `zod` and `react` are peer dependencies. `react-dom` is an optional peer.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`. Declared runtime optional dependencies need complete license material even when they are not installed on the current platform. The root files cover the whole workspace; each published package's files cover only its own dependencies and those of the workspace packages it depends on.
 

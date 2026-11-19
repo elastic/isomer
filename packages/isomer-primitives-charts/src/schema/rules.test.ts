@@ -7,64 +7,24 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { GAUGE_RULES } from '../primitives/gauge/schema';
+import { HEATMAP_RULES } from '../primitives/heatmap/schema';
+import { LEGACY_METRIC_RULES } from '../primitives/legacy_metric/schema';
+import { METRIC_RULES } from '../primitives/metric/schema';
+
 import { BAND_RULE } from './colors';
 import { DATA_RULES } from './data';
-import { GRID_RULES } from './grid';
-import { METRIC_RULES } from './metric';
-import { COLUMN_REF_RULE } from './references';
-import { nodeSchemaOf } from './schema.fixtures';
-import { XY_RULES } from './xy_chart';
-
-const containing = (text: string): string =>
-  expect.stringContaining(text) as string;
-
-const issuesOf = (type: string, node: unknown) => {
-  const result = nodeSchemaOf(type).safeParse(node);
-  return result.success
-    ? []
-    : result.error.issues.map(({ path, message }) => ({
-        path: path.join('.'),
-        message,
-      }));
-};
-
-const expectRule = (
-  type: string,
-  node: unknown,
-  rule: string,
-  path: string
-) => {
-  expect(issuesOf(type, node)).toContainEqual({
-    path,
-    message: containing(rule),
-  });
-};
-
-const number = (id: string) => ({
-  id,
-  label: id,
-  type: 'number',
-  role: 'metric',
-});
-const string = (id: string) => ({
-  id,
-  label: id,
-  type: 'string',
-  role: 'dimension',
-});
-const date = (id: string) => ({
-  id,
-  label: id,
-  type: 'date',
-  role: 'dimension',
-});
-
-const metric = (overrides: Record<string, unknown> = {}) => ({
-  type: 'metric',
-  data: { columns: [number('v')], rows: [[1]] },
-  value: { column: 'v' },
-  ...overrides,
-});
+import { FORMAT_RULES } from './format';
+import {
+  BANDS_RANGE_SENTENCE,
+  containing,
+  date,
+  expectRule,
+  issuesOf,
+  metric,
+  number,
+  string,
+} from './rules.fixtures';
 
 describe('chart data', () => {
   it('accepts every legal cell', () => {
@@ -85,6 +45,64 @@ describe('chart data', () => {
         })
       )
     ).toEqual([]);
+  });
+
+  it('accepts a date format with styles or with fields', () => {
+    for (const format of [
+      { kind: 'date', dateStyle: 'short', hour12: false },
+      { kind: 'date', month: 'short', day: 'numeric' },
+    ]) {
+      expect(
+        issuesOf(
+          'metric',
+          metric({
+            data: { columns: [{ ...date('d'), format }], rows: [[0]] },
+            value: { column: 'd' },
+          })
+        )
+      ).not.toContainEqual(
+        expect.objectContaining({ message: containing(FORMAT_RULES.dateStyle) })
+      );
+    }
+  });
+
+  it('rejects a date format with both a style and a field', () => {
+    expectRule(
+      'metric',
+      metric({
+        data: {
+          columns: [
+            number('v'),
+            {
+              ...date('d'),
+              format: { kind: 'date', timeStyle: 'short', day: 'numeric' },
+            },
+          ],
+          rows: [[1, 0]],
+        },
+      }),
+      FORMAT_RULES.dateStyle,
+      'data.columns.1.format.timeStyle'
+    );
+  });
+
+  it('rejects a date format time zone that Intl does not know', () => {
+    for (const timeZone of ['Mars/Olympus_Mons', '']) {
+      expectRule(
+        'metric',
+        metric({
+          data: {
+            columns: [
+              number('v'),
+              { ...date('d'), format: { kind: 'date', timeZone } },
+            ],
+            rows: [[1, 0]],
+          },
+        }),
+        FORMAT_RULES.timeZone,
+        'data.columns.1.format.timeZone'
+      );
+    }
   });
 
   it('rejects a repeated column id', () => {
@@ -128,6 +146,116 @@ describe('chart data', () => {
     );
   });
 
+  it.each([
+    [
+      'a string in a number column',
+      number('v'),
+      'one',
+      '"one"',
+      'a `number` column needs a number, or null.',
+    ],
+    [
+      'a boolean in a date column',
+      date('v'),
+      true,
+      'true',
+      'a `date` column needs epoch milliseconds or an ISO 8601 date-time string with a UTC offset, or null.',
+    ],
+    [
+      'an array in a column that is not multivalue',
+      string('v'),
+      ['a'],
+      '["a"]',
+      'a `string` column needs a string, or null.',
+    ],
+    [
+      'a mistyped value inside a multivalue cell',
+      { ...string('v'), multivalue: true },
+      ['a', 1],
+      '["a",1]',
+      'a multivalue `string` column needs a string, null, or an array of those.',
+    ],
+  ])(
+    'names the column, row, value and need for %s',
+    (_, column, cell, held, needs) => {
+      expect(
+        issuesOf(
+          'metric',
+          metric({ data: { columns: [column], rows: [[null], [cell]] } })
+        )
+      ).toContainEqual({
+        path: 'data.rows.1.0',
+        message: `${DATA_RULES.cellType} Row 1 of column "v" holds ${held}; ${needs}`,
+      });
+    }
+  );
+
+  it('shortens a long value in a cell type message', () => {
+    const [{ message } = { message: '' }] = issuesOf(
+      'metric',
+      metric({ data: { columns: [number('v')], rows: [['x'.repeat(500)]] } })
+    );
+    expect(message).toContain(`holds "${'x'.repeat(39)}…;`);
+    expect(message).not.toContain('x'.repeat(40));
+  });
+
+  const circular: unknown[] = [];
+  circular.push(circular);
+
+  it.each([
+    ['a bigint', 10n, '10n'],
+    ['a circular array', circular, 'a value with no JSON text'],
+    ['an array holding a bigint', [10n], 'a value with no JSON text'],
+    ['a symbol', Symbol('s'), 'Symbol(s)'],
+    ['a function', () => 1, '() => 1'],
+  ])('reports the problems after %s cell', (_, cell, held) => {
+    const issues = issuesOf(
+      'metric',
+      metric({
+        data: {
+          columns: [number('v')],
+          rows: [[cell], ['one']],
+          display: { w: ['x'] },
+        },
+      })
+    );
+    expect(issues).toContainEqual({
+      path: 'data.rows.0.0',
+      message: containing(`Row 0 of column "v" holds ${held};`),
+    });
+    expect(issues).toContainEqual({
+      path: 'data.rows.1.0',
+      message: containing('Row 1 of column "v" holds "one";'),
+    });
+    expect(issues).toContainEqual({
+      path: 'data.display.w',
+      message: containing(DATA_RULES.display),
+    });
+  });
+
+  it.each([
+    ['NaN', number('v'), Number.NaN],
+    ['Infinity', number('v'), Number.POSITIVE_INFINITY],
+    [
+      '-Infinity in a multivalue cell',
+      { ...number('v'), multivalue: true },
+      [Number.NEGATIVE_INFINITY],
+    ],
+  ])('says a %s cell must be finite', (_, column, cell) => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ data: { columns: [column], rows: [[cell]] } })
+      )
+    ).toEqual([
+      {
+        path: 'data.rows.0.0',
+        message:
+          'must be a finite number, a string, a boolean, null, or an array of those',
+      },
+    ]);
+  });
+
   it('rejects display strings for an unknown column or of the wrong length', () => {
     const issues = issuesOf(
       'metric',
@@ -163,8 +291,53 @@ describe('chart data', () => {
   });
 });
 
+describe('a color of the wrong shape', () => {
+  const forms =
+    '`{ light, dark }` hex colors (`#rgb`, `#rrggbb` or `#rrggbbaa`), a `{ token }`, or a `{ palette: "categorical", index }`';
+
+  it.each(['red', { token: 'series' }, { palette: 'categorical' }])(
+    'names the shapes a color takes for %j',
+    (color) => {
+      expect(
+        issuesOf('metric', metric({ colors: { byKey: { v: color } } }))
+      ).toEqual([{ path: 'colors.byKey.v', message: `must be ${forms}` }]);
+    }
+  );
+
+  it('names `bands` too where a metric takes it', () => {
+    expect(
+      issuesOf('metric', metric({ value: { column: 'v', color: 'red' } }))
+    ).toEqual([
+      { path: 'value.color', message: `must be \`"bands"\`, ${forms}` },
+    ]);
+  });
+
+  it('keeps the hex message for one bad scheme', () => {
+    expect(
+      issuesOf(
+        'metric',
+        metric({ colors: { byKey: { v: { light: 'red', dark: '#000' } } } })
+      )
+    ).toEqual([
+      {
+        path: 'colors.byKey.v.light',
+        message: 'must be a #rgb, #rrggbb or #rrggbbaa color',
+      },
+    ]);
+  });
+});
+
 describe('color bands', () => {
   const color = { light: '#000000', dark: '#ffffff' };
+
+  it('states one bandsRange rule on every primitive that takes one', () => {
+    expect([
+      GAUGE_RULES.bandsRange,
+      HEATMAP_RULES.bandsRange,
+      LEGACY_METRIC_RULES.bandsRange,
+      METRIC_RULES.bandsRange,
+    ]).toEqual(Array(4).fill(BANDS_RANGE_SENTENCE));
+  });
 
   it.each([
     ['reversed bounds', [{ from: 5, to: 1, color }]],
@@ -204,308 +377,5 @@ describe('color bands', () => {
         })
       )
     ).toEqual([]);
-  });
-});
-
-describe('metric', () => {
-  it('rejects a reference to a missing column', () => {
-    expectRule(
-      'metric',
-      metric({ value: { column: 'nope' } }),
-      COLUMN_REF_RULE,
-      'value.column'
-    );
-  });
-
-  it('requires arithmetic operands to be single-valued numbers', () => {
-    const data = { columns: [number('v'), string('s')], rows: [[1, 'x']] };
-    expectRule(
-      'metric',
-      metric({
-        data,
-        secondary: { column: 's', compare: { to: 'primary' } },
-      }),
-      METRIC_RULES.operands,
-      'secondary.column'
-    );
-    expectRule(
-      'metric',
-      metric({
-        data: { columns: [string('s')], rows: [['x']] },
-        value: { column: 's' },
-        background: { kind: 'bar', max: 'v' },
-      }),
-      METRIC_RULES.operands,
-      'value.column'
-    );
-    expectRule(
-      'metric',
-      metric({
-        data: {
-          columns: [{ ...number('v'), multivalue: true }],
-          rows: [[[1, 2]]],
-        },
-        value: { column: 'v', color: 'bands' },
-      }),
-      METRIC_RULES.operands,
-      'value.column'
-    );
-    expect(
-      issuesOf(
-        'metric',
-        metric({
-          data: { columns: [string('s')], rows: [['x']] },
-          value: { column: 's' },
-        })
-      )
-    ).toEqual([]);
-  });
-
-  it('requires a date cell to be a real instant with a UTC offset', () => {
-    const withDate = (cell: string) =>
-      metric({
-        data: { columns: [date('d')], rows: [[cell]] },
-        value: { column: 'd' },
-      });
-    for (const bad of [
-      '2026-11-03T00:00:00',
-      '2026-02-30T00:00:00Z',
-      '2026-11-03T00:00:00Z\n',
-      '1900-02-29T00:00:00Z',
-    ]) {
-      expect(issuesOf('metric', withDate(bad)).length).toBeGreaterThan(0);
-    }
-    for (const good of [
-      '2026-11-03T00:00:00Z',
-      '2026-11-03T01:00:00+01:00',
-      '0000-02-29T00:00:00Z',
-      '2000-02-29T00:00:00Z',
-    ]) {
-      expect(issuesOf('metric', withDate(good))).toEqual([]);
-    }
-  });
-
-  it('rejects a non-number bar maximum', () => {
-    expectRule(
-      'metric',
-      metric({
-        data: { columns: [number('v'), string('m')], rows: [[1, 'x']] },
-        background: { kind: 'bar', max: 'm' },
-      }),
-      METRIC_RULES.columnType,
-      'background.max'
-    );
-  });
-
-  it('checks trend references against the trend table', () => {
-    const issues = issuesOf(
-      'metric',
-      metric({
-        background: {
-          kind: 'trend',
-          data: { columns: [string('t'), number('y')], rows: [] },
-          x: 't',
-          y: 'v',
-        },
-      })
-    );
-    expect(issues).toEqual([
-      {
-        path: 'background.x',
-        message: containing(METRIC_RULES.columnType),
-      },
-      {
-        path: 'background.y',
-        message: containing(METRIC_RULES.trendColumns),
-      },
-    ]);
-  });
-
-  it('rejects a trend breakdown without a metric breakdown', () => {
-    expectRule(
-      'metric',
-      metric({
-        background: {
-          kind: 'trend',
-          data: { columns: [date('t'), number('y'), string('b')], rows: [] },
-          x: 't',
-          y: 'y',
-          breakdown: 'b',
-        },
-      }),
-      METRIC_RULES.trendBreakdown,
-      'background.breakdown'
-    );
-  });
-
-  it('rejects several rows without a breakdown', () => {
-    expectRule(
-      'metric',
-      metric({ data: { columns: [number('v')], rows: [[1], [2]] } }),
-      METRIC_RULES.oneRow,
-      'data.rows'
-    );
-  });
-
-  it('rejects a bands color with no bands', () => {
-    expectRule(
-      'metric',
-      metric({ value: { column: 'v', color: 'bands' } }),
-      METRIC_RULES.bands,
-      'value.color'
-    );
-  });
-
-  it('rejects percentage bands with nothing to supply a maximum', () => {
-    expectRule(
-      'metric',
-      metric({ value: { column: 'v', bandsRange: 'percentage' } }),
-      METRIC_RULES.percentage,
-      'value.bandsRange'
-    );
-  });
-});
-
-describe('xyChart', () => {
-  const xy = (overrides: Record<string, unknown> = {}) => ({
-    type: 'xyChart',
-    data: {
-      columns: [date('t'), number('y'), string('s')],
-      rows: [[0, 1, 'a']],
-    },
-    layers: [{ kind: 'data', mark: 'line', x: 't', y: [{ column: 'y' }] }],
-    ...overrides,
-  });
-
-  it('accepts the minimal chart', () => {
-    expect(issuesOf('xyChart', xy())).toEqual([]);
-  });
-
-  it('rejects a y column that is not a number', () => {
-    expectRule(
-      'xyChart',
-      xy({ layers: [{ kind: 'data', mark: 'bar', y: [{ column: 's' }] }] }),
-      XY_RULES.yType,
-      'layers.0.y.0.column'
-    );
-  });
-
-  it('rejects a missing split column', () => {
-    expectRule(
-      'xyChart',
-      xy({
-        layers: [
-          { kind: 'data', mark: 'bar', y: [{ column: 'y' }], splitBy: 'z' },
-        ],
-      }),
-      COLUMN_REF_RULE,
-      'layers.0.splitBy'
-    );
-  });
-
-  it('rejects a stacked line', () => {
-    expectRule(
-      'xyChart',
-      xy({
-        layers: [
-          {
-            kind: 'data',
-            mark: 'line',
-            stack: 'stacked',
-            y: [{ column: 'y' }],
-          },
-        ],
-      }),
-      XY_RULES.stack,
-      'layers.0.stack'
-    );
-  });
-
-  it.each([
-    ['past the end', [0, 2]],
-    ['reversed', [1, 0]],
-  ])('rejects a row range %s', (_, rows) => {
-    expectRule(
-      'xyChart',
-      xy({
-        layers: [{ kind: 'data', mark: 'bar', y: [{ column: 'y' }], rows }],
-      }),
-      XY_RULES.rows,
-      'layers.0.rows'
-    );
-  });
-
-  it('rejects a chart with no data layer', () => {
-    expectRule(
-      'xyChart',
-      xy({ layers: [{ kind: 'referenceLines', lines: [{ value: 1 }] }] }),
-      XY_RULES.dataLayer,
-      'layers'
-    );
-  });
-
-  it('rejects an annotation range that ends before it starts', () => {
-    expectRule(
-      'xyChart',
-      xy({
-        layers: [
-          { kind: 'data', mark: 'line', y: [{ column: 'y' }] },
-          {
-            kind: 'annotations',
-            events: [
-              {
-                kind: 'range',
-                from: '2026-11-03T02:00:00Z',
-                to: Date.UTC(2026, 10, 3, 1),
-              },
-            ],
-          },
-        ],
-      }),
-      XY_RULES.rangeOrder,
-      'layers.1.events.0'
-    );
-  });
-});
-
-describe('grid', () => {
-  const metricNode = metric();
-
-  it('rejects a panel past the last column', () => {
-    expectRule(
-      'grid',
-      {
-        type: 'grid',
-        panels: [{ x: 40, y: 0, w: 12, h: 4, node: metricNode }],
-      },
-      GRID_RULES.width,
-      'panels.0.w'
-    );
-  });
-
-  it('rejects a repeated id across panels and sections', () => {
-    expectRule(
-      'grid',
-      {
-        type: 'grid',
-        panels: [{ id: 'a', x: 0, y: 0, w: 12, h: 4, node: metricNode }],
-        sections: [{ id: 'a', title: 'A', y: 4, panels: [] }],
-      },
-      GRID_RULES.ids,
-      'sections.0.id'
-    );
-  });
-});
-
-describe('unsupported', () => {
-  it('rejects a script link', () => {
-    expect(
-      issuesOf('unsupported', {
-        type: 'unsupported',
-        title: 'x',
-        reason: 'y',
-        link: { href: 'javascript:alert(1)', label: 'Open' },
-      }).map(({ path }) => path)
-    ).toEqual(['link.href']);
   });
 });

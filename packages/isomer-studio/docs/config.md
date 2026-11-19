@@ -24,18 +24,19 @@ export default defineStudioConfig({
 });
 ```
 
-| Field                       | Required | What it does                                                                                                                                                                                                                                                                                                  |
-| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `runtime`                   | Yes      | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers.                                                                                                                                                                                     |
-| `title`                     | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                                                                                         |
-| `stylesheet()`              | No       | The CSS the React preview needs. The Studio calls it once and adopts the result into each preview's shadow root.                                                                                                                                                                                              |
-| `createReactContext(root)`  | No       | Returns the render context the pack's renderers expect, inside the React preview's shadow root, after `stylesheet` is adopted there. Call `adoptStylesheet(root, css)` for any other CSS. Without it the context is empty, and without it or `stylesheet` the React preview shows the `html` surface instead. |
-| `previewExample(node)`      | No       | The composition one node is shown in on its own, such as a slide around it. The Studio adds the theme and puts several nodes in a `view`. See [`previewExample` and `compose`](#previewexample-and-compose).                                                                                                  |
-| `compose(nodes, { theme })` | No       | Wraps example nodes in a composition, for full control. Wins over `previewExample`. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                                       |
-| `apps`                      | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                                                                                            |
-| `imageFonts`                | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                                                                                     |
-| `images`                    | No       | `false` turns off PNGs and PDFs: no PNG previews, Decks PDFs or prerendered PNGs, and takumi never loads. See [Turning images off](#turning-images-off).                                                                                                                                                      |
-| `featured`                  | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                                                                                   |
+| Field                        | Required | What it does                                                                                                                                                                                                                                                                                                  |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `runtime`                    | Yes      | The runtime from `createIsomerRuntime`. Its packs are what the Studio lists, and its surfaces are the previews it offers.                                                                                                                                                                                     |
+| `title`                      | No       | Replaces the header, the page title, and the `check` report name. Defaults to `Isomer Studio`. Leave it unset to keep the product name; a runtime with more than one pack shows each pack in the nav.                                                                                                         |
+| `stylesheet()`               | No       | The CSS the React preview needs. The Studio calls it once and adopts the result into each preview's shadow root.                                                                                                                                                                                              |
+| `createReactContext(root)`   | No       | Returns the render context the pack's renderers expect, inside the React preview's shadow root, after `stylesheet` is adopted there. Call `adoptStylesheet(root, css)` for any other CSS. Without it the context is empty, and without it or `stylesheet` the React preview shows the `html` surface instead. |
+| `previewExample(node)`       | No       | The composition one node is shown in on its own, such as a slide around it. The Studio adds the theme and puts several nodes in a `view`. See [`previewExample` and `compose`](#previewexample-and-compose).                                                                                                  |
+| `compose(nodes, { theme })`  | No       | Wraps example nodes in a composition, for full control. Wins over `previewExample`. Defaults to `{ type: 'view', body: nodes, theme }`.                                                                                                                                                                       |
+| `snapshotFrame(composition)` | No       | The runtime frame a composition's `snapshot` preview and PNG use, by name; `undefined` keeps the runtime's `defaultFrame`. A PDF draws every page in its first page's. See [Frames per composition](#frames-per-composition).                                                                                 |
+| `apps`                       | No       | Pages that demonstrate the pack, listed in the nav and on Home. See [Apps](#apps).                                                                                                                                                                                                                            |
+| `imageFonts`                 | No       | A module path, relative to the config, whose default export lists the takumi `FontLoader`s PNGs and PDFs draw text with. See [Image fonts](#image-fonts).                                                                                                                                                     |
+| `images`                     | No       | `false` turns off PNGs and PDFs: no PNG previews, Decks PDFs or prerendered PNGs, and takumi never loads. See [Turning images off](#turning-images-off).                                                                                                                                                      |
+| `featured`                   | No       | Primitive types Home features, in order. Without it Home draws six at random on each load. See [Featured primitives](#featured-primitives).                                                                                                                                                                   |
 
 ## `previewExample` and `compose`
 
@@ -45,6 +46,19 @@ The default fits a pack whose primitives render inside a plain `view`. A pack wh
 
 `compose` receives the theme the Studio is showing, `light` or `dark`, and puts it on the composition; with `previewExample`, the Studio does. That theme is the app's color mode, so previews always match the chrome around them. Light and dark are then different compositions, which is how a static build tells their PNGs apart.
 
+## Frames per composition
+
+A runtime with several frames draws `snapshot` in its `defaultFrame` unless a render names another. `snapshotFrame` names one per composition, for the `snapshot` preview, PNGs and `check`, so packs whose frames need different roots can share one Studio. A PDF is one document in one frame: every page draws in the frame its first composition names, so a PDF that mixes slides and charts fails the first frame's body rules. The repository's Studio draws slides in the slide deck frame and charts in `chartsFrame`:
+
+```ts
+snapshotFrame: ({ body }) =>
+  body.length && body.every(({ type }) => chartsPack.types.has(type))
+    ? 'charts'
+    : undefined,
+```
+
+A runtime's frames share one theme type. When two frames' themes differ, give each the keys the other reads, as the repository's config gives the slide deck frame the charts keys.
+
 ## Turning images off
 
 `images: false` keeps the Studio in the browser. Node never loads `@elastic/isomer-image-takumi` or `imageFonts`, `build` writes no PNGs, PNG previews and PDF actions are hidden, and `dev` answers `/png` and `/pdf` with 404. The `snapshot` surface's markup still renders, and `check --png` refuses the config.
@@ -53,7 +67,7 @@ Toggling it in `dev` hot-updates in place, keeping the route and the editor's dr
 
 ## Featured primitives
 
-Home opens with a strip of featured primitives, each with a link to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:
+Home features a few primitives, each as a card with a live preview of its first example and links to its Reference page and to the Workbench. `featured` names them by type, in the order they appear:
 
 ```ts
 export default defineStudioConfig({
@@ -66,7 +80,7 @@ Without `featured`, Home draws six primitives at random each time it loads, so a
 
 ## Apps
 
-An app is a whole page of the Studio, such as a deck viewer. Each one gets a top-level nav entry beside Gallery, a tile on Home, and a route at `#/app/<id>/`.
+An app is a whole page of the Studio, such as a deck viewer. Each one gets a top-level nav entry beside Gallery, a link on Home, and a route at `#/app/<id>/`.
 
 ```ts
 export default defineStudioConfig({
@@ -85,8 +99,8 @@ export default defineStudioConfig({
 | Field         | Required | What it does                                                                                                                        |
 | ------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `id`          | Yes      | The route segment, matching `/^[a-z][a-z0-9-]*$/` and unique within the config.                                                     |
-| `title`       | Yes      | The nav entry, the header's label while the app is open, and the Home tile's title.                                                 |
-| `description` | No       | One line under the title on the Home tile and in Home's Loaded panel.                                                               |
+| `title`       | Yes      | The nav entry, the header's label while the app is open, and the link on Home.                                                      |
+| `description` | No       | One line under the app's link on Home.                                                                                              |
 | `icon`        | No       | A `PrimitiveIcon`, held to the same rules as a primitive's icon by `check`. Without one, the nav and Home show the title's initial. |
 | `load`        | Yes      | Imports a module whose default export is the app's page.                                                                            |
 | `pages`       | No       | Nav rows under the app's own row. See [Pages](#pages).                                                                              |

@@ -24,7 +24,6 @@ import { slideDeckPrimitives } from './registry';
 import { slideDistillery } from './theme/distillery';
 import { type SlideFrameTheme, slidePaletteForMode } from './theme/palette';
 import { scalePx } from './theme/scale';
-import { createDistillateStyleAdapter } from './theme/style_adapter';
 import { SLIDE_THEME } from './theme/theme';
 
 /** Pixel width of {@link slideDeckFrame}. */
@@ -65,12 +64,10 @@ export const slideDeckFrame: Frame<SlideFrameTheme> = {
   wrap: (_header, body, _viewport) => body[0],
 };
 
-const styleAdapter = createDistillateStyleAdapter(slideDistillery);
-
 const packInput = {
   id: 'slides',
   primitives: slideDeckPrimitives,
-  styleAdapter,
+  distillery: slideDistillery,
   authoring: slidesPackAuthoring,
   enhancements: [slideBuildsEnhancement, slideCopyEnhancement],
 } satisfies PrimitivePackInput;

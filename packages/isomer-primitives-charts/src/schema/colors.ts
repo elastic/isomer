@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 import { crossSuperRefine } from './cross_field';
 
@@ -25,19 +25,26 @@ const CHROME_TOKENS = [
   'border',
 ] as const;
 
+/** The shapes a color takes, as a validation message names them. */
+export const COLOR_VALUE_FORMS =
+  '`{ light, dark }` hex colors (`#rgb`, `#rrggbb` or `#rrggbbaa`), a `{ token }`, or a `{ palette: "categorical", index }`';
+
 /**
  * A color, resolved by whoever built the node: concrete for both schemes,
  * a chrome token, or an index into the default categorical palette.
  */
 export const colorValueSchema = z
-  .union([
-    z.strictObject({ light: hexColorSchema, dark: hexColorSchema }),
-    z.strictObject({ token: z.enum(CHROME_TOKENS) }),
-    z.strictObject({
-      palette: z.literal('categorical'),
-      index: z.int().min(0),
-    }),
-  ])
+  .union(
+    [
+      z.strictObject({ light: hexColorSchema, dark: hexColorSchema }),
+      z.strictObject({ token: z.enum(CHROME_TOKENS) }),
+      z.strictObject({
+        palette: z.literal('categorical'),
+        index: z.int().min(0),
+      }),
+    ],
+    { error: () => `must be ${COLOR_VALUE_FORMS}` }
+  )
   .describe(
     'A color. Data colors are concrete for both schemes (`{ light, dark }`). `{ token }` is for chrome only: text, axes, grid lines, background, borders. `{ palette: "categorical", index }` picks from the default categorical palette, for charts authored with no palette of their own.'
   );
@@ -51,7 +58,7 @@ export type ColorValue = z.infer<typeof colorValueSchema>;
  * ":" cannot be mistaken for two.
  */
 export const KEY_PART_RULE =
-  'A key part is the value as a string with each `\\` and `:` preceded by `\\`; a missing (null) cell is the key part `\\null`, which no string produces.';
+  'A key part is the value as a string with each `\\` and `:` preceded by `\\`; a missing (null) cell is the key part `\\null`, and a multivalue cell is `\\` followed by the key part of its JSON text, such as `\\["a"]`; no string produces either.';
 
 /** The rule `chartColorsSchema` states for `colors.bands`. */
 export const BAND_RULE =
@@ -65,7 +72,9 @@ const colorBandSchema = z.strictObject({
   to: z
     .number()
     .optional()
-    .describe('Exclusive upper bound. Absent means unbounded.'),
+    .describe(
+      'Exclusive upper bound, except on the last band, which includes it. Absent means unbounded.'
+    ),
   color: colorValueSchema,
 });
 
@@ -126,3 +135,24 @@ export const chartColorsSchema = chartColorsObjectSchema
 
 /** Colors resolved by whoever built the node. */
 export type ChartColors = z.infer<typeof chartColorsSchema>;
+
+/** The rule every primitive with a `bandsRange` states. */
+export const BANDS_RANGE_RULE = 'A `bandsRange` needs `colors.bands`.';
+
+/** Adds a {@link BANDS_RANGE_RULE} issue at `path` for a `bandsRange` stated with no bands. */
+export const checkBandsRange = (
+  {
+    bandsRange,
+    colors,
+  }: { bandsRange?: string | undefined; colors?: ChartColors | undefined },
+  context: z.core.$RefinementCtx<unknown>,
+  path: readonly string[] = ['bandsRange']
+): void => {
+  if (bandsRange !== undefined && !colors?.bands?.length) {
+    context.addIssue({
+      code: 'custom',
+      path: [...path],
+      message: BANDS_RANGE_RULE,
+    });
+  }
+};

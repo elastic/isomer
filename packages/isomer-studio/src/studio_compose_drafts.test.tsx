@@ -95,7 +95,7 @@ describe('IsomerStudio', () => {
 
       fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
       fireEvent.click(
-        await screen.findByRole('link', { name: /Open the workbench/ })
+        await screen.findByRole('link', { name: 'Open the Workbench' })
       );
       await findEditor();
       const nav = screen.getByRole('navigation', { name: 'Primitives' });
@@ -125,7 +125,7 @@ describe('IsomerStudio', () => {
         'Quick.'
       );
       fireEvent.click(
-        await screen.findByRole('link', { name: /Open the workbench/ })
+        await screen.findByRole('link', { name: 'Open the Workbench' })
       );
       await findEditor();
       const nav = screen.getByRole('navigation', { name: 'Primitives' });
@@ -243,7 +243,7 @@ describe('IsomerStudio', () => {
           screen.getByRole('link', { name: 'Isomer Studio home' })
         );
         fireEvent.click(
-          await screen.findByRole('link', { name: /Open the workbench/ })
+          await screen.findByRole('link', { name: 'Open the Workbench' })
         );
         await findEditor();
         const nav = screen.getByRole('navigation', { name: 'Primitives' });

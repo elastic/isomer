@@ -9,9 +9,9 @@ import {
   type AnyPrimitivePack,
   IsomerError,
   type PrimitiveNode,
-  type PrimitivePack,
   type PrimitiveStyleCollector,
 } from '@elastic/isomer-sdk';
+import { createDistillateStyleAdapter } from '@elastic/isomer-sdk/html';
 
 import type { HTMLStyleAdapter } from '../surfaces';
 
@@ -22,14 +22,11 @@ type ResolvedAdapter<TRenderContext> = HTMLStyleAdapter<
 >;
 
 /**
- * The adapter the HTML surface runs: the host's if it supplied one, otherwise
- * the one composed pack's that declares one.
- *
- * A runtime styles with one engine. Two packs declaring an adapter throw
- * `AMBIGUOUS_STYLE_ADAPTER`; the host chooses by passing `styleAdapter`.
+ * The host's adapter if it supplied one; otherwise one Distillate adapter over
+ * every pack's distillery, or the one pack's own `styleAdapter`.
  */
-export const resolveStyleAdapter = <TTheme, TRenderContext>(
-  packs: readonly PrimitivePack<TTheme>[],
+export const resolveStyleAdapter = <TRenderContext>(
+  packs: readonly AnyPrimitivePack[],
   hostAdapter: ResolvedAdapter<TRenderContext> | undefined
 ): ResolvedAdapter<TRenderContext> | undefined => {
   if (hostAdapter !== undefined) {
@@ -39,14 +36,35 @@ export const resolveStyleAdapter = <TTheme, TRenderContext>(
     });
     return hostAdapter;
   }
-  const styled = packs.filter((pack) => pack.styleAdapter !== undefined);
-  if (styled.length > 1) {
+  const distilleries = packs.flatMap(({ distillery }) =>
+    distillery === undefined ? [] : [distillery]
+  );
+  const sources = [
+    ...packs.flatMap(({ id, styleAdapter }) =>
+      styleAdapter === undefined ? [] : [`pack "${id}"'s styleAdapter`]
+    ),
+    ...(distilleries.length > 0
+      ? [
+          `the distilleries of packs ${packs
+            .filter(({ distillery }) => distillery !== undefined)
+            .map(({ id }) => `"${id}"`)
+            .join(', ')}`,
+        ]
+      : []),
+  ];
+  if (sources.length > 1) {
     throw new IsomerError(
       'AMBIGUOUS_STYLE_ADAPTER',
-      `runtime: packs ${styled.map(({ id }) => `"${id}"`).join(', ')} each declare a styleAdapter, but a runtime styles with one; supply styleAdapter to choose it`
+      `runtime: ${sources.join(' and ')} each style the HTML surface; supply styleAdapter to choose one`
     );
   }
-  const owner = styled[0];
+  if (distilleries.length > 0) {
+    assertNoCollectingPacks(packs);
+    return createDistillateStyleAdapter(
+      distilleries
+    ) as unknown as ResolvedAdapter<TRenderContext>;
+  }
+  const owner = packs.find(({ styleAdapter }) => styleAdapter !== undefined);
   if (owner?.styleAdapter === undefined) {
     return undefined;
   }
@@ -55,6 +73,21 @@ export const resolveStyleAdapter = <TTheme, TRenderContext>(
     tag: owner.styleAdapter.styleCollector,
   });
   return owner.styleAdapter as ResolvedAdapter<TRenderContext>;
+};
+
+/** Throws for a pack that declares `collectStyles`, which the Distillate adapter never runs. */
+const assertNoCollectingPacks = (packs: readonly AnyPrimitivePack[]): void => {
+  for (const pack of packs) {
+    const collecting = pack.primitives.find(
+      (definition) => definition.collectStyles !== undefined
+    );
+    if (collecting !== undefined) {
+      throw new IsomerError(
+        'INCOMPATIBLE_STYLE_COLLECTOR',
+        `runtime: pack "${pack.id}" primitive "${collecting.type}" declares collectStyles, which the Distillate style adapter never runs; supply a styleAdapter that does`
+      );
+    }
+  }
 };
 
 interface CollectorSource {

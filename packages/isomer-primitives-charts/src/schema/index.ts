@@ -6,19 +6,18 @@
  */
 
 export {
-  gridCatalog,
-  metricCatalog,
-  unsupportedCatalog,
-  xyChartCatalog,
-} from './catalog';
-export {
   type ChartColors,
   type ColorBand,
   type ColorValue,
+  BANDS_RANGE_RULE,
+  COLOR_VALUE_FORMS,
+  KEY_PART_RULE,
   chartColorsSchema,
+  checkBandsRange,
   colorValueSchema,
 } from './colors';
 export { chartCoreShape } from './core';
+export { crossSuperRefine } from './cross_field';
 export {
   type Cell,
   type ChartColumn,
@@ -26,6 +25,7 @@ export {
   type ColumnRole,
   type ColumnType,
   type ScalarCell,
+  cellMatchesColumn,
   cellSchema,
   chartDataSchema,
 } from './data';
@@ -39,45 +39,37 @@ export {
   INTERACTION_RULES,
   SELECT_TARGETS,
   brushingInteractionsSchemaFor,
+  brushInteractionsSchemaFor,
   brushSchema,
   chartEventSchema,
   checkInteractions,
   emphasisSchema,
   interactionsCoreShape,
   interactionsSchemaFor,
+  linkSchema,
   readChartEvent,
   selectSchema,
   toActionEvent,
 } from './events';
-export { chartEventExamples } from './examples/events';
-export { gridExamples } from './examples/grid';
-export { metricExamples } from './examples/metric';
-export { unsupportedExamples } from './examples/unsupported';
-export { xyChartExamples } from './examples/xy_chart';
+export { BYTES, HOUR, NUMBER, PERCENT, START } from './examples';
 export {
+  type DurationOutputUnit,
   type DurationUnit,
   type PortableFormat,
+  FORMAT_RULES,
   portableFormatSchema,
 } from './format';
-export {
-  type GridNode,
-  type GridPanel,
-  type GridReadingEntry,
-  type GridSection,
-  GRID_COLUMNS,
-  GRID_RULES,
-  GRID_SINGLE_COLUMN_BELOW,
-  gridReadingOrder,
-  gridSchema,
-  gridSchemaFor,
-} from './grid';
-export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
+export { glyphSchema } from './icons';
+export { navigationHrefSchema } from './links';
 export {
   type Loss,
   type Provenance,
   lossSchema,
   provenanceSchema,
 } from './provenance';
-export { type ColumnReference, columnRefSchema } from './references';
-export { type UnsupportedNode, unsupportedSchema } from './unsupported';
-export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';
+export {
+  type ColumnReference,
+  COLUMN_REF_RULE,
+  checkColumnReferences,
+  columnRefSchema,
+} from './references';

@@ -7,13 +7,23 @@
 
 import type { PortableFormat } from '../format';
 
-// Kibana's default patterns (`format:number:defaultPattern` and siblings).
-export const NUMBER: PortableFormat = { kind: 'number', pattern: '0,0.[000]' };
+/** A number with up to three fraction digits. */
+export const NUMBER: PortableFormat = {
+  kind: 'number',
+  maximumFractionDigits: 3,
+};
+/** A percent with up to three fraction digits. */
 export const PERCENT: PortableFormat = {
   kind: 'percent',
-  pattern: '0,0.[000]%',
+  maximumFractionDigits: 3,
 };
-export const BYTES: PortableFormat = { kind: 'bytes', pattern: '0,0.[0]b' };
+/** Bytes with up to one fraction digit. */
+export const BYTES: PortableFormat = {
+  kind: 'bytes',
+  maximumFractionDigits: 1,
+};
 
+/** One hour in milliseconds. */
 export const HOUR = 3_600_000;
+/** The first timestamp of the time-series examples, 2026-11-03 UTC. */
 export const START = Date.UTC(2026, 10, 3);

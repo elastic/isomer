@@ -68,6 +68,7 @@ The [SDK docs](https://elastic.github.io/isomer/sdk/) have the [quick start](htt
 | Entry        | Reach for it when                              |
 | ------------ | ---------------------------------------------- |
 | `.`          | Defining primitives, packs, frames; validating |
+| `./schema`   | Defining pack schemas without React or a DOM   |
 | `./html`     | Rendering HTML, writing a style adapter        |
 | `./text`     | Text envelopes                                 |
 | `./markdown` | Markdown envelopes and formatting              |

@@ -75,9 +75,13 @@ export {
 } from '../define';
 export {
   type AnyPrimitivePack,
+  type DistilleryCollector,
+  type DistilleryHandle,
   type EnhancementDefinition,
   type HostCapabilities,
   type PackAuthoringOptions,
+  type PackDistillery,
+  type PackInputBudget,
   type PrimitiveGroup,
   type PrimitivePack,
   type PrimitivePackInput,
@@ -95,10 +99,12 @@ export {
   LAYOUT_ROOM_ATTRIBUTE,
   NODE_ANCHOR_ATTRIBUTE,
   checkLayout,
+  contextWith,
   createPrimitiveDispatcher,
   formatDisplayValue,
   layoutRoom,
   nodeAnchor,
+  styleScopeOf,
   withNodeAnchors,
   withoutAnchors,
 } from '../render';

@@ -45,33 +45,28 @@ describe('IsomerStudio', () => {
   it('opens Home on an empty hash, and returns to it from the mark', async () => {
     window.location.hash = '';
     render(<IsomerStudio {...{ runtime }} />);
+    const home = await screen.findByTestId('home');
     expect(
-      await screen.findByRole('heading', {
+      within(home).getByRole('heading', {
         level: 1,
         name: 'What are we rendering today?',
       })
     ).toBeInTheDocument();
-    expect(
-      screen.queryByRole('button', { name: 'Reference' })
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole('main')).toContainElement(home);
     expect(
       screen.queryByRole('navigation', { name: 'Primitives' })
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole('banner')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('link', { name: /Open the workbench/ }));
+    fireEvent.click(
+      within(home).getByRole('link', { name: 'Open the Workbench' })
+    );
     await waitFor(() => expect(window.location.hash).toBe('#/dev/callout/0'));
     expect(await findEditor()).toBeInTheDocument();
-    expect(
-      screen.getByRole('button', { name: 'Reference' })
-    ).toBeInTheDocument();
+    expect(screen.queryByTestId('home')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
-    expect(
-      await screen.findByRole('heading', {
-        level: 1,
-        name: 'What are we rendering today?',
-      })
-    ).toBeInTheDocument();
+    expect(await screen.findByTestId('home')).toBeInTheDocument();
     expect(window.location.hash).toBe('#/home');
   });
 
@@ -79,7 +74,9 @@ describe('IsomerStudio', () => {
     window.location.hash = '#/docs/divider/0';
     render(<IsomerStudio {...{ runtime }} />);
     fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
-    const search = await screen.findByLabelText('Search primitives');
+    const home = await screen.findByTestId('home');
+    const search = screen.getByLabelText('Search primitives');
+    expect(home).toContainElement(search);
     fireEvent.focus(search);
     fireEvent.change(search, { target: { value: 'health' } });
     fireEvent.click(await screen.findByRole('option', { name: /Health/ }));
@@ -87,6 +84,7 @@ describe('IsomerStudio', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Health' })
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('Search primitives')).not.toBe(search);
   });
 
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {

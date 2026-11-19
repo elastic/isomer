@@ -42,6 +42,10 @@ export const renderMarkdownChildren = (
   scope: Pick<SlideRenderScope, 'renderMarkdownContent'>
 ): MarkdownContent => nodes.map((node) => scope.renderMarkdownContent(node));
 
+/** A container's label, uppercased on one line. */
+export const textCaption = (label: string): string =>
+  oneLine(label).toUpperCase();
+
 /** A container's label, uppercased in strong as its own paragraph. */
 export const markdownCaption = (label: string): MarkdownBlock =>
   md.paragraph(md.strong(label.toUpperCase()));
@@ -63,3 +67,7 @@ export const slackCaption = (text: string, strong = false): SlackBlock =>
       ),
     [text]
   );
+
+/** A container's label, uppercased in a strong {@link slackCaption}. */
+export const slackLabelCaption = (label: string): SlackBlock =>
+  slackCaption(label.toUpperCase(), true);

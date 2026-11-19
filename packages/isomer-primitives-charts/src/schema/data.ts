@@ -5,26 +5,29 @@
  * 2.0.
  */
 
-import { requiredString, z } from '@elastic/isomer-sdk';
+import { requiredString, z } from '@elastic/isomer-sdk/schema';
+
+import { isoDateTimeEpoch } from '../iso_date_time';
 
 import { crossSuperRefine } from './cross_field';
 import { portableFormatSchema } from './format';
 
-const scalarCellSchema = z.union([
-  z.number(),
-  z.string(),
-  z.boolean(),
-  z.null(),
-]);
+const CELL_MESSAGE =
+  'must be a finite number, a string, a boolean, null, or an array of those';
+
+const scalarCellSchema = z.union(
+  [z.number(), z.string(), z.boolean(), z.null()],
+  { error: () => CELL_MESSAGE }
+);
 
 /** One value in a non-multivalue cell. `null` is a missing value, never zero. */
 export type ScalarCell = z.infer<typeof scalarCellSchema>;
 
 /** A cell: one scalar, or an array of scalars for a multivalue column. */
-export const cellSchema = z.union([
-  scalarCellSchema,
-  z.array(scalarCellSchema),
-]);
+export const cellSchema = z.union(
+  [scalarCellSchema, z.array(scalarCellSchema)],
+  { error: () => CELL_MESSAGE }
+);
 
 /** A cell: one value, or an array of values in a `multivalue` column. */
 export type Cell = z.infer<typeof cellSchema>;
@@ -48,9 +51,19 @@ const columnSchema = z.strictObject({
     'Stable within the node. Every other field refers to the column by this id.'
   ),
   label: z.string().describe('What the column is called on every surface.'),
-  type: z.enum(COLUMN_TYPES),
-  role: z.enum(COLUMN_ROLES),
-  format: portableFormatSchema.optional(),
+  type: z
+    .enum(COLUMN_TYPES)
+    .describe('The kind of value the column’s cells hold.'),
+  role: z
+    .enum(COLUMN_ROLES)
+    .describe(
+      'A `dimension` column identifies a row, such as a category, bucket or time; a `metric` column measures it.'
+    ),
+  format: portableFormatSchema
+    .optional()
+    .describe(
+      'How the column’s values print. Absent means the default for its `type`: a number, a medium date and time, or the text as is.'
+    ),
   multivalue: z
     .literal(true)
     .optional()
@@ -75,44 +88,6 @@ export const DATA_RULES = {
   display: 'Each `display` key names a column and holds one string per row.',
 } as const;
 
-const ISO_DATE_TIME =
-  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.\d{1,9})?)?(?:Z|[+-](\d{2}):?(\d{2}))$/;
-
-// An offset is required so a date-time names one instant on every host; a
-// calendar-invalid value such as February 30 is rejected, not normalized.
-const isIsoDateTime = (value: string): boolean => {
-  const match = ISO_DATE_TIME.exec(value);
-  if (!match) {
-    return false;
-  }
-  const [year, month, day, hour, minute, second, offsetHour, offsetMinute] =
-    match.slice(1).map((part) => (part === undefined ? 0 : Number(part))) as [
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-      number,
-    ];
-  const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-  const daysInMonth =
-    [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1] ??
-    0;
-  return (
-    month >= 1 &&
-    month <= 12 &&
-    day >= 1 &&
-    day <= daysInMonth &&
-    hour <= 23 &&
-    minute <= 59 &&
-    second <= 59 &&
-    offsetHour <= 23 &&
-    offsetMinute <= 59
-  );
-};
-
 const scalarMatches = (type: ColumnType, value: ScalarCell): boolean => {
   if (value === null) {
     return true;
@@ -127,12 +102,13 @@ const scalarMatches = (type: ColumnType, value: ScalarCell): boolean => {
     case 'date':
       return (
         typeof value === 'number' ||
-        (typeof value === 'string' && isIsoDateTime(value))
+        (typeof value === 'string' && isoDateTimeEpoch(value) !== undefined)
       );
   }
 };
 
-const cellMatchesColumn = (
+/** Whether `cell` holds what `column`'s type and `multivalue` allow. */
+export const cellMatchesColumn = (
   column: Pick<ChartColumn, 'type' | 'multivalue'>,
   cell: Cell
 ): boolean =>
@@ -141,20 +117,89 @@ const cellMatchesColumn = (
       cell.every((value) => scalarMatches(column.type, value))
     : scalarMatches(column.type, cell);
 
+const CELL_NEEDS: Record<ColumnType, string> = {
+  number: 'a number',
+  string: 'a string',
+  boolean: 'a boolean',
+  date: 'epoch milliseconds or an ISO 8601 date-time string with a UTC offset',
+};
+
+const MAX_QUOTED_LENGTH = 40;
+
+const textOf = (value: unknown): string => {
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  if (typeof value === 'bigint') {
+    return `${value}n`;
+  }
+  try {
+    return JSON.stringify(value) ?? String(value);
+  } catch {
+    return 'a value with no JSON text';
+  }
+};
+
+/** Never throws: a throw inside a check drops the check's later issues. */
+const quoted = (value: unknown): string => {
+  const text = textOf(value);
+  return text.length > MAX_QUOTED_LENGTH
+    ? `${text.slice(0, MAX_QUOTED_LENGTH)}…`
+    : text;
+};
+
+const cellTypeMessage = (
+  { id, type, multivalue }: ChartColumn,
+  rowIndex: number,
+  cell: unknown
+): string => {
+  const needs = multivalue
+    ? `${CELL_NEEDS[type]}, null, or an array of those`
+    : `${CELL_NEEDS[type]}, or null`;
+  const kind = multivalue ? `multivalue \`${type}\`` : `\`${type}\``;
+  return `${DATA_RULES.cellType} Row ${rowIndex} of column "${id}" holds ${quoted(cell)}; a ${kind} column needs ${needs}.`;
+};
+
 const DATA_DESCRIPTION = [
   'Typed columnar data, as the source table holds it: rows are never reordered, and a selection refers to them by index.',
   ...Object.values(DATA_RULES),
 ].join(' ');
 
 const chartDataObjectSchema = z.strictObject({
-  columns: z.array(columnSchema).min(1),
-  rows: z.array(z.array(cellSchema)),
+  columns: z
+    .array(columnSchema)
+    .min(1)
+    .describe('The table’s columns, in order.'),
+  rows: z
+    .array(z.array(cellSchema))
+    .describe(
+      'One array per row, with one cell per column in `columns` order.'
+    ),
   source: z
     .unknown()
     .optional()
     .describe(
       'Opaque table-level meta, never rendered, such as Kibana `Datatable` meta.'
     ),
+  missing: z
+    .strictObject({
+      null: z
+        .string()
+        .optional()
+        .describe('A missing (`null`) cell. Absent means `(null)`.'),
+      empty: z
+        .string()
+        .optional()
+        .describe('An empty string. Absent means `(blank)`.'),
+      nan: z
+        .string()
+        .optional()
+        .describe(
+          'A number-like value that is not a number. Absent means `NaN`.'
+        ),
+    })
+    .optional()
+    .describe('The text for cells a format cannot show.'),
   display: z
     .record(z.string(), z.array(z.string()))
     .optional()
@@ -200,7 +245,7 @@ const checkRows = ({ columns, rows }: ChartDataInput, context: Issues) => {
         context.addIssue({
           code: 'custom',
           path: ['rows', rowIndex, columnIndex],
-          message: `${DATA_RULES.cellType} Column "${column.id}" is \`${column.type}\`${column.multivalue ? ' and multivalue' : ''}.`,
+          message: cellTypeMessage(column, rowIndex, cell),
         });
       }
     });

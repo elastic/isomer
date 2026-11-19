@@ -27,7 +27,7 @@ A pack is a vocabulary as a value, built and checked by `definePrimitivePack`, w
 
 `definePrimitivePack` throws `UNKNOWN_PRIMITIVE_TYPE` for a group naming an unregistered type, `DUPLICATE_PRIMITIVE_TYPE` for a type in two groups, and `INVALID_PACK_GROUPS` for a title used twice or titled `UNCATEGORIZED_GROUP_TITLE` (`'Uncategorized'`), the heading the index lists ungrouped types under.[^pack]
 
-The SDK ships no adapter for any CSS engine and does not depend on `@elastic/distillate`.
+A pack authored in Distillate declares its `distillery` rather than an adapter; the SDK types it structurally as `PackDistillery` and does not depend on `@elastic/distillate`.
 
 A pack exposes `icons`, each primitive's `icon` by type for the primitives that declare one, and `composePacks` merges them across packs. Both are frozen null-prototype dictionaries, so a type named `__proto__` is an ordinary key and an absent type such as `constructor` reads `undefined`.[^pack]
 

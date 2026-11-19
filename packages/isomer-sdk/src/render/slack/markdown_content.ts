@@ -23,6 +23,7 @@ import type {
 
 import type { MarkdownContent } from '../../define/markdown_content';
 import { gfmBlocks, resolvedMarkdownBlocks } from '../markdown/blocks';
+import { footnoteLabel, plainText } from '../markdown/plain_text';
 
 import {
   SLACK_LIMITS,
@@ -45,25 +46,6 @@ import {
   fitsTableShape,
   splitRichTextElement,
 } from './rich_text';
-
-const footnoteLabel = ({
-  identifier,
-  label,
-}: Pick<FootnoteDefinition, 'identifier' | 'label'>): string =>
-  `[^${label ?? identifier}]`;
-
-const plainText = (node: Nodes): string => {
-  if ('value' in node) {
-    return node.value;
-  }
-  if (node.type === 'image') {
-    return node.alt ?? '';
-  }
-  if (node.type === 'footnoteReference') {
-    return footnoteLabel(node);
-  }
-  return 'children' in node ? node.children.map(plainText).join('') : '';
-};
 
 const styled = (style: SlackRichTextStyle): SlackRichTextStyle | undefined =>
   Object.keys(style).length === 0 ? undefined : style;

@@ -579,6 +579,18 @@ describe('slack asset swap', () => {
     expect(collector.requests).toEqual([]);
   });
 
+  it('keeps a node hidden from snapshot as its Markdown, since no picture can be drawn', () => {
+    const collector = createSlackAssetCollector();
+    pic(
+      (node) => node,
+      () => 'alt'
+    ).renderSlack(
+      { type: 'pic', src: 'x', surfaces: ['slack', 'markdown'] } as PicNode,
+      collector
+    );
+    expect(collector.requests).toEqual([]);
+  });
+
   it('falls back to the type for an empty alt text', () => {
     const [block] = pic(
       (node) => node,

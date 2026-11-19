@@ -168,3 +168,33 @@ describe('composePacks icons', () => {
     expect(icons['note']).toEqual(icon('note'));
   });
 });
+
+describe('definePrimitivePack inputBudget', () => {
+  it('keeps a declared budget on the pack', () => {
+    expect(
+      definePrimitivePack({
+        id: 'charts',
+        primitives: [leaf('chart')],
+        inputBudget: { values: 250_000 },
+      }).inputBudget
+    ).toEqual({ values: 250_000 });
+  });
+
+  it.each([0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY])(
+    'rejects a declared limit of %s',
+    (values) => {
+      expect(() =>
+        definePrimitivePack({
+          id: 'bad',
+          primitives: [leaf('x')],
+          inputBudget: { values },
+        })
+      ).toThrow(
+        expect.objectContaining({
+          name: 'IsomerError',
+          code: 'INVALID_INPUT_BUDGET',
+        })
+      );
+    }
+  );
+});

@@ -17,6 +17,7 @@ import {
   slackHeading,
   slackMarksSection,
   slackRichText,
+  textCaption,
 } from '../../render';
 import {
   marksMarkdown,
@@ -39,7 +40,7 @@ export type { TitleDefinition, TitleSlideNode } from './types';
 
 const ownText = ({ eyebrow, title, tagline, definition }: TitleSlideNode) =>
   [
-    eyebrow && oneLine(eyebrow).toUpperCase(),
+    eyebrow && textCaption(eyebrow),
     oneLine(title),
     tagline && plainText(tagline),
     definition

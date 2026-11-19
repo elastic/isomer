@@ -14,9 +14,9 @@ import {
   renderTextChildren,
   slackCaption,
   slackMarksSection,
+  textCaption,
 } from '../../render';
 import { marksMarkdown, plainText } from '../../render/marks';
-import { oneLine } from '../../render/one_line';
 import { toneCueText } from '../../render/tone_cue';
 import { slideDistillery } from '../../theme/distillery';
 import { contentNode, definePrimitive } from '../define';
@@ -51,7 +51,7 @@ export const slideSplitLayoutPrimitive = definePrimitive<
         ...panes.flatMap(({ label, tone, items }, index) => [
           index > 0 && divider === 'arrow' ? arrowGlyph : '',
           [
-            label ? `${toneCueText(tone)}${oneLine(label).toUpperCase()}` : '',
+            label ? `${toneCueText(tone)}${textCaption(label)}` : '',
             renderTextChildren(items, scope),
           ]
             .filter(Boolean)

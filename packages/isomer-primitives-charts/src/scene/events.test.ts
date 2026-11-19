@@ -7,13 +7,13 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { chartEventExamples } from '../primitives/xy_chart/events';
+import { xyInteractive } from '../primitives/xy_chart/examples';
 import { type ChartEvent, chartEventSchema } from '../schema/events';
-import { chartEventExamples } from '../schema/examples/events';
-import { xyInteractive } from '../schema/examples/xy_chart';
 
+import type { SceneSelection } from './base';
 import { brushEvent, selectEvent } from './events';
 import { xyInteractiveScene, xyTimeSeriesScene } from './examples';
-import type { SceneSelection } from './types';
 
 const NODE = xyInteractive.id ?? '';
 const HOUR = 3_600_000;

@@ -13,6 +13,7 @@ import type { StudioConfig } from '../config';
 import { appProblems } from '../model/app_problems';
 import { featuredProblems, runtimePrimitiveTypes } from '../model/featured';
 import { imagesProblem } from '../model/images';
+import { withSnapshotFrame } from '../model/snapshot_frame';
 import { IsomerStudio } from '../studio';
 import type { JsxTransform, RasterizePng, RenderPdf } from '../types';
 
@@ -72,7 +73,7 @@ export const mountStudio = (
     document.title = next.title ?? 'Isomer Studio';
     root.render(
       <IsomerStudio
-        {...next}
+        {...withSnapshotFrame(next)}
         {...{ apps, transformJsx, rasterizePng, renderPdf }}
         configProblems={problems}
       />

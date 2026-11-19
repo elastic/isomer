@@ -124,7 +124,8 @@ A PDF is byte-stable on the same terms once `metadata.creationDate` is fixed; le
 | `LayoutBox` | What `measure` returns, one per laid-out element |
 | `PngRuntime`, `PdfRuntime` | The slice of a runtime `renderPng` and `renderPdf` need: `validate` and the `snapshot` surface |
 | `SnapshotOptions`, `RenderPngOptions`, `RenderPdfOptions` | The forwarded `snapshot` options, and each helper's options |
-| `RenderPngResult`, `RenderPdfResult`, `PngValidationResult`, `PngCheckedValidationResult` | The helpers' results and the validation shapes they carry |
+| `RenderPngResult`, `RenderPdfResult`, `ValidationResult`, `CheckedValidationResult` | The helpers' results and the validation shapes they carry |
+| `PngValidationResult`, `PngCheckedValidationResult` | Deprecated aliases of `ValidationResult` and `CheckedValidationResult` |
 | `Font`, `FontDetails`, `FontLoader`, `ImagesInput` | Re-exported from `@takumi-rs/core` and `takumi-pdf`, so a host types `fonts` and `images` without a second import |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.

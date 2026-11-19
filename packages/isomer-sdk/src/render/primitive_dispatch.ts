@@ -57,7 +57,8 @@ export interface PrimitiveDispatcher<
   ): ReactNode;
   /**
    * {@link RenderScope.renderSlack}, plus: a node `isSlackAssetType` names
-   * becomes an `image` block when `collector` can allocate, and
+   * becomes an `image` block when `collector` can allocate and the node is
+   * visible on `snapshot`, which draws the picture, and
    * `options.baseUrl` reaches the renderer's env and every child it renders
    * through `scope`.
    */
@@ -289,7 +290,11 @@ export const createPrimitiveDispatcher = <
         return [];
       }
       const definition = getDefinition(node);
-      if (isSlackAssetCollector(collector) && isSlackAssetType?.(node.type)) {
+      if (
+        isSlackAssetCollector(collector) &&
+        isSlackAssetType?.(node.type) &&
+        isVisibleOnSurface(node, 'snapshot')
+      ) {
         return renderSlackAsset(definition, node, collector);
       }
       if (!definition.renderers.slack) {

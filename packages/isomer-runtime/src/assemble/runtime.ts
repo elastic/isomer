@@ -22,6 +22,9 @@ import {
   getCompositionSchemaForDefinitions,
   type InputBudget,
   IsomerError,
+  MAX_INPUT_CHARACTERS,
+  MAX_INPUT_DEPTH,
+  MAX_INPUT_VALUES,
   type ParsedComposition,
   type PrimitiveNode,
   type PrimitivePack,
@@ -107,12 +110,13 @@ export interface IsomerRuntimeOptions<
   /**
    * The HTML surface's CSS and class-name strategy.
    *
-   * Defaults to the one pack adapter; two packs that each declare one throw
-   * `AMBIGUOUS_STYLE_ADAPTER` unless this is passed. Pass a no-op when a
-   * CSS-bearing pack should emit no CSS.
+   * Defaults to one Distillate adapter over every pack's `distillery`, or else
+   * the one pack `styleAdapter`. Passing this replaces them, such as a no-op
+   * when a CSS-bearing pack should emit no CSS.
    *
-   * Required when any pack declares `collectStyles` and no pack (or this
-   * option) supplies an adapter.
+   * Required when a pack `styleAdapter` sits beside another pack's adapter or
+   * distillery, and when any pack declares `collectStyles` and no pack
+   * `styleAdapter` serves it: the Distillate adapter never runs the hook.
    */
   styleAdapter?: HTMLStyleAdapter<
     PrimitiveNode,
@@ -129,7 +133,9 @@ export interface IsomerRuntimeOptions<
   authoring?: RuntimeAuthoringOptions;
   /**
    * Limits `checkInputBudget` applies in `parse`, `validate`, view input, and
-   * every surface but `react`, which does not validate. Defaults to the SDK's.
+   * every surface but `react`, which does not validate. Each limit set here
+   * replaces the packs' budget: per limit, the largest any pack declares, and
+   * never less than the SDK's default.
    */
   inputBudget?: InputBudget;
 }
@@ -264,8 +270,17 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     label: 'runtime',
     isSlackAssetType: (type) => slackAssetTypes.has(type),
   });
-  const { inputBudget } = options;
-  const budget = inputBudget === undefined ? {} : { inputBudget };
+  // The packs' budget, with each limit the host sets taking its place.
+  const budget = {
+    inputBudget: {
+      ...packsInputBudget(packs),
+      ...Object.fromEntries(
+        Object.entries(options.inputBudget ?? {}).filter(
+          ([, value]) => value !== undefined
+        )
+      ),
+    },
+  };
   const validate = createCompositionValidator(definitions, budget);
   const parse = createCompositionParser(definitions, budget);
   const viewRegistry = createViewRegistry<THostContext, PrimitiveNode>(
@@ -335,6 +350,19 @@ export const createIsomerRuntime: CreateIsomerRuntime = (<
     getCompositionSchema: () => getCompositionSchemaForDefinitions(definitions),
   };
 }) as CreateIsomerRuntime;
+
+/** Per limit, the largest of the SDK default and every pack's declared budget. */
+const packsInputBudget = (
+  packs: readonly Pick<AnyPrimitivePack, 'inputBudget'>[]
+): Required<InputBudget> => {
+  const largest = (limit: keyof InputBudget, fallback: number) =>
+    Math.max(fallback, ...packs.map((pack) => pack.inputBudget?.[limit] ?? 0));
+  return {
+    depth: largest('depth', MAX_INPUT_DEPTH),
+    values: largest('values', MAX_INPUT_VALUES),
+    characters: largest('characters', MAX_INPUT_CHARACTERS),
+  };
+};
 
 /**
  * The runtime-level rules `composePacks` does not own: a runtime needs at

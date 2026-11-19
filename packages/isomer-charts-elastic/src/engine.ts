@@ -1,0 +1,22 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+// What another Elastic Charts drawing of a Scene builds on, so it draws from
+// the same specs, theme and text as the browser renderer.
+
+export { slicesOf } from './charts/partition/partition';
+export { TAG_CLOUD_LABEL } from './charts/tag_cloud/label';
+export { type XyDatum, seriesOf } from './charts/xy/events';
+export { ariaDescriptionOf } from './shared/accessibility';
+export {
+  EMPTY_LINE_HEIGHT,
+  EMPTY_TEXT_SIZE,
+  emptyTextOf,
+} from './shared/empty';
+export type { ElasticChartsOptions } from './shared/options';
+export { kibanaBaseTheme } from './shared/theme';
+export { sceneSpecs } from './specs';

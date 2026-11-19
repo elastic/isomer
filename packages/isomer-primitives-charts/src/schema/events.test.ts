@@ -7,17 +7,19 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { metricSingleValue } from '../primitives/metric/examples';
+import { chartEventExamples } from '../primitives/xy_chart/events';
+import { xyInteractive } from '../primitives/xy_chart/examples';
+
 import type { Cell } from './data';
 import {
   CHART_EVENT_NAMES,
+  type ChartEvent,
   chartEventSchema,
   INTERACTION_RULES,
   readChartEvent,
   toActionEvent,
 } from './events';
-import { chartEventExamples } from './examples/events';
-import { metricSingleValue } from './examples/metric';
-import { xyInteractive } from './examples/xy_chart';
 import { nodeSchemaOf } from './schema.fixtures';
 
 const { data } = xyInteractive;
@@ -265,4 +267,32 @@ describe('interactions', () => {
       }).length
     ).toBeGreaterThan(0);
   });
+
+  it.each([
+    ['mark', ['day'], { day: 'Wed' }, 'Day: Wed'],
+    ['region', ['country'], { country: 'DE' }, 'Country: DE'],
+  ] as const)(
+    'round-trips a %s selection, which carries no series',
+    (target, columns, values, description) => {
+      const event: ChartEvent = {
+        kind: 'select',
+        target,
+        node: 'chart',
+        rows: [2, 5],
+        columns: [...columns],
+        values: { ...values },
+        description,
+        negate: true,
+      };
+      expect(chartEventSchema.parse(event)).toEqual(event);
+      expect(readChartEvent(toActionEvent(event))).toEqual(event);
+      expect(
+        chartEventSchema.safeParse({
+          ...event,
+          seriesKey: '',
+          series: { layer: 0, y: 0 },
+        }).success
+      ).toBe(false);
+    }
+  );
 });

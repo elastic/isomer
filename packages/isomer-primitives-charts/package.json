@@ -11,36 +11,54 @@
     "directory": "packages/isomer-primitives-charts"
   },
   "sideEffects": false,
-  "main": "lib/cjs/index.js",
-  "module": "lib/esm/index.js",
-  "types": "lib/cjs/index.d.ts",
+  "main": "lib/cjs/entries/index.js",
+  "module": "lib/esm/entries/index.js",
+  "types": "lib/cjs/entries/index.d.ts",
   "exports": {
     ".": {
-      "types": "./lib/cjs/index.d.ts",
-      "import": "./lib/esm/index.js",
-      "require": "./lib/cjs/index.js",
-      "default": "./lib/cjs/index.js"
+      "types": "./lib/cjs/entries/index.d.ts",
+      "import": "./lib/esm/entries/index.js",
+      "require": "./lib/cjs/entries/index.js",
+      "default": "./lib/cjs/entries/index.js"
     },
     "./schema": {
-      "types": "./lib/cjs/schema/index.d.ts",
-      "import": "./lib/esm/schema/index.js",
-      "require": "./lib/cjs/schema/index.js",
-      "default": "./lib/cjs/schema/index.js"
+      "types": "./lib/cjs/entries/schema.d.ts",
+      "import": "./lib/esm/entries/schema.js",
+      "require": "./lib/cjs/entries/schema.js",
+      "default": "./lib/cjs/entries/schema.js"
     },
     "./scene": {
-      "types": "./lib/cjs/scene/index.d.ts",
-      "import": "./lib/esm/scene/index.js",
-      "require": "./lib/cjs/scene/index.js",
-      "default": "./lib/cjs/scene/index.js"
+      "types": "./lib/cjs/entries/scene.d.ts",
+      "import": "./lib/esm/entries/scene.js",
+      "require": "./lib/cjs/entries/scene.js",
+      "default": "./lib/cjs/entries/scene.js"
+    },
+    "./resolve": {
+      "types": "./lib/cjs/entries/resolve.d.ts",
+      "import": "./lib/esm/entries/resolve.js",
+      "require": "./lib/cjs/entries/resolve.js",
+      "default": "./lib/cjs/entries/resolve.js"
+    },
+    "./testing": {
+      "types": "./lib/cjs/entries/testing.d.ts",
+      "import": "./lib/esm/entries/testing.js",
+      "require": "./lib/cjs/entries/testing.js",
+      "default": "./lib/cjs/entries/testing.js"
     }
   },
   "typesVersions": {
     "*": {
       "schema": [
-        "./lib/cjs/schema/index.d.ts"
+        "./lib/cjs/entries/schema.d.ts"
       ],
       "scene": [
-        "./lib/cjs/scene/index.d.ts"
+        "./lib/cjs/entries/scene.d.ts"
+      ],
+      "resolve": [
+        "./lib/cjs/entries/resolve.d.ts"
+      ],
+      "testing": [
+        "./lib/cjs/entries/testing.d.ts"
       ]
     }
   },
@@ -57,15 +75,39 @@
   "scripts": {
     "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
     "build:clean": "rimraf lib/",
-    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts,**/*.d.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench:check": "node ../../scripts/bench_charts.cjs --check"
   },
   "dependencies": {
+    "@elastic/distillate": "^0.2.0",
     "@elastic/isomer-sdk": "workspace:*"
   },
   "peerDependencies": {
+    "@elastic/isomer-runtime": "workspace:^",
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
     "zod": "^4.5.4"
+  },
+  "peerDependenciesMeta": {
+    "@elastic/isomer-runtime": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@elastic/eui-theme-borealis": "8.1.0",
+    "@elastic/isomer-runtime": "workspace:*",
+    "@types/mdast": "^4.0.4",
+    "@types/react": "^18.2.14",
+    "mdast-util-from-markdown": "^2.0.3",
+    "mdast-util-gfm": "^3.1.0",
+    "micromark-extension-gfm": "^3.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   }
 }

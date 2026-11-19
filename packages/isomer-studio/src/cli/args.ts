@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 
 import type { StudioSurface } from '../model/describe_runtime';
-import { SURFACE_LABELS } from '../model/describe_runtime';
+import { isStudioSurface, STUDIO_SURFACES } from '../model/surface_catalog';
 import type { ConfigLoader } from '../node/load_config';
 import type { ReportFormat } from '../node/report';
 
@@ -76,9 +76,6 @@ const COMMANDS = ['dev', 'build', 'check', 'init'] as const;
 const isCommand = (value: string): value is (typeof COMMANDS)[number] =>
   COMMANDS.some((command) => command === value);
 
-const isSurface = (value: string): value is StudioSurface =>
-  Object.hasOwn(SURFACE_LABELS, value);
-
 const oneOf = <T extends string>(
   flag: string,
   value: string | undefined,
@@ -118,13 +115,13 @@ const parseSurfaces = (
     .split(',')
     .map((name) => name.trim())
     .filter(Boolean);
-  const unknown = names.filter((name) => !isSurface(name));
+  const unknown = names.filter((name) => !isStudioSurface(name));
   if (unknown.length) {
     throw new UsageError(
-      `--surfaces has unknown surfaces: ${unknown.join(', ')}. Known: ${Object.keys(SURFACE_LABELS).join(', ')}.`
+      `--surfaces has unknown surfaces: ${unknown.join(', ')}. Known: ${STUDIO_SURFACES.join(', ')}.`
     );
   }
-  return names.filter(isSurface);
+  return names.filter(isStudioSurface);
 };
 
 /** A trailing slash, so asset URLs resolve inside the base rather than beside it. */

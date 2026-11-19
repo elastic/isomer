@@ -23,9 +23,11 @@ This page is the pack **contract**. Composing packs into a runtime is the [runti
 | `primitives`      | The definitions. At least one, with unique types, or construction throws.      |
 | `enhancements`    | Progressive enhancements this vocabulary supports, by id.                      |
 | `slackAssetTypes` | Which of the pack's node types are pictures rather than text.                  |
-| `styleAdapter`    | Optional. This pack's HTML CSS; a runtime runs one pack's adapter.             |
+| `distillery`      | Optional. The Distillate distillery the pack's styles are authored in.         |
+| `styleAdapter`    | Optional. The HTML CSS for a pack styled without Distillate.                   |
 | `styleCollector`  | Optional. Derived from `styleAdapter.styleCollector` unless overridden.        |
 | `authoring`       | Optional. `describe` and index `groups` for agents.                            |
+| `inputBudget`     | Optional. The input budget the pack's compositions need; see below.            |
 
 `surfaces` is advisory: dispatch and `describeCapabilities` follow each primitive's own `renderers.slack`, so a primitive without one renders, and reports, Slack as a markdown fallback.
 
@@ -41,7 +43,7 @@ A repeated type in `definePrimitivePack` throws `DUPLICATE_PRIMITIVE_TYPE`; `com
 
 ## `slackAssetTypes`
 
-Which of your node types are self-contained pictures. A channel that cannot draw them inline uploads an image instead: the Slack dispatcher swaps such a node for an `image` block and an upload request, so a chart arrives as a PNG rather than as a markdown approximation of one.
+Which of your node types are self-contained pictures. A channel that cannot draw them inline uploads an image instead: the Slack dispatcher swaps such a node for an `image` block and an upload request, so a chart arrives as a PNG rather than as a markdown approximation of one. A node hidden from `snapshot`, which draws the picture, keeps its Markdown instead.
 
 It is declared here because it is a fact about the vocabulary. A host composing packs it did not write cannot be expected to know which of your types are charts.
 
@@ -122,6 +124,16 @@ it.each(myPackPrimitives)('$type states its checks', ({ type, schema }) => {
 ```
 
 `skip` stops the walk at another primitive's schema, which is checked on its own. The slides pack's `src/stated_rules.test.ts` is a complete version.
+
+## `inputBudget`
+
+The [input budget](composition.md#the-input-budget) a pack's compositions need, where it is larger than the default: a chart pack whose nodes carry their data inline reaches 20,000 values long before a dashboard of them is large.
+
+```ts
+definePrimitivePack({ id: 'charts', primitives: […], inputBudget: { values: 250_000 } });
+```
+
+A runtime takes, per limit, the largest any of its packs declares and never less than the default, so its budget grows with the packs it registers and a pack cannot lower another's. The type is `PackInputBudget`, the same fields as the validator's `InputBudget`. A host's own `inputBudget` replaces the limits it sets. Each declared limit is a positive integer, or `definePrimitivePack` throws `INVALID_INPUT_BUDGET`.
 
 ## The theme a pack requires
 

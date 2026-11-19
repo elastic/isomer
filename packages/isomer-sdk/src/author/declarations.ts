@@ -10,6 +10,7 @@ import { z } from 'zod';
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 import {
   isJsonObject,
+  isNullSchema,
   type JsonObject,
   ownDef,
   parseDefRef,
@@ -71,9 +72,6 @@ const isPlainObjectSchema = (node: unknown): node is JsonObject =>
   (node.additionalProperties === undefined ||
     node.additionalProperties === false) &&
   !['$ref', 'oneOf', 'anyOf', 'allOf'].some((key) => Object.hasOwn(node, key));
-
-const isNullSchema = (node: unknown): boolean =>
-  isJsonObject(node) && node.type === 'null';
 
 /** The object (or array) schema `node` stands for, through `$ref` and nullable wrappers. */
 const resolveNode = (

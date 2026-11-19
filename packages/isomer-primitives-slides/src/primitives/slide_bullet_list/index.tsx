@@ -9,9 +9,8 @@ import { md } from '@elastic/isomer-sdk/markdown';
 import type { SlackBlock } from '@elastic/isomer-sdk/slack';
 
 import { withBuild } from '../../builds/types';
-import { slackCaption } from '../../render';
+import { markdownCaption, slackLabelCaption, textCaption } from '../../render';
 import { marksMarkdown, marksRichText, plainText } from '../../render/marks';
-import { oneLine } from '../../render/one_line';
 import { slideDistillery } from '../../theme/distillery';
 import type { SlideBulletMarker } from '../../theme/variants';
 import { definePrimitive } from '../define';
@@ -25,10 +24,10 @@ import { schema, type SlideBulletListNode } from './schema';
 
 export type { SlideBulletListNode } from './schema';
 
-const { checkGlyph, crossGlyph } = slideDistillery.tokens.bulletList;
+const { checkGlyph, crossGlyph, dotGlyph } = slideDistillery.tokens.bulletList;
 
 const glyphs: Record<SlideBulletMarker, string> = {
-  dot: '-',
+  dot: dotGlyph.value,
   check: checkGlyph.value,
   x: crossGlyph.value,
 };
@@ -43,7 +42,7 @@ export const text = ({
   marker = 'dot',
 }: SlideBulletListNode): string =>
   [
-    label && oneLine(label).toUpperCase(),
+    label && textCaption(label),
     items.map((item) => `${glyphs[marker]} ${plainText(item)}`).join('\n'),
   ]
     .filter(Boolean)
@@ -54,7 +53,7 @@ export const markdown = ({
   items,
   marker = 'dot',
 }: SlideBulletListNode) => [
-  ...(label ? [md.paragraph(md.strong(label.toUpperCase()))] : []),
+  ...(label ? [markdownCaption(label)] : []),
   md.list(
     items.map((item) =>
       md.paragraph(...itemPrefix(marker), ...marksMarkdown(item))
@@ -67,7 +66,7 @@ export const slack = ({
   items,
   marker = 'dot',
 }: SlideBulletListNode): SlackBlock[] => [
-  ...(label ? [slackCaption(label.toUpperCase(), true)] : []),
+  ...(label ? [slackLabelCaption(label)] : []),
   {
     type: 'rich_text',
     elements: [

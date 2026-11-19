@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { z } from '@elastic/isomer-sdk';
+import { z } from '@elastic/isomer-sdk/schema';
 
 import type { ChartColumn, ColumnType } from './data';
 
@@ -37,6 +37,8 @@ interface ColumnReferenceRules {
   missing: string;
   /** Reported for a reference to a column of a type it does not accept. */
   type: string;
+  /** Reported for a `single` reference to a `multivalue` column. Absent means `type`. */
+  single?: string;
   /** What the missing thing is called in the message. Absent means "column". */
   noun?: string;
 }
@@ -55,6 +57,10 @@ export const checkColumnReferences = (
     (data?.columns ?? []).map((column) => [column.id, column])
   );
   for (const { path, id, types, single, rule } of references) {
+    // A reference of the wrong shape is reported by its own field.
+    if (typeof id !== 'string') {
+      continue;
+    }
     const column = byId.get(id);
     if (!column) {
       context.addIssue({
@@ -72,7 +78,7 @@ export const checkColumnReferences = (
       context.addIssue({
         code: 'custom',
         path,
-        message: `${rule ?? rules.type} Column "${id}" is multivalue.`,
+        message: `${rule ?? rules.single ?? rules.type} Column "${id}" is multivalue.`,
       });
     }
   }

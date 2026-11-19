@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { readdirSync } from 'node:fs';
+
 import js from '@eslint/js';
 import licenseHeader from 'eslint-plugin-license-header';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -15,6 +17,73 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 const SCREAMING_SNAKE = '^[A-Z][A-Z0-9_]*$';
+
+const CHART_ENGINE_IMPORTS =
+  'A chart engine imports only @elastic/isomer-primitives-charts/scene.';
+
+// A specifier or path that reaches the charts pack other than as its `./scene` entry.
+const CHARTS_PACK_BEYOND_SCENE =
+  '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
+
+// `no-restricted-syntax` entries for each way to load `regex` other than a static import: `import()`, `import()` types and calls (all calls unless `call` narrows them).
+const loadsOf = (regex, message, call = 'CallExpression') =>
+  [
+    'ImportExpression > Literal.source[value=PATH]',
+    'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
+    `${call} > Literal.arguments[value=PATH]`,
+    `${call} > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]`,
+    'TSImportType Literal[value=PATH]',
+  ].map((selector) => ({
+    selector: selector.replace('PATH', `/${regex.replaceAll('/', '\\/')}/`),
+    message,
+  }));
+
+// Charts pack: another directory is imported through its `index.ts`. Matches `./render/cls` and `../../theme/palette`.
+const CHARTS_DIR_FILE = {
+  regex: '^(\\./|(\\.\\./)+)(?!primitives/)[\\w-]+/',
+  message:
+    'Import another directory through its index.ts (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
+// A primitive's file rather than its `index.ts`, which reaches React and depends on `render/`.
+const CHARTS_PRIMITIVE_FILE = {
+  regex: '^(\\./|(\\.\\./)+)primitives/[\\w-]+/',
+  message:
+    'Import a primitive through its index.ts; only modules it depends on, or that the React-free entries reach, import its files (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
+const CHARTS_SRC = 'packages/isomer-primitives-charts/src';
+// Read from disk so a primitive's barrel is told apart from `primitives/define.ts` and the other aggregators.
+const CHARTS_PRIMITIVES = readdirSync(
+  new URL(`./${CHARTS_SRC}/primitives/`, import.meta.url),
+  { withFileTypes: true }
+)
+  .filter((entry) => entry.isDirectory())
+  .map(({ name }) => name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+// A primitive's `index.ts`, which imports the shared directories and `primitives/defaults.ts` back, with or without an extension.
+const chartsPrimitiveBarrel = (prefix) => ({
+  regex: `^${prefix}(${CHARTS_PRIMITIVES.join('|')})(/index)?(\\.[cm]?[jt]sx?)?$`,
+  message:
+    "Import a primitive's files here: its index.ts depends on this module, or reaches React (packages/isomer-primitives-charts/AGENTS.md#module-rules).",
+});
+// The pack's own entries, which the module graph check treats as external and does not follow.
+const CHARTS_SELF_IMPORT = {
+  regex: '^@elastic/isomer-primitives-charts(/|$)',
+  message:
+    'Import the pack through relative paths, not its own package entries (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
+const chartsBarrels = (files, patterns, ignores = []) => ({
+  files,
+  ignores: [
+    `${CHARTS_SRC}/**/*.test.{ts,tsx}`,
+    `${CHARTS_SRC}/**/*.fixtures.ts`,
+    ...ignores,
+  ],
+  rules: {
+    'no-restricted-imports': [
+      'error',
+      { patterns: [...patterns, CHARTS_SELF_IMPORT] },
+    ],
+  },
+});
 
 const namedSpecifiers = (typeGroup, valueGroup) => [
   'error',
@@ -290,6 +359,71 @@ export default tseslint.config(
     },
   },
   {
+    // Chart engines draw a Scene; they never validate or resolve one, and format only through `formatAxisValue`.
+    files: ['packages/isomer-charts-*/src/**/*.{ts,tsx}'],
+    ignores: [
+      'packages/isomer-charts-*/src/**/*.test.{ts,tsx}',
+      'packages/isomer-charts-*/src/**/*.fixtures.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { regex: CHARTS_PACK_BEYOND_SCENE, message: CHART_ENGINE_IMPORTS },
+          ],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        ...loadsOf(CHARTS_PACK_BEYOND_SCENE, CHART_ENGINE_IMPORTS),
+      ],
+    },
+  },
+  {
+    files: [`${CHARTS_SRC}/**/*.{ts,tsx}`],
+    ignores: [
+      `${CHARTS_SRC}/**/*.test.{ts,tsx}`,
+      `${CHARTS_SRC}/**/*.fixtures.ts`,
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...loadsOf(
+          CHARTS_SELF_IMPORT.regex,
+          CHARTS_SELF_IMPORT.message,
+          'CallExpression[callee.name="require"]'
+        ),
+      ],
+    },
+  },
+  chartsBarrels(
+    [`${CHARTS_SRC}/**/*.{ts,tsx}`],
+    [CHARTS_DIR_FILE, CHARTS_PRIMITIVE_FILE],
+    [`${CHARTS_SRC}/primitives/**`]
+  ),
+  // The primitives' barrels depend on these, or the React-free entries reach them.
+  chartsBarrels(
+    [
+      `${CHARTS_SRC}/{format,render,resolve,scene,schema,styles,text,theme}/**/*.{ts,tsx}`,
+      `${CHARTS_SRC}/entries/{resolve,scene,schema}.ts`,
+    ],
+    [CHARTS_DIR_FILE, chartsPrimitiveBarrel('(\\./|(\\.\\./)+)primitives/')]
+  ),
+  // `./<primitive>/<file>` from here is a primitive's file, which the aggregators need.
+  chartsBarrels(
+    [`${CHARTS_SRC}/primitives/*.{ts,tsx}`],
+    [
+      { ...CHARTS_DIR_FILE, regex: '^(\\.\\./)+[\\w-]+/' },
+      chartsPrimitiveBarrel('\\./'),
+    ]
+  ),
+  // `../<primitive>/<file>` from here is a sibling primitive's file.
+  chartsBarrels(
+    [`${CHARTS_SRC}/primitives/*/**/*.{ts,tsx}`],
+    [{ ...CHARTS_DIR_FILE, regex: '^(\\.\\./){2,}[\\w-]+/' }]
+  ),
+  {
     files: ['packages/**/*.{ts,tsx}'],
     plugins: {
       'react-hooks': reactHooks,
@@ -322,6 +456,7 @@ export default tseslint.config(
       '.github',
       '.artifacts',
       '.claude',
+      'test-results',
     ],
   },
   {

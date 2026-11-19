@@ -10,7 +10,11 @@
 // means. Events refer to rows and columns of the node's own `data`, never to
 // pixels or an engine's indexes, so every renderer raises the same event.
 
-import { type ActionEventRef, requiredString, z } from '@elastic/isomer-sdk';
+import {
+  type ActionEventRef,
+  requiredString,
+  z,
+} from '@elastic/isomer-sdk/schema';
 
 import { cellSchema, type ChartColumn } from './data';
 import { navigationHrefSchema } from './links';
@@ -21,6 +25,10 @@ import {
   columnRefSchema,
 } from './references';
 
+/**
+ * Every part of a chart a reader can select. `mark` is a mark of a chart a
+ * grammar draws, such as Vega's; `region` is a map region joined to a row.
+ */
 export const SELECT_TARGETS = [
   'datum',
   'series',
@@ -28,27 +36,46 @@ export const SELECT_TARGETS = [
   'legend',
   'cell',
   'tile',
+  'slice',
+  'mark',
+  'region',
+  'tag',
 ] as const;
 
 /** What a selection lands on. Each chart states which it offers. */
 export type SelectTarget = (typeof SELECT_TARGETS)[number];
 
+/** The cross-field rules the interaction schemas state in their descriptions, one sentence each. */
 export const INTERACTION_RULES = {
   brushColumn:
     'A `brush` column is a `date` or `number` column used as `x` by at least one `data` layer.',
   emphasisRows: 'Emphasis rows are indexes into `data.rows`.',
 } as const;
 
-const linkSchema = z
-  .strictObject({ href: navigationHrefSchema, label: requiredString() })
+/** A static link a chart draws on every surface. */
+export const linkSchema = z
+  .strictObject({
+    href: navigationHrefSchema,
+    label: requiredString().describe('The link’s text.'),
+  })
   .describe(
     'A static link, such as "Open in Kibana", drawn on every surface including images and text.'
   );
 
 const syncSchema = z
   .strictObject({
-    cursor: z.boolean().optional(),
-    tooltips: z.boolean().optional(),
+    cursor: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows other charts’ cursor position on this one. Absent means false.'
+      ),
+    tooltips: z
+      .boolean()
+      .optional()
+      .describe(
+        'Shows this chart’s tooltip while another is hovered. Absent means false.'
+      ),
   })
   .describe(
     'Share the cursor and tooltips with other charts in the composition. Takes effect where a container enables it.'
@@ -68,6 +95,7 @@ export const selectSchema = <
     .optional()
     .describe('What a reader may select. Absent means nothing.');
 
+/** A brush along one continuous x column. */
 export const brushSchema = z
   .strictObject({ column: columnRefSchema })
   .describe(
@@ -83,6 +111,23 @@ export const interactionsSchemaFor = <
   z
     .strictObject({
       select: selectSchema(targets),
+      sync: syncSchema.optional(),
+      link: linkSchema.optional(),
+    })
+    .describe(INTERACTIONS_DESCRIPTION);
+
+/** The `interactions` schema for a chart that brushes along `brush`, with no persisted view state. */
+export const brushInteractionsSchemaFor = <
+  const TTargets extends readonly [SelectTarget, ...SelectTarget[]],
+  TBrush extends z.ZodType,
+>(
+  targets: TTargets,
+  brush: TBrush
+) =>
+  z
+    .strictObject({
+      select: selectSchema(targets),
+      brush: brush.optional(),
       sync: syncSchema.optional(),
       link: linkSchema.optional(),
     })
@@ -109,6 +154,7 @@ export const brushingInteractionsSchemaFor = <
     })
     .describe(INTERACTIONS_DESCRIPTION);
 
+/** Rows drawn with emphasis, each with an optional note. */
 export const emphasisSchema = z
   .array(
     z.strictObject({
@@ -120,6 +166,7 @@ export const emphasisSchema = z
     `Rows to highlight statically, such as what an agent is talking about. Drawn on every surface. ${INTERACTION_RULES.emphasisRows}`
   );
 
+/** A chart's parsed `emphasis`. */
 export type Emphasis = z.infer<typeof emphasisSchema>;
 
 /** The interaction fields every chart spreads into its schema beside the core. */
@@ -135,6 +182,10 @@ interface InteractionsInput {
 
 interface InteractionCheckOptions {
   brushColumns?: readonly string[];
+  /** Reported for a brush on any other column, in place of `INTERACTION_RULES.brushColumn`. */
+  brushRule?: string;
+  /** The types a brush column takes. Absent means `date` and `number`. */
+  brushTypes?: readonly ('date' | 'number')[];
 }
 
 /** Checks emphasis rows and an `xyChart` brush against `data` and its x columns. */
@@ -152,19 +203,19 @@ export const checkInteractions = (
     references.push({
       path: ['interactions', 'brush', 'column'],
       id: brush.column,
-      types: ['date', 'number'],
+      types: options.brushTypes ?? ['date', 'number'],
     });
     if (options.brushColumns && !options.brushColumns.includes(brush.column)) {
       context.addIssue({
         code: 'custom',
         path: ['interactions', 'brush', 'column'],
-        message: INTERACTION_RULES.brushColumn,
+        message: options.brushRule ?? INTERACTION_RULES.brushColumn,
       });
     }
   }
   checkColumnReferences(node.data, references, context, {
     missing: COLUMN_REF_RULE,
-    type: INTERACTION_RULES.brushColumn,
+    type: options.brushRule ?? INTERACTION_RULES.brushColumn,
   });
   (node.emphasis ?? []).forEach(({ rows }, index) => {
     rows.forEach((row, rowIndex) => {
@@ -234,10 +285,15 @@ const selectEventSchema = z.discriminatedUnion('target', [
   }),
   z.strictObject({
     ...selectEventShape,
-    target: z.enum(['category', 'cell', 'tile']),
+    target: z
+      .enum(['category', 'cell', 'tile', 'slice', 'mark', 'region', 'tag'])
+      .describe(
+        'What was selected: an x `category`, a table `cell`, a metric `tile`, a partition `slice`, a grammar chart’s `mark`, a map `region`, or a word cloud `tag`.'
+      ),
   }),
 ]);
 
+/** An event a chart raises: a selection or a brush. */
 export const chartEventSchema = z
   .discriminatedUnion('kind', [
     selectEventSchema,
@@ -256,10 +312,13 @@ export const chartEventSchema = z
     'A gesture on a chart, as rows and columns of the node’s own `data`. Every renderer raises the same event for the same gesture.'
   );
 
+/** A `select` or `brush` gesture on a chart, in terms of the node's `data`. */
 export type ChartEvent = z.infer<typeof chartEventSchema>;
 
+/** The `select` member of {@link ChartEvent}. */
 export type ChartSelectEvent = Extract<ChartEvent, { kind: 'select' }>;
 
+/** The `brush` member of {@link ChartEvent}. */
 export type ChartBrushEvent = Extract<ChartEvent, { kind: 'brush' }>;
 
 /** Wraps a chart event as the `ActionEventRef` a host's `onEvent` receives. */

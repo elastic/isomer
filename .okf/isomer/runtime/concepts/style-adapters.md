@@ -1,7 +1,7 @@
 ---
 type: Concept
 title: Style adapters
-description: The HTML surface runs the host adapter if supplied, otherwise the one pack adapter.
+description: The HTML surface runs the host adapter if supplied, otherwise one Distillate adapter over the packs' distilleries.
 resource: https://github.com/elastic/isomer/blob/main/packages/isomer-runtime/src/assemble/style_adapter.ts
 tags: [isomer, runtime, css]
 status: stable
@@ -17,9 +17,9 @@ sources:
 
 # Definition
 
-The HTML surface runs the host's style adapter if one was passed, otherwise the adapter of the one composed pack that declares one. See the package doc on packs.[^docs]
+The HTML and `snapshot` surfaces run the host's style adapter if one was passed, otherwise one adapter built from the packs. See the package doc on packs.[^docs]
 
-Two packs declaring an adapter throw `AMBIGUOUS_STYLE_ADAPTER` unless the host passes its own; there is no composite adapter, so a render context is the adapter's own object.[^adapter]
+Packs that declare a `distillery` share the SDK's `createDistillateStyleAdapter`: every renderer gets the same context, each handle is recorded by the distillery whose registry owns its module, and the stylesheet joins each distillery's rules in pack order. A pack that declares `collectStyles` beside them throws `INCOMPATIBLE_STYLE_COLLECTOR`, since that adapter never runs the hook. A pack `styleAdapter` runs only as the one pack-level style source; beside another pack's adapter or distillery it throws `AMBIGUOUS_STYLE_ADAPTER` unless the host passes `styleAdapter`.[^adapter]
 
 Related: [pack composition](/runtime/concepts/packs.md), [rendering](/sdk/concepts/rendering.md).
 
