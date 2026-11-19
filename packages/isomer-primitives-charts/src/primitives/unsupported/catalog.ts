@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { unsupportedVega } from './examples';
 
 /** What an agent reads to choose `unsupported`: purpose, when to use it, and an example. */
-export const unsupportedCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'unsupported',
   name: 'Unsupported',
   purpose:

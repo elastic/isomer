@@ -23,21 +23,21 @@ import { z } from 'zod';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import {
-  dataTableExamples,
   dataTableTopHosts,
+  examples as dataTableExamples,
 } from './primitives/data_table/examples';
-import { gridExamples } from './primitives/grid/examples';
-import { gridSnapshotHeight } from './primitives/grid/react';
+import { examples as gridExamples } from './primitives/grid/examples';
+import { gridSnapshotHeight } from './primitives/grid/layout';
 import type { GridNode } from './primitives/grid/schema';
 import { gridModule } from './primitives/grid/styles';
+import { resolveChart } from './primitives/resolve_chart';
 import { unsupportedVega } from './primitives/unsupported/examples';
 import type { UnsupportedNode } from './primitives/unsupported/schema';
 import type { ChartNode, ChartsRenderContext } from './render/context';
-import { CHARTS_THEME } from './render/theme';
 import type { ResolveChartOptions } from './resolve/common';
-import { resolveChart } from './resolve/resolve_chart';
 import { metricSingleValueScene } from './scene/examples';
 import type { Scene } from './scene/types';
+import { CHARTS_THEME } from './theme/theme';
 
 const view = (node: PrimitiveNode): Composition => ({
   type: 'view',

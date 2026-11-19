@@ -11,11 +11,10 @@ import {
   z,
 } from '@elastic/isomer-sdk/schema';
 
-import { navigationHrefSchema } from '../../schema/links';
-import { provenanceSchema } from '../../schema/provenance';
+import { navigationHrefSchema, provenanceSchema } from '../../schema';
 
 /** A visible placeholder for content that could not be materialized or rendered. */
-export const unsupportedSchema = z
+export const schema = z
   .object({
     type: z.literal('unsupported'),
     title: requiredString().describe('The title of what could not be shown.'),
@@ -36,4 +35,4 @@ export const unsupportedSchema = z
   );
 
 /** A validated `unsupported` node. */
-export type UnsupportedNode = z.infer<typeof unsupportedSchema> & PrimitiveNode;
+export type UnsupportedNode = z.infer<typeof schema> & PrimitiveNode;

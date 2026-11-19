@@ -7,16 +7,17 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { BANDS_RANGE_RULE, checkBandsRange } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
-import { linkSchema } from '../../schema/events';
 import {
+  BANDS_RANGE_RULE,
+  chartCoreShape,
+  checkBandsRange,
   checkColumnReferences,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  linkSchema,
+} from '../../schema';
 
 /** The shapes a `gauge` draws. */
 export const GAUGE_SHAPES = [
@@ -30,7 +31,7 @@ export const GAUGE_SHAPES = [
 /** One of {@link GAUGE_SHAPES}. */
 export type GaugeShape = (typeof GAUGE_SHAPES)[number];
 
-/** The cross-field rules `gaugeSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const GAUGE_RULES = {
   numberColumns:
     'The `value`, `min`, `max` and `goal` columns are single-valued `number` columns.',
@@ -105,7 +106,7 @@ const gaugeObjectSchema = z.object({
 type GaugeInput = z.infer<typeof gaugeObjectSchema>;
 
 /** A gauge: one value on a scale, as a bullet or a round dial. */
-export const gaugeSchema = gaugeObjectSchema.describe(GAUGE_DESCRIPTION).check(
+export const schema = gaugeObjectSchema.describe(GAUGE_DESCRIPTION).check(
   crossSuperRefine<GaugeInput>(
     (node, context) => {
       const references: ColumnReference[] = (
@@ -134,4 +135,4 @@ export const gaugeSchema = gaugeObjectSchema.describe(GAUGE_DESCRIPTION).check(
 );
 
 /** A validated `gauge` node. */
-export type GaugeNode = z.infer<typeof gaugeSchema> & PrimitiveNode;
+export type GaugeNode = z.infer<typeof schema> & PrimitiveNode;

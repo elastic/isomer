@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { dataTableTopHosts } from './examples';
 
 /** What an agent reads to choose `dataTable`: purpose, when to use it, and an example. */
-export const dataTableCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'dataTable',
   name: 'Data table',
   purpose:

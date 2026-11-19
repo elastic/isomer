@@ -7,15 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { Cell, ChartColumn } from '../../schema/data';
-import {
-  BYTES,
-  HOUR,
-  NUMBER,
-  PERCENT,
-  START,
-} from '../../schema/examples/shared';
-import type { PortableFormat } from '../../schema/format';
+import type { Cell, ChartColumn, PortableFormat } from '../../schema';
+import { BYTES, HOUR, NUMBER, PERCENT, START } from '../../schema';
 
 import type { XyChartNode } from './schema';
 
@@ -177,7 +170,7 @@ export const xyInteractive: XyChartNode = {
 };
 
 /** Named `xyChart` examples covering the corpus edge cases, each valid in a composition. */
-export const xyChartExamples: PrimitiveExample<XyChartNode>[] = [
+export const examples: PrimitiveExample<XyChartNode>[] = [
   {
     name: 'Time series line',
     description: 'One line over a time axis.',

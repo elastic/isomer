@@ -24,6 +24,29 @@ const CHARTS_PACK_BEYOND_SCENE =
   '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
 const CHARTS_PACK_BEYOND_SCENE_SELECTOR = `/${CHARTS_PACK_BEYOND_SCENE.replaceAll('/', '\\/')}/`;
 
+// Charts pack: another directory is imported through its `index.ts`. Matches `./render/cls` and `../../theme/palette`.
+const CHARTS_DIR_FILE = {
+  regex: '^(\\./|(\\.\\./)+)(?!primitives/)[\\w-]+/',
+  message:
+    'Import another directory through its index.ts (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
+// A primitive's file rather than its `index.ts`, which reaches React and depends on `render/`.
+const CHARTS_PRIMITIVE_FILE = {
+  regex: '^(\\./|(\\.\\./)+)primitives/[\\w-]+/',
+  message:
+    'Import a primitive through its index.ts; only modules it depends on, or that the React-free entries reach, import its files (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
+};
+const CHARTS_SRC = 'packages/isomer-primitives-charts/src';
+const chartsBarrels = (files, patterns, ignores = []) => ({
+  files,
+  ignores: [
+    `${CHARTS_SRC}/**/*.test.{ts,tsx}`,
+    `${CHARTS_SRC}/**/*.fixtures.ts`,
+    ...ignores,
+  ],
+  rules: { 'no-restricted-imports': ['error', { patterns }] },
+});
+
 const namedSpecifiers = (typeGroup, valueGroup) => [
   'error',
   {
@@ -329,6 +352,29 @@ export default tseslint.config(
       ],
     },
   },
+  chartsBarrels(
+    [`${CHARTS_SRC}/**/*.{ts,tsx}`],
+    [CHARTS_DIR_FILE, CHARTS_PRIMITIVE_FILE],
+    [`${CHARTS_SRC}/primitives/**`]
+  ),
+  // The primitives' barrels depend on these, or the React-free entries reach them.
+  chartsBarrels(
+    [
+      `${CHARTS_SRC}/{format,render,resolve,scene,schema,text,theme}/**/*.{ts,tsx}`,
+      `${CHARTS_SRC}/entries/{resolve,scene,schema}.ts`,
+    ],
+    [CHARTS_DIR_FILE]
+  ),
+  // `./<primitive>/<file>` from here is a primitive's file, which the aggregators need.
+  chartsBarrels(
+    [`${CHARTS_SRC}/primitives/*.{ts,tsx}`],
+    [{ ...CHARTS_DIR_FILE, regex: '^(\\.\\./)+[\\w-]+/' }]
+  ),
+  // `../<primitive>/<file>` from here is a sibling primitive's file.
+  chartsBarrels(
+    [`${CHARTS_SRC}/primitives/*/**/*.{ts,tsx}`],
+    [{ ...CHARTS_DIR_FILE, regex: '^(\\.\\./){2,}[\\w-]+/' }]
+  ),
   {
     files: ['packages/**/*.{ts,tsx}'],
     plugins: {

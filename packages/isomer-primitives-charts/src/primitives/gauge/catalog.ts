@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { gaugeSemiCircle } from './examples';
 
 /** What an agent reads to choose `gauge`: purpose, when to use it, and an example. */
-export const gaugeCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'gauge',
   name: 'Gauge',
   purpose:

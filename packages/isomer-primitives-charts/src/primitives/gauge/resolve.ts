@@ -19,8 +19,8 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import { resolveColor, TABLE_CHROME, TRANSPARENT } from '../../resolve/theme';
+} from '../../resolve';
+import { resolveColor, TABLE_CHROME, TRANSPARENT } from '../../theme';
 
 import type { GaugeBand, GaugeScene } from './scene';
 import type { GaugeNode } from './schema';

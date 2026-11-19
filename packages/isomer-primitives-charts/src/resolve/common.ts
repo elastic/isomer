@@ -6,20 +6,25 @@
  */
 
 import { coordinateOf, scalarOf } from '../coordinates';
-import { defaultFormatFor, formatValue } from '../format/format';
+import { defaultFormatFor, formatValue } from '../format';
 import type {
   ColorScheme,
   SceneChrome,
   SceneInteractions,
   SceneSize,
   SceneTable,
-} from '../scene/base';
-import type { ColorBand } from '../schema/colors';
-import type { Cell, ChartColumn, ChartData, ColumnType } from '../schema/data';
-import type { Emphasis, SelectTarget } from '../schema/events';
-import type { PortableFormat } from '../schema/format';
-
-import { CHART_CHROME } from './theme';
+} from '../scene';
+import type {
+  Cell,
+  ChartColumn,
+  ChartData,
+  ColorBand,
+  ColumnType,
+  Emphasis,
+  PortableFormat,
+  SelectTarget,
+} from '../schema';
+import { CHART_CHROME } from '../theme';
 
 /** What the host draws a Scene for, passed to `resolveChart`. */
 export interface ResolveChartOptions {

@@ -7,8 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { Cell, ChartColumn } from '../../schema/data';
-import { HOUR, NUMBER, START } from '../../schema/examples/shared';
+import type { Cell, ChartColumn } from '../../schema';
+import { HOUR, NUMBER, START } from '../../schema';
 
 import type { HeatmapNode } from './schema';
 
@@ -61,7 +61,7 @@ export const heatmapHourly: HeatmapNode = {
 };
 
 /** Named `heatmap` examples covering the corpus edge cases, each valid in a composition. */
-export const heatmapExamples: PrimitiveExample<HeatmapNode>[] = [
+export const examples: PrimitiveExample<HeatmapNode>[] = [
   {
     name: 'Hourly by host',
     description:

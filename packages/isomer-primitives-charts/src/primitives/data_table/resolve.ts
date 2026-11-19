@@ -9,10 +9,13 @@
 // table's missing-value text, its default alignments, cell decorations and
 // bar domains, the `@kbn/sort-predicates` orderings and the summary row.
 
-import { toEpoch } from '../../format/date';
-import { DEFAULT_FORMATS, EMPTY_LABEL, NULL_LABEL } from '../../format/format';
-import { collator } from '../../format/intl';
-import { CHARTS_THEME } from '../../render/theme';
+import {
+  collator,
+  DEFAULT_FORMATS,
+  EMPTY_LABEL,
+  NULL_LABEL,
+  toEpoch,
+} from '../../format';
 import {
   bandFor,
   createResolution,
@@ -27,18 +30,22 @@ import {
   resolveInteractions,
   sceneBase,
   titled,
-} from '../../resolve/common';
+} from '../../resolve';
+import type { ColorScheme, SceneColor } from '../../scene';
+import type {
+  Cell,
+  ChartColors,
+  PortableFormat,
+  ScalarCell,
+} from '../../schema';
 import {
+  CHARTS_THEME,
   contrastText,
   DEFAULT_TABLE_BAR_COLOR,
   keyColor as byKeyColor,
   resolveColor,
   TABLE_CHROME,
-} from '../../resolve/theme';
-import type { ColorScheme, SceneColor } from '../../scene/base';
-import type { ChartColors } from '../../schema/colors';
-import type { Cell, ScalarCell } from '../../schema/data';
-import type { PortableFormat } from '../../schema/format';
+} from '../../theme';
 
 import type {
   TableAlignment,

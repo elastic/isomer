@@ -12,8 +12,8 @@ import type {
   SceneSelection,
   SceneSource,
   SceneTooltip,
-} from '../../scene/base';
-import type { Cell } from '../../schema/data';
+} from '../../scene';
+import type { Cell } from '../../schema';
 
 /** How a metric tile aligns its title and value. */
 export type MetricAlignment = 'left' | 'center' | 'right';

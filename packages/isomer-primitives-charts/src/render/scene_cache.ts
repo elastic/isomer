@@ -15,8 +15,8 @@
 import type { ReactNode } from 'react';
 
 import { afterTask } from '../after_task';
-import type { ResolveChartOptions } from '../resolve/common';
-import type { Scene, SceneRenderEnv } from '../scene/types';
+import type { ResolveChartOptions } from '../resolve';
+import type { Scene, SceneRenderEnv } from '../scene';
 
 import type { ChartNode, ReactSceneRenderer, SceneResolver } from './context';
 

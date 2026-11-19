@@ -10,10 +10,10 @@ import { nodeAnchor } from '@elastic/isomer-sdk';
 
 import { afterTask } from '../after_task';
 import { unsupportedModule } from '../primitives/unsupported/styles';
+import { CHARTS_THEME } from '../theme';
 
+import { cls } from './cls';
 import type { ChartNode, ChartsReactEnv } from './context';
-import { cls } from './styles';
-import { CHARTS_THEME } from './theme';
 
 /** What every surface writes in place of a chart that could not be resolved or drawn. */
 export const CHART_FAILURE_TEXT = 'This chart could not be drawn.';

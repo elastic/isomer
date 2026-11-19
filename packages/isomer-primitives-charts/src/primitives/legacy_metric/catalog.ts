@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { legacyMetricSingleValue } from './examples';
 
 /** What an agent reads to choose `legacyMetric`: purpose, when to use it, and an example. */
-export const legacyMetricCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'legacyMetric',
   name: 'Legacy metric',
   purpose:

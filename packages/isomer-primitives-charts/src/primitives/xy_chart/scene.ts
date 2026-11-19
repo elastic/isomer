@@ -12,8 +12,8 @@ import type {
   SceneSelection,
   SceneSource,
   SceneTooltip,
-} from '../../scene/base';
-import type { PortableFormat } from '../../schema/format';
+} from '../../scene';
+import type { PortableFormat } from '../../schema';
 
 /** An xy Scene's axis: the category axis, or the primary or secondary value axis. */
 export type AxisId = 'x' | 'y' | 'y2';

@@ -15,40 +15,40 @@ import {
   z,
 } from '@elastic/isomer-sdk';
 
-import { dataTableCatalog } from '../primitives/data_table/catalog';
-import { dataTableExamples } from '../primitives/data_table/examples';
-import { dataTableSchema } from '../primitives/data_table/schema';
-import { gaugeCatalog } from '../primitives/gauge/catalog';
-import { gaugeExamples } from '../primitives/gauge/examples';
-import { gaugeSchema } from '../primitives/gauge/schema';
-import { gridCatalog } from '../primitives/grid/catalog';
-import { gridExamples } from '../primitives/grid/examples';
+import { catalog as dataTableCatalog } from '../primitives/data_table/catalog';
+import { examples as dataTableExamples } from '../primitives/data_table/examples';
+import { schema as dataTableSchema } from '../primitives/data_table/schema';
+import { catalog as gaugeCatalog } from '../primitives/gauge/catalog';
+import { examples as gaugeExamples } from '../primitives/gauge/examples';
+import { schema as gaugeSchema } from '../primitives/gauge/schema';
+import { catalog as gridCatalog } from '../primitives/grid/catalog';
+import { examples as gridExamples } from '../primitives/grid/examples';
 import {
   type GridNode,
-  gridSchema,
   gridSchemaFor,
+  schema as gridSchema,
 } from '../primitives/grid/schema';
-import { heatmapCatalog } from '../primitives/heatmap/catalog';
-import { heatmapExamples } from '../primitives/heatmap/examples';
-import { heatmapSchema } from '../primitives/heatmap/schema';
-import { legacyMetricCatalog } from '../primitives/legacy_metric/catalog';
-import { legacyMetricExamples } from '../primitives/legacy_metric/examples';
-import { legacyMetricSchema } from '../primitives/legacy_metric/schema';
-import { metricCatalog } from '../primitives/metric/catalog';
-import { metricExamples } from '../primitives/metric/examples';
-import { metricSchema } from '../primitives/metric/schema';
-import { partitionChartCatalog } from '../primitives/partition_chart/catalog';
-import { partitionChartExamples } from '../primitives/partition_chart/examples';
-import { partitionChartSchema } from '../primitives/partition_chart/schema';
-import { tagCloudCatalog } from '../primitives/tag_cloud/catalog';
-import { tagCloudExamples } from '../primitives/tag_cloud/examples';
-import { tagCloudSchema } from '../primitives/tag_cloud/schema';
-import { unsupportedCatalog } from '../primitives/unsupported/catalog';
-import { unsupportedExamples } from '../primitives/unsupported/examples';
-import { unsupportedSchema } from '../primitives/unsupported/schema';
-import { xyChartCatalog } from '../primitives/xy_chart/catalog';
-import { xyChartExamples } from '../primitives/xy_chart/examples';
-import { xyChartSchema } from '../primitives/xy_chart/schema';
+import { catalog as heatmapCatalog } from '../primitives/heatmap/catalog';
+import { examples as heatmapExamples } from '../primitives/heatmap/examples';
+import { schema as heatmapSchema } from '../primitives/heatmap/schema';
+import { catalog as legacyMetricCatalog } from '../primitives/legacy_metric/catalog';
+import { examples as legacyMetricExamples } from '../primitives/legacy_metric/examples';
+import { schema as legacyMetricSchema } from '../primitives/legacy_metric/schema';
+import { catalog as metricCatalog } from '../primitives/metric/catalog';
+import { examples as metricExamples } from '../primitives/metric/examples';
+import { schema as metricSchema } from '../primitives/metric/schema';
+import { catalog as partitionChartCatalog } from '../primitives/partition_chart/catalog';
+import { examples as partitionChartExamples } from '../primitives/partition_chart/examples';
+import { schema as partitionChartSchema } from '../primitives/partition_chart/schema';
+import { catalog as tagCloudCatalog } from '../primitives/tag_cloud/catalog';
+import { examples as tagCloudExamples } from '../primitives/tag_cloud/examples';
+import { schema as tagCloudSchema } from '../primitives/tag_cloud/schema';
+import { catalog as unsupportedCatalog } from '../primitives/unsupported/catalog';
+import { examples as unsupportedExamples } from '../primitives/unsupported/examples';
+import { schema as unsupportedSchema } from '../primitives/unsupported/schema';
+import { catalog as xyChartCatalog } from '../primitives/xy_chart/catalog';
+import { examples as xyChartExamples } from '../primitives/xy_chart/examples';
+import { schema as xyChartSchema } from '../primitives/xy_chart/schema';
 
 const renderers = {
   react: () => null,

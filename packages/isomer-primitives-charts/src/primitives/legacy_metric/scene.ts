@@ -11,8 +11,8 @@ import type {
   SceneSelection,
   SceneSize,
   SceneSource,
-} from '../../scene/base';
-import type { Cell } from '../../schema/data';
+} from '../../scene';
+import type { Cell } from '../../schema';
 import type { MetricAlignment } from '../metric/scene';
 
 /** One tile of a {@link LegacyMetricScene}: one value of one row, its type sized to fit the chart. */

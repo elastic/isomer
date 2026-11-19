@@ -7,8 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { ChartColumn } from '../../schema/data';
-import { BYTES, NUMBER, PERCENT } from '../../schema/examples/shared';
+import type { ChartColumn } from '../../schema';
+import { BYTES, NUMBER, PERCENT } from '../../schema';
 
 import type { DataTableNode } from './schema';
 
@@ -116,7 +116,7 @@ const grades: DataTableNode['columns'] = [
 ];
 
 /** Named `dataTable` examples covering the corpus edge cases, each valid in a composition. */
-export const dataTableExamples: PrimitiveExample<DataTableNode>[] = [
+export const examples: PrimitiveExample<DataTableNode>[] = [
   {
     name: 'Top hosts',
     description:

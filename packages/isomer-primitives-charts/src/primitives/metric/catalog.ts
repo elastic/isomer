@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { metricSingleValue } from './examples';
 
 /** What an agent reads to choose `metric`: purpose, when to use it, and an example. */
-export const metricCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'metric',
   name: 'Metric',
   purpose:

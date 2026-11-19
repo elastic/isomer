@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import { chartsDistillery } from '../../render/styles';
-import { CHARTS_THEME } from '../../render/theme';
+import { CHARTS_THEME, chartsDistillery } from '../../theme';
 
 const { padding, borderWidth } = CHARTS_THEME.unsupported;
 

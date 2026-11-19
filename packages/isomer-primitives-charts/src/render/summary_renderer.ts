@@ -7,12 +7,12 @@
 
 import { createElement, Fragment } from 'react';
 
-import { SCENE_KINDS } from '../scene/base';
-import { described, sceneNotes } from '../text/scene_text';
+import { SCENE_KINDS } from '../scene';
+import { described, sceneNotes } from '../text';
 
+import { cls } from './cls';
 import type { ReactSceneRenderer } from './context';
 import { sceneModule } from './scene_styles';
-import { cls } from './styles';
 
 /** Draws a Scene's summary sentence, description and emphasis notes. The pack's last resort for every kind. */
 export const summarySceneRenderer: ReactSceneRenderer = {

@@ -12,87 +12,25 @@ import {
   isVisibleOnSurface,
   nodeAnchor,
   type PrimitiveNode,
-  type z,
 } from '@elastic/isomer-sdk';
-import { type MarkdownContent, md } from '@elastic/isomer-sdk/markdown';
-import {
-  markdownContentToSlackBlocks,
-  type SlackBlock,
-  slackContainer,
-} from '@elastic/isomer-sdk/slack';
 
-import type { ChartsReactEnv, ChartsRenderContext } from '../../render/context';
-import { definePrimitive } from '../../render/define';
-import { gridIcon } from '../../render/icons';
-import { isNominalSize, markNominalSize } from '../../render/size';
-import { cls, px, varStyle } from '../../render/styles';
-import { CHARTS_THEME } from '../../render/theme';
-import type { SceneSize } from '../../scene/base';
+import type { ChartsReactEnv, ChartsRenderContext } from '../../render';
+import { cls, isNominalSize, markNominalSize } from '../../render';
+import type { SceneSize } from '../../scene';
+import { CHARTS_THEME, px, varStyle } from '../../theme';
 
-import { gridCatalog } from './catalog';
-import { gridExamples } from './examples';
+import { blocksOf, headerOf, rowsHeight } from './layout';
 import {
   GRID_COLUMNS,
   GRID_SINGLE_COLUMN_BELOW,
   type GridNode,
   type GridPanel,
   type GridReadingEntry,
-  gridReadingOrder,
-  gridSchema,
-  gridSchemaFor,
-  type GridSection,
 } from './schema';
 import { gridModule } from './styles';
 
-const {
-  rowHeight,
-  gap,
-  sectionGap,
-  headerHeight,
-  descriptionHeight,
-  nominalWidth,
-} = CHARTS_THEME.grid;
+const { gap, nominalWidth } = CHARTS_THEME.grid;
 const { handles: grid, vars } = gridModule;
-
-const rowsHeight = (rows: number) =>
-  rows === 0 ? 0 : rows * rowHeight + (rows - 1) * gap;
-
-const extent = (panels: readonly GridPanel[]) =>
-  panels.reduce((rows, { y, h }) => Math.max(rows, y + h), 0);
-
-interface Block {
-  /** Absent for the top-level panels. */
-  readonly section?: GridSection;
-  readonly entries: readonly GridReadingEntry[];
-}
-
-/** Top-level panels, then each section by `y`, each in reading order. */
-const blocksOf = (node: GridNode): Block[] => {
-  const entries = gridReadingOrder(node);
-  const sections = (node.sections ?? [])
-    .map((section, index) => ({ section, index }))
-    .sort((a, b) => a.section.y - b.section.y || a.index - b.index)
-    .map(({ section }) => ({
-      section,
-      entries: entries.filter((entry) => entry.section === section),
-    }));
-  return [
-    { entries: entries.filter((entry) => entry.section === undefined) },
-    ...sections,
-  ];
-};
-
-/** The height a title and description take. */
-const headerOf = ({
-  title,
-  description,
-}: {
-  readonly title?: string | undefined;
-  readonly description?: string | undefined;
-}) => (title ? headerHeight : 0) + (description ? descriptionHeight : 0);
-
-const shown = ({ section, entries }: Block) =>
-  section?.collapsed ? [] : entries;
 
 /** The width the host gave this grid, directly or through its containers. */
 const hostWidth = (context: ChartsRenderContext | undefined) => {
@@ -257,7 +195,8 @@ const CollapsedAnchors = ({
     ));
 };
 
-const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
+/** Draws a grid: its header, then each block of panels, sections titled. */
+export const react = (node: GridNode, env: ChartsReactEnv): ReactNode => {
   const width = hostWidth(env.context);
   const oneColumn = width !== undefined && width < GRID_SINGLE_COLUMN_BELOW;
   return (
@@ -303,119 +242,3 @@ const renderGrid = (node: GridNode, env: ChartsReactEnv): ReactNode => {
     </div>
   );
 };
-
-const gridText = (
-  node: GridNode,
-  renderText: (node: PrimitiveNode) => string
-): string =>
-  [
-    ...(node.title || node.description
-      ? [[node.title, node.description].filter(Boolean).join('\n')]
-      : []),
-    ...blocksOf(node).flatMap((block) => [
-      ...(block.section ? [block.section.title.toUpperCase()] : []),
-      ...shown(block).map(({ panel }) =>
-        [panel.title, panel.description, renderText(panel.node)]
-          .filter((part) => part !== undefined && part !== '')
-          .join('\n')
-      ),
-    ]),
-  ]
-    .filter((part) => part !== '')
-    .join('\n\n');
-
-const gridMarkdown = (
-  node: GridNode,
-  renderMarkdown: (node: PrimitiveNode) => MarkdownContent
-): MarkdownContent => [
-  ...(node.title ? [md.heading(2, node.title)] : []),
-  ...(node.description ? [md.paragraph(node.description)] : []),
-  ...blocksOf(node).flatMap((block) => [
-    ...(block.section ? [md.heading(3, block.section.title)] : []),
-    ...shown(block).flatMap(({ panel }) => [
-      ...(panel.title ? [md.heading(4, panel.title)] : []),
-      ...(panel.description
-        ? [md.paragraph(md.emphasis(panel.description))]
-        : []),
-      renderMarkdown(panel.node),
-    ]),
-  ]),
-];
-
-const header = (text: string, level: 2 | 4): SlackBlock => ({
-  type: 'header',
-  level,
-  text: { type: 'plain_text', text, emoji: true },
-});
-
-// Sections become containers; panel titles are headers inside them, since a
-// container nested in another is unwrapped and would lose its title.
-const gridSlack = (
-  node: GridNode,
-  renderSlack: (node: PrimitiveNode) => readonly SlackBlock[]
-): SlackBlock[] => [
-  ...(node.title ? [header(node.title, 2)] : []),
-  ...(node.description
-    ? markdownContentToSlackBlocks(md.paragraph(node.description))
-    : []),
-  ...blocksOf(node).flatMap((block) => {
-    const panels = shown(block).flatMap(({ panel }) => [
-      ...(panel.title ? [header(panel.title, 4)] : []),
-      ...(panel.description
-        ? markdownContentToSlackBlocks(
-            md.paragraph(md.emphasis(panel.description))
-          )
-        : []),
-      ...renderSlack(panel.node),
-    ]);
-    return block.section
-      ? slackContainer(block.section.title, panels, { fallbackLevel: 3 })
-      : panels;
-  }),
-];
-
-/** The `snapshot` height of a grid laid out at full width. */
-export const gridSnapshotHeight = (node: GridNode): number =>
-  [
-    headerOf(node),
-    ...blocksOf(node).map(({ section, entries }) => {
-      const panels = rowsHeight(extent(entries.map(({ panel }) => panel)));
-      if (!section) {
-        return panels;
-      }
-      return headerHeight + (section.collapsed ? 0 : sectionGap / 2 + panels);
-    }),
-  ]
-    .filter((height) => height > 0)
-    .reduce(
-      (total, height, index) => total + height + (index > 0 ? sectionGap : 0),
-      0
-    );
-
-/** Panels on a 48-column grid; one column, in reading order, below the threshold width. */
-export const gridPrimitive = definePrimitive<GridNode>({
-  type: 'grid',
-  icon: gridIcon,
-  schema: gridSchema,
-  schemaFor: (bodyNode: z.ZodType<unknown>) => gridSchemaFor(bodyNode),
-  catalog: gridCatalog,
-  examples: gridExamples,
-  children: (node) =>
-    gridReadingOrder(node).map(({ panel, path }) => ({
-      node: panel.node,
-      path,
-    })),
-  hasOwnContent: (node) =>
-    Boolean(node.title || node.description || node.sections?.length) ||
-    node.panels.some(({ title, description }) => title || description),
-  metrics: { snapshotHeight: gridSnapshotHeight },
-  renderers: {
-    react: (node, env) => renderGrid(node, env),
-    text: (node, { scope }) =>
-      gridText(node, (child) => scope.renderText(child)),
-    markdown: (node, { scope }) =>
-      gridMarkdown(node, (child) => scope.renderMarkdownContent(child)),
-    slack: (node, { collector, scope }) =>
-      gridSlack(node, (child) => scope.renderSlack(child, collector)),
-  },
-});

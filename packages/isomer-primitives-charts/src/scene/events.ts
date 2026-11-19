@@ -13,7 +13,7 @@ import type {
   HeatmapScene,
 } from '../primitives/heatmap/scene';
 import type { XyScene } from '../primitives/xy_chart/scene';
-import type { ChartBrushEvent, ChartSelectEvent } from '../schema/events';
+import type { ChartBrushEvent, ChartSelectEvent } from '../schema';
 
 import type { SceneSelection } from './base';
 

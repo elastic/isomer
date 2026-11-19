@@ -14,7 +14,7 @@ import {
 
 type ZodType<T = unknown> = z.ZodType<T>;
 
-import { crossSuperRefine } from '../../schema/cross_field';
+import { crossSuperRefine } from '../../schema';
 
 /** Columns across a grid, as on a Kibana dashboard. */
 export const GRID_COLUMNS = 48;
@@ -25,7 +25,7 @@ export const GRID_COLUMNS = 48;
  */
 export const GRID_SINGLE_COLUMN_BELOW = 768;
 
-/** The cross-field rules `gridSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const GRID_RULES = {
   width: `A panel's \`x + w\` is at most ${GRID_COLUMNS}.`,
   ids: 'Panel and section ids are unique within the grid.',
@@ -141,7 +141,7 @@ const gridObject = <TNode extends ZodType>(node: TNode) => {
 };
 
 /** The `grid` schema with its panel nodes unresolved, for standalone validation. */
-export const gridSchema = gridObject(unresolvedBodyNodeSchema);
+export const schema = gridObject(unresolvedBodyNodeSchema);
 
 /** The `grid` schema bound to a composition's body-node union. */
 export const gridSchemaFor = (bodyNode: ZodType<unknown>) =>

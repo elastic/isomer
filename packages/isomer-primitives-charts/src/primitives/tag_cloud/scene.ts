@@ -10,7 +10,7 @@ import type {
   SceneColor,
   SceneSelection,
   SceneSource,
-} from '../../scene/base';
+} from '../../scene';
 
 /** One word of a {@link TagCloudScene}: a row. */
 export interface TagCloudWord {

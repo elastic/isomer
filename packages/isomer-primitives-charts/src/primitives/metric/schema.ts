@@ -9,29 +9,25 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import {
   BANDS_RANGE_RULE,
+  chartCoreShape,
+  chartDataSchema,
   checkBandsRange,
+  checkColumnReferences,
+  checkInteractions,
   COLOR_VALUE_FORMS,
   colorValueSchema,
-  KEY_PART_RULE,
-} from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
-import { chartDataSchema } from '../../schema/data';
-import {
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-  interactionsSchemaFor,
-} from '../../schema/events';
-import { glyphSchema } from '../../schema/icons';
-import {
-  checkColumnReferences,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  glyphSchema,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  KEY_PART_RULE,
+} from '../../schema';
 
-/** The cross-field rules `metricSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const METRIC_RULES = {
   columnType:
     'A bar `max` and a trend `y` are `number` columns; a trend `x` is a `date` or `number` column.',
@@ -334,41 +330,39 @@ const checkBands = (node: MetricInput, context: Issues) => {
 };
 
 /** A metric: one headline value per tile, with optional secondary value, progress bar or trend. */
-export const metricSchema = metricObjectSchema
-  .describe(METRIC_DESCRIPTION)
-  .check(
-    crossSuperRefine<MetricInput>(
-      (node, context) => {
-        checkColumnReferences(node.data, dataReferences(node), context, {
-          missing: COLUMN_REF_RULE,
-          type: METRIC_RULES.columnType,
+export const schema = metricObjectSchema.describe(METRIC_DESCRIPTION).check(
+  crossSuperRefine<MetricInput>(
+    (node, context) => {
+      checkColumnReferences(node.data, dataReferences(node), context, {
+        missing: COLUMN_REF_RULE,
+        type: METRIC_RULES.columnType,
+      });
+      checkInteractions(node, context);
+      if (node.background?.kind === 'trend') {
+        checkTrend(node, node.background, context);
+      }
+      if (!node.breakdown && node.data.rows.length > 1) {
+        context.addIssue({
+          code: 'custom',
+          path: ['data', 'rows'],
+          message: `${METRIC_RULES.oneRow} It holds ${node.data.rows.length}.`,
         });
-        checkInteractions(node, context);
-        if (node.background?.kind === 'trend') {
-          checkTrend(node, node.background, context);
-        }
-        if (!node.breakdown && node.data.rows.length > 1) {
-          context.addIssue({
-            code: 'custom',
-            path: ['data', 'rows'],
-            message: `${METRIC_RULES.oneRow} It holds ${node.data.rows.length}.`,
-          });
-        }
-        checkBands(node, context);
-      },
-      [
-        COLUMN_REF_RULE,
-        METRIC_RULES.columnType,
-        METRIC_RULES.operands,
-        METRIC_RULES.trendColumns,
-        METRIC_RULES.oneRow,
-        METRIC_RULES.bands,
-        METRIC_RULES.bandsRange,
-        METRIC_RULES.trendBreakdown,
-        INTERACTION_RULES.emphasisRows,
-      ]
-    )
-  );
+      }
+      checkBands(node, context);
+    },
+    [
+      COLUMN_REF_RULE,
+      METRIC_RULES.columnType,
+      METRIC_RULES.operands,
+      METRIC_RULES.trendColumns,
+      METRIC_RULES.oneRow,
+      METRIC_RULES.bands,
+      METRIC_RULES.bandsRange,
+      METRIC_RULES.trendBreakdown,
+      INTERACTION_RULES.emphasisRows,
+    ]
+  )
+);
 
 /** A validated `metric` node. */
-export type MetricNode = z.infer<typeof metricSchema> & PrimitiveNode;
+export type MetricNode = z.infer<typeof schema> & PrimitiveNode;

@@ -15,13 +15,9 @@ import {
 } from '@elastic/isomer-sdk';
 
 import { createChartsPack } from '../pack';
-import type {
-  ChartsRenderContext,
-  ReactSceneRenderer,
-} from '../render/context';
-import { resolveChart } from '../resolve';
-import type { ColorScheme, SceneKind } from '../scene/base';
-import type { Scene, SceneEnvironment } from '../scene/types';
+import { resolveChart } from '../primitives/resolve_chart';
+import type { ChartsRenderContext, ReactSceneRenderer } from '../render';
+import type { ColorScheme, Scene, SceneEnvironment, SceneKind } from '../scene';
 
 const SCHEMES: readonly ColorScheme[] = ['light', 'dark'];
 

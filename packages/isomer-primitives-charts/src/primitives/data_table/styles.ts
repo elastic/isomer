@@ -7,8 +7,7 @@
 
 import { variants } from '@elastic/distillate';
 
-import { createVarsModule } from '../../render/styles';
-import { CHARTS_THEME } from '../../render/theme';
+import { CHARTS_THEME, createVarsModule } from '../../theme';
 
 import type { TableAlignment, TableScene } from './scene';
 

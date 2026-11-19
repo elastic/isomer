@@ -7,16 +7,16 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { gaugeExamples } from '../primitives/gauge/examples';
-import { legacyMetricExamples } from '../primitives/legacy_metric/examples';
+import { examples as gaugeExamples } from '../primitives/gauge/examples';
+import { examples as legacyMetricExamples } from '../primitives/legacy_metric/examples';
 import type { MetricScene } from '../primitives/metric/scene';
+import { resolveChart } from '../primitives/resolve_chart';
 import type { XyScene } from '../primitives/xy_chart/scene';
 import { wrappedHeight } from '../resolve/common';
-import { resolveChart } from '../resolve/resolve_chart';
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
+import { CHARTS_THEME } from '../theme/theme';
 
 import { chartSize, chartSizeSpec, chartSizeVars } from './size';
-import { CHARTS_THEME } from './theme';
 
 const { chart } = CHARTS_THEME;
 

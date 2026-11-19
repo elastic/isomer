@@ -7,12 +7,12 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
 import { formatAxisValue } from '../../scene/format_axis';
 import type { Cell } from '../../schema/data';
+import { resolveChart } from '../resolve_chart';
 
 import type { XyScene } from './scene';
-import { type XyChartNode, xyChartSchema } from './schema';
+import { schema, type XyChartNode } from './schema';
 
 const seriesIn = (scene: XyScene) =>
   scene.layers.flatMap((layer) =>
@@ -94,7 +94,7 @@ describe('xy series and categories', () => {
       ['(null)', 's', 4],
     ]);
     node.data.display = { x: ['same', 'same', '(null)', '(null)'] };
-    expect(xyChartSchema.safeParse(node).success).toBe(true);
+    expect(schema.safeParse(node).success).toBe(true);
     const scene = resolveChart(node, { scheme: 'light' });
     expect(scene.categories.map(({ label }) => label)).toEqual([
       'same',
@@ -756,7 +756,7 @@ describe('xy axes', () => {
       }),
     ],
   ])('keeps %s finite', (_, node) => {
-    const scene = resolve(xyChartSchema.parse(node));
+    const scene = resolve(schema.parse(node));
     expect(JSON.parse(JSON.stringify(scene))).toEqual(scene);
   });
 
@@ -794,7 +794,7 @@ describe('xy axes', () => {
             rows: [[epoch, 1]],
           },
         });
-        expect(xyChartSchema.safeParse(node).success).toBe(true);
+        expect(schema.safeParse(node).success).toBe(true);
         const scene = resolveChart(node, { scheme: 'light', timeZone });
         expect(seriesIn(scene)[0]?.marks[0]?.x).toBe(epoch);
         expect(scene.axes.x.timeZone).toBe(timeZone);

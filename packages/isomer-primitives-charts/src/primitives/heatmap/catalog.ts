@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { heatmapHourly } from './examples';
 
 /** What an agent reads to choose `heatmap`: purpose, when to use it, and an example. */
-export const heatmapCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'heatmap',
   name: 'Heat map',
   purpose:

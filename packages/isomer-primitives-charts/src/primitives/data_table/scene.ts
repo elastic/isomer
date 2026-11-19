@@ -11,7 +11,7 @@ import type {
   SceneColumn,
   SceneSelection,
   SceneSource,
-} from '../../scene/base';
+} from '../../scene';
 
 /** How a table column aligns its cells. */
 export type TableAlignment = 'left' | 'center' | 'right';

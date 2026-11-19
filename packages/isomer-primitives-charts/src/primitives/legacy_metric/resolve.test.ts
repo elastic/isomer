@@ -12,11 +12,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { CHARTS_THEME } from '../../render/theme';
 import { wrappedHeight } from '../../resolve/common';
-import { resolveChart } from '../../resolve/resolve_chart';
-import { CHART_CHROME, TABLE_CHROME } from '../../resolve/theme';
 import type { Cell, ChartColumn } from '../../schema/data';
+import { CHART_CHROME, TABLE_CHROME } from '../../theme/palette';
+import { CHARTS_THEME } from '../../theme/theme';
+import { resolveChart } from '../resolve_chart';
 
 import { estimateTextWidth } from './resolve';
 import type { LegacyMetricNode } from './schema';

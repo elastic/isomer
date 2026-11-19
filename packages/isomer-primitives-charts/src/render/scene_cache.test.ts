@@ -21,7 +21,7 @@ import { z } from 'zod';
 
 import { chartsFrame } from '../frame';
 import { createChartsPack } from '../pack';
-import { resolveChart } from '../resolve/resolve_chart';
+import { resolveChart } from '../primitives/resolve_chart';
 import { SCENE_KINDS } from '../scene/base';
 
 import type { ChartNode, ReactSceneRenderer } from './context';

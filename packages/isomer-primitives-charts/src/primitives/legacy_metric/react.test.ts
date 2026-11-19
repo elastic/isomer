@@ -12,11 +12,11 @@ import { createRoot } from 'react-dom/client';
 import { act as testUtilsAct } from 'react-dom/test-utils';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
-import { TABLE_CHROME } from '../../resolve/theme';
 import type { SceneRenderEnv } from '../../scene/types';
 import type { Cell } from '../../schema/data';
 import type { ChartEvent } from '../../schema/events';
+import { TABLE_CHROME } from '../../theme/palette';
+import { resolveChart } from '../resolve_chart';
 
 import { legacyMetricSceneRenderer } from './react';
 import type { LegacyMetricNode } from './schema';

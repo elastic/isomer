@@ -12,10 +12,10 @@
 import { describe, expect, it } from 'vitest';
 
 import { nextUp } from '../../resolve/common';
-import { resolveChart } from '../../resolve/resolve_chart';
-import { TRANSPARENT } from '../../resolve/theme';
 import { brushEvent } from '../../scene/events';
 import type { Cell, ChartColumn } from '../../schema/data';
+import { TRANSPARENT } from '../../theme/palette';
+import { resolveChart } from '../resolve_chart';
 
 import type { HeatmapScene } from './scene';
 import type { HeatmapNode } from './schema';

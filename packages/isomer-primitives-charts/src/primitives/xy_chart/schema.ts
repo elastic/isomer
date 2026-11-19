@@ -9,24 +9,24 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import { continuousScaleOf, coordinateOf, MAX_EPOCH } from '../../coordinates';
 import { isoDateTimeEpoch } from '../../iso_date_time';
-import { colorValueSchema, KEY_PART_RULE } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
-import { type Cell, cellMatchesColumn } from '../../schema/data';
 import {
   brushingInteractionsSchemaFor,
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-} from '../../schema/events';
-import { portableFormatSchema } from '../../schema/format';
-import { glyphSchema } from '../../schema/icons';
-import {
+  type Cell,
+  cellMatchesColumn,
+  chartCoreShape,
   checkColumnReferences,
+  checkInteractions,
+  colorValueSchema,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  glyphSchema,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  KEY_PART_RULE,
+  portableFormatSchema,
+} from '../../schema';
 
 // The per-series statistics the Lens API format's legend accepts.
 const XY_LEGEND_STATISTICS = [
@@ -51,7 +51,7 @@ const XY_LEGEND_STATISTICS = [
 
 const XY_SERIES_KEY_RULE = `A series key, for \`colors.byKey\` and \`interactions.initial.hiddenSeries\`, is the y column id without \`splitBy\`; with \`splitBy\` it is the split cell, which for a \`date\` column is the first row's cell among those showing one instant, prefixed by the y column id and ":" when the layer has more than one y column or more than one data layer has \`splitBy\`. Series that share a key, such as two layers plotting one y column, share its \`colors.byKey\` entry and hidden state. The y column id and the split cell are each a key part. ${KEY_PART_RULE}`;
 
-/** The cross-field rules `xyChartSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const XY_RULES = {
   yType: 'A `y` column is a `number` column.',
   sharedX:
@@ -714,7 +714,7 @@ const checkDateEncodings = ({ data }: XyChartInput, context: Issues) => {
 };
 
 /** An x/y chart: line, area and bar layers over typed data, with reference lines and annotations. */
-export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
+export const schema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
   crossSuperRefine<XyChartInput>(
     (node, context) => {
       checkSharedX(node.layers, context);
@@ -769,4 +769,4 @@ export const xyChartSchema = xyChartObjectSchema.describe(XY_DESCRIPTION).check(
 );
 
 /** A validated `xyChart` node. */
-export type XyChartNode = z.infer<typeof xyChartSchema> & PrimitiveNode;
+export type XyChartNode = z.infer<typeof schema> & PrimitiveNode;

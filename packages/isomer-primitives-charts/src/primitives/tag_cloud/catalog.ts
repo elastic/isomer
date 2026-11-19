@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { tagCloudServices } from './examples';
 
 /** What an agent reads to choose `tagCloud`: purpose, when to use it, and an example. */
-export const tagCloudCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'tagCloud',
   name: 'Tag cloud',
   purpose:

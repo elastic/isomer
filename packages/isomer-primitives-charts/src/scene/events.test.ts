@@ -7,9 +7,9 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { chartEventExamples } from '../primitives/xy_chart/events';
 import { xyInteractive } from '../primitives/xy_chart/examples';
 import { type ChartEvent, chartEventSchema } from '../schema/events';
-import { chartEventExamples } from '../schema/examples/events';
 
 import type { SceneSelection } from './base';
 import { brushEvent, selectEvent } from './events';

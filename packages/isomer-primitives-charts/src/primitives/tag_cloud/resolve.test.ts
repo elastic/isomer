@@ -11,9 +11,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
-import { CATEGORICAL_PALETTE } from '../../resolve/theme';
 import type { Cell, ChartColumn } from '../../schema/data';
+import { CATEGORICAL_PALETTE } from '../../theme/palette';
+import { resolveChart } from '../resolve_chart';
 
 import type { TagCloudNode } from './schema';
 

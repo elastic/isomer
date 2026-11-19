@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { CHARTS_THEME } from '../../render/theme';
-import { sceneNotes } from '../../text/scene_text';
+import { sceneNotes } from '../../text';
+import { CHARTS_THEME } from '../../theme';
 
 import type { TableScene } from './scene';
 

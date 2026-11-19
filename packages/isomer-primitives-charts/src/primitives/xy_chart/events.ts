@@ -5,8 +5,9 @@
  * 2.0.
  */
 
-import { xyInteractive } from '../../primitives/xy_chart/examples';
-import type { ChartEvent } from '../events';
+import type { ChartEvent } from '../../schema';
+
+import { xyInteractive } from './examples';
 
 // Rows of `xyInteractive`: four per hour from 00:00, in the order 200, 404,
 // Other, missing.

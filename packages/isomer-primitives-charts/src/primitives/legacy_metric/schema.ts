@@ -7,23 +7,22 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { BANDS_RANGE_RULE, checkBandsRange } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
 import {
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-  interactionsSchemaFor,
-} from '../../schema/events';
-import {
+  BANDS_RANGE_RULE,
+  chartCoreShape,
+  checkBandsRange,
   checkColumnReferences,
+  checkInteractions,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+} from '../../schema';
 
-/** The cross-field rules `legacyMetricSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const LEGACY_METRIC_RULES = {
   distinct:
     'Each `metrics` column is named once, and the `breakdown` column is not one of them.',
@@ -128,7 +127,7 @@ const checkDistinct = (node: LegacyMetricInput, context: Issues) => {
 };
 
 /** A legacy metric: large values with labels, as Lens's legacy metric draws them. */
-export const legacyMetricSchema = legacyMetricObjectSchema
+export const schema = legacyMetricObjectSchema
   .describe(LEGACY_METRIC_DESCRIPTION)
   .check(
     crossSuperRefine<LegacyMetricInput>(
@@ -168,5 +167,4 @@ export const legacyMetricSchema = legacyMetricObjectSchema
   );
 
 /** A validated `legacyMetric` node. */
-export type LegacyMetricNode = z.infer<typeof legacyMetricSchema> &
-  PrimitiveNode;
+export type LegacyMetricNode = z.infer<typeof schema> & PrimitiveNode;

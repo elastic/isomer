@@ -5,9 +5,4 @@
  * 2.0.
  */
 
-import { definePrimitiveFor } from '@elastic/isomer-sdk';
-
-import type { ChartsPackTypes } from './context';
-
-/** `definePrimitive` bound to this pack's types. */
-export const definePrimitive = definePrimitiveFor<ChartsPackTypes>();
+export { BYTES, HOUR, NUMBER, PERCENT, START } from './shared';

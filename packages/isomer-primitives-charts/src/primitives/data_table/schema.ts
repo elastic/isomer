@@ -7,21 +7,20 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { chartColorsSchema, colorValueSchema } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
 import {
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-  interactionsSchemaFor,
-} from '../../schema/events';
-import {
+  chartColorsSchema,
+  chartCoreShape,
   checkColumnReferences,
+  checkInteractions,
+  colorValueSchema,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+} from '../../schema';
 
 /** The footer summaries a `dataTable` column can show. */
 export const DATA_TABLE_SUMMARIES = [
@@ -35,7 +34,7 @@ export const DATA_TABLE_SUMMARIES = [
 /** One of {@link DATA_TABLE_SUMMARIES}. */
 export type DataTableSummary = (typeof DATA_TABLE_SUMMARIES)[number];
 
-/** The cross-field rules `dataTableSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const DATA_TABLE_RULES = {
   uniqueColumns: 'Each data column is listed in `columns` at most once.',
   numberOnly: 'A `bar` decoration and a `summary` need a `number` column.',
@@ -171,7 +170,7 @@ const dataTableObjectSchema = z.object({
 });
 
 /** A data table: rows of `data`, with column decorations, a footer summary, sorting and paging. */
-export const dataTableSchema = dataTableObjectSchema
+export const schema = dataTableObjectSchema
   .describe(DATA_TABLE_DESCRIPTION)
   .check(
     crossSuperRefine<z.infer<typeof dataTableObjectSchema>>(
@@ -237,4 +236,4 @@ export const dataTableSchema = dataTableObjectSchema
   );
 
 /** A validated `dataTable` node. */
-export type DataTableNode = z.infer<typeof dataTableSchema> & PrimitiveNode;
+export type DataTableNode = z.infer<typeof schema> & PrimitiveNode;

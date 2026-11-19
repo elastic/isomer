@@ -13,9 +13,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
+import { resolveChart } from '../resolve_chart';
 
-import { partitionChartExamples } from './examples';
+import { examples } from './examples';
 import type { PartitionNode, PartitionScene } from './scene';
 import type { PartitionChartNode } from './schema';
 
@@ -29,7 +29,7 @@ const VIS = [
 ] as const;
 
 const named = (name: string): PartitionChartNode =>
-  partitionChartExamples.find((example) => example.name === name)!.node;
+  examples.find((example) => example.name === name)!.node;
 
 const resolve = (
   node: PartitionChartNode,

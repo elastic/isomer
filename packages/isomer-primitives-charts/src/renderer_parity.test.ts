@@ -21,9 +21,9 @@ import { describe, expect, it } from 'vitest';
 import { createChartsPack } from './pack';
 import { tableSceneRenderer } from './primitives/data_table/react';
 import { legacyMetricSceneRenderer } from './primitives/legacy_metric/react';
+import { resolveChart } from './primitives/resolve_chart';
 import type { ChartsRenderContext, ReactSceneRenderer } from './render/context';
 import { summarySceneRenderer } from './render/summary_renderer';
-import { resolveChart } from './resolve/resolve_chart';
 import { type ColorScheme, SCENE_KINDS } from './scene/base';
 import { type Scene } from './scene/types';
 

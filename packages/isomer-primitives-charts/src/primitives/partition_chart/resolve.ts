@@ -20,19 +20,14 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import {
-  categoricalColor,
-  keyColor,
-  mixLch,
-  TRANSPARENT,
-} from '../../resolve/theme';
+} from '../../resolve';
 import type {
   SceneColor,
   SceneSelection,
   SceneTooltipEntry,
-} from '../../scene/base';
-import type { PortableFormat } from '../../schema/format';
+} from '../../scene';
+import type { PortableFormat } from '../../schema';
+import { categoricalColor, keyColor, mixLch, TRANSPARENT } from '../../theme';
 
 import type {
   PartitionLayer,

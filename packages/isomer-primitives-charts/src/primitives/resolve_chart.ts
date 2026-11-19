@@ -5,33 +5,33 @@
  * 2.0.
  */
 
-import { resolveTable } from '../primitives/data_table/resolve';
-import type { TableScene } from '../primitives/data_table/scene';
-import type { DataTableNode } from '../primitives/data_table/schema';
-import { resolveGauge } from '../primitives/gauge/resolve';
-import type { GaugeScene } from '../primitives/gauge/scene';
-import type { GaugeNode } from '../primitives/gauge/schema';
-import { resolveHeatmap } from '../primitives/heatmap/resolve';
-import type { HeatmapScene } from '../primitives/heatmap/scene';
-import type { HeatmapNode } from '../primitives/heatmap/schema';
-import { resolveLegacyMetric } from '../primitives/legacy_metric/resolve';
-import type { LegacyMetricScene } from '../primitives/legacy_metric/scene';
-import type { LegacyMetricNode } from '../primitives/legacy_metric/schema';
-import { resolveMetric } from '../primitives/metric/resolve';
-import type { MetricScene } from '../primitives/metric/scene';
-import type { MetricNode } from '../primitives/metric/schema';
-import { resolvePartition } from '../primitives/partition_chart/resolve';
-import type { PartitionScene } from '../primitives/partition_chart/scene';
-import type { PartitionChartNode } from '../primitives/partition_chart/schema';
-import { resolveTagCloud } from '../primitives/tag_cloud/resolve';
-import type { TagCloudScene } from '../primitives/tag_cloud/scene';
-import type { TagCloudNode } from '../primitives/tag_cloud/schema';
-import { resolveXy } from '../primitives/xy_chart/resolve';
-import type { XyScene } from '../primitives/xy_chart/scene';
-import type { XyChartNode } from '../primitives/xy_chart/schema';
-import type { Scene } from '../scene/types';
+import type { ResolveChartOptions } from '../resolve';
+import type { Scene } from '../scene';
 
-import type { ResolveChartOptions } from './common';
+import { resolveTable } from './data_table/resolve';
+import type { TableScene } from './data_table/scene';
+import type { DataTableNode } from './data_table/schema';
+import { resolveGauge } from './gauge/resolve';
+import type { GaugeScene } from './gauge/scene';
+import type { GaugeNode } from './gauge/schema';
+import { resolveHeatmap } from './heatmap/resolve';
+import type { HeatmapScene } from './heatmap/scene';
+import type { HeatmapNode } from './heatmap/schema';
+import { resolveLegacyMetric } from './legacy_metric/resolve';
+import type { LegacyMetricScene } from './legacy_metric/scene';
+import type { LegacyMetricNode } from './legacy_metric/schema';
+import { resolveMetric } from './metric/resolve';
+import type { MetricScene } from './metric/scene';
+import type { MetricNode } from './metric/schema';
+import { resolvePartition } from './partition_chart/resolve';
+import type { PartitionScene } from './partition_chart/scene';
+import type { PartitionChartNode } from './partition_chart/schema';
+import { resolveTagCloud } from './tag_cloud/resolve';
+import type { TagCloudScene } from './tag_cloud/scene';
+import type { TagCloudNode } from './tag_cloud/schema';
+import { resolveXy } from './xy_chart/resolve';
+import type { XyScene } from './xy_chart/scene';
+import type { XyChartNode } from './xy_chart/schema';
 
 /** A chart node the resolver draws. */
 export type ChartNode =

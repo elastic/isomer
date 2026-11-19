@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-import type { Cell, ColumnRole, ColumnType } from '../schema/data';
-import type { SelectTarget } from '../schema/events';
+import type { Cell, ColumnRole, ColumnType, SelectTarget } from '../schema';
 
 /** The chart kinds a Scene describes. A renderer declares which it supports. */
 export const SCENE_KINDS = [

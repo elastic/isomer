@@ -5,15 +5,14 @@
  * 2.0.
  */
 
-import type { HeatmapScene } from '../primitives/heatmap/scene';
-import type { MetricScene } from '../primitives/metric/scene';
+import type { HeatmapScene } from '../primitives/heatmap';
+import type { MetricScene } from '../primitives/metric';
 import type {
   PartitionNode,
   PartitionScene,
-} from '../primitives/partition_chart/scene';
-import type { XyScene } from '../primitives/xy_chart/scene';
-import type { SceneKind } from '../scene/base';
-import type { Scene } from '../scene/types';
+} from '../primitives/partition_chart';
+import type { XyScene } from '../primitives/xy_chart';
+import type { Scene, SceneKind } from '../scene';
 
 import type { DrawnExamples, DrawnScene } from './draw_examples';
 

@@ -11,8 +11,8 @@ import type {
   SceneSelection,
   SceneSource,
   SceneTooltip,
-} from '../../scene/base';
-import type { PortableFormat } from '../../schema/format';
+} from '../../scene';
+import type { PortableFormat } from '../../schema';
 
 /** One position along a {@link HeatmapAxis}, in axis order. */
 export interface HeatmapCategory {

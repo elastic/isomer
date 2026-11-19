@@ -14,7 +14,7 @@ import { xyTimeSeries } from '../xy_chart/examples';
 import type { GridNode } from './schema';
 
 /** Named `grid` examples, each of which validates in a composition. */
-export const gridExamples: PrimitiveExample<GridNode>[] = [
+export const examples: PrimitiveExample<GridNode>[] = [
   {
     name: 'Panels side by side',
     description:

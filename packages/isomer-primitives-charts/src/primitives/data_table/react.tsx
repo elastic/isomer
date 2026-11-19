@@ -14,11 +14,11 @@
 import type { ReactNode } from 'react';
 import type { StyleHandle } from '@elastic/distillate';
 
-import type { ReactSceneRenderer } from '../../render/context';
-import { cls, px, varStyle } from '../../render/styles';
-import { CHARTS_THEME } from '../../render/theme';
-import type { SceneRenderEnv } from '../../scene/types';
-import { sceneNotes } from '../../text/scene_text';
+import type { ReactSceneRenderer } from '../../render';
+import { cls } from '../../render';
+import type { SceneRenderEnv } from '../../scene';
+import { sceneNotes } from '../../text';
+import { CHARTS_THEME, px, varStyle } from '../../theme';
 
 import type { TableAlignment, TableCell, TableScene } from './scene';
 import {

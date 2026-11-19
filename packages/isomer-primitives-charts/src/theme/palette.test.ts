@@ -9,7 +9,7 @@ import { createRequire } from 'node:module';
 
 import { describe, expect, it } from 'vitest';
 
-import { CATEGORICAL_PALETTE, CHART_CHROME, mixLch } from './theme';
+import { CATEGORICAL_PALETTE, CHART_CHROME, mixLch } from './palette';
 
 const require = createRequire(import.meta.url);
 const colors = (file: string) =>

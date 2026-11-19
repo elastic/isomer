@@ -19,14 +19,20 @@ const namesOf = (entry: string): string[] =>
   ].flatMap(([, , names]) =>
     names!
       .split(',')
-      .map((name) => name.trim().replace(/^type\s+/, ''))
+      .map((name) =>
+        name
+          .trim()
+          .replace(/^type\s+/, '')
+          .split(/\s+as\s+/)
+          .pop()!
+      )
       .filter(Boolean)
   );
 
 describe('the root entry', () => {
-  const root = new Set(namesOf('index.ts'));
+  const root = new Set(namesOf('entries/index.ts'));
 
-  it.each(['schema/index.ts', 'scene/index.ts', 'resolve/index.ts'])(
+  it.each(['entries/schema.ts', 'entries/scene.ts', 'entries/resolve.ts'])(
     'exports every name %s does',
     (entry) => {
       expect(namesOf(entry).filter((name) => !root.has(name))).toEqual([]);

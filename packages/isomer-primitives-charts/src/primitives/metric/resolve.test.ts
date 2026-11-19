@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
+import { resolveChart } from '../resolve_chart';
 
 import type { MetricNode } from './schema';
 

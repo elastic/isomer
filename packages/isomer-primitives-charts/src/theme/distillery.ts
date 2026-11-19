@@ -9,10 +9,8 @@ import type { CSSProperties } from 'react';
 import {
   createDistillery,
   type LocalVarGroup,
-  type StyleHandle,
   type StylesObject,
 } from '@elastic/distillate';
-import type { StyledRenderContext } from '@elastic/isomer-sdk';
 
 // Guarded so the pack loads as unbundled browser ESM, where `process` is absent.
 const dev =
@@ -79,19 +77,3 @@ export const varStyle = <TKey extends string>(
         value === undefined ? [] : [[group[key].propName, value]]
     )
   );
-
-/** `value` pixels, as a var's value: custom properties take no unitless length. */
-export const px = (value: number): string => `${value}px`;
-
-/** Resolves handles through the render's adapter, or to their readable names when it has none. */
-export const cls = (
-  context: Pick<StyledRenderContext, 'resolveClassName'> | undefined,
-  ...handles: ReadonlyArray<StyleHandle | false | undefined>
-): string => {
-  const present = handles.filter((handle): handle is StyleHandle =>
-    Boolean(handle)
-  );
-  return context?.resolveClassName
-    ? context.resolveClassName(...present)
-    : present.map(({ readableName }) => readableName).join(' ');
-};

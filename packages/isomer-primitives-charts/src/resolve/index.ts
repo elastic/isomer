@@ -5,5 +5,25 @@
  * 2.0.
  */
 
-export { type ResolveChartOptions } from './common';
-export { type ChartNode, resolveChart } from './resolve_chart';
+export {
+  type Resolution,
+  type ResolveChartOptions,
+  LABEL_ROTATION,
+  NO_RESULTS,
+  bandFor,
+  cellIdentity,
+  cellKey,
+  createResolution,
+  describe,
+  emphasisNotes,
+  fractionAlong,
+  isEmptyCell,
+  keyPart,
+  nextUp,
+  percentAlong,
+  resolveInteractions,
+  sceneBase,
+  titled,
+  toNumber,
+  wrappedHeight,
+} from './common';

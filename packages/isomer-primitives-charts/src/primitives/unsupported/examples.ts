@@ -21,7 +21,7 @@ export const unsupportedVega: UnsupportedNode = {
 };
 
 /** Named `unsupported` examples, each valid in a composition. */
-export const unsupportedExamples: PrimitiveExample<UnsupportedNode>[] = [
+export const examples: PrimitiveExample<UnsupportedNode>[] = [
   {
     name: 'With a link',
     description: 'A panel type with no materializer, linking to its source.',

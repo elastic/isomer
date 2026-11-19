@@ -19,7 +19,7 @@ import type { MetricScene } from '../primitives/metric/scene';
 import type { PartitionScene } from '../primitives/partition_chart/scene';
 import type { TagCloudScene } from '../primitives/tag_cloud/scene';
 import type { XyScene } from '../primitives/xy_chart/scene';
-import type { ChartEvent } from '../schema/events';
+import type { ChartEvent } from '../schema';
 
 import type { SceneKind } from './base';
 

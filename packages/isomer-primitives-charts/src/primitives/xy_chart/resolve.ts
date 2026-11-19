@@ -6,8 +6,7 @@
  */
 
 import { continuousScaleOf, coordinateOf } from '../../coordinates';
-import { toEpoch } from '../../format/date';
-import { DEFAULT_FORMATS } from '../../format/format';
+import { DEFAULT_FORMATS, toEpoch } from '../../format';
 import {
   createResolution,
   describe,
@@ -20,15 +19,14 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import { categoricalColor, keyColor, resolveColor } from '../../resolve/theme';
+} from '../../resolve';
 import type {
   SceneColor,
   SceneInteractions,
   SceneSelection,
-} from '../../scene/base';
-import type { Cell, ChartColumn } from '../../schema/data';
-import type { PortableFormat } from '../../schema/format';
+} from '../../scene';
+import type { Cell, ChartColumn, PortableFormat } from '../../schema';
+import { categoricalColor, keyColor, resolveColor } from '../../theme';
 
 import type {
   SceneAnnotation,

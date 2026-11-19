@@ -9,8 +9,7 @@
 
 import type { MetricScene } from '../primitives/metric/scene';
 import type { XyMark, XyScene, XySeries } from '../primitives/xy_chart/scene';
-import type { Cell } from '../schema/data';
-import type { PortableFormat } from '../schema/format';
+import type { Cell, PortableFormat } from '../schema';
 
 import type { SceneChrome, SceneSelection } from './base';
 

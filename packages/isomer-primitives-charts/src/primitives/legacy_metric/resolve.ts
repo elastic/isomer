@@ -10,7 +10,6 @@
 // `withAutoScale`, with the font sizes Lens's `toExpression` sets), with every
 // tile's text, color and type size decided here.
 
-import { CHARTS_THEME } from '../../render/theme';
 import {
   bandFor,
   createResolution,
@@ -24,9 +23,14 @@ import {
   titled,
   toNumber,
   wrappedHeight,
-} from '../../resolve/common';
-import { isColorDark, resolveColor, TABLE_CHROME } from '../../resolve/theme';
-import type { SceneColor, SceneSelection, SceneSize } from '../../scene/base';
+} from '../../resolve';
+import type { SceneColor, SceneSelection, SceneSize } from '../../scene';
+import {
+  CHARTS_THEME,
+  isColorDark,
+  resolveColor,
+  TABLE_CHROME,
+} from '../../theme';
 
 import type { LegacyMetricScene, LegacyMetricTile } from './scene';
 import type { LegacyMetricNode } from './schema';

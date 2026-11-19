@@ -7,8 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { ChartColumn } from '../../schema/data';
-import { BYTES, NUMBER, PERCENT } from '../../schema/examples/shared';
+import type { ChartColumn } from '../../schema';
+import { BYTES, NUMBER, PERCENT } from '../../schema';
 
 import type { LegacyMetricNode } from './schema';
 
@@ -41,7 +41,7 @@ export const legacyMetricSingleValue: LegacyMetricNode = {
 };
 
 /** Named `legacyMetric` examples covering the corpus edge cases, each valid in a composition. */
-export const legacyMetricExamples: PrimitiveExample<LegacyMetricNode>[] = [
+export const examples: PrimitiveExample<LegacyMetricNode>[] = [
   {
     name: 'Single value',
     description:

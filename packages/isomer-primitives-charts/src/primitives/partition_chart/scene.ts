@@ -11,7 +11,7 @@ import type {
   SceneSelection,
   SceneSource,
   SceneTooltip,
-} from '../../scene/base';
+} from '../../scene';
 
 /** The shapes a {@link PartitionScene} draws. */
 export type PartitionSceneShape =

@@ -7,9 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { ChartColumn } from '../../schema/data';
-import { BYTES, NUMBER, START } from '../../schema/examples/shared';
-import type { PortableFormat } from '../../schema/format';
+import type { ChartColumn, PortableFormat } from '../../schema';
+import { BYTES, NUMBER, START } from '../../schema';
 
 import type { PartitionChartNode } from './schema';
 
@@ -55,7 +54,7 @@ export const partitionPie: PartitionChartNode = {
 };
 
 /** Named `partitionChart` examples covering the corpus edge cases, each valid in a composition. */
-export const partitionChartExamples: PrimitiveExample<PartitionChartNode>[] = [
+export const examples: PrimitiveExample<PartitionChartNode>[] = [
   {
     name: 'Pie',
     description:

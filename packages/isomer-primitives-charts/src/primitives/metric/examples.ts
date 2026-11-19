@@ -7,14 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import {
-  BYTES,
-  HOUR,
-  NUMBER,
-  PERCENT,
-  START,
-} from '../../schema/examples/shared';
-import type { PortableFormat } from '../../schema/format';
+import type { PortableFormat } from '../../schema';
+import { BYTES, HOUR, NUMBER, PERCENT, START } from '../../schema';
 
 import type { MetricNode } from './schema';
 
@@ -45,7 +39,7 @@ export const metricSingleValue: MetricNode = {
 };
 
 /** Named `metric` examples covering the corpus edge cases, each valid in a composition. */
-export const metricExamples: PrimitiveExample<MetricNode>[] = [
+export const examples: PrimitiveExample<MetricNode>[] = [
   {
     name: 'Single value',
     description: 'One number, formatted with at most three decimals.',

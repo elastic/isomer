@@ -11,9 +11,9 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
-import { TABLE_CHROME, TRANSPARENT } from '../../resolve/theme';
 import type { Cell, ChartColumn } from '../../schema/data';
+import { TABLE_CHROME, TRANSPARENT } from '../../theme/palette';
+import { resolveChart } from '../resolve_chart';
 
 import { niceMax } from './resolve';
 import type { GaugeNode } from './schema';

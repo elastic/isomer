@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { xyTimeSeries } from './examples';
 
 /** What an agent reads to choose `xyChart`: purpose, when to use it, and an example. */
-export const xyChartCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'xyChart',
   name: 'XY chart',
   purpose:

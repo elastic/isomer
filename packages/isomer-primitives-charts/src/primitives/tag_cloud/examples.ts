@@ -7,8 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { ChartColumn } from '../../schema/data';
-import { NUMBER } from '../../schema/examples/shared';
+import type { ChartColumn } from '../../schema';
+import { NUMBER } from '../../schema';
 
 import type { TagCloudNode } from './schema';
 
@@ -51,7 +51,7 @@ export const tagCloudServices: TagCloudNode = {
 };
 
 /** Named `tagCloud` examples covering the corpus edge cases, each valid in a composition. */
-export const tagCloudExamples: PrimitiveExample<TagCloudNode>[] = [
+export const examples: PrimitiveExample<TagCloudNode>[] = [
   {
     name: 'Services by volume',
     description:

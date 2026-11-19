@@ -11,11 +11,12 @@
 
 import type { KeyboardEvent } from 'react';
 
-import type { ReactSceneRenderer } from '../../render/context';
-import { cls, px, varStyle } from '../../render/styles';
-import { selectEvent } from '../../scene/events';
-import type { SceneRenderEnv } from '../../scene/types';
-import { described, sceneNotes } from '../../text/scene_text';
+import type { ReactSceneRenderer } from '../../render';
+import { cls } from '../../render';
+import type { SceneRenderEnv } from '../../scene';
+import { selectEvent } from '../../scene';
+import { described, sceneNotes } from '../../text';
+import { px, varStyle } from '../../theme';
 
 import type { LegacyMetricScene, LegacyMetricTile } from './scene';
 import { legacyMetricModule } from './styles';

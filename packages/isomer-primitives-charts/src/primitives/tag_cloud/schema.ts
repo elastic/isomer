@@ -7,23 +7,21 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { KEY_PART_RULE } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
 import {
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-  interactionsSchemaFor,
-} from '../../schema/events';
-import {
+  chartCoreShape,
   checkColumnReferences,
+  checkInteractions,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  KEY_PART_RULE,
+} from '../../schema';
 
-/** The cross-field rules `tagCloudSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const TAG_CLOUD_RULES = {
   metricType: 'The `metric` column is a `number` column.',
   singleValued: 'The `tags` and `metric` columns are not `multivalue`.',
@@ -101,7 +99,7 @@ const tagCloudObjectSchema = z.object({
 type TagCloudInput = z.infer<typeof tagCloudObjectSchema>;
 
 /** A tag cloud: words sized by value. */
-export const tagCloudSchema = tagCloudObjectSchema
+export const schema = tagCloudObjectSchema
   .describe(TAG_CLOUD_DESCRIPTION)
   .check(
     crossSuperRefine<TagCloudInput>(
@@ -149,4 +147,4 @@ export const tagCloudSchema = tagCloudObjectSchema
   );
 
 /** A validated `tagCloud` node. */
-export type TagCloudNode = z.infer<typeof tagCloudSchema> & PrimitiveNode;
+export type TagCloudNode = z.infer<typeof schema> & PrimitiveNode;

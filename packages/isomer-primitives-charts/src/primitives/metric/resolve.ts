@@ -20,15 +20,10 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import {
-  categoricalColor,
-  keyColor,
-  resolveColor,
-  textOn,
-} from '../../resolve/theme';
-import type { SceneColor, SceneSelection } from '../../scene/base';
-import type { PortableFormat } from '../../schema/format';
+} from '../../resolve';
+import type { SceneColor, SceneSelection } from '../../scene';
+import type { PortableFormat } from '../../schema';
+import { categoricalColor, keyColor, resolveColor, textOn } from '../../theme';
 
 import type { MetricScene, MetricTile } from './scene';
 import type { MetricNode } from './schema';

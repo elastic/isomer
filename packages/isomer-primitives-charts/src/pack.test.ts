@@ -8,12 +8,18 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type { ActionEventRef, Composition } from '@elastic/isomer-sdk';
+import type {
+  ActionEventRef,
+  Composition,
+  PrimitivePack,
+} from '@elastic/isomer-sdk';
+import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import { dataTableTopHosts } from './primitives/data_table/examples';
 import { metricSingleValue } from './primitives/metric/examples';
+import { chartEventExamples } from './primitives/xy_chart/events';
 import { xyInteractive, xyTimeSeries } from './primitives/xy_chart/examples';
 import type { XyChartNode } from './primitives/xy_chart/schema';
 import type {
@@ -24,7 +30,6 @@ import type {
 import { CHART_FAILURE_TEXT } from './render/failure';
 import { sceneModule } from './render/scene_styles';
 import { chartSize, chartSizeSpec } from './render/size';
-import { CHARTS_THEME } from './render/theme';
 import type { ResolveChartOptions } from './resolve/common';
 import {
   metricSingleValueScene,
@@ -33,7 +38,7 @@ import {
 } from './scene/examples';
 import { selectSceneRenderer } from './scene/select';
 import type { Scene, SceneRenderEnv } from './scene/types';
-import { chartEventExamples } from './schema/examples/events';
+import { CHARTS_THEME } from './theme/theme';
 
 // The resolver does not exist yet: resolve the two examples that have
 // hand-written Scenes, and record what each call was asked for.
@@ -689,5 +694,28 @@ describe('a chart that cannot be drawn', () => {
     expect(failures).toEqual([
       [broken, expect.objectContaining({ type: 'metric' })],
     ]);
+  });
+});
+
+describe('registration', () => {
+  const typesOf = ({ primitives }: PrimitivePack) =>
+    primitives.map(({ type }) => type);
+
+  it('registers every primitive directory, and nothing else', async () => {
+    await assertPackRegistrationComplete({
+      primitivesDir: new URL('./primitives/', import.meta.url),
+      registered: chartsPack.primitives,
+    });
+  });
+
+  it('builds the same primitives through createChartsPack', () => {
+    expect(typesOf(createChartsPack())).toEqual(typesOf(chartsPack));
+  });
+
+  it('indexes every registered type in exactly one group', () => {
+    const grouped = (chartsPack.authoring?.groups ?? []).flatMap(
+      ({ types }) => types
+    );
+    expect([...grouped].sort()).toEqual([...typesOf(chartsPack)].sort());
   });
 });

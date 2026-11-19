@@ -7,29 +7,29 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { dataTableExamples } from '../primitives/data_table/examples';
-import { gaugeExamples } from '../primitives/gauge/examples';
-import { heatmapExamples } from '../primitives/heatmap/examples';
-import { legacyMetricExamples } from '../primitives/legacy_metric/examples';
-import { metricExamples } from '../primitives/metric/examples';
-import type { MetricScene } from '../primitives/metric/scene';
-import type { MetricNode } from '../primitives/metric/schema';
-import { partitionChartExamples } from '../primitives/partition_chart/examples';
-import type { PartitionNode } from '../primitives/partition_chart/scene';
-import { tagCloudExamples } from '../primitives/tag_cloud/examples';
-import {
-  xyChartExamples,
-  xyInteractive,
-} from '../primitives/xy_chart/examples';
-import type { XyScene } from '../primitives/xy_chart/scene';
-import type { XyChartNode } from '../primitives/xy_chart/schema';
 import { brushEvent, selectEvent } from '../scene/events';
 import { xyInteractiveScene } from '../scene/examples';
 import { formatAxisValue } from '../scene/format_axis';
 import type { Scene } from '../scene/types';
-import { chartEventExamples } from '../schema/examples/events';
 
+import { examples as dataTableExamples } from './data_table/examples';
+import { examples as gaugeExamples } from './gauge/examples';
+import { examples as heatmapExamples } from './heatmap/examples';
+import { examples as legacyMetricExamples } from './legacy_metric/examples';
+import { examples as metricExamples } from './metric/examples';
+import type { MetricScene } from './metric/scene';
+import type { MetricNode } from './metric/schema';
+import { examples as partitionChartExamples } from './partition_chart/examples';
+import type { PartitionNode } from './partition_chart/scene';
 import { resolveChart } from './resolve_chart';
+import { examples as tagCloudExamples } from './tag_cloud/examples';
+import { chartEventExamples } from './xy_chart/events';
+import {
+  examples as xyChartExamples,
+  xyInteractive,
+} from './xy_chart/examples';
+import type { XyScene } from './xy_chart/scene';
+import type { XyChartNode } from './xy_chart/schema';
 
 const SIZE = { width: 480, height: 240 };
 

@@ -11,7 +11,7 @@
 // cell's color decided here, so an engine only lays the grid out.
 
 import { coordinateOf } from '../../coordinates';
-import { collator, dateFormat } from '../../format/intl';
+import { collator, dateFormat } from '../../format';
 import {
   createResolution,
   describe,
@@ -25,14 +25,10 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import {
-  HEATMAP_PALETTE,
-  resolveColor,
-  TRANSPARENT,
-} from '../../resolve/theme';
-import type { SceneColor, SceneSelection } from '../../scene/base';
-import type { ColorBand } from '../../schema/colors';
+} from '../../resolve';
+import type { SceneColor, SceneSelection } from '../../scene';
+import type { ColorBand } from '../../schema';
+import { HEATMAP_PALETTE, resolveColor, TRANSPARENT } from '../../theme';
 
 import type {
   HeatmapAxis,

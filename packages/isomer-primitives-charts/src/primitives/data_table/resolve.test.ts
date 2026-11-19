@@ -13,8 +13,8 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { resolveChart } from '../../resolve/resolve_chart';
 import type { ChartColumn } from '../../schema/data';
+import { resolveChart } from '../resolve_chart';
 
 import type { DataTableNode } from './schema';
 

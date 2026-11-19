@@ -20,9 +20,9 @@ import {
   sceneBase,
   titled,
   toNumber,
-} from '../../resolve/common';
-import { categoricalColor, keyColor } from '../../resolve/theme';
-import type { SceneSelection } from '../../scene/base';
+} from '../../resolve';
+import type { SceneSelection } from '../../scene';
+import { categoricalColor, keyColor } from '../../theme';
 
 import type { TagCloudScene, TagCloudWord } from './scene';
 import type { TagCloudNode } from './schema';

@@ -5,6 +5,47 @@
  * 2.0.
  */
 
-export { partitionChartCatalog } from './catalog';
-export { partitionChartExamples } from './examples';
-export { type PartitionChartNode, partitionChartSchema } from './schema';
+import { type ChartPrimitiveConfig, chartPrimitiveParts } from '../../render';
+import { defaultChartPrimitiveConfig } from '../defaults';
+import { definePrimitive } from '../define';
+
+import { catalog } from './catalog';
+import { examples } from './examples';
+import { icon } from './icon';
+import { type PartitionChartNode, schema } from './schema';
+
+export { catalog as partitionChartCatalog } from './catalog';
+export { examples as partitionChartExamples } from './examples';
+export {
+  type PartitionLayer,
+  type PartitionLegend,
+  type PartitionLegendItem,
+  type PartitionNode,
+  type PartitionScene,
+  type PartitionSceneShape,
+} from './scene';
+export {
+  type PartitionChartNode,
+  type PartitionShape,
+  PARTITION_KEY_RULE,
+  PARTITION_MAX_GROUPS,
+  PARTITION_RULES,
+  PARTITION_SHAPES,
+  schema as partitionChartSchema,
+} from './schema';
+
+/** The `partitionChart` primitive, drawing through `config`. */
+export const definePartitionChartPrimitive = (config: ChartPrimitiveConfig) =>
+  definePrimitive({
+    type: 'partitionChart',
+    catalog,
+    icon,
+    examples,
+    schema,
+    ...chartPrimitiveParts<PartitionChartNode>(config),
+  });
+
+/** {@link definePartitionChartPrimitive} with the pack's defaults. */
+export const partitionChartPrimitive = definePartitionChartPrimitive(
+  defaultChartPrimitiveConfig
+);

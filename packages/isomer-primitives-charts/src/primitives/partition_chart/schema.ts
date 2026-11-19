@@ -7,21 +7,19 @@
 
 import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
-import { KEY_PART_RULE } from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
 import {
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-  interactionsSchemaFor,
-} from '../../schema/events';
-import {
+  chartCoreShape,
   checkColumnReferences,
+  checkInteractions,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+  interactionsSchemaFor,
+  KEY_PART_RULE,
+} from '../../schema';
 
 /** The shapes a `partitionChart` draws. */
 export const PARTITION_SHAPES = [
@@ -44,7 +42,7 @@ export const PARTITION_MAX_GROUPS: Readonly<Record<PartitionShape, number>> = {
   waffle: 1,
 };
 
-/** The cross-field rules `partitionChartSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const PARTITION_RULES = {
   metricType: 'A `metrics` column is a `number` column.',
   singleValued: 'The `metrics` and `groups` columns are not `multivalue`.',
@@ -171,7 +169,7 @@ const partitionChartObjectSchema = z.object({
 type PartitionChartInput = z.infer<typeof partitionChartObjectSchema>;
 
 /** A partition chart: pie, donut, treemap, mosaic or waffle slices of a whole. */
-export const partitionChartSchema = partitionChartObjectSchema
+export const schema = partitionChartObjectSchema
   .describe(PARTITION_DESCRIPTION)
   .check(
     crossSuperRefine<PartitionChartInput>(
@@ -244,5 +242,4 @@ export const partitionChartSchema = partitionChartObjectSchema
   );
 
 /** A validated `partitionChart` node. */
-export type PartitionChartNode = z.infer<typeof partitionChartSchema> &
-  PrimitiveNode;
+export type PartitionChartNode = z.infer<typeof schema> & PrimitiveNode;

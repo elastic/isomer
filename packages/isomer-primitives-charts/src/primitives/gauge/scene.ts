@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import type { SceneBase, SceneColor } from '../../scene/base';
-import type { PortableFormat } from '../../schema/format';
+import type { SceneBase, SceneColor } from '../../scene';
+import type { PortableFormat } from '../../schema';
 
 /** The shapes a {@link GaugeScene} draws. */
 export type GaugeSceneShape =

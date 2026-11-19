@@ -7,8 +7,8 @@
 
 import type { PrimitiveExample } from '@elastic/isomer-sdk/schema';
 
-import type { ChartColumn } from '../../schema/data';
-import { NUMBER } from '../../schema/examples/shared';
+import type { ChartColumn } from '../../schema';
+import { NUMBER } from '../../schema';
 
 import type { GaugeNode } from './schema';
 
@@ -63,7 +63,7 @@ export const gaugeSemiCircle: GaugeNode = {
 };
 
 /** Named `gauge` examples covering the corpus edge cases, each valid in a composition. */
-export const gaugeExamples: PrimitiveExample<GaugeNode>[] = [
+export const examples: PrimitiveExample<GaugeNode>[] = [
   {
     name: 'Semicircle with bands and a goal',
     description:

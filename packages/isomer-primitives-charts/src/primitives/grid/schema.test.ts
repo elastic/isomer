@@ -7,14 +7,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { gridExamples } from './examples';
+import { examples } from './examples';
 import { type GridNode, gridReadingOrder } from './schema';
 
 // Kibana's grid orders panels by row, then column (`comparePanel` in
 // `@kbn/grid-layout`), and draws sections after the panels outside them.
 
 const node = (name: string): GridNode => {
-  const found = gridExamples.find((example) => example.name === name);
+  const found = examples.find((example) => example.name === name);
   if (!found) {
     throw new Error(`no grid example named ${name}`);
   }

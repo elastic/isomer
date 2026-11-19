@@ -7,10 +7,10 @@
 
 // The one source of every color the resolver supplies itself: chrome tokens and
 // the default categorical palette. Values are EUI Borealis tokens, which
-// `theme.test.ts` checks against the theme package.
+// `palette.test.ts` checks against the theme package.
 
-import type { ColorScheme, SceneChrome, SceneColor } from '../scene/base';
-import type { ColorValue } from '../schema/colors';
+import type { ColorScheme, SceneChrome, SceneColor } from '../scene';
+import type { ColorValue } from '../schema';
 
 /** Chrome per scheme, in EUI Borealis tokens: `textParagraph`, `textSubdued`, `borderBaseSubdued` for axis and grid lines, `backgroundBasePlain` and `borderBasePlain`. */
 export const CHART_CHROME: Readonly<Record<ColorScheme, SceneChrome>> = {

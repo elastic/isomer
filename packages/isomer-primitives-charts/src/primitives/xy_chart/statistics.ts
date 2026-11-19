@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { DEFAULT_FORMATS } from '../../format/format';
-import type { Resolution } from '../../resolve/common';
+import { DEFAULT_FORMATS } from '../../format';
+import type { Resolution } from '../../resolve';
 
 import type { SceneLegendItem } from './scene';
 import type { XyChartNode } from './schema';

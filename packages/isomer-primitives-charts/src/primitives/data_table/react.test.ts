@@ -13,11 +13,11 @@ import { describe, expect, it } from 'vitest';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from '../../pack';
 import type { ReactSceneRenderer } from '../../render/context';
-import { CHARTS_THEME } from '../../render/theme';
-import { resolveChart } from '../../resolve/resolve_chart';
 import type { ColorScheme } from '../../scene/base';
+import { CHARTS_THEME } from '../../theme/theme';
+import { resolveChart } from '../resolve_chart';
 
-import { dataTableExamples } from './examples';
+import { examples } from './examples';
 import { TableView } from './react';
 import type { TableScene } from './scene';
 import type { DataTableNode } from './schema';
@@ -37,7 +37,7 @@ const escaped = (text: string) =>
   renderToStaticMarkup(createElement(Fragment, null, text));
 
 const example = (name: string) =>
-  dataTableExamples.find((entry) => entry.name === name)!.node;
+  examples.find((entry) => entry.name === name)!.node;
 
 const { titleHeight, lineHeight } = CHARTS_THEME.table;
 
@@ -56,7 +56,7 @@ const CHOSEN = 'Chosen columns, widths and pre-rendered values';
 const firstPage = (scene: TableScene) =>
   scene.paging ? scene.order.slice(0, scene.paging.pageSize) : scene.order;
 
-const cases = dataTableExamples.flatMap(({ name, node }) =>
+const cases = examples.flatMap(({ name, node }) =>
   (['light', 'dark'] as const).map((scheme) => ({
     name,
     scheme,

@@ -10,7 +10,7 @@ import type { PrimitiveCatalogEntry } from '@elastic/isomer-sdk/schema';
 import { partitionPie } from './examples';
 
 /** What an agent reads to choose `partitionChart`: purpose, when to use it, and an example. */
-export const partitionChartCatalog: PrimitiveCatalogEntry = {
+export const catalog: PrimitiveCatalogEntry = {
   type: 'partitionChart',
   name: 'Partition chart',
   purpose:

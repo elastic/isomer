@@ -9,25 +9,21 @@ import { type PrimitiveNode, z } from '@elastic/isomer-sdk/schema';
 
 import {
   BANDS_RANGE_RULE,
-  checkBandsRange,
-  colorValueSchema,
-} from '../../schema/colors';
-import { chartCoreShape } from '../../schema/core';
-import { crossSuperRefine } from '../../schema/cross_field';
-import {
   brushInteractionsSchemaFor,
-  checkInteractions,
-  INTERACTION_RULES,
-  interactionsCoreShape,
-} from '../../schema/events';
-import {
+  chartCoreShape,
+  checkBandsRange,
   checkColumnReferences,
+  checkInteractions,
+  colorValueSchema,
   COLUMN_REF_RULE,
   type ColumnReference,
   columnRefSchema,
-} from '../../schema/references';
+  crossSuperRefine,
+  INTERACTION_RULES,
+  interactionsCoreShape,
+} from '../../schema';
 
-/** The cross-field rules `heatmapSchema` states in its description, one sentence each. */
+/** The cross-field rules {@link schema} states in its description, one sentence each. */
 export const HEATMAP_RULES = {
   valueType: 'The `value` column is a `number` column.',
   singleValued: 'The `x`, `y` and `value` columns are not `multivalue`.',
@@ -194,103 +190,101 @@ const heatmapObjectSchema = z.object({
 type HeatmapInput = z.infer<typeof heatmapObjectSchema>;
 
 /** A heat map: cells by `x` and `y`, colored by value. */
-export const heatmapSchema = heatmapObjectSchema
-  .describe(HEATMAP_DESCRIPTION)
-  .check(
-    crossSuperRefine<HeatmapInput>(
-      (node, context) => {
-        const references: ColumnReference[] = [
-          { path: ['x', 'column'], id: node.x.column, single: true },
-          ...(node.y
-            ? [{ path: ['y', 'column'], id: node.y.column, single: true }]
-            : []),
-          {
-            path: ['value', 'column'],
-            id: node.value.column,
-            types: ['number'] as const,
-            single: true,
-          },
-        ];
-        checkColumnReferences(node.data, references, context, {
-          missing: COLUMN_REF_RULE,
-          type: HEATMAP_RULES.valueType,
-          single: HEATMAP_RULES.singleValued,
+export const schema = heatmapObjectSchema.describe(HEATMAP_DESCRIPTION).check(
+  crossSuperRefine<HeatmapInput>(
+    (node, context) => {
+      const references: ColumnReference[] = [
+        { path: ['x', 'column'], id: node.x.column, single: true },
+        ...(node.y
+          ? [{ path: ['y', 'column'], id: node.y.column, single: true }]
+          : []),
+        {
+          path: ['value', 'column'],
+          id: node.value.column,
+          types: ['number'] as const,
+          single: true,
+        },
+      ];
+      checkColumnReferences(node.data, references, context, {
+        missing: COLUMN_REF_RULE,
+        type: HEATMAP_RULES.valueType,
+        single: HEATMAP_RULES.singleValued,
+      });
+      const seen = new Set<string>();
+      for (const { path, id } of references) {
+        if (seen.has(id)) {
+          context.addIssue({
+            code: 'custom',
+            path,
+            message: `${HEATMAP_RULES.distinct} "${id}" repeats.`,
+          });
+        }
+        seen.add(id);
+      }
+      const indexOf = (id: string) =>
+        node.data.columns.findIndex((column) => column.id === id);
+      const xIndex = indexOf(node.x.column);
+      const yIndex = node.y ? indexOf(node.y.column) : -1;
+      const xType = node.data.columns[xIndex]?.type;
+      if (node.x.interval !== undefined && xType !== 'date') {
+        context.addIssue({
+          code: 'custom',
+          path: ['x', 'interval'],
+          message: HEATMAP_RULES.interval,
         });
-        const seen = new Set<string>();
-        for (const { path, id } of references) {
-          if (seen.has(id)) {
+      }
+      const domain = node.axes?.x?.domain;
+      if (
+        domain !== undefined &&
+        (xType !== 'date' ||
+          (domain.kind === 'custom' && !(domain.min < domain.max)))
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['axes', 'x', 'domain'],
+          message: HEATMAP_RULES.domain,
+        });
+      }
+      if (xIndex >= 0 && (!node.y || yIndex >= 0)) {
+        const cells = new Map<string, number>();
+        node.data.rows.forEach((row, index) => {
+          const key = JSON.stringify([
+            row[xIndex],
+            yIndex >= 0 ? row[yIndex] : null,
+          ]);
+          const first = cells.get(key);
+          if (first === undefined) {
+            cells.set(key, index);
+          } else {
             context.addIssue({
               code: 'custom',
-              path,
-              message: `${HEATMAP_RULES.distinct} "${id}" repeats.`,
+              path: ['data', 'rows', index],
+              message: `${HEATMAP_RULES.uniqueCells} Row ${index} repeats row ${first}.`,
             });
           }
-          seen.add(id);
-        }
-        const indexOf = (id: string) =>
-          node.data.columns.findIndex((column) => column.id === id);
-        const xIndex = indexOf(node.x.column);
-        const yIndex = node.y ? indexOf(node.y.column) : -1;
-        const xType = node.data.columns[xIndex]?.type;
-        if (node.x.interval !== undefined && xType !== 'date') {
-          context.addIssue({
-            code: 'custom',
-            path: ['x', 'interval'],
-            message: HEATMAP_RULES.interval,
-          });
-        }
-        const domain = node.axes?.x?.domain;
-        if (
-          domain !== undefined &&
-          (xType !== 'date' ||
-            (domain.kind === 'custom' && !(domain.min < domain.max)))
-        ) {
-          context.addIssue({
-            code: 'custom',
-            path: ['axes', 'x', 'domain'],
-            message: HEATMAP_RULES.domain,
-          });
-        }
-        if (xIndex >= 0 && (!node.y || yIndex >= 0)) {
-          const cells = new Map<string, number>();
-          node.data.rows.forEach((row, index) => {
-            const key = JSON.stringify([
-              row[xIndex],
-              yIndex >= 0 ? row[yIndex] : null,
-            ]);
-            const first = cells.get(key);
-            if (first === undefined) {
-              cells.set(key, index);
-            } else {
-              context.addIssue({
-                code: 'custom',
-                path: ['data', 'rows', index],
-                message: `${HEATMAP_RULES.uniqueCells} Row ${index} repeats row ${first}.`,
-              });
-            }
-          });
-        }
-        checkBandsRange(node, context);
-        checkInteractions(node, context, {
-          brushColumns: xType === 'date' ? [node.x.column] : [],
-          brushRule: HEATMAP_RULES.brushColumn,
-          brushTypes: ['date'],
         });
-      },
-      [
-        COLUMN_REF_RULE,
-        HEATMAP_RULES.valueType,
-        HEATMAP_RULES.singleValued,
-        HEATMAP_RULES.distinct,
-        HEATMAP_RULES.uniqueCells,
-        HEATMAP_RULES.interval,
-        HEATMAP_RULES.domain,
-        HEATMAP_RULES.brushColumn,
-        HEATMAP_RULES.bandsRange,
-        INTERACTION_RULES.emphasisRows,
-      ]
-    )
-  );
+      }
+      checkBandsRange(node, context);
+      checkInteractions(node, context, {
+        brushColumns: xType === 'date' ? [node.x.column] : [],
+        brushRule: HEATMAP_RULES.brushColumn,
+        brushTypes: ['date'],
+      });
+    },
+    [
+      COLUMN_REF_RULE,
+      HEATMAP_RULES.valueType,
+      HEATMAP_RULES.singleValued,
+      HEATMAP_RULES.distinct,
+      HEATMAP_RULES.uniqueCells,
+      HEATMAP_RULES.interval,
+      HEATMAP_RULES.domain,
+      HEATMAP_RULES.brushColumn,
+      HEATMAP_RULES.bandsRange,
+      INTERACTION_RULES.emphasisRows,
+    ]
+  )
+);
 
 /** A validated `heatmap` node. */
-export type HeatmapNode = z.infer<typeof heatmapSchema> & PrimitiveNode;
+export type HeatmapNode = z.infer<typeof schema> & PrimitiveNode;
