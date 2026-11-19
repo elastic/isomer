@@ -17,7 +17,8 @@ import {
 import type { ChartsReactEnv, ChartsRenderContext } from '../../render';
 import { cls, isNominalSize, markNominalSize } from '../../render';
 import type { SceneSize } from '../../scene';
-import { CHARTS_THEME, px, varStyle } from '../../theme';
+import { varStyle } from '../../styles';
+import { CHARTS_THEME, px } from '../../theme';
 
 import { blocksOf, headerOf, rowsHeight } from './layout';
 import {

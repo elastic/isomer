@@ -7,7 +7,8 @@
 
 import { variants } from '@elastic/distillate';
 
-import { CHARTS_THEME, createVarsModule } from '../../theme';
+import { createVarsModule } from '../../styles';
+import { CHARTS_THEME } from '../../theme';
 import type { MetricAlignment } from '../metric/scene';
 
 import type { LegacyMetricScene } from './scene';

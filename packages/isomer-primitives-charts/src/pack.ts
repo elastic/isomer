@@ -47,7 +47,7 @@ import {
   type ChartPrimitiveConfig,
   createChartPrimitiveConfig,
 } from './render';
-import { chartsDistillery } from './theme';
+import { chartsDistillery } from './styles';
 
 /** What {@link createChartsPack} builds the pack with. Every field is optional. */
 export interface ChartsPackOptions {

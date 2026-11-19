@@ -233,5 +233,6 @@ export type {
   ChartSelectEvent,
   SelectTarget,
 } from '../schema';
-export { createVarsModule, px, varStyle } from '../theme';
+export { createVarsModule, varStyle } from '../styles';
+export { px } from '../theme';
 export type { LocalVarGroup, StyleHandle } from '@elastic/distillate';

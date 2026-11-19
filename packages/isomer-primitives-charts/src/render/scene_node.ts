@@ -26,7 +26,8 @@ import type {
 } from '../scene';
 import { selectSceneRenderer } from '../scene';
 import { toActionEvent } from '../schema';
-import { CHARTS_THEME, varStyle } from '../theme';
+import { varStyle } from '../styles';
+import { CHARTS_THEME } from '../theme';
 
 import { cls } from './cls';
 import type {

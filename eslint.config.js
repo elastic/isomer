@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { readdirSync } from 'node:fs';
+
 import js from '@eslint/js';
 import licenseHeader from 'eslint-plugin-license-header';
 import perfectionist from 'eslint-plugin-perfectionist';
@@ -37,6 +39,19 @@ const CHARTS_PRIMITIVE_FILE = {
     'Import a primitive through its index.ts; only modules it depends on, or that the React-free entries reach, import its files (packages/isomer-primitives-charts/AGENTS.md#module-rules).',
 };
 const CHARTS_SRC = 'packages/isomer-primitives-charts/src';
+// Read from disk so a primitive's barrel is told apart from `primitives/define.ts` and the other aggregators.
+const CHARTS_PRIMITIVES = readdirSync(
+  new URL(`./${CHARTS_SRC}/primitives/`, import.meta.url),
+  { withFileTypes: true }
+)
+  .filter((entry) => entry.isDirectory())
+  .map(({ name }) => name);
+// A primitive's `index.ts`, which imports the shared directories and `primitives/defaults.ts` back.
+const chartsPrimitiveBarrel = (prefix) => ({
+  regex: `^${prefix}(${CHARTS_PRIMITIVES.join('|')})(/index)?$`,
+  message:
+    "Import a primitive's files here: its index.ts depends on this module, or reaches React (packages/isomer-primitives-charts/AGENTS.md#module-rules).",
+});
 const chartsBarrels = (files, patterns, ignores = []) => ({
   files,
   ignores: [
@@ -360,15 +375,18 @@ export default tseslint.config(
   // The primitives' barrels depend on these, or the React-free entries reach them.
   chartsBarrels(
     [
-      `${CHARTS_SRC}/{format,render,resolve,scene,schema,text,theme}/**/*.{ts,tsx}`,
+      `${CHARTS_SRC}/{format,render,resolve,scene,schema,styles,text,theme}/**/*.{ts,tsx}`,
       `${CHARTS_SRC}/entries/{resolve,scene,schema}.ts`,
     ],
-    [CHARTS_DIR_FILE]
+    [CHARTS_DIR_FILE, chartsPrimitiveBarrel('(\\./|(\\.\\./)+)primitives/')]
   ),
   // `./<primitive>/<file>` from here is a primitive's file, which the aggregators need.
   chartsBarrels(
     [`${CHARTS_SRC}/primitives/*.{ts,tsx}`],
-    [{ ...CHARTS_DIR_FILE, regex: '^(\\.\\./)+[\\w-]+/' }]
+    [
+      { ...CHARTS_DIR_FILE, regex: '^(\\.\\./)+[\\w-]+/' },
+      chartsPrimitiveBarrel('\\./'),
+    ]
   ),
   // `../<primitive>/<file>` from here is a sibling primitive's file.
   chartsBarrels(

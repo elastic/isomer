@@ -76,6 +76,30 @@ describe.each(['./schema', './scene', './resolve'])('charts %s', (entryKey) => {
   });
 });
 
+describe.each(['./schema', './resolve'])('charts %s', (entryKey) => {
+  const forbidden = RULES['@elastic/isomer-primitives-charts'][entryKey];
+
+  it('rejects Distillate, directly or through a relative module', async () => {
+    expect(
+      await forbiddenReachable(entryImporting('@elastic/distillate'), forbidden)
+    ).toEqual(['@elastic/distillate']);
+    expect(
+      await forbiddenReachable(entryReaching('@elastic/distillate'), forbidden)
+    ).toEqual(['@elastic/distillate']);
+  });
+});
+
+describe('charts ./scene', () => {
+  it('allows Distillate, for the style helpers it exports', async () => {
+    expect(
+      await forbiddenReachable(
+        entryImporting('@elastic/distillate'),
+        RULES['@elastic/isomer-primitives-charts']['./scene']
+      )
+    ).toEqual([]);
+  });
+});
+
 describe('charts .', () => {
   const forbidden = RULES['@elastic/isomer-primitives-charts']['.'];
 

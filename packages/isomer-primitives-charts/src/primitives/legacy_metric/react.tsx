@@ -15,8 +15,9 @@ import type { ReactSceneRenderer } from '../../render';
 import { cls } from '../../render';
 import type { SceneRenderEnv } from '../../scene';
 import { selectEvent } from '../../scene';
+import { varStyle } from '../../styles';
 import { described, sceneNotes } from '../../text';
-import { px, varStyle } from '../../theme';
+import { px } from '../../theme';
 
 import type { LegacyMetricScene, LegacyMetricTile } from './scene';
 import { legacyMetricModule } from './styles';

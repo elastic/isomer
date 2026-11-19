@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-export { chartsDistillery, createVarsModule, varStyle } from './distillery';
 export { chartsIcon } from './icons';
 export {
   CHART_CHROME,

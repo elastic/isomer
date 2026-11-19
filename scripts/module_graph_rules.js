@@ -38,12 +38,10 @@ export const RULES = {
     './schema': ['react', 'react-dom', ...MARKDOWN_PARSERS],
   },
   '@elastic/isomer-primitives-charts': {
-    ...Object.fromEntries(
-      ['./schema', './scene', './resolve'].map((entry) => [
-        entry,
-        CHARTS_CONTRACT_FORBIDDEN,
-      ])
-    ),
+    // `./scene` exports the style helpers chart engines author with; the contracts and resolver load no stylesheet machinery.
+    './schema': [...CHARTS_CONTRACT_FORBIDDEN, '@elastic/distillate'],
+    './scene': CHARTS_CONTRACT_FORBIDDEN,
+    './resolve': [...CHARTS_CONTRACT_FORBIDDEN, '@elastic/distillate'],
     // The runtime and `react-dom` are `./testing`'s optional peers alone.
     '.': ['@elastic/isomer-runtime', 'react-dom'],
   },

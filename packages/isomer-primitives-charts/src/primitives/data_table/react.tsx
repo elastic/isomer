@@ -17,8 +17,9 @@ import type { StyleHandle } from '@elastic/distillate';
 import type { ReactSceneRenderer } from '../../render';
 import { cls } from '../../render';
 import type { SceneRenderEnv } from '../../scene';
+import { varStyle } from '../../styles';
 import { sceneNotes } from '../../text';
-import { CHARTS_THEME, px, varStyle } from '../../theme';
+import { CHARTS_THEME, px } from '../../theme';
 
 import type { TableAlignment, TableCell, TableScene } from './scene';
 import {

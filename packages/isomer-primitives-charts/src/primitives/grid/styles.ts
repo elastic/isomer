@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import { CHARTS_THEME, createVarsModule } from '../../theme';
+import { createVarsModule } from '../../styles';
+import { CHARTS_THEME } from '../../theme';
 
 import { GRID_COLUMNS } from './schema';
 
