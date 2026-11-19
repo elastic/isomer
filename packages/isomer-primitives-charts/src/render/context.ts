@@ -12,15 +12,15 @@ import type {
   SurfaceMap,
 } from '@elastic/isomer-sdk';
 
-import type { ResolveChartOptions } from '../scene/common';
-import type { ChartNode } from '../scene/resolve';
+import type { ChartNode } from '../primitives/resolve_chart';
+import type { ResolveChartOptions } from '../resolve';
 import type {
   ColorScheme,
   Scene,
   SceneEnvironment,
   SceneRenderer,
   SceneSize,
-} from '../scene/types';
+} from '../scene';
 
 export type { ChartNode };
 

@@ -8,14 +8,14 @@
 // Events from what a renderer hit, so every renderer raises the same event for
 // the same gesture. Everything an event says comes from the Scene.
 
-import type { ChartBrushEvent, ChartSelectEvent } from '../schema/events';
-
 import type {
   HeatmapCategory,
   HeatmapScene,
-  SceneSelection,
-  XyScene,
-} from './types';
+} from '../primitives/heatmap/scene';
+import type { XyScene } from '../primitives/xy_chart/scene';
+import type { ChartBrushEvent, ChartSelectEvent } from '../schema';
+
+import type { SceneSelection } from './base';
 
 /** The `select` event for a part of the Scene the reader selected. */
 export const selectEvent = (

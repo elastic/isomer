@@ -7,6 +7,10 @@
 
 import { describe, expect, it } from 'vitest';
 
+import { metricSingleValue } from '../primitives/metric/examples';
+import { chartEventExamples } from '../primitives/xy_chart/events';
+import { xyInteractive } from '../primitives/xy_chart/examples';
+
 import type { Cell } from './data';
 import {
   CHART_EVENT_NAMES,
@@ -16,9 +20,6 @@ import {
   readChartEvent,
   toActionEvent,
 } from './events';
-import { chartEventExamples } from './examples/events';
-import { metricSingleValue } from './examples/metric';
-import { xyInteractive } from './examples/xy_chart';
 import { nodeSchemaOf } from './schema.fixtures';
 
 const { data } = xyInteractive;

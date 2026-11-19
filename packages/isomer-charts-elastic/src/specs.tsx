@@ -14,13 +14,13 @@ import type {
   SceneRenderEnv,
 } from '@elastic/isomer-primitives-charts/scene';
 
-import { gaugeSpecs } from './gauge';
-import { heatmapSpecs } from './heatmap';
-import { metricSpecs } from './metric';
-import type { ElasticChartsOptions } from './options';
-import { partitionSpecs } from './partition';
-import { tagCloudSpecs } from './tag_cloud';
-import { xySpecs } from './xy';
+import { gaugeSpecs } from './charts/gauge';
+import { heatmapSpecs } from './charts/heatmap/heatmap';
+import { metricSpecs } from './charts/metric/metric';
+import { partitionSpecs } from './charts/partition/partition';
+import { tagCloudSpecs } from './charts/tag_cloud/tag_cloud';
+import { xySpecs } from './charts/xy/xy';
+import type { ElasticChartsOptions } from './shared/options';
 
 /** A metric, xy, partition, heatmap, gauge or tag cloud Scene as Elastic Charts spec elements; `null` for any other kind, or an empty Scene. */
 export const sceneSpecs = (

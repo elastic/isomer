@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { SceneEnvironment, SceneKind, SceneRenderer } from './types';
+import type { SceneKind } from './base';
+import type { SceneEnvironment, SceneRenderer } from './types';
 
 /**
  * The renderer that draws a Scene: the first in `preferences` that runs in

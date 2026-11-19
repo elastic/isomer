@@ -11,7 +11,7 @@ import { dirname, join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { ECH_CLASSES } from './metric';
+import { ECH_CLASSES } from './charts/metric/metric';
 import { ELASTIC_CHARTS_VERSION } from './renderer';
 
 const require = createRequire(import.meta.url);

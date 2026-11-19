@@ -16,12 +16,12 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from '../src/pack';
+import { metricSingleValue } from '../src/primitives/metric/examples';
+import { xyTimeSeries } from '../src/primitives/xy_chart/examples';
 import type {
   ChartsRenderContext,
   ReactSceneRenderer,
 } from '../src/render/context';
-import { metricSingleValue } from '../src/schema/examples/metric';
-import { xyTimeSeries } from '../src/schema/examples/xy_chart';
 
 const filling: ReactSceneRenderer = {
   id: 'filling',

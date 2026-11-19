@@ -22,22 +22,22 @@ import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
-import type { ChartNode, ChartsRenderContext } from './render/context';
-import { gridSnapshotHeight } from './render/grid';
-import { gridModule } from './render/grid_styles';
-import { CHARTS_THEME } from './render/theme';
-import type { ResolveChartOptions } from './scene/common';
-import { metricSingleValueScene } from './scene/examples';
-import { resolveChart } from './scene/resolve';
-import type { Scene } from './scene/types';
 import {
-  dataTableExamples,
   dataTableTopHosts,
-} from './schema/examples/data_table';
-import { gridExamples } from './schema/examples/grid';
-import { unsupportedVega } from './schema/examples/unsupported';
-import type { GridNode } from './schema/grid';
-import type { UnsupportedNode } from './schema/unsupported';
+  examples as dataTableExamples,
+} from './primitives/data_table/examples';
+import { examples as gridExamples } from './primitives/grid/examples';
+import { gridSnapshotHeight } from './primitives/grid/layout';
+import type { GridNode } from './primitives/grid/schema';
+import { gridModule } from './primitives/grid/styles';
+import { resolveChart } from './primitives/resolve_chart';
+import { unsupportedVega } from './primitives/unsupported/examples';
+import type { UnsupportedNode } from './primitives/unsupported/schema';
+import type { ChartNode, ChartsRenderContext } from './render/context';
+import type { ResolveChartOptions } from './resolve/common';
+import { metricSingleValueScene } from './scene/examples';
+import type { Scene } from './scene/types';
+import { CHARTS_THEME } from './theme/theme';
 
 const view = (node: PrimitiveNode): Composition => ({
   type: 'view',

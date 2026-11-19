@@ -19,12 +19,13 @@ import { type Composition, primitiveExamples } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from './pack';
+import { tableSceneRenderer } from './primitives/data_table/react';
+import { legacyMetricSceneRenderer } from './primitives/legacy_metric/react';
+import { resolveChart } from './primitives/resolve_chart';
 import type { ChartsRenderContext, ReactSceneRenderer } from './render/context';
-import { legacyMetricSceneRenderer } from './render/legacy_metric';
 import { summarySceneRenderer } from './render/summary_renderer';
-import { tableSceneRenderer } from './render/table';
-import { resolveChart } from './scene/resolve';
-import { type ColorScheme, type Scene, SCENE_KINDS } from './scene/types';
+import { type ColorScheme, SCENE_KINDS } from './scene/base';
+import { type Scene } from './scene/types';
 
 interface Drawn {
   readonly example: string;

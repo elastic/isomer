@@ -12,8 +12,8 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { metricSchema } from './entries/schema';
 import { chartsPack } from './pack';
-import { metricSchema } from './schema';
 
 const runtime = createIsomerRuntime({ packs: [chartsPack] });
 

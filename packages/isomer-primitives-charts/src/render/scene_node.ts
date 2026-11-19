@@ -16,16 +16,20 @@ import {
   styleScopeOf,
 } from '@elastic/isomer-sdk';
 
-import { selectSceneRenderer } from '../scene/select';
+import { tableHeight } from '../primitives/data_table/size';
 import type {
   ColorScheme,
   Scene,
   SceneEnvironment,
   SceneRenderEnv,
   SceneSize,
-} from '../scene/types';
-import { toActionEvent } from '../schema/events';
+} from '../scene';
+import { selectSceneRenderer } from '../scene';
+import { toActionEvent } from '../schema';
+import { varStyle } from '../styles';
+import { CHARTS_THEME } from '../theme';
 
+import { cls } from './cls';
 import type {
   ChartNode,
   ChartsReactEnv,
@@ -40,10 +44,7 @@ import {
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
 import { chartSize, chartSizeSpec, chartSizeVars, isNominalSize } from './size';
-import { cls, varStyle } from './styles';
 import { summarySceneRenderer } from './summary_renderer';
-import { tableHeight } from './table';
-import { CHARTS_THEME } from './theme';
 
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
 export interface SceneShimConfig {

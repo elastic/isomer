@@ -5,9 +5,8 @@
  * 2.0.
  */
 
-import { formatValue } from '../format/format';
-
-import type { SceneAxis, XyScene } from './types';
+import { formatValue } from '../format';
+import type { SceneAxis, XyScene } from '../primitives/xy_chart/scene';
 
 /** A value on a continuous axis as the axis prints it, such as a tick an engine chose. */
 export const formatAxisValue = (

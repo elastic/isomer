@@ -6,7 +6,7 @@
  */
 
 import { isoDateTimeEpoch } from './iso_date_time';
-import type { Cell } from './schema/data';
+import type { Cell } from './schema';
 
 /** The largest absolute epoch, in milliseconds, a JavaScript `Date` represents. */
 export const MAX_EPOCH = 8.64e15;

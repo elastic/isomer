@@ -13,13 +13,13 @@ import { describe, expect, it } from 'vitest';
 
 import { chartsFrame } from './frame';
 import { createChartsPack } from './pack';
+import { examples as gridExamples } from './primitives/grid/examples';
+import type { GridNode } from './primitives/grid/schema';
 import type { ChartNode } from './render/context';
-import type { ResolveChartOptions } from './scene/common';
+import type { ResolveChartOptions } from './resolve/common';
 import { metricSingleValueScene } from './scene/examples';
-import { CHART_CHROME } from './scene/theme';
 import type { Scene } from './scene/types';
-import { gridExamples } from './schema/examples/grid';
-import type { GridNode } from './schema/grid';
+import { CHART_CHROME } from './theme/palette';
 
 const chart = gridExamples[0]!.node.panels[0]!.node;
 

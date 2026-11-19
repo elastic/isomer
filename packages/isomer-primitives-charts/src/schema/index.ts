@@ -5,27 +5,19 @@
  * 2.0.
  */
 
-export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
-export {
-  dataTableCatalog,
-  gaugeCatalog,
-  gridCatalog,
-  heatmapCatalog,
-  legacyMetricCatalog,
-  metricCatalog,
-  partitionChartCatalog,
-  tagCloudCatalog,
-  unsupportedCatalog,
-  xyChartCatalog,
-} from './catalog';
 export {
   type ChartColors,
   type ColorBand,
   type ColorValue,
+  BANDS_RANGE_RULE,
+  COLOR_VALUE_FORMS,
+  KEY_PART_RULE,
   chartColorsSchema,
+  checkBandsRange,
   colorValueSchema,
 } from './colors';
 export { chartCoreShape } from './core';
+export { crossSuperRefine } from './cross_field';
 export {
   type Cell,
   type ChartColumn,
@@ -33,18 +25,10 @@ export {
   type ColumnRole,
   type ColumnType,
   type ScalarCell,
+  cellMatchesColumn,
   cellSchema,
   chartDataSchema,
 } from './data';
-export {
-  type DataTableColumn,
-  type DataTableNode,
-  type DataTableSummary,
-  DATA_TABLE_KEY_RULE,
-  DATA_TABLE_RULES,
-  DATA_TABLE_SUMMARIES,
-  dataTableSchema,
-} from './data_table';
 export {
   type ChartBrushEvent,
   type ChartEvent,
@@ -67,17 +51,7 @@ export {
   selectSchema,
   toActionEvent,
 } from './events';
-export { dataTableExamples } from './examples/data_table';
-export { chartEventExamples } from './examples/events';
-export { gaugeExamples } from './examples/gauge';
-export { gridExamples } from './examples/grid';
-export { heatmapExamples } from './examples/heatmap';
-export { legacyMetricExamples } from './examples/legacy_metric';
-export { metricExamples } from './examples/metric';
-export { partitionChartExamples } from './examples/partition_chart';
-export { tagCloudExamples } from './examples/tag_cloud';
-export { unsupportedExamples } from './examples/unsupported';
-export { xyChartExamples } from './examples/xy_chart';
+export { BYTES, HOUR, NUMBER, PERCENT, START } from './examples';
 export {
   type DurationOutputUnit,
   type DurationUnit,
@@ -85,55 +59,17 @@ export {
   FORMAT_RULES,
   portableFormatSchema,
 } from './format';
-export {
-  type GaugeNode,
-  type GaugeShape,
-  GAUGE_RULES,
-  GAUGE_SHAPES,
-  gaugeSchema,
-} from './gauge';
-export {
-  type GridNode,
-  type GridPanel,
-  type GridReadingEntry,
-  type GridSection,
-  GRID_COLUMNS,
-  GRID_RULES,
-  GRID_SINGLE_COLUMN_BELOW,
-  gridReadingOrder,
-  gridSchema,
-  gridSchemaFor,
-} from './grid';
-export { type HeatmapNode, HEATMAP_RULES, heatmapSchema } from './heatmap';
 export { glyphSchema } from './icons';
-export {
-  type LegacyMetricNode,
-  LEGACY_METRIC_RULES,
-  LEGACY_METRIC_SIZES,
-  legacyMetricSchema,
-} from './legacy_metric';
-export { type MetricNode, METRIC_RULES, metricSchema } from './metric';
-export {
-  type PartitionChartNode,
-  type PartitionShape,
-  PARTITION_KEY_RULE,
-  PARTITION_MAX_GROUPS,
-  PARTITION_RULES,
-  PARTITION_SHAPES,
-  partitionChartSchema,
-} from './partition_chart';
+export { navigationHrefSchema } from './links';
 export {
   type Loss,
   type Provenance,
   lossSchema,
   provenanceSchema,
 } from './provenance';
-export { type ColumnReference, columnRefSchema } from './references';
 export {
-  type TagCloudNode,
-  TAG_CLOUD_KEY_RULE,
-  TAG_CLOUD_RULES,
-  tagCloudSchema,
-} from './tag_cloud';
-export { type UnsupportedNode, unsupportedSchema } from './unsupported';
-export { type XyChartNode, XY_RULES, xyChartSchema } from './xy_chart';
+  type ColumnReference,
+  COLUMN_REF_RULE,
+  checkColumnReferences,
+  columnRefSchema,
+} from './references';

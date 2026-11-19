@@ -66,6 +66,8 @@ describe.each(['./schema', './scene', './resolve'])('charts %s', (entryKey) => {
     'mdast-util-gfm',
     'mdast-util-to-markdown',
     'micromark-extension-gfm',
+    '@elastic/isomer-primitives-charts',
+    '@elastic/isomer-primitives-charts/scene',
   ])('rejects %s, directly or through a relative module', async (specifier) => {
     expect(
       await forbiddenReachable(entryImporting(specifier), forbidden)
@@ -73,6 +75,30 @@ describe.each(['./schema', './scene', './resolve'])('charts %s', (entryKey) => {
     expect(
       await forbiddenReachable(entryReaching(specifier), forbidden)
     ).toEqual([specifier]);
+  });
+});
+
+describe.each(['./schema', './resolve'])('charts %s', (entryKey) => {
+  const forbidden = RULES['@elastic/isomer-primitives-charts'][entryKey];
+
+  it('rejects Distillate, directly or through a relative module', async () => {
+    expect(
+      await forbiddenReachable(entryImporting('@elastic/distillate'), forbidden)
+    ).toEqual(['@elastic/distillate']);
+    expect(
+      await forbiddenReachable(entryReaching('@elastic/distillate'), forbidden)
+    ).toEqual(['@elastic/distillate']);
+  });
+});
+
+describe('charts ./scene', () => {
+  it('allows Distillate, for the style helpers it exports', async () => {
+    expect(
+      await forbiddenReachable(
+        entryImporting('@elastic/distillate'),
+        RULES['@elastic/isomer-primitives-charts']['./scene']
+      )
+    ).toEqual([]);
   });
 });
 
@@ -104,6 +130,18 @@ describe('charts .', () => {
       ).toEqual([specifier]);
     }
   );
+
+  it('rejects a lazy load of its own testing entry', async () => {
+    entries += 1;
+    const entry = join(fixtures, `lazy_${entries}.js`);
+    writeFileSync(
+      entry,
+      "export const load = () => import('@elastic/isomer-primitives-charts/testing');"
+    );
+    expect(await forbiddenReachable(entry, forbidden)).toEqual([
+      '@elastic/isomer-primitives-charts/testing',
+    ]);
+  });
 });
 
 describe('SDK ./schema', () => {

@@ -9,7 +9,7 @@ import type {
   DurationOutputUnit,
   DurationUnit,
   PortableFormat,
-} from '../schema/format';
+} from '../schema';
 
 import {
   formatNumber,

@@ -27,8 +27,8 @@ import { gfm } from 'micromark-extension-gfm';
 import { describe, expect, it } from 'vitest';
 
 import { createChartsPack } from './pack';
-import type { ResolveChartOptions } from './scene/common';
-import { type ChartNode, resolveChart } from './scene/resolve';
+import { type ChartNode, resolveChart } from './primitives/resolve_chart';
+import type { ResolveChartOptions } from './resolve/common';
 import type { Scene } from './scene/types';
 
 const resolved: { node: ChartNode; scene: Scene }[] = [];

@@ -5,18 +5,49 @@
  * 2.0.
  */
 
-import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
+import {
+  type AnyPrimitiveDefinition,
+  definePrimitivePack,
+  type PrimitivePack,
+} from '@elastic/isomer-sdk';
 
-import type { ReactSceneRenderer, SceneResolver } from './render/context';
-import type { ChartFailureHandler } from './render/failure';
-import { gridPrimitive } from './render/grid';
-import { legacyMetricSceneRenderer } from './render/legacy_metric';
-import { defineChartPrimitives } from './render/primitives';
-import { chartsDistillery } from './render/styles';
-import { summarySceneRenderer } from './render/summary_renderer';
-import { tableSceneRenderer } from './render/table';
-import { unsupportedPrimitive } from './render/unsupported';
-import { resolveChart } from './scene/resolve';
+import {
+  dataTablePrimitive,
+  defineDataTablePrimitive,
+} from './primitives/data_table';
+import { PACK_SCENE_RENDERERS } from './primitives/defaults';
+import { defineGaugePrimitive, gaugePrimitive } from './primitives/gauge';
+import { gridPrimitive } from './primitives/grid';
+import { defineHeatmapPrimitive, heatmapPrimitive } from './primitives/heatmap';
+import {
+  defineLegacyMetricPrimitive,
+  legacyMetricPrimitive,
+} from './primitives/legacy_metric';
+import { defineMetricPrimitive, metricPrimitive } from './primitives/metric';
+import {
+  definePartitionChartPrimitive,
+  partitionChartPrimitive,
+} from './primitives/partition_chart';
+import { resolveChart } from './primitives/resolve_chart';
+import {
+  defineTagCloudPrimitive,
+  tagCloudPrimitive,
+} from './primitives/tag_cloud';
+import { unsupportedPrimitive } from './primitives/unsupported';
+import {
+  defineXyChartPrimitive,
+  xyChartPrimitive,
+} from './primitives/xy_chart';
+import type {
+  ChartFailureHandler,
+  ReactSceneRenderer,
+  SceneResolver,
+} from './render';
+import {
+  type ChartPrimitiveConfig,
+  createChartPrimitiveConfig,
+} from './render';
+import { chartsDistillery } from './styles';
 
 /** What {@link createChartsPack} builds the pack with. Every field is optional. */
 export interface ChartsPackOptions {
@@ -47,12 +78,9 @@ export const CHARTS_INPUT_BUDGET = {
   characters: 10_000_000,
 } as const;
 
-/** The charts pack, drawing every chart through `SceneRenderer`s. */
-export const createChartsPack = ({
-  resolveScene = resolveChart,
-  sceneRenderers = [],
-  onFailure,
-}: ChartsPackOptions = {}): PrimitivePack =>
+const definePack = (
+  primitives: readonly AnyPrimitiveDefinition[]
+): PrimitivePack =>
   definePrimitivePack({
     id: 'charts',
     slackAssetTypes: [
@@ -83,29 +111,56 @@ export const createChartsPack = ({
         { title: 'Dashboards', types: ['grid', 'unsupported'] },
       ],
     },
-    primitives: [
-      ...defineChartPrimitives({
-        resolveScene,
-        sceneRenderers: [
-          ...sceneRenderers,
-          tableSceneRenderer,
-          legacyMetricSceneRenderer,
-          summarySceneRenderer,
-        ],
-        ...(onFailure && { onFailure }),
-      }),
-      gridPrimitive,
-      unsupportedPrimitive,
-    ],
+    primitives,
     distillery: chartsDistillery,
   });
+
+const chartPrimitives = (config: ChartPrimitiveConfig) => [
+  defineMetricPrimitive(config),
+  defineLegacyMetricPrimitive(config),
+  defineDataTablePrimitive(config),
+  defineXyChartPrimitive(config),
+  definePartitionChartPrimitive(config),
+  defineHeatmapPrimitive(config),
+  defineGaugePrimitive(config),
+  defineTagCloudPrimitive(config),
+];
+
+/** The charts pack, drawing every chart through `SceneRenderer`s. */
+export const createChartsPack = ({
+  resolveScene = resolveChart,
+  sceneRenderers = [],
+  onFailure,
+}: ChartsPackOptions = {}): PrimitivePack =>
+  definePack([
+    ...chartPrimitives(
+      createChartPrimitiveConfig({
+        resolveScene,
+        sceneRenderers: [...sceneRenderers, ...PACK_SCENE_RENDERERS],
+        ...(onFailure && { onFailure }),
+      })
+    ),
+    gridPrimitive,
+    unsupportedPrimitive,
+  ]);
 
 /**
  * The charts pack with its defaults: `resolveChart`, then the summary
  * fallback. A host registers an engine through {@link createChartsPack} or the
  * render context's `sceneRenderers`.
  */
-export const chartsPack: PrimitivePack = createChartsPack();
+export const chartsPack: PrimitivePack = definePack([
+  metricPrimitive,
+  legacyMetricPrimitive,
+  dataTablePrimitive,
+  xyChartPrimitive,
+  partitionChartPrimitive,
+  heatmapPrimitive,
+  gaugePrimitive,
+  tagCloudPrimitive,
+  gridPrimitive,
+  unsupportedPrimitive,
+]);
 
 /** Every rule the pack draws with, for a host that draws the `react` surface and ships the CSS itself. */
 export const chartsStylesheet = (): string =>

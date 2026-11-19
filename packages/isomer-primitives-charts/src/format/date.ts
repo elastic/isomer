@@ -7,7 +7,7 @@
 
 import { MAX_EPOCH } from '../coordinates';
 import { isoDateTimeEpoch } from '../iso_date_time';
-import type { PortableFormat } from '../schema/format';
+import type { PortableFormat } from '../schema';
 
 import { dateFormat } from './intl';
 

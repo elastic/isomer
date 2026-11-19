@@ -17,9 +17,9 @@ import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 import { chartsPack, chartsStylesheet } from '../src/pack';
+import type { LegacyMetricNode } from '../src/primitives/legacy_metric/schema';
 import type { ChartsRenderContext } from '../src/render/context';
 import type { Cell } from '../src/schema/data';
-import type { LegacyMetricNode } from '../src/schema/legacy_metric';
 
 const legacy = (
   rows: Cell[][],

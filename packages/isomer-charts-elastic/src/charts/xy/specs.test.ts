@@ -1,0 +1,383 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import {
+  formatAxisValue,
+  xyInteractiveScene,
+  type XyScene,
+  xyTimeSeriesScene,
+} from '@elastic/isomer-primitives-charts/scene';
+import { describe, expect, it } from 'vitest';
+
+import { specElements, specIds } from '../../shared/specs.fixtures';
+import { sceneSpecs } from '../../specs';
+
+import { seriesOf, seriesSpecId } from './events';
+
+/** The props of the spec element with this `id`. */
+const specProps = (scene: XyScene, id: string): Record<string, unknown> => {
+  const props = specElements(
+    sceneSpecs(scene, { environment: 'browser' })
+  ).find((element) => element.id === id);
+  expect(props).toBeDefined();
+  return props!;
+};
+
+const firstSeriesId = (scene: XyScene): string =>
+  seriesSpecId(seriesOf(scene)[0]!);
+
+/** The `theme` an xy Scene passes `Settings`. */
+const settingsTheme = (scene: XyScene): Record<string, unknown> => {
+  const settings = specElements(
+    sceneSpecs(scene, { environment: 'browser' })
+  ).find((element) => 'baseTheme' in element);
+  expect(settings).toBeDefined();
+  return settings!.theme as Record<string, unknown>;
+};
+
+describe('sceneSpecs', () => {
+  it('draws xy layers in the Scene order, each helper kind keeping its own index', () => {
+    const [first, second, third] = seriesOf(xyInteractiveScene);
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: [
+        { kind: 'series', series: first! },
+        {
+          kind: 'referenceLine',
+          line: {
+            axis: 'y',
+            value: 100,
+            color: '#ff0000',
+            strokeWidth: 1,
+            strokeDash: 'solid',
+            textPosition: 'auto',
+          },
+        },
+        { kind: 'series', series: second! },
+        {
+          kind: 'annotation',
+          annotation: {
+            kind: 'point',
+            at: 0,
+            color: '#00ff00',
+            tooltip: { entries: [] },
+          },
+        },
+        { kind: 'series', series: third! },
+      ],
+    };
+    expect(
+      specIds(sceneSpecs(scene, { environment: 'browser' })).filter((id) =>
+        /^(series|reference|annotation)-/.test(id)
+      )
+    ).toEqual([
+      'series-0-0-200',
+      'reference-0',
+      'series-0-0-404',
+      'annotation-0',
+      'series-0-0-Other',
+    ]);
+  });
+
+  it('hands Elastic Charts each axis domain as intent, as Kibana does', () => {
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      axes: {
+        ...xyInteractiveScene.axes,
+        y2: {
+          ...xyInteractiveScene.axes.y!,
+          id: 'y2',
+          position: 'right',
+          domain: { kind: 'custom', min: -5, max: 5 },
+        },
+      },
+    };
+    expect(specProps(scene, 'y').domain).toEqual({
+      min: Number.NaN,
+      max: Number.NaN,
+      fit: false,
+      includeDataFromIds: [],
+    });
+    expect(specProps(scene, 'y2').domain).toEqual({ min: -5, max: 5 });
+    const fitted: XyScene = {
+      ...scene,
+      axes: {
+        ...scene.axes,
+        y: {
+          ...scene.axes.y!,
+          domain: { kind: 'data', includeZero: false, rounding: false },
+        },
+      },
+    };
+    expect(specProps(fitted, 'y').domain).toMatchObject({ fit: true });
+    expect(specProps(fitted, firstSeriesId(fitted))).toMatchObject({
+      yNice: false,
+    });
+    expect(specProps(scene, firstSeriesId(scene))).toMatchObject({
+      yNice: true,
+    });
+  });
+
+  it('hands Elastic Charts the x domain bounds and bucket interval', () => {
+    const xDomain = (scene: XyScene) =>
+      specElements(sceneSpecs(scene, { environment: 'browser' })).find(
+        (element) => 'baseTheme' in element
+      )?.xDomain;
+    const withX = (x: Partial<XyScene['axes']['x']>): XyScene => ({
+      ...xyTimeSeriesScene,
+      axes: {
+        ...xyTimeSeriesScene.axes,
+        x: { ...xyTimeSeriesScene.axes.x, ...x },
+      },
+    });
+    expect(xDomain(xyTimeSeriesScene)).toBeUndefined();
+    expect(xDomain(withX({ interval: 3_600_000 }))).toEqual({
+      min: Number.NaN,
+      max: Number.NaN,
+      minInterval: 3_600_000,
+    });
+    expect(
+      xDomain(
+        withX({
+          interval: 60_000,
+          domain: { kind: 'custom', min: 0, max: 600_000 },
+        })
+      )
+    ).toEqual({ min: 0, max: 600_000, minInterval: 60_000 });
+  });
+
+  it('includes a reference line in its axis data domain', () => {
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: [
+        ...xyInteractiveScene.layers,
+        {
+          kind: 'referenceLine',
+          line: {
+            axis: 'y',
+            value: 1000,
+            color: '#ff0000',
+            strokeWidth: 1,
+            strokeDash: 'solid',
+            textPosition: 'auto',
+          },
+        },
+      ],
+    };
+    expect(specProps(scene, 'y').domain).toMatchObject({
+      includeDataFromIds: ['reference-0'],
+    });
+  });
+
+  it('lets Elastic Charts stack unstacked values, as a percentage when asked', () => {
+    const [first] = seriesOf(xyInteractiveScene);
+    const percentage: XyScene = {
+      ...xyInteractiveScene,
+      layers: xyInteractiveScene.layers.map((layer) =>
+        layer.kind === 'series'
+          ? {
+              ...layer,
+              series: {
+                ...layer.series,
+                stack: { group: 'y', mode: 'percentage' },
+              },
+            }
+          : layer
+      ),
+    };
+    expect(
+      specProps(xyInteractiveScene, firstSeriesId(xyInteractiveScene))
+    ).toMatchObject({
+      stackAccessors: ['x'],
+      data: first!.marks.map(({ x, y }, mark) => ({
+        x,
+        y,
+        series: 0,
+        mark,
+      })),
+    });
+    expect(
+      specProps(xyInteractiveScene, firstSeriesId(xyInteractiveScene)).stackMode
+    ).toBe(undefined);
+    expect(specProps(percentage, firstSeriesId(percentage))).toMatchObject({
+      stackMode: 'percentage',
+    });
+  });
+
+  it('labels a percentage stack’s values by their share, through the y axis', () => {
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: xyInteractiveScene.layers.map((layer) =>
+        layer.kind === 'series'
+          ? {
+              ...layer,
+              series: {
+                ...layer.series,
+                stack: { group: 'y', mode: 'percentage' },
+                valueLabels: true,
+              },
+            }
+          : layer
+      ),
+    };
+    const { displayValueSettings } = specProps(scene, firstSeriesId(scene)) as {
+      displayValueSettings: { valueFormatter: (value: unknown) => string };
+    };
+    const label = displayValueSettings.valueFormatter(0.25);
+    expect(label).not.toBe('');
+    expect(label).toBe(formatAxisValue(scene, scene.axes.y!, 0.25));
+  });
+
+  it('labels each value by its mark, and a value whose marks disagree through the y axis', () => {
+    const [series] = seriesOf(xyInteractiveScene);
+    const mark = series!.marks[0]!;
+    const scene: XyScene = {
+      ...xyInteractiveScene,
+      layers: xyInteractiveScene.layers.map((layer) =>
+        layer.kind === 'series' && layer.series === series
+          ? {
+              ...layer,
+              series: {
+                ...series,
+                valueLabels: true,
+                marks: [
+                  { ...mark, y: 10, label: 'ten (a)' },
+                  { ...mark, y: 10, label: 'ten (b)' },
+                  { ...mark, y: 20, label: 'twenty' },
+                  { ...mark, y: 20, label: 'twenty' },
+                  { ...mark, y: 30, label: 'thirty' },
+                ],
+              },
+            }
+          : layer
+      ),
+    };
+    const { displayValueSettings } = specProps(scene, firstSeriesId(scene)) as {
+      displayValueSettings: { valueFormatter: (value: unknown) => string };
+    };
+    const tenThroughAxis = formatAxisValue(scene, scene.axes.y!, 10);
+    expect(tenThroughAxis).not.toMatch(/^$|ten/);
+    expect([10, 20, 30].map(displayValueSettings.valueFormatter)).toEqual([
+      tenThroughAxis,
+      'twenty',
+      'thirty',
+    ]);
+  });
+
+  // Expectations are Kibana's, from `expression_xy/public/components`:
+  // `displayValueSettings` in `data_layers.tsx`, `getValueLabelsStyling` in `xy_chart.tsx`.
+  it.each([
+    {
+      orientation: 'vertical' as const,
+      alignment: { horizontal: 'center' },
+      offsetX: 0,
+      offsetY: -10,
+    },
+    {
+      orientation: 'horizontal' as const,
+      alignment: { vertical: 'middle' },
+      offsetX: 10,
+      offsetY: 0,
+    },
+  ])(
+    'places bar value labels as Kibana does on a $orientation chart',
+    ({ orientation, ...placement }) => {
+      const scene: XyScene = {
+        ...xyInteractiveScene,
+        orientation,
+        layers: xyInteractiveScene.layers.map((layer) =>
+          layer.kind === 'series'
+            ? { ...layer, series: { ...layer.series, valueLabels: true } }
+            : layer
+        ),
+      };
+      expect(seriesOf(scene)[0]!.mark).toBe('bar');
+      expect(
+        specProps(scene, firstSeriesId(scene)).displayValueSettings
+      ).toMatchObject({
+        showValueLabel: true,
+        isAlternatingValueLabel: false,
+        overflowConstraints: ['chartEdges', 'barGeometry'],
+      });
+      expect(settingsTheme(scene).barSeriesStyle).toEqual({
+        displayValue: {
+          fontSize: { min: 10, max: 12 },
+          fill: { textBorder: 0 },
+          ...placement,
+        },
+      });
+    }
+  );
+
+  it('leaves the bar display-value style to the base theme without value labels', () => {
+    expect(seriesOf(xyInteractiveScene).some((s) => s.valueLabels)).toBe(false);
+    expect(settingsTheme(xyInteractiveScene).barSeriesStyle).toBe(undefined);
+  });
+
+  it('draws a range annotation outside the plot when its fill is outside', () => {
+    const band = (fill: 'inside' | 'outside'): XyScene => ({
+      ...xyInteractiveScene,
+      layers: [
+        {
+          kind: 'annotation',
+          annotation: {
+            kind: 'range',
+            from: 0,
+            to: 1,
+            color: '#00ff00',
+            fill,
+            tooltip: { entries: [] },
+          },
+        },
+      ],
+    });
+    expect(specProps(band('outside'), 'annotation-0')).toMatchObject({
+      outside: true,
+    });
+    expect(specProps(band('inside'), 'annotation-0').outside).toBe(undefined);
+  });
+
+  it.each([
+    ['auto', 'auto'],
+    ['visible', 'always'],
+    ['hidden', 'never'],
+  ] as const)('draws %s points as Elastic Charts %s', (points, visible) => {
+    const series = seriesOf(xyTimeSeriesScene)[0]!;
+    const scene: XyScene = {
+      ...xyTimeSeriesScene,
+      layers: [{ kind: 'series', series: { ...series, points } }],
+    };
+    expect(specProps(scene, firstSeriesId(scene))).toMatchObject({
+      lineSeriesStyle: { point: { visible } },
+    });
+  });
+
+  it('labels value ticks through formatAxisValue and categories by their label', () => {
+    const { y } = xyInteractiveScene.axes;
+    const yFormat = specProps(xyInteractiveScene, 'y').tickFormat as (
+      value: unknown
+    ) => string;
+    expect(yFormat(1234.5)).toBe(
+      formatAxisValue(xyInteractiveScene, y!, 1234.5)
+    );
+    const { domain: _domain, ...x } = xyInteractiveScene.axes.x;
+    const ordinal: XyScene = {
+      ...xyInteractiveScene,
+      axes: { ...xyInteractiveScene.axes, x: { ...x, scale: 'ordinal' } },
+      categories: xyInteractiveScene.categories.map((category, index) => ({
+        ...category,
+        x: `c${index}`,
+        label: `Category ${index}`,
+      })),
+    };
+    const xFormat = specProps(ordinal, 'x').tickFormat as (
+      value: unknown
+    ) => string;
+    expect(xFormat('c0')).toBe('Category 0');
+    expect(xFormat('unknown')).toBe('unknown');
+  });
+});

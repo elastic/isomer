@@ -28,10 +28,10 @@
       "default": "./lib/cjs/engine.js"
     },
     "./testing": {
-      "types": "./lib/cjs/testing.d.ts",
-      "import": "./lib/esm/testing.js",
-      "require": "./lib/cjs/testing.js",
-      "default": "./lib/cjs/testing.js"
+      "types": "./lib/cjs/testing/index.d.ts",
+      "import": "./lib/esm/testing/index.js",
+      "require": "./lib/cjs/testing/index.js",
+      "default": "./lib/cjs/testing/index.js"
     }
   },
   "typesVersions": {
@@ -40,7 +40,7 @@
         "./lib/cjs/engine.d.ts"
       ],
       "testing": [
-        "./lib/cjs/testing.d.ts"
+        "./lib/cjs/testing/index.d.ts"
       ]
     }
   },

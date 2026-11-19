@@ -5,14 +5,22 @@
  * 2.0.
  */
 
-export { type ChartGlyph, CHART_GLYPHS } from '../glyphs';
-export { cls, createVarsModule, px, varStyle } from '../render/styles';
-export type {
-  ChartBrushEvent,
-  ChartEvent,
-  ChartSelectEvent,
-  SelectTarget,
-} from '../schema/events';
+export {
+  type ColorScheme,
+  type SceneBase,
+  type SceneChrome,
+  type SceneColor,
+  type SceneColumn,
+  type SceneInteractions,
+  type SceneKind,
+  type SceneSelection,
+  type SceneSize,
+  type SceneSource,
+  type SceneTable,
+  type SceneTooltip,
+  type SceneTooltipEntry,
+  SCENE_KINDS,
+} from './base';
 export { brushEvent, selectEvent } from './events';
 export {
   metricSingleValueScene,
@@ -22,62 +30,8 @@ export {
 export { formatAxisValue } from './format_axis';
 export { selectSceneRenderer } from './select';
 export {
-  type AxisId,
-  type ColorScheme,
-  type GaugeBand,
-  type GaugeScene,
-  type GaugeSceneShape,
-  type HeatmapAxis,
-  type HeatmapBand,
-  type HeatmapCategory,
-  type HeatmapCell,
-  type HeatmapScene,
-  type LegacyMetricScene,
-  type LegacyMetricTile,
-  type MetricAlignment,
-  type MetricLayout,
-  type MetricScene,
-  type MetricTile,
-  type PartitionLayer,
-  type PartitionLegend,
-  type PartitionLegendItem,
-  type PartitionNode,
-  type PartitionScene,
-  type PartitionSceneShape,
   type Scene,
-  type SceneAnnotation,
-  type SceneAxis,
-  type SceneChrome,
-  type SceneColor,
-  type SceneColumn,
-  type SceneDomain,
   type SceneEnvironment,
-  type SceneInteractions,
-  type SceneKind,
-  type SceneLegend,
-  type SceneLegendItem,
-  type SceneReferenceLine,
   type SceneRenderEnv,
   type SceneRenderer,
-  type SceneSelection,
-  type SceneSize,
-  type SceneSource,
-  type SceneTable,
-  type SceneTooltip,
-  type SceneTooltipEntry,
-  type TableAlignment,
-  type TableCell,
-  type TableColumn,
-  type TableOrder,
-  type TableRow,
-  type TableScene,
-  type TagCloudScene,
-  type TagCloudWord,
-  type XyCategory,
-  type XyMark,
-  type XyScene,
-  type XySceneLayer,
-  type XySeries,
-  SCENE_KINDS,
 } from './types';
-export type { LocalVarGroup, StyleHandle } from '@elastic/distillate';

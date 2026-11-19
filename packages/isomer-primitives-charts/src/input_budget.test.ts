@@ -10,8 +10,8 @@ import { type Composition, MAX_INPUT_VALUES } from '@elastic/isomer-sdk';
 import { describe, expect, it } from 'vitest';
 
 import { CHARTS_INPUT_BUDGET, chartsPack } from './pack';
-import { xyTimeSeries } from './schema/examples/xy_chart';
-import type { XyChartNode } from './schema/xy_chart';
+import { xyTimeSeries } from './primitives/xy_chart/examples';
+import type { XyChartNode } from './primitives/xy_chart/schema';
 
 // The SDK's rule, restated: every object, array and leaf counts once.
 const countValues = (value: unknown): number =>

@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-import { createVarsModule } from './styles';
-import { CHARTS_THEME } from './theme';
+import { createVarsModule } from '../styles';
+import { CHARTS_THEME } from '../theme';
 
 const { linkHeight } = CHARTS_THEME.chart;
 

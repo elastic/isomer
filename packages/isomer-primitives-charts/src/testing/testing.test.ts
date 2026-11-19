@@ -8,14 +8,12 @@
 import { createElement } from 'react';
 import { describe, expect, it } from 'vitest';
 
+import type { HeatmapScene } from '../primitives/heatmap/scene';
+import type { MetricScene } from '../primitives/metric/scene';
+import type { PartitionScene } from '../primitives/partition_chart/scene';
+import type { XyScene } from '../primitives/xy_chart/scene';
 import type { ReactSceneRenderer } from '../render/context';
-import type {
-  HeatmapScene,
-  MetricScene,
-  PartitionScene,
-  Scene,
-  XyScene,
-} from '../scene/types';
+import type { Scene } from '../scene/types';
 import {
   coverageProblems,
   drawExamples,
