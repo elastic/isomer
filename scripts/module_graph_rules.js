@@ -44,8 +44,12 @@ export const RULES = {
     './schema': [...CHARTS_CONTRACT_FORBIDDEN, '@elastic/distillate'],
     './scene': CHARTS_CONTRACT_FORBIDDEN,
     './resolve': [...CHARTS_CONTRACT_FORBIDDEN, '@elastic/distillate'],
-    // The runtime and `react-dom` are `./testing`'s optional peers alone.
-    '.': ['@elastic/isomer-runtime', 'react-dom'],
+    // The runtime and `react-dom` are `./testing`'s optional peers alone, and the pack's own entries, `./testing` among them, are external to the check.
+    '.': [
+      '@elastic/isomer-runtime',
+      'react-dom',
+      '@elastic/isomer-primitives-charts',
+    ],
   },
 };
 

@@ -66,6 +66,20 @@ describe('charts barrel imports', () => {
     expect(await restricted(specifier, filePath)).toBe(false);
   });
 
+  it.each([
+    "export const load = () => import('@elastic/isomer-primitives-charts/testing');\n",
+    'export const load = () => import(`@elastic/isomer-primitives-charts/testing`);\n',
+    "export const load = () => require('@elastic/isomer-primitives-charts');\n",
+    "export type Lazy = import('@elastic/isomer-primitives-charts/scene').Scene;\n",
+  ])('rejects a self-import by any load: %s', async (code) => {
+    const [{ messages }] = await eslint.lintText(code, {
+      filePath: `${SRC}/render/probe.ts`,
+    });
+    expect(messages.map(({ ruleId }) => ruleId)).toEqual([
+      'no-restricted-syntax',
+    ]);
+  });
+
   it('exempts tests', async () => {
     expect(await restricted('../theme/palette', 'render/probe.test.ts')).toBe(
       false

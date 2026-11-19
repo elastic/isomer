@@ -24,7 +24,19 @@ const CHART_ENGINE_IMPORTS =
 // A specifier or path that reaches the charts pack other than as its `./scene` entry.
 const CHARTS_PACK_BEYOND_SCENE =
   '^(?!@elastic/isomer-primitives-charts/scene$)([^\\s]*/)?isomer-primitives-charts(/|$)';
-const CHARTS_PACK_BEYOND_SCENE_SELECTOR = `/${CHARTS_PACK_BEYOND_SCENE.replaceAll('/', '\\/')}/`;
+
+// `no-restricted-syntax` entries for each way to load `regex` other than a static import: `import()`, `require` or any call, so a `createRequire` result under another name is covered, and `import()` types.
+const loadsOf = (regex, message) =>
+  [
+    'ImportExpression > Literal.source[value=PATH]',
+    'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
+    'CallExpression > Literal.arguments[value=PATH]',
+    'CallExpression > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]',
+    'TSImportType Literal[value=PATH]',
+  ].map((selector) => ({
+    selector: selector.replace('PATH', `/${regex.replaceAll('/', '\\/')}/`),
+    message,
+  }));
 
 // Charts pack: another directory is imported through its `index.ts`. Matches `./render/cls` and `../../theme/palette`.
 const CHARTS_DIR_FILE = {
@@ -362,19 +374,22 @@ export default tseslint.config(
           ],
         },
       ],
-      // Any call, so a `createRequire` result under another name is covered.
       'no-restricted-syntax': [
         'error',
-        ...[
-          'ImportExpression > Literal.source[value=PATH]',
-          'ImportExpression > TemplateLiteral.source > TemplateElement:first-child[value.raw=PATH]',
-          'CallExpression > Literal.arguments[value=PATH]',
-          'CallExpression > TemplateLiteral.arguments > TemplateElement:first-child[value.raw=PATH]',
-          'TSImportType Literal[value=PATH]',
-        ].map((selector) => ({
-          selector: selector.replace('PATH', CHARTS_PACK_BEYOND_SCENE_SELECTOR),
-          message: CHART_ENGINE_IMPORTS,
-        })),
+        ...loadsOf(CHARTS_PACK_BEYOND_SCENE, CHART_ENGINE_IMPORTS),
+      ],
+    },
+  },
+  {
+    files: [`${CHARTS_SRC}/**/*.{ts,tsx}`],
+    ignores: [
+      `${CHARTS_SRC}/**/*.test.{ts,tsx}`,
+      `${CHARTS_SRC}/**/*.fixtures.ts`,
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...loadsOf(CHARTS_SELF_IMPORT.regex, CHARTS_SELF_IMPORT.message),
       ],
     },
   },

@@ -130,6 +130,18 @@ describe('charts .', () => {
       ).toEqual([specifier]);
     }
   );
+
+  it('rejects a lazy load of its own testing entry', async () => {
+    entries += 1;
+    const entry = join(fixtures, `lazy_${entries}.js`);
+    writeFileSync(
+      entry,
+      "export const load = () => import('@elastic/isomer-primitives-charts/testing');"
+    );
+    expect(await forbiddenReachable(entry, forbidden)).toEqual([
+      '@elastic/isomer-primitives-charts/testing',
+    ]);
+  });
 });
 
 describe('SDK ./schema', () => {
