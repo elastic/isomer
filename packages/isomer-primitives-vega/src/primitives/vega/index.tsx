@@ -22,6 +22,7 @@ import { vegaMarkdown, vegaText } from './text';
 export { type VegaRenderContext } from '../define';
 export { vegaCatalog } from './catalog';
 export { vegaPrimitiveSchema } from './check';
+export { drawVegaNode } from './draw';
 export {
   brushExample,
   donutExample,

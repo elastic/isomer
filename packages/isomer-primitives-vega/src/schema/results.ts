@@ -32,33 +32,39 @@ const at = (root: unknown, path: Path): unknown =>
     root
   );
 
-/** A Vega `data` array's entry, at the top or in a group mark, or a Vega-Lite `data` object. */
+/** Keys whose contents are rows, never a data declaration. */
+const ROWS = new Set<string | number>(['values', 'datasets']);
+
+/** A Vega `data` array's entry, at the top or in a group mark, or a Vega-Lite `data` object; never inside rows. */
 const isDataEntryPath = (path: Path): boolean => {
   const last = path[path.length - 1];
   return (
-    last === 'data' ||
-    (path[path.length - 2] === 'data' && typeof last === 'number')
+    !path.some((key) => ROWS.has(key)) &&
+    (last === 'data' ||
+      (path[path.length - 2] === 'data' && typeof last === 'number'))
   );
 };
 
 const isDataEntry = (spec: SpecObject, path: Path): boolean =>
   isDataEntryPath(path) && isSpecObject(at(spec, path));
 
-/** Where a result doesn't name a data entry in `spec`, the message why. */
+/** Where a result names no data entry of the spec as authored with a `url` to replace, the message why. */
 export const resultIssues = (
   spec: SpecObject,
   results: readonly VegaResult[]
 ): Array<{ path: Path; message: string }> =>
-  results.flatMap(({ path }, index) =>
-    isDataEntry(spec, path)
+  results.flatMap(({ path }, index) => {
+    const entry = isDataEntry(spec, path) ? at(spec, path) : undefined;
+    return isSpecObject(entry) &&
+      Object.prototype.hasOwnProperty.call(entry, 'url')
       ? []
       : [
           {
             path: ['results', index, 'path'],
-            message: `names no data entry (${path.join('.')})`,
+            message: `names no data entry with a url (${path.join('.')})`,
           },
-        ]
-  );
+        ];
+  });
 
 /** Whether `issuePath` is the `url` a result replaces. */
 export const isResultUrl = (
@@ -113,8 +119,6 @@ export const withResults = (
   }
   return root;
 };
-
-const ROWS = new Set(['values', 'datasets']);
 
 /**
  * A compiled spec without `tooltip` encodings. A tooltip only shows on hover, so a static drawing never draws one,

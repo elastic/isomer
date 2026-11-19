@@ -20,6 +20,7 @@ import { VEGA_THEMES } from '../theme/theme';
 
 import {
   createVegaView,
+  pruneVegaResults,
   renderVegaSvg,
   toVegaSpec,
   type VegaChartInput,
@@ -286,6 +287,30 @@ describe('renderVegaSvg', () => {
     expect(svg).toContain('aria-label="url(https://example.com)"');
   });
 
+  it('scopes def ids only in ids and references, so text and descriptions quoting one stay as written', () => {
+    const svg = draw(
+      marks({
+        text: { value: 'see url(#clip1)' },
+        description: { value: 'url(#gradient_1)' },
+      })
+    );
+    expect(svg).toContain('>see url(#clip1)<');
+    expect(svg).toContain('aria-label="url(#gradient_1)"');
+  });
+
+  it.each([NaN, Infinity, -1])(
+    'refuses a size of %s before writing it into the SVG',
+    (side) => {
+      const input = vega({ marks: [] });
+      expect(() =>
+        renderVegaSvg(toVegaSpec(input, vegaLightTheme), {
+          width: side,
+          height: 100,
+        })
+      ).toThrow(VegaRenderError);
+    }
+  );
+
   it('throws, rather than drawing a partial chart, when the dataflow fails', () => {
     const input = vega({
       data: [
@@ -403,5 +428,15 @@ describe('renderVegaSvg', () => {
     );
     expect(svg).toContain('fill="rgb(1, 2, 3)"');
     expect(svg).toContain('mix-blend-mode: multiply;');
+  });
+});
+
+describe('pruneVegaResults', () => {
+  it('returns its input unchanged when given no theme to prove the drawing under', () => {
+    const input: VegaChartInput = {
+      ...vega({ data: [{ name: 't', url: 'x' }], marks: [] }),
+      results: [{ path: ['data', 0], values: [{ a: 1 }], scope: 'static' }],
+    };
+    expect(pruneVegaResults(input, [])).toBe(input);
   });
 });

@@ -7,7 +7,6 @@
 
 import { nodeAnchor } from '@elastic/isomer-sdk';
 
-import { renderVegaSvg, toVegaSpec } from '../../render';
 import {
   chromeStyle,
   cls,
@@ -17,8 +16,9 @@ import {
 } from '../../theme';
 import type { VegaReactEnv } from '../define';
 
-import { TILE_SRC, type VegaNode } from './schema';
-import { chartInput, linkOf, vegaChartSize } from './size';
+import { drawVegaNode } from './draw';
+import type { VegaNode } from './schema';
+import { linkOf, vegaChartSize } from './size';
 import { summaryOf } from './text';
 
 const schemeOfTheme = (theme: unknown): VegaScheme | undefined => {
@@ -27,28 +27,6 @@ const schemeOfTheme = (theme: unknown): VegaScheme | undefined => {
   }
   const { scheme } = theme;
   return scheme === 'light' || scheme === 'dark' ? scheme : undefined;
-};
-
-const round = (value: number) => Math.round(value * 100) / 100;
-
-/** `svg` with `basemap`'s tiles as its first children, under everything Vega drew. */
-const withBasemap = (svg: string, basemap: VegaNode['basemap']): string => {
-  if (!basemap?.tiles.length) {
-    return svg;
-  }
-  const tiles = basemap.tiles
-    .filter(({ src }) => TILE_SRC.test(src))
-    .map(
-      ({ src, x, y, width, height }) =>
-        `<image href="${src}" x="${round(x)}" y="${round(y)}" width="${round(
-          width
-        )}" height="${round(height)}" preserveAspectRatio="none"/>`
-    )
-    .join('');
-  return svg.replace(
-    /^(<svg[^>]*>)/,
-    `$1<g data-isomer-vega-basemap="">${tiles}</g>`
-  );
 };
 
 export const react = (
@@ -83,11 +61,9 @@ export const react = (
       )}
     </>
   );
-  let vegaSpec;
   let svg;
   try {
-    vegaSpec = toVegaSpec(chartInput(node, size), theme);
-    svg = withBasemap(renderVegaSvg(vegaSpec, size).svg, node.basemap);
+    svg = drawVegaNode(node, size, theme);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
     return (

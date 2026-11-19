@@ -29,7 +29,7 @@ node → toVegaSpec (strip, bind data and results, compile Vega-Lite, theme, siz
 
 A spec Vega cannot draw at render time draws a note in the chart's box instead: its title and description, with the reason in `data-isomer-vega-error`.
 
-React Native has no Vega. A host draws a native node by rendering `renderVegaSvg(toVegaSpec(…))` on its server and drawing the string with `react-native-svg`, and validates on the device with the `./schema` entry.
+React Native has no Vega. A host draws a native node on its server with `drawVegaNode(node, { width, height }, VEGA_THEMES[scheme])`, the SVG the `react` surface draws, basemap included, and draws the string with `react-native-svg`. It validates on the device with the `./schema` entry.
 
 ## Theme
 
@@ -49,9 +49,13 @@ Kibana's other defaults come with it: axis titles at weight 500, no view stroke,
 
 A chart draws in, first, the box its container gives it (`context.size`, as a charts `grid` panel passes), less the link and attribution lines; else its `width` and `height`; else 480 × 270. A single view fits the box with `autosize: fit`, unless the spec sets `autosize: none`, as Kibana allows; a composite Vega-Lite view (`concat`, `facet`, `repeat`) is scaled into it through the SVG's `viewBox`.
 
+A chart with basemap tiles draws at its own `width` and `height`, the frame its tiles were stamped for, and scales into the box with them, so the overlay never shifts off the map.
+
+In a browser the SVG is never wider than its container: in a narrower one, such as a `grid` panel laid out for the grid's nominal width, it scales down through its `viewBox`.
+
 ## Styling
 
-The pack authors its chrome, the chart box, the link line and the fallback note, with [Distillate](https://elastic.github.io/distillate/), and ships its own style adapter, so `html` and `snapshot` style its nodes with no host setup. Every class starts with `vega`. On the `react` surface the host ships `vegaStylesheet()`. A color only the scheme knows reaches its rule through a module-local var, so an element's `style` holds only custom properties its classes declare.
+The pack authors its chrome, the chart box, the link line and the fallback note, with [Distillate](https://elastic.github.io/distillate/), and declares its `distillery`, so a runtime styles it with every other pack's in one adapter and `html` and `snapshot` style its nodes with no host setup. Every class starts with `vega`. On the `react` surface the host ships `vegaStylesheet()`. A color only the scheme knows reaches its rule through a module-local var, so an element's `style` holds only custom properties its classes declare.
 
 ## Images and PDF
 
@@ -89,6 +93,8 @@ Vega is ESM only. A CommonJS host `require`s it, which Node allows for an ES mod
 ## Limits
 
 What an image costs follows the SVG elements it draws, not the size of its data: takumi rasterizes each element, at about 0.4 ms per symbol at 2×. A line, area or trail is one path however many points it has: a line through 30,000 points rasterizes in under half a second, while 31,000 points as symbols took 22 s and 877 MB. A spec's size cannot bound this, since a few transforms can generate thousands of marks, so the pack counts what a chart draws and draws its fallback note past 5,000 elements: the worst image then takes about 2 s at 2× and stays under the memory the Elastic Charts engine's examples use.
+
+The count bounds the drawing, not the work before it. Vega runs the dataflow synchronously, and a transform such as `sequence` can generate data far past what the spec's size suggests, so `renderVegaSvg` has no time or memory bound of its own. A server that draws specs for readers other than their authors runs it, and the `html` and `snapshot` surfaces, in a worker it can stop, with its own time and memory limits. The `react` surface draws inline, in the reader's own page, as Kibana draws a Vega panel.
 
 The size limits bound the rest, parsing and memory: 250,000 characters of spec, about 12,000 rows of two numbers inline; 250,000 characters of results after pruning; 10,000 rows of `data`, within a 5,000-element drawing for any spec that aggregates or draws a line.
 

@@ -66,7 +66,9 @@ export const VEGA_RULES = {
   resultUrl:
     'A data source keeps its `url` only where a `results` entry replaces it.',
   resultPath:
-    'Each `results` path names a data entry of the spec: an entry of a Vega `data` array, or a Vega-Lite `data` object.',
+    'Each `results` path names a data entry of the spec that has a `url` to replace: an entry of a Vega `data` array, or a Vega-Lite `data` object, outside inline rows.',
+  basemapSize:
+    'A basemap with tiles needs `width` and `height`: the frame its tiles were stamped for.',
 } as const;
 
 const NOT_JSON = 'cannot be written as JSON';
@@ -159,7 +161,7 @@ const basemapSchema = z
     attribution: z.string().max(400).optional(),
   })
   .describe(
-    'Host-stamped map tiles drawn beneath the chart, as Kibana map mode draws a Vega layer over its basemap. A chart with a basemap draws statically. Models must not set this.'
+    `Host-stamped map tiles drawn beneath the chart, as Kibana map mode draws a Vega layer over its basemap. A chart with a basemap draws statically. Models must not set this. ${VEGA_RULES.basemapSize}`
   );
 
 const interactionsSchema = z
@@ -229,7 +231,14 @@ const crossFieldIssues = (node: VegaObject, ctx: z.core.$RefinementCtx) => {
       message: VEGA_RULES.resultPath,
     });
   }
-  const { data, interactions } = node;
+  const { basemap, data, height, interactions, width } = node;
+  if (basemap?.tiles.length && (width === undefined || height === undefined)) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['basemap'],
+      message: VEGA_RULES.basemapSize,
+    });
+  }
   if (data && data.rows.length > MAX_DATA_ROWS) {
     ctx.addIssue({
       code: 'custom',

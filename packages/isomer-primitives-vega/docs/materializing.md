@@ -15,7 +15,7 @@ Isomer never reads saved objects, queries Elasticsearch, or fetches anything a s
 4. **Lower map mode.** See [Map mode](#map-mode).
 5. **Rewrite Kibana's expression functions.** Isomer's Vega knows none of Kibana's `kibanaAddFilter`, `kibanaRemoveFilter`, `kibanaRemoveAllFilters` or `kibanaSetTimeFilter`, and a spec that calls one fails validation. Turn a time-filter brush into a signal holding `[from, to]` named by [`interactions.brush`](index.md#interactions); turn a click filter into `interactions.select: ['mark']` where the spec reads a flat `data` table; remove what neither covers, and record each as a `dropped` loss.
 6. **Describe the node.** Set `title` from the panel, `description` to one sentence saying what the chart shows, `source` (`host: 'kibana'`, the version, `capturedAt`, the absolute `timeRange`, and in `meta` the saved object and panel the node came from), `losses`, and `interactions.link` back to the dashboard ("Open in Kibana").
-7. **Size it.** Leave `width` and `height` unset in a grid, whose panel sizes the chart; set them for a lone chart.
+7. **Size it.** Leave `width` and `height` unset in a grid, whose panel sizes the chart; set them for a lone chart, and for a chart with basemap tiles, to the frame the tiles cover.
 8. **Stay in budget.** Prune results with `pruneVegaResults`. A node still over the [limits](index.md#rules) is `unsupported`.
 
 `kibanaPanelExample` and `mapExample` show nodes as a materializer hands them over.
@@ -24,7 +24,7 @@ Isomer never reads saved objects, queries Elasticsearch, or fetches anything a s
 
 `results` keep the spec as authored, queries included, as Dashboards as Code keeps a Vega panel's: each `{ path, values, scope: 'static' }` replaces the `url` of the data entry at `path` with `values`, the response as Elasticsearch returned it, so the spec's `format.property` and transforms read it as in Kibana. A source keeps its `url` only where a result replaces it.
 
-A response is usually far larger than what the drawing reads. `pruneVegaResults(input, themes)` runs the drawing once with each result behind read-recording proxies, tooltips stripped, and keeps only what was read: an array keeps its length, unread items `null`. It returns the pruned input only if it draws the same SVG under every theme given, else the input unchanged. A chart with results is static: a hover would show values pruned away.
+A response is usually far larger than what the drawing reads. `pruneVegaResults(input, themes)` runs the drawing once with each result behind read-recording proxies, tooltips stripped, and keeps only what was read: an array keeps its length, unread items `null`. It returns the pruned input only if it draws the same SVG under every theme given, else the input unchanged, and the input unchanged when no theme is given. The proof holds at the input's `width` and `height`: prune at the size the panel draws at, since a spec that reads its size to choose rows or fields can read others at another size. A chart with results is static: a hover would show values pruned away.
 
 ```ts
 import { pruneVegaResults, VEGA_THEMES } from '@elastic/isomer-primitives-vega';

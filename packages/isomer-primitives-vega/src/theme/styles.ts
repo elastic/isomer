@@ -10,10 +10,8 @@ import {
   createDistillery,
   type LocalVarGroup,
   type StyleHandle,
-  type StylesCollector,
 } from '@elastic/distillate';
-import type { PrimitiveNode, StyledRenderContext } from '@elastic/isomer-sdk';
-import type { HTMLStyleAdapter } from '@elastic/isomer-sdk/html';
+import type { StyledRenderContext } from '@elastic/isomer-sdk';
 
 import { VEGA_LAYOUT } from './layout';
 
@@ -61,6 +59,10 @@ export const vegaModule = vegaDistillery.createStyleModule(
       chart: css`
         display: block;
         line-height: 0;
+        & > svg {
+          max-width: 100%;
+          height: auto;
+        }
       `,
       link: line,
       attribution: line,
@@ -88,23 +90,6 @@ export const vegaModule = vegaDistillery.createStyleModule(
 
 /** The module-local vars a renderer sets on the link and the note. */
 export const vegaChromeVars = chromeVars as LocalVarGroup<ChromeVar>;
-
-/** The pack's HTML style adapter: records the handles a render resolves and emits their rules. */
-export const vegaStyleAdapter: HTMLStyleAdapter<
-  PrimitiveNode,
-  StylesCollector
-> = {
-  styleCollector: 'distillate',
-  createCollector: () => vegaDistillery.artifactCollector('readable'),
-  createRenderContext: (collector) => ({
-    resolveClassName: (...handles) => {
-      // Renderers pass Distillate handles, typed by the SDK as its narrower `StyleHandle`.
-      collector.useHandles(handles as unknown as readonly StyleHandle[]);
-      return handles.map(({ readableName }) => readableName).join(' ');
-    },
-  }),
-  renderStyles: (collector) => vegaDistillery.renderStyles(collector),
-};
 
 /** Sets the chrome vars on one element; its `style` holds only custom properties the module declares. */
 export const chromeStyle = (

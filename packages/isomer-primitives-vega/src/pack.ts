@@ -8,7 +8,7 @@
 import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
 
 import { vegaPrimitive } from './primitives/vega';
-import { vegaStyleAdapter } from './theme';
+import { vegaDistillery } from './theme';
 
 /**
  * The input budget the pack declares, the charts pack's: a Vega node carries
@@ -26,5 +26,5 @@ export const vegaPack: PrimitivePack = definePrimitivePack({
   slackAssetTypes: ['vega'],
   inputBudget: VEGA_INPUT_BUDGET,
   authoring: { groups: [{ title: 'Charts', types: ['vega'] }] },
-  styleAdapter: vegaStyleAdapter,
+  distillery: vegaDistillery,
 });

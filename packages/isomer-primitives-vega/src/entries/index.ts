@@ -21,6 +21,7 @@ export {
   VEGA_RULES,
   brushExample,
   donutExample,
+  drawVegaNode,
   facetExample,
   heatmapExample,
   histogramExample,

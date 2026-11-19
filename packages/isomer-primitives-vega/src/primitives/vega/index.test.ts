@@ -7,7 +7,11 @@
 
 import { createElement, Fragment, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { chartsFrame } from '@elastic/isomer-primitives-charts';
+import {
+  chartsFrame,
+  chartsPack,
+  metricExamples,
+} from '@elastic/isomer-primitives-charts';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { runPrimitiveInventoryConformance } from '@elastic/isomer-sdk/testing';
@@ -20,6 +24,7 @@ import { vegaChartSize, vegaPrimitive, type VegaRenderContext } from '.';
 import {
   brushExample,
   kibanaPanelExample,
+  layeredExample,
   mapExample,
   vegaExample,
   vegaExamples,
@@ -151,6 +156,24 @@ describe('vega schema', () => {
       { datasets: { table: [] } },
       'body[0].spec.datasets.table',
     ],
+    [
+      'a Vega-Lite `table` with rows of its own',
+      vegaExample,
+      { data: { name: 'table', values: [{ day: 'Mon', errors: 99 }] } },
+      'body[0].spec.data',
+    ],
+    [
+      'a layer that defines its own `table` beside one that reads it',
+      vegaExample,
+      {
+        data: { name: 'table' },
+        layer: [
+          { mark: 'bar' },
+          { data: { name: 'table', values: [] }, mark: 'rule' },
+        ],
+      },
+      'body[0].spec.layer[1].data',
+    ],
   ])('holds `data` to the table rule: %s', (_name, base, change, path) => {
     const node = {
       ...base,
@@ -207,6 +230,45 @@ describe('vega schema', () => {
     expect(
       errors(rows(MAX_DATA_ROWS)).filter((e) => e.includes('data.rows'))
     ).toEqual([]);
+  });
+
+  it('names a data entry with a `url` in each result path, never inline rows', () => {
+    const source = withSpec(vegaGrammarExample, {
+      ...vegaGrammarExample.spec,
+      data: [
+        { name: 'table', values: [{ region: 'a', share: 1, data: {} }] },
+        { name: 'hits', url: { index: 'logs' } },
+      ],
+    });
+    const stamped = (path: Array<string | number>) => ({
+      ...source,
+      results: [{ path, values: [], scope: 'static' }],
+    });
+    const message = `body[0].results[0].path: ${VEGA_RULES.resultPath}`;
+    expect(errors(stamped(['data', 1]))).toEqual([]);
+    expect(errors(stamped(['data', 0]))).toContain(message);
+    expect(errors(stamped(['data', 0, 'values', 0, 'data']))).toContain(
+      message
+    );
+  });
+
+  it('needs a size for a basemap with tiles, the frame they were stamped for', () => {
+    const { width: _width, ...unsized } = mapExample;
+    const tiles = {
+      tiles: [
+        {
+          src: 'data:image/png;base64,iVBORw0KGgo=',
+          x: 0,
+          y: 0,
+          width: 256,
+          height: 256,
+        },
+      ],
+    };
+    expect(errors({ ...unsized, basemap: tiles })).toEqual([
+      `body[0].basemap: ${VEGA_RULES.basemapSize}`,
+    ]);
+    expect(errors({ ...mapExample, basemap: tiles })).toEqual([]);
   });
 
   it('accepts only an inline raster tile, so a basemap cannot fetch', () => {
@@ -333,6 +395,29 @@ describe('vega rendering', () => {
     const svg = markup.slice(markup.indexOf('<svg'));
     expect(svg.indexOf(`<image href="${tile}" x="-10"`)).toBeGreaterThan(0);
     expect(svg.indexOf('<image')).toBeLessThan(svg.indexOf('<path'));
+  });
+
+  it('draws a chart with tiles at their frame and scales both into a smaller box', () => {
+    const tile = 'data:image/png;base64,iVBORw0KGgo=';
+    const mapped = {
+      ...mapExample,
+      basemap: {
+        tiles: [{ src: tile, x: 0, y: 0, width: 256, height: 256 }],
+      },
+    };
+    const context: VegaRenderContext = { size: { width: 240, height: 135 } };
+    const svg = markupOf(
+      runtime.surfaces.react.renderNode(mapped, { context })
+    );
+    expect(svg).toMatch(/<svg[^>]* width="240" height="135"/);
+    expect(svg).toMatch(/<svg[^>]* viewBox="0 0 480 270"/);
+    expect(svg).toContain(`<image href="${tile}" x="0" y="0" width="256"`);
+  });
+
+  it('never draws wider than its container, so a narrower grid panel scales it down', () => {
+    expect(runtime.surfaces.html.render(view(vegaExample)).css).toMatch(
+      /\.vegaChart-chart>svg\{[^}]*max-width:100%;[^}]*height:auto/
+    );
   });
 
   it('renders an unvalidated node without fetching or linking', () => {
@@ -496,6 +581,21 @@ describe('vega chrome below the chart', () => {
   });
 });
 
+describe('vega beside the charts pack', () => {
+  it('shares a runtime with it, both packs’ rules in one stylesheet', () => {
+    const shared = createIsomerRuntime({
+      packs: [chartsPack, vegaPack],
+      frames: { charts: chartsFrame },
+    });
+    const [metric] = metricExamples;
+    const { css } = shared.surfaces.html.render(
+      view(vegaExample, metric!.node)
+    );
+    expect(css).toMatch(/\.vegaChart-chart\{/);
+    expect(css).toMatch(/\.charts[A-Z]\w*-\w+\{/);
+  });
+});
+
 describe('vega text surfaces', () => {
   it('writes the sentence, then `data` formatted as a dataTable shows it', () => {
     expect(runtime.surfaces.text.renderNode(vegaExample)).toBe(
@@ -524,6 +624,43 @@ describe('vega text surfaces', () => {
 
       [Open in Kibana](https://kibana.example.com/app/dashboards#/view/web-logs)"
     `);
+  });
+
+  it('writes the rows a layered Vega-Lite chart declares in a child view', () => {
+    const layered: VegaNode = {
+      type: 'vega',
+      mode: 'vega-lite',
+      description: 'Two layers.',
+      spec: {
+        layer: [
+          {
+            data: { values: [{ k: 'a', v: 1 }] },
+            mark: 'bar',
+            encoding: {
+              x: { field: 'k', type: 'nominal' },
+              y: { field: 'v', type: 'quantitative' },
+            },
+          },
+        ],
+      },
+    };
+    expect(runtime.surfaces.text.renderNode(layered)).toContain('k | v\na | 1');
+  });
+
+  it('writes the named dataset a Vega-Lite chart reads, not the first declared', () => {
+    const named = withSpec(layeredExample, {
+      ...layeredExample.spec,
+      data: { name: 'sales' },
+      datasets: {
+        other: [{ unread: 1 }],
+        sales: layeredExample.spec.data
+          ? (layeredExample.spec.data as { values: object[] }).values
+          : [],
+      },
+    });
+    const text = runtime.surfaces.text.renderNode(named);
+    expect(text).toContain('hour | requests | errorRate');
+    expect(text).not.toContain('unread');
   });
 
   it('cuts a long inline dataset and says how much is left', () => {

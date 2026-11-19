@@ -9,8 +9,8 @@ export { VEGA_LAYOUT } from './layout';
 export {
   chromeStyle,
   cls,
+  vegaDistillery,
   vegaModule,
-  vegaStyleAdapter,
   vegaStylesheet,
 } from './styles';
 export {

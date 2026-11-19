@@ -238,33 +238,103 @@ const svgRenderer = (): HeadlessSvgRenderer => {
 const ESCAPED_ELEMENT =
   /<a[\s>]|<image\b[^>]*href="[^"]|<script|<style|<foreignObject/i;
 
-/** Vega escapes `<` and `>` in text and attributes, so every `<…>` is a tag. */
-const TAG = /<[^>]*>/g;
-const ATTRIBUTE = /\s([\w:-]+)="([^"]*)"/g;
+/** Each tag's span in Vega's markup; Vega escapes `<` and `>` in text and attribute values, so every `<…>` is a tag. */
+const tagSpans = (markup: string): Array<[number, number]> => {
+  const spans: Array<[number, number]> = [];
+  let start = markup.indexOf('<');
+  while (start >= 0) {
+    const end = markup.indexOf('>', start);
+    if (end < 0) {
+      break;
+    }
+    spans.push([start, end + 1]);
+    start = markup.indexOf('<', end);
+  }
+  return spans;
+};
+
+/** A tag's attributes, each with its value's span; Vega writes ` name="value"` with `"` escaped in the value. */
+const attributesOf = (tag: string) => {
+  const attributes: Array<{ name: string; start: number; end: number }> = [];
+  let equals = tag.indexOf('="');
+  while (equals >= 0) {
+    const end = tag.indexOf('"', equals + 2);
+    if (end < 0) {
+      break;
+    }
+    const name = tag.slice(tag.lastIndexOf(' ', equals) + 1, equals);
+    attributes.push({ name, start: equals + 2, end });
+    equals = tag.indexOf('="', end + 1);
+  }
+  return attributes;
+};
+
+/** Text and `aria-*` attributes are prose, so `url(` or a def id there is not a reference. */
+const isProse = (name: string) => name.startsWith('aria-');
+
 /** Any `url(` but a reference to the chart's own defs. */
 const FETCHING_URL = /url\((?!#)/i;
 
-/** Whether `markup` can link out or fetch. Text and `aria-*` attributes are prose, so `url(` there is harmless. */
+/** Whether `markup` can link out or fetch. */
 const escapes = (markup: string): boolean =>
   ESCAPED_ELEMENT.test(markup) ||
-  Array.from(markup.matchAll(TAG), ([tag]) => tag).some((tag) =>
-    Array.from(tag.matchAll(ATTRIBUTE)).some(
-      ([, name = '', value = '']) =>
-        !name.startsWith('aria-') && FETCHING_URL.test(value)
-    )
-  );
+  tagSpans(markup).some(([tagStart, tagEnd]) => {
+    const tag = markup.slice(tagStart, tagEnd);
+    return attributesOf(tag).some(
+      ({ name, start, end }) =>
+        !isProse(name) && FETCHING_URL.test(tag.slice(start, end))
+    );
+  });
+
+/** `markup` with each attribute value passed through `map`, and its text as it is. */
+const mapAttributeValues = (
+  markup: string,
+  map: (name: string, value: string) => string
+): string => {
+  let out = '';
+  let at = 0;
+  for (const [tagStart, tagEnd] of tagSpans(markup)) {
+    const tag = markup.slice(tagStart, tagEnd);
+    let tagAt = 0;
+    out += markup.slice(at, tagStart);
+    for (const { name, start, end } of attributesOf(tag)) {
+      out += tag.slice(tagAt, start) + map(name, tag.slice(start, end));
+      tagAt = end;
+    }
+    out += tag.slice(tagAt);
+    at = tagEnd;
+  }
+  return out + markup.slice(at);
+};
 
 /** Ids Vega numbers from process-wide counters: gradients, patterns, and clip paths. */
-const DEF_ID = /(id="|url\(#)((?:p_)?gradient_\d+|clip\d+)/g;
+const DEF_ID = /^(?:p_)?gradient_\d+$|^clip\d+$/;
+const DEF_REFERENCE = /url\(#((?:p_)?gradient_\d+|clip\d+)\)/g;
 
-/** `markup` with each def id renumbered from 1 by first use, so a drawing does not depend on the counters' state. */
-const renumberDefIds = (markup: string) => {
-  const numbered = new Map<string, string>();
-  return markup.replace(DEF_ID, (_match, lead: string, id: string) => {
-    const next =
-      numbered.get(id) ?? id.replace(/\d+$/, String(numbered.size + 1));
-    numbered.set(id, next);
-    return `${lead}${next}`;
+/**
+ * `markup` with each def id renumbered from 1 by first use and given `prefix`, in `id` attributes and the
+ * attributes that reference one, so a drawing depends neither on Vega's counters nor on another chart's ids.
+ */
+const scopeDefIds = (markup: string, prefix: string) => {
+  const scoped = new Map<string, string>();
+  const scope = (id: string) => {
+    let next = scoped.get(id);
+    if (next === undefined) {
+      next = `${prefix}${id.replace(/\d+$/, String(scoped.size + 1))}`;
+      scoped.set(id, next);
+    }
+    return next;
+  };
+  return mapAttributeValues(markup, (name, value) => {
+    if (name === 'id') {
+      return DEF_ID.test(value) ? scope(value) : value;
+    }
+    return isProse(name)
+      ? value
+      : value.replace(
+          DEF_REFERENCE,
+          (_match, id: string) => `url(#${scope(id)})`
+        );
   });
 };
 
@@ -319,8 +389,8 @@ const countDrawn = (root: unknown): number => {
   return count;
 };
 
-/** Runs `view` to completion and draws its scene as an SVG string, scrubbed of anything that fetches. */
-const drawView = (view: View, log: VegaLog): string => {
+/** Runs `view` to completion and draws its scene as an SVG string, scrubbed of anything that fetches, its def ids scoped by `idPrefix`. */
+const drawView = (view: View, log: VegaLog, idPrefix: string): string => {
   settle(view, log);
   const [failure] = log.errors;
   if (failure !== undefined) {
@@ -360,7 +430,7 @@ const drawView = (view: View, log: VegaLog): string => {
       'vega: the rendered SVG holds a link, an image source, or a fetching style'
     );
   }
-  return renumberDefIds(markup);
+  return scopeDefIds(markup, idPrefix);
 };
 
 /** `markup` drawn at `width` × `height`, its drawing scaled into its `viewBox`. */
@@ -385,6 +455,11 @@ export const renderVegaSvg = (
   vegaSpec: SpecObject,
   { width, height }: { width: number; height: number }
 ): VegaSvg => {
+  if (![width, height].every((side) => Number.isFinite(side) && side >= 0)) {
+    throw new VegaRenderError(
+      `vega: the chart's size, ${width} × ${height}, is not two finite, non-negative numbers`
+    );
+  }
   const log: VegaLog = { errors: [], warnings: [] };
   const json = JSON.stringify(vegaSpec);
   const idPrefix = `isomer-vega-${specHash(json)}-`;
@@ -395,9 +470,8 @@ export const renderVegaSvg = (
     log
   );
   try {
-    const markup = drawView(view, log);
     return {
-      svg: sized(markup, { width, height }).replace(DEF_ID, `$1${idPrefix}$2`),
+      svg: sized(drawView(view, log, idPrefix), { width, height }),
       log,
     };
   } finally {
@@ -418,7 +492,7 @@ export const pruneVegaResults = <T extends VegaChartInput>(
   themes: readonly VegaTheme[]
 ): T => {
   const results = input.results ?? [];
-  if (results.length === 0) {
+  if (results.length === 0 || themes.length === 0) {
     return input;
   }
   const records = results.map(() => newReadRecord());
@@ -452,7 +526,7 @@ export const pruneVegaResults = <T extends VegaChartInput>(
         logger: silentLogger(log),
       });
       try {
-        return sized(drawView(view, log), input);
+        return sized(drawView(view, log, ''), input);
       } finally {
         view.finalize();
       }

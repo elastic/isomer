@@ -67,17 +67,17 @@ const runtime = createIsomerRuntime({
 ### Rules
 
 - A spec reaches nothing outside itself. Validation reports every `url` (data sources, lookups, image marks), every `href` and every bound input's `element`, at its path; rows under `values` and `datasets` are data and are not inspected. Anything nested deeper than 64 levels is refused.
-- A data source keeps its `url` only where a `results` entry replaces it, and each `results` path names a data entry of the spec: an entry of a Vega `data` array, or a Vega-Lite `data` object.
+- A data source keeps its `url` only where a `results` entry replaces it, and each `results` path names a data entry of the spec that has a `url` to replace: an entry of a Vega `data` array, or a Vega-Lite `data` object, outside inline rows.
 - Kibana map mode, `config.kibana.type: "map"`, is refused: a [materializer converts it](materializing.md#map-mode). Every other `config.kibana` key is dropped, since only Kibana's own view reads them.
-- With `data`, the spec reads it as the dataset named `table`: a Vega spec declares `{ "name": "table" }` in `data` with no `values`, `url` or `source`, and a Vega-Lite spec reads `"data": { "name": "table" }` and declares no `datasets.table`. The pack fills it with one object per row keyed by column id, dates as epoch milliseconds.
+- With `data`, the spec reads it as the dataset named `table`: a Vega spec declares `{ "name": "table" }` in `data` with no `values`, `url` or `source`, and a Vega-Lite spec reads `"data": { "name": "table" }`, with no rows or source of its own, and declares no `datasets.table`. The pack fills it with one object per row keyed by column id, dates as epoch milliseconds.
 - `interactions.select` and `interactions.brush` need `data`, and a `brush` column is a `date` or `number` column of `data`.
 - The spec compiles and parses: Vega-Lite compiles, and Vega parses it with the expression interpreter, so an unknown function, such as Kibana's `kibanaAddFilter`, fails at `spec`.
-- A spec is at most 250,000 characters of JSON, `data` at most 10,000 rows, and `results` at most 16 entries and 250,000 characters. A basemap is at most 16 inline PNG, JPEG or WebP `data:` tiles.
+- A spec is at most 250,000 characters of JSON, `data` at most 10,000 rows, and `results` at most 16 entries and 250,000 characters. A basemap is at most 16 inline PNG, JPEG or WebP `data:` tiles, and a node with tiles sets `width` and `height`, the frame they were stamped for.
 - A chart draws at most 5,000 SVG elements, axes and legends included: one per mark item, and one per line, area or trail, which draw as one path. Past that it draws its fallback note. Validation does not run the dataflow, so this is checked when the chart draws; [Rendering](rendering.md#limits) says why. The pack declares the charts pack's [input budget](../../isomer-sdk/docs/packs.md#inputbudget), 250,000 values and 10,000,000 characters.
 
 ## Interactions
 
-Events ride the SDK's `onEvent` as the charts pack's [`ChartEvent`](../../isomer-primitives-charts/docs/interactions.md#chartevent), and only for a node with an `id`. With no `onEvent`, a chart raises nothing.
+Events ride the SDK's `onEvent` as the charts pack's [`ChartEvent`](../../isomer-primitives-charts/docs/interactions.md#chartevent), and only for a node with an `id`. With no `onEvent`, a chart raises nothing. A static drawing raises nothing either: `select` and `brush` say what a live view of the chart, running Vega in a browser, raises.
 
 - **`select: ['mark']`**: a click on a mark raises a `select` whose `target` is `mark`. `columns` are the dimension columns of `data` the mark's datum carries, by column id; `rows` are every row holding the datum's values in them. An aggregated mark, which keeps only its group-by fields, selects every row of its group. A datum that carries no dimension column, or matches no row, raises nothing.
 - **`brush: { column, signal }`**: each value of the named signal that is two numbers or dates, `[from, to]`, raises a `brush` on `column`, ordered and in the column's units. The spec decides when the signal changes, so a spec that sets it on release raises one brush per gesture.
