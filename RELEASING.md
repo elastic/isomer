@@ -19,7 +19,7 @@ pnpm -r exec npm pkg set version=X.Y.Z
 pnpm -r publish --access public --tag latest --no-git-checks
 ```
 
-`pnpm -r publish` skips private packages and any package already on the registry at that version, so only the missing ones go out.
+`pnpm -r publish` skips private packages and any package already on the registry at that version, so only the missing ones go out. `@elastic/isomer-primitives-vega` is private while `@elastic/isomer-primitives-charts`, which it depends on, is: make them public together, seeding and adding a Trusted Publisher for each, along with `@elastic/isomer-charts-elastic`. A host that `require`s the Vega pack applies the workspace's `patches/vega-canvas@2.0.0.patch`, as Kibana does; see [Loading Vega on Node](packages/isomer-primitives-vega/docs/rendering.md#loading-vega-on-node).
 
 A package waiting for npm to seed its name stays `private` and carries `"isomer": { "unseeded": true }`, so `check:pack-contents`, `check:pack-consumer` and `licenses:report` already treat it as published. Once its name is seeded, configure its Trusted Publisher (step 3), then remove `private` and `isomer.unseeded` together; the next release publishes it at that release's version.
 

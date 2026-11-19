@@ -11,6 +11,7 @@ import {
   chartsPack,
   chartsStylesheet,
 } from '@elastic/isomer-primitives-charts';
+import { vegaPack, vegaStylesheet } from '@elastic/isomer-primitives-vega';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { Frame } from '@elastic/isomer-sdk';
 import { defineStudioConfig } from '@elastic/isomer-studio';
@@ -33,22 +34,25 @@ const slideFrame: Frame<SlideFrameTheme & ChartsFrameTheme> = {
   },
 };
 
+/** Charts and Vega charts preview on the charts page. */
+const isChart = (type: string) =>
+  chartsPack.types.has(type) || vegaPack.types.has(type);
+
 /** The repository's Studio: every in-repo pack, drawn in the browser alone. */
 export default defineStudioConfig({
   ...slidesStudioConfig,
   runtime: createIsomerRuntime({
-    packs: [slidesPack, chartsPack],
+    packs: [slidesPack, chartsPack, vegaPack],
     frames: { slide: slideFrame, charts: chartsFrame },
     defaultFrame: 'slide',
   }),
-  stylesheet: () => `${slideStylesheet()}\n${chartsStylesheet()}`,
+  stylesheet: () =>
+    `${slideStylesheet()}\n${chartsStylesheet()}\n${vegaStylesheet()}`,
   // Slides preview inside a slide; charts preview on their own.
   previewExample: (node) =>
-    chartsPack.types.has(node.type)
-      ? { type: 'view', body: [node] }
-      : previewSlide(node),
+    isChart(node.type) ? { type: 'view', body: [node] } : previewSlide(node),
   snapshotFrame: ({ body }) =>
-    body.length && body.every(({ type }) => chartsPack.types.has(type))
+    body.length && body.every(({ type }) => isChart(type))
       ? 'charts'
       : undefined,
   images: false,
