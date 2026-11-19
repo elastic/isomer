@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -14,7 +14,6 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
-import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -22,13 +21,14 @@ import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import semver from 'semver';
 
+import { checkDeclarations } from './packed_declarations.js';
 import {
+  consumerEnv,
   failOnWarning,
   linkDirectory,
   requireEntries,
   requireWithoutPeers,
 } from './packed_require.js';
-import { splitDiagnostics } from './tsc_diagnostics.js';
 import {
   isPublishable,
   repoRoot,
@@ -109,28 +109,6 @@ const exportSpecifiers = ({ name, exports: exportMap = {} }) =>
   Object.keys(exportMap).map((key) =>
     key === '.' ? name : `${name}/${key.slice(2)}`
   );
-
-const tsc = createRequire(import.meta.url).resolve('typescript/bin/tsc');
-
-const compileDiagnostics = (project) => {
-  const result = spawnSync(
-    process.execPath,
-    [tsc, '-p', project, '--pretty', 'false'],
-    { encoding: 'utf-8' }
-  );
-  if (result.error) {
-    throw result.error;
-  }
-  const diagnostics = splitDiagnostics(result.stdout);
-  if (
-    result.status !== 0 &&
-    diagnostics.own.length === 0 &&
-    diagnostics.thirdParty.length === 0
-  ) {
-    throw new Error(`tsc exited ${result.status}: ${result.stderr}`);
-  }
-  return diagnostics;
-};
 
 /** Entries that only Node loads, so they bundle for Node alone. */
 const NODE_ONLY_ENTRIES = new Set([
@@ -265,7 +243,20 @@ try {
     if (optionalPeers.size === 0) {
       requireEntries(plainEntries, consumerDir);
     } else {
-      requireWithoutPeers(pkg, plainEntries, optionalPeers, tempDir);
+      const isolatedConsumer = requireWithoutPeers(
+        pkg,
+        plainEntries,
+        optionalPeers,
+        tempDir,
+        packages
+      );
+      for (const types of ['node', 'react']) {
+        linkDirectory(
+          resolve(repoRoot, 'node_modules', '@types', types),
+          join(isolatedConsumer, 'node_modules', '@types', types)
+        );
+      }
+      checkDeclarations(plainEntries, isolatedConsumer);
     }
     for (const peer of optionalPeers) {
       linkDirectory(
@@ -300,7 +291,7 @@ try {
               '--eval',
               `${failOnWarning} await import(${JSON.stringify(pathToFileURL(outfile).href)})`,
             ],
-            { cwd: consumerDir, stdio: 'inherit' }
+            { cwd: consumerDir, env: consumerEnv(), stdio: 'inherit' }
           );
         }
       }
@@ -358,9 +349,7 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     );
   }
 
-  // A consumer compiles every published declaration with `skipLibCheck` off,
-  // against whichever `@types/react` this install has. Errors inside a third-party
-  // package's own declarations are that package's, so they are printed but do not fail.
+  // Declarations compile with `skipLibCheck` off against the installed React types.
   for (const types of ['node', 'react', 'react-dom']) {
     linkDirectory(
       resolve(repoRoot, 'node_modules', '@types', types),
@@ -373,55 +362,12 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     return exportSpecifiers(pkg.manifest);
   });
   mkdirSync(typesConsumerDir, { recursive: true });
-  // takumi's own dependencies publish their subpath types through `exports` alone, which `node10` cannot read.
-  const node10Unresolvable = new Set(['@elastic/isomer-image-takumi']);
-  const resolutions = [
-    ['commonjs', 'node10'],
-    ['nodenext', 'nodenext'],
-    ['esnext', 'bundler'],
-  ];
-  for (const [module, moduleResolution] of resolutions) {
-    const checked = specifiers.filter(
-      (specifier) =>
-        moduleResolution !== 'node10' || !node10Unresolvable.has(specifier)
-    );
-    writeFileSync(
-      join(typesConsumerDir, 'index.ts'),
-      `${checked.map((specifier, index) => `import type * as entry${index} from '${specifier}';`).join('\n')}\nexport type { ${checked.map((_, index) => `entry${index}`).join(', ')} };\n`
-    );
-    writeFileSync(
-      join(typesConsumerDir, 'tsconfig.json'),
-      JSON.stringify({
-        compilerOptions: {
-          module,
-          moduleResolution,
-          target: 'es2022',
-          lib: ['es2023', 'dom'],
-          strict: true,
-          skipLibCheck: false,
-          esModuleInterop: true,
-          noEmit: true,
-          types: ['node'],
-        },
-        files: ['index.ts'],
-      })
-    );
-    const { thirdParty, own } = compileDiagnostics(typesConsumerDir);
-    for (const diagnostic of thirdParty) {
-      console.warn(`Third-party declaration error, not ours: ${diagnostic}`);
-    }
-    if (own.length > 0) {
-      for (const diagnostic of own) {
-        console.error(diagnostic);
-      }
-      throw new Error(
-        `Packed declarations fail to compile under ${moduleResolution} resolution.`
-      );
-    }
-    console.log(
-      `Packed declarations of ${checked.length} entry points compile under ${moduleResolution} resolution.`
-    );
-  }
+  // Takumi's dependencies expose subpath types through `exports`, which `node10` cannot read.
+  checkDeclarations(
+    specifiers,
+    typesConsumerDir,
+    new Set(['@elastic/isomer-image-takumi'])
+  );
 
   // `assertPackRegistrationComplete` loads files by itself, so each module
   // system's build must load a primitive directory.

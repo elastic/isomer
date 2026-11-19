@@ -19,28 +19,42 @@ const CONSUMER =
   "index.ts(3,1): error TS2307: Cannot find module '@elastic/isomer-runtime/missing'.";
 
 describe('splitDiagnostics', () => {
-  it("keeps a third-party package's own declaration errors apart", () => {
+  it('allows the known Elastic Charts constraint error', () => {
     expect(splitDiagnostics(`${ELASTIC_CHARTS}\n`)).toEqual({
-      own: [],
-      thirdParty: [ELASTIC_CHARTS],
+      errors: [],
+      known: [ELASTIC_CHARTS],
     });
   });
 
-  it('counts packed and linked Isomer declarations and the consumer as ours', () => {
+  it('rejects errors in packed and linked Isomer declarations and the consumer', () => {
     expect(
       splitDiagnostics(
         [ELASTIC_CHARTS, PACKED_ISOMER, LINKED_ISOMER, CONSUMER, ''].join('\n')
       )
     ).toEqual({
-      own: [PACKED_ISOMER, LINKED_ISOMER, CONSUMER],
-      thirdParty: [ELASTIC_CHARTS],
+      errors: [PACKED_ISOMER, LINKED_ISOMER, CONSUMER],
+      known: [ELASTIC_CHARTS],
     });
   });
 
   it('carries indented continuation lines with their diagnostic', () => {
     const continuation = "  Type 'string' is not assignable to type 'number'.";
-    expect(splitDiagnostics(`${PACKED_ISOMER}\n${continuation}\n`).own).toEqual(
-      [`${PACKED_ISOMER}\n${continuation}`]
-    );
+    expect(
+      splitDiagnostics(`${PACKED_ISOMER}\n${continuation}\n`).errors
+    ).toEqual([`${PACKED_ISOMER}\n${continuation}`]);
+  });
+
+  it.each([
+    "node_modules/zod/index.d.ts(1,1): error TS2307: Cannot find module './gone'.",
+    "node_modules/@types/react/index.d.ts(1,1): error TS2344: Type 'New' does not satisfy the constraint 'Other'.",
+    "error TS6053: File '/tmp/node_modules/x/index.d.ts' not found.",
+    ELASTIC_CHARTS.replace('TS2344', 'TS2307'),
+    ELASTIC_CHARTS.replace('theme.d.ts', 'other.d.ts'),
+    ELASTIC_CHARTS.replace('GeometryStateStyle', 'NewStyle'),
+  ])('rejects a diagnostic outside the known exception: %s', (diagnostic) => {
+    expect(splitDiagnostics(diagnostic)).toEqual({
+      errors: [diagnostic],
+      known: [],
+    });
   });
 });

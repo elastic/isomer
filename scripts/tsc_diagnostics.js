@@ -5,20 +5,12 @@
  * 2.0.
  */
 
-/** A diagnostic located in a package installed from npm, rather than in the consumer or a packed Isomer package. */
-const isThirdParty = (diagnostic) => {
-  const [path] = diagnostic.split('(');
-  return (
-    /(^|\/)node_modules\//.test(path) &&
-    !/node_modules\/@elastic\/isomer-/.test(path)
+// `@elastic/charts` 73.3.2 omits React's CSS custom-property index from `GeometryStateStyle`.
+const isKnownChartsError = (diagnostic) =>
+  /^(?:.*\/)?node_modules\/@elastic\/charts\/dist\/utils\/themes\/theme\.d\.ts\(\d+,\d+\): error TS2344: Type 'GeometryStateStyle' does not satisfy the constraint 'CSSProperties'\.(?:\n|$)/.test(
+    diagnostic
   );
-};
 
-/**
- * Splits `tsc --pretty false` output into this repository's diagnostics and third parties'.
- *
- * @param {string} output
- */
 export const splitDiagnostics = (output) => {
   // Each diagnostic starts at column zero; its continuation lines are indented.
   const diagnostics = output.split('\n').reduce((all, line) => {
@@ -31,7 +23,7 @@ export const splitDiagnostics = (output) => {
     return [...all, line];
   }, /** @type {string[]} */ ([]));
   return {
-    own: diagnostics.filter((diagnostic) => !isThirdParty(diagnostic)),
-    thirdParty: diagnostics.filter(isThirdParty),
+    errors: diagnostics.filter((diagnostic) => !isKnownChartsError(diagnostic)),
+    known: diagnostics.filter(isKnownChartsError),
   };
 };

@@ -13,7 +13,6 @@ import {
   realpathSync,
   symlinkSync,
 } from 'node:fs';
-import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 
 export const linkDirectory = (target, path) => {
@@ -29,56 +28,89 @@ export const linkDirectory = (target, path) => {
 export const failOnWarning =
   "process.on('warning', (warning) => { console.error(warning); process.exitCode = 1; });";
 
+export const consumerEnv = () =>
+  Object.fromEntries(
+    Object.entries(process.env).filter(([key]) => key !== 'NODE_PATH')
+  );
+
 export const requireEntries = (specifiers, consumerDir) =>
   execFileSync(
     process.execPath,
     [
       '--eval',
-      `${failOnWarning} ${specifiers.map((specifier) => `require('${specifier}');`).join(' ')}`,
+      `${failOnWarning} ${specifiers.map((specifier) => `require(${JSON.stringify(specifier)});`).join(' ')}`,
     ],
-    { cwd: consumerDir, stdio: 'inherit' }
+    { cwd: consumerDir, env: consumerEnv(), encoding: 'utf-8' }
   );
 
-/**
- * Requires `specifiers` from a copy of `pkg` under `workDir` that holds only its dependencies and required peers, since
- * another package's required peer may already be linked into `pkg` itself. Fails when any of `peers` still resolves there.
- *
- * @param {{ dir: string; manifest: { name: string; dependencies?: object; peerDependencies?: object } }} pkg
- * @param {string[]} specifiers
- * @param {Set<string>} peers
- * @param {string} workDir
- */
-export const requireWithoutPeers = (pkg, specifiers, peers, workDir) => {
-  const { name, dependencies = {}, peerDependencies = {} } = pkg.manifest;
-  const isolatedDir = join(workDir, 'isolated', name);
-  const ownModules = join(pkg.dir, 'node_modules');
-  cpSync(pkg.dir, isolatedDir, {
-    recursive: true,
-    filter: (source) => !source.startsWith(ownModules),
-  });
-  for (const linked of [
-    ...Object.keys(dependencies),
-    ...Object.keys(peerDependencies).filter((peer) => !peers.has(peer)),
-  ]) {
-    const target = join(ownModules, linked);
-    if (existsSync(target)) {
-      linkDirectory(
-        realpathSync(target),
-        join(isolatedDir, 'node_modules', linked)
-      );
+/** Copies the packed dependency graph with only declared dependencies and required peers. */
+export const requireWithoutPeers = (
+  pkg,
+  specifiers,
+  peers,
+  workDir,
+  packedPackages = new Map()
+) => {
+  const consumerDir = join(workDir, 'isolated-consumers', pkg.manifest.name);
+  const copies = new Map();
+  const copyPackage = (source) => {
+    const { dir, manifest } = source;
+    const {
+      name,
+      dependencies = {},
+      peerDependencies = {},
+      peerDependenciesMeta = {},
+    } = manifest;
+    if (copies.has(dir)) {
+      return copies.get(dir);
     }
-  }
-  const isolatedRequire = createRequire(join(isolatedDir, 'package.json'));
-  for (const peer of peers) {
-    let resolved;
-    try {
-      resolved = isolatedRequire.resolve(peer);
-    } catch {
-      continue;
+    const isolatedDir = join(consumerDir, 'node_modules', name);
+    copies.set(dir, isolatedDir);
+    const ownModules = join(dir, 'node_modules');
+    cpSync(dir, isolatedDir, {
+      recursive: true,
+      filter: (sourcePath) =>
+        sourcePath !== ownModules && !sourcePath.startsWith(`${ownModules}/`),
+    });
+    const required = new Set([
+      ...Object.keys(dependencies),
+      ...Object.keys(peerDependencies).filter(
+        (peer) => peerDependenciesMeta[peer]?.optional !== true
+      ),
+    ]);
+    for (const dependency of required) {
+      const target = join(ownModules, dependency);
+      if (existsSync(target)) {
+        const packed =
+          dependency === pkg.manifest.name
+            ? pkg
+            : packedPackages.get(dependency);
+        linkDirectory(
+          packed ? copyPackage(packed) : realpathSync(target),
+          join(isolatedDir, 'node_modules', dependency)
+        );
+      }
     }
-    throw new Error(`${name}: optional peer "${peer}" resolves at ${resolved}`);
-  }
-  const consumerDir = join(workDir, 'isolated-consumers', name);
-  linkDirectory(isolatedDir, join(consumerDir, 'node_modules', name));
+    return isolatedDir;
+  };
+  copyPackage(pkg);
+  execFileSync(
+    process.execPath,
+    [
+      '--eval',
+      `
+    for (const dir of ${JSON.stringify([...copies.values(), consumerDir])}) {
+      for (const peer of ${JSON.stringify([...peers])}) {
+        let resolved;
+        try { resolved = require.resolve(peer, { paths: [dir] }); }
+        catch (error) { if (error.code === 'MODULE_NOT_FOUND') continue; throw error; }
+        throw new Error('optional peer "' + peer + '" resolves at ' + resolved);
+      }
+    }
+  `,
+    ],
+    { cwd: consumerDir, env: consumerEnv(), encoding: 'utf-8' }
+  );
   requireEntries(specifiers, consumerDir);
+  return consumerDir;
 };
