@@ -320,7 +320,7 @@ describe('startLiveView', () => {
     first.finalize();
   });
 
-  it('goes back to the server’s SVG once its container comes to scale the drawing', async () => {
+  it('goes back to the server’s SVG once its container comes to scale the drawing, not when Vega resizes it', async () => {
     const probe = await start();
     const svg = probe.container.querySelector('svg')!;
     const [width, height] = ['width', 'height'].map((side) =>
@@ -347,9 +347,15 @@ describe('startLiveView', () => {
     const container = document.createElement('div');
     container.innerHTML = markup;
     document.body.append(container);
-    await live.startLiveView(container, spec);
+    const view = await live.startLiveView(container, spec);
     expect(watching).toBe(true);
-    Object.defineProperty(container, 'clientWidth', { value: width! - 10 });
+    let clientWidth = width! + 100;
+    Object.defineProperty(container, 'clientWidth', { get: () => clientWidth });
+    await view.width(view.width() + 40).runAsync();
+    resized.forEach((callback) => callback());
+    expect(container.innerHTML).not.toBe(markup);
+    expect(watching).toBe(true);
+    clientWidth = width! - 10;
     resized.forEach((callback) => callback());
     expect(container.innerHTML).toBe(markup);
     expect(watching).toBe(false);

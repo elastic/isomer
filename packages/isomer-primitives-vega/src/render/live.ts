@@ -145,9 +145,15 @@ const svgSize = (markup: string) => {
   };
 };
 
+/** Whether `container` is narrower than the drawing it holds now, so CSS scales the drawing down. */
+const isNarrowed = (container: HTMLElement) => {
+  const width = Number(container.querySelector('svg')?.getAttribute('width'));
+  return container.clientWidth > 0 && container.clientWidth < width;
+};
+
 /**
- * Whether the live drawing differs from the server's size, or its container is narrower and scales it down: Vega
- * maps the pointer without CSS scaling, so a scaled view would brush and read `x()` at the wrong values.
+ * Whether the live drawing differs from the server's size, or its container scales it down: Vega maps the pointer
+ * without CSS scaling, so a scaled view would brush and read `x()` at the wrong values.
  */
 const isScaled = (container: HTMLElement, server: string) => {
   const drawn = svgSize(server);
@@ -157,24 +163,19 @@ const isScaled = (container: HTMLElement, server: string) => {
   const live = container.querySelector('svg');
   const differs = (side: 'width' | 'height') =>
     Math.abs(Number(live?.getAttribute(side)) - drawn[side]) > 0.5;
-  return (
-    differs('width') ||
-    differs('height') ||
-    (container.clientWidth > 0 && container.clientWidth < drawn.width)
-  );
+  return differs('width') || differs('height') || isNarrowed(container);
 };
 
 /**
  * Calls `demote` once `container` comes to scale `view`'s drawing, as a panel that narrows does, after finalizing
- * the view. Stops watching when the view is finalized.
+ * the view. Vega resizing its own drawing is not scaling. Stops watching when the view is finalized.
  */
 const watchScale = (container: HTMLElement, view: View, demote: () => void) => {
   if (typeof ResizeObserver === 'undefined') {
     return;
   }
-  const svg = container.querySelector('svg')?.outerHTML ?? '';
   const observer = new ResizeObserver(() => {
-    if (isScaled(container, svg)) {
+    if (isNarrowed(container)) {
       view.finalize();
       demote();
     }
