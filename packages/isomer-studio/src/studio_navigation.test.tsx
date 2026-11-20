@@ -71,6 +71,19 @@ describe('IsomerStudio', () => {
     expect(window.location.hash).toBe('#/home');
   });
 
+  it('names a link that matches no page on Home, and drops the notice on the next page', async () => {
+    window.location.hash = '#nope/zzz';
+    render(<IsomerStudio {...{ runtime }} />);
+    const home = await screen.findByTestId('home');
+    expect(within(home).getByText('#nope/zzz')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#nope/zzz');
+
+    window.location.hash = '#/home';
+    await waitFor(() =>
+      expect(within(home).queryByText(/No page at/)).not.toBeInTheDocument()
+    );
+  });
+
   it('opens a searched primitive from Home in the mode last used', async () => {
     window.location.hash = '#/docs/divider/0';
     render(<IsomerStudio {...{ runtime }} />);

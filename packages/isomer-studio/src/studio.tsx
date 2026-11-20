@@ -241,6 +241,7 @@ const Layout = ({
             onColorModeChange,
             composeParams,
           }}
+          missing={isHomeRoute(location) ? location.missing : undefined}
         />
       </main>
     );

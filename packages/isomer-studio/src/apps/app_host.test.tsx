@@ -182,16 +182,18 @@ describe('Studio apps', () => {
     expect(await screen.findByText('Second page')).toBeInTheDocument();
   });
 
-  it('goes Home and rewrites the hash when the open app goes away', async () => {
+  it('goes Home and names the address when the open app goes away', async () => {
     const { rerender } = render(
       <IsomerStudio {...{ runtime }} apps={[deck(sameLoad())]} />
     );
     await openDeck();
+    const { hash } = window.location;
 
     rerender(<IsomerStudio {...{ runtime }} apps={[]} />);
 
-    await waitFor(() => expect(window.location.hash).toBe('#/home'));
-    expect(await screen.findByTestId('home')).toBeInTheDocument();
+    const home = await screen.findByTestId('home');
+    expect(within(home).getByText(hash)).toBeInTheDocument();
+    expect(window.location.hash).toBe(hash);
     expect(screen.queryByText(/^count/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Deck' })).toBeNull();
   });
