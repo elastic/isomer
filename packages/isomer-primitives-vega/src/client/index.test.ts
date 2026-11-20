@@ -51,6 +51,14 @@ describe('hydrateVega', () => {
     dispose();
   });
 
+  it('hydrates a chart passed as the root itself', async () => {
+    const chart =
+      mount(vegaExample).querySelector<HTMLElement>('[data-isomer-vega]')!;
+    const { views, dispose } = await hydrateVega(chart);
+    expect(views).toHaveLength(1);
+    dispose();
+  });
+
   it('leaves a chart rendered without the enhancement as it is', async () => {
     const root = mount(vegaExample, []);
     const before = root.querySelector('[data-isomer-vega-chart] svg');

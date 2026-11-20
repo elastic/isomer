@@ -305,6 +305,99 @@ describe('startLiveView', () => {
     view.finalize();
   });
 
+  it('puts the server’s SVG back when a restart’s spec cannot parse', async () => {
+    const container = document.createElement('div');
+    container.innerHTML = '<svg data-server=""></svg>';
+    document.body.append(container);
+    const first = await live.startLiveView(container, spec);
+    await expect(
+      live.startLiveView(container, {
+        ...spec,
+        signals: [{ name: 'x', update: '1 +' }],
+      })
+    ).rejects.toThrow();
+    expect(container.innerHTML).toBe('<svg data-server=""></svg>');
+    first.finalize();
+  });
+
+  it('goes back to the server’s SVG once its container comes to scale the drawing', async () => {
+    const probe = await start();
+    const svg = probe.container.querySelector('svg')!;
+    const [width, height] = ['width', 'height'].map((side) =>
+      Number(svg.getAttribute(side))
+    );
+    probe.view.finalize();
+    const resized: Array<() => void> = [];
+    let watching = false;
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: () => void) {
+          resized.push(callback);
+        }
+        observe() {
+          watching = true;
+        }
+        disconnect() {
+          watching = false;
+        }
+      }
+    );
+    const markup = `<svg width="${width}" height="${height}"></svg>`;
+    const container = document.createElement('div');
+    container.innerHTML = markup;
+    document.body.append(container);
+    await live.startLiveView(container, spec);
+    expect(watching).toBe(true);
+    Object.defineProperty(container, 'clientWidth', { value: width! - 10 });
+    resized.forEach((callback) => callback());
+    expect(container.innerHTML).toBe(markup);
+    expect(watching).toBe(false);
+    vi.unstubAllGlobals();
+  });
+
+  it('raises no brush while an update is past the mark cap and its drawing is stale', async () => {
+    const events: unknown[] = [];
+    const container = document.createElement('div');
+    container.innerHTML = '<svg></svg>';
+    document.body.append(container);
+    const view = await live.startLiveView(
+      container,
+      {
+        ...spec,
+        signals: [
+          { name: 'n', value: 10 },
+          { name: 'range', value: null },
+        ],
+        data: [
+          {
+            name: 'table',
+            transform: [{ type: 'sequence', start: 0, stop: { signal: 'n' } }],
+          },
+        ],
+        marks: [
+          {
+            type: 'symbol',
+            from: { data: 'table' },
+            encode: { enter: { x: { field: 'data' } } },
+          },
+        ],
+      },
+      { onEvent: (event) => events.push(event), node: brushExample }
+    );
+    const brush = async (to: number) =>
+      view.signal('range', [0, to]).runAsync();
+    await brush(1);
+    expect(events).toHaveLength(1);
+    await view.signal('n', MAX_DRAWN_ITEMS + 1).runAsync();
+    await brush(2);
+    expect(events).toHaveLength(1);
+    await view.signal('n', 10).runAsync();
+    await brush(3);
+    expect(events).toHaveLength(2);
+    view.finalize();
+  });
+
   it('keeps a chart the server scaled into its box static, since Vega would misplace the pointer', async () => {
     const markup = '<svg width="321" height="123"></svg>';
     const container = document.createElement('div');

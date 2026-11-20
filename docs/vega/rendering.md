@@ -29,9 +29,9 @@ node → toVegaSpec (strip, bind data and results, compile Vega-Lite, theme, siz
 
 A chart with `results` or a `basemap` draws statically everywhere: a live view would lose the basemap, and hover over results pruned to the drawing would show nothing.
 
-A live view replaces the SVG only when it draws at the server's size, unscaled: Vega maps the pointer without CSS scaling, so a chart scaled into its box, such as a composite Vega-Lite view or one in a narrower container, keeps its SVG. A live view never draws past the 5,000-element cap: an update that would keeps the last drawing, and a first draw that would leaves the SVG. A view that cannot start leaves the SVG too, and a restart that fails puts it back.
+A live view replaces the SVG only when it draws at the server's size, unscaled: Vega maps the pointer without CSS scaling, so a chart scaled into its box, such as a composite Vega-Lite view or one in a narrower container, keeps its SVG. A chart whose container later comes to scale it, as a panel that narrows does, goes back to its SVG. A live view never draws past the 5,000-element cap: an update that would keeps the last drawing and raises no events until it draws again, and a first draw that would leaves the SVG. A view that cannot start leaves the SVG too, and a restart that fails puts it back.
 
-`hydrateVega` returns the live views and `dispose()`. Call `dispose()` before removing or replacing hydrated charts: removing their markup leaves Vega's listeners and timers running. Hydrating a chart again replaces its live view.
+`hydrateVega(root)` makes each chart in `root`, or `root` itself, live, and returns the live views and `dispose()`. Call `dispose()` before removing or replacing hydrated charts: removing their markup leaves Vega's listeners and timers running. Hydrating a chart again replaces its live view.
 
 A spec Vega cannot draw at render time draws a note in the chart's box instead: its title and description, with the reason in `data-isomer-vega-error`.
 

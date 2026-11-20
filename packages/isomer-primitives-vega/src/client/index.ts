@@ -54,7 +54,7 @@ const readEmbedded = (chart: Element): Embedded | undefined => {
 };
 
 /**
- * Replaces each server-rendered chart under `root` with a live Vega view, for
+ * Replaces each server-rendered chart in `root`, or `root` itself, with a live Vega view, for
  * tooltips, signals and chart events. Needs the `vegaInteractive` enhancement
  * on the render, which embeds each chart's spec; a chart without one keeps its
  * SVG.
@@ -63,7 +63,12 @@ export const hydrateVega = async (
   root: ParentNode,
   { onEvent }: HydrateVegaOptions = {}
 ): Promise<HydratedVega> => {
-  const charts = Array.from(root.querySelectorAll('[data-isomer-vega]'));
+  const charts = [
+    ...(root instanceof Element && root.matches('[data-isomer-vega]')
+      ? [root]
+      : []),
+    ...root.querySelectorAll('[data-isomer-vega]'),
+  ];
   const raise =
     onEvent && ((event: ChartEvent) => onEvent(toActionEvent(event)));
   // A chart that cannot start keeps its server SVG and leaves the others live.

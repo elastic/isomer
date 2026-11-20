@@ -164,6 +164,29 @@ const isScaled = (container: HTMLElement, server: string) => {
   );
 };
 
+/**
+ * Calls `demote` once `container` comes to scale `view`'s drawing, as a panel that narrows does, after finalizing
+ * the view. Stops watching when the view is finalized.
+ */
+const watchScale = (container: HTMLElement, view: View, demote: () => void) => {
+  if (typeof ResizeObserver === 'undefined') {
+    return;
+  }
+  const svg = container.querySelector('svg')?.outerHTML ?? '';
+  const observer = new ResizeObserver(() => {
+    if (isScaled(container, svg)) {
+      view.finalize();
+      demote();
+    }
+  });
+  const finalize = view.finalize.bind(view);
+  view.finalize = () => {
+    observer.disconnect();
+    return finalize();
+  };
+  observer.observe(container);
+};
+
 /** The view live in each container, so a new start replaces it rather than leaving it running. */
 const liveViews = new WeakMap<HTMLElement, View>();
 /** The server's drawing in each container, and its role, which a failed start puts back. */
@@ -194,8 +217,8 @@ export interface LiveViewOptions {
 /**
  * Draws `spec` into `container` as a live view, replacing what it holds and any view live there, and wires the
  * node's `mark` selection and brush signal to `onEvent`. Resolves once the first render is done; finalize the view
- * to remove it. A view that fails to start, draws past the mark cap or would be scaled is finalized, and
- * `container` gets the server's SVG back.
+ * to remove it. A view that fails to start, draws past the mark cap or would be scaled, or that its container later
+ * comes to scale, is finalized, and `container` gets the server's SVG back.
  */
 export const startLiveView = async (
   container: HTMLElement,
@@ -215,61 +238,71 @@ export const startLiveView = async (
     setAttribute(container, 'aria-label', label);
     container.removeAttribute('aria-roledescription');
   };
-  liveViews.get(container)?.finalize();
-  registerScrubbedSvg();
-  const view = new View(parse(hardenVegaSpec(spec), undefined, { ast: true }), {
-    // `vega-typings` lists only the built-in renderer names.
-    renderer: SCRUBBED_SVG as 'svg',
-    loader: clientLoader,
-    expr: expressionEvaluator,
-    hover: true,
-  });
-  liveViews.set(container, view);
-  let started = false;
-  // Nothing reaches the host from a view that may yet be rolled back.
-  const raise = (event: ChartEvent | undefined) => {
-    if (started && event) {
-      onEvent?.(event);
-    }
+  const restoreServer = () => {
+    container.innerHTML = server.svg;
+    restoreAria(server.role);
   };
-  view.tooltip(new Handler({ formatTooltip }).call);
-  if (onEvent && node) {
-    const target = node as VegaNode;
-    view.addEventListener('click', (_event, item) =>
-      raise(
-        markSelectEvent(
-          target,
-          (item as { datum?: unknown } | null | undefined)?.datum
-        )
-      )
+  liveViews.get(container)?.finalize();
+  liveViews.delete(container);
+  registerScrubbedSvg();
+  let view: View | undefined;
+  let started = false;
+  try {
+    const live = new View(
+      parse(hardenVegaSpec(spec), undefined, { ast: true }),
+      {
+        // `vega-typings` lists only the built-in renderer names.
+        renderer: SCRUBBED_SVG as 'svg',
+        loader: clientLoader,
+        expr: expressionEvaluator,
+        hover: true,
+      }
     );
-    const brush = node.interactions?.brush;
-    if (brush) {
-      try {
-        view.addSignalListener(brush.signal, (_name, value) =>
-          raise(signalBrushEvent(target, value))
-        );
-      } catch {
-        // A spec without the signal raises no brush; the rest of the view stays live.
+    view = live;
+    liveViews.set(container, live);
+    const drawsPastCap = () =>
+      countDrawn((live.scenegraph() as unknown as { root: unknown }).root) >
+      MAX_DRAWN_ITEMS;
+    // Nothing reaches the host from a view that may yet be rolled back, or whose scales are past what it draws.
+    const raise = (event: ChartEvent | undefined) => {
+      if (started && event && !drawsPastCap()) {
+        onEvent?.(event);
+      }
+    };
+    live.tooltip(new Handler({ formatTooltip }).call);
+    if (onEvent && node) {
+      const target = node as VegaNode;
+      live.addEventListener('click', (_event, item) =>
+        raise(
+          markSelectEvent(
+            target,
+            (item as { datum?: unknown } | null | undefined)?.datum
+          )
+        )
+      );
+      const brush = node.interactions?.brush;
+      if (brush) {
+        try {
+          live.addSignalListener(brush.signal, (_name, value) =>
+            raise(signalBrushEvent(target, value))
+          );
+        } catch {
+          // A spec without the signal raises no brush; the rest of the view stays live.
+        }
       }
     }
-  }
-  try {
     container.replaceChildren();
     // Bound inputs go in their own box, outside the chart's image.
     const bindings = document.createElement('div');
-    view.initialize(container, bindings);
+    live.initialize(container, bindings);
     container.append(bindings);
     bindings.style.lineHeight = 'normal';
     guardCursor(container);
-    const run = await view.runAsync();
-    if (liveViews.get(container) !== view) {
+    const run = await live.runAsync();
+    if (liveViews.get(container) !== live) {
       throw new Error('vega: a newer view took the container');
     }
-    if (
-      countDrawn((view.scenegraph() as unknown as { root: unknown }).root) >
-      MAX_DRAWN_ITEMS
-    ) {
+    if (drawsPastCap()) {
       throw new Error('vega: the live view draws past the mark cap');
     }
     if (isScaled(container, server.svg)) {
@@ -278,13 +311,16 @@ export const startLiveView = async (
     // The bound inputs are reachable only outside an image.
     restoreAria('group');
     started = true;
+    watchScale(container, live, () => {
+      liveViews.delete(container);
+      restoreServer();
+    });
     return run;
   } catch (error) {
-    view.finalize();
+    view?.finalize();
     if (liveViews.get(container) === view) {
       liveViews.delete(container);
-      container.innerHTML = server.svg;
-      restoreAria(server.role);
+      restoreServer();
     }
     throw error;
   }
