@@ -28,6 +28,8 @@ export interface StudioRoute {
   example: number;
   /** A group title the gallery scrolls to, from `#/docs/gallery/<group>`. */
   group?: string | undefined;
+  /** The hash that named no primitive, when the first primitive is shown in its place. */
+  missing?: string | undefined;
 }
 
 export interface AppRoute {
@@ -39,6 +41,8 @@ export interface AppRoute {
 /** The landing page, at `#/home`, which an empty or unknown hash also opens. */
 export interface HomeRoute {
   home: true;
+  /** The hash that matched nothing, when Home opens in its place. */
+  missing?: string | undefined;
 }
 
 /** The composition editor, at `#/compose`, with what to load in its query. */
@@ -117,8 +121,9 @@ export const parseRoute = (
 
 /**
  * {@link parseRoute} for `#/dev/...` and `#/docs/...`, `#/app/<id>/<path>` for an id in `appIds`,
- * `#/compose?<query>` for the composition editor, and {@link HOME} for an empty hash, `#/home`, an
- * unknown app, or any other first segment.
+ * `#/compose?<query>` for the composition editor, {@link HOME} for an empty hash or `#/home`, and
+ * Home with {@link HomeRoute.missing} for an unknown app or any other first segment. An unknown
+ * primitive opens the first one, with {@link StudioRoute.missing} set.
  */
 export const parseLocation = (
   hash: string,
@@ -137,15 +142,21 @@ export const parseLocation = (
     };
   }
   const [segment, id, ...rest] = path.split('/');
+  const missing: HomeRoute = { home: true, missing: hash };
   if (segment === APP_SEGMENT) {
     return id !== undefined && appIds.includes(id)
       ? { app: id, path: rest.map(decodeSegment).join('/') }
-      : HOME;
+      : missing;
   }
   if (segment === 'dev' || segment === 'docs') {
-    return parseRoute(hash, docs);
+    const route = parseRoute(hash, docs);
+    return id &&
+      !(segment === 'docs' && id === GALLERY) &&
+      !docs.primitives.some(({ type }) => type === id)
+      ? { ...route, missing: hash }
+      : route;
   }
-  return HOME;
+  return path === '' || segment === HOME_SEGMENT ? HOME : missing;
 };
 
 export const formatRoute = ({
@@ -220,6 +231,20 @@ export interface StudioRouter extends Navigation {
   replaceComposer: (params: ComposeParams) => void;
 }
 
+/** A primitive that disappears after a hot update falls back to the first one without a notice. */
+const withoutMissingPrimitive = (location: StudioLocation): StudioLocation => {
+  if (!isPrimitiveRoute(location) || location.missing === undefined) {
+    return location;
+  }
+  const { missing: _missing, ...route } = location;
+  return route;
+};
+
+const missingOf = (location: StudioLocation) =>
+  isHomeRoute(location) || isPrimitiveRoute(location)
+    ? location.missing
+    : undefined;
+
 /** The location in the URL hash, re-checked whenever the primitives or apps change. */
 export const useStudioRoute = (
   docs: RuntimeDocs,
@@ -240,9 +265,20 @@ export const useStudioRoute = (
     if (formatRoute(remembered) !== formatRoute(route)) {
       store.set({ ...store.get(), route: remembered });
     }
-    const next = parseLocation(window.location.hash, docs, appIds);
-    if (formatLocation(next) !== formatLocation(location)) {
-      window.history.replaceState(null, '', formatLocation(next));
+    const parsed = parseLocation(window.location.hash, docs, appIds);
+    // A link that was already missing stays named; a primitive that just went away does not.
+    const next =
+      missingOf(parsed) === missingOf(location)
+        ? parsed
+        : withoutMissingPrimitive(parsed);
+    if (
+      formatLocation(next) !== formatLocation(location) ||
+      missingOf(next) !== missingOf(location)
+    ) {
+      // A link that matches nothing stays in the address bar, so a later update can open it.
+      if (missingOf(next) === undefined) {
+        window.history.replaceState(null, '', formatLocation(next));
+      }
       show(next);
     }
     const onHashChange = () =>

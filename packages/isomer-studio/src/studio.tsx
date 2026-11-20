@@ -5,13 +5,27 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { EuiProvider, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  EuiCallOut,
+  euiCanAnimate,
+  EuiProvider,
+  EuiSkipLink,
+  EuiThemeProvider,
+  useEuiTheme,
+} from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { css } from '@emotion/react';
+import { css, Global } from '@emotion/react';
 
 import { AppHost } from './apps/app_host';
 import { useAccent } from './chrome/accent';
+import { activeAppPage } from './chrome/app_pages';
 import type { ColorModePreference } from './chrome/color_mode';
 import { useColorMode } from './chrome/color_mode';
 import { ConfigProblems } from './chrome/config_problems';
@@ -20,10 +34,12 @@ import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
 import type { StudioRouter } from './chrome/route';
 import {
+  formatLocation,
   GALLERY,
   isAppRoute,
   isComposeRoute,
   isHomeRoute,
+  isPrimitiveRoute,
   useStudioRoute,
 } from './chrome/route';
 import { ShellBackdrop } from './chrome/shell_background';
@@ -49,6 +65,24 @@ const darkWrapper = {
 
 const NO_TINT = {};
 
+const MAIN_ID = 'isomer-studio-main';
+
+/** Touch targets of at least 44px for the controls EUI draws smaller. */
+const touchTargets = css`
+  @media (pointer: coarse) {
+    .euiButton,
+    .euiButtonEmpty,
+    .euiButtonIcon,
+    .euiButtonGroupButton,
+    .euiListGroupItem__button {
+      min-block-size: 44px;
+    }
+    .euiButtonIcon {
+      min-inline-size: 44px;
+    }
+  }
+`;
+
 const NO_APPS: readonly StudioApp[] = [];
 
 const fill = css`
@@ -59,6 +93,11 @@ const compactNavQuery = () =>
   typeof window === 'undefined'
     ? undefined
     : window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+
+const phoneNavQuery = () =>
+  typeof window === 'undefined'
+    ? undefined
+    : window.matchMedia(`(max-width: ${NAV_WIDTH.phoneAt}px)`);
 
 const Layout = ({
   title = 'Isomer Studio',
@@ -102,6 +141,19 @@ const Layout = ({
     () => compactNavQuery()?.matches ?? false
   );
   const [isNavOpen, setNavOpen] = useState(() => !isCompactNav);
+  const [isPhone, setPhone] = useState(() => phoneNavQuery()?.matches ?? false);
+  const navToggle = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const query = phoneNavQuery();
+    if (!query) {
+      return;
+    }
+    const update = () => setPhone(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     const query = compactNavQuery();
@@ -132,14 +184,18 @@ const Layout = ({
     display: grid;
     position: relative;
     grid-template-columns: ${
-      isCompactNav
-        ? NAV_WIDTH.closed
-        : isNavOpen
-          ? NAV_WIDTH.open
-          : NAV_WIDTH.closed
+      isPhone
+        ? 0
+        : isCompactNav
+          ? NAV_WIDTH.closed
+          : isNavOpen
+            ? NAV_WIDTH.open
+            : NAV_WIDTH.closed
     }px minmax(0, 1fr);
-    transition: grid-template-columns ${euiTheme.animation.normal}
-      ${euiTheme.animation.resistance};
+    ${euiCanAnimate} {
+      transition: grid-template-columns ${euiTheme.animation.normal}
+        ${euiTheme.animation.resistance};
+    }
   `;
   const panel = css`
     min-height: 0;
@@ -149,11 +205,73 @@ const Layout = ({
     overflow: auto;
     border-radius: ${euiTheme.border.radius.frame};
     background: ${euiTheme.colors.backgroundBasePlain};
+    &:focus {
+      outline: none;
+    }
   `;
   const main = css`
     grid-column: 2;
     margin-left: 0;
   `;
+
+  const closeOnPhone = useCallback(() => {
+    if (isPhone) {
+      setNavOpen(false);
+    }
+  }, [isPhone]);
+
+  // Back and Forward change the page without going through the nav.
+  const address = formatLocation(location);
+  useEffect(() => closeOnPhone(), [address, closeOnPhone]);
+
+  const primitiveLabel = primitives.find(({ type }) => type === page)?.label;
+  const appPage =
+    app && isAppRoute(location)
+      ? activeAppPage(app.pages ?? [], location.path)
+      : undefined;
+  const pageKey = home
+    ? 'home'
+    : composing
+      ? 'compose'
+      : app
+        ? `app:${app.id}/${appPage?.path ?? ''}`
+        : `${route.mode}:${page}`;
+  const documentTitle = [
+    ...(home
+      ? []
+      : composing
+        ? ['Composition']
+        : app
+          ? [appPage?.title, app.title]
+          : [
+              page === GALLERY ? 'Gallery' : primitiveLabel,
+              route.mode === 'dev' ? 'Workbench' : 'Reference',
+            ]),
+    title,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  useEffect(() => {
+    document.title = documentTitle;
+  }, [documentTitle]);
+
+  const shownPage = useRef(pageKey);
+  const focusPending = useRef(false);
+  const coveredByNav = isPhone && isNavOpen;
+  useEffect(() => {
+    if (shownPage.current !== pageKey) {
+      shownPage.current = pageKey;
+      focusPending.current = true;
+    }
+    // Waits for the phone nav to close, which would otherwise hand focus back to its menu button.
+    if (focusPending.current && !coveredByNav) {
+      focusPending.current = false;
+      const panel = document.getElementById(MAIN_ID);
+      // `EuiSkipLink` drops the destination's `tabindex` when focus leaves it.
+      panel?.setAttribute('tabindex', '-1');
+      panel?.focus({ preventScroll: true });
+    }
+  }, [pageKey, coveredByNav]);
 
   const onSelectPrimitive = useCallback(
     (type: string) => navigate({ page: type, example: 0 }),
@@ -163,7 +281,12 @@ const Layout = ({
   if (home) {
     return (
       <main
+        id={MAIN_ID}
+        tabIndex={-1}
         css={css`
+          &:focus {
+            outline: none;
+          }
           height: 100vh;
           overflow: auto;
           color: ${euiTheme.colors.textParagraph};
@@ -178,6 +301,7 @@ const Layout = ({
             onColorModeChange,
             composeParams,
           }}
+          missing={isHomeRoute(location) ? location.missing : undefined}
         />
       </main>
     );
@@ -185,6 +309,13 @@ const Layout = ({
 
   return (
     <div css={shell}>
+      <EuiSkipLink
+        destinationId={MAIN_ID}
+        onClick={closeOnPhone}
+        overrideLinkBehavior
+        position="fixed">
+        Skip to content
+      </EuiSkipLink>
       <ShellBackdrop {...{ look }} />
       <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
         <StudioHeader
@@ -198,6 +329,15 @@ const Layout = ({
           }}
           onModeChange={(next) => navigate({ mode: next })}
           onHome={goHome}
+          phoneNav={
+            isPhone
+              ? {
+                  isOpen: isNavOpen,
+                  onToggle: () => setNavOpen((open) => !open),
+                  toggleRef: navToggle,
+                }
+              : undefined
+          }
         />
       </EuiThemeProvider>
       <div css={body}>
@@ -207,23 +347,50 @@ const Layout = ({
             app={app?.id}
             isComposing={composing}
             // Reopens the draft the composer last wrote, so the URL keeps sharing it.
-            onCompose={() => openComposer(composeParams)}
+            onCompose={() => {
+              openComposer(composeParams);
+              closeOnPhone();
+            }}
             appPath={isAppRoute(location) ? location.path : undefined}
             isOpen={isNavOpen}
             isCompact={isCompactNav}
+            {...{ isPhone }}
+            toggleRef={navToggle}
             onToggle={() => setNavOpen((open) => !open)}
-            onSelect={(next) =>
+            onClose={() => setNavOpen(false)}
+            onSelect={(next) => {
               navigate(
                 next === GALLERY
                   ? { mode: 'docs', page: GALLERY }
                   : { page: next, example: 0 }
-              )
-            }
-            onSelectApp={openApp}
+              );
+              closeOnPhone();
+            }}
+            onSelectApp={(id, path) => {
+              openApp(id, path);
+              closeOnPhone();
+            }}
           />
         </EuiThemeProvider>
-        <main css={[panel, main]}>
+        <main id={MAIN_ID} tabIndex={-1} css={[panel, main]}>
           <ConfigProblems problems={configProblems} />
+          {isPrimitiveRoute(location) && location.missing !== undefined ? (
+            <EuiCallOut
+              announceOnMount
+              color="warning"
+              iconType="warning"
+              size="s"
+              css={css`
+                margin: ${euiTheme.size.m};
+              `}
+              title={
+                <>
+                  No primitive at <code>{location.missing}</code>. Showing{' '}
+                  {primitiveLabel ?? 'the first primitive'} instead.
+                </>
+              }
+            />
+          ) : null}
           {app && isAppRoute(location) ? (
             <AppHost key={app.id} path={location.path} {...{ app, openApp }} />
           ) : null}
@@ -348,6 +515,7 @@ const Studio = ({
       <EuiThemeProvider
         modify={tinted ? DEV_TINT : NO_TINT}
         wrapperProps={darkWrapper}>
+        <Global styles={touchTargets} />
         <Layout
           {...{ title, router, configProblems, colorMode, onColorModeChange }}
         />

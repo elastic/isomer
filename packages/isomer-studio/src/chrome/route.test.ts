@@ -53,13 +53,43 @@ describe('parseLocation', () => {
     });
   });
 
-  it('opens Home for an unknown app, an empty hash, #/home, or an unknown first segment', () => {
-    expect(parseLocation('#/app/gone/a', docs, ['deck'])).toEqual(HOME);
-    expect(parseLocation('#/app', docs, ['deck'])).toEqual(HOME);
-    for (const hash of ['', '#', '#/', '#/home', '#/nope/callout']) {
+  it('opens Home for an empty hash or #/home', () => {
+    for (const hash of ['', '#', '#/', '#/home']) {
       expect(parseLocation(hash, docs, ['deck'])).toEqual(HOME);
     }
     expect(formatLocation(HOME)).toBe('#/home');
+  });
+
+  it('opens Home and names the hash, as written, for an unknown app or first segment', () => {
+    for (const hash of [
+      '#/app/gone/a',
+      '#app/gone/a',
+      '#/app',
+      '#/nope/callout',
+    ]) {
+      const location = parseLocation(hash, docs, ['deck']);
+      expect(location).toEqual({ home: true, missing: hash });
+      expect(formatLocation(location)).toBe('#/home');
+    }
+  });
+
+  it('names a hash that matches no primitive, and still shows the first one', () => {
+    expect(parseLocation('#/dev/gone/0', docs, [])).toEqual({
+      ...first,
+      missing: '#/dev/gone/0',
+    });
+    expect(parseLocation('#/dev/gallery', docs, [])).toHaveProperty(
+      'missing',
+      '#/dev/gallery'
+    );
+    for (const hash of [
+      '#/dev/callout/0',
+      '#/docs/gallery',
+      '#/dev',
+      '#/docs/',
+    ]) {
+      expect(parseLocation(hash, docs, [])).not.toHaveProperty('missing');
+    }
   });
 
   it('reads the composition editor and its query, and writes it back', () => {
@@ -85,7 +115,10 @@ describe('parseLocation', () => {
   });
 
   it('leaves a query on other routes to their own parsing', () => {
-    expect(parseLocation('#/compose-x', docs, [])).toEqual(HOME);
+    expect(parseLocation('#/compose-x', docs, [])).toEqual({
+      home: true,
+      missing: '#/compose-x',
+    });
     expect(parseLocation('#/dev/divider/0', docs, [])).toMatchObject({
       mode: 'dev',
       page: 'divider',
@@ -195,7 +228,7 @@ describe('useStudioRoute', () => {
     expect(result.current.route).toEqual(first);
   });
 
-  it('replaces the hash when the open app or primitive goes away', () => {
+  it('shows Home when the open app goes away, and the app again when it comes back', () => {
     window.location.hash = '#/app/deck/a';
     const length = window.history.length;
     const { result, rerender } = renderHook(
@@ -204,8 +237,14 @@ describe('useStudioRoute', () => {
     );
 
     rerender({ ids: ['other'] });
-    expect(result.current.location).toEqual(HOME);
-    expect(window.location.hash).toBe('#/home');
+    expect(result.current.location).toEqual({
+      home: true,
+      missing: '#/app/deck/a',
+    });
+    expect(window.location.hash).toBe('#/app/deck/a');
+
+    rerender({ ids: ['deck'] });
+    expect(result.current.location).toEqual({ app: 'deck', path: 'a' });
     expect(window.history.length).toBe(length);
 
     const fewer = describeRuntime(
@@ -221,6 +260,41 @@ describe('useStudioRoute', () => {
     act(() => removed.result.current.navigate({ page: 'health' }));
     removed.rerender({ current: fewer });
     expect(removed.result.current.location).toEqual(parseRoute('', fewer));
+  });
+
+  it('keeps naming a link to a missing primitive across updates, and opens it once it exists', () => {
+    const withCalloutAndDivider = describeRuntime(
+      createIsomerRuntime<unknown, StyledRenderContext>({
+        packs: [
+          definePrimitivePack({ id: 'two', primitives: [callout, divider] }),
+        ],
+      })
+    );
+    const withDivider = describeRuntime(
+      createIsomerRuntime<unknown, StyledRenderContext>({
+        packs: [definePrimitivePack({ id: 'one', primitives: [divider] })],
+      })
+    );
+    window.location.hash = '#/docs/health/0';
+    const { result, rerender } = renderHook(
+      ({ current }) => useStudioRoute(current, []),
+      { initialProps: { current: withCalloutAndDivider } }
+    );
+    expect(result.current.location).toMatchObject({
+      missing: '#/docs/health/0',
+    });
+
+    rerender({ current: withDivider });
+    expect(result.current.location).toMatchObject({
+      page: 'divider',
+      missing: '#/docs/health/0',
+    });
+    expect(window.location.hash).toBe('#/docs/health/0');
+
+    rerender({ current: docs });
+    expect(result.current.location).toEqual(
+      parseRoute('#/docs/health/0', docs)
+    );
   });
 
   it('keeps the location object when nothing it names changed', () => {

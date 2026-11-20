@@ -516,7 +516,7 @@ test.describe('static build', () => {
     expect(narrowBounds[1]!.y).toBeGreaterThan(narrowBounds[0]!.y);
     for (const surface of ['Web', 'Slack', 'Markdown', 'Text', 'PNG']) {
       await expect(
-        preview.getByRole('heading', { level: 3, name: surface })
+        preview.getByRole('heading', { level: 2, name: surface })
       ).toBeAttached();
     }
     await expect(
@@ -784,6 +784,377 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('opens the Gallery from the keyboard when a header search matches nothing', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    const search = page.locator('header').getByLabel('Search primitives');
+    await search.fill('zzzqq');
+    const gallery = page.getByRole('option', { name: /Browse all \d+/ });
+    await expect(gallery).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Gallery' })
+    ).toBeVisible();
+    await expect(page.getByRole('listbox')).toHaveCount(0);
+  });
+
+  test('keeps a long search that matches nothing inside a phone screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}#/home`);
+    await page.getByLabel('Search primitives').fill('x'.repeat(200));
+    const option = page.getByRole('option', { name: /Browse all \d+/ });
+    await expect(option).toBeVisible();
+    for (const element of [option, page.getByRole('listbox')]) {
+      const { x, width } = (await element.boundingBox())!;
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x + width).toBeLessThanOrEqual(390);
+      expect(
+        await element.evaluate(
+          ({ scrollWidth, clientWidth }) => scrollWidth <= clientWidth
+        )
+      ).toBe(true);
+    }
+  });
+
+  test('gives the nav filter placeholder 4.5:1 contrast', async ({ page }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    const ratio = await page
+      .getByRole('navigation', { name: 'Primitives' })
+      .getByLabel('Filter primitives')
+      .evaluate((input) => {
+        const rgb = (color: string) =>
+          (color.match(/[\d.]+/g) ?? []).slice(0, 4).map(Number);
+        const luminance = ([r = 0, g = 0, b = 0]: number[]) => {
+          const [lr, lg, lb] = [r, g, b].map((channel) => {
+            const c = channel / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!;
+        };
+        let background: Element | null = input;
+        let fill = rgb(getComputedStyle(input).backgroundColor);
+        while (background && (fill[3] ?? 1) === 0) {
+          background = background.parentElement;
+          fill = background
+            ? rgb(getComputedStyle(background).backgroundColor)
+            : [255, 255, 255];
+        }
+        const text = luminance(
+          rgb(getComputedStyle(input, '::placeholder').color)
+        );
+        const back = luminance(fill);
+        return (Math.max(text, back) + 0.05) / (Math.min(text, back) + 0.05);
+      });
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
+  test('names the page in the tab title', async ({ page }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expect(page).toHaveTitle(/^.+ · Workbench · .+$/);
+  });
+
+  test('moves focus to the next page after the skip link was used', async ({
+    page,
+  }) => {
+    const docsRoute = EDIT_ROUTE.replace('#/dev/', '#/docs/');
+    await page.goto(`${site.url}${docsRoute}`);
+    const main = page.locator('main').first();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(main).toBeFocused();
+    // Leaving `main` is when the skip link drops the tabindex it added.
+    await page.keyboard.press('Tab');
+    await expect(main).not.toBeFocused();
+
+    await page
+      .getByRole('group', { name: 'Studio mode' })
+      .getByRole('button', { name: 'Workbench' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`${EDIT_ROUTE}$`));
+    await expect(main).toBeFocused();
+  });
+
+  test('opens the header search from the keyboard shortcut when it is a button', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 700, height: 800 });
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    await expect(
+      page.locator('header').getByRole('button', { name: 'Search primitives' })
+    ).toBeVisible();
+    await page.keyboard.press('Control+K');
+    await expect(page.getByPlaceholder('Search all primitives')).toBeFocused();
+  });
+
+  test('opens a readable header search from a button on a 320px touch screen', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 640 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+      await page
+        .locator('header')
+        .getByRole('button', { name: 'Search primitives' })
+        .click();
+      const field = page.getByPlaceholder('Search all primitives');
+      await expect(field).toBeVisible();
+      const fits = await field.evaluate((input) => {
+        if (!(input instanceof HTMLInputElement)) {
+          return false;
+        }
+        const style = getComputedStyle(input);
+        const context2d = document.createElement('canvas').getContext('2d')!;
+        context2d.font = style.font;
+        const room =
+          input.clientWidth -
+          parseFloat(style.paddingInlineStart) -
+          parseFloat(style.paddingInlineEnd);
+        return context2d.measureText(input.placeholder).width <= room;
+      });
+      expect(fits).toBe(true);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('settles the Gallery layout once previews mount', async ({ page }) => {
+    await page.addInitScript(() => {
+      const shifts = { total: 0 };
+      const add = (entries: PerformanceEntryList) => {
+        for (const entry of entries) {
+          const shift = entry as PerformanceEntry & {
+            value: number;
+            hadRecentInput: boolean;
+          };
+          if (!shift.hadRecentInput) {
+            shifts.total += shift.value;
+          }
+        }
+      };
+      const observer = new PerformanceObserver((list) =>
+        add(list.getEntries())
+      );
+      observer.observe({ type: 'layout-shift', buffered: true });
+      Object.assign(window, {
+        shiftTotal: () => {
+          add(observer.takeRecords());
+          return shifts.total;
+        },
+      });
+    });
+    await page.goto(`${site.url}#/docs/gallery`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Gallery' })
+    ).toBeVisible();
+    // Past the first row a tile's preview is deferred, so the budget covers one that mounted late.
+    const tiles = page.locator('[inert]');
+    await expect(tiles.first()).toBeAttached();
+    const deferred = Math.min(3, (await tiles.count()) - 1);
+    await expect
+      .poll(() =>
+        tiles
+          .nth(deferred)
+          .evaluate((tile) => {
+            const host = [...tile.querySelectorAll('*')].find(
+              (element) =>
+                element.shadowRoot || element instanceof HTMLIFrameElement
+            );
+            const content =
+              host instanceof HTMLIFrameElement
+                ? host.contentDocument?.body
+                : host?.shadowRoot;
+            return (
+              Boolean(content?.textContent) &&
+              tile.getBoundingClientRect().height > 0
+            );
+          })
+          .catch(() => false)
+      )
+      .toBe(true);
+    // Two frames let the late preview paint, and so record any shift it caused.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    );
+    const total = await page.evaluate(() =>
+      (window as unknown as { shiftTotal: () => number }).shiftTotal()
+    );
+    expect(total).toBeLessThan(0.05);
+  });
+
+  test('keeps previews out of the page outline on the Workbench and Reference', async ({
+    page,
+  }) => {
+    const cdp = await page.context().newCDPSession(page);
+    // Chromium's own tree, which honors `aria-level` and reaches into shadow roots and frames.
+    const outline = async () => {
+      const {
+        frameTree: { frame, childFrames = [] },
+      } = await cdp.send('Page.getFrameTree');
+      const nodes = (
+        await Promise.all(
+          [frame, ...childFrames.map(({ frame: child }) => child)].map(
+            async ({ id }) =>
+              (await cdp.send('Accessibility.getFullAXTree', { frameId: id }))
+                .nodes
+          )
+        )
+      ).flat();
+      const level = ({ properties = [] }: (typeof nodes)[number]) =>
+        properties.find(({ name }) => name === 'level')?.value.value as unknown;
+      return {
+        main: nodes.filter(({ role }) => role?.value === 'main').length,
+        topHeadings: nodes.filter(
+          (node) => node.role?.value === 'heading' && level(node) === 1
+        ).length,
+      };
+    };
+    for (const route of [EDIT_ROUTE, EDIT_ROUTE.replace('#/dev/', '#/docs/')]) {
+      await page.goto(`${site.url}${route}`);
+      // The shell alone has one of each, so wait until every preview has rendered.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const hosts = [...document.querySelectorAll('main *')].filter(
+              (element) => element.shadowRoot
+            );
+            const frames = [...document.querySelectorAll('main iframe')].map(
+              (frame) => (frame as HTMLIFrameElement).contentDocument?.body
+            );
+            return (
+              hosts.length + frames.length > 0 &&
+              hosts.every((host) => host.shadowRoot!.childElementCount > 0) &&
+              frames.every((body) => (body?.childElementCount ?? 0) > 0)
+            );
+          })
+        )
+        .toBe(true);
+      await expect.poll(outline).toEqual({ main: 1, topHeadings: 1 });
+      // A focusable `main` ignores `role="presentation"`, so it needs a role that still applies.
+      await page.evaluate(() => {
+        const host = [...document.querySelectorAll('main *')].find(
+          (element) => element.shadowRoot
+        );
+        host?.shadowRoot!.append(
+          Object.assign(document.createElement('main'), {
+            tabIndex: -1,
+            innerHTML: '<h1>Added later</h1>',
+          })
+        );
+      });
+      await expect.poll(outline).toEqual({ main: 1, topHeadings: 1 });
+    }
+  });
+
+  test('skips to the page from the keyboard without changing the route', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to content' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main').first()).toBeFocused();
+    expect(new URL(page.url()).hash).toBe(EDIT_ROUTE);
+  });
+
+  test('opens and closes the navigation without motion when reduced motion is asked for', async ({
+    page,
+  }) => {
+    const duration = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => getComputedStyle(element).transitionDuration);
+    // The nav's column animates on a wide screen; the nav itself animates over the content below 1120px.
+    for (const [width, animated] of [
+      [1440, '#isomer-studio-main >> xpath=..'],
+      [900, 'nav[aria-label="Primitives"]'],
+    ] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+      await expect(page.locator(animated).first()).toBeVisible();
+      await expect.poll(() => duration(animated)).not.toBe('0s');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect.poll(() => duration(animated)).toBe('0s');
+    }
+  });
+
+  test('resizes the stacked Workbench by dragging its handle with a finger', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}${EDIT_ROUTE}`);
+      await expectMonacoReady(page);
+
+      const editor = page.getByRole('region', { name: 'Source editor' });
+      const before = (await editor.boundingBox())!;
+      const hitsEditor = await page.evaluate(
+        ({ x, y }) =>
+          document
+            .elementFromPoint(x, y)
+            ?.closest('[aria-label="Source editor"]') != null,
+        { x: before.x + before.width / 2, y: before.y + before.height / 2 }
+      );
+      expect(hitsEditor).toBe(true);
+
+      const handle = (await page
+        .locator('.euiResizableButton')
+        .first()
+        .boundingBox())!;
+      expect(handle.height).toBeGreaterThanOrEqual(44);
+      const scrollTop = () =>
+        page
+          .locator('main')
+          .first()
+          .evaluate((main) => main.scrollTop);
+      const scrolledBefore = await scrollTop();
+
+      const x = handle.x + handle.width / 2;
+      const y = handle.y + handle.height / 2;
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y }],
+      });
+      for (let step = 1; step <= 10; step += 1) {
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x, y: y + step * 12 }],
+        });
+      }
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      });
+
+      await expect
+        .poll(async () => (await editor.boundingBox())!.height)
+        .toBeGreaterThan(before.height + 60);
+      expect(await scrollTop()).toBe(scrolledBefore);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('keeps the Reference example usable on a mobile viewport', async ({
     page,
   }) => {
@@ -808,7 +1179,7 @@ test.describe('static build', () => {
       )
       .toBe(true);
     await expect(
-      page.getByRole('button', { name: 'Expand primitive navigation' })
+      page.getByRole('button', { name: 'Primitive navigation' })
     ).toHaveAttribute('aria-expanded', 'false');
     await expect(
       views.getByRole('button', { name: 'Example source' })
@@ -820,6 +1191,147 @@ test.describe('static build', () => {
     await rendered.focus();
     await page.keyboard.press('Enter');
     await expect(rendered).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('opens the phone navigation as a modal drawer over the Workbench', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    const menu = page.getByRole('button', { name: 'Primitive navigation' });
+    const nav = page.getByRole('navigation', { name: 'Primitives' });
+
+    await menu.focus();
+    await page.keyboard.press('Enter');
+    await expect(nav).toBeFocused();
+    // The page behind the drawer is hidden from assistive technology, apart from its live regions.
+    const exposedControls = () =>
+      page
+        .getByRole('button')
+        .or(page.getByRole('link'))
+        .or(page.getByRole('textbox'))
+        .evaluateAll(
+          (controls) =>
+            controls.filter(
+              (control) =>
+                !control.closest('nav[aria-label="Primitives"]') &&
+                control.getAttribute('aria-label') !== 'Primitive navigation'
+            ).length
+        );
+    await expect.poll(exposedControls).toBe(0);
+    for (let tab = 0; tab < 40; tab += 1) {
+      await page.keyboard.press('Tab');
+      expect(
+        await page.evaluate(
+          () =>
+            document.activeElement?.closest(
+              'nav[aria-label="Primitives"], [aria-label="Primitive navigation"]'
+            ) != null
+        )
+      ).toBe(true);
+    }
+    // A focused entry's tooltip takes the first Escape.
+    await nav.focus();
+    await page.keyboard.press('Escape');
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    await menu.click();
+    const handle = (await page
+      .locator('.euiResizableButton')
+      .first()
+      .boundingBox())!;
+    const onHandle = await page.evaluate(
+      ({ x, y }) =>
+        document
+          .elementFromPoint(x, y)
+          ?.closest('nav[aria-label="Primitives"]') != null,
+      { x: 40, y: handle.y + handle.height / 2 }
+    );
+    expect(onHandle).toBe(true);
+    // The backdrop takes no focus, so the menu button gets it back.
+    await page.mouse.click(380, 600);
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    await menu.click();
+    await nav.getByRole('button', { name: 'Composition' }).click();
+    await expect(nav).toBeHidden();
+    await expect(page.locator('main').first()).toBeFocused();
+
+    await menu.click();
+    await nav
+      .getByRole('button', { name: 'Collapse primitive navigation' })
+      .click();
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    // Escape while the backdrop is still pressed closes it, and the release does not reopen it.
+    await menu.click();
+    await page.mouse.move(380, 600);
+    await page.mouse.down();
+    await page.keyboard.press('Escape');
+    await expect(nav).toBeHidden();
+    await page.mouse.up();
+    await page.waitForTimeout(100);
+    await expect(nav).toBeHidden();
+
+    // The page takes no pointer events while the drawer is open, so a click on a header control only dismisses it.
+    await menu.click();
+    const colorMode = page.locator('header button[aria-label^="Color mode: "]');
+    const label = await colorMode.getAttribute('aria-label');
+    const { x, y, width, height } = (await colorMode.boundingBox())!;
+    await page.mouse.click(x + width / 2, y + height / 2);
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+    await expect(colorMode).toHaveAttribute('aria-label', label!);
+
+    const before = page.url();
+    await menu.click();
+    await nav.getByRole('button', { name: 'Gallery', exact: true }).click();
+    await expect(nav).toBeHidden();
+    await expect(page).not.toHaveURL(before);
+    await expect(page.locator('main').first()).toBeFocused();
+    await menu.click();
+    await expect(nav).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(before);
+    await expect(nav).toBeHidden();
+    await expect(page.locator('main').first()).toBeFocused();
+  });
+
+  test('fits the header on a 320px touch screen', async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 640 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}#/docs/slidePipeline/0`);
+      const header = page.locator('header').first();
+      await expect(
+        header.getByRole('button', { name: 'Primitive navigation' })
+      ).toBeVisible();
+      const controls = await header.evaluate((element) =>
+        [...element.querySelectorAll('a, button, input')]
+          .map((control) => {
+            const { left, right, width } = control.getBoundingClientRect();
+            return { label: control.ariaLabel, left, right, width };
+          })
+          .filter(({ width }) => width > 0)
+          .sort((a, b) => a.left - b.left)
+      );
+      for (const [index, { left, right }] of controls.entries()) {
+        expect(left).toBeGreaterThanOrEqual(0);
+        expect(right).toBeLessThanOrEqual(320);
+        if (index > 0) {
+          expect(left).toBeGreaterThanOrEqual(controls[index - 1]!.right - 1);
+        }
+      }
+    } finally {
+      await context.close();
+    }
   });
 
   test('scrolls only the content when jumping within a Reference page', async ({
@@ -1066,8 +1578,68 @@ test.describe('static build', () => {
       );
       expect(background > 128).toBe(colorScheme === 'light');
       expect(Math.abs(background - heading)).toBeGreaterThan(128);
+
+      const hero = await panel
+        .getByRole('heading', { level: 1 })
+        .evaluate((element) => {
+          const section = element.closest('section')!;
+          const style = getComputedStyle(section);
+          return {
+            color: style.backgroundColor,
+            glows: style.backgroundImage.split('radial-gradient').length - 1,
+            width: section.getBoundingClientRect().width,
+            page: section.closest('main')!.clientWidth,
+            divider: style.borderBottomWidth,
+          };
+        });
+      expect(lightness(hero.color) > 128).toBe(colorScheme === 'light');
+      expect(hero.glows).toBe(3);
+      // The hairline spans Home's scrolling page, under the full-width background.
+      expect(hero.width).toBe(hero.page);
+      expect(hero.divider).not.toBe('0px');
     });
   }
+
+  test("keeps each Gallery tile's Workbench button inside its tile in three narrow columns", async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs a group with at least three examples, as the repository pack has'
+    );
+    await page.setViewportSize({ width: 800, height: 900 });
+    await page.goto(`${site.url}#/docs/gallery`);
+    const tiles = page.locator('main .euiPanel:has([inert])');
+    await expect(tiles.first()).toBeVisible();
+    for (const tile of await tiles.all()) {
+      await expect(
+        tile.getByRole('link', { name: /^Open .+ in Workbench$/ })
+      ).toBeVisible();
+    }
+    const measured = await tiles.evaluateAll((panels) =>
+      panels.map((panel) => {
+        const tile = panel.getBoundingClientRect();
+        const link = panel
+          .querySelector('a[aria-label$=" in Workbench"]')
+          ?.getBoundingClientRect();
+        return {
+          top: tile.top,
+          inside: Boolean(
+            link && link.left >= tile.left && link.right <= tile.right
+          ),
+        };
+      })
+    );
+    const [first] = measured;
+    expect(measured.filter(({ top }) => top === first!.top)).toHaveLength(3);
+    expect(measured.filter(({ inside }) => !inside)).toEqual([]);
+    expect(
+      await page
+        .locator('main')
+        .first()
+        .evaluate(({ scrollWidth, clientWidth }) => scrollWidth <= clientWidth)
+    ).toBe(true);
+  });
 });
 
 test.describe('decks', () => {
@@ -1084,6 +1656,23 @@ test.describe('decks', () => {
 
   test.afterAll(async () => {
     await site.close();
+  });
+
+  test('draws a focus ring around a deck tile', async ({ page }) => {
+    await page.goto(`${site.url}#/dev`);
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    const tile = page
+      .locator('main')
+      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .first();
+    await expect(tile).toBeVisible();
+    await page.keyboard.press('Shift');
+    await tile.focus();
+    const ring = await tile.evaluate((element) => ({
+      position: getComputedStyle(element).position,
+      outline: getComputedStyle(element, '::after').outlineStyle,
+    }));
+    expect(ring).toEqual({ position: 'relative', outline: 'solid' });
   });
 
   test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({
@@ -1699,7 +2288,7 @@ test.describe('dev server reload', () => {
 
     await writeOptions('App reload', false);
 
-    await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
   });
 
@@ -1723,7 +2312,9 @@ test.describe('dev server reload', () => {
         .length - 1;
     await page.goto(`${dev.url}#/app/counter/`);
     await writeOptions('Fonts config only', true);
-    await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts config only', {
+      timeout: 60_000,
+    });
     writeFonts('"changed after config reload"');
     await expect
       .poll(postPdf, { timeout: 60_000 })
@@ -1734,13 +2325,17 @@ test.describe('dev server reload', () => {
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
 
     await writeOptions('Fonts disabled', true, false);
-    await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts disabled', {
+      timeout: 60_000,
+    });
     expect(await postPdf()).toContain('404');
     const errorsBefore = fontErrors();
     writeFonts('"not a list"');
     await delay(100);
     await writeOptions('Fonts enabled', true);
-    await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts enabled', {
+      timeout: 60_000,
+    });
     await expect
       .poll(postPdf, { timeout: 60_000 })
       .toBe('400 Could not render PDF.');

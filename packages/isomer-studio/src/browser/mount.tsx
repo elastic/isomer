@@ -70,7 +70,6 @@ export const mountStudio = (
     if (images) {
       problems.push(images);
     }
-    document.title = next.title ?? 'Isomer Studio';
     root.render(
       <IsomerStudio
         {...withSnapshotFrame(next)}

@@ -5,16 +5,26 @@
  * 2.0.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { EuiCodeBlock, EuiMarkdownFormat } from '@elastic/eui';
 
 import { formatSource } from './format_source';
 import type { SurfaceOutput } from './render_output';
+import { observeQuietPreview } from './shadow_root';
 
 /** Markdown as a reader sees it. */
-export const MarkdownSurface = ({ markdown }: { markdown: string }) => (
-  <EuiMarkdownFormat textSize="m">{markdown}</EuiMarkdownFormat>
-);
+export const MarkdownSurface = ({ markdown }: { markdown: string }) => {
+  const host = useRef<HTMLDivElement>(null);
+  useLayoutEffect(
+    () => (host.current ? observeQuietPreview(host.current) : undefined),
+    []
+  );
+  return (
+    <div ref={host}>
+      <EuiMarkdownFormat textSize="m">{markdown}</EuiMarkdownFormat>
+    </div>
+  );
+};
 
 /** Plain text, which looks the same rendered as it does as source. */
 export const TextSurface = ({ text }: { text: string }) => (

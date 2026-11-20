@@ -114,6 +114,7 @@ export const ExamplesPanel = ({
         `}>
         <SurfaceBoard
           surfaces={showing}
+          headingLevel={3}
           view={view === 'example' ? 'render' : view}
           {...{ composition, validation }}
           errorHref={devHref}

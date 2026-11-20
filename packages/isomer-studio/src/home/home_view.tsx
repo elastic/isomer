@@ -10,6 +10,7 @@ import React, { useMemo } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiCallOut,
   EuiCard,
   EuiDescriptionList,
   EuiEmptyPrompt,
@@ -25,6 +26,7 @@ import {
   EuiStat,
   EuiText,
   EuiTitle,
+  useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
@@ -40,6 +42,7 @@ import {
 import { Glyph, PrimitiveGlyph } from '../chrome/primitive_glyph';
 import { PrimitiveSearch } from '../chrome/primitive_search';
 import { formatLocation, formatRoute, GALLERY } from '../chrome/route';
+import { shellBackground } from '../chrome/shell_background';
 import type { ComposeParams } from '../model/compose_link';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { pickFeatured } from '../model/featured';
@@ -136,7 +139,7 @@ const FeaturedCard = ({ doc }: { doc: PrimitiveDoc }) => {
           </EuiButtonEmpty>
         </EuiFlexGroup>
       }>
-      <EuiText size="xs" color="subdued">
+      <EuiText size="s" color="subdued">
         <code>{group}</code>
       </EuiText>
     </EuiCard>
@@ -198,6 +201,7 @@ export const HomeView = ({
   colorMode,
   onColorModeChange,
   composeParams,
+  missing,
 }: {
   title: string;
   onSelectPrimitive: (type: string) => void;
@@ -205,6 +209,8 @@ export const HomeView = ({
   onColorModeChange: (colorMode: ColorModePreference) => void;
   /** What the composer last showed, so Compose reopens it. */
   composeParams?: ComposeParams | undefined;
+  /** The address that matched no page, which Home is showing in its place. */
+  missing?: string | undefined;
 }) => {
   const {
     runtime: { packs },
@@ -220,28 +226,57 @@ export const HomeView = ({
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
   const first = groups[0]?.types[0] ?? primitives[0]?.type ?? '';
   const packNames = new Intl.ListFormat('en').format(packs.map(({ id }) => id));
+  const { euiTheme } = useEuiTheme();
 
   return (
     <div data-testid="home">
-      <EuiPageSection restrictWidth={WIDTH} paddingSize="xl">
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        paddingSize="xl"
+        bottomBorder="extended"
+        css={shellBackground(euiTheme, 'docs')}>
         <EuiFlexGroup
           justifyContent="spaceBetween"
           alignItems="center"
           responsive={false}>
-          <EuiText size="s" color="subdued">
+          <EuiText size="s">
             <strong>{title}</strong>
           </EuiText>
           <ColorModePicker {...{ colorMode, onColorModeChange }} />
         </EuiFlexGroup>
+        {missing === undefined ? null : (
+          <>
+            <EuiSpacer size="m" />
+            <EuiCallOut
+              announceOnMount
+              color="warning"
+              iconType="warning"
+              size="s"
+              title={
+                <>
+                  No page at <code>{missing}</code>. Showing Home instead.
+                </>
+              }
+            />
+          </>
+        )}
         <EuiSpacer size="xl" />
         <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
           <EuiFlexItem grow={2} css={heroCopy}>
             <EuiTitle size="l">
-              <h1>What are we rendering today?</h1>
+              <h1
+                css={css`
+                  text-wrap: balance;
+                `}>
+                What are we rendering today?
+              </h1>
             </EuiTitle>
             <EuiSpacer size="s" />
             <EuiText size="m">
-              <p>
+              <p
+                css={css`
+                  text-wrap: pretty;
+                `}>
                 Learn every primitive of {packNames}, edit it live, and see one
                 composition render on every surface your product speaks.
               </p>
@@ -406,7 +441,6 @@ export const HomeView = ({
         <EuiFlexGrid columns={3} gutterSize="l">
           <Loaded title="Primitive packs" count={packs.length}>
             <EuiDescriptionList
-              compressed
               listItems={packs.map(({ id, primitives: types, authoring }) => {
                 const groupCount = authoring?.groups?.length ?? 0;
                 return {
@@ -422,7 +456,6 @@ export const HomeView = ({
           <Loaded title="Apps" count={apps.length}>
             {apps.length ? (
               <EuiDescriptionList
-                compressed
                 listItems={apps.map(
                   ({ id, title: name, description, icon }) => ({
                     title: (
@@ -450,7 +483,6 @@ export const HomeView = ({
           <Loaded title="Views" count={views.length}>
             {views.length ? (
               <EuiDescriptionList
-                compressed
                 listItems={views.map(({ id, title: name, description }) => ({
                   title: <code>{id}</code>,
                   description: description || name,

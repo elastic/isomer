@@ -10,12 +10,16 @@ import React, { useId, useState } from 'react';
 import { EuiPanel, EuiResizableContainer, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 
+import { NAV_WIDTH } from '../chrome/nav';
 import type { PrimitiveDoc, StudioSurface } from '../model/describe_runtime';
 
 import { WorkbenchStatus } from './editor_panel';
 import { PreviewPanel } from './preview_panel';
 import { PropReference } from './prop_reference';
 import type { EditorState } from './use_editor';
+
+/** The toolbar and a few lines of source. */
+const STACKED_SOURCE_MIN = '160px';
 
 export interface WorkbenchProps {
   heading: ReactNode;
@@ -53,6 +57,10 @@ export const Workbench = ({
         display: flex;
         flex-direction: column;
         padding: ${euiTheme.size.l};
+        @media (max-width: ${NAV_WIDTH.phoneAt}px) {
+          padding: ${euiTheme.size.s};
+          min-height: 60rem;
+        }
       `}>
       <div
         css={css`
@@ -76,12 +84,21 @@ export const Workbench = ({
           css={css`
             flex: 1;
             min-height: 0;
+            .euiResizableButton {
+              touch-action: none;
+            }
+            @media (pointer: coarse) {
+              .euiResizableButton {
+                min-block-size: 44px;
+                min-inline-size: 44px;
+              }
+            }
           `}>
           {(Panel, Resizer) => (
             <>
               <Panel
                 initialSize={40}
-                minSize="360px"
+                minSize={stacked ? STACKED_SOURCE_MIN : '360px'}
                 paddingSize="none"
                 color="transparent">
                 {source}

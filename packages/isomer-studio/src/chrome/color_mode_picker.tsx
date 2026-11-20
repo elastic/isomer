@@ -24,31 +24,54 @@ const COLOR_MODES: {
 const isColorMode = (id: string): id is ColorModePreference =>
   COLOR_MODES.some((option) => option.id === id);
 
-/** System, Light and Dark, as icon buttons. */
+/** System, Light and Dark, as icon buttons, or as one button that steps through them when `compact`. */
 export const ColorModePicker = ({
   colorMode,
   onColorModeChange,
+  compact = false,
 }: {
   colorMode: ColorModePreference;
   onColorModeChange: (colorMode: ColorModePreference) => void;
-}) => (
-  <EuiButtonGroup
-    css={css`
-      flex: none;
-    `}
-    legend="Color mode"
-    buttonSize="s"
-    variant="selection"
-    idSelected={colorMode}
-    display="highlighted"
-    onChange={(id) => isColorMode(id) && onColorModeChange(id)}>
-    {COLOR_MODES.map(({ id, label, iconType }) => (
+  compact?: boolean | undefined;
+}) => {
+  if (compact) {
+    const index = Math.max(
+      0,
+      COLOR_MODES.findIndex(({ id }) => id === colorMode)
+    );
+    const { label, iconType } = COLOR_MODES[index]!;
+    const { id: next } = COLOR_MODES[(index + 1) % COLOR_MODES.length]!;
+    return (
       <EuiButtonIcon
-        key={id}
-        {...{ id, iconType }}
-        aria-label={label}
-        title={label}
+        display="empty"
+        color="text"
+        size="s"
+        {...{ iconType }}
+        aria-label={`Color mode: ${label}`}
+        title={`Color mode: ${label}`}
+        onClick={() => onColorModeChange(next)}
       />
-    ))}
-  </EuiButtonGroup>
-);
+    );
+  }
+  return (
+    <EuiButtonGroup
+      css={css`
+        flex: none;
+      `}
+      legend="Color mode"
+      buttonSize="s"
+      variant="selection"
+      idSelected={colorMode}
+      display="highlighted"
+      onChange={(id) => isColorMode(id) && onColorModeChange(id)}>
+      {COLOR_MODES.map(({ id, label, iconType }) => (
+        <EuiButtonIcon
+          key={id}
+          {...{ id, iconType }}
+          aria-label={label}
+          title={label}
+        />
+      ))}
+    </EuiButtonGroup>
+  );
+};

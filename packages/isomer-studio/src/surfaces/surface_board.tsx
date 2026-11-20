@@ -30,6 +30,8 @@ import type { SurfaceView } from './surface_preview';
 import { SurfaceRender } from './surface_render';
 
 interface RenderProps {
+  /** The level of each output's title, one below the heading the board sits under. */
+  headingLevel: 2 | 3;
   composition: Composition;
   validation: ValidationResult;
   view: SurfaceView;
@@ -40,6 +42,7 @@ interface RenderProps {
 
 const SurfaceCard = ({
   surface,
+  headingLevel,
   composition,
   validation,
   view,
@@ -60,6 +63,7 @@ const SurfaceCard = ({
 }) => {
   const { euiTheme } = useEuiTheme();
   const label = title ?? SURFACE_CATALOG[surface].label;
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const clipsRender = view === 'render' && isVisualSurface(surface);
   const background = usePreviewBackground();
 
@@ -86,18 +90,18 @@ const SurfaceCard = ({
           border-bottom: ${euiTheme.border.thin};
         `}>
         <EuiIcon type={SURFACE_ICONS[surface]} size="m" aria-hidden={true} />
-        <EuiText size="xs">
-          <h3
+        <EuiText size="s">
+          <Heading
             css={css`
               margin: 0;
               font-size: inherit;
               line-height: inherit;
             `}>
             <strong>{label}</strong>
-          </h3>
+          </Heading>
         </EuiText>
         <EuiText
-          size="xs"
+          size="s"
           color="subdued"
           css={css`
             flex: 1 1 100%;
@@ -180,6 +184,7 @@ export interface SurfaceBoardProps extends RenderProps {
 /** One surface at full size, or several in a vertical list. */
 export const SurfaceBoard = ({
   surfaces,
+  headingLevel,
   composition,
   validation,
   view,
@@ -222,9 +227,10 @@ export const SurfaceBoard = ({
   const otherSurfaces = surfaces.filter((surface) => !isVisualSurface(surface));
 
   if (surfaces.length === 1 && only && !isBrowserSurface(only)) {
+    const Heading = headingLevel === 2 ? 'h2' : 'h3';
     return (
       <section aria-labelledby={`surface-heading-${only}`}>
-        <h2
+        <Heading
           id={`surface-heading-${only}`}
           css={css`
             position: absolute;
@@ -238,7 +244,7 @@ export const SurfaceBoard = ({
             border: 0;
           `}>
           {SURFACE_CATALOG[only].label} preview
-        </h2>
+        </Heading>
         <SurfaceRender
           surface={only}
           {...{ composition, validation, view, zoom, errorHref }}
@@ -251,7 +257,7 @@ export const SurfaceBoard = ({
     items.map((surface) => (
       <SurfaceCard
         key={surface}
-        {...{ surface, composition, validation, view, errorHref }}
+        {...{ surface, headingLevel, composition, validation, view, errorHref }}
       />
     ));
 
@@ -274,6 +280,7 @@ export const SurfaceBoard = ({
             {activeSurface ? (
               <SurfaceCard
                 surface={activeSurface}
+                {...{ headingLevel }}
                 title={outputLabel(activeSurface)}
                 note={
                   activeSurface === 'html'

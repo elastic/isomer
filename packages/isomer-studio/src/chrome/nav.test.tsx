@@ -58,6 +58,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
           page="callout"
           isOpen
           {...{ onToggle, onCompose }}
+          onClose={() => undefined}
           onSelect={() => undefined}
           {...{ onSelectApp }}
           {...props}
@@ -109,10 +110,11 @@ describe('StudioNav app pages', () => {
       'Isomer, slide 3',
       'Draft A',
     ]);
-    expect(texts(within(list).getAllByRole('heading'))).toEqual([
-      'Shown',
-      'Drafts',
-    ]);
+    expect(
+      within(list)
+        .getAllByRole('list')
+        .map((section) => section.getAttribute('aria-label'))
+    ).toEqual(['Shown', 'Drafts']);
     expect(
       texts(
         within(within(list).getByRole('list', { name: 'Drafts' })).getAllByRole(
@@ -149,7 +151,7 @@ describe('StudioNav app pages', () => {
     expect(texts(within(pageList()).getAllByRole('button'))).toEqual([
       'Isomer, slide 3',
     ]);
-    expect(within(pageList()).getAllByRole('heading')).toHaveLength(1);
+    expect(within(pageList()).getAllByRole('list')).toHaveLength(1);
 
     fireEvent.change(
       within(nav).getByRole('searchbox', { name: 'Filter primitives' }),

@@ -103,6 +103,7 @@ export const PreviewPanel = ({
         `}>
         <SurfaceBoard
           surfaces={showing}
+          headingLevel={2}
           {...{ composition, validation, view, zoom }}
         />
       </div>

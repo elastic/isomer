@@ -17,6 +17,7 @@ import {
   within,
 } from '@testing-library/react';
 
+import { NAV_WIDTH } from './chrome/nav';
 import { componentsPrimitives } from './fixtures/components_pack';
 import { findEditor, renderStudio, runtime } from './fixtures/studio_harness';
 import { IsomerStudio } from './studio';
@@ -70,6 +71,19 @@ describe('IsomerStudio', () => {
     expect(window.location.hash).toBe('#/home');
   });
 
+  it('names a link that matches no page on Home, and drops the notice on the next page', async () => {
+    window.location.hash = '#nope/zzz';
+    render(<IsomerStudio {...{ runtime }} />);
+    const home = await screen.findByTestId('home');
+    expect(within(home).getByText('#nope/zzz')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#nope/zzz');
+
+    window.location.hash = '#/home';
+    await waitFor(() =>
+      expect(within(home).queryByText(/No page at/)).not.toBeInTheDocument()
+    );
+  });
+
   it('opens a searched primitive from Home in the mode last used', async () => {
     window.location.hash = '#/docs/divider/0';
     render(<IsomerStudio {...{ runtime }} />);
@@ -87,13 +101,84 @@ describe('IsomerStudio', () => {
     expect(screen.getByLabelText('Search primitives')).not.toBe(search);
   });
 
+  it('offers a skip link that moves focus to the page without changing the route', async () => {
+    window.location.hash = '#/docs/callout/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    await screen.findByRole('heading', { level: 1, name: 'Callout' });
+
+    const skip = screen.getByRole('link', { name: 'Skip to content' });
+    fireEvent.click(skip);
+
+    expect(screen.getByRole('main')).toHaveFocus();
+    expect(window.location.hash).toBe('#/docs/callout/0');
+  });
+
+  it('names each page in the document title and moves focus to the page when it changes', async () => {
+    window.location.hash = '#/docs/callout/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    await screen.findByRole('heading', { level: 1, name: 'Callout' });
+    expect(document.title).toBe('Callout · Reference · Isomer Studio');
+    expect(screen.getByRole('main')).not.toHaveFocus();
+
+    fireEvent.click(
+      within(screen.getByRole('navigation', { name: 'Primitives' })).getByRole(
+        'button',
+        { name: 'Divider' }
+      )
+    );
+    await waitFor(() =>
+      expect(document.title).toBe('Divider · Reference · Isomer Studio')
+    );
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+
+    fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+    await screen.findByTestId('home');
+    expect(document.title).toBe('Isomer Studio');
+  });
+
+  it('says when a link names no primitive, and clears the notice on the next page', async () => {
+    window.location.hash = '#/docs/gone/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    expect(await screen.findAllByText('#/docs/gone/0')).not.toHaveLength(0);
+    expect(screen.getAllByText(/No primitive at/)).not.toHaveLength(0);
+
+    fireEvent.click(
+      within(screen.getByRole('navigation', { name: 'Primitives' })).getByRole(
+        'button',
+        { name: 'Divider' }
+      )
+    );
+    await waitFor(() =>
+      expect(screen.queryAllByText(/No primitive at/)).toHaveLength(0)
+    );
+  });
+
+  it('offers the Gallery, once, as the result of a search that matches nothing', async () => {
+    window.location.hash = '#/home';
+    render(<IsomerStudio {...{ runtime }} />);
+    const search = await screen.findByLabelText('Search primitives');
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'zzzqq' } });
+
+    const gallery = await screen.findByRole('option', {
+      name: /Browse all \d+ primitives in the Gallery/,
+    });
+    expect(screen.getAllByRole('option')).toEqual([gallery]);
+    expect(gallery).toHaveTextContent('No primitive matches “zzzqq”');
+    expect(screen.queryAllByRole('link', { name: /browse all/i })).toEqual([]);
+
+    fireEvent.click(gallery);
+    await waitFor(() => expect(window.location.hash).toBe('#/docs/gallery'));
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
+  });
+
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {
     await renderStudio();
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     const headings = () =>
       within(nav)
-        .getAllByRole('heading')
-        .map(({ textContent }) => textContent);
+        .getAllByRole('group')
+        .map((group) => group.getAttribute('aria-label'));
     const labels = () =>
       within(nav)
         .getAllByRole('listitem')
@@ -207,7 +292,7 @@ describe('IsomerStudio', () => {
     const matchMedia = window.matchMedia.bind(window);
     window.matchMedia = (query) => ({
       ...matchMedia(query),
-      matches: query.includes('max-width'),
+      matches: query.includes(`${NAV_WIDTH.compactAt}px`),
     });
     try {
       window.location.hash = '#/docs/callout/0';
@@ -224,6 +309,46 @@ describe('IsomerStudio', () => {
       expect(
         screen.getByRole('button', { name: 'Collapse primitive navigation' })
       ).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      window.matchMedia = matchMedia;
+    }
+  });
+
+  it('hides the rail on a phone and opens the navigation from the header, closing it on a pick', async () => {
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      await screen.findByRole('heading', { level: 1, name: 'Callout' });
+
+      const nav = document.querySelector<HTMLElement>(
+        'nav[aria-label="Primitives"]'
+      )!;
+      expect(nav).toHaveStyle({ display: 'none' });
+      const menu = screen.getByRole('button', {
+        name: 'Primitive navigation',
+      });
+      expect(menu).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(menu);
+      expect(menu).toHaveAttribute('aria-expanded', 'true');
+      expect(nav).not.toHaveStyle({ display: 'none' });
+
+      fireEvent.click(within(nav).getByRole('button', { name: /Divider/ }));
+      await waitFor(() => expect(nav).toHaveStyle({ display: 'none' }));
+      expect(window.location.hash).toContain('divider');
+
+      fireEvent.click(menu);
+      expect(nav).not.toHaveStyle({ display: 'none' });
+      fireEvent.click(screen.getByRole('link', { name: 'Skip to content' }));
+      expect(nav).toHaveStyle({ display: 'none' });
+      expect(
+        screen.getByRole('button', { name: 'Color mode: System' })
+      ).toBeInTheDocument();
     } finally {
       window.matchMedia = matchMedia;
     }
@@ -260,8 +385,8 @@ describe('IsomerStudio', () => {
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     const headings = () =>
       within(nav)
-        .getAllByRole('heading')
-        .map(({ textContent }) => textContent);
+        .getAllByRole('group')
+        .map((group) => group.getAttribute('aria-label'));
     expect(headings()).toEqual([
       'Narrative',
       'Narrative and content',
@@ -347,5 +472,36 @@ describe('IsomerStudio', () => {
     expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
       'system'
     );
+  });
+
+  it('steps through the color modes from one button on a phone', async () => {
+    window.localStorage.removeItem('isomer-studio:color-mode');
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      await screen.findByRole('heading', { level: 1, name: 'Callout' });
+      expect(screen.queryByRole('button', { name: 'Dark' })).toBeNull();
+
+      for (const [label, stored] of [
+        ['Light', 'light'],
+        ['Dark', 'dark'],
+        ['System', 'system'],
+      ]) {
+        fireEvent.click(screen.getByRole('button', { name: /^Color mode: / }));
+        expect(
+          screen.getByRole('button', { name: `Color mode: ${label}` })
+        ).toBeInTheDocument();
+        expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
+          stored
+        );
+      }
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 });

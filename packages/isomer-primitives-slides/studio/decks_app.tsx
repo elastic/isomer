@@ -285,7 +285,7 @@ const DeckCard = ({
       caption={
         <>
           <EuiTitle size="xxs">
-            <h3>{title}</h3>
+            <h2>{title}</h2>
           </EuiTitle>
           {loaded && 'deck' in loaded ? (
             <EuiText size="xs" color="subdued">
@@ -324,7 +324,7 @@ const DeckList = ({
 }: Pick<StudioAppProps, 'Preview' | 'theme' | 'navigate'>) => (
   <div className={styles.page}>
     <EuiTitle size="s">
-      <h2>Decks</h2>
+      <h1>Decks</h1>
     </EuiTitle>
     <ul className={styles.grid}>
       {deckCatalog.map((entry) => (
@@ -366,7 +366,7 @@ const DeckSlides = ({
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiTitle size="s">
-            <h2>{title}</h2>
+            <h1>{title}</h1>
           </EuiTitle>
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
@@ -579,7 +579,7 @@ const SlideStage = ({
         </EuiFlexItem>
         <EuiFlexItem>
           <EuiTitle size="xs">
-            <h2>{composition.title ?? `Slide ${slide + 1}`}</h2>
+            <h1>{composition.title ?? `Slide ${slide + 1}`}</h1>
           </EuiTitle>
         </EuiFlexItem>
         {isSlide && stepCount > 0 ? (

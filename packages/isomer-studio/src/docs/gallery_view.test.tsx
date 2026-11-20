@@ -45,7 +45,8 @@ class MockObserver {
     private readonly callback: (
       entries: IntersectionObserverEntry[],
       observer: MockObserver
-    ) => void
+    ) => void,
+    readonly options?: IntersectionObserverInit
   ) {
     MockObserver.observers.push(this);
   }
@@ -57,6 +58,13 @@ class MockObserver {
   intersect() {
     this.callback(
       [{ isIntersecting: true } as IntersectionObserverEntry],
+      this
+    );
+  }
+
+  leave() {
+    this.callback(
+      [{ isIntersecting: false } as IntersectionObserverEntry],
       this
     );
   }
@@ -98,9 +106,55 @@ describe('GalleryView', () => {
     });
 
     expect(previews()).toHaveLength(exampleCount);
-    for (const observer of previewObservers()) {
-      expect(observer.disconnect).toHaveBeenCalled();
+
+    act(() => {
+      previewObservers().forEach((observer) => observer.leave());
+    });
+
+    expect(previews()).toHaveLength(GALLERY_COLUMNS);
+  });
+
+  it('keeps every preview, and the landmarks inside it, out of the accessibility tree', () => {
+    render(<IsomerStudio {...{ runtime }} />);
+    act(() => {
+      previewObservers().forEach((observer) => observer.intersect());
+    });
+
+    expect(previews()).toHaveLength(exampleCount);
+    for (const preview of previews()) {
+      expect(preview.closest('[aria-hidden="true"]')).not.toBeNull();
+      expect(preview.closest('[inert]')).not.toBeNull();
     }
+  });
+
+  it('watches from the scrolling page, and keeps an unmounted preview at the shape it had', () => {
+    render(<IsomerStudio {...{ runtime }} />);
+    const [first, second] = previewObservers();
+    expect(first!.options?.root).toBe(screen.getByRole('main'));
+    const placeholders = () =>
+      document.querySelectorAll<HTMLElement>('[inert] > div:empty');
+    const before = placeholders().length;
+
+    const size = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockReturnValue(300);
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(400);
+    try {
+      act(() => second!.leave());
+      act(() => first!.intersect());
+      act(() => first!.leave());
+    } finally {
+      size.mockRestore();
+      vi.restoreAllMocks();
+    }
+
+    const shaped = [...placeholders()].filter(({ style }) =>
+      Boolean(style.aspectRatio)
+    );
+    expect(placeholders()).toHaveLength(before);
+    expect(shaped.map(({ style }) => style.aspectRatio)).toEqual([
+      String(400 / 300),
+    ]);
   });
 
   it('lists each group in an "On this page" gutter', () => {
