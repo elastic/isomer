@@ -10,6 +10,7 @@ import React, { useMemo } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiCallOut,
   EuiCard,
   EuiDescriptionList,
   EuiEmptyPrompt,
@@ -198,6 +199,7 @@ export const HomeView = ({
   colorMode,
   onColorModeChange,
   composeParams,
+  missing,
 }: {
   title: string;
   onSelectPrimitive: (type: string) => void;
@@ -205,6 +207,8 @@ export const HomeView = ({
   onColorModeChange: (colorMode: ColorModePreference) => void;
   /** What the composer last showed, so Compose reopens it. */
   composeParams?: ComposeParams | undefined;
+  /** The address that matched no page, which Home is showing in its place. */
+  missing?: string | undefined;
 }) => {
   const {
     runtime: { packs },
@@ -233,6 +237,22 @@ export const HomeView = ({
           </EuiText>
           <ColorModePicker {...{ colorMode, onColorModeChange }} />
         </EuiFlexGroup>
+        {missing === undefined ? null : (
+          <>
+            <EuiSpacer size="m" />
+            <EuiCallOut
+              announceOnMount
+              color="warning"
+              iconType="warning"
+              size="s"
+              title={
+                <>
+                  No page at <code>{missing}</code>. Showing Home instead.
+                </>
+              }
+            />
+          </>
+        )}
         <EuiSpacer size="xl" />
         <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
           <EuiFlexItem grow={2} css={heroCopy}>

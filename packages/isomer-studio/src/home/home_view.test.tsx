@@ -9,7 +9,13 @@ import React from 'react';
 import { EuiProvider } from '@elastic/eui';
 import { createIsomerRuntime, defineView } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import { z } from 'zod';
 
 import type { ColorModePreference } from '../chrome/color_mode';
@@ -58,6 +64,7 @@ const renderHome = ({
   onColorModeChange = vi.fn(),
   compose = (nodes) => defaultCompose(nodes, { theme: 'light' }),
   composeParams,
+  missing,
 }: {
   apps?: readonly StudioApp[];
   featured?: readonly string[];
@@ -65,6 +72,7 @@ const renderHome = ({
   onColorModeChange?: (colorMode: ColorModePreference) => void;
   compose?: StudioContextValue['compose'];
   composeParams?: ComposeParams;
+  missing?: string;
 } = {}) => {
   const value: StudioContextValue = {
     runtime: current,
@@ -83,7 +91,7 @@ const renderHome = ({
           title="Isomer Studio"
           onSelectPrimitive={vi.fn()}
           colorMode="system"
-          {...{ onColorModeChange, composeParams }}
+          {...{ onColorModeChange, composeParams, missing }}
         />
       </StudioContextProvider>
     </EuiProvider>
@@ -96,6 +104,16 @@ const featuredCards = () =>
   within(region('Featured primitives')).getAllByTestId('featured-primitive');
 
 describe('HomeView', () => {
+  it('names the address that matched no page, and says nothing otherwise', () => {
+    renderHome({ missing: '#/nope/zzz' });
+    expect(screen.getByText('#/nope/zzz')).toBeInTheDocument();
+    expect(screen.getByText(/Showing Home instead/)).toBeInTheDocument();
+    cleanup();
+
+    renderHome();
+    expect(screen.queryByText(/Showing Home instead/)).not.toBeInTheDocument();
+  });
+
   it('leads with what the Studio is for, names it, and links to the gallery, the Workbench, the composer and the docs', () => {
     renderHome();
     expect(
