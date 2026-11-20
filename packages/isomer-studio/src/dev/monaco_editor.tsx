@@ -10,7 +10,7 @@ import 'monaco-editor/esm/vs/language/json/monaco.contribution';
 import 'monaco-editor/esm/vs/language/typescript/monaco.contribution';
 
 import React, { useEffect, useRef } from 'react';
-import { useEuiTheme } from '@elastic/eui';
+import { EuiText, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { editor, languages, Uri } from 'monaco-editor/esm/vs/editor/editor.api';
 
@@ -94,6 +94,10 @@ const configureLanguages = ({
 const hex = (color: string): string | undefined =>
   /^#[\da-f]{6,8}$/i.test(color) ? color : undefined;
 
+const TAB_ESCAPE_HINT = `Tab indents. Press ${
+  /Mac|iPhone|iPad/.test(navigator.platform) ? 'Control+Shift+M' : 'Control+M'
+} to let Tab move focus out of the editor.`;
+
 /** Monaco on this runtime's types: TypeScript checks JSX, the Composition schema checks JSON. */
 export const MonacoEditor = ({
   format,
@@ -174,16 +178,22 @@ export const MonacoEditor = ({
     });
   }, [ariaLabel, euiTheme.font]);
 
-  // Monaco's iOS keyboard textarea has no name of its own.
+  // Monaco's iOS keyboard textarea has no name of its own, and no textarea says how Tab leaves.
   useEffect(() => {
     const element = container.current;
     if (!element) {
       return;
     }
-    const name = () =>
+    const name = () => {
       element
         .querySelectorAll('textarea.iPadShowKeyboard')
         .forEach((textarea) => textarea.setAttribute('aria-label', ariaLabel));
+      element
+        .querySelectorAll('textarea')
+        .forEach((textarea) =>
+          textarea.setAttribute('aria-description', TAB_ESCAPE_HINT)
+        );
+    };
     name();
     const observer = new MutationObserver(name);
     observer.observe(element, { childList: true, subtree: true });
@@ -230,12 +240,32 @@ export const MonacoEditor = ({
 
   return (
     <div
-      ref={container}
       css={css`
         flex: 1;
         min-height: 0;
+        display: flex;
+        flex-direction: column;
         border-block-start: ${euiTheme.border.thin};
-      `}
-    />
+      `}>
+      <div
+        ref={container}
+        css={css`
+          flex: 1;
+          min-height: 0;
+        `}
+      />
+      {/* The textarea's description already says this to screen readers. */}
+      <EuiText
+        size="xs"
+        color="subdued"
+        aria-hidden={true}
+        css={css`
+          flex: none;
+          padding: ${euiTheme.size.xs} ${euiTheme.size.base};
+          border-block-start: ${euiTheme.border.thin};
+        `}>
+        {TAB_ESCAPE_HINT}
+      </EuiText>
+    </div>
   );
 };

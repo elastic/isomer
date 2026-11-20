@@ -13,6 +13,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  EuiCallOut,
   euiCanAnimate,
   EuiProvider,
   EuiSkipLink,
@@ -24,6 +25,7 @@ import { css, Global } from '@emotion/react';
 
 import { AppHost } from './apps/app_host';
 import { useAccent } from './chrome/accent';
+import { activeAppPage } from './chrome/app_pages';
 import type { ColorModePreference } from './chrome/color_mode';
 import { useColorMode } from './chrome/color_mode';
 import { ConfigProblems } from './chrome/config_problems';
@@ -37,6 +39,7 @@ import {
   isAppRoute,
   isComposeRoute,
   isHomeRoute,
+  isPrimitiveRoute,
   useStudioRoute,
 } from './chrome/route';
 import { ShellBackdrop } from './chrome/shell_background';
@@ -202,6 +205,9 @@ const Layout = ({
     overflow: auto;
     border-radius: ${euiTheme.border.radius.frame};
     background: ${euiTheme.colors.backgroundBasePlain};
+    &:focus {
+      outline: none;
+    }
   `;
   const main = css`
     grid-column: 2;
@@ -218,6 +224,55 @@ const Layout = ({
   const address = formatLocation(location);
   useEffect(() => closeOnPhone(), [address, closeOnPhone]);
 
+  const primitiveLabel = primitives.find(({ type }) => type === page)?.label;
+  const appPage =
+    app && isAppRoute(location)
+      ? activeAppPage(app.pages ?? [], location.path)
+      : undefined;
+  const pageKey = home
+    ? 'home'
+    : composing
+      ? 'compose'
+      : app
+        ? `app:${app.id}/${appPage?.path ?? ''}`
+        : `${route.mode}:${page}`;
+  const documentTitle = [
+    ...(home
+      ? []
+      : composing
+        ? ['Composition']
+        : app
+          ? [appPage?.title, app.title]
+          : [
+              page === GALLERY ? 'Gallery' : primitiveLabel,
+              route.mode === 'dev' ? 'Workbench' : 'Reference',
+            ]),
+    title,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  useEffect(() => {
+    document.title = documentTitle;
+  }, [documentTitle]);
+
+  const shownPage = useRef(pageKey);
+  const focusPending = useRef(false);
+  const coveredByNav = isPhone && isNavOpen;
+  useEffect(() => {
+    if (shownPage.current !== pageKey) {
+      shownPage.current = pageKey;
+      focusPending.current = true;
+    }
+    // Waits for the phone nav to close, which would otherwise hand focus back to its menu button.
+    if (focusPending.current && !coveredByNav) {
+      focusPending.current = false;
+      const panel = document.getElementById(MAIN_ID);
+      // `EuiSkipLink` drops the destination's `tabindex` when focus leaves it.
+      panel?.setAttribute('tabindex', '-1');
+      panel?.focus({ preventScroll: true });
+    }
+  }, [pageKey, coveredByNav]);
+
   const onSelectPrimitive = useCallback(
     (type: string) => navigate({ page: type, example: 0 }),
     [navigate]
@@ -226,7 +281,12 @@ const Layout = ({
   if (home) {
     return (
       <main
+        id={MAIN_ID}
+        tabIndex={-1}
         css={css`
+          &:focus {
+            outline: none;
+          }
           height: 100vh;
           overflow: auto;
           color: ${euiTheme.colors.textParagraph};
@@ -312,8 +372,25 @@ const Layout = ({
             }}
           />
         </EuiThemeProvider>
-        <main id={MAIN_ID} css={[panel, main]}>
+        <main id={MAIN_ID} tabIndex={-1} css={[panel, main]}>
           <ConfigProblems problems={configProblems} />
+          {isPrimitiveRoute(location) && location.missing !== undefined ? (
+            <EuiCallOut
+              announceOnMount
+              color="warning"
+              iconType="warning"
+              size="s"
+              css={css`
+                margin: ${euiTheme.size.m};
+              `}
+              title={
+                <>
+                  No primitive at <code>{location.missing}</code>. Showing{' '}
+                  {primitiveLabel ?? 'the first primitive'} instead.
+                </>
+              }
+            />
+          ) : null}
           {app && isAppRoute(location) ? (
             <AppHost key={app.id} path={location.path} {...{ app, openApp }} />
           ) : null}

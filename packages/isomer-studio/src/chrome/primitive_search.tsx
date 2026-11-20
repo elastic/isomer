@@ -8,6 +8,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
 import {
+  EuiButtonIcon,
   EuiSelectableMessage,
   EuiSelectableTemplateSitewide,
   useEuiTheme,
@@ -37,12 +38,13 @@ export interface PrimitiveSearchProps {
 export const PrimitiveSearch = ({
   onSelectPrimitive,
   size = 'compressed',
-  placeholder = 'Search names and descriptions',
+  placeholder = 'Search all primitives',
 }: PrimitiveSearchProps) => {
   const {
     docs: { primitives },
   } = useStudio();
   const input = useRef<HTMLInputElement | null>(null);
+  const trigger = useRef<HTMLButtonElement | null>(null);
   const [query, setQuery] = useState('');
 
   useEffect(() => {
@@ -54,7 +56,13 @@ export const PrimitiveSearch = ({
         event.key.toLowerCase() === 'k'
       ) {
         event.preventDefault();
-        input.current?.focus();
+        // On a narrow screen the field lives in a popover the button opens.
+        if (!input.current?.isConnected && trigger.current?.isConnected) {
+          trigger.current.click();
+          requestAnimationFrame(() => input.current?.focus());
+        } else {
+          input.current?.focus();
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown);
@@ -127,6 +135,21 @@ export const PrimitiveSearch = ({
         'aria-label': 'Search primitives',
       }}
       popoverProps={{ width: large ? 620 : 420 }}
+      // A header too narrow for a readable field opens it in the popover instead.
+      {...(large
+        ? {}
+        : {
+            popoverButton: (
+              <EuiButtonIcon
+                display="empty"
+                color="text"
+                iconType="search"
+                aria-label="Search primitives"
+                buttonRef={trigger}
+              />
+            ),
+            popoverButtonBreakpoints: ['xs', 's'],
+          })}
       css={[
         css`
           .euiFieldSearch::placeholder {

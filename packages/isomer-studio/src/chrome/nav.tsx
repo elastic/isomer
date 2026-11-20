@@ -198,7 +198,7 @@ const PageSection = ({
 }) => (
   <li>
     <EuiTitle size="xxxs" textTransform="uppercase">
-      <h4>{title}</h4>
+      <div>{title}</div>
     </EuiTitle>
     <NavList aria-label={title}>{children}</NavList>
   </li>
@@ -277,9 +277,9 @@ const Group = ({
 }) => {
   const id = useGeneratedHtmlId({ prefix: 'navGroup' });
   return (
-    <div>
+    <div role="group" aria-label={title}>
       <EuiTitle size="xxxs">
-        <h3>
+        <div>
           <EuiButtonEmpty
             size="xs"
             color="text"
@@ -290,7 +290,7 @@ const Group = ({
             onClick={onToggle}>
             {title}
           </EuiButtonEmpty>
-        </h3>
+        </div>
       </EuiTitle>
       {isOpen ? <div {...{ id }}>{children}</div> : null}
     </div>
@@ -506,10 +506,19 @@ export const StudioNav = ({
               />
             </NavList>
             {listed.map((pack) => (
-              <React.Fragment key={pack.id}>
+              <div
+                key={pack.id}
+                {...(separatePacks
+                  ? { role: 'group', 'aria-label': pack.label }
+                  : {})}
+                css={css`
+                  display: flex;
+                  flex-direction: column;
+                  gap: ${euiTheme.size.s};
+                `}>
                 {separatePacks ? (
                   <EuiTitle size="xxxs" textTransform="uppercase">
-                    <h2>{pack.label}</h2>
+                    <div aria-hidden={true}>{pack.label}</div>
                   </EuiTitle>
                 ) : null}
                 {pack.groups.map((group) => (
@@ -529,7 +538,7 @@ export const StudioNav = ({
                     </NavList>
                   </Group>
                 ))}
-              </React.Fragment>
+              </div>
             ))}
           </>
         ) : (
