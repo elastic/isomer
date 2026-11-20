@@ -98,6 +98,27 @@ The count bounds the drawing, not the work before it. Vega runs the dataflow syn
 
 The size limits bound the rest, parsing and memory: 250,000 characters of spec, about 12,000 rows of two numbers inline; 250,000 characters of results after pruning; 10,000 rows of `data`, within a 5,000-element drawing for any spec that aggregates or draws a line.
 
+## Measuring it
+
+`scripts/bench_render.cjs` draws Vega charts as a render service does: validation, which parses each spec, `snapshot` on `chartsFrame`, and takumi to PNG, in a fresh Node process under `--disallow-code-generation-from-strings`. On macOS arm64, Node 22, the median of three runs:
+
+| Scenario | Peak RSS (MB) | Peak less loaded (MB) | Validate and draw (ms) | takumi PNG (ms) |
+| --- | --- | --- | --- | --- |
+| Every example, light and dark, 1× | 213 | 93 | 12 | 3.2 |
+| One cold PNG, 2× | 135 | 17 | 40 | 5.3 |
+| `budget-marks`: a scatter plot at the 5,000-element cap, 2× | 225 | 101 | 143 | 2,080 |
+| `budget-spec`: a line through a spec at 250,000 characters, 2× | 188 | 67 | 280 | 310 |
+| `budget-data`: a line through 10,000 rows of `data`, 2× | 183 | 63 | 226 | 16 |
+| `budget-results`: a line through a search response stamped as 250,000 characters of results, 2× | 173 | 50 | 290 | 25 |
+| `over-marks`: a 250,000-character scatter plot past the cap, drawn as a note | 176 | 56 | 255 | 3.7 |
+| 16 PNGs at 2× through a limiter of 2 | 233 | 113 | 14 | 18 |
+
+The script finds `budget-marks`'s point count in a process of its own, so no measured process draws the probes, and fails a run that drew anything but a chart with marks, or for `over-marks` the mark-cap note, so a chart Vega fails to draw never passes as a cheaper one.
+
+Linux pays more for the same work, so read Linux for a server: on CI's Linux x64 runners, one cold PNG peaked at 135 MB and every other scenario at 294–364 MB, about 170 MB over loaded.
+
+`pnpm --filter @elastic/isomer-primitives-vega bench:check`, part of `pnpm check:memory`, runs every scenario three times and fails when a median is over its bound in the script. A bound is about 1.5× the larger of the macOS and Linux x64 medians, with a floor for `one`'s small delta, so a runner's variance passes and a doubling fails.
+
 ## Developing
 
 `pnpm --filter @elastic/isomer-primitives-vega studio` previews the pack in the Studio on every surface, with PNGs. The repository's Studio, `pnpm studio:dev`, shows it beside the other packs.

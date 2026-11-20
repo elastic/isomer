@@ -5,7 +5,7 @@ Read the [root instructions](../../AGENTS.md) first, and the [charts pack's](../
 ## Read before changing
 
 - The node, its rules or its events: [Vega](docs/index.md).
-- Rendering, the theme, size, styling, images or limits: [Rendering](docs/rendering.md).
+- Rendering, the theme, size, styling, images or the benchmark: [Rendering](docs/rendering.md).
 - What a host does before Isomer sees a node: [Materializing](docs/materializing.md).
 
 ## When changing this area
@@ -24,4 +24,4 @@ Pin `vega*` versions to what Kibana resolves, and update the root `pnpm.override
 
 ## Evidence required
 
-Every example validates and draws on every surface (`src/primitives/vega/index.test.ts`).
+Every example validates and draws on every surface (`src/primitives/vega/index.test.ts`). A change to drawing passes the rendering corpus (`src/corpus/corpus.test.ts`), which holds the pack to Vega's own `toSVG()`. A change to what a chart costs reruns `bench:check`.
