@@ -94,11 +94,12 @@ const DeferredPreview = ({
 
   return (
     <div ref={host} aria-hidden={true}>
-      {shown ? (
-        children
-      ) : (
-        <div css={previewWell} style={ratio ? { aspectRatio: ratio } : {}} />
-      )}
+      {/* At least a slide's 16:9, so a slide's preview mounts without a shift; a taller one grows it, a shorter one leaves space below. */}
+      <div
+        css={previewWell}
+        style={!shown && ratio ? { aspectRatio: ratio } : {}}>
+        {shown ? children : null}
+      </div>
     </div>
   );
 };

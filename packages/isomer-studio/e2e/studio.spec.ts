@@ -852,6 +852,146 @@ test.describe('static build', () => {
     expect(ratio).toBeGreaterThanOrEqual(4.5);
   });
 
+  test('names the page in the tab title', async ({ page }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expect(page).toHaveTitle(/^.+ · Workbench · .+$/);
+  });
+
+  test('moves focus to the next page after the skip link was used', async ({
+    page,
+  }) => {
+    const docsRoute = EDIT_ROUTE.replace('#/dev/', '#/docs/');
+    await page.goto(`${site.url}${docsRoute}`);
+    const main = page.locator('main').first();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await expect(main).toBeFocused();
+    // Leaving `main` is when the skip link drops the tabindex it added.
+    await page.keyboard.press('Tab');
+    await expect(main).not.toBeFocused();
+
+    await page
+      .getByRole('group', { name: 'Studio mode' })
+      .getByRole('button', { name: 'Workbench' })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`${EDIT_ROUTE}$`));
+    await expect(main).toBeFocused();
+  });
+
+  test('opens the header search from the keyboard shortcut when it is a button', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 700, height: 800 });
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    await expect(
+      page.locator('header').getByRole('button', { name: 'Search primitives' })
+    ).toBeVisible();
+    await page.keyboard.press('Control+K');
+    await expect(page.getByPlaceholder('Search all primitives')).toBeFocused();
+  });
+
+  test('opens a readable header search from a button on a 320px touch screen', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 640 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+      await page
+        .locator('header')
+        .getByRole('button', { name: 'Search primitives' })
+        .click();
+      const field = page.getByPlaceholder('Search all primitives');
+      await expect(field).toBeVisible();
+      const fits = await field.evaluate((input) => {
+        if (!(input instanceof HTMLInputElement)) {
+          return false;
+        }
+        const style = getComputedStyle(input);
+        const context2d = document.createElement('canvas').getContext('2d')!;
+        context2d.font = style.font;
+        const room =
+          input.clientWidth -
+          parseFloat(style.paddingInlineStart) -
+          parseFloat(style.paddingInlineEnd);
+        return context2d.measureText(input.placeholder).width <= room;
+      });
+      expect(fits).toBe(true);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test('settles the Gallery layout once previews mount', async ({ page }) => {
+    await page.addInitScript(() => {
+      const shifts = { total: 0 };
+      const add = (entries: PerformanceEntryList) => {
+        for (const entry of entries) {
+          const shift = entry as PerformanceEntry & {
+            value: number;
+            hadRecentInput: boolean;
+          };
+          if (!shift.hadRecentInput) {
+            shifts.total += shift.value;
+          }
+        }
+      };
+      const observer = new PerformanceObserver((list) =>
+        add(list.getEntries())
+      );
+      observer.observe({ type: 'layout-shift', buffered: true });
+      Object.assign(window, {
+        shiftTotal: () => {
+          add(observer.takeRecords());
+          return shifts.total;
+        },
+      });
+    });
+    await page.goto(`${site.url}#/docs/gallery`);
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Gallery' })
+    ).toBeVisible();
+    // Past the first row a tile's preview is deferred, so the budget covers one that mounted late.
+    const tiles = page.locator('[inert]');
+    await expect(tiles.first()).toBeAttached();
+    const deferred = Math.min(3, (await tiles.count()) - 1);
+    await expect
+      .poll(() =>
+        tiles
+          .nth(deferred)
+          .evaluate((tile) => {
+            const host = [...tile.querySelectorAll('*')].find(
+              (element) =>
+                element.shadowRoot || element instanceof HTMLIFrameElement
+            );
+            const content =
+              host instanceof HTMLIFrameElement
+                ? host.contentDocument?.body
+                : host?.shadowRoot;
+            return (
+              Boolean(content?.textContent) &&
+              tile.getBoundingClientRect().height > 0
+            );
+          })
+          .catch(() => false)
+      )
+      .toBe(true);
+    // Two frames let the late preview paint, and so record any shift it caused.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve))
+        )
+    );
+    const total = await page.evaluate(() =>
+      (window as unknown as { shiftTotal: () => number }).shiftTotal()
+    );
+    expect(total).toBeLessThan(0.05);
+  });
+
   test('keeps previews out of the page outline on the Workbench and Reference', async ({
     page,
   }) => {
@@ -1116,6 +1256,11 @@ test.describe('static build', () => {
     await expect(menu).toBeFocused();
 
     await menu.click();
+    await nav.getByRole('button', { name: 'Composition' }).click();
+    await expect(nav).toBeHidden();
+    await expect(page.locator('main').first()).toBeFocused();
+
+    await menu.click();
     await nav
       .getByRole('button', { name: 'Collapse primitive navigation' })
       .click();
@@ -1147,12 +1292,13 @@ test.describe('static build', () => {
     await nav.getByRole('button', { name: 'Gallery', exact: true }).click();
     await expect(nav).toBeHidden();
     await expect(page).not.toHaveURL(before);
-    await expect(menu).toBeFocused();
+    await expect(page.locator('main').first()).toBeFocused();
     await menu.click();
     await expect(nav).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL(before);
     await expect(nav).toBeHidden();
+    await expect(page.locator('main').first()).toBeFocused();
   });
 
   test('fits the header on a 320px touch screen', async ({ browser }) => {
@@ -1510,6 +1656,23 @@ test.describe('decks', () => {
 
   test.afterAll(async () => {
     await site.close();
+  });
+
+  test('draws a focus ring around a deck tile', async ({ page }) => {
+    await page.goto(`${site.url}#/dev`);
+    await page.getByRole('button', { name: 'Decks', exact: true }).click();
+    const tile = page
+      .locator('main')
+      .getByRole('button', { name: 'Isomer: one composition, every surface' })
+      .first();
+    await expect(tile).toBeVisible();
+    await page.keyboard.press('Shift');
+    await tile.focus();
+    const ring = await tile.evaluate((element) => ({
+      position: getComputedStyle(element).position,
+      outline: getComputedStyle(element, '::after').outlineStyle,
+    }));
+    expect(ring).toEqual({ position: 'relative', outline: 'solid' });
   });
 
   test('opens a deck from the nav, steps through builds and slides, and keeps the place', async ({
@@ -2125,7 +2288,7 @@ test.describe('dev server reload', () => {
 
     await writeOptions('App reload', false);
 
-    await expect(page).toHaveTitle('App reload', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · App reload', { timeout: 60_000 });
     await expect(page.getByRole('button', { name: 'Count 1' })).toBeVisible();
   });
 
@@ -2149,7 +2312,9 @@ test.describe('dev server reload', () => {
         .length - 1;
     await page.goto(`${dev.url}#/app/counter/`);
     await writeOptions('Fonts config only', true);
-    await expect(page).toHaveTitle('Fonts config only', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts config only', {
+      timeout: 60_000,
+    });
     writeFonts('"changed after config reload"');
     await expect
       .poll(postPdf, { timeout: 60_000 })
@@ -2160,13 +2325,17 @@ test.describe('dev server reload', () => {
     await expect.poll(postPdf, { timeout: 60_000 }).toBe('200 ');
 
     await writeOptions('Fonts disabled', true, false);
-    await expect(page).toHaveTitle('Fonts disabled', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts disabled', {
+      timeout: 60_000,
+    });
     expect(await postPdf()).toContain('404');
     const errorsBefore = fontErrors();
     writeFonts('"not a list"');
     await delay(100);
     await writeOptions('Fonts enabled', true);
-    await expect(page).toHaveTitle('Fonts enabled', { timeout: 60_000 });
+    await expect(page).toHaveTitle('Counter · Fonts enabled', {
+      timeout: 60_000,
+    });
     await expect
       .poll(postPdf, { timeout: 60_000 })
       .toBe('400 Could not render PDF.');

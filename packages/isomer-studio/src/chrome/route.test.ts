@@ -73,6 +73,25 @@ describe('parseLocation', () => {
     }
   });
 
+  it('names a hash that matches no primitive, and still shows the first one', () => {
+    expect(parseLocation('#/dev/gone/0', docs, [])).toEqual({
+      ...first,
+      missing: '#/dev/gone/0',
+    });
+    expect(parseLocation('#/dev/gallery', docs, [])).toHaveProperty(
+      'missing',
+      '#/dev/gallery'
+    );
+    for (const hash of [
+      '#/dev/callout/0',
+      '#/docs/gallery',
+      '#/dev',
+      '#/docs/',
+    ]) {
+      expect(parseLocation(hash, docs, [])).not.toHaveProperty('missing');
+    }
+  });
+
   it('reads the composition editor and its query, and writes it back', () => {
     expect(parseLocation('#/compose', docs, [])).toEqual({
       compose: true,
@@ -241,6 +260,41 @@ describe('useStudioRoute', () => {
     act(() => removed.result.current.navigate({ page: 'health' }));
     removed.rerender({ current: fewer });
     expect(removed.result.current.location).toEqual(parseRoute('', fewer));
+  });
+
+  it('keeps naming a link to a missing primitive across updates, and opens it once it exists', () => {
+    const withCalloutAndDivider = describeRuntime(
+      createIsomerRuntime<unknown, StyledRenderContext>({
+        packs: [
+          definePrimitivePack({ id: 'two', primitives: [callout, divider] }),
+        ],
+      })
+    );
+    const withDivider = describeRuntime(
+      createIsomerRuntime<unknown, StyledRenderContext>({
+        packs: [definePrimitivePack({ id: 'one', primitives: [divider] })],
+      })
+    );
+    window.location.hash = '#/docs/health/0';
+    const { result, rerender } = renderHook(
+      ({ current }) => useStudioRoute(current, []),
+      { initialProps: { current: withCalloutAndDivider } }
+    );
+    expect(result.current.location).toMatchObject({
+      missing: '#/docs/health/0',
+    });
+
+    rerender({ current: withDivider });
+    expect(result.current.location).toMatchObject({
+      page: 'divider',
+      missing: '#/docs/health/0',
+    });
+    expect(window.location.hash).toBe('#/docs/health/0');
+
+    rerender({ current: docs });
+    expect(result.current.location).toEqual(
+      parseRoute('#/docs/health/0', docs)
+    );
   });
 
   it('keeps the location object when nothing it names changed', () => {

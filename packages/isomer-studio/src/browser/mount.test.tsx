@@ -8,7 +8,7 @@
 import React from 'react';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import type { StyledRenderContext } from '@elastic/isomer-sdk';
-import { act, screen } from '@testing-library/react';
+import { act, screen, waitFor } from '@testing-library/react';
 
 import type { StudioApp, StudioConfig } from '../config';
 import { componentsPack } from '../fixtures/components_pack';
@@ -66,5 +66,18 @@ describe('mountStudio', () => {
     expect(
       screen.queryByText('apps[0] ("second"): load must be a function.')
     ).toBeNull();
+  });
+
+  it("keeps the page's tab title across a hot update", async () => {
+    let studio: ReturnType<typeof mountStudio> | undefined;
+    act(() => {
+      studio = mountStudio({ runtime, title: 'Pack' }, {});
+    });
+    await waitFor(() => expect(document.title).toMatch(/ · Workbench · Pack$/));
+    const { title } = document;
+
+    act(() => studio?.update({ runtime, title: 'Pack' }, {}));
+
+    expect(document.title).toBe(title);
   });
 });

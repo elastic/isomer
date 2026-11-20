@@ -113,6 +113,46 @@ describe('IsomerStudio', () => {
     expect(window.location.hash).toBe('#/docs/callout/0');
   });
 
+  it('names each page in the document title and moves focus to the page when it changes', async () => {
+    window.location.hash = '#/docs/callout/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    await screen.findByRole('heading', { level: 1, name: 'Callout' });
+    expect(document.title).toBe('Callout · Reference · Isomer Studio');
+    expect(screen.getByRole('main')).not.toHaveFocus();
+
+    fireEvent.click(
+      within(screen.getByRole('navigation', { name: 'Primitives' })).getByRole(
+        'button',
+        { name: 'Divider' }
+      )
+    );
+    await waitFor(() =>
+      expect(document.title).toBe('Divider · Reference · Isomer Studio')
+    );
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+
+    fireEvent.click(screen.getByRole('link', { name: 'Isomer Studio home' }));
+    await screen.findByTestId('home');
+    expect(document.title).toBe('Isomer Studio');
+  });
+
+  it('says when a link names no primitive, and clears the notice on the next page', async () => {
+    window.location.hash = '#/docs/gone/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    expect(await screen.findAllByText('#/docs/gone/0')).not.toHaveLength(0);
+    expect(screen.getAllByText(/No primitive at/)).not.toHaveLength(0);
+
+    fireEvent.click(
+      within(screen.getByRole('navigation', { name: 'Primitives' })).getByRole(
+        'button',
+        { name: 'Divider' }
+      )
+    );
+    await waitFor(() =>
+      expect(screen.queryAllByText(/No primitive at/)).toHaveLength(0)
+    );
+  });
+
   it('offers the Gallery, once, as the result of a search that matches nothing', async () => {
     window.location.hash = '#/home';
     render(<IsomerStudio {...{ runtime }} />);
@@ -137,8 +177,8 @@ describe('IsomerStudio', () => {
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     const headings = () =>
       within(nav)
-        .getAllByRole('heading')
-        .map(({ textContent }) => textContent);
+        .getAllByRole('group')
+        .map((group) => group.getAttribute('aria-label'));
     const labels = () =>
       within(nav)
         .getAllByRole('listitem')
@@ -345,8 +385,8 @@ describe('IsomerStudio', () => {
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
     const headings = () =>
       within(nav)
-        .getAllByRole('heading')
-        .map(({ textContent }) => textContent);
+        .getAllByRole('group')
+        .map((group) => group.getAttribute('aria-label'));
     expect(headings()).toEqual([
       'Narrative',
       'Narrative and content',

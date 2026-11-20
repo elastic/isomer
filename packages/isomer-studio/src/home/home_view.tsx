@@ -264,11 +264,19 @@ export const HomeView = ({
         <EuiFlexGroup gutterSize="xl" alignItems="center" wrap>
           <EuiFlexItem grow={2} css={heroCopy}>
             <EuiTitle size="l">
-              <h1>What are we rendering today?</h1>
+              <h1
+                css={css`
+                  text-wrap: balance;
+                `}>
+                What are we rendering today?
+              </h1>
             </EuiTitle>
             <EuiSpacer size="s" />
             <EuiText size="m">
-              <p>
+              <p
+                css={css`
+                  text-wrap: pretty;
+                `}>
                 Learn every primitive of {packNames}, edit it live, and see one
                 composition render on every surface your product speaks.
               </p>

@@ -123,6 +123,38 @@ describe('Studio apps', () => {
     );
   });
 
+  it('titles the tab with the current app page, and moves focus when the page changes', async () => {
+    window.location.hash = '#/app/deck/slides';
+    render(
+      <IsomerStudio
+        {...{ runtime }}
+        apps={[
+          {
+            ...deck(sameLoad()),
+            pages: [
+              { path: 'slides', title: 'Slides' },
+              { path: 'notes', title: 'Notes' },
+            ],
+          },
+        ]}
+      />
+    );
+    await waitFor(() =>
+      expect(document.title).toBe('Slides · Deck · Isomer Studio')
+    );
+
+    fireEvent.click(
+      within(screen.getByRole('list', { name: 'Deck pages' })).getByRole(
+        'button',
+        { name: 'Notes' }
+      )
+    );
+    await waitFor(() =>
+      expect(document.title).toBe('Notes · Deck · Isomer Studio')
+    );
+    await waitFor(() => expect(screen.getByRole('main')).toHaveFocus());
+  });
+
   it('deep-links into an app, and returns to the remembered primitive from the header', async () => {
     window.location.hash = '#/docs/divider';
     render(<IsomerStudio {...{ runtime }} apps={[deck(sameLoad())]} />);
