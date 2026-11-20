@@ -17,6 +17,7 @@ import {
   within,
 } from '@testing-library/react';
 
+import { NAV_WIDTH } from './chrome/nav';
 import { componentsPrimitives } from './fixtures/components_pack';
 import { findEditor, renderStudio, runtime } from './fixtures/studio_harness';
 import { IsomerStudio } from './studio';
@@ -207,7 +208,7 @@ describe('IsomerStudio', () => {
     const matchMedia = window.matchMedia.bind(window);
     window.matchMedia = (query) => ({
       ...matchMedia(query),
-      matches: query.includes('max-width'),
+      matches: query.includes(`${NAV_WIDTH.compactAt}px`),
     });
     try {
       window.location.hash = '#/docs/callout/0';
@@ -224,6 +225,41 @@ describe('IsomerStudio', () => {
       expect(
         screen.getByRole('button', { name: 'Collapse primitive navigation' })
       ).toHaveAttribute('aria-expanded', 'true');
+    } finally {
+      window.matchMedia = matchMedia;
+    }
+  });
+
+  it('hides the rail on a phone and opens the navigation from the header, closing it on a pick', async () => {
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      await screen.findByRole('heading', { level: 1, name: 'Callout' });
+
+      const nav = document.querySelector<HTMLElement>(
+        'nav[aria-label="Primitives"]'
+      )!;
+      expect(nav).toHaveStyle({ display: 'none' });
+      const menu = screen.getByRole('button', {
+        name: 'Primitive navigation',
+      });
+      expect(menu).toHaveAttribute('aria-expanded', 'false');
+
+      fireEvent.click(menu);
+      expect(menu).toHaveAttribute('aria-expanded', 'true');
+      expect(nav).not.toHaveStyle({ display: 'none' });
+
+      fireEvent.click(within(nav).getByRole('button', { name: /Divider/ }));
+      await waitFor(() => expect(nav).toHaveStyle({ display: 'none' }));
+      expect(window.location.hash).toContain('divider');
+      expect(
+        screen.getByRole('button', { name: 'Color mode: System' })
+      ).toBeInTheDocument();
     } finally {
       window.matchMedia = matchMedia;
     }
@@ -347,5 +383,36 @@ describe('IsomerStudio', () => {
     expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
       'system'
     );
+  });
+
+  it('steps through the color modes from one button on a phone', async () => {
+    window.localStorage.removeItem('isomer-studio:color-mode');
+    const matchMedia = window.matchMedia.bind(window);
+    window.matchMedia = (query) => ({
+      ...matchMedia(query),
+      matches: query.includes('max-width'),
+    });
+    try {
+      window.location.hash = '#/docs/callout/0';
+      render(<IsomerStudio {...{ runtime }} />);
+      await screen.findByRole('heading', { level: 1, name: 'Callout' });
+      expect(screen.queryByRole('button', { name: 'Dark' })).toBeNull();
+
+      for (const [label, stored] of [
+        ['Light', 'light'],
+        ['Dark', 'dark'],
+        ['System', 'system'],
+      ]) {
+        fireEvent.click(screen.getByRole('button', { name: /^Color mode: / }));
+        expect(
+          screen.getByRole('button', { name: `Color mode: ${label}` })
+        ).toBeInTheDocument();
+        expect(window.localStorage.getItem('isomer-studio:color-mode')).toBe(
+          stored
+        );
+      }
+    } finally {
+      window.matchMedia = matchMedia;
+    }
   });
 });

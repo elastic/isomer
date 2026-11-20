@@ -217,7 +217,7 @@ export const MonacoEditor = ({
       ref={container}
       css={css`
         flex: 1;
-        min-height: 240px;
+        min-height: 0;
         border-block-start: ${euiTheme.border.thin};
       `}
     />

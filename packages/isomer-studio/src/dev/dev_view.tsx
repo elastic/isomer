@@ -12,6 +12,7 @@ import {
   EuiFlexItem,
   EuiToolTip,
 } from '@elastic/eui';
+import { css } from '@emotion/react';
 
 import { PrimitiveHeading } from '../chrome/primitive_heading';
 import type { StudioRoute } from '../chrome/route';
@@ -32,6 +33,11 @@ import { printDraft, splitComposition, useEditor } from './use_editor';
 import { Workbench } from './workbench';
 
 const OPEN_LABEL = 'Open in the composition editor';
+
+/** Below this the action wraps under the title instead of squeezing it. */
+const headingBasis = css`
+  flex: 1 1 20rem;
+`;
 
 /** Carries the composed draft, minus the Studio's theme, to the composition editor. */
 const OpenInComposer = ({
@@ -112,8 +118,12 @@ const ExampleWorkbench = ({
   return (
     <Workbench
       heading={
-        <EuiFlexGroup alignItems="center" gutterSize="m" responsive={false}>
-          <EuiFlexItem>
+        <EuiFlexGroup
+          alignItems="center"
+          gutterSize="m"
+          responsive={false}
+          wrap>
+          <EuiFlexItem css={headingBasis}>
             <PrimitiveHeading {...{ doc }} layout="inline" />
           </EuiFlexItem>
           <EuiFlexItem grow={false}>

@@ -784,6 +784,68 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('resizes the stacked Workbench by dragging its handle with a finger', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}${EDIT_ROUTE}`);
+      await expectMonacoReady(page);
+
+      const editor = page.getByRole('region', { name: 'Source editor' });
+      const before = (await editor.boundingBox())!;
+      const hitsEditor = await page.evaluate(
+        ({ x, y }) =>
+          document
+            .elementFromPoint(x, y)
+            ?.closest('[aria-label="Source editor"]') != null,
+        { x: before.x + before.width / 2, y: before.y + before.height / 2 }
+      );
+      expect(hitsEditor).toBe(true);
+
+      const handle = (await page
+        .locator('.euiResizableButton')
+        .first()
+        .boundingBox())!;
+      expect(handle.height).toBeGreaterThanOrEqual(44);
+      const scrollTop = () =>
+        page
+          .locator('main')
+          .first()
+          .evaluate((main) => main.scrollTop);
+      const scrolledBefore = await scrollTop();
+
+      const x = handle.x + handle.width / 2;
+      const y = handle.y + handle.height / 2;
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [{ x, y }],
+      });
+      for (let step = 1; step <= 10; step += 1) {
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x, y: y + step * 12 }],
+        });
+      }
+      await cdp.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      });
+
+      await expect
+        .poll(async () => (await editor.boundingBox())!.height)
+        .toBeGreaterThan(before.height + 60);
+      expect(await scrollTop()).toBe(scrolledBefore);
+    } finally {
+      await context.close();
+    }
+  });
+
   test('keeps the Reference example usable on a mobile viewport', async ({
     page,
   }) => {
@@ -808,7 +870,7 @@ test.describe('static build', () => {
       )
       .toBe(true);
     await expect(
-      page.getByRole('button', { name: 'Expand primitive navigation' })
+      page.getByRole('button', { name: 'Primitive navigation' })
     ).toHaveAttribute('aria-expanded', 'false');
     await expect(
       views.getByRole('button', { name: 'Example source' })
@@ -820,6 +882,141 @@ test.describe('static build', () => {
     await rendered.focus();
     await page.keyboard.press('Enter');
     await expect(rendered).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('opens the phone navigation as a modal drawer over the Workbench', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    const menu = page.getByRole('button', { name: 'Primitive navigation' });
+    const nav = page.getByRole('navigation', { name: 'Primitives' });
+
+    await menu.focus();
+    await page.keyboard.press('Enter');
+    await expect(nav).toBeFocused();
+    // The page behind the drawer is hidden from assistive technology, apart from its live regions.
+    const exposedControls = () =>
+      page
+        .getByRole('button')
+        .or(page.getByRole('link'))
+        .or(page.getByRole('textbox'))
+        .evaluateAll(
+          (controls) =>
+            controls.filter(
+              (control) =>
+                !control.closest('nav[aria-label="Primitives"]') &&
+                control.getAttribute('aria-label') !== 'Primitive navigation'
+            ).length
+        );
+    await expect.poll(exposedControls).toBe(0);
+    for (let tab = 0; tab < 40; tab += 1) {
+      await page.keyboard.press('Tab');
+      expect(
+        await page.evaluate(
+          () =>
+            document.activeElement?.closest(
+              'nav[aria-label="Primitives"], [aria-label="Primitive navigation"]'
+            ) != null
+        )
+      ).toBe(true);
+    }
+    // A focused entry's tooltip takes the first Escape.
+    await nav.focus();
+    await page.keyboard.press('Escape');
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    await menu.click();
+    const handle = (await page
+      .locator('.euiResizableButton')
+      .first()
+      .boundingBox())!;
+    const onHandle = await page.evaluate(
+      ({ x, y }) =>
+        document
+          .elementFromPoint(x, y)
+          ?.closest('nav[aria-label="Primitives"]') != null,
+      { x: 40, y: handle.y + handle.height / 2 }
+    );
+    expect(onHandle).toBe(true);
+    // The backdrop takes no focus, so the menu button gets it back.
+    await page.mouse.click(380, 600);
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    await menu.click();
+    await nav
+      .getByRole('button', { name: 'Collapse primitive navigation' })
+      .click();
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+
+    // Escape while the backdrop is still pressed closes it, and the release does not reopen it.
+    await menu.click();
+    await page.mouse.move(380, 600);
+    await page.mouse.down();
+    await page.keyboard.press('Escape');
+    await expect(nav).toBeHidden();
+    await page.mouse.up();
+    await page.waitForTimeout(100);
+    await expect(nav).toBeHidden();
+
+    // The page takes no pointer events while the drawer is open, so a click on a header control only dismisses it.
+    await menu.click();
+    const colorMode = page.locator('header button[aria-label^="Color mode: "]');
+    const label = await colorMode.getAttribute('aria-label');
+    const { x, y, width, height } = (await colorMode.boundingBox())!;
+    await page.mouse.click(x + width / 2, y + height / 2);
+    await expect(nav).toBeHidden();
+    await expect(menu).toBeFocused();
+    await expect(colorMode).toHaveAttribute('aria-label', label!);
+
+    const before = page.url();
+    await menu.click();
+    await nav.getByRole('button', { name: 'Gallery', exact: true }).click();
+    await expect(nav).toBeHidden();
+    await expect(page).not.toHaveURL(before);
+    await expect(menu).toBeFocused();
+    await menu.click();
+    await expect(nav).toBeVisible();
+    await page.goBack();
+    await expect(page).toHaveURL(before);
+    await expect(nav).toBeHidden();
+  });
+
+  test('fits the header on a 320px touch screen', async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 640 },
+      hasTouch: true,
+    });
+    try {
+      const page = await context.newPage();
+      await page.goto(`${site.url}#/docs/slidePipeline/0`);
+      const header = page.locator('header').first();
+      await expect(
+        header.getByRole('button', { name: 'Primitive navigation' })
+      ).toBeVisible();
+      const controls = await header.evaluate((element) =>
+        [...element.querySelectorAll('a, button, input')]
+          .map((control) => {
+            const { left, right, width } = control.getBoundingClientRect();
+            return { label: control.ariaLabel, left, right, width };
+          })
+          .filter(({ width }) => width > 0)
+          .sort((a, b) => a.left - b.left)
+      );
+      for (const [index, { left, right }] of controls.entries()) {
+        expect(left).toBeGreaterThanOrEqual(0);
+        expect(right).toBeLessThanOrEqual(320);
+        if (index > 0) {
+          expect(left).toBeGreaterThanOrEqual(controls[index - 1]!.right - 1);
+        }
+      }
+    } finally {
+      await context.close();
+    }
   });
 
   test('scrolls only the content when jumping within a Reference page', async ({

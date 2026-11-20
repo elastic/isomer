@@ -5,8 +5,15 @@
  * 2.0.
  */
 
+import type { Ref } from 'react';
 import React from 'react';
-import { EuiButton, EuiButtonGroup, EuiText, useEuiTheme } from '@elastic/eui';
+import {
+  EuiButton,
+  EuiButtonGroup,
+  EuiButtonIcon,
+  EuiText,
+  useEuiTheme,
+} from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import type { ColorModePreference } from './color_mode';
@@ -23,6 +30,12 @@ const MODE_OPTIONS: { id: StudioMode; label: string }[] = [
 const isMode = (id: string): id is StudioMode =>
   MODE_OPTIONS.some((option) => option.id === id);
 
+export interface PhoneNav {
+  isOpen: boolean;
+  onToggle: () => void;
+  toggleRef: Ref<HTMLButtonElement>;
+}
+
 export interface StudioHeaderProps {
   /** Defaults to "Isomer Studio". */
   title?: string | undefined;
@@ -35,6 +48,8 @@ export interface StudioHeaderProps {
   onColorModeChange: (colorMode: ColorModePreference) => void;
   onSelectPrimitive: (type: string) => void;
   onHome: () => void;
+  /** On a phone: a menu button for the nav, and one color mode button. */
+  phoneNav?: PhoneNav | undefined;
 }
 
 /** Title, the Workbench/Reference switch, search and color mode. The mark and title link to Home. */
@@ -47,6 +62,7 @@ export const StudioHeader = ({
   onColorModeChange,
   onSelectPrimitive,
   onHome,
+  phoneNav,
 }: StudioHeaderProps) => {
   const { euiTheme } = useEuiTheme();
 
@@ -62,6 +78,9 @@ export const StudioHeader = ({
       display: flex;
       flex-wrap: nowrap;
       padding-inline: ${euiTheme.size.s};
+    }
+    @media (pointer: coarse) {
+      height: calc(${euiTheme.size.xxxl} + ${euiTheme.size.s});
     }
   `;
   const brandSlot = css`
@@ -117,6 +136,11 @@ export const StudioHeader = ({
       outline: 2px solid ${euiTheme.colors.primary};
       outline-offset: 2px;
     }
+    @media (pointer: coarse) {
+      min-block-size: 44px;
+      min-inline-size: 44px;
+      justify-content: center;
+    }
   `;
 
   return (
@@ -130,6 +154,18 @@ export const StudioHeader = ({
             gap: ${euiTheme.size.s};
           `,
         ]}>
+        {phoneNav ? (
+          <EuiButtonIcon
+            display="empty"
+            size="m"
+            color="text"
+            iconType="menu"
+            aria-label="Primitive navigation"
+            aria-expanded={phoneNav.isOpen}
+            buttonRef={phoneNav.toggleRef}
+            onClick={phoneNav.onToggle}
+          />
+        ) : null}
         <a
           href={formatLocation(HOME)}
           css={brand}
@@ -183,7 +219,10 @@ export const StudioHeader = ({
           `,
         ]}>
         <PrimitiveSearch {...{ onSelectPrimitive }} />
-        <ColorModePicker {...{ colorMode, onColorModeChange }} />
+        <ColorModePicker
+          {...{ colorMode, onColorModeChange }}
+          compact={phoneNav !== undefined}
+        />
       </div>
     </header>
   );

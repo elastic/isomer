@@ -58,6 +58,7 @@ const renderNav = (props: Partial<StudioNavProps> = {}) => {
           page="callout"
           isOpen
           {...{ onToggle, onCompose }}
+          onClose={() => undefined}
           onSelect={() => undefined}
           {...{ onSelectApp }}
           {...props}

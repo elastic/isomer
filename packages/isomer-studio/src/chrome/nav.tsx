@@ -5,18 +5,20 @@
  * 2.0.
  */
 
-import type { ReactElement, ReactNode } from 'react';
-import React, { useMemo, useState } from 'react';
+import type { ReactElement, ReactNode, RefObject } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { EuiListGroupItemProps, IconType } from '@elastic/eui';
 import {
   EuiButtonEmpty,
   EuiButtonIcon,
   EuiFieldSearch,
+  EuiFocusTrap,
   EuiHorizontalRule,
   EuiListGroup,
   EuiListGroupItem,
   EuiTitle,
   EuiToolTip,
+  transparentize,
   useEuiScrollBar,
   useEuiShadow,
   useEuiTheme,
@@ -40,7 +42,11 @@ export const NAV_WIDTH = {
   open: 272,
   closed: 72,
   compactAt: 1120,
+  /** At or below this width the closed rail goes away and the header's menu button opens the nav. */
+  phoneAt: 640,
 } as const;
+
+const NAV_ID = 'isomer-studio-nav';
 
 /** The edge of a glyph, matching `EuiIcon` at size `m`. */
 const GLYPH_SIZE = 16;
@@ -55,7 +61,13 @@ export interface StudioNavProps {
   isComposing?: boolean | undefined;
   isOpen: boolean;
   isCompact?: boolean | undefined;
+  /** Hides the nav while it is closed, and makes it modal while open. */
+  isPhone?: boolean | undefined;
+  /** The control outside the nav that opens it on a phone; it stays reachable while the nav is modal. */
+  toggleRef?: RefObject<HTMLElement> | undefined;
   onToggle: () => void;
+  /** Closes the nav, and never opens it, unlike `onToggle`. */
+  onClose: () => void;
   onCompose: () => void;
   onSelect: (page: string) => void;
   onSelectApp: (id: string, path?: string) => void;
@@ -295,7 +307,10 @@ export const StudioNav = ({
   isComposing = false,
   isOpen,
   isCompact = false,
+  isPhone = false,
+  toggleRef,
   onToggle,
+  onClose,
   onCompose,
   onSelect,
   onSelectApp,
@@ -358,13 +373,18 @@ export const StudioNav = ({
     min-block-size: 0;
     padding-block: 0 ${euiTheme.size.m};
     overflow: hidden;
+    &:focus {
+      outline: none;
+    }
     ${
       isCompact
         ? css`
             position: absolute;
             inset-block: 0;
             inset-inline-start: 0;
-            z-index: 1;
+            /* Above the Workbench's resize handle, which EUI also gives z-index 1. */
+            z-index: 2;
+            display: ${isPhone && !isOpen ? 'none' : 'flex'};
             inline-size: ${isOpen ? NAV_WIDTH.open : NAV_WIDTH.closed}px;
             background: ${
               isOpen ? euiTheme.colors.backgroundBasePlain : 'transparent'
@@ -408,8 +428,23 @@ export const StudioNav = ({
   const activePage = app === undefined && !isComposing ? page : undefined;
   const toggleLabel = `${isOpen ? 'Collapse' : 'Expand'} primitive navigation`;
 
-  return (
-    <nav css={column} aria-label="Primitives">
+  const isModal = isPhone && isOpen;
+  const wasModal = useRef(false);
+  useEffect(() => {
+    if (isModal) {
+      document.getElementById(NAV_ID)?.focus();
+    } else if (wasModal.current) {
+      // Nothing outside the open nav takes pointer events, so no click outside has moved focus.
+      toggleRef?.current?.focus();
+    }
+    wasModal.current = isModal;
+  }, [isModal, toggleRef]);
+  const nav = (
+    <nav
+      id={NAV_ID}
+      css={column}
+      aria-label="Primitives"
+      tabIndex={isPhone ? -1 : undefined}>
       <div css={toolbar}>
         {isOpen ? (
           <div
@@ -531,5 +566,34 @@ export const StudioNav = ({
         )}
       </div>
     </nav>
+  );
+
+  if (!isPhone) {
+    return nav;
+  }
+  return (
+    <>
+      {isModal ? (
+        <div
+          aria-hidden={true}
+          css={css`
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            background: ${transparentize(euiTheme.colors.shadow, 0.4)};
+          `}
+        />
+      ) : null}
+      <EuiFocusTrap
+        disabled={!isModal}
+        noIsolation={false}
+        returnFocus={false}
+        closeOnMouseup
+        shards={toggleRef ? [toggleRef] : []}
+        onClickOutside={onClose}
+        onEscapeKey={onClose}>
+        {nav}
+      </EuiFocusTrap>
+    </>
   );
 };

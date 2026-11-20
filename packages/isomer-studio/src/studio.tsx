@@ -5,10 +5,16 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { EuiProvider, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
-import { css } from '@emotion/react';
+import { css, Global } from '@emotion/react';
 
 import { AppHost } from './apps/app_host';
 import { useAccent } from './chrome/accent';
@@ -20,6 +26,7 @@ import { StudioHeader } from './chrome/header';
 import { NAV_WIDTH, StudioNav } from './chrome/nav';
 import type { StudioRouter } from './chrome/route';
 import {
+  formatLocation,
   GALLERY,
   isAppRoute,
   isComposeRoute,
@@ -49,6 +56,22 @@ const darkWrapper = {
 
 const NO_TINT = {};
 
+/** Touch targets of at least 44px for the controls EUI draws smaller. */
+const touchTargets = css`
+  @media (pointer: coarse) {
+    .euiButton,
+    .euiButtonEmpty,
+    .euiButtonIcon,
+    .euiButtonGroupButton,
+    .euiListGroupItem__button {
+      min-block-size: 44px;
+    }
+    .euiButtonIcon {
+      min-inline-size: 44px;
+    }
+  }
+`;
+
 const NO_APPS: readonly StudioApp[] = [];
 
 const fill = css`
@@ -59,6 +82,11 @@ const compactNavQuery = () =>
   typeof window === 'undefined'
     ? undefined
     : window.matchMedia(`(max-width: ${NAV_WIDTH.compactAt}px)`);
+
+const phoneNavQuery = () =>
+  typeof window === 'undefined'
+    ? undefined
+    : window.matchMedia(`(max-width: ${NAV_WIDTH.phoneAt}px)`);
 
 const Layout = ({
   title = 'Isomer Studio',
@@ -102,6 +130,19 @@ const Layout = ({
     () => compactNavQuery()?.matches ?? false
   );
   const [isNavOpen, setNavOpen] = useState(() => !isCompactNav);
+  const [isPhone, setPhone] = useState(() => phoneNavQuery()?.matches ?? false);
+  const navToggle = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const query = phoneNavQuery();
+    if (!query) {
+      return;
+    }
+    const update = () => setPhone(query.matches);
+    update();
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
 
   useEffect(() => {
     const query = compactNavQuery();
@@ -132,11 +173,13 @@ const Layout = ({
     display: grid;
     position: relative;
     grid-template-columns: ${
-      isCompactNav
-        ? NAV_WIDTH.closed
-        : isNavOpen
-          ? NAV_WIDTH.open
-          : NAV_WIDTH.closed
+      isPhone
+        ? 0
+        : isCompactNav
+          ? NAV_WIDTH.closed
+          : isNavOpen
+            ? NAV_WIDTH.open
+            : NAV_WIDTH.closed
     }px minmax(0, 1fr);
     transition: grid-template-columns ${euiTheme.animation.normal}
       ${euiTheme.animation.resistance};
@@ -154,6 +197,16 @@ const Layout = ({
     grid-column: 2;
     margin-left: 0;
   `;
+
+  const closeOnPhone = useCallback(() => {
+    if (isPhone) {
+      setNavOpen(false);
+    }
+  }, [isPhone]);
+
+  // Back and Forward change the page without going through the nav.
+  const address = formatLocation(location);
+  useEffect(() => closeOnPhone(), [address, closeOnPhone]);
 
   const onSelectPrimitive = useCallback(
     (type: string) => navigate({ page: type, example: 0 }),
@@ -198,6 +251,15 @@ const Layout = ({
           }}
           onModeChange={(next) => navigate({ mode: next })}
           onHome={goHome}
+          phoneNav={
+            isPhone
+              ? {
+                  isOpen: isNavOpen,
+                  onToggle: () => setNavOpen((open) => !open),
+                  toggleRef: navToggle,
+                }
+              : undefined
+          }
         />
       </EuiThemeProvider>
       <div css={body}>
@@ -207,19 +269,29 @@ const Layout = ({
             app={app?.id}
             isComposing={composing}
             // Reopens the draft the composer last wrote, so the URL keeps sharing it.
-            onCompose={() => openComposer(composeParams)}
+            onCompose={() => {
+              openComposer(composeParams);
+              closeOnPhone();
+            }}
             appPath={isAppRoute(location) ? location.path : undefined}
             isOpen={isNavOpen}
             isCompact={isCompactNav}
+            {...{ isPhone }}
+            toggleRef={navToggle}
             onToggle={() => setNavOpen((open) => !open)}
-            onSelect={(next) =>
+            onClose={() => setNavOpen(false)}
+            onSelect={(next) => {
               navigate(
                 next === GALLERY
                   ? { mode: 'docs', page: GALLERY }
                   : { page: next, example: 0 }
-              )
-            }
-            onSelectApp={openApp}
+              );
+              closeOnPhone();
+            }}
+            onSelectApp={(id, path) => {
+              openApp(id, path);
+              closeOnPhone();
+            }}
           />
         </EuiThemeProvider>
         <main css={[panel, main]}>
@@ -348,6 +420,7 @@ const Studio = ({
       <EuiThemeProvider
         modify={tinted ? DEV_TINT : NO_TINT}
         wrapperProps={darkWrapper}>
+        <Global styles={touchTargets} />
         <Layout
           {...{ title, router, configProblems, colorMode, onColorModeChange }}
         />
