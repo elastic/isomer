@@ -1,6 +1,5 @@
 {
   "name": "@elastic/isomer-charts-elastic",
-  "private": true,
   "version": "0.0.0-development",
   "description": "Elastic Charts engine for Isomer chart Scenes: a SceneRenderer that draws metric, xy, partition, heat map, gauge and tag cloud charts as Kibana does, in the browser.",
   "license": "Elastic-2.0",
@@ -80,8 +79,5 @@
     "moment-timezone": "^0.5.48",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
-  },
-  "isomer": {
-    "unseeded": true
   }
 }
