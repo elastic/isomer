@@ -14,6 +14,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiText,
+  useEuiTheme,
 } from '@elastic/eui';
 import type { PropDescriptor } from '@elastic/isomer-runtime';
 import { css } from '@emotion/react';
@@ -110,12 +111,20 @@ export const PropsTable = ({
   names: readonly string[];
   /** Uses proportional column widths for the shared Dev drawer. */
   compact?: boolean;
-}) => (
-  <EuiBasicTable<PropDescriptor>
-    tableCaption="Props"
-    items={props}
-    columns={columnsFor(accent, names, compact)}
-    itemId="name"
-    noItemsMessage="This primitive has no props besides its type."
-  />
-);
+}) => {
+  const { euiTheme } = useEuiTheme();
+  return (
+    <EuiBasicTable<PropDescriptor>
+      css={css`
+        .euiTableRowCell__mobileHeader {
+          font-size: ${euiTheme.size.m};
+        }
+      `}
+      tableCaption="Props"
+      items={props}
+      columns={columnsFor(accent, names, compact)}
+      itemId="name"
+      noItemsMessage="This primitive has no props besides its type."
+    />
+  );
+};

@@ -784,6 +784,74 @@ test.describe('static build', () => {
     expect(problems).toEqual([]);
   });
 
+  test('opens the Gallery from the keyboard when a header search matches nothing', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    const search = page.locator('header').getByLabel('Search primitives');
+    await search.fill('zzzqq');
+    const gallery = page.getByRole('option', { name: /Browse all \d+/ });
+    await expect(gallery).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Gallery' })
+    ).toBeVisible();
+    await expect(page.getByRole('listbox')).toHaveCount(0);
+  });
+
+  test('keeps a long search that matches nothing inside a phone screen', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${site.url}#/home`);
+    await page.getByLabel('Search primitives').fill('x'.repeat(200));
+    const option = page.getByRole('option', { name: /Browse all \d+/ });
+    await expect(option).toBeVisible();
+    for (const element of [option, page.getByRole('listbox')]) {
+      const { x, width } = (await element.boundingBox())!;
+      expect(x).toBeGreaterThanOrEqual(0);
+      expect(x + width).toBeLessThanOrEqual(390);
+      expect(
+        await element.evaluate(
+          ({ scrollWidth, clientWidth }) => scrollWidth <= clientWidth
+        )
+      ).toBe(true);
+    }
+  });
+
+  test('gives the nav filter placeholder 4.5:1 contrast', async ({ page }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+    const ratio = await page
+      .getByRole('navigation', { name: 'Primitives' })
+      .getByLabel('Filter primitives')
+      .evaluate((input) => {
+        const rgb = (color: string) =>
+          (color.match(/[\d.]+/g) ?? []).slice(0, 4).map(Number);
+        const luminance = ([r = 0, g = 0, b = 0]: number[]) => {
+          const [lr, lg, lb] = [r, g, b].map((channel) => {
+            const c = channel / 255;
+            return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+          });
+          return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!;
+        };
+        let background: Element | null = input;
+        let fill = rgb(getComputedStyle(input).backgroundColor);
+        while (background && (fill[3] ?? 1) === 0) {
+          background = background.parentElement;
+          fill = background
+            ? rgb(getComputedStyle(background).backgroundColor)
+            : [255, 255, 255];
+        }
+        const text = luminance(
+          rgb(getComputedStyle(input, '::placeholder').color)
+        );
+        const back = luminance(fill);
+        return (Math.max(text, back) + 0.05) / (Math.min(text, back) + 0.05);
+      });
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
   test('keeps previews out of the page outline on the Workbench and Reference', async ({
     page,
   }) => {

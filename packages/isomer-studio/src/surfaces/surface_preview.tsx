@@ -213,7 +213,7 @@ export const SurfacePreview = ({
             <>
               <SourceView {...{ output }} />
               {slack ? (
-                <EuiText size="xs">
+                <EuiText size="s">
                   <EuiSpacer size="xs" />
                   <EuiLink
                     href={blockKitBuilderUrl(slack.blocks)}
