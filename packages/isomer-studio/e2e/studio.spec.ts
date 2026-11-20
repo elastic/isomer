@@ -1432,8 +1432,68 @@ test.describe('static build', () => {
       );
       expect(background > 128).toBe(colorScheme === 'light');
       expect(Math.abs(background - heading)).toBeGreaterThan(128);
+
+      const hero = await panel
+        .getByRole('heading', { level: 1 })
+        .evaluate((element) => {
+          const section = element.closest('section')!;
+          const style = getComputedStyle(section);
+          return {
+            color: style.backgroundColor,
+            glows: style.backgroundImage.split('radial-gradient').length - 1,
+            width: section.getBoundingClientRect().width,
+            page: section.closest('main')!.clientWidth,
+            divider: style.borderBottomWidth,
+          };
+        });
+      expect(lightness(hero.color) > 128).toBe(colorScheme === 'light');
+      expect(hero.glows).toBe(3);
+      // The hairline spans Home's scrolling page, under the full-width background.
+      expect(hero.width).toBe(hero.page);
+      expect(hero.divider).not.toBe('0px');
     });
   }
+
+  test("keeps each Gallery tile's Workbench button inside its tile in three narrow columns", async ({
+    page,
+  }) => {
+    test.skip(
+      Boolean(process.env.STUDIO_CONFIG),
+      'needs a group with at least three examples, as the repository pack has'
+    );
+    await page.setViewportSize({ width: 800, height: 900 });
+    await page.goto(`${site.url}#/docs/gallery`);
+    const tiles = page.locator('main .euiPanel:has([inert])');
+    await expect(tiles.first()).toBeVisible();
+    for (const tile of await tiles.all()) {
+      await expect(
+        tile.getByRole('link', { name: /^Open .+ in Workbench$/ })
+      ).toBeVisible();
+    }
+    const measured = await tiles.evaluateAll((panels) =>
+      panels.map((panel) => {
+        const tile = panel.getBoundingClientRect();
+        const link = panel
+          .querySelector('a[aria-label$=" in Workbench"]')
+          ?.getBoundingClientRect();
+        return {
+          top: tile.top,
+          inside: Boolean(
+            link && link.left >= tile.left && link.right <= tile.right
+          ),
+        };
+      })
+    );
+    const [first] = measured;
+    expect(measured.filter(({ top }) => top === first!.top)).toHaveLength(3);
+    expect(measured.filter(({ inside }) => !inside)).toEqual([]);
+    expect(
+      await page
+        .locator('main')
+        .first()
+        .evaluate(({ scrollWidth, clientWidth }) => scrollWidth <= clientWidth)
+    ).toBe(true);
+  });
 });
 
 test.describe('decks', () => {

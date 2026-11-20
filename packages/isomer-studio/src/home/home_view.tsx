@@ -26,6 +26,7 @@ import {
   EuiStat,
   EuiText,
   EuiTitle,
+  useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
@@ -41,6 +42,7 @@ import {
 import { Glyph, PrimitiveGlyph } from '../chrome/primitive_glyph';
 import { PrimitiveSearch } from '../chrome/primitive_search';
 import { formatLocation, formatRoute, GALLERY } from '../chrome/route';
+import { shellBackground } from '../chrome/shell_background';
 import type { ComposeParams } from '../model/compose_link';
 import type { PrimitiveDoc } from '../model/describe_runtime';
 import { pickFeatured } from '../model/featured';
@@ -224,15 +226,20 @@ export const HomeView = ({
   const surfaces = previewSurfaces(supported, Boolean(rasterizePng));
   const first = groups[0]?.types[0] ?? primitives[0]?.type ?? '';
   const packNames = new Intl.ListFormat('en').format(packs.map(({ id }) => id));
+  const { euiTheme } = useEuiTheme();
 
   return (
     <div data-testid="home">
-      <EuiPageSection restrictWidth={WIDTH} paddingSize="xl">
+      <EuiPageSection
+        restrictWidth={WIDTH}
+        paddingSize="xl"
+        bottomBorder="extended"
+        css={shellBackground(euiTheme, 'docs')}>
         <EuiFlexGroup
           justifyContent="spaceBetween"
           alignItems="center"
           responsive={false}>
-          <EuiText size="s" color="subdued">
+          <EuiText size="s">
             <strong>{title}</strong>
           </EuiText>
           <ColorModePicker {...{ colorMode, onColorModeChange }} />

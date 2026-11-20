@@ -8,10 +8,10 @@
 import type { ReactNode } from 'react';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  EuiButtonEmpty,
   EuiFlexGrid,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiLink,
   EuiPanel,
   EuiSpacer,
   EuiText,
@@ -117,20 +117,20 @@ const ExampleTile = ({
   eager: boolean;
 }) => (
   <EuiPanel hasBorder hasShadow={false} paddingSize="m">
-    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+    <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false} wrap>
       <EuiFlexItem>
         <EuiText size="s">
           <strong>{label}</strong> · {name}
         </EuiText>
       </EuiFlexItem>
       <EuiFlexItem grow={false}>
-        <EuiText size="xs">
-          <EuiLink
-            href={devHref}
-            aria-label={`Open ${label} ${name} in Workbench`}>
-            Open in Workbench
-          </EuiLink>
-        </EuiText>
+        <EuiButtonEmpty
+          size="s"
+          iconType="code"
+          href={devHref}
+          aria-label={`Open ${label} ${name} in Workbench`}>
+          Workbench
+        </EuiButtonEmpty>
       </EuiFlexItem>
     </EuiFlexGroup>
     <EuiSpacer size="s" />
