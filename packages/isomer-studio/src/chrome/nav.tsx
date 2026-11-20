@@ -11,6 +11,7 @@ import type { EuiListGroupItemProps, IconType } from '@elastic/eui';
 import {
   EuiButtonEmpty,
   EuiButtonIcon,
+  euiCanAnimate,
   EuiFieldSearch,
   EuiFocusTrap,
   EuiHorizontalRule,
@@ -391,8 +392,10 @@ export const StudioNav = ({
             };
             border-inline-end: ${isOpen ? euiTheme.border.thin : 'none'};
             ${isOpen ? overlayShadow : ''};
-            transition: inline-size ${euiTheme.animation.normal}
-              ${euiTheme.animation.resistance};
+            ${euiCanAnimate} {
+              transition: inline-size ${euiTheme.animation.normal}
+                ${euiTheme.animation.resistance};
+            }
           `
         : ''
     }

@@ -10,7 +10,7 @@ import { EuiCallOut } from '@elastic/eui';
 import { runEnhancementScript } from '@elastic/isomer-sdk/react';
 import { css } from '@emotion/react';
 
-import { ShadowRootHost } from './shadow_root';
+import { quietPreview, ShadowRootHost } from './shadow_root';
 
 const MIN_HEIGHT = 48;
 
@@ -76,9 +76,10 @@ export const HtmlSurface = ({
       framed = element.contentDocument ?? undefined;
       framed?.addEventListener('keydown', onKey);
       const body = framed?.body;
-      if (!body) {
+      if (!framed || !body) {
         return;
       }
+      quietPreview(framed);
       // A frame clips what overflows it, so a fixed-width document widens the frame to show it.
       // The width is set on the node so each measurement starts from the container's width.
       const update = () => {

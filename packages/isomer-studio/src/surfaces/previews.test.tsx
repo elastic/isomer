@@ -13,7 +13,14 @@ import type {
 } from '@elastic/isomer-sdk';
 import { someBodyNode } from '@elastic/isomer-sdk';
 import { css } from '@emotion/react';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 
 import type { StudioRuntime } from '../config';
 import type { StudioContextValue } from '../studio_context';
@@ -26,6 +33,7 @@ import { ReactSurface } from './react_surface';
 import { ScaledPreview } from './scaled_preview';
 import { ShadowRootHost } from './shadow_root';
 import { SurfaceBoard } from './surface_board';
+import { MarkdownSurface } from './text_surfaces';
 
 class FakeResizeObserver {
   static readonly instances = new Set<FakeResizeObserver>();
@@ -243,6 +251,21 @@ describe('ScaledPreview', () => {
   });
 });
 
+describe('MarkdownSurface', () => {
+  it('demotes a top-level heading, including one from new Markdown', async () => {
+    const { container, rerender } = render(
+      <MarkdownSurface markdown={'# First\n\n## Second'} />
+    );
+    const title = () => container.querySelector('h1');
+    expect(title()).toHaveAttribute('aria-level', '2');
+    expect(container.querySelector('h2')).not.toHaveAttribute('aria-level');
+
+    rerender(<MarkdownSurface markdown={'Intro\n\n# Later'} />);
+    await waitFor(() => expect(title()).toHaveTextContent('Later'));
+    await waitFor(() => expect(title()).toHaveAttribute('aria-level', '2'));
+  });
+});
+
 describe('HtmlSurface', () => {
   it('renders HTML in a shadow root, runs only explicit enhancements, and replaces enhanced content', () => {
     const html =
@@ -420,6 +443,33 @@ describe('HtmlSurface', () => {
 
     expect(frame.style.width).toBe('');
     expect(frame.clientWidth).toBe(1600);
+  });
+
+  it('keeps each framed document from adding a main landmark or a top-level heading', () => {
+    const { rerender } = render(
+      <HtmlSurface html="<main><h1>First</h1></main>" title="Preview" />
+    );
+    const frame = screen.getByTitle<HTMLIFrameElement>('Preview');
+    const framed = frame.contentDocument;
+    if (!framed) {
+      throw new Error('No frame document.');
+    }
+    framed.body.innerHTML = '<main><h1>First</h1></main>';
+    loadDocument(frame, 400);
+    expect(framed.querySelector('main')).toHaveAttribute('role', 'generic');
+    expect(framed.querySelector('h1')).toHaveAttribute('aria-level', '2');
+
+    rerender(
+      <HtmlSurface
+        html='<div role="main"><h1 aria-level="1">Second</h1></div>'
+        title="Preview"
+      />
+    );
+    framed.body.innerHTML =
+      '<div role="main"><h1 aria-level="1">Second</h1></div>';
+    loadDocument(frame, 400);
+    expect(framed.querySelector('div')).toHaveAttribute('role', 'generic');
+    expect(framed.querySelector('h1')).toHaveAttribute('aria-level', '2');
   });
 
   it("forwards keys from the frame's document to the page, but not keys typed into its fields", () => {
@@ -708,6 +758,7 @@ describe('SurfaceBoard', () => {
     render(
       <SurfaceBoard
         surfaces={['snapshot', 'png']}
+        headingLevel={2}
         composition={composition('first')}
         validation={noWarnings}
         view="render"
@@ -745,6 +796,7 @@ describe('SurfaceBoard', () => {
     render(
       <SurfaceBoard
         surfaces={['snapshot', 'png']}
+        headingLevel={2}
         composition={composition('first')}
         validation={noWarnings}
         view="render"
@@ -760,14 +812,48 @@ describe('SurfaceBoard', () => {
       screen.queryByRole('heading', { level: 2, name: 'Visual outputs' })
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 3, name: 'Snapshot' })
+      screen.getByRole('heading', { level: 2, name: 'Snapshot' })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { level: 3, name: 'PNG' })
+      screen.getByRole('heading', { level: 2, name: 'PNG' })
     ).toBeInTheDocument();
     expect(screen.queryByText('Image')).not.toBeInTheDocument();
     expect(screen.queryByText('Visual')).not.toBeInTheDocument();
     expect(screen.queryByText('Other outputs')).not.toBeInTheDocument();
+  });
+
+  it('titles each output one level below the heading the caller puts the board under', () => {
+    const { rerender } = render(
+      <SurfaceBoard
+        surfaces={['snapshot', 'markdown']}
+        headingLevel={3}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+      />,
+      { wrapper: withStudio(studio()) }
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Snapshot' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Markdown' })
+    ).toBeInTheDocument();
+
+    rerender(
+      <SurfaceBoard
+        surfaces={['markdown']}
+        headingLevel={3}
+        composition={composition('first')}
+        validation={noWarnings}
+        view="render"
+        zoom="fit"
+      />
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Markdown preview' })
+    ).toBeInTheDocument();
   });
 
   it('uses HTML for combined browser outputs without a dropdown and keeps PNG separate', () => {
@@ -778,6 +864,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const { rerender } = render(<SurfaceBoard {...props} />, {
       wrapper: withStudio(studio()),
@@ -819,6 +906,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const frameOf = (name: string) => {
       const frame = screen
@@ -884,6 +972,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/1)' }));
@@ -927,6 +1016,7 @@ describe('SurfaceBoard', () => {
     render(
       <SurfaceBoard
         surfaces={['html']}
+        headingLevel={2}
         composition={composition('first')}
         validation={noWarnings}
         view="render"
@@ -965,6 +1055,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
     fireEvent.click(screen.getByRole('button', { name: 'Enhancements (0/2)' }));
@@ -1055,6 +1146,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const { rerender } = render(<SurfaceBoard {...props} />, { wrapper });
     expect(
@@ -1089,6 +1181,7 @@ describe('SurfaceBoard', () => {
       validation: noWarnings,
       view: 'render' as const,
       zoom: 'fit' as const,
+      headingLevel: 2 as const,
     };
     const { rerender } = render(<SurfaceBoard {...props} />, {
       wrapper: withStudio(studio()),
@@ -1106,6 +1199,7 @@ describe('SurfaceBoard', () => {
     render(
       <SurfaceBoard
         surfaces={['html']}
+        headingLevel={2}
         composition={composition('first')}
         validation={noWarnings}
         view="render"
