@@ -113,7 +113,7 @@ The size limits bound the rest, parsing and memory: 250,000 characters of spec, 
 | `over-marks`: a 250,000-character scatter plot past the cap, drawn as a note | 176 | 56 | 255 | 3.7 |
 | 16 PNGs at 2× through a limiter of 2 | 233 | 113 | 14 | 18 |
 
-The script finds `budget-marks`'s point count before any measured process starts, and fails a run that drew anything but a chart, or for `over-marks` the mark-cap note, so a chart Vega fails to draw never passes as a cheaper note.
+The script finds `budget-marks`'s point count in a process of its own, so no measured process draws the probes, and fails a run that drew anything but a chart with marks, or for `over-marks` the mark-cap note, so a chart Vega fails to draw never passes as a cheaper one.
 
 Linux pays more for the same work, so read Linux for a server: on CI's Linux x64 runners, one cold PNG peaked at 135 MB and every other scenario at 294–364 MB, about 170 MB over loaded.
 

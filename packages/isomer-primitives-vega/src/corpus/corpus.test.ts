@@ -27,8 +27,8 @@ const TAG = /<[^>]*>/g;
 
 /**
  * `svg` with each def id renamed by the order it is defined in, in `id` attributes and in attribute values that
- * are a `url(#…)` reference, so two drawings compare one-to-one whatever their ids. A reference to no
- * definition fails the test.
+ * are a `url(#…)` reference outside `aria-*`, so two drawings compare one-to-one whatever their ids. Throws on a
+ * reference to no definition.
  */
 const canonicalIds = (svg: string) => {
   const names = new Map<string, string>();
@@ -43,11 +43,19 @@ const canonicalIds = (svg: string) => {
         /(\sid=")([^"]*)"/g,
         (_match, lead: string, id: string) => `${lead}${names.get(id)}"`
       )
-      .replace(/="url\(#([^)"]*)\)"/g, (_match, id: string) => {
-        const name = names.get(id);
-        expect(name, `url(#${id}) names no definition`).toBeDefined();
-        return `="url(#${name})"`;
-      })
+      .replace(
+        /(\s[\w:-]+)="url\(#([^)"]*)\)"/g,
+        (match, attribute: string, id: string) => {
+          if (attribute.trimStart().startsWith('aria-')) {
+            return match;
+          }
+          const name = names.get(id);
+          if (name === undefined) {
+            throw new Error(`url(#${id}) names no definition`);
+          }
+          return `${attribute}="url(#${name})"`;
+        }
+      )
   );
 };
 
@@ -80,6 +88,40 @@ const reference = async (vegaSpec: SpecObject) => {
     view.finalize();
   }
 };
+
+describe('canonicalIds', () => {
+  const defs = (a: string, b: string) =>
+    `<svg><defs><clipPath id="${a}"></clipPath><clipPath id="${b}"></clipPath></defs>`;
+
+  it('renames ids by definition order, so differently numbered drawings compare equal', () => {
+    const svg = (a: string, b: string) =>
+      `${defs(a, b)}<g clip-path="url(#${a})"></g><g clip-path="url(#${b})"></g></svg>`;
+    expect(canonicalIds(svg('clip1', 'clip2'))).toBe(
+      canonicalIds(svg('isomer-vega-x-clip7', 'isomer-vega-x-clip9'))
+    );
+  });
+
+  it('tells apart swapped references and two definitions sharing one', () => {
+    const drawn = (first: string, second: string) =>
+      canonicalIds(
+        `${defs('a', 'b')}<g clip-path="url(#${first})"></g><g clip-path="url(#${second})"></g></svg>`
+      );
+    expect(drawn('b', 'a')).not.toBe(drawn('a', 'b'));
+    expect(drawn('a', 'a')).not.toBe(drawn('a', 'b'));
+  });
+
+  it('leaves text and descriptions that quote a reference as written', () => {
+    const svg = `${defs('a', 'b')}<g aria-label="url(#gone)"><text>url(#gone)</text></g></svg>`;
+    expect(canonicalIds(svg)).toContain('aria-label="url(#gone)"');
+    expect(canonicalIds(svg)).toContain('<text>url(#gone)</text>');
+  });
+
+  it('throws on a reference to no definition', () => {
+    expect(() =>
+      canonicalIds(`${defs('a', 'b')}<g clip-path="url(#c)"></g></svg>`)
+    ).toThrow('url(#c) names no definition');
+  });
+});
 
 const corpus: [string, CorpusSpec[]][] = [
   ['Vega-Lite', vegaLiteSpecs],

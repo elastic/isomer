@@ -261,15 +261,20 @@ const child = async (scenario, points) => {
       theme,
     });
     draws.push(ms(drawStart));
-    // A chart Vega fails to draw becomes a cheaper note, which would pass the bounds unmeasured.
+    // A chart Vega fails to draw becomes a cheaper note, and one that draws no marks a cheaper chart; neither is measured.
+    const drewMarks = /class="mark-[a-z]+ role-mark[^"]*"[^>]*><(?!\/g>)/.test(
+      input.html
+    );
     const drew = input.html.includes('data-isomer-vega-error=')
       ? input.html.includes('data-isomer-vega-error="vega: the chart draws ')
         ? 'note'
         : 'error'
-      : 'chart';
+      : drewMarks
+        ? 'chart'
+        : 'no marks';
     if (drew !== (note ? 'note' : 'chart')) {
       throw new Error(
-        `${scenario}: expected ${note ? 'the mark-cap note' : 'a chart'}, drew ${input.html.slice(0, 300)}`
+        `${scenario}: expected ${note ? 'the mark-cap note' : 'a chart with marks'}, drew ${input.html.slice(0, 300)}`
       );
     }
     const rasterStart = process.hrtime.bigint();
@@ -341,6 +346,17 @@ const pointsAtMarkCap = () => {
   return low;
 };
 
+/** {@link pointsAtMarkCap}, run in a fresh process. */
+const probePoints = () => {
+  const run = spawnSync(process.execPath, [__filename, '--probe'], {
+    encoding: 'utf8',
+  });
+  if (run.status !== 0) {
+    throw new Error(`the mark-cap probe failed:\n${run.stderr}`);
+  }
+  return Number(run.stdout);
+};
+
 const parent = () => {
   const args = process.argv.slice(2);
   const option = (name, fallback) => {
@@ -358,8 +374,8 @@ const parent = () => {
       throw new Error(`unknown scenario ${scenario}`);
     }
   }
-  // Found here, so no measured process draws the probes.
-  const points = scenarios.includes('budget-marks') ? pointsAtMarkCap() : 0;
+  // Found in a process of its own, so neither a measured run nor this launcher draws the probes.
+  const points = scenarios.includes('budget-marks') ? probePoints() : 0;
   const results = scenarios.flatMap((scenario) =>
     Array.from({ length: runs }, () => {
       const run = spawnSync(
@@ -443,7 +459,9 @@ const parent = () => {
 module.exports = { BOUNDS };
 
 if (require.main === module) {
-  if (process.argv[2] === '--child') {
+  if (process.argv[2] === '--probe') {
+    process.stdout.write(String(pointsAtMarkCap()));
+  } else if (process.argv[2] === '--child') {
     child(process.argv[3], Number(process.argv[4])).catch((error) => {
       process.stderr.write(`${error.stack}\n`);
       process.exit(1);
