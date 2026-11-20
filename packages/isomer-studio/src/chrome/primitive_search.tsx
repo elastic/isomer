@@ -5,15 +5,26 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { EuiSelectableTemplateSitewideOption } from '@elastic/eui';
 import {
+  EuiSelectableMessage,
   EuiSelectableTemplateSitewide,
+  useEuiTheme,
   useIsWithinBreakpoints,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
 
 import { useStudio } from '../studio_context';
+
+import { formatRoute, GALLERY } from './route';
+
+/** EUI's partial match, which `EuiSelectable` applies to these options. */
+const matchesQuery = (
+  { label, searchableLabel }: EuiSelectableTemplateSitewideOption,
+  query: string
+) =>
+  (searchableLabel || label).trim().toLowerCase().includes(query.toLowerCase());
 
 export interface PrimitiveSearchProps {
   onSelectPrimitive: (type: string) => void;
@@ -32,6 +43,7 @@ export const PrimitiveSearch = ({
     docs: { primitives },
   } = useStudio();
   const input = useRef<HTMLInputElement | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -62,16 +74,44 @@ export const PrimitiveSearch = ({
     [primitives]
   );
 
+  const hasMatch = useMemo(
+    () => !query || options.some((option) => matchesQuery(option, query)),
+    [options, query]
+  );
+  const galleryOption: EuiSelectableTemplateSitewideOption = {
+    key: GALLERY,
+    label: `Browse all ${primitives.length} primitives in the Gallery`,
+    meta: [{ text: `No primitive matches “${query}”` }],
+  };
+
+  const { euiTheme } = useEuiTheme();
   const large = size === 'large';
   // The shortcut hint gives way to the query on the narrowest screens.
   const showShortcut = !useIsWithinBreakpoints(['xs']);
 
   return (
     <EuiSelectableTemplateSitewide
-      options={options}
+      options={hasMatch ? options : [galleryOption]}
+      isPreFiltered={!hasMatch}
+      emptyMessage={
+        <EuiSelectableMessage>
+          <p>No primitives to search.</p>
+        </EuiSelectableMessage>
+      }
       onChange={(updated) => {
         const selected = updated.find(({ checked }) => checked === 'on');
-        if (selected?.key) {
+        if (!selected?.key) {
+          return;
+        }
+        // Leaving the field closes the results, which stay open while it has focus.
+        input.current?.blur();
+        if (selected.key === GALLERY) {
+          window.location.hash = formatRoute({
+            mode: 'docs',
+            page: GALLERY,
+            example: 0,
+          });
+        } else {
           onSelectPrimitive(selected.key);
         }
       }}
@@ -80,13 +120,19 @@ export const PrimitiveSearch = ({
         ...(showShortcut ? { append: '⌘K' } : {}),
         compressed: !large,
         fullWidth: large,
+        onChange: setQuery,
         inputRef: (element: HTMLInputElement | null) => {
           input.current = element;
         },
         'aria-label': 'Search primitives',
       }}
       popoverProps={{ width: large ? 620 : 420 }}
-      css={
+      css={[
+        css`
+          .euiFieldSearch::placeholder {
+            color: ${euiTheme.colors.textSubdued};
+          }
+        `,
         large
           ? css`
               width: 100%;
@@ -95,8 +141,8 @@ export const PrimitiveSearch = ({
               flex: 0 1 280px;
               width: 280px;
               min-width: 72px;
-            `
-      }
+            `,
+      ]}
     />
   );
 };

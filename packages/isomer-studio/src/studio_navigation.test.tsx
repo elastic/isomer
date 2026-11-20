@@ -113,6 +113,25 @@ describe('IsomerStudio', () => {
     expect(window.location.hash).toBe('#/docs/callout/0');
   });
 
+  it('offers the Gallery, once, as the result of a search that matches nothing', async () => {
+    window.location.hash = '#/home';
+    render(<IsomerStudio {...{ runtime }} />);
+    const search = await screen.findByLabelText('Search primitives');
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: 'zzzqq' } });
+
+    const gallery = await screen.findByRole('option', {
+      name: /Browse all \d+ primitives in the Gallery/,
+    });
+    expect(screen.getAllByRole('option')).toEqual([gallery]);
+    expect(gallery).toHaveTextContent('No primitive matches “zzzqq”');
+    expect(screen.queryAllByRole('link', { name: /browse all/i })).toEqual([]);
+
+    fireEvent.click(gallery);
+    await waitFor(() => expect(window.location.hash).toBe('#/docs/gallery'));
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
+  });
+
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {
     await renderStudio();
     const nav = screen.getByRole('navigation', { name: 'Primitives' });

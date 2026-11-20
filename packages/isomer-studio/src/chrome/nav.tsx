@@ -454,6 +454,9 @@ export const StudioNav = ({
             css={css`
               flex: 1;
               min-inline-size: 0;
+              .euiFieldSearch::placeholder {
+                color: ${euiTheme.colors.textSubdued};
+              }
             `}>
             <EuiFieldSearch
               compressed

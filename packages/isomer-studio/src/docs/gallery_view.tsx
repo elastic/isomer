@@ -119,7 +119,7 @@ const ExampleTile = ({
   <EuiPanel hasBorder hasShadow={false} paddingSize="m">
     <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
       <EuiFlexItem>
-        <EuiText size="xs">
+        <EuiText size="s">
           <strong>{label}</strong> · {name}
         </EuiText>
       </EuiFlexItem>

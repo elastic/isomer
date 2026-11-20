@@ -137,7 +137,7 @@ const FeaturedCard = ({ doc }: { doc: PrimitiveDoc }) => {
           </EuiButtonEmpty>
         </EuiFlexGroup>
       }>
-      <EuiText size="xs" color="subdued">
+      <EuiText size="s" color="subdued">
         <code>{group}</code>
       </EuiText>
     </EuiCard>
@@ -426,7 +426,6 @@ export const HomeView = ({
         <EuiFlexGrid columns={3} gutterSize="l">
           <Loaded title="Primitive packs" count={packs.length}>
             <EuiDescriptionList
-              compressed
               listItems={packs.map(({ id, primitives: types, authoring }) => {
                 const groupCount = authoring?.groups?.length ?? 0;
                 return {
@@ -442,7 +441,6 @@ export const HomeView = ({
           <Loaded title="Apps" count={apps.length}>
             {apps.length ? (
               <EuiDescriptionList
-                compressed
                 listItems={apps.map(
                   ({ id, title: name, description, icon }) => ({
                     title: (
@@ -470,7 +468,6 @@ export const HomeView = ({
           <Loaded title="Views" count={views.length}>
             {views.length ? (
               <EuiDescriptionList
-                compressed
                 listItems={views.map(({ id, title: name, description }) => ({
                   title: <code>{id}</code>,
                   description: description || name,

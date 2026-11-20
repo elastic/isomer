@@ -385,7 +385,7 @@ const ComposeWorkbench = ({
                     <p>{loadError}</p>
                   </EuiCallOut>
                 ) : isLoading ? (
-                  <EuiText size="xs" color="subdued">
+                  <EuiText size="s" color="subdued">
                     <p>Loading…</p>
                   </EuiText>
                 ) : (

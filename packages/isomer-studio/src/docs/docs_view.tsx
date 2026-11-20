@@ -84,7 +84,7 @@ const Guidance = ({
   names: readonly string[];
 }) => (
   <EuiPanel color={color} hasShadow={false} paddingSize="m">
-    <EuiText size="xs" color={color}>
+    <EuiText size="s" color={color}>
       <strong>{title}</strong>
     </EuiText>
     <EuiText size="s">
