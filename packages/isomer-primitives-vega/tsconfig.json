@@ -6,6 +6,7 @@
   },
   "include": [
     "src",
+    "e2e",
     "studio",
     "isomer-studio.config.ts"
   ]

@@ -166,7 +166,49 @@ describe('hardenVegaSpec', () => {
         config: { events: { selector: true, view: ['click'] } },
       }).config
     ).toEqual({
-      events: { selector: false, globalCursor: false, view: ['click'] },
+      events: {
+        selector: false,
+        globalCursor: false,
+        view: ['click'],
+        window: [
+          'mousemove',
+          'mouseup',
+          'pointermove',
+          'pointerup',
+          'touchmove',
+          'touchend',
+        ],
+      },
     });
+  });
+
+  it.each([
+    ['all window events', undefined, 6],
+    ['window events', true, 6],
+    ['no window events', false, false],
+  ])(
+    'lets a spec that allows %s hear only pointer events from the window',
+    (_name, window, heard) => {
+      const events = (
+        hardenVegaSpec({ config: { events: { window } } }).config as {
+          events: { window: unknown };
+        }
+      ).events;
+      expect(
+        Array.isArray(events.window) ? events.window.length : events.window
+      ).toBe(heard);
+    }
+  );
+
+  it('keeps a narrower window list, and drops keys and input from it', () => {
+    const harden = () =>
+      (
+        hardenVegaSpec({
+          config: { events: { window: ['keydown', 'pointerup', 'input'] } },
+        }).config as { events: { window: string[] } }
+      ).events.window;
+    expect(harden()).toEqual(['pointerup']);
+    harden().push('keydown');
+    expect(harden()).toEqual(['pointerup']);
   });
 });

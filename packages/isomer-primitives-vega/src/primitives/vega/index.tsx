@@ -23,6 +23,7 @@ export { type VegaRenderContext } from '../define';
 export { vegaCatalog } from './catalog';
 export { vegaPrimitiveSchema } from './check';
 export { drawVegaNode } from './draw';
+export { markSelectEvent, signalBrushEvent } from './events';
 export {
   brushExample,
   donutExample,
@@ -39,6 +40,7 @@ export {
   vegaExamples,
   vegaGrammarExample,
 } from './examples';
+export { VEGA_INTERACTIVE } from './interactive';
 export {
   type VegaData,
   type VegaNode,

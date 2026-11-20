@@ -1,6 +1,6 @@
 ---
 navigation_title: Rendering
-description: How the vega primitive draws on every surface, its theme and size, images, and what it costs on a server.
+description: How the vega primitive draws on every surface, its theme and size, live views, images, and what it costs on a server.
 ---
 
 # Rendering
@@ -21,11 +21,17 @@ node → toVegaSpec (strip, bind data and results, compile Vega-Lite, theme, siz
 
 | Surface | What it draws |
 | --- | --- |
-| `react` | The inline SVG, in a `div` carrying the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors), with the link line and a basemap's attribution below it. |
-| `html` | The same SVG |
+| `react` | The inline SVG, in a `div` carrying the [node anchor](../../isomer-sdk/docs/rendering.md#node-anchors), with the link line and a basemap's attribution below it. In a browser, once mounted, a live Vega view of the same spec replaces the SVG: tooltips, signals, and the node's [chart events](index.md#interactions) through `onEvent`. Effects never run on a server, so server output is the SVG alone |
+| `html` | The same SVG. With the `vegaInteractive` enhancement, each chart also embeds its compiled spec and its `id`, `data` and `interactions`, and `hydrateVega(root, { onEvent })` from `./client` makes it live |
 | `snapshot` | The same SVG, for takumi to draw. `metrics.snapshotHeight` is the chart's height plus its link line |
 | `text`, `markdown` | `title: description`; then `data` as a [`dataTable`](../../isomer-primitives-charts/docs/data-table.md) of it shows it, formatted, or else the first inline dataset's first 10 rows and 6 fields, as they are, with how many rows are left; then the link |
 | `slack` | `vega` is the pack's `slackAssetTypes` entry: with `collectAssets`, a picture uploaded with the text as alt text; without, the Markdown |
+
+A chart with `results` or a `basemap` draws statically everywhere: a live view would lose the basemap, and hover over results pruned to the drawing would show nothing.
+
+A live view replaces the SVG only when it draws at the server's size, unscaled: Vega maps the pointer without CSS scaling, so a chart scaled into its box, such as a composite Vega-Lite view or one in a narrower container, keeps its SVG. A chart whose container later comes to scale it, as a panel that narrows does, goes back to its SVG. A live view never draws past the 5,000-element cap: an update that would keeps the last drawing and raises no events until it draws again, and a first draw that would leaves the SVG. A view that cannot start leaves the SVG too, and a restart that fails puts it back.
+
+`hydrateVega(root)` makes each chart in `root`, or `root` itself, live, and returns the live views and `dispose()`. Call `dispose()` before removing or replacing hydrated charts: removing their markup leaves Vega's listeners and timers running. Hydrating a chart again replaces its live view.
 
 A spec Vega cannot draw at render time draws a note in the chart's box instead: its title and description, with the reason in `data-isomer-vega-error`.
 
@@ -81,14 +87,15 @@ Specs are author-written code, so every layer treats them as untrusted:
 - **The loader** refuses every load, fetch and file read.
 - **The scene** loses every link and image source after the dataflow runs, and every style value a CSS parser could turn into a fetch, since a signal or a data row can set one. A fetching `background` becomes `transparent`, and the SVG is refused if any `url(` but a reference to its own defs survives.
 - **Expressions** run through `vega-interpreter`, never `new Function`, so charts render under `--disallow-code-generation-from-strings`.
-- **Events** cannot select elements outside the chart, and the cursor never styles the page.
+- **Events** cannot select elements outside the chart, and from the window a chart hears only the pointer events that carry on a drag, never keys or input. The cursor never styles the page. A live view sets only a keyword cursor, so a `cursor` signal cannot name an image, and a tooltip shows no `image` from the data.
+- **A live view** scrubs its scene before every draw, as the server does once, since a signal or data can set a link or a fetching style, an array included.
 - **A basemap** is only inline raster `data:` URIs, drawn beneath the chart, with its `attribution` on a line below.
 
 ## Loading Vega on Node
 
 Vega is ESM only. A CommonJS host `require`s it, which Node allows for an ES module graph without a top-level `await`; `vega-canvas`'s Node build has one, `await import('canvas')`. The workspace patches it, as Kibana does, to resolve its browser build under `node` too (`patches/vega-canvas@2.0.0.patch`). A host that `require`s the pack applies the same patch; an ESM host needs none. Headless SVG needs no canvas: the canvas-only `label` and `wordcloud` transforms and the `heatmap` image fail, as they would without the `canvas` package.
 
-`vega`, `vega-lite` and `vega-interpreter` are Kibana's versions, and the root `pnpm.overrides` pins every `vega-*` sub-package to what Kibana resolves, so one copy of each loads.
+`vega`, `vega-lite`, `vega-interpreter` and `vega-tooltip` are Kibana's versions, and the root `pnpm.overrides` pins every `vega-*` sub-package to what Kibana resolves, so one copy of each loads.
 
 ## Limits
 
@@ -121,4 +128,4 @@ Linux pays more for the same work, so read Linux for a server: on CI's Linux x64
 
 ## Developing
 
-`pnpm --filter @elastic/isomer-primitives-vega studio` previews the pack in the Studio on every surface, with PNGs. The repository's Studio, `pnpm studio:dev`, shows it beside the other packs.
+`pnpm --filter @elastic/isomer-primitives-vega studio` previews the pack in the Studio on every surface, with PNGs. The repository's Studio, `pnpm studio:dev`, shows it beside the other packs. `e2e/hydrate.spec.ts`, run by `pnpm test:browser`, hydrates charts in Chromium and checks a tooltip, a hover signal, a click's `chart.select`, a dragged `chart.brush`, a `cursor` signal naming an image, and that nothing is fetched.

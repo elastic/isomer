@@ -5,10 +5,31 @@
  * 2.0.
  */
 
-import { definePrimitivePack, type PrimitivePack } from '@elastic/isomer-sdk';
+import {
+  definePrimitivePack,
+  type EnhancementDefinition,
+  type PrimitiveNode,
+  type PrimitivePack,
+  someBodyNode,
+} from '@elastic/isomer-sdk';
 
-import { vegaPrimitive } from './primitives/vega';
+import { VEGA_INTERACTIVE, vegaPrimitive } from './primitives/vega';
 import { vegaDistillery } from './theme';
+
+/**
+ * Embeds each chart's compiled spec beside its SVG so `hydrateVega` from
+ * `./client` can make it live. Host-driven: it ships no script.
+ */
+export const vegaInteractiveEnhancement: EnhancementDefinition = {
+  id: VEGA_INTERACTIVE,
+  appliesTo: (body, walk) =>
+    someBodyNode(
+      body,
+      'react',
+      (node) => (node as PrimitiveNode).type === 'vega',
+      walk
+    ),
+};
 
 /**
  * The input budget the pack declares, the charts pack's: a Vega node carries
@@ -23,6 +44,7 @@ export const VEGA_INPUT_BUDGET = {
 export const vegaPack: PrimitivePack = definePrimitivePack({
   id: 'vega',
   primitives: [vegaPrimitive],
+  enhancements: [vegaInteractiveEnhancement],
   slackAssetTypes: ['vega'],
   inputBudget: VEGA_INPUT_BUDGET,
   authoring: { groups: [{ title: 'Charts', types: ['vega'] }] },

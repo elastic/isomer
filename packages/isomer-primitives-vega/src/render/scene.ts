@@ -9,7 +9,7 @@ import { isSpecObject } from '../schema';
 
 /** Strings that a CSS parser could turn into a fetch: `url(…)`, `image-set(…)`, or an escape that hides one. */
 const FETCHING_CSS = /url\s*\(|image-set\s*\(|src\s*\(|\\/i;
-const KEYWORD = /^[a-z-]+$/i;
+export const KEYWORD = /^[a-z-]+$/i;
 /** Read as text or ARIA, never as CSS. */
 const TEXT_PROPERTIES = new Set([
   'text',
@@ -32,15 +32,23 @@ export const scrubScene = (node: unknown): void => {
   delete node.url;
   for (const key of ['blend', 'cursor']) {
     const value = node[key];
-    if (typeof value === 'string' && !KEYWORD.test(value)) {
+    if (
+      value !== undefined &&
+      !(typeof value === 'string' && KEYWORD.test(value))
+    ) {
       delete node[key];
     }
   }
   for (const [key, value] of Object.entries(node)) {
+    // An attribute setter writes an array as its joined text, so an array is checked in that form.
+    const css =
+      typeof value === 'string' || Array.isArray(value)
+        ? String(value)
+        : undefined;
     if (
-      typeof value === 'string' &&
+      css !== undefined &&
       !TEXT_PROPERTIES.has(key) &&
-      FETCHING_CSS.test(value)
+      FETCHING_CSS.test(css)
     ) {
       delete node[key];
     }

@@ -19,7 +19,12 @@ import { runPrimitiveInventoryConformance } from '@elastic/isomer-sdk/testing';
 import { vegaPack } from '../../pack';
 import { TABLE_RULE } from '../../schema/table';
 import { VEGA_THEMES } from '../../theme/theme';
-import { vegaChartSize, vegaPrimitive, type VegaRenderContext } from '.';
+import {
+  VEGA_INTERACTIVE,
+  vegaChartSize,
+  vegaPrimitive,
+  type VegaRenderContext,
+} from '.';
 
 import {
   brushExample,
@@ -383,7 +388,30 @@ describe('vega rendering', () => {
     expect(markup).not.toContain('javascript:');
   });
 
-  it('draws a basemap’s tiles beneath the chart', () => {
+  it('embeds the compiled spec and event fields, safe inside a script, only for the enhancement', () => {
+    const node = withSpec(vegaExample, {
+      ...vegaExample.spec,
+      title: '</script><script>alert(1)</script>',
+    });
+    const markup = html(node, [VEGA_INTERACTIVE]);
+    const [, json] =
+      /<script type="application\/json" data-isomer-vega-spec="">(.*?)<\/script>/.exec(
+        markup
+      ) ?? [];
+    expect(json).toContain('\\u003c/script\\u003e');
+    const embedded = JSON.parse(json ?? 'null') as {
+      spec: { $schema: string; config: { events: { selector: boolean } } };
+      node: { id: string; interactions: object };
+    };
+    expect(embedded.spec.$schema).toContain('vega/v6');
+    expect(embedded.spec.config.events.selector).toBe(false);
+    expect(embedded.node).toMatchObject({
+      id: 'checkout-errors',
+      interactions: { select: ['mark'] },
+    });
+  });
+
+  it('draws a chart with results or a basemap statically', () => {
     const tile = 'data:image/png;base64,iVBORw0KGgo=';
     const mapped = {
       ...mapExample,
@@ -391,7 +419,8 @@ describe('vega rendering', () => {
         tiles: [{ src: tile, x: -10, y: 0, width: 256, height: 256 }],
       },
     };
-    const markup = html(mapped);
+    const markup = html(mapped, [VEGA_INTERACTIVE]);
+    expect(markup).not.toContain('data-isomer-vega-spec');
     const svg = markup.slice(markup.indexOf('<svg'));
     expect(svg.indexOf(`<image href="${tile}" x="-10"`)).toBeGreaterThan(0);
     expect(svg.indexOf('<image')).toBeLessThan(svg.indexOf('<path'));
@@ -578,6 +607,24 @@ describe('vega chrome below the chart', () => {
       runtime.surfaces.snapshot.render(view(n), { frame: 'charts' }).height;
     expect(height(node) - height(withBasemap(vegaExample))).toBe(18);
     expect(vegaChartSize(node, { width: 400, height: 218 }).height).toBe(200);
+  });
+
+  it('leaves the opaque `source` fields out of the embedded event data', () => {
+    const node = {
+      ...brushExample,
+      data: {
+        ...brushExample.data,
+        source: { secret: 'table-meta' },
+        columns: brushExample.data!.columns.map((column) => ({
+          ...column,
+          source: { secret: 'column-meta' },
+        })),
+      },
+    } as VegaNode;
+    const markup = html(node, [VEGA_INTERACTIVE]);
+    expect(markup).toContain('data-isomer-vega-spec');
+    expect(markup).not.toContain('table-meta');
+    expect(markup).not.toContain('column-meta');
   });
 });
 

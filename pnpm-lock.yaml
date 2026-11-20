@@ -438,6 +438,9 @@ importers:
       vega-lite:
         specifier: 6.4.1
         version: 6.4.1(vega@6.2.0)
+      vega-tooltip:
+        specifier: 1.1.0
+        version: 1.1.0
       zod:
         specifier: ^4.5.4
         version: 4.6.5
@@ -5459,6 +5462,9 @@ packages:
 
   vega-time@3.1.0:
     resolution: {integrity: sha512-G93mWzPwNa6UYQRkr8Ujur9uqxbBDjDT/WpXjbDY0yygdSkRT+zXF+Sb4gjhW0nPaqdiwkn0R6kZcSPMj1bMNA==}
+
+  vega-tooltip@1.1.0:
+    resolution: {integrity: sha512-PP4CxC8gX//SBUtlcJkwffmvdZBvzAsqS0EANBKvImJ9PxV/KtJkcs7RCqp+A7nh2cjWdVzyOBWAvqKhXJStTQ==}
 
   vega-transforms@5.1.0:
     resolution: {integrity: sha512-mj/sO2tSuzzpiXX8JSl4DDlhEmVwM/46MTAzTNQUQzJPMI/n4ChCjr/SdEbfEyzlD4DPm1bjohZGjLc010yuMg==}
@@ -11164,6 +11170,10 @@ snapshots:
     dependencies:
       d3-array: 3.2.5
       d3-time: 3.1.1
+      vega-util: 2.1.0
+
+  vega-tooltip@1.1.0:
+    dependencies:
       vega-util: 2.1.0
 
   vega-transforms@5.1.0:

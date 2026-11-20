@@ -24,4 +24,4 @@ Pin `vega*` versions to what Kibana resolves, and update the root `pnpm.override
 
 ## Evidence required
 
-Every example validates and draws on every surface (`src/primitives/vega/index.test.ts`). A change to drawing passes the rendering corpus (`src/corpus/corpus.test.ts`), which holds the pack to Vega's own `toSVG()`. A change to what a chart costs reruns `bench:check`.
+Every example validates and draws on every surface (`src/primitives/vega/index.test.ts`). A change to drawing passes the rendering corpus (`src/corpus/corpus.test.ts`), which holds the pack to Vega's own `toSVG()`. A change to events passes `src/primitives/vega/events.test.ts` and `e2e/hydrate.spec.ts`. A change to what a chart costs reruns `bench:check`.
