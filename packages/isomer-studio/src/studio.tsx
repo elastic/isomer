@@ -12,7 +12,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { EuiProvider, EuiThemeProvider, useEuiTheme } from '@elastic/eui';
+import {
+  euiCanAnimate,
+  EuiProvider,
+  EuiSkipLink,
+  EuiThemeProvider,
+  useEuiTheme,
+} from '@elastic/eui';
 import type { PrimitiveNode } from '@elastic/isomer-sdk';
 import { css, Global } from '@emotion/react';
 
@@ -55,6 +61,8 @@ const darkWrapper = {
 };
 
 const NO_TINT = {};
+
+const MAIN_ID = 'isomer-studio-main';
 
 /** Touch targets of at least 44px for the controls EUI draws smaller. */
 const touchTargets = css`
@@ -181,8 +189,10 @@ const Layout = ({
             ? NAV_WIDTH.open
             : NAV_WIDTH.closed
     }px minmax(0, 1fr);
-    transition: grid-template-columns ${euiTheme.animation.normal}
-      ${euiTheme.animation.resistance};
+    ${euiCanAnimate} {
+      transition: grid-template-columns ${euiTheme.animation.normal}
+        ${euiTheme.animation.resistance};
+    }
   `;
   const panel = css`
     min-height: 0;
@@ -238,6 +248,13 @@ const Layout = ({
 
   return (
     <div css={shell}>
+      <EuiSkipLink
+        destinationId={MAIN_ID}
+        onClick={closeOnPhone}
+        overrideLinkBehavior
+        position="fixed">
+        Skip to content
+      </EuiSkipLink>
       <ShellBackdrop {...{ look }} />
       <EuiThemeProvider colorMode="dark" wrapperProps={darkWrapper}>
         <StudioHeader
@@ -294,7 +311,7 @@ const Layout = ({
             }}
           />
         </EuiThemeProvider>
-        <main css={[panel, main]}>
+        <main id={MAIN_ID} css={[panel, main]}>
           <ConfigProblems problems={configProblems} />
           {app && isAppRoute(location) ? (
             <AppHost key={app.id} path={location.path} {...{ app, openApp }} />

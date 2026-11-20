@@ -516,7 +516,7 @@ test.describe('static build', () => {
     expect(narrowBounds[1]!.y).toBeGreaterThan(narrowBounds[0]!.y);
     for (const surface of ['Web', 'Slack', 'Markdown', 'Text', 'PNG']) {
       await expect(
-        preview.getByRole('heading', { level: 3, name: surface })
+        preview.getByRole('heading', { level: 2, name: surface })
       ).toBeAttached();
     }
     await expect(
@@ -782,6 +782,107 @@ test.describe('static build', () => {
     await page.getByRole('button', { name: 'Props', exact: true }).click();
     await expect(nestedReference).toHaveCount(0);
     expect(problems).toEqual([]);
+  });
+
+  test('keeps previews out of the page outline on the Workbench and Reference', async ({
+    page,
+  }) => {
+    const cdp = await page.context().newCDPSession(page);
+    // Chromium's own tree, which honors `aria-level` and reaches into shadow roots and frames.
+    const outline = async () => {
+      const {
+        frameTree: { frame, childFrames = [] },
+      } = await cdp.send('Page.getFrameTree');
+      const nodes = (
+        await Promise.all(
+          [frame, ...childFrames.map(({ frame: child }) => child)].map(
+            async ({ id }) =>
+              (await cdp.send('Accessibility.getFullAXTree', { frameId: id }))
+                .nodes
+          )
+        )
+      ).flat();
+      const level = ({ properties = [] }: (typeof nodes)[number]) =>
+        properties.find(({ name }) => name === 'level')?.value.value as unknown;
+      return {
+        main: nodes.filter(({ role }) => role?.value === 'main').length,
+        topHeadings: nodes.filter(
+          (node) => node.role?.value === 'heading' && level(node) === 1
+        ).length,
+      };
+    };
+    for (const route of [EDIT_ROUTE, EDIT_ROUTE.replace('#/dev/', '#/docs/')]) {
+      await page.goto(`${site.url}${route}`);
+      // The shell alone has one of each, so wait until every preview has rendered.
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const hosts = [...document.querySelectorAll('main *')].filter(
+              (element) => element.shadowRoot
+            );
+            const frames = [...document.querySelectorAll('main iframe')].map(
+              (frame) => (frame as HTMLIFrameElement).contentDocument?.body
+            );
+            return (
+              hosts.length + frames.length > 0 &&
+              hosts.every((host) => host.shadowRoot!.childElementCount > 0) &&
+              frames.every((body) => (body?.childElementCount ?? 0) > 0)
+            );
+          })
+        )
+        .toBe(true);
+      await expect.poll(outline).toEqual({ main: 1, topHeadings: 1 });
+      // A focusable `main` ignores `role="presentation"`, so it needs a role that still applies.
+      await page.evaluate(() => {
+        const host = [...document.querySelectorAll('main *')].find(
+          (element) => element.shadowRoot
+        );
+        host?.shadowRoot!.append(
+          Object.assign(document.createElement('main'), {
+            tabIndex: -1,
+            innerHTML: '<h1>Added later</h1>',
+          })
+        );
+      });
+      await expect.poll(outline).toEqual({ main: 1, topHeadings: 1 });
+    }
+  });
+
+  test('skips to the page from the keyboard without changing the route', async ({
+    page,
+  }) => {
+    await page.goto(`${site.url}${EDIT_ROUTE}`);
+    await expectMonacoReady(page);
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to content' });
+    await expect(skip).toBeFocused();
+    await expect(skip).toBeInViewport();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('main').first()).toBeFocused();
+    expect(new URL(page.url()).hash).toBe(EDIT_ROUTE);
+  });
+
+  test('opens and closes the navigation without motion when reduced motion is asked for', async ({
+    page,
+  }) => {
+    const duration = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((element) => getComputedStyle(element).transitionDuration);
+    // The nav's column animates on a wide screen; the nav itself animates over the content below 1120px.
+    for (const [width, animated] of [
+      [1440, '#isomer-studio-main >> xpath=..'],
+      [900, 'nav[aria-label="Primitives"]'],
+    ] as const) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.goto(`${site.url}${EDIT_ROUTE.replace('#/dev/', '#/docs/')}`);
+      await expect(page.locator(animated).first()).toBeVisible();
+      await expect.poll(() => duration(animated)).not.toBe('0s');
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await expect.poll(() => duration(animated)).toBe('0s');
+    }
   });
 
   test('resizes the stacked Workbench by dragging its handle with a finger', async ({

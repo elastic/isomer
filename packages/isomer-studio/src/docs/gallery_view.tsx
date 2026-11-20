@@ -38,8 +38,8 @@ import {
 /** Columns in the gallery grid. That many previews mount immediately. */
 export const GALLERY_COLUMNS = 3;
 
-/** How far ahead of the viewport a preview mounts. */
-const PREVIEW_ROOT_MARGIN = '240px';
+/** How far from the scrolling page's edge a preview stays mounted. */
+const PREVIEW_ROOT_MARGIN = '600px';
 
 /** 16:9 matches a 1920×1080 slide, so later rows stay outside the first paint. */
 const previewWell = css`
@@ -54,31 +54,53 @@ const DeferredPreview = ({
   children: ReactNode;
 }) => {
   const host = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(eager);
+  const [near, setNear] = useState(false);
+  const shown = eager || near;
+  const wasShown = useRef(shown);
+  wasShown.current = shown;
+  // The last mounted preview's width over its height, so its placeholder keeps that shape at any width.
+  const [ratio, setRatio] = useState<number>();
 
   useEffect(() => {
-    if (visible) {
+    host.current?.setAttribute('inert', '');
+  }, []);
+
+  useEffect(() => {
+    const element = host.current;
+    if (eager || !element) {
       return;
     }
-    const element = host.current;
-    if (!element || typeof IntersectionObserver === 'undefined') {
-      setVisible(true);
+    if (typeof IntersectionObserver === 'undefined') {
+      setNear(true);
       return;
     }
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some(({ isIntersecting }) => isIntersecting)) {
-          observer.disconnect();
-          setVisible(true);
+        const entry = entries.at(-1);
+        if (!entry) {
+          return;
         }
+        const { offsetWidth, offsetHeight } = element;
+        if (!entry.isIntersecting && wasShown.current && offsetHeight > 0) {
+          setRatio(offsetWidth / offsetHeight);
+        }
+        setNear(entry.isIntersecting);
       },
-      { rootMargin: PREVIEW_ROOT_MARGIN }
+      { root: element.closest('main'), rootMargin: PREVIEW_ROOT_MARGIN }
     );
     observer.observe(element);
     return () => observer.disconnect();
-  }, [visible]);
+  }, [eager]);
 
-  return <div ref={host}>{visible ? children : <div css={previewWell} />}</div>;
+  return (
+    <div ref={host} aria-hidden={true}>
+      {shown ? (
+        children
+      ) : (
+        <div css={previewWell} style={ratio ? { aspectRatio: ratio } : {}} />
+      )}
+    </div>
+  );
 };
 
 const ExampleTile = ({

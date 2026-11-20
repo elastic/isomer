@@ -88,6 +88,18 @@ describe('IsomerStudio', () => {
     expect(screen.getByLabelText('Search primitives')).not.toBe(search);
   });
 
+  it('offers a skip link that moves focus to the page without changing the route', async () => {
+    window.location.hash = '#/docs/callout/0';
+    render(<IsomerStudio {...{ runtime }} />);
+    await screen.findByRole('heading', { level: 1, name: 'Callout' });
+
+    const skip = screen.getByRole('link', { name: 'Skip to content' });
+    fireEvent.click(skip);
+
+    expect(screen.getByRole('main')).toHaveFocus();
+    expect(window.location.hash).toBe('#/docs/callout/0');
+  });
+
   it('lists the runtime primitives under their groups, narrowed by the filter', async () => {
     await renderStudio();
     const nav = screen.getByRole('navigation', { name: 'Primitives' });
@@ -257,6 +269,11 @@ describe('IsomerStudio', () => {
       fireEvent.click(within(nav).getByRole('button', { name: /Divider/ }));
       await waitFor(() => expect(nav).toHaveStyle({ display: 'none' }));
       expect(window.location.hash).toContain('divider');
+
+      fireEvent.click(menu);
+      expect(nav).not.toHaveStyle({ display: 'none' });
+      fireEvent.click(screen.getByRole('link', { name: 'Skip to content' }));
+      expect(nav).toHaveStyle({ display: 'none' });
       expect(
         screen.getByRole('button', { name: 'Color mode: System' })
       ).toBeInTheDocument();

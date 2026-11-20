@@ -174,6 +174,22 @@ export const MonacoEditor = ({
     });
   }, [ariaLabel, euiTheme.font]);
 
+  // Monaco's iOS keyboard textarea has no name of its own.
+  useEffect(() => {
+    const element = container.current;
+    if (!element) {
+      return;
+    }
+    const name = () =>
+      element
+        .querySelectorAll('textarea.iPadShowKeyboard')
+        .forEach((textarea) => textarea.setAttribute('aria-label', ariaLabel));
+    name();
+    const observer = new MutationObserver(name);
+    observer.observe(element, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [ariaLabel]);
+
   useEffect(() => {
     current.current = value;
     const model = instance.current?.getModel();
