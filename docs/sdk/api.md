@@ -68,6 +68,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `formatValidationError` | A `ValidationError` as one `<path> (in <nodeType>) <message>` string |
 | `warningsForSurface` | Narrows warnings to one surface |
 | `getCompositionSchemaForDefinitions` | Memoized schema, keyed on array identity |
+| `buildCompositionJsonSchema` | The validator schema as JSON Schema draft 2020-12 (`CompositionJsonSchemaOptions`), for a host that validates outside TypeScript or digests the schema it validates against |
 | `buildAuthoringJsonSchema` | Agent-facing projection: named shared defs, inlined scalars, no `id`/`surfaces` |
 | `authoringSchemaSubset` | The `$defs` some types reach in an authoring schema, with the body-node union stubbed |
 | `formatZodIssues` | Zod issues as `ValidationError`s |

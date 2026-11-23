@@ -17,7 +17,10 @@ import {
   definePrimitive,
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
-import { structuredValueSchema as rootStructuredValueSchema } from '../entries';
+import {
+  buildCompositionJsonSchema as rootBuildCompositionJsonSchema,
+  structuredValueSchema as rootStructuredValueSchema,
+} from '../entries';
 
 import {
   authoringSchemaSubset,
@@ -72,6 +75,10 @@ const defsOf = (
   >;
 
 describe('buildCompositionJsonSchema', () => {
+  it('is exported from the root entry', () => {
+    expect(rootBuildCompositionJsonSchema).toBe(buildCompositionJsonSchema);
+  });
+
   it('names a schemaFor container and its recursive body-node reference', () => {
     const projected = buildCompositionJsonSchema([container, leaf('alpha')]);
     const defs = defsOf(projected);

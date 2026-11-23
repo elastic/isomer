@@ -57,7 +57,7 @@ Every error is a `ValidationError`, `{ path, message, nodeType?, code? }`: `path
 
 ## JSON Schema
 
-`buildAuthoringJsonSchema` projects the composition to draft-2020-12 for an agent to read. JSON Schema cannot express a Zod refinement, so anything stated only in one must also be stated in prose an agent will read. The projection starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds and per-node `id`/`surfaces`, and accepts `describe` and extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses.
+`buildCompositionJsonSchema(definitions, options?)` projects the validator schema to draft-2020-12, with one `$defs` entry per primitive type and `bodyNode` for the union: what a host validates against outside TypeScript, or hashes to tell one vocabulary from another. `buildAuthoringJsonSchema` projects the composition to draft-2020-12 for an agent to read. JSON Schema cannot express a Zod refinement, so anything stated only in one must also be stated in prose an agent will read. The projection starts from the validator schema, names the SDK's shared value schemas (`tone`, `displayValue`, `structuredValue`, `renderTheme`), inlines bare scalar `$defs` and `$ref`-only hops, drops `Number.MAX_SAFE_INTEGER` bounds and per-node `id`/`surfaces`, and accepts `describe` and extra pack `$defs` (`actionItem`, `badgeItem`) from the caller. The validator projection is unchanged: a node that emits `id` still parses.
 
 ## How the body-node union is built
 
