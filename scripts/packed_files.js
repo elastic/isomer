@@ -36,20 +36,66 @@ export const missingPackedFiles = (entries, patterns = []) =>
   });
 
 /**
- * Directory names a host's build may delete from `node_modules`: Kibana's does,
- * wherever they sit in a package.
+ * Names Kibana's build deletes from `node_modules`, wherever they sit in a
+ * package and whether a file or a directory: the single-segment patterns of
+ * `CleanExtraFilesFromModules` in Kibana's `src/dev/build/tasks/clean_tasks.ts`,
+ * which match without regard to case. `*` and `{a,b}` are as a glob's.
  */
-export const PRUNED_DIRECTORY_NAMES = [
-  'bin',
-  'demo',
-  'doc',
-  'docs',
-  'example',
-  'examples',
-  'samples',
+export const KIBANA_PRUNED_NAMES = [
   'test',
   'tests',
+  'jest.config.js',
+  '__tests__',
+  '*.test.js',
+  '*.snap',
+  'coverage',
+  'doc',
+  'docs',
+  'README',
+  'README.*',
+  'example',
+  'examples',
+  'demo',
+  'samples',
+  '.bin',
+  'bin',
+  '*.map',
+  '@types',
+  'Gruntfile.js',
+  'gulpfile.js',
+  '*.ts',
+  '*.tsx',
+  'tsconfig.json',
+  'babel.config.*',
+  '.vscode',
+  '.idea',
+  '.git',
+  '.github',
+  'karma.conf.ci.js',
+  'karma.conf.js',
+  'karma-ci.conf.js',
+  'package-lock.json',
+  'component.json',
+  'bower.json',
+  '.pnpm',
+  '*.{png,jpg,jpeg,gif,webp,zip,7z,rar,tar,tgz,gz,cc,pl,py,h,xml,html}',
+  '*.development.js',
+  '*.dev.js',
+  'benchmark',
+  'benchmarks',
+  'benchmark.js',
+  'benchmarks.js',
 ];
+
+const prunedName = new RegExp(
+  `^(${KIBANA_PRUNED_NAMES.map((pattern) =>
+    pattern
+      .replace(/[.+?^$()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*')
+      .replace(/\{([^}]*)\}/g, (_, names) => `(${names.replace(/,/g, '|')})`)
+  ).join('|')})$`,
+  'i'
+);
 
 const RUNTIME_CODE = /\.(c|m)?js$|\.json$|\.node$|\.wasm$/;
 
@@ -59,22 +105,22 @@ const binTargets = (bin) =>
   );
 
 /**
- * Tarball entries holding runtime code under a {@link PRUNED_DIRECTORY_NAMES}
- * directory. A manifest's `bin` targets are exempt: a command, not a module the
- * package loads.
+ * Tarball entries holding runtime code that {@link KIBANA_PRUNED_NAMES}
+ * deletes, by a directory's name or the file's own. A manifest's `bin` target
+ * directly under the package's `bin` directory is exempt: a command's
+ * launcher, which nothing imports.
  *
  * @param {readonly string[]} entries
  * @param {string | Record<string, string>} [bin]
  */
 export const prunedRuntimeFiles = (entries, bin) => {
-  const exempt = new Set(binTargets(bin));
+  const launchers = new Set(
+    binTargets(bin).filter((target) => /^bin\/[^/]+$/i.test(target))
+  );
   return entries.filter(
     (entry) =>
       RUNTIME_CODE.test(entry) &&
-      !exempt.has(entry) &&
-      entry
-        .split('/')
-        .slice(0, -1)
-        .some((segment) => PRUNED_DIRECTORY_NAMES.includes(segment))
+      !launchers.has(entry) &&
+      entry.split('/').some((segment) => prunedName.test(segment))
   );
 };

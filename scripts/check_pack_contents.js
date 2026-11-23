@@ -57,9 +57,14 @@ const packedPath = (from, target) => {
 let allPassed = true;
 
 for (const pkg of workspacePackages()) {
-  const { bin, exports: exportMap, name, files: filesField } = pkg.manifest;
+  const {
+    bin,
+    exports: exportMap,
+    name,
+    files: filesField = [],
+  } = pkg.manifest;
 
-  if (!isPublishable(pkg.manifest) || !filesField) {
+  if (!isPublishable(pkg.manifest)) {
     continue;
   }
 
@@ -153,7 +158,7 @@ for (const pkg of workspacePackages()) {
       : []),
     ...(pruned.length > 0
       ? [
-          `ships runtime code in a directory a host build deletes: ${pruned.join(', ')}`,
+          `ships runtime code Kibana's build deletes from node_modules: ${pruned.join(', ')}`,
         ]
       : []),
     ...brokenLinks.map(

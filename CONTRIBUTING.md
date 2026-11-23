@@ -46,7 +46,7 @@ Executable examples, config, generators, and build behavior are not prose-only. 
 
 The ESM keeps extensionless relative imports, so it is for bundlers: Node consumers `require` the CommonJS build, and every export maps `types`, `import`, `require` and `default` (the CommonJS build). `check:export-parity` holds every manifest to that shape, `check:exports` requires each export, and `check:pack-consumer` requires each packed export, bundles its ESM with esbuild for Node and the browser, and compiles its declarations under `node10`, `nodenext` and `bundler` resolution.
 
-No source directory that ships is named `bin`, `demo`, `doc`, `docs`, `example`, `examples`, `samples`, `test` or `tests`: Kibana's build deletes directories with those names from `node_modules`, so `check:pack-contents` fails a tarball with runtime code under one. A file may carry the name (`examples.ts`), and a manifest's `bin` targets are exempt.
+Kibana's build deletes files and directories from `node_modules` by name, in any case: `examples`, `docs`, `test`, `bin`, `coverage`, `benchmarks`, `*.development.js` and the rest of `KIBANA_PRUNED_NAMES` in `scripts/packed_files.js`, which mirrors Kibana's list. No source that ships carries one of those names, and `check:pack-contents` fails a tarball with runtime code under one. A file named for a directory on the list is fine (`examples.ts`), and a manifest's `bin` target directly under `bin/` is exempt.
 
 ## Adding a package
 

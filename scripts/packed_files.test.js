@@ -66,22 +66,43 @@ describe('missingPackedFiles', () => {
 });
 
 describe('prunedRuntimeFiles', () => {
-  it('names runtime code under a directory a host build deletes', () => {
-    expect(
-      prunedRuntimeFiles([
-        'lib/cjs/schema/examples/index.js',
-        'lib/esm/docs/view.js',
-        'lib/cjs/test/data.json',
-        'lib/cjs/schema/index.js',
-      ])
-    ).toEqual([
+  it("names runtime code under a directory Kibana's build deletes", () => {
+    const pruned = [
       'lib/cjs/schema/examples/index.js',
       'lib/esm/docs/view.js',
       'lib/cjs/test/data.json',
-    ]);
+      'lib/cjs/benchmarks/run.js',
+      'lib/cjs/coverage/index.js',
+      'lib/cjs/__tests__/helper.js',
+    ];
+    expect(prunedRuntimeFiles([...pruned, 'lib/cjs/schema/index.js'])).toEqual(
+      pruned
+    );
   });
 
-  it('passes a file named like one, declarations, and prose', () => {
+  it('names runtime code whose own name Kibana deletes', () => {
+    const pruned = [
+      'lib/cjs/benchmark.js',
+      'lib/cjs/react.development.js',
+      'lib/cjs/babel.config.js',
+      'lib/cjs/readme.js',
+      'lib/cjs/bower.json',
+    ];
+    expect(prunedRuntimeFiles([...pruned, 'lib/cjs/benchmarking.js'])).toEqual(
+      pruned
+    );
+  });
+
+  it('matches without regard to case, as Kibana does', () => {
+    expect(
+      prunedRuntimeFiles([
+        'lib/cjs/schema/Examples/index.js',
+        'lib/cjs/DOCS/view.js',
+      ])
+    ).toHaveLength(2);
+  });
+
+  it('passes a file named like a directory, declarations, and prose', () => {
     expect(
       prunedRuntimeFiles([
         'lib/cjs/primitives/grid/examples.js',
@@ -92,13 +113,21 @@ describe('prunedRuntimeFiles', () => {
     ).toEqual([]);
   });
 
-  it('exempts only the manifest bin targets', () => {
-    const entries = ['bin/isomer-studio.js', 'bin/helper.js'];
+  it("exempts only a bin target directly under the package's bin directory", () => {
+    const entries = [
+      'bin/isomer-studio.js',
+      'bin/helper.js',
+      'lib/examples/cli.js',
+    ];
     expect(
-      prunedRuntimeFiles(entries, { 'isomer-studio': './bin/isomer-studio.js' })
-    ).toEqual(['bin/helper.js']);
+      prunedRuntimeFiles(entries, {
+        'isomer-studio': './bin/isomer-studio.js',
+        examples: './lib/examples/cli.js',
+      })
+    ).toEqual(['bin/helper.js', 'lib/examples/cli.js']);
     expect(prunedRuntimeFiles(entries, 'bin/isomer-studio.js')).toEqual([
       'bin/helper.js',
+      'lib/examples/cli.js',
     ]);
   });
 });
