@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { missingPackedFiles } from './packed_files.js';
+import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
 import { workspacePackages } from './workspace_packages.js';
 
 const studio = workspacePackages().find(
@@ -62,5 +62,43 @@ describe('missingPackedFiles', () => {
     expect(missingPackedFiles(entries, studioPackedFiles)).toEqual(
       studioPackedFiles
     );
+  });
+});
+
+describe('prunedRuntimeFiles', () => {
+  it('names runtime code under a directory a host build deletes', () => {
+    expect(
+      prunedRuntimeFiles([
+        'lib/cjs/schema/examples/index.js',
+        'lib/esm/docs/view.js',
+        'lib/cjs/test/data.json',
+        'lib/cjs/schema/index.js',
+      ])
+    ).toEqual([
+      'lib/cjs/schema/examples/index.js',
+      'lib/esm/docs/view.js',
+      'lib/cjs/test/data.json',
+    ]);
+  });
+
+  it('passes a file named like one, declarations, and prose', () => {
+    expect(
+      prunedRuntimeFiles([
+        'lib/cjs/primitives/grid/examples.js',
+        'lib/cjs/schema/examples/index.d.ts',
+        'docs/index.md',
+        'docs/images/home.png',
+      ])
+    ).toEqual([]);
+  });
+
+  it('exempts only the manifest bin targets', () => {
+    const entries = ['bin/isomer-studio.js', 'bin/helper.js'];
+    expect(
+      prunedRuntimeFiles(entries, { 'isomer-studio': './bin/isomer-studio.js' })
+    ).toEqual(['bin/helper.js']);
+    expect(prunedRuntimeFiles(entries, 'bin/isomer-studio.js')).toEqual([
+      'bin/helper.js',
+    ]);
   });
 });

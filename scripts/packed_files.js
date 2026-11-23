@@ -34,3 +34,47 @@ export const missingPackedFiles = (entries, patterns = []) =>
     const matcher = patternToRegExp(pattern);
     return !entries.some((entry) => matcher.test(entry));
   });
+
+/**
+ * Directory names a host's build may delete from `node_modules`: Kibana's does,
+ * wherever they sit in a package.
+ */
+export const PRUNED_DIRECTORY_NAMES = [
+  'bin',
+  'demo',
+  'doc',
+  'docs',
+  'example',
+  'examples',
+  'samples',
+  'test',
+  'tests',
+];
+
+const RUNTIME_CODE = /\.(c|m)?js$|\.json$|\.node$|\.wasm$/;
+
+const binTargets = (bin) =>
+  (typeof bin === 'string' ? [bin] : Object.values(bin ?? {})).map((target) =>
+    target.replace(/^\.\//, '')
+  );
+
+/**
+ * Tarball entries holding runtime code under a {@link PRUNED_DIRECTORY_NAMES}
+ * directory. A manifest's `bin` targets are exempt: a command, not a module the
+ * package loads.
+ *
+ * @param {readonly string[]} entries
+ * @param {string | Record<string, string>} [bin]
+ */
+export const prunedRuntimeFiles = (entries, bin) => {
+  const exempt = new Set(binTargets(bin));
+  return entries.filter(
+    (entry) =>
+      RUNTIME_CODE.test(entry) &&
+      !exempt.has(entry) &&
+      entry
+        .split('/')
+        .slice(0, -1)
+        .some((segment) => PRUNED_DIRECTORY_NAMES.includes(segment))
+  );
+};

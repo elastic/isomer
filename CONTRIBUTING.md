@@ -46,6 +46,8 @@ Executable examples, config, generators, and build behavior are not prose-only. 
 
 The ESM keeps extensionless relative imports, so it is for bundlers: Node consumers `require` the CommonJS build, and every export maps `types`, `import`, `require` and `default` (the CommonJS build). `check:export-parity` holds every manifest to that shape, `check:exports` requires each export, and `check:pack-consumer` requires each packed export, bundles its ESM with esbuild for Node and the browser, and compiles its declarations under `node10`, `nodenext` and `bundler` resolution.
 
+No source directory that ships is named `bin`, `demo`, `doc`, `docs`, `example`, `examples`, `samples`, `test` or `tests`: Kibana's build deletes directories with those names from `node_modules`, so `check:pack-contents` fails a tarball with runtime code under one. A file may carry the name (`examples.ts`), and a manifest's `bin` targets are exempt.
+
 ## Adding a package
 
 Create `packages/<name>` with a `package.json` that declares the `build`, `build:*` and `typecheck` scripts, plus `tsconfig.json`, `tsconfig.esm.json`, `tsconfig.types.json`, and `babel.config.js` modeled on a sibling. Then, by hand: add a `toc` entry to `docs/docset.yml`, a `workspace:*` devDependency to the root `package.json`, and a paragraph to `AGENTS.md`. Everything else (typecheck, tests and their source aliases, docs assembly, the license report, and the `check:*` scripts) derives from `packages/*`.

@@ -10,7 +10,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
-import { missingPackedFiles } from './packed_files.js';
+import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
 import { isPublishable, workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
@@ -57,7 +57,7 @@ const packedPath = (from, target) => {
 let allPassed = true;
 
 for (const pkg of workspacePackages()) {
-  const { exports: exportMap, name, files: filesField } = pkg.manifest;
+  const { bin, exports: exportMap, name, files: filesField } = pkg.manifest;
 
   if (!isPublishable(pkg.manifest) || !filesField) {
     continue;
@@ -106,6 +106,7 @@ for (const pkg of workspacePackages()) {
   const forbidden = entries.filter((entry) =>
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
+  const pruned = prunedRuntimeFiles(entries, bin);
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
@@ -149,6 +150,11 @@ for (const pkg of workspacePackages()) {
       : []),
     ...(forbidden.length > 0
       ? [`contains forbidden files: ${forbidden.join(', ')}`]
+      : []),
+    ...(pruned.length > 0
+      ? [
+          `ships runtime code in a directory a host build deletes: ${pruned.join(', ')}`,
+        ]
       : []),
     ...brokenLinks.map(
       ({ entry, target }) => `${entry} links to unpacked path ${target}`
