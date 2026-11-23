@@ -4,115 +4,115 @@ Everything `@elastic/isomer-runtime` exports from its entry point and its `./tes
 
 ## Functions
 
-| Export | Signature |
-| --- | --- |
+| Export                | Signature                                                                                                                                                                                                                   |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `createIsomerRuntime` | `(options: IsomerRuntimeOptions<THostContext, TRenderContext, TTheme>) => IsomerRuntime<THostContext, TRenderContext, TTheme>` — with `frames`, the result's `surfaces.snapshot` is `SnapshotSurface`; without, `undefined` |
-| `defineView` | `(options: DefineViewOptions<THostContext, TInput, TNode>) => RegisteredView<…>` — defaults `description`; a Zod `input` types `build` |
+| `defineView`          | `(options: DefineViewOptions<THostContext, TInput, TNode>) => RegisteredView<…>` — defaults `description`; a Zod `input` types `build`                                                                                      |
 
 ## `IsomerRuntimeOptions`
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `packs` | `readonly PrimitivePack<TTheme>[]` | Required. At least one; additive within one theme bound. |
-| `frames` | `FrameMap<TTheme>` | Optional. Omit and `surfaces.snapshot` is `undefined`; an empty map throws `EMPTY_FRAMES`. |
-| `defaultFrame` | `string` | Required when `frames` has more than one entry. |
-| `formats` | `readonly string[]` | Formats the host ships beyond the runtime's own, reported by `getCapabilities().formats`; a rasterizer's list, e.g. a takumi backend's `formats`. |
-| `views` | `readonly RegisteredView[]` | Pre-registered on the runtime's view registry. |
-| `rendererOverrides` | `RuntimeRendererOverrides` | Keyed by primitive `type`, then by surface. |
-| `styleAdapter` | `HTMLStyleAdapter<…>` | Replaces the packs' styling. Defaults to one Distillate adapter over every pack's `distillery`, or else the one pack adapter. Required when a pack adapter sits beside another pack's adapter or distillery, or when any pack declares `collectStyles` and no pack `styleAdapter` serves it, since the Distillate adapter never runs the hook. |
-| `defaultAriaLabel` | `string` | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`. |
-| `authoring` | `RuntimeAuthoringOptions` | Options for the authoring schema and declarations `getAuthoringContext` returns. |
-| `inputBudget` | `InputBudget` | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Each limit set replaces the packs' budget for that limit: the largest any pack declares, never below the SDK default. |
+| Field               | Type                               | Notes                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packs`             | `readonly PrimitivePack<TTheme>[]` | Required. At least one; additive within one theme bound.                                                                                                                                                                                                                                                                                       |
+| `frames`            | `FrameMap<TTheme>`                 | Optional. Omit and `surfaces.snapshot` is `undefined`; an empty map throws `EMPTY_FRAMES`.                                                                                                                                                                                                                                                     |
+| `defaultFrame`      | `string`                           | Required when `frames` has more than one entry.                                                                                                                                                                                                                                                                                                |
+| `formats`           | `readonly string[]`                | Formats the host ships beyond the runtime's own, reported by `getCapabilities().formats`; a rasterizer's list, e.g. a takumi backend's `formats`.                                                                                                                                                                                              |
+| `views`             | `readonly RegisteredView[]`        | Pre-registered on the runtime's view registry.                                                                                                                                                                                                                                                                                                 |
+| `rendererOverrides` | `RuntimeRendererOverrides`         | Keyed by primitive `type`, then by surface.                                                                                                                                                                                                                                                                                                    |
+| `styleAdapter`      | `HTMLStyleAdapter<…>`              | Replaces the packs' styling. Defaults to one Distillate adapter over every pack's `distillery`, or else the one pack adapter. Required when a pack adapter sits beside another pack's adapter or distillery, or when any pack declares `collectStyles` and no pack `styleAdapter` serves it, since the Distillate adapter never runs the hook. |
+| `defaultAriaLabel`  | `string`                           | Fallback `aria-label` for `html` and for `react` with `wrapper`. Defaults to `'View'`.                                                                                                                                                                                                                                                         |
+| `authoring`         | `RuntimeAuthoringOptions`          | Options for the authoring schema and declarations `getAuthoringContext` returns.                                                                                                                                                                                                                                                               |
+| `inputBudget`       | `InputBudget`                      | Limits `checkInputBudget` applies in `parse`, `validate`, the `html`, `text`, `markdown`, `slack`, and `snapshot` surfaces, and `viewRegistry.request` input; `react` does not validate, so it is not checked. Each limit set replaces the packs' budget for that limit: the largest any pack declares, never below the SDK default.           |
 
 `CreateIsomerRuntime` is the factory's overloaded signature: `frames` present types `surfaces.snapshot` as `SnapshotSurface`, `frames` absent types it `undefined`, and options not statically known get the union. `TRenderContext` is inferred from `styleAdapter` alone; a host that supplies none and loads a pack that narrows its context names all three type parameters positionally, as [Runtime](runtime.md#typing-the-render-context) shows.
 
 ## `IsomerRuntime`
 
-| Member | Type |
-| --- | --- |
-| `packs` | `readonly PrimitivePack<TTheme>[]` — post-override |
-| `primitives` | `readonly AnyPrimitiveDefinition[]` |
-| `enhancements` | `readonly EnhancementDefinition[]` — every pack's enhancements, flattened |
-| `surfaces` | `RuntimeSurfaces<TRenderContext, TSnapshot>` |
-| `viewRegistry` | `ViewRegistry<THostContext, PrimitiveNode>` |
-| `getAuthoringContext()` | `RuntimeAuthoringContext` |
-| `getCapabilities()` | `HostCapabilities` |
-| `validate(composition)` | `CheckedValidationResult` |
-| `parse(value)` | `ParsedComposition` |
-| `getCompositionSchema()` | `ZodObject` |
+| Member                   | Type                                                                      |
+| ------------------------ | ------------------------------------------------------------------------- |
+| `packs`                  | `readonly PrimitivePack<TTheme>[]` — post-override                        |
+| `primitives`             | `readonly AnyPrimitiveDefinition[]`                                       |
+| `enhancements`           | `readonly EnhancementDefinition[]` — every pack's enhancements, flattened |
+| `surfaces`               | `RuntimeSurfaces<TRenderContext, TSnapshot>`                              |
+| `viewRegistry`           | `ViewRegistry<THostContext, PrimitiveNode>`                               |
+| `getAuthoringContext()`  | `RuntimeAuthoringContext`                                                 |
+| `getCapabilities()`      | `HostCapabilities`                                                        |
+| `validate(composition)`  | `CheckedValidationResult`                                                 |
+| `parse(value)`           | `ParsedComposition`                                                       |
+| `getCompositionSchema()` | `ZodObject`                                                               |
 
 ## Surfaces
 
 Each exposes `render` and `renderNode`, plus a `validating` field stating its posture.
 
-| Surface | `render` returns | `renderNode` returns | `validating` | `renderNode` takes |
-| --- | --- | --- | --- | --- |
-| `react` | `ReactNode` | `ReactNode` | `false` | `ReactRenderNodeOptions`: `context`, `wrapper`, `enhancements` |
-| `html` | `HTMLRenderResult` | `HTMLRenderResult` | `true` | `HTMLRenderOptions` |
-| `text` | `string` | `string` | `true` | `TextRenderNodeOptions`: `onValidationError` |
-| `markdown` | `string` | `string` | `true` | `MarkdownRenderNodeOptions`: `onValidationError` |
-| `slack` | `SlackRenderResult` | `SlackRenderResult` | `true` | `SlackRenderNodeOptions`: `text`, `collectAssets`, `baseUrl`, `onValidationError` |
-| `snapshot` | `SnapshotRenderResult` | `SnapshotRenderResult` | `true` | `SnapshotRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError` |
+| Surface    | `render` returns       | `renderNode` returns   | `validating` | `renderNode` takes                                                                |
+| ---------- | ---------------------- | ---------------------- | ------------ | --------------------------------------------------------------------------------- |
+| `react`    | `ReactNode`            | `ReactNode`            | `false`      | `ReactRenderNodeOptions`: `context`, `wrapper`, `enhancements`                    |
+| `html`     | `HTMLRenderResult`     | `HTMLRenderResult`     | `true`       | `HTMLRenderOptions`                                                               |
+| `text`     | `string`               | `string`               | `true`       | `TextRenderNodeOptions`: `onValidationError`                                      |
+| `markdown` | `string`               | `string`               | `true`       | `MarkdownRenderNodeOptions`: `onValidationError`                                  |
+| `slack`    | `SlackRenderResult`    | `SlackRenderResult`    | `true`       | `SlackRenderNodeOptions`: `text`, `collectAssets`, `baseUrl`, `onValidationError` |
+| `snapshot` | `SnapshotRenderResult` | `SnapshotRenderResult` | `true`       | `SnapshotRenderNodeOptions`: `frame`, `theme`, `anchors`, `onValidationError`     |
 
 Each surface's type is exported under its own name: `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface`; `RuntimeSurfaces` is the record of all six. `render` takes its surface's options type below. `SnapshotRenderResult` is a `SnapshotPage`, `{ element, html }`, plus `{ css, width, height, heightMode, warnings }`: `html` is `element`'s static markup, rendered in the same call. `heightMode` is the SDK's `FrameSizing`, `content` when the frame sizes to content and no `height` was given, so `height` is an estimate a backend measures past. `warnings` is a `SnapshotHeightWarning[]` (`{ path, message }`): nodes this render measured as 0 because they declare no `metrics.snapshotHeight`, empty when the frame never calls `estimateSnapshotHeight`, when `height` is given, or when the frame sizes to content. The `snapshot` surface additionally exposes `renderPages(compositions, options?)`, which lays several compositions out as one document and returns `SnapshotPagesResult`, `{ pages, css, width, height, heightMode, warnings }`: one `SnapshotPage` per composition against one stylesheet, every page the tallest estimate unless `height` is given, and the first composition's `theme` unless `theme` is given. Paged `warnings` prefix each path with `pages[n].`.
 
 ### Options types
 
-| Type | Fields |
-| --- | --- |
-| `ReactRenderOptions` | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly string[]` (ids, resolved against the packs' enhancements as on `html`); `ReactRenderArgs` is the tuple form, optional only when `context` is |
-| `ReactRenderNodeOptions` | `ReactRenderOptions` without `heading` |
-| `HTMLRenderOptions` | `theme`, `scheme: 'light' \| 'dark'` (resolves `light-dark(…)` in the stylesheet; the `snapshot` surface sets it), `minify`, `fluid`, `framed`, `heading`, `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
-| `TextRenderOptions` | `heading`, `onValidationError` |
-| `TextRenderNodeOptions` | `onValidationError` |
-| `MarkdownRenderOptions` | `heading`, `onValidationError` |
-| `MarkdownRenderNodeOptions` | `onValidationError` |
-| `SlackRenderOptions` | `heading`, `text`, `collectAssets`, `baseUrl`, `onValidationError` |
-| `SlackRenderNodeOptions` | `SlackRenderOptions` without `heading` |
-| `SnapshotRenderOptions` | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError` |
+| Type                        | Fields                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ReactRenderOptions`        | `context`, `heading`, `wrapper: boolean \| CompositionWrapperOptions`, `enhancements: readonly string[]` (ids, resolved against the packs' enhancements as on `html`); `ReactRenderArgs` is the tuple form, optional only when `context` is                                                                                                                                                                  |
+| `ReactRenderNodeOptions`    | `ReactRenderOptions` without `heading`                                                                                                                                                                                                                                                                                                                                                                       |
+| `HTMLRenderOptions`         | `theme`, `scheme: 'light' \| 'dark'` (resolves `light-dark(…)` in the stylesheet; the `snapshot` surface sets it), `minify`, `fluid`, `framed`, `heading`, `width` (the width the host lays the content out in, which each node is told), `css: 'inline' \| 'separate'`, `scripts: 'embedded' \| 'host'`, `enhancements: string[]`, `anchors: boolean` (node anchors; `true` for tests), `onValidationError` |
+| `TextRenderOptions`         | `heading`, `onValidationError`                                                                                                                                                                                                                                                                                                                                                                               |
+| `TextRenderNodeOptions`     | `onValidationError`                                                                                                                                                                                                                                                                                                                                                                                          |
+| `MarkdownRenderOptions`     | `heading`, `onValidationError`                                                                                                                                                                                                                                                                                                                                                                               |
+| `MarkdownRenderNodeOptions` | `onValidationError`                                                                                                                                                                                                                                                                                                                                                                                          |
+| `SlackRenderOptions`        | `heading`, `text`, `collectAssets`, `baseUrl`, `onValidationError`                                                                                                                                                                                                                                                                                                                                           |
+| `SlackRenderNodeOptions`    | `SlackRenderOptions` without `heading`                                                                                                                                                                                                                                                                                                                                                                       |
+| `SnapshotRenderOptions`     | `frame`, `width`, `height`, `theme`, `anchors: boolean` (node anchors, e.g. for `checkLayout`), `onValidationError`                                                                                                                                                                                                                                                                                          |
 
 `onValidationError` is `'collect' | 'throw'`. `html` defaults to `'collect'` and reports on `validationErrors`; `text`, `markdown`, `slack`, and `snapshot` default to `'throw'`. Each validating surface's `renderNode` validates the node as a one-node view and takes the same default as its `render`. Input [refused before parsing](../sdk/composition.md#the-input-budget) throws on every surface in either mode.
 
 ### Result types
 
-| Type | Shape |
-| --- | --- |
-| `HTMLRenderResult` | `{ html, css, js, body, measurement, validationErrors }` |
-| `SlackRenderResult` | `{ text, blocks, assets }` |
-| `ValidationResult` | `{ valid, errors, warnings }` — each error is a `ValidationError`, `{ path, message, nodeType?, code? }`, where `code` (`INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`) marks input refused before parsing |
-| `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing |
-| `ParsedComposition` | `{ valid, errors, composition? }` |
+| Type                      | Shape                                                                                                                                                                                                     |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `HTMLRenderResult`        | `{ html, css, js, body, measurement, validationErrors }`                                                                                                                                                  |
+| `SlackRenderResult`       | `{ text, blocks, assets }`                                                                                                                                                                                |
+| `ValidationResult`        | `{ valid, errors, warnings }` — each error is a `ValidationError`, `{ path, message, nodeType?, code? }`, where `code` (`INPUT_OVER_BUDGET` or `INPUT_NOT_PLAIN_DATA`) marks input refused before parsing |
+| `CheckedValidationResult` | `ValidationResult` plus `composition`, the plain copy validation checked, which validating surfaces render; `undefined` only when refused before parsing                                                  |
+| `ParsedComposition`       | `{ valid, errors, composition? }`                                                                                                                                                                         |
 
 Three results carry a `composition`, each with its own rule:
 
-| Result | `composition` |
-| --- | --- |
-| `ParsedComposition` | The parsed document, present only when `valid` |
+| Result                    | `composition`                                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `ParsedComposition`       | The parsed document, present only when `valid`                                                                   |
 | `CheckedValidationResult` | The checked copy, present even when `valid` is `false`; `undefined` only when the input budget refused the input |
-| `ViewResponse` | The checked copy, or the built value, unchecked, when the input budget refused it; always present |
+| `ViewResponse`            | The checked copy, or the built value, unchecked, when the input budget refused it; always present                |
 
 ## View registry
 
-| Member | Type |
-| --- | --- |
-| `register(view)` | `void` — throws on a duplicate id |
-| `list()` | `RegisteredViewSummary[]` |
-| `get(id)` | `RegisteredViewSummary \| undefined` |
+| Member                         | Type                                                          |
+| ------------------------------ | ------------------------------------------------------------- |
+| `register(view)`               | `void` — throws on a duplicate id                             |
+| `list()`                       | `RegisteredViewSummary[]`                                     |
+| `get(id)`                      | `RegisteredViewSummary \| undefined`                          |
 | `request(id, context, input?)` | `Promise<ViewResponse>` — `{ view, composition, validation }` |
 
 `RegisteredView` is `{ id, title, description, answers, input?, build }`, where `build({ context, input })` returns the composition. `DefineViewOptions` is the same with `description` optional. `RegisteredViewSummary` is `{ id, title, description, answers, inputSchema? }`. `ViewBuildArgs` is `build`'s argument, `ViewInput` is `Record<string, unknown>`, `build`'s input type unless a Zod `input` schema infers one, and `ViewResponse` is what `request` resolves to.
 
 ## Types exported from this package
 
-| Concern | Names |
-| --- | --- |
-| Runtime | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides` |
-| Authoring | `RuntimeAuthoringContext`, `RuntimeAuthoringOptions`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema` |
-| View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError` |
-| Surfaces | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface` |
-| Options | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SnapshotRenderOptions`, `SnapshotRenderNodeOptions` |
-| Results | `HTMLRenderResult`, `SlackRenderResult`, `SnapshotPage`, `SnapshotRenderResult`, `SnapshotPagesResult`, `SnapshotHeightWarning` |
-| Errors | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError` |
+| Concern       | Names                                                                                                                                                                                                                                                                                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime       | `CreateIsomerRuntime`, `IsomerRuntime`, `IsomerRuntimeOptions`, `RuntimeSurfaces`, `FrameMap`, `RuntimeRendererOverrides`                                                                                                                                                                                            |
+| Authoring     | `RuntimeAuthoringContext`, `RuntimeAuthoringOptions`, `PrimitiveDescriptions`, `PropDescriptor`, `HostCapabilities`, `SurfaceSupport`, `JsonSchema`                                                                                                                                                                  |
+| View registry | `ViewRegistry`, `RegisteredView`, `RegisteredViewSummary`, `DefineViewOptions`, `ViewBuildArgs`, `ViewInput`, `ViewResponse`, `RegisteredViewInputError`                                                                                                                                                             |
+| Surfaces      | `ReactSurface`, `HtmlSurface`, `TextSurface`, `MarkdownSurface`, `SlackSurface`, `SnapshotSurface`                                                                                                                                                                                                                   |
+| Options       | `ReactRenderOptions`, `ReactRenderNodeOptions`, `ReactRenderArgs`, `HTMLRenderOptions`, `HTMLStyleAdapter`, `TextRenderOptions`, `TextRenderNodeOptions`, `MarkdownRenderOptions`, `MarkdownRenderNodeOptions`, `SlackRenderOptions`, `SlackRenderNodeOptions`, `SnapshotRenderOptions`, `SnapshotRenderNodeOptions` |
+| Results       | `HTMLRenderResult`, `SlackRenderResult`, `SnapshotPage`, `SnapshotRenderResult`, `SnapshotPagesResult`, `SnapshotHeightWarning`                                                                                                                                                                                      |
+| Errors        | `IsomerError`, `IsomerErrorCode`, `ISOMER_ERROR_CODES`, `CompositionValidationError`                                                                                                                                                                                                                                 |
 
 `src/api_reference.test.ts` fails when a name exported from `src/index.ts` is missing from this page.
 
@@ -124,37 +124,43 @@ Three results carry a `composition`, each with its own rule:
 
 ## Errors
 
-| Thrown | By | Carries |
-| --- | --- | --- |
-| `IsomerError` | `createIsomerRuntime` (`EMPTY_PACKS`, `DUPLICATE_PACK_ID`, `DUPLICATE_PRIMITIVE_TYPE`, `DUPLICATE_ENHANCEMENT`, `UNKNOWN_PRIMITIVE_TYPE`, `UNKNOWN_SURFACE`, `EMPTY_FRAMES`, `UNKNOWN_FRAME`, `AMBIGUOUS_FRAME`, `MISSING_STYLE_ADAPTER`, `AMBIGUOUS_STYLE_ADAPTER`, `INCOMPATIBLE_STYLE_COLLECTOR`; see [Runtime](runtime.md#what-it-refuses-and-when)), `viewRegistry.register` on a repeated id (`DUPLICATE_VIEW`), `viewRegistry.request` on an unknown id (`UNKNOWN_VIEW`), `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `snapshot` surface on an unknown frame name (`UNKNOWN_FRAME`), a body the frame rejects (`INVALID_FRAME_BODY`), or `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender |
-| `RegisteredViewInputError` | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
-| `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `snapshot` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing | `code` (`COMPOSITION_INVALID`), `errors` |
+| Thrown                       | By                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Carries                                                                                        |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `IsomerError`                | `createIsomerRuntime` (`EMPTY_PACKS`, `DUPLICATE_PACK_ID`, `DUPLICATE_PRIMITIVE_TYPE`, `DUPLICATE_ENHANCEMENT`, `UNKNOWN_PRIMITIVE_TYPE`, `UNKNOWN_SURFACE`, `EMPTY_FRAMES`, `UNKNOWN_FRAME`, `AMBIGUOUS_FRAME`, `MISSING_STYLE_ADAPTER`, `AMBIGUOUS_STYLE_ADAPTER`, `INCOMPATIBLE_STYLE_COLLECTOR`; see [Runtime](runtime.md#what-it-refuses-and-when)), `viewRegistry.register` on a repeated id (`DUPLICATE_VIEW`), `viewRegistry.request` on an unknown id (`UNKNOWN_VIEW`), `getAuthoringContext().schemaFor` or `describePrimitives` on an unknown type (`UNKNOWN_PRIMITIVE_TYPE`), or the `snapshot` surface on an unknown frame name (`UNKNOWN_FRAME`), a body the frame rejects (`INVALID_FRAME_BODY`), or `renderPages` on an empty list (`EMPTY_PAGES`) | `code` and a message naming the offender                                                       |
+| `RegisteredViewInputError`   | `viewRegistry.request`, on input refused before parsing or invalid against the view's schema                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `code` (`VIEW_INPUT_INVALID`), `viewId`, `errors` (`{ path, message, nodeType?, code? }` each) |
+| `CompositionValidationError` | `render` and `renderNode` on `text`, `markdown`, `slack`, and `snapshot` by default; on `html` with `onValidationError: 'throw'`; on every validating surface on input refused before parsing                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `code` (`COMPOSITION_INVALID`), `errors`                                                       |
 
 ## Testing
 
 The `./testing` subpath exports `createRuntimeConformanceHarness(runtime, overrides?)`, which returns the SDK's `PrimitiveConformanceHarness` for an `IsomerRuntime`, so a pack's conformance test needs no hand-written bindings. It derives every member the runtime can answer: validation, the `react`, `html`, `text`, `markdown`, and `slack` surfaces (per-node renders collect validation errors rather than throw), `anchorWalk` over the runtime's primitives, and `wrapComposition` titled `CONFORMANCE_FIXTURE_TITLE`. `renderSnapshotNode` and `renderSnapshotComposition` are present only when the runtime has a frame. `renderHTML` forwards `css` and `anchors`, not `names`, which no HTML option carries. `overrides` is a `Partial<PrimitiveConformanceHarness>` that replaces derived members and supplies what a runtime cannot know: `nestForeignChild`, `sizesFromNodeHeights`, `estimateSnapshotHeight`, `assertVarRefsHaveDeclarations`, or a `wrapComposition` that puts the node in the pack's frame.
 
 ```ts
-const harness = createRuntimeConformanceHarness(createIsomerRuntime({ packs: [pack] }));
+const harness = createRuntimeConformanceHarness(
+  createIsomerRuntime({ packs: [pack] })
+);
 
-it('passes inventory conformance', () => runPrimitiveInventoryConformance(primitives));
-it.each(primitiveConformanceRows(primitives))('$type #$exampleIndex: $name', (row) => row.run(row, harness));
+it('passes inventory conformance', () =>
+  runPrimitiveInventoryConformance(primitives));
+it.each(primitiveConformanceRows(primitives))(
+  '$type #$exampleIndex: $name',
+  (row) => row.run(row, harness)
+);
 ```
 
 The anchor case asserts every node renders an anchor, so a pack's `react` renderers spread `nodeAnchor` before it passes.
 
 ## Where the code is
 
-| Concern | File |
-| --- | --- |
-| Factory, options, pack admission, frame resolution | `src/assemble/runtime.ts` |
-| Renderer overrides and their checks | `src/assemble/overrides.ts` |
-| Authoring context | `src/assemble/authoring.ts` |
-| Surfaces, one file each behind a barrel | `src/surfaces/` |
-| View registry, `defineView`, input error | `src/registry/view_registry.ts` |
-| Public entry point | `src/index.ts` |
-| Conformance harness factory (`./testing`) | `src/testing/conformance_harness.ts` |
-| Style-adapter composition | `src/assemble/style_adapter.ts` |
-| Coverage of this page against the entry point | `src/api_reference.test.ts` |
-| Composition and render behaviour, one file per concern over shared `runtime.fixtures.ts` | `src/assemble/runtime_*.test.ts` |
-| Registry behaviour | `src/registry/view_registry.test.ts` |
+| Concern                                                                                  | File                                 |
+| ---------------------------------------------------------------------------------------- | ------------------------------------ |
+| Factory, options, pack admission, frame resolution                                       | `src/assemble/runtime.ts`            |
+| Renderer overrides and their checks                                                      | `src/assemble/overrides.ts`          |
+| Authoring context                                                                        | `src/assemble/authoring.ts`          |
+| Surfaces, one file each behind a barrel                                                  | `src/surfaces/`                      |
+| View registry, `defineView`, input error                                                 | `src/registry/view_registry.ts`      |
+| Public entry point                                                                       | `src/index.ts`                       |
+| Conformance harness factory (`./testing`)                                                | `src/testing/conformance_harness.ts` |
+| Style-adapter composition                                                                | `src/assemble/style_adapter.ts`      |
+| Coverage of this page against the entry point                                            | `src/api_reference.test.ts`          |
+| Composition and render behaviour, one file per concern over shared `runtime.fixtures.ts` | `src/assemble/runtime_*.test.ts`     |
+| Registry behaviour                                                                       | `src/registry/view_registry.test.ts` |

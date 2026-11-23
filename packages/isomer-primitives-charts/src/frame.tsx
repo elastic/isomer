@@ -39,7 +39,7 @@ const line = (size: number) => ({
 /** A content-sized page of charts. Register as `frames: { charts: chartsFrame }`. */
 export const chartsFrame: Frame<ChartsFrameTheme> = {
   defaultWidth: width,
-  contentWidth: (pageWidth) => pageWidth - 2 * padding,
+  contentWidth: (pageWidth) => Math.max(0, pageWidth - 2 * padding),
   sizing: 'content',
   theme: { light: themeFor('light'), dark: themeFor('dark') },
   estimateHeight: (composition, dispatcher) => {

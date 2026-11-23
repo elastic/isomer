@@ -14,8 +14,6 @@ import type { ReactNode } from 'react';
 import type { RenderTheme } from '../composition/named_color';
 import type { PrimitiveNode } from '../composition/node';
 
-import type { SnapshotHeightOptions } from './primitive_module';
-
 /**
  * A frame's palette, per mode. An image has no media queries, so it must
  * commit to one; `auto` resolves light.
@@ -53,11 +51,11 @@ export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Draws one node on the `snapshot` surface. `key` must be unique among its siblings. */
   renderSnapshotNode(node: TNode, key: string): ReactNode;
   /**
-   * The node's height in pixels; `0` when it is hidden from `snapshot` or its
-   * primitive declares no `metrics.snapshotHeight`. Without `options.width`,
-   * the node is measured at the frame's {@link Frame.contentWidth}.
+   * The node's height in pixels, at the frame's {@link Frame.contentWidth}
+   * when it states one; `0` when the node is hidden from `snapshot` or its
+   * primitive declares no `metrics.snapshotHeight`.
    */
-  estimateSnapshotHeight(node: TNode, options?: SnapshotHeightOptions): number;
+  estimateSnapshotHeight(node: TNode): number;
 }
 
 /** The page a height is estimated for. The `snapshot` surface always passes it. */
@@ -123,8 +121,8 @@ export interface Frame<TTheme> {
   /**
    * The width the body is laid out in on a page `width` wide, such as the
    * page less its padding. The `snapshot` surface tells each node that width
-   * as it draws it (`layoutWidthOf`) and as it estimates its height.
-   * Absent: nodes are told no width.
+   * as it draws it (`layoutWidthOf`) and as it estimates its height, so the
+   * two agree. Absent: nodes are told no width.
    */
   contentWidth?: (width: number) => number;
   /**

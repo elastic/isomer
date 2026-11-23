@@ -13,6 +13,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  layoutWidthOf,
   NODE_ANCHOR_ATTRIBUTE,
   primitiveExamples,
   type PrimitiveNode,
@@ -641,6 +642,8 @@ CLOSED`);
     const [nested] = seen;
     expect(nested).toBeInstanceOf(HostContext);
     expect(nested?.size?.width).toBeLessThan(968);
+    // Any pack's node reads the room its panel leaves it.
+    expect(layoutWidthOf(nested)).toBe(nested?.size?.width);
     expect(nested?.onEvent).toBe(nested?.onEvent);
   });
 

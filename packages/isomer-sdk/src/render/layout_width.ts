@@ -11,8 +11,9 @@ const LAYOUT_WIDTH = Symbol.for('@elastic/isomer-sdk/layout-width');
 
 /**
  * A view of `context` that tells the nodes drawn with it the width they are
- * laid out in, in pixels: a `snapshot` frame's content width, or an `html`
- * render's `width`.
+ * laid out in, in pixels: a `snapshot` frame's content width, an `html`
+ * render's `width`, or the room a container leaves a child. A context that is
+ * neither an object nor a function carries nothing and is returned as it is.
  */
 export const withLayoutWidth = <TContext>(
   context: TContext,

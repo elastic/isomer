@@ -21,7 +21,6 @@ import {
   type PrimitiveNode,
   type PrimitiveStyleCollector,
   type RenderTheme,
-  type SnapshotHeightOptions,
   type ValidationErrorMode,
   withLayoutWidth,
   withNodeAnchors,
@@ -199,6 +198,12 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     | HTMLStyleAdapter<PrimitiveNode, PrimitiveStyleCollector, TRenderContext>
     | undefined
 ): SnapshotSurface => {
+  /** A page's width, and the width its nodes are told; none under a frame that states no content width. */
+  interface PageWidths {
+    width: number;
+    nodeWidth: number | undefined;
+  }
+
   /** A composition and how to draw it once a render context exists. */
   interface StyledPage {
     composition: Composition;
@@ -219,19 +224,29 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     }
   };
 
-  /** A node's height at the width the frame lays its body out in, unless the frame names another. */
   const estimateNodeHeight = (
-    frame: BoundFrame,
-    width: number,
     node: PrimitiveNode,
-    options: SnapshotHeightOptions | undefined
-  ): number => {
-    const contentWidth = frame.contentWidth(width);
-    return dispatcher.estimateSnapshotHeight(node, {
-      ...(contentWidth === undefined ? {} : { width: contentWidth }),
-      ...options,
-    });
-  };
+    { nodeWidth }: PageWidths
+  ): number =>
+    dispatcher.estimateSnapshotHeight(
+      node,
+      nodeWidth === undefined ? {} : { width: nodeWidth }
+    );
+
+  /** A page `width` wide: its nodes are laid out in the frame's content width. */
+  const pageWidths = (frame: BoundFrame, width: number): PageWidths => ({
+    width,
+    nodeWidth: frame.contentWidth(width),
+  });
+
+  /** A node drawn with no surround has the whole page, under a frame that tells nodes a width at all. */
+  const bareWidths = (frame: BoundFrame): PageWidths => ({
+    width: frame.defaultWidth,
+    nodeWidth:
+      frame.contentWidth(frame.defaultWidth) === undefined
+        ? undefined
+        : frame.defaultWidth,
+  });
 
   /**
    * Height from `estimateHeight`, and warnings when that call reads
@@ -242,19 +257,19 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     frame: BoundFrame,
     composition: Composition,
     prefix: string,
-    width: number
+    widths: PageWidths
   ): { height: number; warnings: readonly SnapshotHeightWarning[] } => {
     let consulted = false;
     const height = frame.estimateHeight(
       composition,
       {
         renderSnapshotNode: () => null,
-        estimateSnapshotHeight: (node, options) => {
+        estimateSnapshotHeight: (node) => {
           consulted = true;
-          return estimateNodeHeight(frame, width, node, options);
+          return estimateNodeHeight(node, widths);
         },
       },
-      { width }
+      { width: widths.width }
     );
     return {
       height,
@@ -295,7 +310,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
         frame,
         composition,
         pagePaths ? `pages[${index}]` : '',
-        width
+        pageWidths(frame, width)
       )
     );
     return {
@@ -306,25 +321,22 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     };
   };
 
-  /** Draws a page `width` wide: each node is told the frame's content width. */
+  /** Draws and measures each node at the page's `nodeWidth`. */
   const frameDispatcherFor = (
-    frame: BoundFrame,
-    width: number,
+    widths: PageWidths,
     context: TRenderContext,
     theme: unknown,
     anchors: boolean | undefined
   ): FrameDispatcher => {
     const anchored = anchors === true ? withNodeAnchors(context) : context;
-    const contentWidth = frame.contentWidth(width);
     const drawn =
-      contentWidth === undefined
+      widths.nodeWidth === undefined
         ? anchored
-        : withLayoutWidth(anchored, contentWidth);
+        : withLayoutWidth(anchored, widths.nodeWidth);
     return {
       renderSnapshotNode: (node, key) =>
         dispatcher.renderSnapshot(node, drawn, theme, key),
-      estimateSnapshotHeight: (node, options) =>
-        estimateNodeHeight(frame, width, node, options),
+      estimateSnapshotHeight: (node) => estimateNodeHeight(node, widths),
     };
   };
 
@@ -407,8 +419,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
           composition,
           { ...size, mode },
           frameDispatcherFor(
-            named.frame,
-            size.width,
+            pageWidths(named.frame, size.width),
             context,
             theme,
             options.anchors
@@ -459,11 +470,12 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
       );
       const { frame } = frameFor(options.frame);
       const theme = frame.resolveTheme(options.theme);
+      const widths = bareWidths(frame);
       const { height, warnings } = measuredHeight(
         frame,
         composition,
         '',
-        frame.defaultWidth
+        widths
       );
       const {
         pages: [page],
@@ -475,13 +487,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
             build: (context) =>
               frame.renderNode(
                 checked,
-                frameDispatcherFor(
-                  frame,
-                  frame.defaultWidth,
-                  context,
-                  theme,
-                  options.anchors
-                )
+                frameDispatcherFor(widths, context, theme, options.anchors)
               ),
           },
         ],

@@ -135,18 +135,76 @@ describe('chartsFrame', () => {
       expect(wide.html).toContain('chartsGrid-panels');
     });
 
-    it('stacks a grid in one column on a page whose content is under 768 px', () => {
+    const sideBySide: GridNode = {
+      type: 'grid',
+      panels: [
+        { x: 0, y: 0, w: 24, h: 4, node: chart },
+        { x: 24, y: 0, w: 24, h: 4, node: chart },
+      ],
+    };
+
+    it('stacks a grid in one column, and measures it so, on a page whose content is under 768 px', () => {
       resolved.length = 0;
-      const narrow = runtime.surfaces.snapshot.render(
-        { type: 'view', body: [grid] },
+      const { snapshot } = runtime.surfaces;
+      const narrow = snapshot.render(
+        { type: 'view', body: [sideBySide] },
         { width: 600 }
       );
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         568,
       ]);
       expect(narrow.html).toContain('chartsGrid-column');
-      // Padding 2 × 16, then two panels of 4 rows (4 × 20 + 3 × 8) with a gap of 8.
+      // Padding 2 × 16; one row of 4 units is 4 × 20 + 3 × 8 = 104, and stacked the two are 104 + 8 + 104.
       expect(narrow.height).toBe(32 + 104 + 8 + 104);
+      expect(snapshot.render({ type: 'view', body: [sideBySide] }).height).toBe(
+        32 + 104
+      );
+    });
+
+    it('keeps a nested grid on its columns in a panel under 768 px, as its panel reserves', () => {
+      const nested: GridNode = {
+        type: 'grid',
+        panels: [{ x: 0, y: 0, w: 24, h: 8, node: sideBySide }],
+      };
+      const { html } = runtime.surfaces.snapshot.render({
+        type: 'view',
+        body: [nested],
+      });
+      // The outer panel is 460 px wide; only the page's width stacks a grid.
+      expect(html.split('chartsGrid-panels').length - 1).toBe(2);
+      expect(html).not.toContain('chartsGrid-column');
+    });
+
+    it('gives a page narrower than its padding no negative width', () => {
+      expect(chartsFrame.contentWidth?.(20)).toBe(0);
+      resolved.length = 0;
+      runtime.surfaces.snapshot.render(
+        { type: 'view', body: [sideBySide] },
+        { width: 20 }
+      );
+      expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
+        0,
+      ]);
+    });
+
+    it('draws a bare grid for the whole page, with no padding to leave', () => {
+      resolved.length = 0;
+      runtime.surfaces.snapshot.renderNode(grid);
+      // (960 − 47 × 8) × 24/48 + 23 × 8 for the half-width panel.
+      expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
+        960, 476,
+      ]);
+    });
+
+    it('lays an html render out for its `width`, with the rules that layout draws', () => {
+      const composition = { type: 'view' as const, body: [sideBySide] };
+      const { html } = runtime.surfaces;
+      const narrow = html.render(composition, { width: 600, css: 'separate' });
+      expect(narrow.html).toContain('chartsGrid-column');
+      expect(narrow.css).toContain('.chartsGrid-column');
+      const unstated = html.render(composition, { css: 'separate' });
+      expect(unstated.html).toContain('chartsGrid-panels');
+      expect(unstated.css).not.toContain('.chartsGrid-column');
     });
 
     it('draws a chart on its own in the light scheme by default', () => {

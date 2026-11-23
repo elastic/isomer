@@ -471,7 +471,7 @@ describe('createIsomerRuntime', () => {
       },
       examples: [{ type: 'width' }],
       schema: z.object({ type: z.literal('width') }),
-      metrics: { snapshotHeight: (_node, { width }) => width ?? -1 },
+      metrics: { snapshotHeight: (_node, options) => options?.width ?? -1 },
       renderers: {
         react: (_node, { context }) =>
           createElement('i', null, String(layoutWidthOf(context))),
@@ -499,9 +499,6 @@ describe('createIsomerRuntime', () => {
       expect(
         snapshot.renderPages([spec, spec], { width: 800 }).pages[1]?.html
       ).toContain('<i>700</i>');
-      expect(snapshot.renderNode({ type: 'width' }).html).toContain(
-        '<i>500</i>'
-      );
     });
 
     it('estimates each node at that width', () => {
@@ -511,24 +508,27 @@ describe('createIsomerRuntime', () => {
       expect(snapshot.render(spec, { width: 1532 }).height).toBe(1432 + 40);
     });
 
-    it('hands the page width to estimateHeight, and a width the frame names to the node', () => {
-      const seen: number[] = [];
-      const columns: Frame<string> = {
+    it('hands estimateHeight the width of the page it measures', () => {
+      const seen: (number | undefined)[] = [];
+      const recording: Frame<string> = {
         ...padded,
         estimateHeight: (composition, dispatcher, viewport) => {
-          seen.push(viewport?.width ?? -1);
-          return composition.body.reduce(
-            (sum, node) =>
-              sum + dispatcher.estimateSnapshotHeight(node, { width: 300 }),
-            0
-          );
+          seen.push(viewport?.width);
+          return testFrame.estimateHeight(composition, dispatcher, viewport);
         },
       };
-      expect(
-        runtimeWith(columns).surfaces.snapshot.render(spec, { width: 900 })
-          .height
-      ).toBe(300);
-      expect(seen).toEqual([900]);
+      const { snapshot } = runtimeWith(recording).surfaces;
+      snapshot.render(spec);
+      snapshot.render(spec, { width: 900 });
+      expect(seen).toEqual([600, 900]);
+    });
+
+    it('draws and measures a node with no surround at the whole page', () => {
+      const bare = runtimeWith(padded).surfaces.snapshot.renderNode({
+        type: 'width',
+      });
+      expect(bare.html).toContain('<i>600</i>');
+      expect(bare).toMatchObject({ width: 600, height: 600 + 40 });
     });
 
     it('tells nodes no width under a frame that states none', () => {

@@ -327,7 +327,7 @@ export type Renderers<
  */
 export interface PrimitiveMetrics<TNode extends PrimitiveNode> {
   /** The node's drawn height in pixels at `options.width`, or at the width it draws at when told none. */
-  snapshotHeight?: (node: TNode, options: SnapshotHeightOptions) => number;
+  snapshotHeight?: (node: TNode, options?: SnapshotHeightOptions) => number;
 }
 
 /** What a height estimate is told about where the node draws. */

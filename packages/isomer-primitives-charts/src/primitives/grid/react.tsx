@@ -13,6 +13,7 @@ import {
   layoutWidthOf,
   nodeAnchor,
   type PrimitiveNode,
+  withLayoutWidth,
 } from '@elastic/isomer-sdk';
 
 import type { ChartsReactEnv, ChartsRenderContext } from '../../render';
@@ -33,16 +34,17 @@ import { gridModule } from './styles';
 const { gap, nominalWidth } = CHARTS_THEME.grid;
 const { handles: grid, vars } = gridModule;
 
-/** The width this grid is given: a host's or container's `size`, else the width the surface lays the render out in. */
+/** The width the host gave this grid, directly or through its containers. */
 const hostWidth = (context: ChartsRenderContext | undefined) => {
   const size = context?.size;
-  if (size) {
-    return isNominalSize(size) ? undefined : size.width;
-  }
-  return layoutWidthOf(context);
+  return size && !isNominalSize(size) ? size.width : undefined;
 };
 
-/** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
+/** The width a grid no container sizes switches to one column by: the host's, else the surface's. */
+const columnsWidth = (context: ChartsRenderContext | undefined) =>
+  context?.size ? hostWidth(context) : layoutWidthOf(context);
+
+/** The context a panel's node renders with: the grid's own, with the box its panel leaves as its `size` and layout width. Without a host width the box is nominal, laid out for the surface's width, else `nominalWidth`. */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
@@ -61,7 +63,10 @@ const childContext = (
   if (hostWidth(context) === undefined) {
     markNominalSize(size);
   }
-  return context ? contextWith(context, 'size', size) : { size };
+  return withLayoutWidth(
+    context ? contextWith(context, 'size', size) : { size },
+    width
+  );
 };
 
 type Context = ChartsReactEnv['context'];
@@ -202,8 +207,7 @@ const CollapsedAnchors = ({
 
 /** Draws a grid: its header, then each block of panels, sections titled. */
 export const react = (node: GridNode, env: ChartsReactEnv): ReactNode => {
-  const width = hostWidth(env.context);
-  const oneColumn = isOneColumn(width);
+  const oneColumn = isOneColumn(columnsWidth(env.context));
   return (
     <div
       {...nodeAnchor(env.context, node)}
