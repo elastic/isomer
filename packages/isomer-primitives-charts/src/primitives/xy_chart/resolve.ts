@@ -673,7 +673,11 @@ const yAxisOf = (
     format: yFormatOf(context, id),
     domain:
       domain.kind === 'custom'
-        ? { kind: 'custom', min: domain.min, max: domain.max }
+        ? {
+            kind: 'custom',
+            ...(domain.min === undefined ? {} : { min: domain.min }),
+            ...(domain.max === undefined ? {} : { max: domain.max }),
+          }
         : {
             kind: 'data',
             includeZero:

@@ -417,6 +417,23 @@ describe('missing values', () => {
     expect(formatValue([1, 2], suffixed)).toBe('["1","2"] ms');
   });
 
+  it('puts a prefix before the value and after its sign', () => {
+    const dollars: PortableFormat = {
+      kind: 'number',
+      prefix: '$',
+      minimumFractionDigits: 2,
+    };
+    expect(formatValue(1234.5, dollars)).toBe('$1,234.50');
+    expect(formatValue(-5, dollars)).toBe('-$5.00');
+    expect(formatValue(5, { ...dollars, signDisplay: 'always' })).toBe(
+      '+$5.00'
+    );
+    expect(formatValue(5, { ...dollars, suffix: ' USD' })).toBe('$5.00 USD');
+    expect(formatValue(null, dollars)).toBe('(null)');
+    expect(formatValue('', dollars)).toBe('(blank)');
+    expect(formatValue([1, -2], dollars)).toBe('$["1.00","-2.00"]');
+  });
+
   it('takes the node’s text, keeping defaults for the rest', () => {
     const missing = { null: '—', empty: '' };
     expect(formatValue(null, number, { missing })).toBe('—');

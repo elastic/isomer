@@ -313,6 +313,8 @@ describe('xyChart', () => {
   it.each([
     ['x', { domain: { kind: 'custom', min: 5, max: 5 } }],
     ['y', { domain: { kind: 'custom', min: 10, max: 0 } }],
+    ['y', { domain: { kind: 'custom' } }],
+    ['y2', { scale: 'log', domain: { kind: 'custom', min: 0 } }],
     ['y2', { scale: 'log', domain: { kind: 'custom', min: 0, max: 100 } }],
   ])('rejects a degenerate custom %s domain', (id, axis) => {
     expectRule(
@@ -335,6 +337,18 @@ describe('xyChart', () => {
       )
     ).toEqual([]);
   });
+
+  it.each([{ min: 0 }, { max: 100 }, { min: -5 }])(
+    'accepts a one-sided custom y domain %j',
+    (bound) => {
+      expect(
+        issuesOf(
+          'xyChart',
+          xy({ axes: { y: { domain: { kind: 'custom', ...bound } } } })
+        )
+      ).toEqual([]);
+    }
+  );
 
   it.each([
     '2026-11-03T00:30Z',

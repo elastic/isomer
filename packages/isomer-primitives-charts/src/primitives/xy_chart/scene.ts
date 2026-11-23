@@ -27,7 +27,13 @@ export type SceneDomain =
       /** Round the domain out to readable values. */
       readonly rounding: boolean;
     }
-  | { readonly kind: 'custom'; readonly min: number; readonly max: number };
+  | {
+      readonly kind: 'custom';
+      /** Absent on a y axis means from the data, extended to include zero. */
+      readonly min?: number;
+      /** Absent on a y axis means from the data, extended to include zero. */
+      readonly max?: number;
+    };
 
 /** One axis of an xy Scene, stated as intent: the engine chooses its ticks from `format` and `domain`. */
 export interface SceneAxis {

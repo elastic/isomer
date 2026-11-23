@@ -15,8 +15,14 @@ import {
   type GridSection,
 } from './schema';
 
+/**
+ * The lengths a grid draws with, in pixels: a panel `h` rows tall is
+ * `h * rowHeight + (h - 1) * gap`, less `headerHeight` under a title.
+ */
+export const GRID_GEOMETRY = CHARTS_THEME.grid;
+
 const { rowHeight, gap, sectionGap, headerHeight, descriptionHeight } =
-  CHARTS_THEME.grid;
+  GRID_GEOMETRY;
 
 /** The height `rows` grid rows take, with the gaps between them. */
 export const rowsHeight = (rows: number) =>
