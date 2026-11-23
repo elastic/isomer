@@ -19,7 +19,7 @@ Every chart primitive spreads `chartCoreShape` into its schema.
 
 A `title` leads the Scene's summary sentence, so `text`, `markdown`, Slack without assets, an image's alt text and the pack's fallback print it. A `dataTable` draws it above the table, and an `unsupported` node and a chart that could not be drawn draw it above their note.
 
-A chart an engine draws does not draw its `title`. The Elastic Charts engine makes it the chart's accessible name (`aria-label`), with the Scene's summary and `description` as its accessible description: a Kibana panel's chrome titles the panel, not the visualization inside it. The pack's own renderers name themselves by the summary, which the title leads: a `legacyMetric` carries the summary and `description` together in its `aria-label`, and a `dataTable` carries the summary there and draws its title and description above the table.
+A chart an engine draws does not draw its `title`. The Elastic Charts engine makes it the chart's accessible name (`aria-label`), with the Scene's summary and `description` as its accessible description: a Kibana panel's chrome titles the panel, not the visualization inside it. Two of the pack's own renderers name themselves by the summary, which the title leads: a `legacyMetric` carries the summary and `description` together in its `aria-label`, and a `dataTable` carries the summary there and draws its title and description above the table. The fallback has no accessible name: it prints the summary, title first, as a paragraph.
 
 That accessible text is markup, on `react` and `html`. An image holds none of it: a PNG of a chart an engine drew shows no title, and whoever embeds it supplies the alt text, as Slack's image block takes the chart's `text` render.
 
