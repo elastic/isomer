@@ -7,7 +7,11 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
+import {
+  missingPackedFiles,
+  packedPackages,
+  prunedRuntimeFiles,
+} from './packed_files.js';
 import { workspacePackages } from './workspace_packages.js';
 
 const studio = workspacePackages().find(
@@ -66,8 +70,11 @@ describe('missingPackedFiles', () => {
 });
 
 describe('prunedRuntimeFiles', () => {
+  const pruned = (entries, manifest = {}) =>
+    prunedRuntimeFiles({ name: '@elastic/fixture', ...manifest }, entries);
+
   it("names runtime code under a directory Kibana's build deletes", () => {
-    const pruned = [
+    const deleted = [
       'lib/cjs/schema/examples/index.js',
       'lib/esm/docs/view.js',
       'lib/cjs/test/data.json',
@@ -75,36 +82,52 @@ describe('prunedRuntimeFiles', () => {
       'lib/cjs/coverage/index.js',
       'lib/cjs/__tests__/helper.js',
     ];
-    expect(prunedRuntimeFiles([...pruned, 'lib/cjs/schema/index.js'])).toEqual(
-      pruned
-    );
+    expect(pruned([...deleted, 'lib/cjs/schema/index.js'])).toEqual(deleted);
   });
 
   it('names runtime code whose own name Kibana deletes', () => {
-    const pruned = [
+    const deleted = [
       'lib/cjs/benchmark.js',
       'lib/cjs/react.development.js',
       'lib/cjs/babel.config.js',
       'lib/cjs/readme.js',
       'lib/cjs/bower.json',
+      'lib/cjs/.eslintrc.js',
+      'lib/cjs/.prettierrc.js',
     ];
-    expect(prunedRuntimeFiles([...pruned, 'lib/cjs/benchmarking.js'])).toEqual(
-      pruned
-    );
+    expect(pruned([...deleted, 'lib/cjs/benchmarking.js'])).toEqual(deleted);
   });
 
-  it('matches without regard to case, as Kibana does', () => {
+  it('matches as Kibana does: any case, and no `*` over a leading dot', () => {
     expect(
-      prunedRuntimeFiles([
+      pruned([
         'lib/cjs/schema/Examples/index.js',
         'lib/cjs/DOCS/view.js',
+        'lib/cjs/renderer.DEV.JS',
+        'lib/cjs/.compat.dev.js',
       ])
-    ).toHaveLength(2);
+    ).toEqual([
+      'lib/cjs/schema/Examples/index.js',
+      'lib/cjs/DOCS/view.js',
+      'lib/cjs/renderer.DEV.JS',
+    ]);
+  });
+
+  it('keeps what Kibana keeps: its own packages, and the code `yaml` holds under `doc`', () => {
+    expect(
+      prunedRuntimeFiles({ name: '@kbn/fixture' }, ['lib/examples/index.js'])
+    ).toEqual([]);
+    expect(
+      prunedRuntimeFiles({ name: 'yaml' }, [
+        'dist/doc/Document.js',
+        'lib/doc/Document.js',
+      ])
+    ).toEqual(['lib/doc/Document.js']);
   });
 
   it('passes a file named like a directory, declarations, and prose', () => {
     expect(
-      prunedRuntimeFiles([
+      pruned([
         'lib/cjs/primitives/grid/examples.js',
         'lib/cjs/schema/examples/index.d.ts',
         'docs/index.md',
@@ -120,14 +143,32 @@ describe('prunedRuntimeFiles', () => {
       'lib/examples/cli.js',
     ];
     expect(
-      prunedRuntimeFiles(entries, {
-        'isomer-studio': './bin/isomer-studio.js',
-        examples: './lib/examples/cli.js',
+      pruned(entries, {
+        bin: {
+          'isomer-studio': './bin/isomer-studio.js',
+          examples: './lib/examples/cli.js',
+        },
       })
     ).toEqual(['bin/helper.js', 'lib/examples/cli.js']);
-    expect(prunedRuntimeFiles(entries, 'bin/isomer-studio.js')).toEqual([
+    expect(pruned(entries, { bin: 'bin/isomer-studio.js' })).toEqual([
       'bin/helper.js',
       'lib/examples/cli.js',
     ]);
+  });
+});
+
+describe('packedPackages', () => {
+  it('packs a publishing package that declares no `files`', () => {
+    const packages = [
+      { manifest: { name: 'listed', files: ['lib'] } },
+      { manifest: { name: 'unlisted' } },
+      { manifest: { name: 'private', private: true } },
+    ];
+    expect(
+      packedPackages(
+        packages,
+        ({ private: isPrivate }) => isPrivate !== true
+      ).map(({ manifest }) => manifest.name)
+    ).toEqual(['listed', 'unlisted']);
   });
 });

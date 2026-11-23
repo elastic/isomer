@@ -10,7 +10,11 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
-import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
+import {
+  missingPackedFiles,
+  packedPackages,
+  prunedRuntimeFiles,
+} from './packed_files.js';
 import { isPublishable, workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
@@ -56,17 +60,8 @@ const packedPath = (from, target) => {
 
 let allPassed = true;
 
-for (const pkg of workspacePackages()) {
-  const {
-    bin,
-    exports: exportMap,
-    name,
-    files: filesField = [],
-  } = pkg.manifest;
-
-  if (!isPublishable(pkg.manifest)) {
-    continue;
-  }
+for (const pkg of packedPackages(workspacePackages(), isPublishable)) {
+  const { exports: exportMap, name, files: filesField = [] } = pkg.manifest;
 
   let packOutput;
   try {
@@ -111,7 +106,7 @@ for (const pkg of workspacePackages()) {
   const forbidden = entries.filter((entry) =>
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
-  const pruned = prunedRuntimeFiles(entries, bin);
+  const pruned = prunedRuntimeFiles(pkg.manifest, entries);
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
