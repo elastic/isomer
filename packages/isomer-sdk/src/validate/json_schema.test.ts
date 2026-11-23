@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
+import type { Composition } from '../composition/composition';
 import { STRUCTURED_VALUE_FORMATS } from '../composition/structured_value';
 import type {
   AnyPrimitiveDefinition,
@@ -88,11 +89,12 @@ describe('buildCompositionJsonSchema', () => {
     const { properties } = buildCompositionJsonSchema([leaf('alpha')]) as {
       properties: { meta: { additionalProperties?: boolean } };
     };
+    // `meta.extra` is a key `Composition` does not declare.
     const composition = {
       type: 'view',
       meta: { extra: true },
       body: [{ type: 'alpha' }],
-    };
+    } as Composition;
     expect(properties.meta.additionalProperties).toBe(false);
     expect(
       createCompositionValidator([leaf('alpha')])(composition).errors
