@@ -78,14 +78,23 @@ const defsOf = (
 
 describe('buildCompositionJsonSchema', () => {
   it('restores the registry when two schemas claim one `$defs` name', () => {
-    const before = buildCompositionJsonSchema([leaf('alpha')]);
-    expect(() =>
-      buildCompositionJsonSchema([leaf('alpha'), leaf('bodyNode')])
-    ).toThrow();
-    expect(buildCompositionJsonSchema([leaf('alpha')])).toEqual(before);
+    const alpha = leaf('alpha');
+    const member = resolveVocabulary([alpha]).members.get('alpha')!;
+    const metadata = { description: 'Kept' };
+    z.globalRegistry.add(member, metadata);
+    try {
+      const before = buildCompositionJsonSchema([alpha]);
+      expect(() =>
+        buildCompositionJsonSchema([alpha, leaf('bodyNode')])
+      ).toThrow();
+      expect(z.globalRegistry.get(member)).toEqual(metadata);
+      expect(buildCompositionJsonSchema([alpha])).toEqual(before);
+    } finally {
+      z.globalRegistry.remove(member);
+    }
   });
 
-  it('closes an object the validator strips unknown keys from', () => {
+  it('closes an object whose unknown keys the validator accepts and keeps', () => {
     const { properties } = buildCompositionJsonSchema([leaf('alpha')]) as {
       properties: { meta: { additionalProperties?: boolean } };
     };
@@ -96,9 +105,9 @@ describe('buildCompositionJsonSchema', () => {
       body: [{ type: 'alpha' }],
     } as Composition;
     expect(properties.meta.additionalProperties).toBe(false);
-    expect(
-      createCompositionValidator([leaf('alpha')])(composition).errors
-    ).toEqual([]);
+    const checked = createCompositionValidator([leaf('alpha')])(composition);
+    expect(checked.errors).toEqual([]);
+    expect(checked.composition?.meta).toEqual({ extra: true });
   });
 
   it('is exported from the root entry', () => {
