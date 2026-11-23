@@ -44,7 +44,7 @@ const hostWidth = (context: ChartsRenderContext | undefined) => {
 const columnsWidth = (context: ChartsRenderContext | undefined) =>
   context?.size ? hostWidth(context) : layoutWidthOf(context);
 
-/** The context a panel's node renders with: the grid's own, with the box its panel leaves as its `size` and layout width. Without a host width the box is nominal, laid out for the surface's width, else `nominalWidth`. */
+/** The context a panel's node renders with: the grid's own, with the box its panel leaves as its `size`, and as its layout width where the grid's own width is known. Without a host width the box is nominal, laid out for the surface's width, else `nominalWidth`. */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
@@ -63,10 +63,12 @@ const childContext = (
   if (hostWidth(context) === undefined) {
     markNominalSize(size);
   }
-  return withLayoutWidth(
-    context ? contextWith(context, 'size', size) : { size },
-    width
-  );
+  const child = context ? contextWith(context, 'size', size) : { size };
+  // A nominal box is an estimate of a fluid layout, not room a node may count on.
+  return hostWidth(context) === undefined &&
+    layoutWidthOf(context) === undefined
+    ? child
+    : withLayoutWidth(child, width);
 };
 
 type Context = ChartsReactEnv['context'];

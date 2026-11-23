@@ -645,6 +645,18 @@ CLOSED`);
     // Any pack's node reads the room its panel leaves it.
     expect(layoutWidthOf(nested)).toBe(nested?.size?.width);
     expect(nested?.onEvent).toBe(nested?.onEvent);
+
+    // A grid told no width lays out fluidly: its nominal box is no room to count on.
+    seen.length = 0;
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        probing.surfaces.react.render(view(grid), { heading: false })
+      )
+    );
+    expect(seen[0]?.size).toBeDefined();
+    expect(layoutWidthOf(seen[0])).toBeUndefined();
   });
 
   it('sizes nested charts inside a frozen context that already has a size', () => {
