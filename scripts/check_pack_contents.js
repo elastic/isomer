@@ -109,7 +109,7 @@ for (const pkg of workspacePackages()) {
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
-        ? ['types', 'import', 'require', 'default'].map(
+        ? ['types', 'module', 'node', 'import', 'require', 'default'].map(
             (key) => conditions[key]
           )
         : []

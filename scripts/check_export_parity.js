@@ -6,15 +6,17 @@
  */
 
 // Every package ships the EUI layout: ESM for bundlers under `lib/esm`, and
-// CommonJS with its declarations under `lib/cjs`. Each export, and the
-// top-level `main`, `module` and `types`, must name the same module in each.
+// CommonJS with its declarations under `lib/cjs`, which is also what Node
+// loads, `import` included: `module` gives a bundler the ESM before `node`
+// gives Node the CommonJS. Each export, and the top-level `main`, `module`
+// and `types`, must name the same module in each.
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { workspacePackages } from './workspace_packages.js';
 
-const CONDITIONS = ['types', 'import', 'require', 'default'];
+const CONDITIONS = ['types', 'module', 'node', 'import', 'require', 'default'];
 
 /** The `lib/cjs` target and declaration for an `import` target under `lib/esm`. */
 const expectedFor = (importPath) => {
@@ -25,6 +27,8 @@ const expectedFor = (importPath) => {
   }
   const require = `./lib/cjs/${importPath.slice('./lib/esm/'.length)}`;
   return {
+    module: importPath,
+    node: require,
     require,
     default: require,
     types: require.replace(/\.js$/, '.d.ts'),

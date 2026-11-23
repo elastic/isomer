@@ -25,6 +25,7 @@ import { checkDeclarations } from './packed_declarations.js';
 import {
   consumerEnv,
   failOnWarning,
+  importEntries,
   linkDirectory,
   requireEntries,
   requireWithoutPeers,
@@ -142,7 +143,8 @@ const bundleEsm = (specifier, resolveDir, manifest, platform, outfile) =>
     format: 'esm',
     platform,
     target: 'es2022',
-    conditions: platform === 'node' ? ['node'] : [],
+    // Stated conditions replace esbuild's defaults, and `module` is the one every bundler sets.
+    conditions: platform === 'node' ? ['module', 'node'] : ['module'],
     external: [
       ...Object.keys(manifest.dependencies ?? {}),
       ...Object.keys(manifest.peerDependencies ?? {}),
@@ -228,7 +230,7 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     const specifiers = exportSpecifiers(pkg.manifest);
 
-    // Node loads the CommonJS build, with optional peers only for the entries that need them.
+    // Node loads the CommonJS build, by `require()` and by `import()`, with optional peers only for the entries that need them.
     const plainEntries = specifiers.filter(
       (specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)
     );
@@ -248,6 +250,7 @@ try {
     );
     if (optionalPeers.size === 0) {
       requireEntries(plainEntries, consumerDir);
+      importEntries(plainEntries, consumerDir);
     } else {
       const isolatedConsumer = requireWithoutPeers(
         pkg,
@@ -273,6 +276,7 @@ try {
     }
     if (optionalPeerEntries.length > 0) {
       requireEntries(optionalPeerEntries, consumerDir);
+      importEntries(optionalPeerEntries, consumerDir);
     }
 
     // The ESM build is for bundlers: each entry must bundle, and the Node bundle must import.
@@ -311,7 +315,7 @@ try {
       ? 'node and browser'
       : 'node';
     console.log(
-      `${packageName}: ${specifiers.length} packed entry point(s) require, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
+      `${packageName}: ${specifiers.length} packed entry point(s) require and import in Node, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
     );
   }
 
