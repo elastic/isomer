@@ -107,12 +107,16 @@ describe('sceneSpecs', () => {
       ...scene,
       axes: {
         ...scene.axes,
-        y2: { ...scene.axes.y2!, domain: { kind: 'custom', max: 5 } },
+        y2: {
+          ...scene.axes.y2!,
+          domain: { kind: 'data', includeZero: true, rounding: true, max: 5 },
+        },
       },
     };
     expect(specProps(oneSided, 'y2').domain).toEqual({
       min: Number.NaN,
       max: 5,
+      fit: false,
       includeDataFromIds: [],
     });
     const fitted: XyScene = {

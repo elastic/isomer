@@ -315,6 +315,8 @@ describe('xyChart', () => {
     ['y', { domain: { kind: 'custom', min: 10, max: 0 } }],
     ['y', { domain: { kind: 'custom' } }],
     ['y2', { scale: 'log', domain: { kind: 'custom', min: 0 } }],
+    ['y2', { scale: 'log', domain: { kind: 'custom', max: 0 } }],
+    ['y', { scale: 'log', domain: { kind: 'custom', max: -5 } }],
     ['y2', { scale: 'log', domain: { kind: 'custom', min: 0, max: 100 } }],
   ])('rejects a degenerate custom %s domain', (id, axis) => {
     expectRule(

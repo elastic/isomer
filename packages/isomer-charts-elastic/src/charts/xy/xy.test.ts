@@ -114,6 +114,34 @@ describe('elastic-charts renderer: xy', () => {
   const resolveXy = (node: XyChartNode) =>
     resolveChart(node, { scheme: 'light', size: SIZE });
 
+  it('draws a one-sided custom y domain from its bound to the data, extended to zero', async () => {
+    // A line of 98 to 210: on its default domain the axis fits the data.
+    const line = xyChartExamples.find(
+      ({ name }) => name === 'Time series line'
+    )!.node;
+    const ticksOf = async (domain?: { min?: number; max?: number }) => {
+      const node: XyChartNode = domain
+        ? {
+            ...line,
+            axes: {
+              ...line.axes,
+              y: { domain: { kind: 'custom', ...domain } },
+            },
+          }
+        : line;
+      const { values } = (await debugState(resolveXy(node))).axes!.y[0]!;
+      return values.map(Number);
+    };
+    expect(Math.min(...(await ticksOf()))).toBeGreaterThan(0);
+    const toMax = await ticksOf({ max: 1000 });
+    expect(Math.min(...toMax)).toBe(0);
+    expect(Math.max(...toMax)).toBe(1000);
+    const fromMin = await ticksOf({ min: 50 });
+    expect(Math.min(...fromMin)).toBe(50);
+    expect(Math.max(...fromMin)).toBeGreaterThanOrEqual(200);
+    expect(Math.max(...fromMin)).toBeLessThan(1000);
+  });
+
   it('draws a time axis’s minor and major rows, as Lens does', async () => {
     const { labels } = (await debugState(resolveXy(byTheMinute))).axes!.x[0]!;
     expect(labels).toEqual(

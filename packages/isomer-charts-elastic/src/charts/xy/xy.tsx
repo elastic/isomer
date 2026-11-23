@@ -174,25 +174,18 @@ const referenceLineIds = ({ layers }: XyScene, axis: SceneAxis): string[] => {
   return ids;
 };
 
-/** Kibana's `getAxisDomain`: a data domain fits the data unless it includes zero, and a custom bound left out is `NaN`. */
+/** Kibana's `getAxisDomain`: a data domain fits the data unless it includes zero, with an end the axis fixes in place of `NaN`. */
 const yDomainOf = (axis: SceneAxis, scene: XyScene) => {
   const { domain } = axis;
   if (domain === undefined) {
     return undefined;
   }
   if (domain.kind === 'custom') {
-    const { min, max } = domain;
-    return min !== undefined && max !== undefined
-      ? { min, max }
-      : {
-          min: min ?? Number.NaN,
-          max: max ?? Number.NaN,
-          includeDataFromIds: referenceLineIds(scene, axis),
-        };
+    return { min: domain.min, max: domain.max };
   }
   return {
-    min: Number.NaN,
-    max: Number.NaN,
+    min: domain.min ?? Number.NaN,
+    max: domain.max ?? Number.NaN,
     fit: !domain.includeZero,
     includeDataFromIds: referenceLineIds(scene, axis),
   };
@@ -243,7 +236,7 @@ const xDomainOf = ({ axes: { x }, categories }: XyScene) => {
   }
   return {
     ...(domain?.kind === 'custom'
-      ? { min: domain.min ?? NaN, max: domain.max ?? NaN }
+      ? { min: domain.min, max: domain.max }
       : { min: NaN, max: NaN }),
     ...(interval === undefined ? {} : { minInterval: interval }),
   };

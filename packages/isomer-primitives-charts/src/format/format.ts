@@ -184,7 +184,8 @@ const formatScalar = (
   }
 };
 
-const LEADING_SIGN = /^[-+\u2212]/;
+// A sign, with the direction marks some locales put before it, as `ar-EG` does.
+const LEADING_SIGN = /^[\u061C\u200E\u200F]*[-+\u2212]/;
 
 /** `text` between the format's `prefix`, which follows a leading sign, and its `suffix`. */
 const withAffixes = (text: string, format: PortableFormat): string => {

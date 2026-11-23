@@ -67,7 +67,7 @@ export const XY_RULES = {
   rangeOrder: "An annotation range's `from` is not after its `to`.",
   time: 'A time written as a string is an ISO 8601 date-time with a UTC offset, such as `2026-11-03T00:30:00Z`, as a `date` cell is.',
   customDomain:
-    'A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero. A y axis states `min`, `max` or both; an x axis states both.',
+    'A `custom` axis domain has `min` below `max`, and on a `log` y axis each bound above zero. A y axis states `min`, `max` or both; an x axis states both.',
 } as const;
 
 const dateOrNumberSchema = z
@@ -581,7 +581,7 @@ const checkCustomDomains = (axes: XyChartInput['axes'], context: Issues) => {
     if (
       (min === undefined && max === undefined) ||
       (min !== undefined && max !== undefined && min >= max) ||
-      (log && min !== undefined && min <= 0)
+      (log && [min, max].some((bound) => bound !== undefined && bound <= 0))
     ) {
       context.addIssue({
         code: 'custom',

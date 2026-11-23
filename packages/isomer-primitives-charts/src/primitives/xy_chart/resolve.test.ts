@@ -1093,15 +1093,27 @@ describe('visibility, cell identity and bounds', () => {
     ).toEqual({ kind: 'custom', min: 1, max: 100 });
   });
 
-  it.each([
-    [{ min: 0 }, { kind: 'custom', min: 0 }],
-    [{ max: 100 }, { kind: 'custom', max: 100 }],
-  ] as const)('keeps a one-sided custom y domain %j', (bound, domain) => {
-    expect(
-      resolve(xy({ axes: { y: { domain: { kind: 'custom', ...bound } } } }))
-        .axes.y?.domain
-    ).toEqual(domain);
-  });
+  it.each([{ min: 5 }, { max: 100 }] as const)(
+    'states a one-sided custom y domain %j as the data domain, from zero, with that end fixed',
+    (bound) => {
+      const domainOf = (y: NonNullable<XyChartNode['axes']>['y']) =>
+        resolve(
+          xy({ axes: { y: { ...y, domain: { kind: 'custom', ...bound } } } })
+        ).axes.y?.domain;
+      expect(domainOf({})).toEqual({
+        kind: 'data',
+        includeZero: true,
+        rounding: true,
+        ...bound,
+      });
+      expect(domainOf({ scale: 'log', rounding: false })).toEqual({
+        kind: 'data',
+        includeZero: false,
+        rounding: false,
+        ...bound,
+      });
+    }
+  );
 
   it('labels the axis and annotations in the x format and its time zone', () => {
     const at = Date.parse('2026-01-01T06:00:00Z');

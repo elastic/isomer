@@ -26,14 +26,12 @@ export type SceneDomain =
       readonly includeZero: boolean;
       /** Round the domain out to readable values. */
       readonly rounding: boolean;
-    }
-  | {
-      readonly kind: 'custom';
-      /** Absent on a y axis means from the data, extended to include zero. */
+      /** The one end a y axis fixes; the other comes from the data. */
       readonly min?: number;
-      /** Absent on a y axis means from the data, extended to include zero. */
+      /** The one end a y axis fixes; the other comes from the data. */
       readonly max?: number;
-    };
+    }
+  | { readonly kind: 'custom'; readonly min: number; readonly max: number };
 
 /** One axis of an xy Scene, stated as intent: the engine chooses its ticks from `format` and `domain`. */
 export interface SceneAxis {

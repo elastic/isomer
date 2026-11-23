@@ -429,6 +429,11 @@ describe('missing values', () => {
       '+$5.00'
     );
     expect(formatValue(5, { ...dollars, suffix: ' USD' })).toBe('$5.00 USD');
+    const arabic = formatValue(-5, { kind: 'number' }, { locale: 'ar-EG' });
+    expect(arabic.startsWith('\u061C-')).toBe(true);
+    expect(
+      formatValue(-5, { kind: 'number', prefix: '#' }, { locale: 'ar-EG' })
+    ).toBe('\u061C-#' + arabic.slice(2));
     expect(formatValue(null, dollars)).toBe('(null)');
     expect(formatValue('', dollars)).toBe('(blank)');
     expect(formatValue([1, -2], dollars)).toBe('$["1.00","-2.00"]');
