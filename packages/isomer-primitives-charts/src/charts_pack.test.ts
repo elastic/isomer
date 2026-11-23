@@ -657,6 +657,14 @@ CLOSED`);
     );
     expect(seen[0]?.size).toBeDefined();
     expect(layoutWidthOf(seen[0])).toBeUndefined();
+
+    // A width only the surface states: (1000 − 47 × 8) × 24/48 + 23 × 8 for the half-width panel.
+    seen.length = 0;
+    probing.surfaces.html.render(view(grid), { width: 1000 });
+    expect(seen.map((context) => layoutWidthOf(context))).toEqual(
+      seen.map(() => 496)
+    );
+    expect(seen.length).toBeGreaterThan(0);
   });
 
   it('sizes nested charts inside a frozen context that already has a size', () => {

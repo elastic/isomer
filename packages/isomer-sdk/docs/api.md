@@ -50,7 +50,7 @@ Types: `PrimitiveDefinition`, `AnyPrimitiveDefinition`, `PrimitiveExample` (a na
 | `withNodeAnchors` | A view of a context with anchors on, as an enhancement declaring `anchors: true` turns them on |
 | `withoutAnchors` | A context under which nothing renders an anchor, for content that is not one of a node's `children` |
 | `contextWith` | `(context, key, value)`: a view of a context with one field replaced, keeping its getters, private state, methods (bound once) and prototype; what a container passes a child it gives its own field, such as a size |
-| `layoutWidthOf` | The width a surface laid this render out in, from a render context: a `snapshot` frame's `contentWidth`, or an `html` render's `width`; `undefined` where none was stated |
+| `layoutWidthOf` | The width the nodes drawn with a render context are laid out in: a `snapshot` frame's `contentWidth`, an `html` render's `width`, or the room a container states for a child; `undefined` where none was stated |
 | `withLayoutWidth` | A view of a context that states that width: for a surface, a host's own `react` render, or a container giving a child less room. A context that is not an object carries none |
 | `styleScopeOf` | The token every context one Distillate render makes shares across both HTML passes, or `undefined`; for a renderer that caches output per render |
 | `checkLayout` | Where a measured render's nodes run past their room or onto a sibling, as `LayoutFinding`s over a `LayoutBox` tree |

@@ -20,7 +20,7 @@ export const withLayoutWidth = <TContext>(
   width: number
 ): TContext => contextWith(context, LAYOUT_WIDTH, width);
 
-/** The width a surface laid this render out in, or `undefined` where none was stated. */
+/** The width the nodes drawn with `context` are laid out in, or `undefined` where none was stated. */
 export const layoutWidthOf = (context: unknown): number | undefined => {
   const width: unknown = isObjectLike(context)
     ? Reflect.get(context, LAYOUT_WIDTH)
