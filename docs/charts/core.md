@@ -9,7 +9,7 @@ Every chart primitive spreads `chartCoreShape` into its schema.
 
 | Field | What it is |
 | --- | --- |
-| `title`, `description` | The chart's name, and what it shows. Text surfaces print both; a drawn chart carries them as its accessible name and description. See [`title`](#title) |
+| `title`, `description` | The chart's name, and what it shows. Text surfaces print both; a drawn chart carries them in its markup's accessible text, as its renderer puts them. See [`title`](#title) |
 | `data` | Typed columnar data, as the source table holds it |
 | `colors` | Data colors resolved by whoever built the node |
 | `source` | Provenance, never rendered |
@@ -19,7 +19,11 @@ Every chart primitive spreads `chartCoreShape` into its schema.
 
 A `title` leads the Scene's summary sentence, so `text`, `markdown`, Slack without assets, an image's alt text and the pack's fallback print it. A `dataTable` draws it above the table, and an `unsupported` node and a chart that could not be drawn draw it above their note.
 
-A chart an engine draws does not draw its `title`. On `react`, and so in `html` and an image, it is the chart's accessible name (`aria-label`), with the Scene's summary and `description` as its accessible description: a Kibana panel's chrome titles the panel, not the visualization inside it. To show a title beside a drawn chart, title the [`grid`](grid.md) panel that holds it, or title the composition, which the `react` and `html` surfaces and [`chartsFrame`](rendering.md#chartsframe) draw.
+A chart an engine draws does not draw its `title`. The Elastic Charts engine makes it the chart's accessible name (`aria-label`), with the Scene's summary and `description` as its accessible description: a Kibana panel's chrome titles the panel, not the visualization inside it. The pack's own renderers name themselves by the summary, which the title leads: a `legacyMetric` carries the summary and `description` together in its `aria-label`, and a `dataTable` carries the summary there and draws its title and description above the table.
+
+That accessible text is markup, on `react` and `html`. An image holds none of it: a PNG of a chart shows no title, and whoever embeds it supplies the alt text, as Slack's image block takes the chart's `text` render.
+
+To show a title beside a drawn chart, title the [`grid`](grid.md) panel that holds it, or title the composition, which the `react` and `html` surfaces and [`chartsFrame`](rendering.md#chartsframe) draw.
 
 ## `data`
 
