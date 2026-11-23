@@ -915,6 +915,18 @@ CLOSED`);
     );
   });
 
+  it('estimates one column, each panel as tall as its rows, below 768 px', () => {
+    // Title 24; top panels stacked in reading order, 4, 4 and 2 rows:
+    // 104 + 8 + 104 + 8 + 48 = 272; open section: header 24 + 8 + 3 rows (76);
+    // closed section: header 24; 3 gaps × 16.
+    expect(gridSnapshotHeight(sectioned, { width: 767 })).toBe(
+      24 + 272 + (24 + 8 + 76) + 24 + 3 * 16
+    );
+    expect(gridSnapshotHeight(sectioned, { width: 768 })).toBe(
+      gridSnapshotHeight(sectioned)
+    );
+  });
+
   it('counts its description line in its snapshot height', () => {
     expect(
       gridSnapshotHeight({ ...sectioned, description: 'About the board' })

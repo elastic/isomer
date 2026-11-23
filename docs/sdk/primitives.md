@@ -144,7 +144,7 @@ Runs before every render, on every surface, and may return `null` to drop the no
 
 ## `metrics.snapshotHeight`
 
-Optional. The height estimate is `0` when it is missing, so a frame that sums node heights sizes short. The runtime's `snapshot` surface reports each such node when the frame that render uses calls `estimateSnapshotHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
+Optional: `(node, { width? }) => number`, the node's drawn height in pixels. `width` is the width the node is laid out in, the one `layoutWidthOf(env.context)` reads when it draws; it is absent under a frame that states no [`contentWidth`](frame.md#the-width-nodes-are-told). The height estimate is `0` when the metric is missing, so a frame that sums node heights sizes short. The runtime's `snapshot` surface reports each such node when the frame that render uses calls `estimateSnapshotHeight`. A frame that returns a constant reads nothing from it, and `validate` reports nothing about it.
 
 ## Names and icons
 

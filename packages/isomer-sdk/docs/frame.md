@@ -7,9 +7,10 @@ A frame is a document: the picture-frame a `snapshot` render sits inside, the ge
 ```ts
 interface Frame<TTheme> {
   defaultWidth: number;
+  contentWidth?: (width: number) => number;
   theme: { light: TTheme; dark: TTheme };
   sizing?: 'fixed' | 'content'; // FrameSizing, default 'fixed'
-  estimateHeight(composition, dispatcher): number;
+  estimateHeight(composition, dispatcher, viewport?): number; // viewport: { width }
   validateBody?(body): readonly string[];
   wrap: (header, body, viewport) => ReactNode;
 }
@@ -18,6 +19,10 @@ interface Frame<TTheme> {
 A frame is named by the key a host registers it under, not by a field it carries.
 
 `body` here is `FrameBody` (`readonly ReactNode[]`), the already-rendered output, distinct from `Composition.body` (raw `PrimitiveNode[]`).
+
+## The width nodes are told
+
+`contentWidth(width)` is the width a frame lays its body out in on a page `width` wide, such as the page less its padding. A frame that states it lets a primitive lay itself out by width: the `snapshot` surface tells each node that width as it draws it, which a renderer reads with `layoutWidthOf(env.context)`, and measures it at that width, as `metrics.snapshotHeight(node, { width })`. `estimateHeight` gets the page's own width as `viewport.width`, and a frame with columns passes each node its column's width, `dispatcher.estimateSnapshotHeight(node, { width })`. Under a frame that states no `contentWidth`, nodes are told no width and draw as they do without one.
 
 ## Why a frame is not a pack asset
 
@@ -58,7 +63,7 @@ An image has no media queries, so it must commit to one palette; `bindFrame` res
 
 ## `bindFrame`, and the theme bound around it
 
-`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `sizing`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
+`bindFrame` resolves a frame's palette per render and returns a `BoundFrame` — `defaultWidth`, `contentWidth`, `sizing`, `estimateHeight`, `validateBody`, `render`, and `renderNode` — with no `TTheme` left in any signature. The erasure is a closure rather than a type parameter because the runtime dispatches every node through one inventory keyed by node type, and that inventory has no single theme to name.
 
 What makes the erasure safe is that a runtime is **homogeneous** in its theme. A pack declares what its `snapshot` renderers read through a phantom marker on `PrimitivePack<TTheme>` — so the palette is checked where the real type is still known, and only the resolved result is stored.
 

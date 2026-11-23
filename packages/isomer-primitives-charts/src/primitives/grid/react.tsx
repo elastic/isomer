@@ -10,6 +10,7 @@ import {
   contextWith,
   createChildNodeWalker,
   isVisibleOnSurface,
+  layoutWidthOf,
   nodeAnchor,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
@@ -20,10 +21,9 @@ import type { SceneSize } from '../../scene';
 import { varStyle } from '../../styles';
 import { CHARTS_THEME, px } from '../../theme';
 
-import { blocksOf, headerOf, rowsHeight } from './layout';
+import { blocksOf, headerOf, isOneColumn, rowsHeight } from './layout';
 import {
   GRID_COLUMNS,
-  GRID_SINGLE_COLUMN_BELOW,
   type GridNode,
   type GridPanel,
   type GridReadingEntry,
@@ -33,10 +33,13 @@ import { gridModule } from './styles';
 const { gap, nominalWidth } = CHARTS_THEME.grid;
 const { handles: grid, vars } = gridModule;
 
-/** The width the host gave this grid, directly or through its containers. */
+/** The width this grid is given: a host's or container's `size`, else the width the surface lays the render out in. */
 const hostWidth = (context: ChartsRenderContext | undefined) => {
   const size = context?.size;
-  return size && !isNominalSize(size) ? size.width : undefined;
+  if (size) {
+    return isNominalSize(size) ? undefined : size.width;
+  }
+  return layoutWidthOf(context);
 };
 
 /** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
@@ -45,7 +48,8 @@ const childContext = (
   panel: GridPanel,
   oneColumn: boolean
 ): ChartsRenderContext => {
-  const gridWidth = context?.size?.width ?? nominalWidth;
+  const gridWidth =
+    context?.size?.width ?? layoutWidthOf(context) ?? nominalWidth;
   const width = oneColumn
     ? gridWidth
     : // CSS floors the tracks at zero when the gaps alone overflow the grid.
@@ -199,7 +203,7 @@ const CollapsedAnchors = ({
 /** Draws a grid: its header, then each block of panels, sections titled. */
 export const react = (node: GridNode, env: ChartsReactEnv): ReactNode => {
   const width = hostWidth(env.context);
-  const oneColumn = width !== undefined && width < GRID_SINGLE_COLUMN_BELOW;
+  const oneColumn = isOneColumn(width);
   return (
     <div
       {...nodeAnchor(env.context, node)}

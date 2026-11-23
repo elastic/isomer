@@ -12,7 +12,7 @@ runtime.surfaces.slack.render(composition, { collectAssets: true });
 | Surface | `render` returns | Validates | Options |
 | --- | --- | --- | --- |
 | `react` | `ReactNode` | no | `context` (required only if the pack narrows it), `heading`, `wrapper`, `enhancements` (ids) |
-| `html` | `HTMLRenderResult` | yes | `theme`, `scheme`, `fluid`, `framed`, `heading`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
+| `html` | `HTMLRenderResult` | yes | `theme`, `scheme`, `fluid`, `framed`, `heading`, `width`, `css`, `scripts`, `minify`, `enhancements` (ids), `anchors`, `onValidationError` |
 | `text` | `string` | yes | `heading`, `onValidationError` |
 | `markdown` | `string` | yes | `heading`, `onValidationError` |
 | `slack` | `{ text, blocks, assets }` | yes | `heading`, `text`, `collectAssets`, `baseUrl`, `onValidationError` |
@@ -93,9 +93,11 @@ const { html, css, width, height, warnings } = runtime.surfaces.snapshot.render(
 
 `anchors: true` renders node anchors into `element` and `html`, so a measured layout of either can be handed to the SDK's `checkLayout`.
 
+`width` sets the page's width in place of the frame's `defaultWidth`. Under a frame that states its [`contentWidth`](frame.md#what-a-frame-owns), each node is told the content width of that page as it draws and as it is measured, so a primitive that lays itself out by width, such as a grid of panels, fills a wider page and reflows on a narrower one. The `html` surface takes the same from its own `width` option, the width the host lays the content out in: it states no size of its own, so without the option nodes are told none.
+
 `renderPages(compositions, options?)` lays several compositions out as one document, `{ pages, css, width, height, heightMode, warnings }`: one `{ element, html }` page per composition against one stylesheet. A paged output such as a PDF needs that, and per-composition `render` calls cannot give it, because each collects only the CSS its own composition uses. Every page is the same size, the tallest estimate unless `height` is given (under a content frame, the backend measures and uses the tallest page), and the first composition's `theme` decides the palette unless `theme` is given. An empty list throws `EMPTY_PAGES`, and a body the frame rejects names its page, counted from 1. `warnings` on a paged result prefix each path with `pages[n].`.
 
-`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, so a rasterizer has a viewport to lay the node out in, and `heightMode` is the frame's `sizing`.
+`renderNode` on this surface takes only `frame`, `theme`, `anchors`, and `onValidationError`. Geometry is absent deliberately: a node drawn with no surround has nothing for a width or height to size. The result still reports one, the frame's `defaultWidth` and its estimate for a one-node body, and the node is told that page's content width, so a rasterizer has a viewport to lay the node out in, and `heightMode` is the frame's `sizing`.
 
 ## Warnings are per surface
 

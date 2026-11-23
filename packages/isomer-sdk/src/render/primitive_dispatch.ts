@@ -21,6 +21,7 @@ import {
   type PrimitiveStyleCollectionContext,
   type Renderer,
   type RenderScope,
+  type SnapshotHeightOptions,
   type SurfaceMap,
 } from '../define/primitive_module';
 import { createNodeIssueFormatter } from '../validate/node_issues';
@@ -318,13 +319,13 @@ export const createPrimitiveDispatcher = <
       }
       return isReadonlyArray(rendered) ? rendered : [rendered];
     },
-    estimateSnapshotHeight: (node) => {
+    estimateSnapshotHeight: (node, options = {}) => {
       if (!isVisibleOnSurface(node, 'snapshot')) {
         return 0;
       }
       const snapshotHeight = getDefinition(node).metrics?.snapshotHeight as
-        ((node: TNode) => number) | undefined;
-      return snapshotHeight?.(node) ?? 0;
+        ((node: TNode, options: SnapshotHeightOptions) => number) | undefined;
+      return snapshotHeight?.(node, options) ?? 0;
     },
     validate: (node, path, errors) => {
       const result = getDefinition(node).schema.safeParse(node, {

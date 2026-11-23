@@ -261,7 +261,7 @@ export interface RenderScope<
     collector?: T['slackCollector']
   ): readonly T['slackBlock'][];
   /** `0` when the node is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
-  estimateSnapshotHeight(node: TNode): number;
+  estimateSnapshotHeight(node: TNode, options?: SnapshotHeightOptions): number;
   /**
    * Appends schema failures under `path` to `errors`, each naming `node`'s
    * type, and an unknown key on `node` listing the fields it declares.
@@ -326,8 +326,14 @@ export type Renderers<
  * a frame that sums node heights sizes short.
  */
 export interface PrimitiveMetrics<TNode extends PrimitiveNode> {
-  /** The node's drawn height in pixels at the frame's width. */
-  snapshotHeight?: (node: TNode) => number;
+  /** The node's drawn height in pixels at `options.width`, or at the width it draws at when told none. */
+  snapshotHeight?: (node: TNode, options: SnapshotHeightOptions) => number;
+}
+
+/** What a height estimate is told about where the node draws. */
+export interface SnapshotHeightOptions {
+  /** The width the node is laid out in, in pixels, as `layoutWidthOf` reads it when the node draws. */
+  width?: number;
 }
 
 /**

@@ -35,6 +35,7 @@ An empty `frames` map throws `EMPTY_FRAMES` rather than building a runtime typed
 | Responsibility | Effect |
 | --- | --- |
 | `defaultWidth` | The width a render uses unless the caller passes one |
+| `contentWidth` | The width the body is laid out in on a page of a given width. Each node is told it as it draws and as it is measured. Absent: nodes are told no width. See [The width nodes are told](../sdk/frame.md#the-width-nodes-are-told) |
 | `sizing` | `fixed` (the default) or `content`: whether the height is `estimateHeight`'s or the laid-out body's. See [Sizing to content](#sizing-to-content) |
 | `estimateHeight` | The height a render uses unless the caller passes one; under `sizing: 'content'`, only an estimate. Calling `estimateSnapshotHeight` is what reads `metrics.snapshotHeight` |
 | `theme` | A palette per mode; an image has no media queries, so it commits to one |

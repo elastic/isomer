@@ -23,7 +23,7 @@ Duplicate types throw at construction, with the label in front of the message so
 | `renderMarkdownContent(node)`                 | `MarkdownContent` — the child's content, empty when it is hidden                |
 | `renderSlack(node, collector?, { baseUrl }?)` | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
 | `collectStyles(node, styles, context)`        | nothing; the collector is mutated                                               |
-| `estimateSnapshotHeight(node)`                | `number` — `0` when hidden or unmeasured                                        |
+| `estimateSnapshotHeight(node, { width }?)`    | `number` — `0` when hidden or unmeasured                                        |
 | `validate(node, path, errors)`                | nothing; errors are appended                                                    |
 | `definitions`, `getDefinition(node)`          | the inventory, and one entry — `getDefinition` throws on an unknown type        |
 

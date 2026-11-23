@@ -122,6 +122,33 @@ describe('chartsFrame', () => {
       );
     });
 
+    it('lays a grid out for the content of the width a render asks for', () => {
+      resolved.length = 0;
+      const wide = runtime.surfaces.snapshot.render(
+        { type: 'view', body: [grid] },
+        { width: 1532 }
+      );
+      // 1532 − 2 × 16 padding; half of it is (1500 − 47 × 8) × 24/48 + 23 × 8.
+      expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
+        1500, 746,
+      ]);
+      expect(wide.html).toContain('chartsGrid-panels');
+    });
+
+    it('stacks a grid in one column on a page whose content is under 768 px', () => {
+      resolved.length = 0;
+      const narrow = runtime.surfaces.snapshot.render(
+        { type: 'view', body: [grid] },
+        { width: 600 }
+      );
+      expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
+        568,
+      ]);
+      expect(narrow.html).toContain('chartsGrid-column');
+      // Padding 2 × 16, then two panels of 4 rows (4 × 20 + 3 × 8) with a gap of 8.
+      expect(narrow.height).toBe(32 + 104 + 8 + 104);
+    });
+
     it('draws a chart on its own in the light scheme by default', () => {
       resolved.length = 0;
       runtime.surfaces.snapshot.render({ type: 'view', body: [chart] });
