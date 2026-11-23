@@ -37,7 +37,11 @@ export interface CompositionJsonSchemaOptions {
  * Projects the composition schema to JSON Schema draft 2020-12, for hosts
  * that validate outside TypeScript.
  *
- * `$defs` are named per primitive type, plus `bodyNode` for the union.
+ * `$defs` are named per primitive type, plus `bodyNode` for the union, so a
+ * primitive typed `bodyNode`, or an `extraDefs` id that is a primitive type,
+ * throws. It is the shape the validator returns, not all it checks: a
+ * refinement, the input budget and duplicate ids are not in it, and an object
+ * the validator strips unknown keys from is closed here.
  * Agent-facing prompt text uses `buildAuthoringJsonSchema` instead.
  */
 export const buildCompositionJsonSchema = (

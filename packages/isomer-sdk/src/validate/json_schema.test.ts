@@ -28,6 +28,7 @@ import {
 } from './authoring_schema';
 import { resolveVocabulary } from './composition_schema';
 import { buildCompositionJsonSchema } from './json_schema';
+import { createCompositionValidator } from './validation';
 import { namedColorSchema } from './value_schemas';
 
 const renderers = {
@@ -75,6 +76,29 @@ const defsOf = (
   >;
 
 describe('buildCompositionJsonSchema', () => {
+  it('restores the registry when two schemas claim one `$defs` name', () => {
+    const before = buildCompositionJsonSchema([leaf('alpha')]);
+    expect(() =>
+      buildCompositionJsonSchema([leaf('alpha'), leaf('bodyNode')])
+    ).toThrow();
+    expect(buildCompositionJsonSchema([leaf('alpha')])).toEqual(before);
+  });
+
+  it('closes an object the validator strips unknown keys from', () => {
+    const { properties } = buildCompositionJsonSchema([leaf('alpha')]) as {
+      properties: { meta: { additionalProperties?: boolean } };
+    };
+    const composition = {
+      type: 'view',
+      meta: { extra: true },
+      body: [{ type: 'alpha' }],
+    };
+    expect(properties.meta.additionalProperties).toBe(false);
+    expect(
+      createCompositionValidator([leaf('alpha')])(composition).errors
+    ).toEqual([]);
+  });
+
   it('is exported from the root entry', () => {
     expect(rootBuildCompositionJsonSchema).toBe(buildCompositionJsonSchema);
   });
