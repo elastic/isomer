@@ -51,7 +51,7 @@ export {
   selectSchema,
   toActionEvent,
 } from './events';
-export { BYTES, HOUR, NUMBER, PERCENT, START } from './examples';
+export { BYTES, HOUR, NUMBER, PERCENT, START } from './example_values';
 export {
   type DurationOutputUnit,
   type DurationUnit,

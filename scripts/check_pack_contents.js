@@ -10,7 +10,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
-import { missingPackedFiles } from './packed_files.js';
+import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
 import { isPublishable, workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
@@ -30,6 +30,18 @@ const FORBIDDEN_FILES = [
   /(^|\/)(__tests__|fixtures?|tests?)\//,
   /\.(fixtures?|tests?)\./,
   /\.tsbuildinfo$/,
+];
+
+// Publish lifecycle scripts. The check packs without running them, and in a
+// recursive publish one package's script can change files another ships.
+const PUBLISH_HOOKS = [
+  'prepublish',
+  'prepare',
+  'prepublishOnly',
+  'prepack',
+  'postpack',
+  'publish',
+  'postpublish',
 ];
 
 // A link into a sibling package's docs, the same shape
@@ -54,20 +66,30 @@ const packedPath = (from, target) => {
   return posix.normalize(posix.join(posix.dirname(from), decodeURI(path)));
 };
 
+// `node scripts/check_pack_contents.js [root]` checks another workspace root.
+const [root] = process.argv.slice(2);
+const packages = workspacePackages(root);
+
+if (root !== undefined && packages.length === 0) {
+  console.error(`${root}: no packages found under ${join(root, 'packages')}`);
+  process.exit(1);
+}
+
 let allPassed = true;
 
-for (const pkg of workspacePackages()) {
-  const { exports: exportMap, name, files: filesField } = pkg.manifest;
-
-  if (!isPublishable(pkg.manifest) || !filesField) {
-    continue;
-  }
+for (const pkg of packages.filter(({ manifest }) => isPublishable(manifest))) {
+  const {
+    exports: exportMap,
+    name,
+    files: filesField = [],
+    scripts = {},
+  } = pkg.manifest;
 
   let packOutput;
   try {
     packOutput = execFileSync(
       'npm',
-      ['pack', '--dry-run', '--json', '--cache', npmCache],
+      ['pack', '--dry-run', '--ignore-scripts', '--json', '--cache', npmCache],
       {
         cwd: pkg.dir,
         encoding: 'utf-8',
@@ -106,6 +128,8 @@ for (const pkg of workspacePackages()) {
   const forbidden = entries.filter((entry) =>
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
+  const pruned = prunedRuntimeFiles(pkg.manifest, entries);
+  const hooks = PUBLISH_HOOKS.filter((hook) => hook in scripts);
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
@@ -149,6 +173,16 @@ for (const pkg of workspacePackages()) {
       : []),
     ...(forbidden.length > 0
       ? [`contains forbidden files: ${forbidden.join(', ')}`]
+      : []),
+    ...(pruned.length > 0
+      ? [
+          `ships runtime code Kibana's build deletes from node_modules: ${pruned.join(', ')}`,
+        ]
+      : []),
+    ...(hooks.length > 0
+      ? [
+          `defines publish lifecycle scripts, which the check does not run: ${hooks.join(', ')}`,
+        ]
       : []),
     ...brokenLinks.map(
       ({ entry, target }) => `${entry} links to unpacked path ${target}`
