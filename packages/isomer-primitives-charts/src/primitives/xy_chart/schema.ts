@@ -310,7 +310,7 @@ const yAxisSchema = z.strictObject({
           max: z.number().optional(),
         })
         .describe(
-          `From \`min\` to \`max\`, exactly. An absent bound comes from the data, extended to include zero except on a \`log\` axis. ${XY_RULES.customDomain}`
+          `From \`min\` to \`max\`, exactly, with no rounding at either end. An absent bound comes from the data, extended to include zero except on a \`log\` axis. ${XY_RULES.customDomain}`
         ),
     ])
     .optional()
@@ -319,7 +319,7 @@ const yAxisSchema = z.strictObject({
     .boolean()
     .optional()
     .describe(
-      'Round a domain from the data out to readable values. A `custom` bound never rounds. Absent means true.'
+      'Round a domain from the data out to readable values. Ignored on a `custom` domain, including the end it leaves to the data. Absent means true.'
     ),
 });
 

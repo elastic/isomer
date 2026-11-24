@@ -22,7 +22,7 @@ export type AxisId = 'x' | 'y' | 'y2';
 export type SceneDomain =
   | {
       readonly kind: 'data';
-      /** Extend the domain to include zero. */
+      /** Extend the data's extent to include zero, before a fixed `min` or `max` replaces its end. */
       readonly includeZero: boolean;
       /** Round the domain out to readable values. */
       readonly rounding: boolean;
