@@ -11,8 +11,8 @@ import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
 import { DEF_PREFIX, isJsonObject, ownDef, parseDefRef } from './json_helpers';
 import {
-  buildCompositionJsonSchema,
   type CompositionJsonSchemaOptions,
+  projectCompositionJsonSchema,
 } from './json_schema';
 import {
   displayValueSchema,
@@ -289,18 +289,20 @@ const slimAuthoringSchema = (
 /**
  * Projects a composition to the JSON Schema an agent reads.
  *
- * `buildCompositionJsonSchema` stays the validator projection. This walk
- * names shared SDK defs, inlines scalar leaves, and drops host-only fields.
+ * Starts from the parse's output shape, so an object a parse strips unknown
+ * keys from is closed to the agent. This walk names shared SDK defs, inlines
+ * scalar leaves, and drops host-only fields.
  */
 export const buildAuthoringJsonSchema = (
   definitions: readonly AnyPrimitiveDefinition[],
   options: AuthoringJsonSchemaOptions = {}
 ): JsonSchema => {
   const { describe, extraDefs, ...rest } = options;
-  const projected = buildCompositionJsonSchema(definitions, {
-    ...rest,
-    extraDefs: mergeExtraDefs(extraDefs),
-  });
+  const projected = projectCompositionJsonSchema(
+    definitions,
+    { ...rest, extraDefs: mergeExtraDefs(extraDefs) },
+    'output'
+  );
   return slimAuthoringSchema(projected, describe ?? {});
 };
 

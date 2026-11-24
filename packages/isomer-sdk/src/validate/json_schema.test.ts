@@ -113,8 +113,8 @@ describe('buildCompositionJsonSchema', () => {
     });
   });
 
-  it('closes an object a parse strips unknown keys from, though the validator keeps them', () => {
-    const { properties } = buildCompositionJsonSchema([leaf('alpha')]) as {
+  it('leaves open an object the validator keeps unknown keys on', () => {
+    const projected = buildCompositionJsonSchema([leaf('alpha')]) as {
       properties: { meta: { additionalProperties?: boolean } };
     };
     // `meta.extra` is a key `Composition` does not declare.
@@ -123,10 +123,18 @@ describe('buildCompositionJsonSchema', () => {
       meta: { extra: true },
       body: [{ type: 'alpha' }],
     } as Composition;
-    expect(properties.meta.additionalProperties).toBe(false);
+    expect(projected.properties.meta).not.toHaveProperty(
+      'additionalProperties'
+    );
     const checked = createCompositionValidator([leaf('alpha')])(composition);
     expect(checked.errors).toEqual([]);
     expect(checked.composition?.meta).toEqual({ extra: true });
+  });
+
+  it('keeps a primitive closed', () => {
+    expect(
+      defsOf(buildCompositionJsonSchema([leaf('alpha')])).alpha
+    ).toMatchObject({ additionalProperties: false });
   });
 
   it('is exported from the root entry', () => {
@@ -244,6 +252,13 @@ describe('buildAuthoringJsonSchema', () => {
     expect(Array.isArray((defs.tone as { enum?: unknown }).enum)).toBe(true);
     expect(defs.bodyNode).toBeTypeOf('object');
     expect(defs.metric).toBeTypeOf('object');
+  });
+
+  it('closes an object a parse strips unknown keys from', () => {
+    const projected = buildAuthoringJsonSchema([leaf('alpha')]) as {
+      properties: { meta: { additionalProperties?: boolean } };
+    };
+    expect(projected.properties.meta.additionalProperties).toBe(false);
   });
 
   it("names a pack's own union with the root entry's structuredValueSchema as structuredValue", () => {

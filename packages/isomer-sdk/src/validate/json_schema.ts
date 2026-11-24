@@ -38,16 +38,21 @@ export interface CompositionJsonSchemaOptions {
  * that validate outside TypeScript.
  *
  * `$defs` are named per primitive type, plus `bodyNode` for the union, and two
- * different schemas under one name throw. It is the schema's structure, not
- * all the validator checks: a refinement, the input budget and duplicate ids
- * are not in it. It is also the shape a parse returns, so an object a parse
- * strips unknown keys from, such as `meta`, is closed here though the validator
- * keeps them; a `z.looseObject` primitive stays open.
- * Agent-facing prompt text uses `buildAuthoringJsonSchema` instead.
+ * different schemas under one name throw. It is the shape `validate` accepts,
+ * so an object a parse strips unknown keys from, such as `meta`, stays open.
+ * A refinement, the input budget and duplicate ids are not in it. Agent-facing
+ * prompt text uses `buildAuthoringJsonSchema` instead.
  */
 export const buildCompositionJsonSchema = (
   definitions: readonly AnyPrimitiveDefinition[],
   options: CompositionJsonSchemaOptions = {}
+): JsonSchema => projectCompositionJsonSchema(definitions, options, 'input');
+
+/** `output` is the shape a parse returns, which closes stripping objects. */
+export const projectCompositionJsonSchema = (
+  definitions: readonly AnyPrimitiveDefinition[],
+  options: CompositionJsonSchemaOptions,
+  io: 'input' | 'output'
 ): JsonSchema => {
   // Members, not `definition.schema`: a container's member is built by
   // `schemaFor`, and the registry is keyed on identity.
@@ -92,6 +97,7 @@ export const buildCompositionJsonSchema = (
     return {
       ...z.toJSONSchema(compositionSchema, {
         target: 'draft-2020-12',
+        io,
         metadata: z.globalRegistry,
         reused: options.reused ?? 'ref',
         cycles: 'ref',
