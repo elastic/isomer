@@ -195,7 +195,8 @@ export const describeEnvironmentLine = ({
   ].join(', ');
 
 /** Escapes text for a Markdown table cell. */
-export const tableText = (text: string): string => text.replace(/\|/g, '\\|');
+export const tableText = (text: string): string =>
+  text.replace(/[\\|]/g, '\\$&');
 
 const cell = (spread: Spread | undefined, digits: number) => {
   if (spread === undefined) {
