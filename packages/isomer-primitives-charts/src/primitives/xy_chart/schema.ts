@@ -67,7 +67,7 @@ export const XY_RULES = {
   rangeOrder: "An annotation range's `from` is not after its `to`.",
   time: 'A time written as a string is an ISO 8601 date-time with a UTC offset, such as `2026-11-03T00:30:00Z`, as a `date` cell is.',
   customDomain:
-    'A `custom` axis domain has `min` below `max`, and on a `log` y axis `min` above zero.',
+    'A `custom` axis domain has `min` below `max`, and on a `log` y axis each bound above zero. A y axis states `min`, `max` or both; an x axis states both.',
 } as const;
 
 const dateOrNumberSchema = z
@@ -306,17 +306,21 @@ const yAxisSchema = z.strictObject({
       z
         .strictObject({
           kind: z.literal('custom'),
-          min: z.number(),
-          max: z.number(),
+          min: z.number().optional(),
+          max: z.number().optional(),
         })
-        .describe(`From \`min\` to \`max\`. ${XY_RULES.customDomain}`),
+        .describe(
+          `From \`min\` to \`max\`, exactly, with no rounding at either end. An absent bound comes from the data, extended to include zero except on a \`log\` axis. ${XY_RULES.customDomain}`
+        ),
     ])
     .optional()
     .describe('The values the axis spans. Absent means `full`.'),
   rounding: z
     .boolean()
     .optional()
-    .describe('Round the domain out to readable values. Absent means true.'),
+    .describe(
+      'Round a domain from the data out to readable values. Ignored on a `custom` domain, including the end it leaves to the data. Absent means true.'
+    ),
 });
 
 const xAxisSchema = z.strictObject({
@@ -572,9 +576,14 @@ const checkCustomDomains = (axes: XyChartInput['axes'], context: Issues) => {
   for (const [id, axis] of Object.entries(axes ?? {})) {
     const domain = axis?.domain;
     const log = axis !== undefined && 'scale' in axis && axis.scale === 'log';
+    if (domain?.kind !== 'custom') {
+      continue;
+    }
+    const { min, max } = domain;
     if (
-      domain?.kind === 'custom' &&
-      (domain.min >= domain.max || (log && domain.min <= 0))
+      (min === undefined && max === undefined) ||
+      (min !== undefined && max !== undefined && min >= max) ||
+      (log && [min, max].some((bound) => bound !== undefined && bound <= 0))
     ) {
       context.addIssue({
         code: 'custom',

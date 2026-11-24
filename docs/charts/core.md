@@ -90,7 +90,7 @@ Formats are ECMA-402 `Intl` options, formatted in the locale and time zone the c
 
 | `kind` | Fields | Meaning |
 | --- | --- | --- |
-| `number` | `minimumFractionDigits?`, `maximumFractionDigits?`, `signDisplay?`, `useGrouping?`, `notation?`, `suffix?` | As `Intl.NumberFormat`. `signDisplay: 'exceptZero'` signs values that do not round to zero |
+| `number` | `minimumFractionDigits?`, `maximumFractionDigits?`, `signDisplay?`, `useGrouping?`, `notation?`, `prefix?`, `suffix?` | As `Intl.NumberFormat`. `signDisplay: 'exceptZero'` signs values that do not round to zero. `prefix` and `suffix` are text around the value, the prefix after its sign: `$` prints `-$5` |
 | `percent` | The `number` fields without `notation`, and `fractional?` | `fractional: false` means percentages rather than fractions |
 | `bytes`, `bits` | The `number` fields without `notation`, `base?` (1000 or 1024), `unitDisplay?` | The largest unit the value is at least one of |
 | `duration` | `input`, `output?`, the `number` fields without `notation`, `unitDisplay?` | `input` is the stored unit; `output` a unit, or `auto` for the largest unit the value is at least one of |

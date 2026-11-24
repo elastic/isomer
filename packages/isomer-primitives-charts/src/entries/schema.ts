@@ -28,6 +28,7 @@ export {
 } from '../primitives/gauge/schema';
 export { catalog as gridCatalog } from '../primitives/grid/catalog';
 export { examples as gridExamples } from '../primitives/grid/examples';
+export { GRID_GEOMETRY } from '../primitives/grid/layout';
 export {
   type GridNode,
   type GridPanel,

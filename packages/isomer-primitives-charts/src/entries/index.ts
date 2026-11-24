@@ -48,6 +48,7 @@ export {
   type GridReadingEntry,
   type GridSection,
   GRID_COLUMNS,
+  GRID_GEOMETRY,
   GRID_RULES,
   GRID_SINGLE_COLUMN_BELOW,
   gridCatalog,
