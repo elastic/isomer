@@ -24,7 +24,7 @@ import {
   type SceneShim,
   type SceneShimConfig,
 } from './scene_node';
-import { chartSize, chartSizeSpec } from './size';
+import { chartSize, chartSizeSpecAt } from './size';
 
 export type { SceneShim as ChartPrimitiveConfig } from './scene_node';
 
@@ -91,7 +91,7 @@ const snapshotHeight =
       node,
       () => {
         const scene = resolveForText(node, config);
-        const spec = chartSizeSpec(scene, width);
+        const spec = chartSizeSpecAt(scene, width);
         return (
           (spec ? chartSize(spec, width).height : 0) + linkLineHeight(scene)
         );

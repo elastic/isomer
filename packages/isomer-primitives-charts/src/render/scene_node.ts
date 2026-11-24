@@ -44,7 +44,12 @@ import {
 } from './failure';
 import type { SceneCache } from './scene_cache';
 import { sceneModule } from './scene_styles';
-import { chartSize, chartSizeSpec, chartSizeVars, isNominalSize } from './size';
+import {
+  chartSize,
+  chartSizeSpecAt,
+  chartSizeVars,
+  isNominalSize,
+} from './size';
 import { summarySceneRenderer } from './summary_renderer';
 
 /** What a pack's shims share: how to resolve, and the renderers after the host's. */
@@ -145,7 +150,7 @@ const fixedBox = (
   if (sized === true && scene.kind === 'table') {
     return { width, height: tableHeight(scene) };
   }
-  const spec = chartSizeSpec(scene, width);
+  const spec = chartSizeSpecAt(scene, width);
   return spec && (environment === 'node' || sized === true)
     ? chartSize(spec, width)
     : undefined;
@@ -172,6 +177,7 @@ const drawSceneNode = (
   const unsized = resolveForReact(node, env, config);
   const renderer = pickSceneRenderer(unsized, environment, context, config);
   const link = sceneLink(unsized);
+  const width = layoutWidthOf(context) ?? CHARTS_THEME.chart.width;
   const box = context?.size
     ? link && {
         width: context.size.width,
@@ -186,7 +192,7 @@ const drawSceneNode = (
   const scene = box ? resolveForReact(node, env, config, box) : unsized;
   const spec =
     !context?.size && !box && environment === 'browser' && renderer.fluid
-      ? chartSizeSpec(unsized)
+      ? chartSizeSpecAt(unsized, width)
       : undefined;
   const drawn = config.cache.draw(
     scene,

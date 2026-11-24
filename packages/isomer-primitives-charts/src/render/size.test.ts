@@ -16,7 +16,12 @@ import { wrappedHeight } from '../resolve/common';
 import { metricSingleValueScene, xyTimeSeriesScene } from '../scene/examples';
 import { CHARTS_THEME } from '../theme/theme';
 
-import { chartSize, chartSizeSpec, chartSizeVars } from './size';
+import {
+  chartSize,
+  chartSizeSpec,
+  chartSizeSpecAt,
+  chartSizeVars,
+} from './size';
 
 const { chart } = CHARTS_THEME;
 
@@ -199,7 +204,22 @@ describe('chartSizeSpec for a legacy metric', () => {
     };
     // Two rows at 480 px, one at 600.
     expect(chartSizeSpec(two)?.minHeight).toBe(100);
-    expect(chartSizeSpec(two, 600)?.minHeight).toBe(60);
+    expect(chartSizeSpecAt(two, 600)?.minHeight).toBe(60);
+  });
+
+  it('sizes at the theme width when mapped over, never at an index', () => {
+    const side = {
+      ...scene,
+      tiles: [40, 60].map((height) => ({
+        ...scene.tiles[0]!,
+        box: { width: 200, height },
+      })),
+      interactions: { ...scene.interactions, emphasis: [] },
+    };
+    // One row at 480 px; at an index's width each tile takes its own.
+    expect(
+      [side, side].map(chartSizeSpec).map((spec) => spec?.minHeight)
+    ).toEqual([60, 60]);
   });
 
   it('adds a line for each emphasis note', () => {

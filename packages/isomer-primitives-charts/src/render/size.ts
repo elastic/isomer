@@ -39,9 +39,9 @@ export const isNominalSize = (size: SceneSize | undefined): boolean =>
   size !== undefined && nominalSizes.has(size);
 
 /** The size spec of a Scene's kind, for a box `width` wide; none for a kind that sizes itself, such as a table. */
-export const chartSizeSpec = (
+export const chartSizeSpecAt = (
   scene: Scene,
-  width: number = chart.width
+  width: number
 ): ChartSizeSpec | undefined => {
   switch (scene.kind) {
     case 'xy':
@@ -84,6 +84,10 @@ export const chartSizeSpec = (
       return undefined;
   }
 };
+
+/** The size spec of a Scene's kind at the theme's chart width; none for a kind that sizes itself, such as a table. */
+export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined =>
+  chartSizeSpecAt(scene, chart.width);
 
 /** The box a spec takes at `width`. */
 export const chartSize = (

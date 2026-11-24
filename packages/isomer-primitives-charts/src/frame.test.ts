@@ -15,13 +15,32 @@ import { chartsFrame } from './frame';
 import { createChartsPack } from './pack';
 import { examples as gridExamples } from './primitives/grid/examples';
 import type { GridNode } from './primitives/grid/schema';
-import type { ChartNode } from './render/context';
+import type { ChartNode, ReactSceneRenderer } from './render/context';
 import type { ResolveChartOptions } from './resolve/common';
 import { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
 import type { Scene } from './scene/types';
 import { CHART_CHROME } from './theme/palette';
 
 const chart = gridExamples[0]!.node.panels[0]!.node;
+
+// Draws the box its Scene was resolved for, so a test reads what reaches the renderer.
+const measuring: ReactSceneRenderer = {
+  id: 'measuring',
+  environments: ['node'],
+  supports: () => true,
+  render: ({ size }) =>
+    createElement('output', {
+      'data-width': size?.width,
+      'data-height': size?.height,
+    }),
+};
+const drawnSizes = (html: string) =>
+  [...html.matchAll(/<output data-width="(\d+)" data-height="(\d+)"/g)].map(
+    ([, width, height]) => ({ width: Number(width), height: Number(height) })
+  );
+const drawnWidths = (html: string) => [
+  ...new Set(drawnSizes(html).map(({ width }) => width)),
+];
 
 describe('chartsFrame', () => {
   const heights = new Map<PrimitiveNode, number>();
@@ -85,10 +104,14 @@ describe('chartsFrame', () => {
       options: ResolveChartOptions
     ): Scene => {
       resolved.push(options);
-      return { ...metricSingleValueScene, scheme: options.scheme };
+      return {
+        ...metricSingleValueScene,
+        scheme: options.scheme,
+        ...(options.size && { size: options.size }),
+      };
     };
     const runtime = createIsomerRuntime({
-      packs: [createChartsPack({ resolveScene })],
+      packs: [createChartsPack({ resolveScene, sceneRenderers: [measuring] })],
       frames: { charts: chartsFrame },
     });
     const grid: GridNode = {
@@ -117,6 +140,7 @@ describe('chartsFrame', () => {
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         928, 460,
       ]);
+      expect(drawnWidths(html)).toEqual([928, 460]);
       expect(new Set(resolved.map(({ scheme }) => scheme))).toEqual(
         new Set(['dark'])
       );
@@ -132,6 +156,7 @@ describe('chartsFrame', () => {
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         1500, 746,
       ]);
+      expect(drawnWidths(wide.html)).toEqual([1500, 746]);
       expect(wide.html).toContain('chartsGrid-panels');
     });
 
@@ -153,6 +178,7 @@ describe('chartsFrame', () => {
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         568,
       ]);
+      expect(drawnWidths(narrow.html)).toEqual([568]);
       expect(narrow.html).toContain('chartsGrid-column');
       // Padding 2 × 16; one row of 4 units is 4 × 20 + 3 × 8 = 104, and stacked the two are 104 + 8 + 104.
       expect(narrow.height).toBe(32 + 104 + 8 + 104);
@@ -178,22 +204,24 @@ describe('chartsFrame', () => {
     it('gives a page narrower than its padding no negative width', () => {
       expect(chartsFrame.contentWidth?.(20)).toBe(0);
       resolved.length = 0;
-      runtime.surfaces.snapshot.render(
+      const { html } = runtime.surfaces.snapshot.render(
         { type: 'view', body: [sideBySide] },
         { width: 20 }
       );
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         0,
       ]);
+      expect(drawnWidths(html)).toEqual([0]);
     });
 
     it('draws a bare grid for the whole page, with no padding to leave', () => {
       resolved.length = 0;
-      runtime.surfaces.snapshot.renderNode(grid);
+      const { html } = runtime.surfaces.snapshot.renderNode(grid);
       // (960 − 47 × 8) × 24/48 + 23 × 8 for the half-width panel.
       expect([...new Set(resolved.map(({ size }) => size?.width))]).toEqual([
         960, 476,
       ]);
+      expect(drawnWidths(html)).toEqual([960, 476]);
     });
 
     it('lays an html render out for its `width`, with the rules that layout draws', () => {
@@ -214,8 +242,9 @@ describe('chartsFrame', () => {
           createChartsPack({
             resolveScene: (_, { size, scheme }) => {
               sizes.push(size);
-              return { ...scenes.current, scheme };
+              return { ...scenes.current, scheme, ...(size && { size }) };
             },
+            sceneRenderers: [measuring],
           }),
         ],
         frames: { charts: chartsFrame },
@@ -236,8 +265,9 @@ describe('chartsFrame', () => {
         (options, box) => {
           sizes.length = 0;
           scenes.current = xyTimeSeriesScene;
-          const { height } = snapshot.render(view, options);
+          const { height, html } = snapshot.render(view, options);
           expect(boxes()).toEqual([box]);
+          expect(drawnSizes(html)).toEqual([box]);
           expect(height).toBe(32 + box.height);
         }
       );
@@ -245,16 +275,18 @@ describe('chartsFrame', () => {
       it("stays within its spec's greatest width", () => {
         sizes.length = 0;
         scenes.current = metricSingleValueScene;
-        const { height } = snapshot.render(view);
+        const { height, html } = snapshot.render(view);
         expect(boxes()).toEqual([{ width: 300, height: 160 }]);
+        expect(drawnSizes(html)).toEqual([{ width: 300, height: 160 }]);
         expect(height).toBe(32 + 160);
       });
 
       it('takes the whole page with no surround', () => {
         sizes.length = 0;
         scenes.current = xyTimeSeriesScene;
-        const { height } = snapshot.renderNode(chart);
+        const { height, html } = snapshot.renderNode(chart);
         expect(boxes()).toEqual([{ width: 960, height: 540 }]);
+        expect(drawnSizes(html)).toEqual([{ width: 960, height: 540 }]);
         // The reported height is the frame's estimate, padding included.
         expect(height).toBe(32 + 540);
       });
