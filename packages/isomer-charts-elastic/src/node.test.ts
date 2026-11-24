@@ -21,10 +21,37 @@ import {
   unescapeMarkup,
 } from '@elastic/isomer-primitives-charts/testing';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createElasticChartsNodeRenderer } from './node';
 import { debugStateProblems } from './testing';
+
+const headless = vi.hoisted(
+  (): { armed: boolean; failing: string | undefined } => ({
+    armed: false,
+    failing: undefined,
+  })
+);
+
+// Elastic Charts' own draw, except that once armed it throws on every draw of the first chart it sees.
+vi.mock('@elastic/charts/headless', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@elastic/charts/headless')>();
+  return {
+    ...actual,
+    renderChart: (...args: Parameters<typeof actual.renderChart>) => {
+      const [chart] = args;
+      const { id } = chart.props as { id: string };
+      if (headless.armed) {
+        headless.failing ??= id;
+      }
+      if (headless.armed && headless.failing === id) {
+        throw new Error('renderChart failed');
+      }
+      return actual.renderChart(...args);
+    },
+  };
+});
 
 const renderer = createElasticChartsNodeRenderer({ debugState: true });
 const examples = drawExamples([renderer]);
@@ -114,6 +141,33 @@ describe('createElasticChartsNodeRenderer', () => {
         )
       );
     expect(idIn('panel-1-')).not.toBe(idIn('panel1-'));
+  });
+
+  it('draws a chart Elastic Charts fails on as its failure note, and the rest of the page', () => {
+    const [first, second] = xyChartExamples;
+    const failures: unknown[] = [];
+    headless.armed = true;
+    let html: string;
+    try {
+      ({ html } = createIsomerRuntime({
+        packs: [
+          createChartsPack({
+            sceneRenderers: [renderer],
+            onFailure: (error) => failures.push(error),
+          }),
+        ],
+        frames: { charts: chartsFrame },
+      }).surfaces.snapshot.render({
+        type: 'view',
+        body: [first!.node, second!.node],
+      }));
+    } finally {
+      headless.armed = false;
+      headless.failing = undefined;
+    }
+    expect(failures).toHaveLength(1);
+    expect(html).toContain('This chart could not be drawn.');
+    expect(html.split('class="echChart"')).toHaveLength(2);
   });
 
   it('draws the same markup for the same page', () => {

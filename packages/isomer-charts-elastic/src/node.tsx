@@ -57,27 +57,15 @@ const encodeId = (id: string): string =>
 
 /**
  * Elastic Charts prefixes every id in a chart's markup with the chart's.
- * The Scene's id is the same on every render and differs between charts;
- * `useId` tells apart two drawings of one Scene on a page.
+ * `id` names the Scene, so it is the same on every render and differs
+ * between charts; `useId` tells apart two drawings of one Scene on a page.
  */
-const StaticChart = ({
-  scene,
-  size,
-  specs,
-}: {
-  scene: Scene;
-  size: NonNullable<Scene['size']>;
-  specs: ReactNode;
-}) => {
-  const id = `${sceneId(scene)}-${encodeId(useId())}`;
+const StaticChart = ({ html, id }: { html: string; id: string }) => {
+  const occurrence = encodeId(useId());
   return (
     <div
       dangerouslySetInnerHTML={{
-        __html: renderChart(
-          <Chart id={id} size={size}>
-            {specs}
-          </Chart>
-        ),
+        __html: html.replaceAll(id, `${id}-${occurrence}`),
       }}
     />
   );
@@ -105,12 +93,13 @@ export const createElasticChartsNodeRenderer = (
     if (size === undefined) {
       throw new Error('The Elastic Charts Node renderer needs a Scene size.');
     }
-    return (
-      <StaticChart
-        {...{ scene, size }}
-        specs={sceneSpecs(scene, env, options)}
-      />
+    const id = sceneId(scene);
+    const html = renderChart(
+      <Chart id={id} size={size}>
+        {sceneSpecs(scene, env, options)}
+      </Chart>
     );
+    return <StaticChart html={html} id={id} />;
   },
 });
 
