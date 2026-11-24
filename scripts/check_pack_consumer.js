@@ -446,8 +446,21 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
+  // A primitive's own rejection reaches the caller, even one that is not an object.
+  const throwingDir = join(tempDir, 'registration', 'throwing');
+  mkdirSync(join(throwingDir, 'thrower'), { recursive: true });
+  writeFileSync(join(throwingDir, 'thrower', 'index.ts'), 'throw null;\n');
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
+      '--eval',
+      `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, throwingDir))}, registered: [] }).then(() => { console.error('A primitive that throws null was loaded.'); process.exit(1); }, (error) => { if (error !== null) { console.error('A primitive that throws null rejected with', error); process.exit(1); } });`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
   console.log(
-    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle, a native import and require.`
+    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle, a native import and require, and passed on a primitive's thrown null.`
   );
 } finally {
   rmSync(tempDir, { force: true, recursive: true });
