@@ -32,10 +32,17 @@ const FORBIDDEN_FILES = [
   /\.tsbuildinfo$/,
 ];
 
-// Scripts that can change a tarball as it is published. The check packs
-// without running them, so a package that defined one would be checked
-// against files it does not ship.
-const PACK_HOOKS = ['prepublish', 'prepare', 'prepublishOnly', 'prepack'];
+// Publish lifecycle scripts. The check packs without running them, and in a
+// recursive publish one package's script can change files another ships.
+const PUBLISH_HOOKS = [
+  'prepublish',
+  'prepare',
+  'prepublishOnly',
+  'prepack',
+  'postpack',
+  'publish',
+  'postpublish',
+];
 
 // A link into a sibling package's docs, the same shape
 // `scripts/assemble_package_docs.js` rewrites for the docs site. GitHub and
@@ -122,7 +129,7 @@ for (const pkg of packages.filter(({ manifest }) => isPublishable(manifest))) {
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
   const pruned = prunedRuntimeFiles(pkg.manifest, entries);
-  const hooks = PACK_HOOKS.filter((hook) => hook in scripts);
+  const hooks = PUBLISH_HOOKS.filter((hook) => hook in scripts);
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
@@ -174,7 +181,7 @@ for (const pkg of packages.filter(({ manifest }) => isPublishable(manifest))) {
       : []),
     ...(hooks.length > 0
       ? [
-          `defines scripts that can change the published tarball: ${hooks.join(', ')}`,
+          `defines publish lifecycle scripts, which the check does not run: ${hooks.join(', ')}`,
         ]
       : []),
     ...brokenLinks.map(

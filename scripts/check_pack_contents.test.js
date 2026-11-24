@@ -71,28 +71,34 @@ describe('check_pack_contents', () => {
     expect(status).toBe(0);
   });
 
-  it("fails runtime code Kibana's build deletes, and a script that can change the tarball", () => {
+  it("fails runtime code Kibana's build deletes", () => {
     writePackage(
       'unlisted',
       { name: 'fixture-unlisted' },
       { 'lib/examples/index.js': '' }
     );
+    const { status, stderr } = run();
+    expect(stderr).toContain(
+      "fixture-unlisted: ships runtime code Kibana's build deletes from node_modules: lib/examples/index.js"
+    );
+    expect(status).toBe(1);
+  });
+
+  it('fails a publish lifecycle script without running it', () => {
     writePackage(
       'scripted',
       {
         name: 'fixture-scripted',
         scripts: {
           prepack: `node -e "require('fs').writeFileSync('prepack-ran', '')"`,
+          postpublish: 'node -e ""',
         },
       },
       {}
     );
     const { status, stderr } = run();
     expect(stderr).toContain(
-      "fixture-unlisted: ships runtime code Kibana's build deletes from node_modules: lib/examples/index.js"
-    );
-    expect(stderr).toContain(
-      'fixture-scripted: defines scripts that can change the published tarball: prepack'
+      'fixture-scripted: defines publish lifecycle scripts, which the check does not run: prepack, postpublish'
     );
     expect(existsSync(join(root, 'packages', 'scripted', 'prepack-ran'))).toBe(
       false
