@@ -161,16 +161,22 @@ const TooltipLabelled = ({
 const PlainSecondary = ({
   secondary: { text, color, label, labelPlacement },
   styles,
+  interactive,
 }: {
   secondary: PlainSecondaryProps;
   styles: Styles;
+  /** Whether a tooltip can open. Static markup reads a tooltip's label to a screen reader alone. */
+  interactive: boolean;
 }) =>
-  label !== undefined && labelPlacement === 'tooltip' ? (
+  interactive && label !== undefined && labelPlacement === 'tooltip' ? (
     <TooltipLabelled {...{ label, color, styles }}>{text}</TooltipLabelled>
   ) : (
     <span
       className={secondaryClass(styles)}
       style={varStyle(vars.ink, { color })}>
+      {label !== undefined && labelPlacement === 'tooltip' ? (
+        <span className={ECH_CLASSES.screenReaderOnly}>{label} </span>
+      ) : null}
       {label !== undefined && labelPlacement === 'before' ? (
         <span className={ECH_CLASSES.secondaryLabel}>{label} </span>
       ) : null}
@@ -189,17 +195,14 @@ const secondaryOf = (
     return undefined;
   }
   const { badge } = secondary;
-  // Headless Elastic Charts draws props, never an element, so off the browser
-  // plain secondary text goes as props, in Elastic Charts' contrast color.
-  if (badge === undefined && env.environment === 'browser') {
-    return <PlainSecondary secondary={secondary} styles={env} />;
-  }
   if (badge === undefined) {
-    return {
-      value: secondary.text,
-      ...(secondary.label === undefined ? {} : { label: secondary.label }),
-      labelPosition: secondary.labelPlacement,
-    } satisfies SecondaryMetricProps;
+    return (
+      <PlainSecondary
+        secondary={secondary}
+        styles={env}
+        interactive={env.environment === 'browser'}
+      />
+    );
   }
   const props: SecondaryMetricProps = {
     value: secondary.text,

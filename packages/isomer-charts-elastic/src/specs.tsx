@@ -6,7 +6,7 @@
  */
 
 // The one spec builder: a Scene as Elastic Charts spec elements. The browser
-// wraps them in `<Chart>`; headless drawing hands them to `collectSpecs`.
+// wraps them in `<Chart>`; the Node renderer hands them to `renderChart`.
 
 import type { ReactNode } from 'react';
 import type {

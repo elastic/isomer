@@ -62,7 +62,7 @@
     "@babel/preset-typescript": "^7.29.7",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
-    "@elastic/charts": "73.3.2",
+    "@elastic/charts": "73.5.1",
     "@elastic/isomer-agent-tools": "workspace:*",
     "@elastic/isomer-charts-elastic": "workspace:*",
     "@elastic/isomer-evals": "workspace:*",

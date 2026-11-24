@@ -1,11 +1,11 @@
 ---
 navigation_title: Elastic Charts engine
-description: A SceneRenderer that draws chart Scenes with Elastic Charts in the browser, as Kibana draws its panels.
+description: SceneRenderers that draw chart Scenes with Elastic Charts, in the browser and on a server, as Kibana draws its panels.
 ---
 
 # Elastic Charts engine
 
-`@elastic/isomer-charts-elastic` draws [chart Scenes](../charts/scene.md) with [Elastic Charts](https://github.com/elastic/elastic-charts), the library Kibana draws its panels with, so a chart in a browser host looks like the Kibana panel it came from. It is a `SceneRenderer` for the browser and supports the `metric`, `xy`, `partition`, `heatmap`, `gauge` and `tagCloud` kinds. Kibana draws a [`legacyMetric`](../charts/legacy-metric.md) without Elastic Charts, so the charts pack draws that kind itself, as it does a table.
+`@elastic/isomer-charts-elastic` draws [chart Scenes](../charts/scene.md) with [Elastic Charts](https://github.com/elastic/elastic-charts), the library Kibana draws its panels with, so a chart looks like the Kibana panel it came from. Its `SceneRenderer` for the browser supports the `metric`, `xy`, `partition`, `heatmap`, `gauge` and `tagCloud` kinds, and its [`SceneRenderer` for Node](#drawing-on-a-server) draws all of them but `tagCloud` as static markup, for an image. Kibana draws a [`legacyMetric`](../charts/legacy-metric.md) without Elastic Charts, so the charts pack draws that kind itself, as it does a table.
 
 ```sh
 npm install @elastic/isomer-charts-elastic @elastic/charts moment moment-timezone react react-dom zod
@@ -23,13 +23,59 @@ The page needs Elastic Charts' stylesheet for the Scene's scheme, `theme_light.c
 
 The few elements this engine draws beside Elastic Charts' own, a metric's secondary text without a badge and its tooltip, the legend's filter buttons, and an empty chart's note, take classes from the charts pack's distillery (`chartsElastic-*`), with what only the Scene knows in Distillate vars. Through the runtime, the pack's distillery emits their rules; a host that draws the `react` surface itself ships `chartsStylesheet()` and `elasticChartsStylesheet()` beside Elastic Charts' stylesheet. `elasticChartsStylesheet()` holds this engine's rules alone and needs nothing loaded first, so a host that builds its CSS before it loads the engine, such as one that code-splits it, still gets them.
 
-`@elastic/charts`, React and React DOM are peer dependencies, so a host shares its own copy: Kibana's pin is the version this engine is tested against (`ELASTIC_CHARTS_VERSION`).
+`@elastic/charts`, React and React DOM are peer dependencies, so a host shares its own copy. `@elastic/charts` is supported from 73.5.0, the first release that draws without a browser, and `ELASTIC_CHARTS_VERSION` is the release this engine is built and tested against.
+
+## Drawing on a server
+
+`@elastic/isomer-charts-elastic/node` draws on Node, where a server makes an image:
+
+```js
+const { readFileSync } = require('node:fs');
+const {
+  ELASTIC_CHARTS_HOST_RULES,
+  createElasticChartsNodeRenderer,
+} = require('@elastic/isomer-charts-elastic/node');
+const {
+  chartsFrame,
+  createChartsPack,
+} = require('@elastic/isomer-primitives-charts');
+const { createIsomerRuntime } = require('@elastic/isomer-runtime');
+
+const runtime = createIsomerRuntime({
+  packs: [
+    createChartsPack({ sceneRenderers: [createElasticChartsNodeRenderer()] }),
+  ],
+  frames: { charts: chartsFrame },
+});
+
+const elasticChartsCss = readFileSync(
+  require.resolve('@elastic/charts/theme_only_light.css'),
+  'utf8'
+);
+const input = runtime.surfaces.snapshot.render(composition, { theme: 'light' });
+const page = {
+  ...input,
+  css: `${elasticChartsCss}\n${ELASTIC_CHARTS_HOST_RULES}\n${input.css}`,
+};
+```
+
+Node loads the CommonJS builds, so the example uses `require`; the ESM builds are for bundlers. `renderChart` and the chart components must come from one copy and one module format of `@elastic/charts`, which `require` throughout gives.
+
+`createElasticChartsNodeRenderer(options?)` is a `sized` renderer for the `node` environment. It hands the browser renderer's specs, [`sceneSpecs`](#one-spec-builder), to Elastic Charts' `renderChart` (`@elastic/charts/headless`), which draws them at the Scene's size with no DOM: an inline `svg`, with the legend and a metric's tiles as HTML. A Scene with nothing to draw is its note, as in the browser.
+
+- **Stylesheet.** The markup needs Elastic Charts' component styles for the Scene's scheme, `theme_only_light.css` or `theme_only_dark.css`, then `ELASTIC_CHARTS_HOST_RULES`: what that stylesheet expects of its page and EUI's global styles give it in Kibana, as [`renderChart`'s docs](https://github.com/elastic/elastic-charts/blob/main/docs/docs/docs/headless.mdx) list. Neither is in the pack's stylesheet, so the host puts both before the `snapshot` result's `css`, once for a page.
+- **Fonts.** Without a DOM, Elastic Charts measures text with Inter's advance widths for printable ASCII, whatever font the theme names, and counts any other character as an average glyph. The rasterizer needs Inter registered; text in another script can overflow or be cut early.
+- **Tag clouds.** `renderChart` does not draw a word cloud, so the renderer does not support `tagCloud`, and the charts pack draws its [fallback](../charts/rendering.md#choosing-a-renderer).
+- **Events.** Static markup raises none: no tooltips, hover, brushing or legend actions. A metric's secondary label placed in a tooltip is read to a screen reader and not drawn. Elastic Charts' own legend still marks each label as a button that toggles its series (`role="button"`, `tabindex="0"`), which does nothing in static markup: a gap of `renderChart`'s that matters where the markup is shown as a page, not rasterized.
+- **Ids.** Elastic Charts prefixes every id in a chart's markup with the chart's, which this renderer derives from the Scene and, through React's `useId`, the chart's place on the page. Charts on one page keep their own clip paths and labels, two drawings of one Scene included, and a page draws the same markup every time.
+
+Elastic Charts writes its data warnings, such as one for null values in a series, to the console on every render. The work is synchronous. A chart at the charts pack's whole [input budget](../sdk/packs.md#inputbudget) takes over a second to validate, resolve and draw, so a server draws in a worker or a render service. `bench/engine.cjs` is this renderer as `scripts/bench_charts.cjs --engine` loads one, with the ceilings `pnpm check:memory` holds it to.
 
 ## One spec builder
 
-`sceneSpecs(scene, env, options?)` turns a `metric`, `xy`, `partition`, `heatmap`, `gauge` or `tagCloud` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, the metric grid, a `Partition` of the Scene's slices, a `Heatmap` of its cells, a gauge's `Bullet`, or a `Wordcloud` of its words. The renderer wraps them in `<Chart>`; headless drawing hands the same elements to Elastic Charts' `collectSpecs`, so a chart drawn in a browser and one drawn on a server come from one place.
+`sceneSpecs(scene, env, options?)` turns a `metric`, `xy`, `partition`, `heatmap`, `gauge` or `tagCloud` Scene into Elastic Charts spec elements: `Settings`, axes, series, reference lines and annotations in the Scene's layer order, the metric grid, a `Partition` of the Scene's slices, a `Heatmap` of its cells, a gauge's `Bullet`, or a `Wordcloud` of its words. The browser renderer wraps them in `<Chart>` and the Node renderer hands the same elements to Elastic Charts' `renderChart`, so a chart drawn in a browser and one drawn on a server come from one place. A metric's secondary text without a badge is a React element in every environment, which both draw.
 
-`@elastic/isomer-charts-elastic/engine` exports `sceneSpecs` and what else another Elastic Charts drawing of a Scene builds on: `kibanaBaseTheme`, `ariaDescriptionOf`, `emptyTextOf` and its text sizes, `seriesOf`, `slicesOf`, and `TAG_CLOUD_LABEL`, the tag cloud label's type. A drawing that collects the specs must build them from the same copy of `@elastic/charts` it collects with.
+`@elastic/isomer-charts-elastic/engine` exports `sceneSpecs` and what else another Elastic Charts drawing of a Scene builds on: `kibanaBaseTheme`, `ariaDescriptionOf`, `emptyTextOf` and its text sizes, `seriesOf`, `slicesOf`, and `TAG_CLOUD_LABEL`, the tag cloud label's type. A drawing that hands the specs to `renderChart` must build them from the same copy and module format of `@elastic/charts`.
 
 ## What it takes from the Scene
 
@@ -68,7 +114,7 @@ Colors, text and series are the Scene's, and draw order is as far as Elastic Cha
 | Gauge bands                                         | `bands` as `colorBands`: their edges as `steps` and one color each, as Kibana passes them; a lone band as its color twice, so Elastic Charts draws it in that color alone                                                                                                                                                                                                                                                                                                                                   |
 | Gauge text                                          | The value and goal print their Scene text; ticks and any other value on the scale print through `formatAxisValue`. The tooltip names them by `tooltipLabels`                                                                                                                                                                                                                                                                                                                                                |
 | Tag cloud words                                     | `words` as the `Wordcloud`'s data, each with its text, `weight` and color and naming its word by index; `scale`, `angles` and `fontSize` as Kibana's tag cloud passes them, in Kibana's font, with 5 px padding on an Archimedean spiral                                                                                                                                                                                                                                                                    |
-| Tag cloud label                                     | `label` on a line under the cloud, centred, bold, in the Scene's text color, as Kibana draws it: in the browser an element of this engine's, cut with an ellipsis where it overruns the chart's width. `sceneSpecs` draws the cloud alone, so a host's headless drawing writes `label` itself on a line of `TAG_CLOUD_LABEL`'s size, line height and weight, and cuts it the same way. The cloud takes the height above it, on the Scene's background                                                       |
+| Tag cloud label                                     | `label` on a line under the cloud, centred, bold, in the Scene's text color, as Kibana draws it: in the browser an element of this engine's, cut with an ellipsis where it overruns the chart's width. `sceneSpecs` draws the cloud alone, so a host's own static drawing writes `label` itself on a line of `TAG_CLOUD_LABEL`'s size, line height and weight, and cuts it the same way. The cloud takes the height above it, on the Scene's background                                                     |
 | An empty chart                                      | `empty.text` of any Scene that carries one, an xy or metric Scene included, centered in the chart's box in the Scene's subdued text color at EUI's `s` size, as Lens's `VisualizationNoResults` draws it, in place of a chart; the title names the image and the note describes it                                                                                                                                                                                                                          |
 | Accessible label and description                    | `title`; `summary`, then `description` when the node states one                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
@@ -102,7 +148,9 @@ Clicking a legend item's label shows or hides series, as Elastic Charts' legend 
 `@elastic/isomer-charts-elastic/testing` holds what any static drawing with Elastic Charts checks beside the charts pack's [static renderer checks](../charts/rendering.md#testing-a-static-renderer):
 
 - `debugStateProblems(scene, state)` compares the `DebugState` Elastic Charts reports for a drawing with its Scene: every tick label is the category's label or the value through `formatAxisValue`, except on a time axis with `twoRows`, which Elastic Charts labels itself; the series drawn and the legend items are the Scene's with their colors, a partition draws each slice by key with its color and value, and a heat map draws each cell in its band's color with its value text, and no value without `cellLabels`, its positions' labels, its axis titles and its bands as the legend, and a gauge draws its bullet with the Scene's labels, value, goal, scale, bands and ticks. A metric or tag cloud has no `DebugState`, so it is checked by its text alone. `debugStateTexts` and `debugStateColors` read what it reports as drawn, for an engine whose output holds no text or paint to read.
-- `defineLookSuite({ test, expect, drawn, script, stylesheet, sameScene, looser?, unlike })` declares the look check in Chromium, given Playwright's `test` and `expect`: this engine's browser drawing of each Scene is the static drawing's size and scores a mean SSIM, on luminance at an eighth of their size (`LOOK_SCALE`) with every pixel counted, of at least `sameScene[kind]` against the static drawing of the same Scene, and below it against the static drawing of each of the `unlike` pairs, examples established to differ in layout. `script` is a bundle that calls `installLookPage()`, which draws Scenes with this engine and scores pictures in the page. `onScore`, when given, receives every score with its tolerance, for an engine to record.
+- `defineLookSuite({ test, expect, drawn, script, stylesheet, sameScene, looser?, unlike })` declares the look check in Chromium, given Playwright's `test` and `expect`: this engine's browser drawing of each Scene is the static drawing's size and scores a mean SSIM, on luminance at an eighth of their size (`LOOK_SCALE`) with every pixel counted, of at least `sameScene[kind]` against the static drawing of the same Scene, and below it against the static drawing of each of the `unlike` pairs, examples established to differ in layout. `script` is a bundle that calls `installLookPage()`, which draws Scenes with this engine and scores pictures in the page. `onScore`, when given, receives every score with its tolerance, for an engine to record. The page gives the browser drawing what EUI's global styles give it in Kibana; the static drawing gets `stylesheet` alone, so a rule its host must load is missed when it is missing.
+
+The Node renderer runs both: `src/node.test.ts` holds every example's `DebugState` to its Scene, and `e2e/look.spec.ts`, part of `pnpm test:browser`, runs the look suite on its markup laid out by Chromium in Inter. A same-Scene drawing scores at least 0.93 for an xy or partition chart and 0.95 for a metric, gauge or heat map, against at most 0.834 for the `unlike` pairs. One heat map example is held to 0.85: `renderChart` measures `%` narrower than Chromium draws it, so a legend of percentage bands fits on Node where the browser cuts it.
 
 `src/testing/testing.test.ts` holds `debugStateProblems` to what this engine draws for every xy, partition, heat map and gauge example in jsdom, and to mutations of it: a changed tick label, a series in another color, a slice missing, a cell in another color or with another value, a gauge with another value or band.
 
