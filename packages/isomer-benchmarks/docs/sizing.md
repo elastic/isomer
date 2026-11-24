@@ -11,9 +11,11 @@ This page turns the [results](results.md) into guidance for a host. Every figure
 
 A bare Node process holds about 42 MB RSS before it loads anything ([`node`](results.md#loading-each-entry)). Loading Isomer adds to that:
 
-- A server that draws images loads the SDK, the runtime, the charts pack and takumi. Together they reach about 80 MB RSS, with 15 MB of heap held, before drawing anything ([`host:image`](results.md#loading-each-entry)).
-- An agent host that loads the slides pack with agent-tools reaches about 96 MB RSS ([`host:agent`](results.md#loading-each-entry)). Most of that is the slides pack, which loads about 640 modules on its own.
-- The Elastic Charts engine is the heaviest single entry: about 720 modules, 16 MB of heap and 96 MB RSS, since it loads `@elastic/charts` with it. A process that only validates or resolves charts never needs it.
+- The SDK and the runtime with takumi, what a server that draws images needs besides a pack, reach about 73 MB RSS with 10 MB of heap held ([`host:image`](results.md#loading-each-entry)). With agent-tools instead of takumi, about 72 MB ([`host:agent`](results.md#loading-each-entry)).
+- A pack adds its own. With the SDK and the runtime, the charts pack reaches about 78 MB ([`charts:host`](results.md#loading-each-entry)) and the slides pack about 96 MB, since it loads about 640 modules on its own ([`slides:host`](results.md#loading-each-entry)).
+- The Elastic Charts engine is the heaviest single entry: about 720 modules, 16 MB of heap and 96 MB RSS, since it loads `@elastic/charts` with it. With the SDK and the runtime it reaches about 115 MB ([`charts-elastic:host`](results.md#loading-each-entry)). A process that only validates or resolves charts never needs it.
+
+To see what your own pack adds, [benchmark it](index.md#benchmarking-a-pack).
 
 ## Importing only what you use
 

@@ -6,6 +6,11 @@
  */
 
 export {
+  type BenchConfig,
+  benchConfigProblem,
+  defineBenchConfig,
+} from './config';
+export {
   type BenchResult,
   type Environment,
   type Measure,

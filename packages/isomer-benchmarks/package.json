@@ -55,6 +55,7 @@
     "@elastic/isomer-image-takumi": "workspace:*",
     "@elastic/isomer-primitives-charts": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
-    "@elastic/isomer-runtime": "workspace:*"
+    "@elastic/isomer-runtime": "workspace:*",
+    "esbuild": "0.28.2"
   }
 }

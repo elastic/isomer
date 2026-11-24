@@ -9,7 +9,7 @@
 // built CommonJS packages; or writes the docs' results page from the
 // committed baselines.
 //
-//   node cli/run.cjs <suite> [--runs 5] [--scenarios a,b] [--write <file>] [--json]
+//   node cli/run.cjs <suite> [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
 //   node cli/run.cjs report [--check]
 //
 // Run `pnpm build` first.
@@ -23,6 +23,12 @@ const REPO = resolve(PACKAGE, '../..');
 const SUITES = ['load', 'synthetic'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
 const RESULTS_PAGE = join(PACKAGE, 'docs/results.md');
+/** The in-repo configs a suite measures when no `--config` is passed. */
+const DEFAULT_CONFIGS = [
+  'packages/isomer-primitives-slides/isomer-bench.config.cjs',
+  'packages/isomer-primitives-charts/isomer-bench.config.cjs',
+  'packages/isomer-charts-elastic/isomer-bench.config.cjs',
+];
 
 /** The versions the numbers depend on, resolved as the suites resolve them. */
 const VERSIONED = [
@@ -82,8 +88,10 @@ const commit = () => {
   }
 };
 
-const child = async (suiteName, scenario) => {
-  const record = await suiteOf(suiteName).run(scenario);
+// The child gets only the scenario's spec, never a config, so nothing a
+// config imports is loaded where the suite measures.
+const child = async (suiteName, scenario, spec) => {
+  const record = await suiteOf(suiteName).run(JSON.parse(spec));
   // `maxRSS` is in kilobytes.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
   process.stdout.write(JSON.stringify({ scenario, peakRssMb, ...record }));
@@ -94,26 +102,52 @@ const option = (args, name, fallback) => {
   return at === -1 ? fallback : args[at + 1];
 };
 
-const runSuite = (suiteName, args) => {
+const options = (args, name) =>
+  args.flatMap((arg, at) => (arg === name ? [args[at + 1]] : []));
+
+const loadConfigs = (paths) =>
+  paths.map((path) => {
+    const file = resolve(path);
+    const config = require(file);
+    const problem = helpers().benchConfigProblem(config);
+    if (problem !== undefined) {
+      throw new Error(`${path}: ${problem}`);
+    }
+    return { ...config, dir: dirname(file) };
+  });
+
+const runSuite = async (suiteName, args) => {
   const suite = suiteOf(suiteName);
   const runs = Number(option(args, '--runs', 5));
+  const passed = options(args, '--config');
+  const configs = loadConfigs(
+    passed.length > 0 ? passed : DEFAULT_CONFIGS.map((path) => join(REPO, path))
+  );
+  const planned = await suite.scenarios(configs);
   const picked = option(args, '--scenarios', undefined)?.split(',');
   const scenarios =
     picked === undefined
-      ? suite.scenarios
+      ? planned
       : picked.map((name) => {
-          const scenario = suite.scenarios.find((s) => s.name === name);
+          const scenario = planned.find((s) => s.name === name);
           if (scenario === undefined) {
             throw new Error(`${suiteName}: unknown scenario ${name}`);
           }
           return scenario;
         });
 
-  const records = scenarios.flatMap(({ name }) =>
+  const records = scenarios.flatMap(({ name, spec }) =>
     Array.from({ length: runs }, () => {
       const run = spawnSync(
         process.execPath,
-        [...NODE_FLAGS, __filename, '--child', suiteName, name],
+        [
+          ...NODE_FLAGS,
+          __filename,
+          '--child',
+          suiteName,
+          name,
+          JSON.stringify(spec),
+        ],
         { encoding: 'utf8', maxBuffer: 1 << 24, cwd: PACKAGE }
       );
       if (run.status !== 0) {
@@ -135,7 +169,7 @@ const runSuite = (suiteName, args) => {
     }),
     runsPerScenario: runs,
     measures: suite.measures,
-    scenarios,
+    scenarios: scenarios.map(({ name, about }) => ({ name, about })),
     runs: records,
     summary: summarize(records, scenarios, suite.measures),
   };
@@ -215,13 +249,13 @@ const report = async (args) => {
 const main = async () => {
   const args = process.argv.slice(2);
   if (args[0] === '--child') {
-    await child(args[1], args[2]);
+    await child(args[1], args[2], args[3]);
   } else if (args[0] === 'report') {
     await report(args.slice(1));
   } else if (args[0] === undefined) {
     throw new Error(`Name a suite (${SUITES.join(', ')}) or \`report\`.`);
   } else {
-    runSuite(args[0], args.slice(1));
+    await runSuite(args[0], args.slice(1));
   }
 };
 

@@ -11,37 +11,43 @@ Each table is generated from a committed baseline. [Measuring Isomer](index.md) 
 
 ## Loading each entry
 
-What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up.
+What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up. Rows past the SDK's own packages come from each pack's config, resolved from that pack's directory; a pack bundled from source excludes what transpiling it would cost.
 
-Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, commit `4760b00e`.
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, commit `49f4b343`.
 
 | Scenario                                    | Load (ms) | Modules | Heap held (MB) | RSS after (MB) | Peak RSS (MB) |
 | ------------------------------------------- | --------: | ------: | -------------: | -------------: | ------------: |
 | `node`                                      |         0 |       0 |            0.0 |             42 |            42 |
-| `@elastic/isomer-sdk`                       |        91 |     152 |            7.0 |             67 |            68 |
-| `@elastic/isomer-sdk/schema`                |        35 |     108 |            3.8 |             56 |            56 |
-| `@elastic/isomer-sdk/html`                  |        46 |     127 |            6.2 |             60 |            60 |
-| `@elastic/isomer-sdk/slack`                 |        84 |     127 |            6.2 |             66 |            66 |
-| `@elastic/isomer-sdk/text`                  |         2 |       3 |            0.1 |             44 |            44 |
-| `@elastic/isomer-sdk/markdown`              |        81 |     110 |            6.0 |             65 |            65 |
-| `@elastic/isomer-sdk/react`                 |        83 |     120 |            6.2 |             66 |            66 |
-| `@elastic/isomer-sdk/author`                |        39 |     129 |            4.3 |             57 |            57 |
-| `@elastic/isomer-runtime`                   |       109 |     219 |            9.7 |             72 |            72 |
-| `@elastic/isomer-agent-tools`               |        95 |     170 |            7.3 |             69 |            69 |
-| `@elastic/isomer-image-takumi`              |        10 |      16 |            0.7 |             50 |            50 |
-| `@elastic/isomer-primitives-charts`         |       134 |     323 |           11.6 |             76 |            76 |
-| `@elastic/isomer-primitives-charts/schema`  |        50 |     161 |            6.6 |             62 |            62 |
-| `@elastic/isomer-primitives-charts/scene`   |        13 |      49 |            0.9 |             50 |            50 |
-| `@elastic/isomer-primitives-charts/resolve` |         9 |      26 |            0.6 |             49 |            49 |
-| `@elastic/isomer-charts-elastic`            |       220 |     718 |           16.0 |             95 |            95 |
-| `@elastic/isomer-charts-elastic/engine`     |       224 |     717 |           16.0 |             95 |            95 |
-| `@elastic/isomer-primitives-slides`         |       209 |     639 |           15.4 |             94 |            94 |
-| `host:image`                                |       162 |     387 |           14.5 |             80 |            80 |
-| `host:agent`                                |       239 |     675 |           17.8 |             96 |            96 |
+| `@elastic/isomer-sdk`                       |        77 |     152 |            7.0 |             68 |            68 |
+| `@elastic/isomer-sdk/schema`                |       104 |     108 |            3.8 |             57 |            57 |
+| `@elastic/isomer-sdk/html`                  |       170 |     127 |            6.2 |             60 |            60 |
+| `@elastic/isomer-sdk/slack`                 |        79 |     127 |            6.2 |             67 |            67 |
+| `@elastic/isomer-sdk/text`                  |         2 |       3 |            0.1 |             47 |            47 |
+| `@elastic/isomer-sdk/markdown`              |        77 |     110 |            6.0 |             65 |            65 |
+| `@elastic/isomer-sdk/react`                 |        79 |     120 |            6.1 |             67 |            67 |
+| `@elastic/isomer-sdk/author`                |        39 |     129 |            4.3 |             58 |            58 |
+| `@elastic/isomer-runtime`                   |        91 |     219 |            9.7 |             72 |            72 |
+| `@elastic/isomer-agent-tools`               |        87 |     170 |            7.3 |             69 |            69 |
+| `@elastic/isomer-image-takumi`              |         9 |      16 |            0.6 |             50 |            50 |
+| `host:image`                                |       109 |     235 |           10.0 |             73 |            73 |
+| `host:agent`                                |       104 |     225 |            9.7 |             72 |            72 |
+| `@elastic/isomer-primitives-slides`         |       210 |     639 |           15.4 |            100 |           100 |
+| `slides:host`                               |       231 |     669 |           17.7 |             96 |            96 |
+| `@elastic/isomer-primitives-charts`         |       127 |     323 |           11.6 |             77 |            77 |
+| `@elastic/isomer-primitives-charts/schema`  |        50 |     161 |            6.6 |             62 |            63 |
+| `@elastic/isomer-primitives-charts/scene`   |        12 |      49 |            0.9 |             50 |            50 |
+| `@elastic/isomer-primitives-charts/resolve` |         8 |      26 |            0.6 |             49 |            49 |
+| `charts:host`                               |       142 |     371 |           14.1 |             78 |            78 |
+| `@elastic/isomer-charts-elastic`            |       213 |     718 |           15.9 |             95 |            95 |
+| `@elastic/isomer-charts-elastic/engine`     |       214 |     717 |           15.9 |             95 |            95 |
+| `charts-elastic:host`                       |       306 |     935 |           25.0 |            115 |           115 |
 
 - `node`: nothing: what the harness itself holds
-- `host:image`: what a server that draws images loads: the SDK, the runtime, the charts pack and takumi
-- `host:agent`: what an agent host loads: the SDK, the runtime, agent-tools and the slides pack
+- `host:image`: what a server that draws images needs besides a pack: the SDK, the runtime and takumi
+- `host:agent`: what an agent host needs besides a pack: the SDK, the runtime and agent-tools
+- `slides:host`: the SDK, the runtime and `@elastic/isomer-primitives-slides`
+- `charts:host`: the SDK, the runtime and `@elastic/isomer-primitives-charts`
+- `charts-elastic:host`: the SDK, the runtime and `@elastic/isomer-charts-elastic`
 
 ## SDK and runtime overhead
 

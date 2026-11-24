@@ -102,10 +102,15 @@ module.exports = {
   title: 'SDK and runtime overhead',
   about: `A generated pack whose renderers each return one element or line, so the cost is the SDK's and the runtime's: assembling a runtime (which builds the composition schema), validating, and rendering. Each axis moves alone from ${DEFAULTS.primitives} primitive types, ${DEFAULTS.nodes} flat nodes and ${DEFAULTS.characters} label characters. Times past the first validate are the median of repeated calls in the same process.`,
   measures: MEASURES,
-  scenarios: Object.entries(PLAN).map(([name, { about }]) => ({ name, about })),
+  // The synthetic pack is the suite's own; a config's pack plays no part.
+  scenarios: async () =>
+    Object.entries(PLAN).map(([name, { about, options }]) => ({
+      name,
+      about,
+      spec: options,
+    })),
   notes: (result) => [perUnit(result)],
-  run: async (scenario) => {
-    const { options } = PLAN[scenario];
+  run: async (options) => {
     const { createIsomerRuntime } = require('@elastic/isomer-runtime');
     const {
       createStepRecorder,
@@ -139,7 +144,7 @@ module.exports = {
     const validateFirstMs = performance.now() - started;
     if (!validation.valid) {
       throw new Error(
-        `${scenario}: invalid tree: ${JSON.stringify(validation.errors.slice(0, 3))}`
+        `invalid tree for ${JSON.stringify(options)}: ${JSON.stringify(validation.errors.slice(0, 3))}`
       );
     }
     const { surfaces } = runtime;
