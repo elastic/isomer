@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { checkDeclarations } from './packed_declarations.js';
 import {
+  importEntries,
   linkDirectory,
   requireEntries,
   requireWithoutPeers,
@@ -331,4 +332,59 @@ describe('requireWithoutPeers', () => {
     },
     30000
   );
+});
+
+describe('importEntries', () => {
+  let root;
+  let consumer;
+
+  const install = (exportConditions, cjs = 'exports.value = 1;\n') => {
+    writePackage(
+      join(consumer, 'node_modules', 'fixture-dual'),
+      { name: 'fixture-dual', exports: { '.': exportConditions } },
+      {}
+    );
+    for (const [file, contents] of Object.entries({
+      'cjs/index.js': cjs,
+      'esm/index.js': "export { value } from './value';\n",
+      'esm/value.js': 'export const value = 1;\n',
+    })) {
+      const path = join(consumer, 'node_modules', 'fixture-dual', file);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, contents);
+    }
+  };
+
+  beforeEach(() => {
+    root = mkdtempSync(join(tmpdir(), 'isomer-import-entries-'));
+    consumer = join(root, 'consumer');
+  });
+
+  afterEach(() => rmSync(root, { force: true, recursive: true }));
+
+  it('fails a package whose `import` is ESM for bundlers alone', () => {
+    install({ import: './esm/index.js', require: './cjs/index.js' });
+    expect(() => importEntries(['fixture-dual'], consumer)).toThrow(
+      /ERR_MODULE_NOT_FOUND/
+    );
+  });
+
+  it('passes once a `node` condition names the CommonJS build', () => {
+    install({
+      node: './cjs/index.js',
+      import: './esm/index.js',
+      require: './cjs/index.js',
+    });
+    expect(() => importEntries(['fixture-dual'], consumer)).not.toThrow();
+  });
+
+  it('fails when `import()` cannot see a name `require()` exports', () => {
+    install(
+      { node: './cjs/index.js' },
+      "const name = 'value'; module.exports[name] = 1;\n"
+    );
+    expect(() => importEntries(['fixture-dual'], consumer)).toThrow(
+      /lacks value/
+    );
+  });
 });

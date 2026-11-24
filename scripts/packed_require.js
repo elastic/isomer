@@ -44,6 +44,30 @@ export const requireEntries = (specifiers, consumerDir) =>
   );
 
 /**
+ * A native `import()` of each specifier, which must expose every name
+ * `require()` does: Node finds a CommonJS module's names by static analysis.
+ */
+export const importEntries = (specifiers, consumerDir) =>
+  execFileSync(
+    process.execPath,
+    [
+      '--input-type=module',
+      '--eval',
+      `${failOnWarning}
+import { createRequire } from 'node:module';
+const require = createRequire(process.cwd() + '/');
+for (const specifier of ${JSON.stringify(specifiers)}) {
+  const imported = await import(specifier);
+  const missing = Object.keys(require(specifier)).filter((name) => !(name in imported));
+  if (missing.length > 0) {
+    throw new Error('import("' + specifier + '") lacks ' + missing.join(', '));
+  }
+}`,
+    ],
+    { cwd: consumerDir, env: consumerEnv(), encoding: 'utf-8' }
+  );
+
+/**
  * Copies the packed dependency graph into a staging directory, linking each copy only to its declared dependencies and required peers.
  * Only `pkg` is exposed in the consumer's `node_modules`.
  * `typesPackages` (`@types/*` name to directory) are visible to the staged copies, whose declarations resolve from the staging directory.
@@ -124,5 +148,6 @@ export const requireWithoutPeers = (
     { cwd: consumerDir, env: consumerEnv(), encoding: 'utf-8' }
   );
   requireEntries(specifiers, consumerDir);
+  importEntries(specifiers, consumerDir);
   return consumerDir;
 };

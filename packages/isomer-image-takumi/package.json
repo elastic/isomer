@@ -16,6 +16,8 @@
   "exports": {
     ".": {
       "types": "./lib/cjs/index.d.ts",
+      "module": "./lib/esm/index.js",
+      "node": "./lib/cjs/index.js",
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"

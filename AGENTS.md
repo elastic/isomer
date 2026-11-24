@@ -94,7 +94,7 @@ For prose-only changes, follow [Contributing's documentation checks](CONTRIBUTIN
 - `zod` is a peer dependency. Do not add it to `dependencies`.
 - The sdk must not import the runtime.
 - No tsconfig `paths`. Internal resolution is `workspace:*`: a package compiles against its dependencies' built declarations, so `pnpm -r` builds in dependency order.
-- Each package builds as `elastic/eui`'s packages do: `tsc` emits ESM for bundlers to `lib/esm`, Babel emits CommonJS to `lib/cjs`, and `tsc` emits declarations beside it; Node consumers `require` the CommonJS build.
+- Each package builds as `elastic/eui`'s packages do: `tsc` emits ESM for bundlers to `lib/esm`, Babel emits CommonJS to `lib/cjs`, and `tsc` emits declarations beside it; Node loads the CommonJS build, by `require` and, through the `node` export condition, by `import`.
 - After adding or changing a dependency, run `pnpm licenses:report` and include the updated `THIRD_PARTY_LICENSES.md` and `NOTICE.txt`.
 - Narrative docs live in each package's `docs/`. Root `docs/` is the docs-builder assembler (landing page and OKF map); do not author package pages there. Its package folders are committed copies, because Elastic Internal Docs (Codex) clones and builds `docs/` as committed: run `pnpm docs:assemble` and commit the result whenever package docs change, and CI fails with `pnpm docs:check` when they drift. Preview with `pnpm docs:dev`.
 - `.okf/isomer` keeps agent-facing detail the package docs don't cover; a concept the docs cover points to them instead of restating them. Put what a human reader needs in the package docs. When a change alters detail a concept keeps, update that concept and run `pnpm okf:check` and `pnpm okf:index`.

@@ -25,6 +25,7 @@ import { checkDeclarations } from './packed_declarations.js';
 import {
   consumerEnv,
   failOnWarning,
+  importEntries,
   linkDirectory,
   requireEntries,
   requireWithoutPeers,
@@ -52,6 +53,9 @@ if (references.length > 0) {
   process.exit(1);
 }
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
+// For an `--input-type=module` eval, whose top-level `await` exits 13 if it never settles.
+const requireHere =
+  "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);";
 
 const packPackage = (packageName) => {
   const folder = packageName.slice(packageName.lastIndexOf('/') + 1);
@@ -142,7 +146,8 @@ const bundleEsm = (specifier, resolveDir, manifest, platform, outfile) =>
     format: 'esm',
     platform,
     target: 'es2022',
-    conditions: platform === 'node' ? ['node'] : [],
+    // Stated conditions replace esbuild's defaults, and `module` is the one every bundler sets.
+    conditions: platform === 'node' ? ['module', 'node'] : ['module'],
     external: [
       ...Object.keys(manifest.dependencies ?? {}),
       ...Object.keys(manifest.peerDependencies ?? {}),
@@ -228,7 +233,7 @@ try {
     linkDirectory(pkg.dir, join(consumerDir, 'node_modules', packageName));
     const specifiers = exportSpecifiers(pkg.manifest);
 
-    // Node loads the CommonJS build, with optional peers only for the entries that need them.
+    // Node loads the CommonJS build, by `require()` and by `import()`, with optional peers only for the entries that need them.
     const plainEntries = specifiers.filter(
       (specifier) => !OPTIONAL_PEER_ENTRIES.has(specifier)
     );
@@ -248,6 +253,7 @@ try {
     );
     if (optionalPeers.size === 0) {
       requireEntries(plainEntries, consumerDir);
+      importEntries(plainEntries, consumerDir);
     } else {
       const isolatedConsumer = requireWithoutPeers(
         pkg,
@@ -273,6 +279,7 @@ try {
     }
     if (optionalPeerEntries.length > 0) {
       requireEntries(optionalPeerEntries, consumerDir);
+      importEntries(optionalPeerEntries, consumerDir);
     }
 
     // The ESM build is for bundlers: each entry must bundle, and the Node bundle must import.
@@ -311,7 +318,7 @@ try {
       ? 'node and browser'
       : 'node';
     console.log(
-      `${packageName}: ${specifiers.length} packed entry point(s) require, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
+      `${packageName}: ${specifiers.length} packed entry point(s) require and import in Node, and bundle as ESM for ${platforms}, with required peers (${requiredPeers.join(', ')}).`
     );
   }
 
@@ -346,8 +353,9 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     execFileSync(
       process.execPath,
       [
+        '--input-type=module',
         '--eval',
-        `${failOnWarning} const { createTakumiImageBackend } = require('${takumiName}');\n(async () => {\n${renderPdf}\n})().catch((error) => { console.error(error); process.exit(1); });`,
+        `${failOnWarning} ${requireHere} const { createTakumiImageBackend } = require('${takumiName}');\n${renderPdf}`,
       ],
       { cwd: takumiConsumerDir, stdio: 'inherit' }
     );
@@ -386,7 +394,17 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     join(primitivesDir, 'demo', 'index.ts'),
     "exports.demoPrimitive = { type: 'demo', catalog: {}, schema: {}, renderers: {} };\n"
   );
-  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }] })`;
+  // `require()` refuses a module with top-level `await`; Node's `import()` loads it.
+  mkdirSync(join(primitivesDir, 'awaited'), { recursive: true });
+  writeFileSync(
+    join(primitivesDir, 'awaited', 'package.json'),
+    '{ "type": "module" }\n'
+  );
+  writeFileSync(
+    join(primitivesDir, 'awaited', 'index.ts'),
+    "const type: string = await Promise.resolve('awaited');\nexport const awaitedPrimitive = { type, catalog: {}, schema: {}, renderers: {} };\n"
+  );
+  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }, { type: 'awaited' }] })`;
   // Node strips TypeScript by default only from 22.18.
   const stripTypes = process.features.typescript
     ? []
@@ -417,13 +435,38 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     process.execPath,
     [
       ...stripTypes,
+      '--input-type=module',
       '--eval',
-      `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); ${registrationCall}.catch((error) => { console.error(error); process.exit(1); });`,
+      `const { assertPackRegistrationComplete } = await import('${sdkName}/testing'); await ${registrationCall};`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
+      '--input-type=module',
+      '--eval',
+      `${requireHere} const { assertPackRegistrationComplete } = require('${sdkName}/testing'); await ${registrationCall};`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
+  // A primitive's own rejection reaches the caller, even one that is not an object.
+  const throwingDir = join(tempDir, 'registration', 'throwing');
+  mkdirSync(join(throwingDir, 'thrower'), { recursive: true });
+  writeFileSync(join(throwingDir, 'thrower', 'index.ts'), 'throw null;\n');
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
+      '--input-type=module',
+      '--eval',
+      `${requireHere} const { assertPackRegistrationComplete } = require('${sdkName}/testing'); let rejection; try { await assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, throwingDir))}, registered: [] }); } catch (error) { rejection = { error }; } if (!rejection) throw new Error('A primitive that throws null was loaded.'); if (rejection.error !== null) { console.error('A primitive that throws null rejected with', rejection.error); process.exit(1); }`,
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
   console.log(
-    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle and require.`
+    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle, a native import and require, and passed on a primitive's thrown null.`
   );
 } finally {
   rmSync(tempDir, { force: true, recursive: true });

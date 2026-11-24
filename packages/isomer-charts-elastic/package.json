@@ -16,24 +16,32 @@
   "exports": {
     ".": {
       "types": "./lib/cjs/index.d.ts",
+      "module": "./lib/esm/index.js",
+      "node": "./lib/cjs/index.js",
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"
     },
     "./engine": {
       "types": "./lib/cjs/engine.d.ts",
+      "module": "./lib/esm/engine.js",
+      "node": "./lib/cjs/engine.js",
       "import": "./lib/esm/engine.js",
       "require": "./lib/cjs/engine.js",
       "default": "./lib/cjs/engine.js"
     },
     "./node": {
       "types": "./lib/cjs/node.d.ts",
+      "module": "./lib/esm/node.js",
+      "node": "./lib/cjs/node.js",
       "import": "./lib/esm/node.js",
       "require": "./lib/cjs/node.js",
       "default": "./lib/cjs/node.js"
     },
     "./testing": {
       "types": "./lib/cjs/testing/index.d.ts",
+      "module": "./lib/esm/testing/index.js",
+      "node": "./lib/cjs/testing/index.js",
       "import": "./lib/esm/testing/index.js",
       "require": "./lib/cjs/testing/index.js",
       "default": "./lib/cjs/testing/index.js"

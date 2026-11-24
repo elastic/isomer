@@ -133,7 +133,7 @@ for (const pkg of packages.filter(({ manifest }) => isPublishable(manifest))) {
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
-        ? ['types', 'import', 'require', 'default'].map(
+        ? ['types', 'module', 'node', 'import', 'require', 'default'].map(
             (key) => conditions[key]
           )
         : []
