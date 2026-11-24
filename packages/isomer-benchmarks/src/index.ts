@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { bundleSourceEntry } from './bundle_source';
 export {
   type BenchConfig,
   benchConfigProblem,
@@ -17,10 +18,12 @@ export {
   type RunRecord,
   type Scenario,
   type Spread,
+  cgroupLimitBytes,
   describeEnvironment,
   describeEnvironmentLine,
   median,
   summarize,
+  tableText,
   toMarkdown,
 } from './results';
 export {

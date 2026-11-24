@@ -8,11 +8,12 @@
 // What `require` of each public entry costs a fresh Node process, before any
 // call into it: the SDK's own packages, then each config's entries.
 
-const { mkdirSync } = require('node:fs');
 const { join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '../..');
 
+// Each package's public entries a host loads; `./testing` entries are for
+// tests, and the Studio is a CLI, so neither is here.
 const CORE = [
   '@elastic/isomer-sdk',
   '@elastic/isomer-sdk/schema',
@@ -42,101 +43,108 @@ const CORE_HOSTS = {
   },
 };
 
-const fileName = (specifier) => specifier.replace(/[^a-z0-9-]+/gi, '_');
-
-/**
- * Bundles each TypeScript entry to one CommonJS file beside the config's
- * `node_modules`, so what it imports from built JavaScript still resolves
- * there. Only TypeScript is bundled; built JavaScript stays external.
- */
-const bundleSource = async ({ dir, name, entries }) => {
-  const { build } = require('esbuild');
-  const out = join(dir, 'node_modules/.cache/isomer-benchmarks', name);
-  mkdirSync(out, { recursive: true });
-  const keepBuiltExternal = {
-    name: 'keep-built-external',
-    setup: (esbuild) => {
-      esbuild.onResolve({ filter: /^[^./]/ }, async (args) => {
-        if (args.pluginData === 'resolving') {
-          return undefined;
-        }
-        const found = await esbuild.resolve(args.path, {
-          kind: args.kind,
-          resolveDir: args.resolveDir,
-          pluginData: 'resolving',
-        });
-        if (found.errors.length > 0) {
-          return { errors: found.errors };
-        }
-        return found.external || !/\.[mc]?tsx?$/.test(found.path)
-          ? { path: args.path, external: true }
-          : found;
-      });
-    },
-  };
-  return Object.fromEntries(
-    await Promise.all(
-      entries.map(async (entry) => {
-        const outfile = join(out, `${fileName(entry)}.cjs`);
-        await build({
-          stdin: {
-            contents: `module.exports = require(${JSON.stringify(entry)});`,
-            resolveDir: dir,
-            loader: 'js',
-          },
-          bundle: true,
-          platform: 'node',
-          format: 'cjs',
-          jsx: 'automatic',
-          outfile,
-          logLevel: 'silent',
-          plugins: [keepBuiltExternal],
-        });
-        return [entry, outfile];
-      })
-    )
-  );
+const resolvesFrom = (dir, specifier) => {
+  try {
+    require.resolve(specifier, { paths: [dir] });
+    return true;
+  } catch {
+    return false;
+  }
 };
 
-const scenarios = async (configs) => {
-  const core = [
-    {
-      name: 'node',
-      about: 'nothing: what the harness itself holds',
-      spec: { base: PACKAGE, load: [] },
+/** A config's entry as a child loads it: the specifier, or the bundle a source entry becomes. */
+const loadable = ({ dir, name, build = 'built' }, entries, entry) =>
+  build === 'source'
+    ? {
+        source: entry,
+        dir,
+        outfile: join(
+          dir,
+          'node_modules/.cache/isomer-benchmarks',
+          name,
+          `${entries.indexOf(entry)}.cjs`
+        ),
+      }
+    : entry;
+
+const scenarios = async (configs) => [
+  {
+    name: 'node',
+    about: 'nothing: what the harness itself holds',
+    spec: { base: PACKAGE, load: [] },
+  },
+  ...CORE.map((specifier) => ({
+    name: specifier,
+    about: '',
+    spec: { base: PACKAGE, load: [specifier] },
+  })),
+  ...Object.entries(CORE_HOSTS).map(([name, { about, specifiers }]) => ({
+    name,
+    about,
+    spec: { base: PACKAGE, load: specifiers },
+  })),
+  ...configs.flatMap((config) => {
+    const { dir, name, entries, build = 'built' } = config;
+    const from = build === 'source' ? ', bundled from source' : '';
+    const hostable = SDK_AND_RUNTIME.every((each) => resolvesFrom(dir, each));
+    if (!hostable) {
+      process.stderr.write(
+        `${name}: no \`${name}:host\` row, since the SDK and the runtime don't both resolve from ${dir}\n`
+      );
+    }
+    return [
+      ...entries.map((entry) => ({
+        name: entry,
+        about: from === '' ? '' : `\`${entry}\`${from}`,
+        spec: { base: dir, load: [loadable(config, entries, entry)] },
+      })),
+      ...(hostable
+        ? [
+            {
+              name: `${name}:host`,
+              about: `the SDK, the runtime and \`${entries[0]}\`${from}`,
+              spec: {
+                base: dir,
+                load: [
+                  ...SDK_AND_RUNTIME,
+                  loadable(config, entries, entries[0]),
+                ],
+              },
+            },
+          ]
+        : []),
+    ];
+  }),
+];
+
+/** Bundles the source entries the picked scenarios load, once each. */
+const prepare = async (picked) => {
+  const { bundleSourceEntry } = require(join(PACKAGE, 'lib/cjs/index.js'));
+  const bundles = new Map();
+  for (const { spec } of picked) {
+    for (const each of spec.load) {
+      if (typeof each === 'object' && !bundles.has(each.outfile)) {
+        bundles.set(
+          each.outfile,
+          bundleSourceEntry({
+            entry: each.source,
+            resolveDir: each.dir,
+            outfile: each.outfile,
+          })
+        );
+      }
+    }
+  }
+  await Promise.all(bundles.values());
+  return picked.map((scenario) => ({
+    ...scenario,
+    spec: {
+      ...scenario.spec,
+      load: scenario.spec.load.map((each) =>
+        typeof each === 'object' ? each.outfile : each
+      ),
     },
-    ...CORE.map((specifier) => ({
-      name: specifier,
-      about: '',
-      spec: { base: PACKAGE, load: [specifier] },
-    })),
-    ...Object.entries(CORE_HOSTS).map(([name, { about, specifiers }]) => ({
-      name,
-      about,
-      spec: { base: PACKAGE, load: specifiers },
-    })),
-  ];
-  const packs = await Promise.all(
-    configs.map(async (config) => {
-      const { dir, name, entries, build = 'built' } = config;
-      const bundled = build === 'source' ? await bundleSource(config) : {};
-      const target = (entry) => bundled[entry] ?? entry;
-      const from = build === 'source' ? ', bundled from source' : '';
-      return [
-        ...entries.map((entry) => ({
-          name: entry,
-          about: from === '' ? '' : `\`${entry}\`${from}`,
-          spec: { base: dir, load: [target(entry)] },
-        })),
-        {
-          name: `${name}:host`,
-          about: `the SDK, the runtime and \`${entries[0]}\`${from}`,
-          spec: { base: dir, load: [...SDK_AND_RUNTIME, target(entries[0])] },
-        },
-      ];
-    })
-  );
-  return [...core, ...packs.flat()];
+  }));
 };
 
 const mb = (bytes) => bytes / 1024 / 1024;
@@ -144,15 +152,17 @@ const mb = (bytes) => bytes / 1024 / 1024;
 module.exports = {
   title: 'Loading each entry',
   about:
-    "What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up. Rows past the SDK's own packages come from each pack's config, resolved from that pack's directory; a pack bundled from source excludes what transpiling it would cost.",
+    "What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up. Rows past the SDK's own packages come from each pack's config, resolved from that pack's directory; a pack bundled from source excludes what transpiling it would cost. `CJS modules` counts entries in `require.cache`; a CommonJS entry that loads ES modules adds modules it doesn't count.",
+  usesConfigs: true,
   measures: [
     { key: 'loadMs', label: 'Load (ms)', digits: 0 },
-    { key: 'modules', label: 'Modules', digits: 0 },
+    { key: 'modules', label: 'CJS modules', digits: 0 },
     { key: 'heapRetainedMb', label: 'Heap held (MB)', digits: 1 },
     { key: 'rssMb', label: 'RSS after (MB)', digits: 0 },
     { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
   ],
   scenarios,
+  prepare,
   run: async ({ base, load }) => {
     const { createRequire } = require('node:module');
     const requireFrom = createRequire(join(base, 'noop.js'));

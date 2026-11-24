@@ -7,7 +7,13 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { median, summarize, toMarkdown } from './results';
+import {
+  cgroupLimitBytes,
+  median,
+  summarize,
+  tableText,
+  toMarkdown,
+} from './results';
 
 const measures = [
   { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
@@ -73,5 +79,35 @@ describe('toMarkdown', () => {
         '| `b` | 50 |  |',
       ].join('\n')
     );
+  });
+});
+
+describe('cgroupLimitBytes', () => {
+  const limits: Record<string, string> = {
+    '/': 'max',
+    '/bench': '1073741824',
+    '/bench/run': '536870912',
+    '/bench/run/child': 'max',
+  };
+
+  it("takes the lowest limit from the process's own cgroup up to the root", () => {
+    expect(
+      cgroupLimitBytes('0::/bench/run/child\n', (cgroup) => limits[cgroup])
+    ).toBe(536870912);
+  });
+
+  it('reads the root in a container whose namespace starts at its cgroup', () => {
+    expect(cgroupLimitBytes('0::/\n', () => '268435456')).toBe(268435456);
+  });
+
+  it('is null with no limit set or no cgroup v2 line', () => {
+    expect(cgroupLimitBytes('0::/bench/run/child', () => 'max')).toBe(null);
+    expect(cgroupLimitBytes('12:memory:/x\n', () => '1')).toBe(null);
+  });
+});
+
+describe('tableText', () => {
+  it('keeps a pipe from splitting a table cell', () => {
+    expect(tableText('./chart|debug.cjs')).toBe('./chart\\|debug.cjs');
   });
 });

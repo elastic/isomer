@@ -11,8 +11,10 @@
 //
 //   node cli/run.cjs <suite> [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
 //   node cli/run.cjs report [--check]
+//   node cli/run.cjs smoke
 //
-// Run `pnpm build` first.
+// Paths are relative to where the command was started, even through
+// `pnpm --filter`. Run `pnpm build` first.
 
 const { execFileSync, spawnSync } = require('node:child_process');
 const { readFileSync, writeFileSync } = require('node:fs');
@@ -22,6 +24,8 @@ const PACKAGE = resolve(__dirname, '..');
 const REPO = resolve(PACKAGE, '../..');
 const SUITES = ['load', 'synthetic'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
+/** What a child writes its one JSON record to, apart from anything a package logs. */
+const RECORD_FD = 3;
 const RESULTS_PAGE = join(PACKAGE, 'docs/results.md');
 /** The in-repo configs a suite measures when no `--config` is passed. */
 const DEFAULT_CONFIGS = [
@@ -44,6 +48,10 @@ const VERSIONED = [
   'zod',
 ];
 
+/** Where `pnpm --filter` was started, so relative paths mean what the user typed. */
+const startedIn = process.env.INIT_CWD ?? process.cwd();
+const fromStart = (path) => resolve(startedIn, path);
+
 const helpers = () => require(join(PACKAGE, 'lib/cjs/index.js'));
 const suiteOf = (name) => {
   if (!SUITES.includes(name)) {
@@ -52,30 +60,33 @@ const suiteOf = (name) => {
   return require(`./suites/${name}.cjs`);
 };
 
-const packageVersions = () =>
-  Object.fromEntries(
-    VERSIONED.map((name) => {
-      // An `exports` map may hide `package.json`; walk up from the entry instead.
-      let dir = dirname(require.resolve(name, { paths: [PACKAGE] }));
-      for (;;) {
-        try {
-          const { name: found, version } = JSON.parse(
-            readFileSync(join(dir, 'package.json'), 'utf8')
-          );
-          if (found === name) {
-            return [name, version];
-          }
-        } catch {
-          // No manifest here; keep walking.
-        }
-        const parent = dirname(dir);
-        if (parent === dir) {
-          return [name, 'unknown'];
-        }
-        dir = parent;
+/** A package's version as resolved from `base`, or `null` when it isn't installed there. */
+const versionFrom = (base, name) => {
+  let dir;
+  try {
+    dir = dirname(require.resolve(name, { paths: [base] }));
+  } catch {
+    return null;
+  }
+  // An `exports` map may hide `package.json`; walk up from the entry instead.
+  for (;;) {
+    try {
+      const { name: found, version } = JSON.parse(
+        readFileSync(join(dir, 'package.json'), 'utf8')
+      );
+      if (found === name) {
+        return version;
       }
-    })
-  );
+    } catch {
+      // No manifest here; keep walking.
+    }
+    const parent = dirname(dir);
+    if (parent === dir) {
+      return null;
+    }
+    dir = parent;
+  }
+};
 
 const commit = () => {
   try {
@@ -94,7 +105,10 @@ const child = async (suiteName, scenario, spec) => {
   const record = await suiteOf(suiteName).run(JSON.parse(spec));
   // `maxRSS` is in kilobytes.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
-  process.stdout.write(JSON.stringify({ scenario, peakRssMb, ...record }));
+  require('node:fs').writeSync(
+    RECORD_FD,
+    JSON.stringify({ scenario, peakRssMb, ...record })
+  );
 };
 
 const option = (args, name, fallback) => {
@@ -105,9 +119,18 @@ const option = (args, name, fallback) => {
 const options = (args, name) =>
   args.flatMap((arg, at) => (arg === name ? [args[at + 1]] : []));
 
+const runsOption = (args) => {
+  const raw = option(args, '--runs', '5');
+  const runs = Number(raw);
+  if (!Number.isInteger(runs) || runs < 1) {
+    throw new Error(`--runs ${raw}: a whole number of runs, at least 1`);
+  }
+  return runs;
+};
+
 const loadConfigs = (paths) =>
   paths.map((path) => {
-    const file = resolve(path);
+    const file = fromStart(path);
     const config = require(file);
     const problem = helpers().benchConfigProblem(config);
     if (problem !== undefined) {
@@ -116,49 +139,83 @@ const loadConfigs = (paths) =>
     return { ...config, dir: dirname(file) };
   });
 
-const runSuite = async (suiteName, args) => {
-  // Children inherit it: React and others load their production builds, as a
-  // production host's do, and the environment records it.
+const pick = (suiteName, planned, names) => {
+  const seen = new Set();
+  for (const { name } of planned) {
+    if (seen.has(name)) {
+      throw new Error(
+        `${suiteName}: two scenarios are named ${name}; give each config its own name and entries`
+      );
+    }
+    seen.add(name);
+  }
+  return names === undefined
+    ? planned
+    : names.map((name) => {
+        const scenario = planned.find((each) => each.name === name);
+        if (scenario === undefined) {
+          throw new Error(`${suiteName}: unknown scenario ${name}`);
+        }
+        return scenario;
+      });
+};
+
+const spawnChild = (suiteName, { name, spec }) => {
+  const run = spawnSync(
+    process.execPath,
+    [
+      ...NODE_FLAGS,
+      __filename,
+      '--child',
+      suiteName,
+      name,
+      JSON.stringify(spec),
+    ],
+    {
+      cwd: PACKAGE,
+      stdio: ['ignore', 'ignore', 'pipe', 'pipe'],
+      maxBuffer: 1 << 24,
+    }
+  );
+  if (run.status !== 0) {
+    throw new Error(`${suiteName} ${name} run failed:\n${run.output[2]}`);
+  }
+  return JSON.parse(run.output[RECORD_FD].toString('utf8'));
+};
+
+/** Plans, picks and prepares a suite's scenarios, then runs each `runs` times. */
+const measure = async (suiteName, { runs, configs, names }) => {
+  // Children inherit it, so React and others load their production builds, as
+  // a production host's do; the environment records it from here.
   process.env.NODE_ENV = 'production';
   const suite = suiteOf(suiteName);
-  const runs = Number(option(args, '--runs', 5));
-  const passed = options(args, '--config');
-  const configs = loadConfigs(
-    passed.length > 0 ? passed : DEFAULT_CONFIGS.map((path) => join(REPO, path))
+  const picked = pick(suiteName, await suite.scenarios(configs), names);
+  const scenarios = (await suite.prepare?.(picked)) ?? picked;
+  const records = scenarios.flatMap((scenario) =>
+    Array.from({ length: runs }, () => spawnChild(suiteName, scenario))
   );
-  const planned = await suite.scenarios(configs);
-  const picked = option(args, '--scenarios', undefined)?.split(',');
-  const scenarios =
-    picked === undefined
-      ? planned
-      : picked.map((name) => {
-          const scenario = planned.find((s) => s.name === name);
-          if (scenario === undefined) {
-            throw new Error(`${suiteName}: unknown scenario ${name}`);
-          }
-          return scenario;
-        });
+  return { suite, scenarios, records };
+};
 
-  const records = scenarios.flatMap(({ name, spec }) =>
-    Array.from({ length: runs }, () => {
-      const run = spawnSync(
-        process.execPath,
-        [
-          ...NODE_FLAGS,
-          __filename,
-          '--child',
-          suiteName,
-          name,
-          JSON.stringify(spec),
-        ],
-        { encoding: 'utf8', maxBuffer: 1 << 24, cwd: PACKAGE }
-      );
-      if (run.status !== 0) {
-        throw new Error(`${suiteName} ${name} run failed:\n${run.stderr}`);
-      }
-      return JSON.parse(run.stdout);
-    })
-  );
+const runSuite = async (suiteName, args) => {
+  const suite = suiteOf(suiteName);
+  const runs = suite.deterministic ? 1 : runsOption(args);
+  const passed = options(args, '--config');
+  if (passed.length > 0 && !suite.usesConfigs) {
+    throw new Error(`${suiteName} measures its own pack; it takes no --config`);
+  }
+  const configs = suite.usesConfigs
+    ? loadConfigs(
+        passed.length > 0
+          ? passed
+          : DEFAULT_CONFIGS.map((path) => join(REPO, path))
+      )
+    : [];
+  const { scenarios, records } = await measure(suiteName, {
+    runs,
+    configs,
+    names: option(args, '--scenarios', undefined)?.split(','),
+  });
 
   const { describeEnvironment, summarize } = helpers();
   const result = {
@@ -167,9 +224,22 @@ const runSuite = async (suiteName, args) => {
     about: suite.about,
     environment: describeEnvironment({
       commit: commit(),
-      packages: packageVersions(),
+      packages: Object.fromEntries(
+        VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)])
+      ),
       nodeFlags: NODE_FLAGS,
     }),
+    // Each pack's own SDK and runtime, which its rows load.
+    packs: configs.map(({ name, build = 'built', dir }) => ({
+      name,
+      build,
+      packages: Object.fromEntries(
+        ['@elastic/isomer-sdk', '@elastic/isomer-runtime'].map((each) => [
+          each,
+          versionFrom(dir, each),
+        ])
+      ),
+    })),
     runsPerScenario: runs,
     measures: suite.measures,
     scenarios: scenarios.map(({ name, about }) => ({ name, about })),
@@ -179,7 +249,7 @@ const runSuite = async (suiteName, args) => {
 
   const write = option(args, '--write', undefined);
   if (write !== undefined) {
-    writeFileSync(resolve(write), `${JSON.stringify(result, null, 2)}\n`);
+    writeFileSync(fromStart(write), `${JSON.stringify(result, null, 2)}\n`);
   }
   process.stdout.write(
     args.includes('--json')
@@ -188,23 +258,47 @@ const runSuite = async (suiteName, args) => {
   );
 };
 
+/** One run of each suite's first and last scenario: does every suite still run? */
+const smoke = async () => {
+  for (const suiteName of SUITES) {
+    const suite = suiteOf(suiteName);
+    const configs = suite.usesConfigs
+      ? loadConfigs(DEFAULT_CONFIGS.map((path) => join(REPO, path)))
+      : [];
+    const planned = await suite.scenarios(configs);
+    const names = [...new Set([planned[0].name, planned.at(-1).name])];
+    const { records } = await measure(suiteName, { runs: 1, configs, names });
+    for (const { scenario } of records) {
+      process.stdout.write(`✓ ${suiteName} ${scenario}\n`);
+    }
+  }
+};
+
 const suiteSection = (result) => {
-  const { describeEnvironmentLine, toMarkdown } = helpers();
-  const { suite, about, environment, runsPerScenario, scenarios } = result;
-  const notes = suiteOf(suite).notes?.(result) ?? [];
+  const { describeEnvironmentLine, summarize, tableText, toMarkdown } =
+    helpers();
+  const { suite, about, environment, runsPerScenario, scenarios, measures } =
+    result;
+  // Derived from the raw runs, so a saved summary can't drift from them.
+  const summary = summarize(result.runs, scenarios, measures);
+  const notes = suiteOf(suite).notes?.({ ...result, summary }) ?? [];
   return [
     `## ${suiteOf(suite).title}`,
     '',
     about,
     '',
-    `Median of ${runsPerScenario} runs per scenario. ${describeEnvironmentLine(environment)}.`,
+    `${
+      suiteOf(suite).deterministic
+        ? 'Measured once'
+        : `Median of ${runsPerScenario} runs per scenario`
+    }. ${describeEnvironmentLine(environment)}.`,
     '',
-    toMarkdown(result),
+    toMarkdown({ measures, scenarios, summary }),
     '',
     // A scenario its name describes has no `about`.
     ...scenarios
       .filter(({ about: what }) => what !== '')
-      .map(({ name, about: what }) => `- \`${name}\`: ${what}`),
+      .map(({ name, about: what }) => `- \`${tableText(name)}\`: ${what}`),
     ...notes.flatMap((note) => ['', note]),
   ].join('\n');
 };
@@ -240,7 +334,7 @@ const report = async (args) => {
   if (args.includes('--check')) {
     if (readFileSync(RESULTS_PAGE, 'utf8') !== page) {
       process.stderr.write(
-        'docs/results.md differs from baselines/; run `pnpm --filter @elastic/isomer-benchmarks bench report`.\n'
+        'docs/results.md differs from baselines/; run `pnpm --filter @elastic/isomer-benchmarks bench report`, then `pnpm docs:assemble`.\n'
       );
       process.exitCode = 1;
     }
@@ -255,8 +349,12 @@ const main = async () => {
     await child(args[1], args[2], args[3]);
   } else if (args[0] === 'report') {
     await report(args.slice(1));
+  } else if (args[0] === 'smoke') {
+    await smoke();
   } else if (args[0] === undefined) {
-    throw new Error(`Name a suite (${SUITES.join(', ')}) or \`report\`.`);
+    throw new Error(
+      `Name a suite (${SUITES.join(', ')}), \`report\` or \`smoke\`.`
+    );
   } else {
     await runSuite(args[0], args.slice(1));
   }

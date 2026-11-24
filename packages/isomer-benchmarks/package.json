@@ -20,6 +20,8 @@
   "exports": {
     ".": {
       "types": "./lib/cjs/index.d.ts",
+      "module": "./lib/esm/index.js",
+      "node": "./lib/cjs/index.js",
       "import": "./lib/esm/index.js",
       "require": "./lib/cjs/index.js",
       "default": "./lib/cjs/index.js"
@@ -42,7 +44,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@elastic/isomer-sdk": "workspace:*"
+    "@elastic/isomer-sdk": "workspace:*",
+    "esbuild": "0.28.2"
   },
   "peerDependencies": {
     "react": ">=18 <20",
@@ -55,7 +58,6 @@
     "@elastic/isomer-image-takumi": "workspace:*",
     "@elastic/isomer-primitives-charts": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
-    "@elastic/isomer-runtime": "workspace:*",
-    "esbuild": "0.28.2"
+    "@elastic/isomer-runtime": "workspace:*"
   }
 }

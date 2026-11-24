@@ -5,15 +5,15 @@ description: What a host needs to give Isomer, drawn from the benchmark results.
 
 # Sizing a host
 
-This page turns the [results](results.md) into guidance for a host. Every figure here comes from a committed baseline: the machine and Node version are on the results page. Memory figures carry across machines better than times do. Sections marked pending wait on suites that don't exist yet.
+This page turns the [raw results](results.md) into guidance for a host. Every figure here comes from a committed baseline: the machine and Node version are on the results page. Memory figures carry across machines better than times do. Sections marked pending wait on suites that don't exist yet.
 
 ## Loading
 
 A bare Node process holds about 42 MB RSS before it loads anything ([`node`](results.md#loading-each-entry)). Loading Isomer adds to that:
 
 - The SDK and the runtime with takumi, what a server that draws images needs besides a pack, reach about 72 MB RSS with 9 MB of heap held ([`host:image`](results.md#loading-each-entry)). With agent-tools instead of takumi, about 71 MB ([`host:agent`](results.md#loading-each-entry)).
-- A pack adds its own. With the SDK and the runtime, the charts pack reaches about 78 MB ([`charts:host`](results.md#loading-each-entry)) and the slides pack about 95 MB, since it loads about 640 modules on its own ([`slides:host`](results.md#loading-each-entry)).
-- The Elastic Charts engine is the heaviest single entry: about 720 modules, 13.5 MB of heap and 92 MB RSS, since it loads `@elastic/charts` with it. With the SDK and the runtime it reaches about 115 MB ([`charts-elastic:host`](results.md#loading-each-entry)). A process that only validates or resolves charts never needs it.
+- A pack adds its own. With the SDK and the runtime, the charts pack reaches about 78 MB ([`charts:host`](results.md#loading-each-entry)) and the slides pack about 95 MB ([`slides:host`](results.md#loading-each-entry)). Compare a pack's host row with `host:agent` or `host:image` for what the pack adds.
+- The Elastic Charts engine is the heaviest single entry: about 730 CommonJS modules, 17 MB of heap and 97 MB RSS, since it loads `@elastic/charts` with it. Its `./engine` and `./node` entries load as much. With the SDK and the runtime it reaches about 118 MB ([`charts-elastic:host`](results.md#loading-each-entry)). A process that only validates or resolves charts never needs it.
 
 To see what your own pack adds, [benchmark it](index.md#benchmarking-a-pack).
 
@@ -24,7 +24,7 @@ The SDK's root entry loads about 150 modules. Its subpaths load less:
 | You need | Import | Instead of |
 | --- | --- | --- |
 | Plain-text rendering | `@elastic/isomer-sdk/text`: 3 modules | the root: about 150 |
-| Schemas and validation, no React | `@elastic/isomer-sdk/schema`: about 110 modules, 3.8 MB heap | the root: about 150 modules, 7 MB heap |
+| A pack's schema helpers (`z`, `requiredString`, URL rules), no React | `@elastic/isomer-sdk/schema`: about 110 modules, 3.8 MB heap | the root: about 150 modules, 7 MB heap. The composition validator and parser are only on the root and the runtime. |
 | Chart contracts for a materializer | `@elastic/isomer-primitives-charts/schema`: about 160 modules | the pack root: about 320 |
 | Scene resolution alone | `@elastic/isomer-primitives-charts/resolve`: about 30 modules | the pack root |
 
@@ -34,10 +34,10 @@ Loading takumi costs little on its own (about 16 modules and 10 ms). Its fonts r
 
 What it costs to assemble a runtime and to validate and render a composition, apart from what a pack's own renderers do ([SDK and runtime overhead](results.md#sdk-and-runtime-overhead)):
 
-- **Assembling a runtime** builds the composition schema, so its cost grows with the number of primitive types: about 3 ms and 0.5 MB of heap for 10 types, and about 16 ms and 4 MB for 200. Assemble once per process and reuse the runtime.
+- **Assembling a runtime** builds the composition schema, so its cost grows with the number of primitive types: about 2 ms and 0.2 MB of heap for 10 types, and about 7 ms and 1.7 MB for 200, apart from defining the pack. Assemble once per process and reuse the runtime.
 - **The first validate** costs about ten times the later ones: about 2 ms against 0.2 ms at 10 types and 100 nodes, and about 5 ms at 200 types. Validate one composition at startup if the first request's latency matters.
-- **Nodes** are what a composition's cost grows with. Each node adds about 1.6 µs to validate, 2 µs to render HTML and 1.6 µs to render a snapshot. 4,000 nodes, about 60% of what the SDK's default input budget admits for nodes this small, validate in about 6.5 ms and render HTML in about 8.5 ms. Peak RSS rises about 9 KB per node, to about 125 MB at 4,000. That is the high-water mark of a process rendering them many times over, garbage included, so it overstates what one render holds.
-- **Nesting depth** costs almost nothing up to the input budget's depth limit.
+- **Validation is most of a composition's cost, and it grows with nodes:** about 2 µs per node with 8-character labels, so 4,000 nodes, about 60% of what the SDK's default input budget admits for nodes this small, validate in about 8 ms. Each surface's `render` validates first; past that, HTML adds about 1.3 ms at 4,000 nodes and a snapshot about 1.5 ms. Peak RSS rises about 14 KB per node, to about 145 MB at 4,000. That is the high-water mark of a process rendering them many times over, garbage included, so it overstates what one render holds.
+- **Nesting depth** costs almost nothing up to 24 levels, the deepest measured.
 - **Text length** costs HTML rendering, which escapes it: 900,000 label characters add about 2 ms. Validation doesn't notice it.
 
 A real pack's renderers cost more than these trivial ones. For a chart, the engine and the rasterizer dominate.
@@ -48,7 +48,13 @@ Pending: takumi's suite. It will cover font registration on the first draw, PDF 
 
 ## Concurrent draws
 
-Pending: per-draw memory under load, and the limiter settings that keep it bounded. Until then, `pnpm bench:charts` measures a burst of chart PNGs with and without a limiter. PNG, SVG and measure calls run on the libuv thread pool ([Rendering a PDF](../image-takumi/index.md#rendering-a-pdf)), so draws in flight at once each hold their memory at once.
+Pending: per-draw memory under load, and the limiter settings that keep it bounded. Until then, the charts pack's memory bench measures a burst of 16 chart PNGs with and without a limiter of 2, drawn with the Elastic Charts engine:
+
+```sh
+pnpm bench:charts --engine packages/isomer-charts-elastic/bench/engine.cjs --scenarios burst-limited,burst-unlimited
+```
+
+PNG, SVG and measure calls run on the libuv thread pool ([Rendering a PDF](../image-takumi/index.md#rendering-a-pdf)), so draws in flight at once each hold their memory at once.
 
 ## Containers and heap limits
 

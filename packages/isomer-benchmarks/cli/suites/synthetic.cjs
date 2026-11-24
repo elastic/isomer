@@ -10,7 +10,13 @@
 
 const { join } = require('node:path');
 
-const DEFAULTS = { primitives: 10, nodes: 100, depth: 1, characters: 800 };
+const LABEL_CHARACTERS = 8;
+const DEFAULTS = {
+  primitives: 10,
+  nodes: 100,
+  depth: 1,
+  characters: 100 * LABEL_CHARACTERS,
+};
 
 const AXES = {
   primitives: {
@@ -21,7 +27,7 @@ const AXES = {
   nodes: {
     unit: 'node',
     points: [10, 100, 1000, 4000],
-    about: (n) => `${n} nodes, flat`,
+    about: (n) => `${n} nodes, flat, ${LABEL_CHARACTERS} label characters each`,
   },
   depth: {
     unit: 'level of nesting',
@@ -40,7 +46,16 @@ const PLAN = Object.fromEntries(
   Object.entries(AXES).flatMap(([axis, { points, about }]) =>
     points.map((point) => [
       `${axis}-${point}`,
-      { axis, about: about(point), options: { ...DEFAULTS, [axis]: point } },
+      {
+        axis,
+        about: about(point),
+        options: {
+          ...DEFAULTS,
+          [axis]: point,
+          // More nodes keep each label's length, so text doesn't grow with them.
+          ...(axis === 'nodes' ? { characters: point * LABEL_CHARACTERS } : {}),
+        },
+      },
     ])
   )
 );
@@ -66,9 +81,9 @@ const MEASURES = [
   { key: 'runtimeHeapMb', label: 'Runtime heap (MB)', digits: 1 },
   { key: 'validateFirstMs', label: 'First validate (ms)', digits: 2 },
   { key: 'validateMs', label: 'Validate (ms)', digits: 2 },
-  { key: 'htmlMs', label: 'HTML (ms)', digits: 2 },
-  { key: 'textMs', label: 'Text (ms)', digits: 2 },
-  { key: 'snapshotMs', label: 'Snapshot (ms)', digits: 2 },
+  { key: 'htmlMs', label: 'Validate + HTML (ms)', digits: 2 },
+  { key: 'textMs', label: 'Validate + text (ms)', digits: 2 },
+  { key: 'snapshotMs', label: 'Validate + snapshot (ms)', digits: 2 },
   { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
 ];
 
@@ -92,7 +107,7 @@ const perUnit = ({ summary }) => {
   return [
     "Each added unit along an axis costs, in microseconds, from the axis's first and last points:",
     '',
-    '| Axis | Per | Assemble (µs) | Validate (µs) | HTML (µs) | Snapshot (µs) |',
+    '| Axis | Per | Assemble (µs) | Validate (µs) | Validate + HTML (µs) | Validate + snapshot (µs) |',
     '| --- | --- | ---: | ---: | ---: | ---: |',
     ...rows,
   ].join('\n');
@@ -100,7 +115,7 @@ const perUnit = ({ summary }) => {
 
 module.exports = {
   title: 'SDK and runtime overhead',
-  about: `A generated pack whose renderers each return one element or line, so the cost is the SDK's and the runtime's: assembling a runtime (which builds the composition schema), validating, and rendering. Each axis moves alone from ${DEFAULTS.primitives} primitive types, ${DEFAULTS.nodes} flat nodes and ${DEFAULTS.characters} label characters. Times past the first validate are the median of repeated calls in the same process.`,
+  about: `A generated pack whose renderers each return one element or line, so the cost is the SDK's and the runtime's: assembling a runtime (which builds the composition schema), validating, and rendering. Each axis moves alone from ${DEFAULTS.primitives} primitive types, ${DEFAULTS.nodes} flat nodes and ${DEFAULTS.characters} label characters. Every composition uses one of the pack's types, so the primitive axis changes only the pack. Assembling excludes defining the pack, which a host has already done. Each surface's \`render\` validates first, so the render columns include a validate. Times past the first validate are the median of repeated calls in the same process.`,
   measures: MEASURES,
   // The synthetic pack is the suite's own; a config's pack plays no part.
   scenarios: async () =>
@@ -119,21 +134,20 @@ module.exports = {
       synthTree,
     } = require(join(__dirname, '../../lib/cjs/index.js'));
 
+    const pack = createSyntheticPack({
+      primitives: options.primitives,
+      fieldsPerPrimitive: 4,
+    });
     const { step, records } = createStepRecorder();
     const runtime = await step('assemble', () =>
       createIsomerRuntime({
-        packs: [
-          createSyntheticPack({
-            primitives: options.primitives,
-            fieldsPerPrimitive: 4,
-          }),
-        ],
+        packs: [pack],
         frames: { synthetic: syntheticFrame },
       })
     );
     const [assembled] = records;
     const tree = synthTree({
-      types: options.primitives,
+      types: 1,
       nodes: options.nodes,
       depth: options.depth,
       labelCharacters: options.characters,

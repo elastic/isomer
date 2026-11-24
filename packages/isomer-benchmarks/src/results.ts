@@ -42,6 +42,7 @@ export interface Environment {
   nodeFlags: readonly string[];
   env: {
     NODE_ENV: string | null;
+    NODE_OPTIONS: string | null;
     MALLOC_ARENA_MAX: string | null;
     UV_THREADPOOL_SIZE: string | null;
   };
@@ -105,13 +106,46 @@ export const summarize = (
     })
   );
 
-const cgroupMemoryLimitMb = (): number | null => {
-  try {
-    const raw = readFileSync('/sys/fs/cgroup/memory.max', 'utf8').trim();
-    return raw === 'max' ? null : Number(raw) / 1024 / 1024;
-  } catch {
+/**
+ * The lowest `memory.max` from the process's own cgroup v2 up to the root,
+ * in bytes; `null` when nothing above it sets one. `selfCgroup` is
+ * `/proc/self/cgroup`; `readMax` reads a cgroup directory's `memory.max`.
+ */
+export const cgroupLimitBytes = (
+  selfCgroup: string,
+  readMax: (cgroup: string) => string | undefined
+): number | null => {
+  const line = selfCgroup.split('\n').find((each) => each.startsWith('0::'));
+  if (line === undefined) {
     return null;
   }
+  const parts = line.slice(3).trim().split('/').filter(Boolean);
+  const limits = parts
+    .map((_, at) => `/${parts.slice(0, parts.length - at).join('/')}`)
+    .concat('/')
+    .map((cgroup) => readMax(cgroup)?.trim())
+    .filter((raw): raw is string => raw !== undefined && raw !== 'max')
+    .map(Number);
+  return limits.length === 0 ? null : Math.min(...limits);
+};
+
+const readOr = (path: string): string | undefined => {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch {
+    return undefined;
+  }
+};
+
+const cgroupMemoryLimitMb = (): number | null => {
+  const self = readOr('/proc/self/cgroup');
+  if (self === undefined) {
+    return null;
+  }
+  const bytes = cgroupLimitBytes(self, (cgroup) =>
+    readOr(`/sys/fs/cgroup${cgroup === '/' ? '' : cgroup}/memory.max`)
+  );
+  return bytes === null ? null : bytes / 1024 / 1024;
 };
 
 export const describeEnvironment = ({
@@ -130,6 +164,7 @@ export const describeEnvironment = ({
   nodeFlags,
   env: {
     NODE_ENV: process.env.NODE_ENV ?? null,
+    NODE_OPTIONS: process.env.NODE_OPTIONS ?? null,
     MALLOC_ARENA_MAX: process.env.MALLOC_ARENA_MAX ?? null,
     UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE ?? null,
   },
@@ -145,7 +180,7 @@ export const describeEnvironmentLine = ({
   cpus: cores,
   totalMemoryMb,
   cgroupMemoryLimitMb: limit,
-  env: { NODE_ENV: nodeEnv },
+  env: { NODE_ENV: nodeEnv, NODE_OPTIONS: nodeOptions },
   commit,
 }: Environment): string =>
   [
@@ -155,8 +190,12 @@ export const describeEnvironmentLine = ({
     `${Math.round(totalMemoryMb / 1024)} GB`,
     ...(limit === null ? [] : [`cgroup limit ${Math.round(limit)} MB`]),
     `NODE_ENV ${nodeEnv ?? 'unset'}`,
+    ...(nodeOptions === null ? [] : [`NODE_OPTIONS \`${nodeOptions}\``]),
     ...(commit === null ? [] : [`commit \`${commit.slice(0, 8)}\``]),
   ].join(', ');
+
+/** Escapes text for a Markdown table cell. */
+export const tableText = (text: string): string => text.replace(/\|/g, '\\|');
 
 const cell = (spread: Spread | undefined, digits: number) => {
   if (spread === undefined) {
@@ -178,7 +217,7 @@ export const toMarkdown = ({
     `| --- | ${measures.map(() => '---:').join(' | ')} |`,
     ...scenarios.map(
       ({ name }) =>
-        `| \`${name}\` | ${measures
+        `| \`${tableText(name)}\` | ${measures
           .map(({ key, digits }) => cell(summary[name]?.[key], digits))
           .join(' | ')} |`
     ),

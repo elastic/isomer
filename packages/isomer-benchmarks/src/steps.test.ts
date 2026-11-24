@@ -34,7 +34,7 @@ const fakeProcess = () => {
 };
 
 describe('createStepRecorder', () => {
-  it('separates what a step keeps from what it only allocated', async () => {
+  it('separates what a step keeps from its net growth before a GC', async () => {
     const { state, probe } = fakeProcess();
     const { step, records } = createStepRecorder(probe);
     const result = await step('build', () => {
@@ -51,7 +51,7 @@ describe('createStepRecorder', () => {
         step: 'build',
         ms: 12,
         heapRetainedMb: 2,
-        heapAllocatedMb: 8,
+        heapGrowthMb: 8,
         rssDeltaMb: 4,
         peakRaiseMb: 2,
       },

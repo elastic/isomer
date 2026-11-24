@@ -35,7 +35,7 @@
     "check:pack-consumer": "node scripts/check_pack_consumer.js",
     "check:studio-consumer": "node scripts/check_studio_consumer.js",
     "check:module-graph": "node scripts/check_module_graph.js",
-    "check:benchmarks": "pnpm --filter @elastic/isomer-benchmarks bench report --check",
+    "check:benchmarks": "pnpm --filter @elastic/isomer-benchmarks bench report --check && pnpm --filter @elastic/isomer-benchmarks bench smoke",
     "check:memory": "pnpm -r --if-present bench:check",
     "check:pack-contents": "node scripts/check_pack_contents.js",
     "licenses:report": "node scripts/licenses_report.js",

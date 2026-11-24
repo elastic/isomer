@@ -11,8 +11,8 @@ export interface StepRecord {
   ms: number;
   /** Heap still held after the step and a GC, with its result kept alive. */
   heapRetainedMb: number;
-  /** Heap grown during the step, before the GC. */
-  heapAllocatedMb: number;
+  /** Net heap growth across the step, before the GC; a GC during the step hides what it collected. */
+  heapGrowthMb: number;
   rssDeltaMb: number;
   /** How far the step raised the process's high-water RSS. */
   peakRaiseMb: number;
@@ -74,14 +74,14 @@ export const createStepRecorder = (
       const started = now();
       const result = await run();
       const ms = now() - started;
-      const heapAllocated = heapUsed() - heapBefore;
+      const heapGrowth = heapUsed() - heapBefore;
       held.push(result);
       gc();
       records.push({
         step: name,
         ms,
         heapRetainedMb: mb(heapUsed() - heapBefore),
-        heapAllocatedMb: mb(heapAllocated),
+        heapGrowthMb: mb(heapGrowth),
         rssDeltaMb: mb(rss() - rssBefore),
         peakRaiseMb: mb(peakRss() - peakBefore),
       });
