@@ -74,7 +74,11 @@ const loadEntry = async (entry: string): Promise<Record<string, unknown>> => {
   try {
     return (await import(entry)) as Record<string, unknown>;
   } catch (error) {
-    const { code } = error as { code?: unknown };
+    // The error does not name the module `require()` refused, which may be one the entry requires.
+    const code =
+      typeof error === 'object' && error !== null && 'code' in error
+        ? error.code
+        : undefined;
     if (typeof code === 'string' && REQUIRE_REFUSED.has(code)) {
       return importNative(pathToFileURL(entry).href);
     }
