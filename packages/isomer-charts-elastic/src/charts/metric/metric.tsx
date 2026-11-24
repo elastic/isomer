@@ -189,17 +189,8 @@ const secondaryOf = (
     return undefined;
   }
   const { badge } = secondary;
-  // Headless Elastic Charts draws props, never an element, so off the browser
-  // plain secondary text goes as props, in Elastic Charts' contrast color.
-  if (badge === undefined && env.environment === 'browser') {
-    return <PlainSecondary secondary={secondary} styles={env} />;
-  }
   if (badge === undefined) {
-    return {
-      value: secondary.text,
-      ...(secondary.label === undefined ? {} : { label: secondary.label }),
-      labelPosition: secondary.labelPlacement,
-    } satisfies SecondaryMetricProps;
+    return <PlainSecondary secondary={secondary} styles={env} />;
   }
   const props: SecondaryMetricProps = {
     value: secondary.text,

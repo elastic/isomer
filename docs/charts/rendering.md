@@ -17,7 +17,7 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 
 createIsomerRuntime({ packs: [chartsPack] });
 
-// A host's own renderer that draws on Node; the pack ships none.
+// A renderer that draws on Node, such as the Elastic Charts engine's; the pack ships none.
 declare const hostImageRenderer: ReactSceneRenderer;
 
 const imagePack = createChartsPack({ sceneRenderers: [hostImageRenderer] });

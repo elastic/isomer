@@ -26,6 +26,29 @@ describe('splitDiagnostics', () => {
     });
   });
 
+  it.each([
+    'dist/cjs/utils/themes/theme.d.ts',
+    'dist/esm/utils/themes/theme.d.mts',
+  ])(
+    'allows it where Elastic Charts 73.5.0 keeps its declarations (%s)',
+    (path) => {
+      const moved = ELASTIC_CHARTS.replace(
+        'dist/utils/themes/theme.d.ts',
+        path
+      );
+      expect(moved).not.toBe(ELASTIC_CHARTS);
+      expect(splitDiagnostics(`${moved}\n`)).toEqual({
+        errors: [],
+        known: [moved],
+      });
+    }
+  );
+
+  it('rejects the same error from another Elastic Charts declaration', () => {
+    const other = ELASTIC_CHARTS.replace('utils/themes/theme', 'utils/other');
+    expect(splitDiagnostics(`${other}\n`).errors).toEqual([other]);
+  });
+
   it('matches the known error in CRLF output and returns it without `\r`', () => {
     expect(
       splitDiagnostics(`${ELASTIC_CHARTS}\r\n${PACKED_ISOMER}\r\n`)

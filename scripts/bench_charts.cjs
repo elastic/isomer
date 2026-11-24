@@ -15,7 +15,8 @@
 //
 // `--engine` names a CommonJS module exporting `{ createRenderers, bounds }`:
 // the scene renderers to draw with, and the ceilings `--check` holds each
-// scenario's median run to, in MB. Without one, only the no-engine scenarios
+// scenario's median run to, in MB. An optional `stylesheet(theme)` export is
+// CSS the engine's markup needs, put before the snapshot's own. Without one, only the no-engine scenarios
 // run, held to `PACK_BOUNDS`. `--check` runs the bounded scenarios and fails
 // when a median exceeds its bound, and refuses a scenario with no bound; with
 // `--json`, its report goes to stderr. Run `pnpm build` first: this loads the
@@ -143,10 +144,9 @@ const child = async (scenario, engine, repeat, cacheMaxBytes, budgetValues) => {
     xyChartExamples,
   } = require('@elastic/isomer-primitives-charts');
   const { createTakumiImageBackend } = require('@elastic/isomer-image-takumi');
-  const sceneRenderers =
-    SCENARIOS[scenario].engine === false
-      ? []
-      : require(engine).createRenderers();
+  const { createRenderers, stylesheet } =
+    SCENARIOS[scenario].engine === false ? {} : require(engine);
+  const sceneRenderers = createRenderers ? createRenderers() : [];
 
   const fonts = [400, 500, 600, 700].map((weight) => ({
     name: 'Inter',
@@ -290,7 +290,11 @@ const child = async (scenario, engine, repeat, cacheMaxBytes, budgetValues) => {
     });
     draws.push(ms(drawStart));
     const rasterStart = process.hrtime.bigint();
-    const fitted = await takumi.fit(input);
+    const fitted = await takumi.fit(
+      stylesheet
+        ? { ...input, css: `${stylesheet(theme)}\n${input.css}` }
+        : input
+    );
     const png = await takumi.png(fitted, { scale });
     rasters.push(ms(rasterStart));
     pngBytes = Math.max(pngBytes, png.length);

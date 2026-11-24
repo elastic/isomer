@@ -162,3 +162,26 @@ describe('SDK ./schema', () => {
     }
   );
 });
+
+describe.each(['.', './engine', './testing'])(
+  'charts-elastic %s',
+  (entryKey) => {
+    const forbidden = RULES['@elastic/isomer-charts-elastic'][entryKey];
+
+    it('allows Elastic Charts itself', async () => {
+      expect(
+        await forbiddenReachable(entryImporting('@elastic/charts'), forbidden)
+      ).toEqual([]);
+    });
+
+    it('rejects the headless entry, directly or through a relative module', async () => {
+      const specifier = '@elastic/charts/headless';
+      expect(
+        await forbiddenReachable(entryImporting(specifier), forbidden)
+      ).toEqual([specifier]);
+      expect(
+        await forbiddenReachable(entryReaching(specifier), forbidden)
+      ).toEqual([specifier]);
+    });
+  }
+);

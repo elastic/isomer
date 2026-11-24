@@ -51,6 +51,12 @@ export const RULES = {
       '@elastic/isomer-primitives-charts',
     ],
   },
+  // `@elastic/charts/headless` exists from 73.5.0; only `./node` needs it, so the rest load on any supported release.
+  '@elastic/isomer-charts-elastic': {
+    '.': ['@elastic/charts/headless'],
+    './engine': ['@elastic/charts/headless'],
+    './testing': ['@elastic/charts/headless'],
+  },
 };
 
 const coversPackage = (specifier, name) =>
