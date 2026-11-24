@@ -27,6 +27,10 @@ export {
   checkInputBudget,
   isInputRefusal,
 } from './input_budget';
+export {
+  type CompositionJsonSchemaOptions,
+  buildCompositionJsonSchema,
+} from './json_schema';
 export { type IssueRoot, createNodeIssueFormatter } from './node_issues';
 export {
   ASSET_URL_MESSAGE,

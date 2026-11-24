@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { z, type ZodType } from 'zod';
 
+import type { Composition } from '../composition/composition';
 import { STRUCTURED_VALUE_FORMATS } from '../composition/structured_value';
 import type {
   AnyPrimitiveDefinition,
@@ -17,7 +18,10 @@ import {
   definePrimitive,
   unresolvedBodyNodeSchema,
 } from '../define/primitive_module';
-import { structuredValueSchema as rootStructuredValueSchema } from '../entries';
+import {
+  buildCompositionJsonSchema as rootBuildCompositionJsonSchema,
+  structuredValueSchema as rootStructuredValueSchema,
+} from '../entries';
 
 import {
   authoringSchemaSubset,
@@ -25,6 +29,10 @@ import {
 } from './authoring_schema';
 import { resolveVocabulary } from './composition_schema';
 import { buildCompositionJsonSchema } from './json_schema';
+import {
+  createCompositionParser,
+  createCompositionValidator,
+} from './validation';
 import { namedColorSchema } from './value_schemas';
 
 const renderers = {
@@ -72,6 +80,71 @@ const defsOf = (
   >;
 
 describe('buildCompositionJsonSchema', () => {
+  it('restores the registry when two schemas claim one `$defs` name', () => {
+    const alpha = leaf('alpha');
+    const member = resolveVocabulary([alpha]).members.get('alpha')!;
+    const metadata = { description: 'Kept' };
+    z.globalRegistry.add(member, metadata);
+    try {
+      const before = buildCompositionJsonSchema([alpha]);
+      expect(() =>
+        buildCompositionJsonSchema([alpha, leaf('bodyNode')])
+      ).toThrow();
+      expect(z.globalRegistry.get(member)).toEqual(metadata);
+      expect(buildCompositionJsonSchema([alpha])).toEqual(before);
+    } finally {
+      z.globalRegistry.remove(member);
+    }
+  });
+
+  it('leaves a loose primitive open', () => {
+    const loose = define({
+      type: 'loose',
+      catalog: {
+        type: 'loose',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.looseObject({ type: z.literal('loose') }),
+      renderers,
+    });
+    const projected = defsOf(buildCompositionJsonSchema([loose])).loose as {
+      additionalProperties?: unknown;
+    };
+    expect(projected.additionalProperties).toEqual({});
+  });
+
+  it('leaves open an object the validator keeps unknown keys on', () => {
+    const projected = buildCompositionJsonSchema([leaf('alpha')]) as {
+      properties: { meta: { additionalProperties?: boolean } };
+    };
+    // `meta.extra` is a key `Composition` does not declare.
+    const composition = {
+      type: 'view',
+      meta: { extra: true },
+      body: [{ type: 'alpha' }],
+    } as Composition;
+    expect(projected.properties.meta).not.toHaveProperty(
+      'additionalProperties'
+    );
+    const checked = createCompositionValidator([leaf('alpha')])(composition);
+    expect(checked.errors).toEqual([]);
+    expect(checked.composition?.meta).toEqual({ extra: true });
+  });
+
+  it('keeps a primitive closed', () => {
+    expect(
+      defsOf(buildCompositionJsonSchema([leaf('alpha')])).alpha
+    ).toMatchObject({ additionalProperties: false });
+  });
+
+  it('is exported from the root entry', () => {
+    expect(rootBuildCompositionJsonSchema).toBe(buildCompositionJsonSchema);
+  });
+
   it('names a schemaFor container and its recursive body-node reference', () => {
     const projected = buildCompositionJsonSchema([container, leaf('alpha')]);
     const defs = defsOf(projected);
@@ -183,6 +256,20 @@ describe('buildAuthoringJsonSchema', () => {
     expect(Array.isArray((defs.tone as { enum?: unknown }).enum)).toBe(true);
     expect(defs.bodyNode).toBeTypeOf('object');
     expect(defs.metric).toBeTypeOf('object');
+  });
+
+  it('closes an object a parse strips unknown keys from', () => {
+    const projected = buildAuthoringJsonSchema([leaf('alpha')]) as {
+      properties: { meta: { additionalProperties?: boolean } };
+    };
+    const parsed = createCompositionParser([leaf('alpha')])({
+      type: 'view',
+      meta: { extra: true },
+      body: [{ type: 'alpha' }],
+    });
+    expect(projected.properties.meta.additionalProperties).toBe(false);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.composition?.meta).toEqual({});
   });
 
   it("names a pack's own union with the root entry's structuredValueSchema as structuredValue", () => {
