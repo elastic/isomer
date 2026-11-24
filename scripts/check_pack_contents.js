@@ -58,9 +58,12 @@ const packedPath = (from, target) => {
   return posix.normalize(posix.join(posix.dirname(from), decodeURI(path)));
 };
 
+// `node scripts/check_pack_contents.js [root]` checks another workspace root.
+const [root] = process.argv.slice(2);
+
 let allPassed = true;
 
-for (const pkg of packedPackages(workspacePackages(), isPublishable)) {
+for (const pkg of packedPackages(workspacePackages(root), isPublishable)) {
   const { exports: exportMap, name, files: filesField = [] } = pkg.manifest;
 
   let packOutput;
