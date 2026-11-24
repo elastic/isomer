@@ -94,10 +94,31 @@ describe('createElasticChartsNodeRenderer', () => {
     }
   );
 
-  it('draws the same markup for the same Scene', () => {
-    const { scene } = charts[0]!;
-    const draw = () => renderer.render(scene, { environment: 'node' });
-    expect(JSON.stringify(draw())).toBe(JSON.stringify(draw()));
+  const snapshotOf = (body: (typeof xyChartExamples)[number]['node'][]) =>
+    createIsomerRuntime({
+      packs: [createChartsPack({ sceneRenderers: [renderer] })],
+      frames: { charts: chartsFrame },
+    }).surfaces.snapshot.render({ type: 'view', body }).html;
+
+  it('keeps the ids of roots with distinct React id prefixes apart', () => {
+    const { scene } = identified[0]!;
+    const idIn = (identifierPrefix: string) =>
+      chartIdOf(
+        renderToStaticMarkup(
+          createElement(
+            'div',
+            null,
+            renderer.render(scene, { environment: 'node' })
+          ),
+          { identifierPrefix }
+        )
+      );
+    expect(idIn('panel-1-')).not.toBe(idIn('panel1-'));
+  });
+
+  it('draws the same markup for the same page', () => {
+    const { node } = xyChartExamples[0]!;
+    expect(snapshotOf([node, node])).toBe(snapshotOf([node, node]));
   });
 
   it('leaves a tag cloud, which `renderChart` cannot draw, to the next renderer', () => {
@@ -143,17 +164,14 @@ describe('createElasticChartsNodeRenderer', () => {
 
   it('draws two copies of one chart on a snapshot page with their own ids, marks and size', () => {
     const { node } = xyChartExamples[0]!;
-    const { html } = createIsomerRuntime({
-      packs: [createChartsPack({ sceneRenderers: [renderer] })],
-      frames: { charts: chartsFrame },
-    }).surfaces.snapshot.render({ type: 'view', body: [node, node] });
-    const charts = html.split('class="echChart"').slice(1);
+    const charts = snapshotOf([node, node]).split('class="echChart"').slice(1);
     expect(charts).toHaveLength(2);
     const ids = charts.map(chartIdOf);
     expect(new Set(ids).size).toBe(2);
     charts.forEach((chart, index) => {
       const other = ids[1 - index]!;
       expect(chart).toContain(`id="${ids[index]}-xy-clip-1"`);
+      expect(chart).toContain(`url(#${ids[index]}-xy-clip-1)`);
       expect(chart).not.toContain(other);
       // The line and its axis labels are in the page, at the pack's box.
       expect(chart).toMatch(/^ style="width:\d+px;height:\d+px"/);
@@ -229,7 +247,9 @@ describe('createElasticChartsNodeRenderer', () => {
         )
       )
     );
-    expect(markup).toContain('last week');
+    expect(markup).toContain(
+      '<span class="echScreenReaderOnly">last week </span>'
+    );
     expect(markup).toContain('+5%');
     expect(markup).not.toContain('role="button"');
     expect(markup).not.toContain('tabindex');

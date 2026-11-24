@@ -45,16 +45,39 @@ const sceneId = ({ table: _table, ...drawn }: Scene): string =>
   `ech-${hash(JSON.stringify(drawn))}`;
 
 /**
- * Elastic Charts prefixes every id in a chart's markup with the chart's.
- * `id` names the Scene, so it is the same on every render and differs
- * between charts; `useId` tells apart two drawings of one Scene on a page.
+ * `useId`'s value in letters and digits, which Elastic Charts leaves as they
+ * are in its clip-path ids: each other UTF-16 unit, and `Z`, becomes `Z` and
+ * four hex digits, so distinct values stay distinct.
  */
-const StaticChart = ({ html, id }: { html: string; id: string }) => {
-  const occurrence = useId().replace(/[^0-9A-Za-z]/g, '');
+const encodeId = (id: string): string =>
+  id.replace(
+    /[^0-9A-Ya-z]/g,
+    (unit) => `Z${unit.charCodeAt(0).toString(16).padStart(4, '0')}`
+  );
+
+/**
+ * Elastic Charts prefixes every id in a chart's markup with the chart's.
+ * The Scene's id is the same on every render and differs between charts;
+ * `useId` tells apart two drawings of one Scene on a page.
+ */
+const StaticChart = ({
+  scene,
+  size,
+  specs,
+}: {
+  scene: Scene;
+  size: NonNullable<Scene['size']>;
+  specs: ReactNode;
+}) => {
+  const id = `${sceneId(scene)}-${encodeId(useId())}`;
   return (
     <div
       dangerouslySetInnerHTML={{
-        __html: html.replaceAll(id, `${id}-${occurrence}`),
+        __html: renderChart(
+          <Chart id={id} size={size}>
+            {specs}
+          </Chart>
+        ),
       }}
     />
   );
@@ -82,13 +105,12 @@ export const createElasticChartsNodeRenderer = (
     if (size === undefined) {
       throw new Error('The Elastic Charts Node renderer needs a Scene size.');
     }
-    const id = sceneId(scene);
-    const html = renderChart(
-      <Chart id={id} size={size}>
-        {sceneSpecs(scene, env, options)}
-      </Chart>
+    return (
+      <StaticChart
+        {...{ scene, size }}
+        specs={sceneSpecs(scene, env, options)}
+      />
     );
-    return <StaticChart html={html} id={id} />;
   },
 });
 
