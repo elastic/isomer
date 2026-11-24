@@ -7,7 +7,7 @@
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { afterAll, describe, expect, it } from 'vitest';
 
@@ -213,6 +213,17 @@ describe('SDK CommonJS Markdown bundle', () => {
         cjsEntryRequiring("module.exports = require('../parsers.js');")
       )
     ).toEqual([]);
+  });
+
+  it('ignores a file no entry reaches, even one that requires a bundled package', async () => {
+    const entry = cjsEntryRequiring(
+      "module.exports = require('../parsers.js');"
+    );
+    writeFileSync(
+      join(dirname(entry), 'unreached.js'),
+      "require('mdast-util-gfm');"
+    );
+    expect(await specifiersOf(entry)).toEqual([]);
   });
 
   it.each([
