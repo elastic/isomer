@@ -12,6 +12,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  layoutWidthOf,
   nodeAnchor,
   type PrimitiveNode,
 } from '@elastic/isomer-sdk';
@@ -455,6 +456,93 @@ describe('createIsomerRuntime', () => {
     }>;
     expect(rendered).toMatchObject({ width: 800, height: 120 });
     expect(element.props).toMatchObject({ width: 800, height: 120 });
+  });
+
+  describe('a frame that states its content width', () => {
+    // Draws the width it is told, and is as tall as the width it is measured at.
+    const widthPrimitive = definePrimitive<PrimitiveNode>({
+      type: 'width',
+      catalog: {
+        type: 'width',
+        purpose: 'Width fixture.',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'width' },
+      },
+      examples: [{ type: 'width' }],
+      schema: z.object({ type: z.literal('width') }),
+      metrics: { snapshotHeight: (_node, options) => options?.width ?? -1 },
+      renderers: {
+        react: (_node, { context }) =>
+          createElement('i', null, String(layoutWidthOf(context))),
+        text: () => 'width',
+        markdown: () => md.paragraph('width'),
+      },
+    });
+    const padded: Frame<string> = {
+      ...testFrame,
+      contentWidth: (width) => width - 100,
+    };
+    const runtimeWith = (frame: Frame<string>) =>
+      createIsomerRuntime({
+        packs: [snapshotPackOf(widthPrimitive)],
+        frames: { card: frame },
+      });
+    const spec: Composition = { type: 'view', body: [{ type: 'width' }] };
+
+    it('tells each node the content width of the page it draws', () => {
+      const { snapshot } = runtimeWith(padded).surfaces;
+      expect(snapshot.render(spec).html).toContain('<i>500</i>');
+      expect(snapshot.render(spec, { width: 1532 }).html).toContain(
+        '<i>1432</i>'
+      );
+      expect(
+        snapshot.renderPages([spec, spec], { width: 800 }).pages[1]?.html
+      ).toContain('<i>700</i>');
+    });
+
+    it('estimates each node at that width', () => {
+      const { snapshot } = runtimeWith(padded).surfaces;
+      // `testFrame` adds 40 per node to the node's own estimate.
+      expect(snapshot.render(spec).height).toBe(500 + 40);
+      expect(snapshot.render(spec, { width: 1532 }).height).toBe(1432 + 40);
+    });
+
+    it('hands estimateHeight the width of the page it measures', () => {
+      const seen: (number | undefined)[] = [];
+      const recording: Frame<string> = {
+        ...padded,
+        estimateHeight: (composition, dispatcher, viewport) => {
+          seen.push(viewport?.width);
+          return testFrame.estimateHeight(composition, dispatcher, viewport);
+        },
+      };
+      const { snapshot } = runtimeWith(recording).surfaces;
+      snapshot.render(spec);
+      snapshot.render(spec, { width: 900 });
+      expect(seen).toEqual([600, 900]);
+    });
+
+    it('draws and measures a node with no surround at the whole page', () => {
+      const bare = runtimeWith(padded).surfaces.snapshot.renderNode({
+        type: 'width',
+      });
+      expect(bare.html).toContain('<i>600</i>');
+      expect(bare).toMatchObject({ width: 600, height: 600 + 40 });
+    });
+
+    it('tells nodes no width under a frame that states none', () => {
+      const { snapshot } = runtimeWith(testFrame).surfaces;
+      const rendered = snapshot.render(spec, { width: 800 });
+      expect(rendered.html).toContain('<i>undefined</i>');
+      expect(rendered.height).toBe(-1 + 40);
+    });
+
+    it('tells nodes the width an html render states', () => {
+      const { html } = runtimeWith(padded).surfaces;
+      expect(html.render(spec).html).toContain('<i>undefined</i>');
+      expect(html.render(spec, { width: 640 }).html).toContain('<i>640</i>');
+    });
   });
 
   it('emits rules a style adapter discovers while the snapshot surface renders', () => {

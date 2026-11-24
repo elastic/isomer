@@ -13,19 +13,19 @@ Duplicate types throw at construction, with the label in front of the message so
 
 ## What it exposes
 
-| Method                                        | Returns                                                                         |
-| --------------------------------------------- | ------------------------------------------------------------------------------- |
-| `renderOn(surface, node, extras)`             | The surface's output, or `undefined` when the node is hidden or has no renderer |
-| `renderReact(node, context?)`                 | `ReactNode`                                                                     |
-| `renderSnapshot(node, context, theme, key)`   | `ReactNode` — the `react` renderer, gated on `snapshot` visibility and keyed    |
-| `renderText(node)`                            | `string` — empty when nothing rendered                                          |
-| `renderMarkdown(node)`                        | `string` — `md` content serialized; empty when nothing rendered                 |
-| `renderMarkdownContent(node)`                 | `MarkdownContent` — the child's content, empty when it is hidden                |
-| `renderSlack(node, collector?, { baseUrl }?)` | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it            |
-| `collectStyles(node, styles, context)`        | nothing; the collector is mutated                                               |
-| `estimateSnapshotHeight(node)`                | `number` — `0` when hidden or unmeasured                                        |
-| `validate(node, path, errors)`                | nothing; errors are appended                                                    |
-| `definitions`, `getDefinition(node)`          | the inventory, and one entry — `getDefinition` throws on an unknown type        |
+| Method                                        | Returns                                                                            |
+| --------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `renderOn(surface, node, extras)`             | The surface's output, or `undefined` when the node is hidden or has no renderer    |
+| `renderReact(node, context?)`                 | `ReactNode`                                                                        |
+| `renderSnapshot(node, context, theme, key)`   | `ReactNode` — the `react` renderer, gated on `snapshot` visibility and keyed       |
+| `renderText(node)`                            | `string` — empty when nothing rendered                                             |
+| `renderMarkdown(node)`                        | `string` — `md` content serialized; empty when nothing rendered                    |
+| `renderMarkdownContent(node)`                 | `MarkdownContent` — the child's content, empty when it is hidden                   |
+| `renderSlack(node, collector?, { baseUrl }?)` | `readonly T['slackBlock'][]` — `SlackBlock` unless the pack binds it               |
+| `collectStyles(node, styles, context)`        | nothing; the collector is mutated                                                  |
+| `estimateSnapshotHeight(node, { width }?)`    | `number` — `0` when hidden or unmeasured; `width` reaches `metrics.snapshotHeight` |
+| `validate(node, path, errors)`                | nothing; errors are appended                                                       |
+| `definitions`, `getDefinition(node)`          | the inventory, and one entry — `getDefinition` throws on an unknown type           |
 
 ## What every render goes through
 

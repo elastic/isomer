@@ -13,6 +13,7 @@ import {
   definePrimitive,
   definePrimitivePack,
   type Frame,
+  layoutWidthOf,
   NODE_ANCHOR_ATTRIBUTE,
   primitiveExamples,
   type PrimitiveNode,
@@ -641,7 +642,29 @@ CLOSED`);
     const [nested] = seen;
     expect(nested).toBeInstanceOf(HostContext);
     expect(nested?.size?.width).toBeLessThan(968);
+    // Any pack's node reads the room its panel leaves it.
+    expect(layoutWidthOf(nested)).toBe(nested?.size?.width);
     expect(nested?.onEvent).toBe(nested?.onEvent);
+
+    // A grid told no width lays out fluidly: its nominal box is no room to count on.
+    seen.length = 0;
+    renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        probing.surfaces.react.render(view(grid), { heading: false })
+      )
+    );
+    expect(seen[0]?.size).toBeDefined();
+    expect(layoutWidthOf(seen[0])).toBeUndefined();
+
+    // A width only the surface states: (1000 − 47 × 8) × 24/48 + 23 × 8 for the half-width panel.
+    seen.length = 0;
+    probing.surfaces.html.render(view(grid), { width: 1000 });
+    expect(seen.map((context) => layoutWidthOf(context))).toEqual(
+      seen.map(() => 496)
+    );
+    expect(seen.length).toBeGreaterThan(0);
   });
 
   it('sizes nested charts inside a frozen context that already has a size', () => {
@@ -912,6 +935,18 @@ CLOSED`);
     // + 8 + 3 rows (3×20 + 2×8 = 76); closed section: header 24; 3 gaps × 16.
     expect(gridSnapshotHeight(sectioned)).toBe(
       24 + 160 + (24 + 8 + 76) + 24 + 3 * 16
+    );
+  });
+
+  it('estimates one column, each panel as tall as its rows, below 768 px', () => {
+    // Title 24; top panels stacked in reading order, 4, 4 and 2 rows:
+    // 104 + 8 + 104 + 8 + 48 = 272; open section: header 24 + 8 + 3 rows (76);
+    // closed section: header 24; 3 gaps × 16.
+    expect(gridSnapshotHeight(sectioned, { width: 767 })).toBe(
+      24 + 272 + (24 + 8 + 76) + 24 + 3 * 16
+    );
+    expect(gridSnapshotHeight(sectioned, { width: 768 })).toBe(
+      gridSnapshotHeight(sectioned)
     );
   });
 

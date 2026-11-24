@@ -8,17 +8,20 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { createIsomerRuntime } from '@elastic/isomer-runtime';
-import type {
-  ActionEventRef,
-  Composition,
-  PrimitivePack,
+import {
+  type ActionEventRef,
+  type Composition,
+  type PrimitivePack,
+  withLayoutWidth,
 } from '@elastic/isomer-sdk';
 import { assertPackRegistrationComplete } from '@elastic/isomer-sdk/testing';
 import { describe, expect, it } from 'vitest';
 
 import { chartsPack, chartsStylesheet, createChartsPack } from './pack';
 import { dataTableTopHosts } from './primitives/data_table/examples';
+import { legacyMetricSingleValue } from './primitives/legacy_metric/examples';
 import { metricSingleValue } from './primitives/metric/examples';
+import { resolveChart } from './primitives/resolve_chart';
 import { chartEventExamples } from './primitives/xy_chart/events';
 import { xyInteractive, xyTimeSeries } from './primitives/xy_chart/examples';
 import type { XyChartNode } from './primitives/xy_chart/schema';
@@ -220,6 +223,50 @@ describe('the charts pack', () => {
       expect(rule).toContain(
         `width:100%;aspect-ratio:var(${size.aspectRatio.propName});min-height:var(${size.minHeight.propName});max-width:var(${size.maxWidth.propName})`
       );
+    });
+
+    it("wraps a legacy metric's tiles for its CSS least height at the stated layout width", () => {
+      const unsized = resolveChart(legacyMetricSingleValue, {
+        scheme: 'light',
+      });
+      const scene: Scene = {
+        ...unsized,
+        tiles: [40, 60].map((height) => ({
+          ...unsized.tiles[0]!,
+          box: { width: 300, height },
+        })),
+      };
+      const html = (layoutWidth?: number) =>
+        renderToStaticMarkup(
+          createElement(
+            'div',
+            null,
+            runtimeFor(
+              createChartsPack({
+                resolveScene: () => scene,
+                sceneRenderers: [
+                  { ...tagging('fluid', ['legacyMetric']), fluid: true },
+                ],
+              })
+            ).surfaces.react.render(
+              { type: 'view', body: [legacyMetricSingleValue] },
+              {
+                context:
+                  layoutWidth === undefined
+                    ? { environment: 'browser' }
+                    : withLayoutWidth<ChartsRenderContext>(
+                        { environment: 'browser' },
+                        layoutWidth
+                      ),
+                heading: false,
+              }
+            )
+          )
+        );
+      const { minHeight } = sceneModule.vars.size;
+      // Two 300 px tiles take two rows at the theme's 480 px, one at 600.
+      expect(html()).toContain(`${minHeight.propName}:100px`);
+      expect(html(600)).toContain(`${minHeight.propName}:60px`);
     });
 
     it('leaves the box to a renderer that sizes itself, such as the summary fallback', () => {

@@ -10,8 +10,10 @@ import {
   contextWith,
   createChildNodeWalker,
   isVisibleOnSurface,
+  layoutWidthOf,
   nodeAnchor,
   type PrimitiveNode,
+  withLayoutWidth,
 } from '@elastic/isomer-sdk';
 
 import type { ChartsReactEnv, ChartsRenderContext } from '../../render';
@@ -20,10 +22,9 @@ import type { SceneSize } from '../../scene';
 import { varStyle } from '../../styles';
 import { CHARTS_THEME, px } from '../../theme';
 
-import { blocksOf, headerOf, rowsHeight } from './layout';
+import { blocksOf, headerOf, isOneColumn, rowsHeight } from './layout';
 import {
   GRID_COLUMNS,
-  GRID_SINGLE_COLUMN_BELOW,
   type GridNode,
   type GridPanel,
   type GridReadingEntry,
@@ -39,13 +40,18 @@ const hostWidth = (context: ChartsRenderContext | undefined) => {
   return size && !isNominalSize(size) ? size.width : undefined;
 };
 
-/** The context a panel's node renders with: the grid's own, with the box its panel leaves, laid out for `nominalWidth` when the host gives no width. */
+/** The width a grid no container sizes switches to one column by: the host's, else the surface's. */
+const columnsWidth = (context: ChartsRenderContext | undefined) =>
+  context?.size ? hostWidth(context) : layoutWidthOf(context);
+
+/** The context a panel's node renders with: the grid's own, with the box its panel leaves as its `size`, and as its layout width where the grid's own width is known. Without a host width the box is nominal, laid out for the surface's width, else `nominalWidth`. */
 const childContext = (
   context: ChartsRenderContext | undefined,
   panel: GridPanel,
   oneColumn: boolean
 ): ChartsRenderContext => {
-  const gridWidth = context?.size?.width ?? nominalWidth;
+  const gridWidth =
+    context?.size?.width ?? layoutWidthOf(context) ?? nominalWidth;
   const width = oneColumn
     ? gridWidth
     : // CSS floors the tracks at zero when the gaps alone overflow the grid.
@@ -57,7 +63,12 @@ const childContext = (
   if (hostWidth(context) === undefined) {
     markNominalSize(size);
   }
-  return context ? contextWith(context, 'size', size) : { size };
+  const child = context ? contextWith(context, 'size', size) : { size };
+  // A nominal box is an estimate of a fluid layout, not room a node may count on.
+  return hostWidth(context) === undefined &&
+    layoutWidthOf(context) === undefined
+    ? child
+    : withLayoutWidth(child, width);
 };
 
 type Context = ChartsReactEnv['context'];
@@ -198,8 +209,7 @@ const CollapsedAnchors = ({
 
 /** Draws a grid: its header, then each block of panels, sections titled. */
 export const react = (node: GridNode, env: ChartsReactEnv): ReactNode => {
-  const width = hostWidth(env.context);
-  const oneColumn = width !== undefined && width < GRID_SINGLE_COLUMN_BELOW;
+  const oneColumn = isOneColumn(columnsWidth(env.context));
   return (
     <div
       {...nodeAnchor(env.context, node)}

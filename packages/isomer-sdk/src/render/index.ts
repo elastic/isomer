@@ -20,6 +20,7 @@ export {
   type LayoutFinding,
   checkLayout,
 } from './layout_check';
+export { layoutWidthOf, withLayoutWidth } from './layout_width';
 export {
   type PrimitiveDispatcher,
   createPrimitiveDispatcher,
