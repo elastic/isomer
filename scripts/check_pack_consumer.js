@@ -53,6 +53,9 @@ if (references.length > 0) {
   process.exit(1);
 }
 const tempDir = mkdtempSync(join(tmpdir(), 'isomer-pack-consumer-'));
+// For an `--input-type=module` eval, whose top-level `await` exits 13 if it never settles.
+const requireHere =
+  "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);";
 
 const packPackage = (packageName) => {
   const folder = packageName.slice(packageName.lastIndexOf('/') + 1);
@@ -350,8 +353,9 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     execFileSync(
       process.execPath,
       [
+        '--input-type=module',
         '--eval',
-        `${failOnWarning} const { createTakumiImageBackend } = require('${takumiName}');\n(async () => {\n${renderPdf}\n})().catch((error) => { console.error(error); process.exit(1); });`,
+        `${failOnWarning} ${requireHere} const { createTakumiImageBackend } = require('${takumiName}');\n${renderPdf}`,
       ],
       { cwd: takumiConsumerDir, stdio: 'inherit' }
     );
@@ -441,8 +445,9 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     process.execPath,
     [
       ...stripTypes,
+      '--input-type=module',
       '--eval',
-      `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); ${registrationCall}.catch((error) => { console.error(error); process.exit(1); });`,
+      `${requireHere} const { assertPackRegistrationComplete } = require('${sdkName}/testing'); await ${registrationCall};`,
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
@@ -454,8 +459,9 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     process.execPath,
     [
       ...stripTypes,
+      '--input-type=module',
       '--eval',
-      `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, throwingDir))}, registered: [] }).then(() => { console.error('A primitive that throws null was loaded.'); process.exit(1); }, (error) => { if (error !== null) { console.error('A primitive that throws null rejected with', error); process.exit(1); } });`,
+      `${requireHere} const { assertPackRegistrationComplete } = require('${sdkName}/testing'); let rejection; try { await assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, throwingDir))}, registered: [] }); } catch (error) { rejection = { error }; } if (!rejection) throw new Error('A primitive that throws null was loaded.'); if (rejection.error !== null) { console.error('A primitive that throws null rejected with', rejection.error); process.exit(1); }`,
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
