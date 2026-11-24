@@ -604,7 +604,7 @@ type YDomain = NonNullable<
   NonNullable<NonNullable<XyChartNode['axes']>['y']>['domain']
 >;
 
-/** A y axis's domain as intent. A `custom` domain with one bound is the data's, extended to zero, with that end fixed. */
+/** A y axis's domain as intent. A `custom` domain with one bound is the data's, extended to zero except on a log axis, with that end fixed and the domain unrounded. */
 const yDomainOf = (
   domain: YDomain,
   {
@@ -622,7 +622,7 @@ const yDomainOf = (
     : {
         kind: 'data',
         includeZero: scale !== 'log',
-        rounding,
+        rounding: false,
         ...(min === undefined ? {} : { min }),
         ...(max === undefined ? {} : { max }),
       };

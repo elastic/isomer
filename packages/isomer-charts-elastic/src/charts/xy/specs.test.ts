@@ -109,7 +109,7 @@ describe('sceneSpecs', () => {
         ...scene.axes,
         y2: {
           ...scene.axes.y2!,
-          domain: { kind: 'data', includeZero: true, rounding: true, max: 5 },
+          domain: { kind: 'data', includeZero: true, rounding: false, max: 5 },
         },
       },
     };

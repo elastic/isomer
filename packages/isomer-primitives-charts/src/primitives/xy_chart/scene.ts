@@ -26,9 +26,9 @@ export type SceneDomain =
       readonly includeZero: boolean;
       /** Round the domain out to readable values. */
       readonly rounding: boolean;
-      /** The one end a y axis fixes; the other comes from the data. */
+      /** The one end a y axis fixes, exactly; the other comes from the data. */
       readonly min?: number;
-      /** The one end a y axis fixes; the other comes from the data. */
+      /** The one end a y axis fixes, exactly; the other comes from the data. */
       readonly max?: number;
     }
   | { readonly kind: 'custom'; readonly min: number; readonly max: number };

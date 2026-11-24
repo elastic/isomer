@@ -1094,19 +1094,19 @@ describe('visibility, cell identity and bounds', () => {
   });
 
   it.each([{ min: 5 }, { max: 100 }] as const)(
-    'states a one-sided custom y domain %j as the data domain, from zero, with that end fixed',
+    'states a one-sided custom y domain %j as the data domain, from zero except on a log axis, with that end fixed and unrounded',
     (bound) => {
       const domainOf = (y: NonNullable<XyChartNode['axes']>['y']) =>
         resolve(
           xy({ axes: { y: { ...y, domain: { kind: 'custom', ...bound } } } })
         ).axes.y?.domain;
-      expect(domainOf({})).toEqual({
+      expect(domainOf({ rounding: true })).toEqual({
         kind: 'data',
         includeZero: true,
-        rounding: true,
+        rounding: false,
         ...bound,
       });
-      expect(domainOf({ scale: 'log', rounding: false })).toEqual({
+      expect(domainOf({ scale: 'log' })).toEqual({
         kind: 'data',
         includeZero: false,
         rounding: false,
