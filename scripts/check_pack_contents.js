@@ -10,11 +10,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, posix } from 'node:path';
 
-import {
-  missingPackedFiles,
-  packedPackages,
-  prunedRuntimeFiles,
-} from './packed_files.js';
+import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
 import { isPublishable, workspacePackages } from './workspace_packages.js';
 
 const npmCache = mkdtempSync(join(tmpdir(), 'isomer-pack-contents-'));
@@ -35,6 +31,11 @@ const FORBIDDEN_FILES = [
   /\.(fixtures?|tests?)\./,
   /\.tsbuildinfo$/,
 ];
+
+// Scripts that can change a tarball as it is published. The check packs
+// without running them, so a package that defined one would be checked
+// against files it does not ship.
+const PACK_HOOKS = ['prepublish', 'prepare', 'prepublishOnly', 'prepack'];
 
 // A link into a sibling package's docs, the same shape
 // `scripts/assemble_package_docs.js` rewrites for the docs site. GitHub and
@@ -69,14 +70,18 @@ if (root !== undefined && packages.length === 0) {
 
 let allPassed = true;
 
-for (const pkg of packedPackages(packages, isPublishable)) {
-  const { exports: exportMap, name, files: filesField = [] } = pkg.manifest;
+for (const pkg of packages.filter(({ manifest }) => isPublishable(manifest))) {
+  const {
+    exports: exportMap,
+    name,
+    files: filesField = [],
+    scripts = {},
+  } = pkg.manifest;
 
   let packOutput;
   try {
     packOutput = execFileSync(
       'npm',
-      // `--dry-run` still runs `prepack` and `postpack`.
       ['pack', '--dry-run', '--ignore-scripts', '--json', '--cache', npmCache],
       {
         cwd: pkg.dir,
@@ -117,6 +122,7 @@ for (const pkg of packedPackages(packages, isPublishable)) {
     FORBIDDEN_FILES.some((pattern) => pattern.test(entry))
   );
   const pruned = prunedRuntimeFiles(pkg.manifest, entries);
+  const hooks = PACK_HOOKS.filter((hook) => hook in scripts);
   const missingExports = Object.values(exportMap ?? {})
     .flatMap((conditions) =>
       conditions && typeof conditions === 'object'
@@ -164,6 +170,11 @@ for (const pkg of packedPackages(packages, isPublishable)) {
     ...(pruned.length > 0
       ? [
           `ships runtime code Kibana's build deletes from node_modules: ${pruned.join(', ')}`,
+        ]
+      : []),
+    ...(hooks.length > 0
+      ? [
+          `defines scripts that can change the published tarball: ${hooks.join(', ')}`,
         ]
       : []),
     ...brokenLinks.map(

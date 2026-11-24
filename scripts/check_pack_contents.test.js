@@ -58,27 +58,25 @@ describe('check_pack_contents', () => {
     rmSync(root, { force: true, recursive: true });
   });
 
-  it('passes a publishing package that declares no `files`', () => {
+  it('passes a publishing package with no `files`, and skips one that never publishes', () => {
     writePackage('unlisted', { name: 'fixture-unlisted' }, {});
+    writePackage(
+      'private',
+      { name: 'fixture-private', private: true },
+      { 'lib/examples/index.js': '' }
+    );
     const { status, stdout } = run();
     expect(stdout).toContain('fixture-unlisted: pack contents OK');
+    expect(stdout).not.toContain('fixture-private');
     expect(status).toBe(0);
   });
 
-  it("fails one shipping runtime code Kibana's build deletes", () => {
+  it("fails runtime code Kibana's build deletes, and a script that can change the tarball", () => {
     writePackage(
       'unlisted',
       { name: 'fixture-unlisted' },
       { 'lib/examples/index.js': '' }
     );
-    const { status, stderr } = run();
-    expect(stderr).toContain(
-      "fixture-unlisted: ships runtime code Kibana's build deletes from node_modules: lib/examples/index.js"
-    );
-    expect(status).toBe(1);
-  });
-
-  it("runs no package's pack scripts", () => {
     writePackage(
       'scripted',
       {
@@ -89,11 +87,17 @@ describe('check_pack_contents', () => {
       },
       {}
     );
-    const { status } = run();
-    expect(status).toBe(0);
+    const { status, stderr } = run();
+    expect(stderr).toContain(
+      "fixture-unlisted: ships runtime code Kibana's build deletes from node_modules: lib/examples/index.js"
+    );
+    expect(stderr).toContain(
+      'fixture-scripted: defines scripts that can change the published tarball: prepack'
+    );
     expect(existsSync(join(root, 'packages', 'scripted', 'prepack-ran'))).toBe(
       false
     );
+    expect(status).toBe(1);
   });
 
   it('fails a root that holds no packages', () => {
@@ -101,16 +105,5 @@ describe('check_pack_contents', () => {
     expect(stderr).toContain(`${root}: no packages found`);
     expect(stdout).not.toContain('Pack contents check passed.');
     expect(status).toBe(1);
-  });
-
-  it('skips a package that never publishes', () => {
-    writePackage(
-      'private',
-      { name: 'fixture-private', private: true },
-      { 'lib/examples/index.js': '' }
-    );
-    const { status, stdout } = run();
-    expect(stdout).not.toContain('fixture-private');
-    expect(status).toBe(0);
   });
 });

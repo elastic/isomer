@@ -203,15 +203,3 @@ export const prunedRuntimeFiles = ({ name, bin }, entries) => {
     );
   });
 };
-
-/**
- * The packages `check:pack-contents` packs: every one that publishes, with a
- * `files` list or without.
- *
- * @template {{ manifest: object }} T
- * @param {readonly T[]} packages
- * @param {(manifest: object) => boolean} isPublishable
- * @returns {T[]}
- */
-export const packedPackages = (packages, isPublishable) =>
-  packages.filter(({ manifest }) => isPublishable(manifest));

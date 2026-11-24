@@ -7,11 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  missingPackedFiles,
-  packedPackages,
-  prunedRuntimeFiles,
-} from './packed_files.js';
+import { missingPackedFiles, prunedRuntimeFiles } from './packed_files.js';
 import { workspacePackages } from './workspace_packages.js';
 
 const studio = workspacePackages().find(
@@ -154,21 +150,5 @@ describe('prunedRuntimeFiles', () => {
       'bin/helper.js',
       'lib/examples/cli.js',
     ]);
-  });
-});
-
-describe('packedPackages', () => {
-  it('packs a publishing package that declares no `files`', () => {
-    const packages = [
-      { manifest: { name: 'listed', files: ['lib'] } },
-      { manifest: { name: 'unlisted' } },
-      { manifest: { name: 'private', private: true } },
-    ];
-    expect(
-      packedPackages(
-        packages,
-        ({ private: isPrivate }) => isPrivate !== true
-      ).map(({ manifest }) => manifest.name)
-    ).toEqual(['listed', 'unlisted']);
   });
 });
