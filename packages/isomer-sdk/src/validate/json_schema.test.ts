@@ -29,7 +29,10 @@ import {
 } from './authoring_schema';
 import { resolveVocabulary } from './composition_schema';
 import { buildCompositionJsonSchema } from './json_schema';
-import { createCompositionValidator } from './validation';
+import {
+  createCompositionParser,
+  createCompositionValidator,
+} from './validation';
 import { namedColorSchema } from './value_schemas';
 
 const renderers = {
@@ -108,9 +111,10 @@ describe('buildCompositionJsonSchema', () => {
       schema: z.looseObject({ type: z.literal('loose') }),
       renderers,
     });
-    expect(defsOf(buildCompositionJsonSchema([loose])).loose).toMatchObject({
-      additionalProperties: {},
-    });
+    const projected = defsOf(buildCompositionJsonSchema([loose])).loose as {
+      additionalProperties?: unknown;
+    };
+    expect(projected.additionalProperties).toEqual({});
   });
 
   it('leaves open an object the validator keeps unknown keys on', () => {
@@ -258,7 +262,14 @@ describe('buildAuthoringJsonSchema', () => {
     const projected = buildAuthoringJsonSchema([leaf('alpha')]) as {
       properties: { meta: { additionalProperties?: boolean } };
     };
+    const parsed = createCompositionParser([leaf('alpha')])({
+      type: 'view',
+      meta: { extra: true },
+      body: [{ type: 'alpha' }],
+    });
     expect(projected.properties.meta.additionalProperties).toBe(false);
+    expect(parsed.errors).toEqual([]);
+    expect(parsed.composition?.meta).toEqual({});
   });
 
   it("names a pack's own union with the root entry's structuredValueSchema as structuredValue", () => {

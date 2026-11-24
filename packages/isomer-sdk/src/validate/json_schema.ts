@@ -40,8 +40,9 @@ export interface CompositionJsonSchemaOptions {
  * `$defs` are named per primitive type, plus `bodyNode` for the union, and two
  * different schemas under one name throw. It is the shape `validate` accepts,
  * so an object a parse strips unknown keys from, such as `meta`, stays open.
- * A refinement, the input budget and duplicate ids are not in it. Agent-facing
- * prompt text uses `buildAuthoringJsonSchema` instead.
+ * A refinement, a `.pipe`'s output side, the input budget and duplicate ids
+ * are not in it. Agent-facing prompt text uses `buildAuthoringJsonSchema`
+ * instead.
  */
 export const buildCompositionJsonSchema = (
   definitions: readonly AnyPrimitiveDefinition[],
