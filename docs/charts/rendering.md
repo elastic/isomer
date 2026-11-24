@@ -58,7 +58,7 @@ Here metric nodes draw as `MetricTiles` in the browser, and every other kind, or
 
 In 0.5.0 a chart is drawn in a browser only. The one engine, [`@elastic/isomer-charts-elastic`](../charts-elastic/index.md), runs in a browser, and neither it nor the pack ships a renderer that draws on Node. A `react`, `html` or `snapshot` render whose `environment` is `node`, which is where a server makes an image, draws a chart as the pack's fallback, the Scene's summary sentence, unless the host names a Node renderer of its own in `sceneRenderers`; a `dataTable` and a `legacyMetric` are the pack's own markup and draw in both environments. [Text, Markdown and Slack](#text-markdown-and-slack) have renderers of their own and need no engine.
 
-A server engine waits on `@elastic/charts`: drawing its charts without a browser is in [elastic-charts#2958](https://github.com/elastic/elastic-charts/pull/2958), which no release of `@elastic/charts` holds yet. Once one does, the Elastic Charts engine gains a server entry in a minor release.
+`@elastic/charts` draws its charts without a browser from 73.5.0 ([elastic-charts#2958](https://github.com/elastic/elastic-charts/pull/2958)). The Elastic Charts engine does not draw with it yet, and gains a server entry in a minor release.
 
 ## The render context
 
