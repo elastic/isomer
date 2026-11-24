@@ -8,7 +8,7 @@
 // The engine on a server: the browser renderer's specs, drawn to static markup
 // by Elastic Charts' `renderChart`.
 
-import type { ReactNode } from 'react';
+import { type ReactNode, useId } from 'react';
 import { Chart } from '@elastic/charts';
 import { renderChart } from '@elastic/charts/headless';
 import type {
@@ -40,12 +40,25 @@ const hash = (text: string): string => {
   return (h >>> 0).toString(36);
 };
 
+/** The Scene's content but its `table`, whose rows are formatted on first read and are not drawn. */
+const sceneId = ({ table: _table, ...drawn }: Scene): string =>
+  `ech-${hash(JSON.stringify(drawn))}`;
+
 /**
- * Elastic Charts prefixes the ids inside a chart's `svg` with the chart's.
- * One from the Scene's content is the same on every render, and differs
- * between the charts of one page unless they draw the same.
+ * Elastic Charts prefixes every id in a chart's markup with the chart's.
+ * `id` names the Scene, so it is the same on every render and differs
+ * between charts; `useId` tells apart two drawings of one Scene on a page.
  */
-const chartId = (scene: Scene): string => `ech-${hash(JSON.stringify(scene))}`;
+const StaticChart = ({ html, id }: { html: string; id: string }) => {
+  const occurrence = useId().replace(/[^0-9A-Za-z]/g, '');
+  return (
+    <div
+      dangerouslySetInnerHTML={{
+        __html: html.replaceAll(id, `${id}-${occurrence}`),
+      }}
+    />
+  );
+};
 
 /**
  * A `SceneRenderer` drawing Scenes on Node with Elastic Charts' `renderChart`,
@@ -69,12 +82,13 @@ export const createElasticChartsNodeRenderer = (
     if (size === undefined) {
       throw new Error('The Elastic Charts Node renderer needs a Scene size.');
     }
+    const id = sceneId(scene);
     const html = renderChart(
-      <Chart id={chartId(scene)} size={size}>
+      <Chart id={id} size={size}>
         {sceneSpecs(scene, env, options)}
       </Chart>
     );
-    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+    return <StaticChart html={html} id={id} />;
   },
 });
 

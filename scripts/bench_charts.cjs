@@ -145,8 +145,10 @@ const child = async (scenario, engine, repeat, cacheMaxBytes, budgetValues) => {
   } = require('@elastic/isomer-primitives-charts');
   const { createTakumiImageBackend } = require('@elastic/isomer-image-takumi');
   const { createRenderers, stylesheet } =
-    SCENARIOS[scenario].engine === false ? {} : require(engine);
-  const sceneRenderers = createRenderers ? createRenderers() : [];
+    SCENARIOS[scenario].engine === false
+      ? { createRenderers: () => [] }
+      : require(engine);
+  const sceneRenderers = createRenderers();
 
   const fonts = [400, 500, 600, 700].map((weight) => ({
     name: 'Inter',

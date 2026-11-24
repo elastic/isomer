@@ -5,13 +5,22 @@
  * 2.0.
  */
 
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import type { DebugState } from '@elastic/charts';
+import {
+  chartsFrame,
+  createChartsPack,
+  xyChartExamples,
+} from '@elastic/isomer-primitives-charts';
 import type { Scene } from '@elastic/isomer-primitives-charts/scene';
+import { metricSingleValueScene } from '@elastic/isomer-primitives-charts/scene';
 import {
   coverageProblems,
   drawExamples,
   unescapeMarkup,
 } from '@elastic/isomer-primitives-charts/testing';
+import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it } from 'vitest';
 
 import { createElasticChartsNodeRenderer } from './node';
@@ -112,20 +121,60 @@ describe('createElasticChartsNodeRenderer', () => {
   });
 
   /** The id a chart's markup carries; a metric draws no `svg`, and carries none. */
-  const chartIdOf = (markup: string) => /"(ech-[0-9a-z]+)--/.exec(markup)?.[1];
+  const chartIdOf = (markup: string) =>
+    /"(ech-[0-9a-z]+-[0-9A-Za-z]+)--/.exec(markup)?.[1];
   const identified = charts.flatMap(({ scene, markup }) => {
     const id = chartIdOf(markup);
     return id === undefined ? [] : [{ id, scene, markup }];
   });
 
-  it('names each chart by its Scene, so the charts of one page keep their own ids', () => {
+  it('names each chart by its Scene, so different charts never share ids', () => {
     const scenes = new Map<string, Set<string>>();
     for (const { id, scene } of identified) {
-      scenes.set(id, (scenes.get(id) ?? new Set()).add(JSON.stringify(scene)));
+      const named = id.replace(/-[^-]+$/, '');
+      scenes.set(
+        named,
+        (scenes.get(named) ?? new Set()).add(JSON.stringify(scene))
+      );
     }
     expect(scenes.size).toBeGreaterThan(1);
-    // One id, one Scene: no two different drawings share clip paths.
     expect([...scenes.values()].filter((same) => same.size > 1)).toEqual([]);
+  });
+
+  it('draws two copies of one chart on a snapshot page with their own ids, marks and size', () => {
+    const { node } = xyChartExamples[0]!;
+    const { html } = createIsomerRuntime({
+      packs: [createChartsPack({ sceneRenderers: [renderer] })],
+      frames: { charts: chartsFrame },
+    }).surfaces.snapshot.render({ type: 'view', body: [node, node] });
+    const charts = html.split('class="echChart"').slice(1);
+    expect(charts).toHaveLength(2);
+    const ids = charts.map(chartIdOf);
+    expect(new Set(ids).size).toBe(2);
+    charts.forEach((chart, index) => {
+      const other = ids[1 - index]!;
+      expect(chart).toContain(`id="${ids[index]}-xy-clip-1"`);
+      expect(chart).not.toContain(other);
+      // The line and its axis labels are in the page, at the pack's box.
+      expect(chart).toMatch(/^ style="width:\d+px;height:\d+px"/);
+      expect(chart).toMatch(/<svg[^>]*class="echCanvasRenderer/);
+      expect(chart).toMatch(/<path /);
+      expect(chart).toMatch(/<text /);
+    });
+  });
+
+  it('does not read the Scene’s table, whose rows are formatted on first read', () => {
+    const { scene } = charts.find(({ scene: { kind } }) => kind === 'xy')!;
+    const lazy: Scene = {
+      ...scene,
+      table: {
+        columns: scene.table.columns,
+        get rows(): Scene['table']['rows'] {
+          throw new Error('rows were read');
+        },
+      },
+    };
+    expect(() => renderer.render(lazy, { environment: 'node' })).not.toThrow();
   });
 
   it('prefixes every id inside a chart with the chart’s', () => {
@@ -152,6 +201,38 @@ describe('createElasticChartsNodeRenderer', () => {
         .filter(({ text, markup }) => !unescapeMarkup(markup).includes(text))
         .map(({ text }) => text)
     ).toEqual([]);
+  });
+
+  it('draws a secondary label placed in a tooltip as text a screen reader reads, with nothing to focus', () => {
+    const [tile] = metricSingleValueScene.tiles;
+    const markup = renderToStaticMarkup(
+      createElement(
+        'div',
+        null,
+        renderer.render(
+          {
+            ...metricSingleValueScene,
+            size: { width: 300, height: 160 },
+            tiles: [
+              {
+                ...tile!,
+                secondary: {
+                  text: '+5%',
+                  color: '#ff00ff',
+                  label: 'last week',
+                  labelPlacement: 'tooltip',
+                },
+              },
+            ],
+          },
+          { environment: 'node' }
+        )
+      )
+    );
+    expect(markup).toContain('last week');
+    expect(markup).toContain('+5%');
+    expect(markup).not.toContain('role="button"');
+    expect(markup).not.toContain('tabindex');
   });
 
   it('refuses a Scene with no size, which a `sized` renderer is never given', () => {

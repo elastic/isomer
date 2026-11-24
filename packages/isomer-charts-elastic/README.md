@@ -6,7 +6,7 @@
 <p align="center"><strong>isomer</strong> <i>n.</i> — one formula, many forms; the same composition rendered to every surface.</p>
 <!-- markdownlint-enable MD033 -->
 
-`SceneRenderer`s that draw Isomer chart Scenes (`metric`, `xy`, `partition`, `heatmap`, `gauge`, `tagCloud`) with Elastic Charts, as Kibana draws its panels: in the browser, and on Node as static markup for an image.
+`SceneRenderer`s that draw Isomer chart Scenes with Elastic Charts, as Kibana draws its panels: `metric`, `xy`, `partition`, `heatmap`, `gauge` and `tagCloud` in the browser, and all of them but `tagCloud` on Node, as static markup for an image.
 
 ```sh
 npm install @elastic/isomer-charts-elastic @elastic/charts moment moment-timezone react react-dom zod

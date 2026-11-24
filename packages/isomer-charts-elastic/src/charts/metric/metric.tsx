@@ -161,16 +161,22 @@ const TooltipLabelled = ({
 const PlainSecondary = ({
   secondary: { text, color, label, labelPlacement },
   styles,
+  interactive,
 }: {
   secondary: PlainSecondaryProps;
   styles: Styles;
+  /** Whether a tooltip can open. Static markup reads a tooltip's label to a screen reader alone. */
+  interactive: boolean;
 }) =>
-  label !== undefined && labelPlacement === 'tooltip' ? (
+  interactive && label !== undefined && labelPlacement === 'tooltip' ? (
     <TooltipLabelled {...{ label, color, styles }}>{text}</TooltipLabelled>
   ) : (
     <span
       className={secondaryClass(styles)}
       style={varStyle(vars.ink, { color })}>
+      {label !== undefined && labelPlacement === 'tooltip' ? (
+        <span className={ECH_CLASSES.screenReaderOnly}>{label} </span>
+      ) : null}
       {label !== undefined && labelPlacement === 'before' ? (
         <span className={ECH_CLASSES.secondaryLabel}>{label} </span>
       ) : null}
@@ -190,7 +196,13 @@ const secondaryOf = (
   }
   const { badge } = secondary;
   if (badge === undefined) {
-    return <PlainSecondary secondary={secondary} styles={env} />;
+    return (
+      <PlainSecondary
+        secondary={secondary}
+        styles={env}
+        interactive={env.environment === 'browser'}
+      />
+    );
   }
   const props: SecondaryMetricProps = {
     value: secondary.text,
