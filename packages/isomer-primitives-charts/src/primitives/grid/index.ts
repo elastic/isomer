@@ -29,6 +29,7 @@ import {
 
 export { catalog as gridCatalog } from './catalog';
 export { examples as gridExamples } from './examples';
+export { GRID_GEOMETRY } from './layout';
 export {
   type GridNode,
   type GridPanel,

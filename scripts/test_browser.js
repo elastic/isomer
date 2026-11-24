@@ -14,11 +14,12 @@ import {
 const SUITES = [
   'packages/isomer-studio/e2e/playwright.config.ts',
   'packages/isomer-primitives-charts/e2e/playwright.config.ts',
+  'packages/isomer-charts-elastic/e2e/playwright.config.ts',
 ];
 
 requireChromium();
 const args = process.argv.slice(2);
-// Arguments may filter to one suite's specs, leaving the other nothing to run.
+// Arguments may filter to one suite's specs, leaving the others nothing to run.
 let suites = SUITES;
 if (args.length > 0) {
   try {

@@ -5,9 +5,9 @@
  * 2.0.
  */
 
-// `@elastic/charts` 73.3.2 omits React's CSS custom-property index from `GeometryStateStyle`.
+// `@elastic/charts` omits React's CSS custom-property index from `GeometryStateStyle`. From 73.5.0 its declarations are under `dist/cjs` and `dist/esm`.
 const isKnownChartsError = (diagnostic) =>
-  /^(?:.*\/)?node_modules\/@elastic\/charts\/dist\/utils\/themes\/theme\.d\.ts\(\d+,\d+\): error TS2344: Type 'GeometryStateStyle' does not satisfy the constraint 'CSSProperties'\.(?:\n|$)/.test(
+  /^(?:.*\/)?node_modules\/@elastic\/charts\/dist\/(?:(?:cjs|esm)\/)?utils\/themes\/theme\.d\.m?ts\(\d+,\d+\): error TS2344: Type 'GeometryStateStyle' does not satisfy the constraint 'CSSProperties'\.(?:\n|$)/.test(
     diagnostic
   );
 

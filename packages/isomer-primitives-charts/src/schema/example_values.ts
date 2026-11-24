@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { PortableFormat } from '../format';
+import type { PortableFormat } from './format';
 
 /** A number with up to three fraction digits. */
 export const NUMBER: PortableFormat = {

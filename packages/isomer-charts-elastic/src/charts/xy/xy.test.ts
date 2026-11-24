@@ -114,6 +114,55 @@ describe('elastic-charts renderer: xy', () => {
   const resolveXy = (node: XyChartNode) =>
     resolveChart(node, { scheme: 'light', size: SIZE });
 
+  it.each(['linear', 'log'] as const)(
+    'draws a custom %s y domain’s stated bounds exactly, and the end it leaves out from the data',
+    async (scale) => {
+      // A line of 98 to 210.
+      const line = xyChartExamples.find(
+        ({ name }) => name === 'Time series line'
+      )!.node;
+      const toScale = (value: number) =>
+        scale === 'log' ? Math.log10(value) : value;
+      const fromScale = (value: number) =>
+        scale === 'log' ? 10 ** value : value;
+      // The y scale read back from where the line's lowest and highest points are drawn.
+      const scaleOf = async (domain: { min?: number; max?: number }) => {
+        const node: XyChartNode = {
+          ...line,
+          axes: {
+            ...line.axes,
+            y: { scale, domain: { kind: 'custom', ...domain } },
+          },
+        };
+        const { path, points } = (await debugState(resolveXy(node))).lines![0]!;
+        const drawn = [...path.matchAll(/[ML][^,]+,([-\d.e]+)/g)].map(([, y]) =>
+          Number(y)
+        );
+        expect(drawn).toHaveLength(points.length);
+        const placed = points
+          .map(({ y }, index) => [toScale(Number(y)), drawn[index]!] as const)
+          .sort(([a], [b]) => a - b);
+        const [[v1, p1], [v2, p2]] = [placed[0]!, placed.at(-1)!];
+        const perPixel = (v2 - v1) / (p2 - p1);
+        return {
+          valueAt: (pixel: number) => fromScale(v1 + (pixel - p1) * perPixel),
+          pixelOf: (value: number) => p1 + (toScale(value) - v1) / perPixel,
+        };
+      };
+      const both = await scaleOf({ min: 57, max: 987 });
+      expect(both.pixelOf(987)).toBeCloseTo(0, 1);
+      const bottom = both.pixelOf(57);
+      expect(bottom).toBeGreaterThan(0);
+
+      const toMax = await scaleOf({ max: 987 });
+      expect(toMax.valueAt(0)).toBeCloseTo(987, 1);
+      expect(toMax.valueAt(bottom)).toBeCloseTo(scale === 'log' ? 98 : 0, 1);
+      const fromMin = await scaleOf({ min: 57 });
+      expect(fromMin.valueAt(bottom)).toBeCloseTo(57, 1);
+      expect(fromMin.valueAt(0)).toBeCloseTo(210, 1);
+    }
+  );
+
   it('draws a time axis’s minor and major rows, as Lens does', async () => {
     const { labels } = (await debugState(resolveXy(byTheMinute))).axes!.x[0]!;
     expect(labels).toEqual(

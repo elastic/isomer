@@ -124,8 +124,11 @@ interface LookPage {
   close: () => Promise<void>;
 }
 
+// What EUI's global styles give the browser drawing in Kibana, at an element
+// rule's weight. The static drawing gets none of it, so it is held to the
+// stylesheet its host loads.
 const RESET =
-  '*,*::before,*::after{box-sizing:border-box}ul,ol{list-style:none}body,h1,h2,h3,h4,h5,h6,p,ul,ol,li,figure{margin:0;padding:0}#browser,#static{position:absolute;top:0;left:0}#static{left:2000px}';
+  ':where(#browser),:where(#browser) *,:where(#browser) *::before,:where(#browser) *::after{box-sizing:border-box}:where(#browser) :is(ul,ol){list-style:none}body,:where(#browser) :is(h1,h2,h3,h4,h5,h6,p,ul,ol,li,figure){margin:0;padding:0}#browser,#static{position:absolute;top:0;left:0}#static{left:2000px}';
 
 type PageWindow = {
   drawScene: (scene: Scene) => Promise<void>;

@@ -541,7 +541,7 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `@commitlint/top-level` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+top-level@19.8.1/node_modules/@commitlint/top-level` |  |
 | `@commitlint/types` | 19.8.1 | MIT | `node_modules/.pnpm/@commitlint+types@19.8.1/node_modules/@commitlint/types` |  |
 | `@dual-bundle/import-meta-resolve` | 4.2.1 | MIT | `node_modules/.pnpm/@dual-bundle+import-meta-resolve@4.2.1/node_modules/@dual-bundle/import-meta-resolve` |  |
-| `@elastic/charts` | 73.3.2 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.3.2_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_b9aafc133779c97901596ca4609bc973/node_modules/@elastic/charts` |  |
+| `@elastic/charts` | 73.5.1 | SEE LICENSE IN LICENSE.txt | `node_modules/.pnpm/@elastic+charts@73.5.1_@types+react@18.3.31_moment-timezone@0.5.48_moment@2.31.0_react-_5933a382bd5e13b3fd60f6cc06476fa7/node_modules/@elastic/charts` |  |
 | `@elastic/datemath` | 5.0.3 | Apache-2.0 | `node_modules/.pnpm/@elastic+datemath@5.0.3_moment@2.31.0/node_modules/@elastic/datemath` |  |
 | `@elastic/distillate` | 0.2.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+distillate@0.2.0/node_modules/@elastic/distillate` |  |
 | `@elastic/esql-definitions` | 4.31.0 | Elastic-2.0 | `node_modules/.pnpm/@elastic+esql-definitions@4.31.0/node_modules/@elastic/esql-definitions` |  |
@@ -1382,7 +1382,6 @@ Direct `devDependencies` and their installed dependency closure. These are not d
 | `queue-microtask` | 1.2.3 | MIT | `node_modules/.pnpm/queue-microtask@1.2.3/node_modules/queue-microtask` |  |
 | `raf-schd` | 4.0.3 | MIT | `node_modules/.pnpm/raf-schd@4.0.3/node_modules/raf-schd` |  |
 | `rc` | 1.2.8 | (BSD-2-Clause OR MIT OR Apache-2.0) | `node_modules/.pnpm/rc@1.2.8/node_modules/rc` |  |
-| `re-reselect` | 4.0.1 | MIT | `node_modules/.pnpm/re-reselect@4.0.1_reselect@5.3.0/node_modules/re-reselect` |  |
 | `react` | 18.3.1 | MIT | `node_modules/.pnpm/react@18.3.1/node_modules/react` |  |
 | `react-clientside-effect` | 1.2.8 | MIT | `node_modules/.pnpm/react-clientside-effect@1.2.8_react@18.3.1/node_modules/react-clientside-effect` |  |
 | `react-dom` | 18.3.1 | MIT | `node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom` |  |

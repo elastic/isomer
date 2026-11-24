@@ -36,6 +36,7 @@ import {
 } from '../../validate/validation';
 import { withAnchors } from '../anchors';
 import { contextWith } from '../context_view';
+import { withLayoutWidth } from '../layout_width';
 import { byteLength, type PayloadMeasurement } from '../payload';
 import {
   type ReactContentDispatcher,
@@ -66,6 +67,12 @@ export interface HTMLRenderOptions {
    * still backs the wrapper's `aria-label`.
    */
   heading?: boolean;
+  /**
+   * The width the host lays the content out in, in pixels. Each node is told
+   * it (`layoutWidthOf`), so a primitive that sizes itself by width,
+   * such as a grid of panels, lays out for it. Absent: nodes are told none.
+   */
+  width?: number;
   /** Whether the collected CSS is inlined as a `<style>` element. Defaults to `'inline'`. */
   css?: 'inline' | 'separate';
   /**
@@ -377,8 +384,12 @@ export const renderHTMLWithDispatcher = <
   );
   const anchors =
     options.anchors === true || applied.some(({ anchors }) => anchors);
-  const enhanced = (context: TContext): TContext =>
-    contextWith(context, 'enhancements', enhancements);
+  const enhanced = (context: TContext): TContext => {
+    const view = contextWith(context, 'enhancements', enhancements);
+    return options.width === undefined
+      ? view
+      : withLayoutWidth(view, options.width);
+  };
 
   const draw = (context: TContext): ReactNode =>
     renderCompositionContent(composition, dispatcher, enhanced(context), {

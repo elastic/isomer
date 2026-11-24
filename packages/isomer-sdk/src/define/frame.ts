@@ -50,8 +50,18 @@ export interface FrameViewport<TTheme> {
 export interface FrameDispatcher<TNode extends PrimitiveNode = PrimitiveNode> {
   /** Draws one node on the `snapshot` surface. `key` must be unique among its siblings. */
   renderSnapshotNode(node: TNode, key: string): ReactNode;
-  /** The node's height in pixels; `0` when it is hidden from `snapshot` or its primitive declares no `metrics.snapshotHeight`. */
+  /**
+   * The node's height in pixels, at the frame's {@link Frame.contentWidth}
+   * when it states one; `0` when the node is hidden from `snapshot` or its
+   * primitive declares no `metrics.snapshotHeight`.
+   */
   estimateSnapshotHeight(node: TNode): number;
+}
+
+/** The page a height is estimated for. The `snapshot` surface always passes it. */
+export interface FrameEstimateViewport {
+  /** The page's width: the caller's, else {@link Frame.defaultWidth}. */
+  width: number;
 }
 
 /**
@@ -109,6 +119,13 @@ export interface Frame<TTheme> {
   /** Width used when the caller passes none. */
   defaultWidth: number;
   /**
+   * The width the body is laid out in on a page `width` wide, such as the
+   * page less its padding. The `snapshot` surface tells each node that width
+   * as it draws it (`layoutWidthOf`) and as it estimates its height, so the
+   * two agree. Absent: nodes are told no width.
+   */
+  contentWidth?: (width: number) => number;
+  /**
    * Palette per mode. Frame and palette vary independently — a branded card is
    * this geometry with a host's colors — so a host overrides one by spreading
    * this value rather than rebuilding anything.
@@ -134,7 +151,8 @@ export interface Frame<TTheme> {
    */
   estimateHeight(
     composition: FrameComposition,
-    dispatcher: FrameDispatcher
+    dispatcher: FrameDispatcher,
+    viewport?: FrameEstimateViewport
   ): number;
   /**
    * What this document requires of a body. A slide document's
@@ -180,10 +198,13 @@ export interface BoundFrame {
   readonly defaultWidth: number;
   /** See {@link Frame.sizing}; resolved, so `fixed` when the frame states none. */
   readonly sizing: FrameSizing;
+  /** See {@link Frame.contentWidth}; `undefined` when the frame states none. */
+  contentWidth(width: number): number | undefined;
   /** See {@link Frame.estimateHeight}. */
   estimateHeight(
     composition: FrameComposition,
-    dispatcher: FrameDispatcher
+    dispatcher: FrameDispatcher,
+    viewport?: FrameEstimateViewport
   ): number;
   /** See {@link Frame.validateBody}; empty when this frame states no rule. */
   validateBody(body: readonly PrimitiveNode[]): readonly string[];
@@ -214,8 +235,9 @@ export const bindFrame = <TTheme>(frame: Frame<TTheme>): BoundFrame => {
   return {
     defaultWidth: frame.defaultWidth,
     sizing: frame.sizing ?? 'fixed',
-    estimateHeight: (composition, dispatcher) =>
-      frame.estimateHeight(composition, dispatcher),
+    contentWidth: (width) => frame.contentWidth?.(width),
+    estimateHeight: (composition, dispatcher, viewport) =>
+      frame.estimateHeight(composition, dispatcher, viewport),
     validateBody: (body) => frame.validateBody?.(body) ?? [],
     resolveTheme: (mode) => themeFor(mode),
     render: (composition, viewport, dispatcher) => {

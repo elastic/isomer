@@ -16,8 +16,8 @@ import type { ZodType } from 'zod';
 import { toJSONSchema } from 'zod';
 
 import { useAccent } from '../chrome/accent';
-import { PropsTable } from '../docs/props_table';
 import type { PrimitiveDoc } from '../model/describe_runtime';
+import { PropsTable } from '../reference/props_table';
 import { useStudio } from '../studio_context';
 
 type Schema = Record<string, unknown>;

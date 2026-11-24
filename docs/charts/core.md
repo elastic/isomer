@@ -9,11 +9,21 @@ Every chart primitive spreads `chartCoreShape` into its schema.
 
 | Field | What it is |
 | --- | --- |
-| `title`, `description` | Shown on every surface; `description` is what the chart shows, for accessible and text surfaces |
+| `title`, `description` | The chart's name, and what it shows. Text surfaces print both; a drawn chart carries them in its markup's accessible text, as its renderer puts them. See [`title`](#title) |
 | `data` | Typed columnar data, as the source table holds it |
 | `colors` | Data colors resolved by whoever built the node |
 | `source` | Provenance, never rendered |
 | `losses` | What the source had that the node drops or approximates |
+
+## `title`
+
+A `title` leads the Scene's summary sentence, so `text`, `markdown`, Slack without assets, an image's alt text and the pack's fallback print it. A `dataTable` draws it above the table, and an `unsupported` node and a chart that could not be drawn draw it above their note.
+
+A chart an engine draws does not draw its `title`. The Elastic Charts engine makes it the chart's accessible name (`aria-label`), with the Scene's summary and `description` as its accessible description: a Kibana panel's chrome titles the panel, not the visualization inside it. Two of the pack's own renderers name themselves by the summary, which the title leads: a `legacyMetric` carries the summary and `description` together in its `aria-label`, and a `dataTable` carries the summary there and draws its title and description above the table. The fallback has no accessible name: it prints the summary, title first, as a paragraph.
+
+That accessible text is markup, on `react` and `html`. An image holds none of it: a PNG of a chart an engine drew shows no title, and whoever embeds it supplies the alt text, as Slack's image block takes the chart's `text` render.
+
+To show a title beside a drawn chart, title the [`grid`](grid.md) panel that holds it, or title the composition, which the `react` and `html` surfaces and [`chartsFrame`](rendering.md#chartsframe) draw.
 
 ## `data`
 
@@ -80,7 +90,7 @@ Formats are ECMA-402 `Intl` options, formatted in the locale and time zone the c
 
 | `kind` | Fields | Meaning |
 | --- | --- | --- |
-| `number` | `minimumFractionDigits?`, `maximumFractionDigits?`, `signDisplay?`, `useGrouping?`, `notation?`, `suffix?` | As `Intl.NumberFormat`. `signDisplay: 'exceptZero'` signs values that do not round to zero |
+| `number` | `minimumFractionDigits?`, `maximumFractionDigits?`, `signDisplay?`, `useGrouping?`, `notation?`, `prefix?`, `suffix?` | As `Intl.NumberFormat`. `signDisplay: 'exceptZero'` signs values that do not round to zero. `prefix` and `suffix` are text around the value, the prefix after its sign: `$` prints `-$5` |
 | `percent` | The `number` fields without `notation`, and `fractional?` | `fractional: false` means percentages rather than fractions |
 | `bytes`, `bits` | The `number` fields without `notation`, `base?` (1000 or 1024), `unitDisplay?` | The largest unit the value is at least one of |
 | `duration` | `input`, `output?`, the `number` fields without `notation`, `unitDisplay?` | `input` is the stored unit; `output` a unit, or `auto` for the largest unit the value is at least one of |

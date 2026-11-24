@@ -49,6 +49,12 @@ const numberShape = {
     .boolean()
     .optional()
     .describe('Group thousands. Absent means true.'),
+  prefix: z
+    .string()
+    .optional()
+    .describe(
+      'Text before the formatted value, after its sign: `$` prints `-$5`.'
+    ),
   suffix: z
     .string()
     .optional()

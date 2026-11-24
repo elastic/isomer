@@ -1,7 +1,7 @@
 {
   "name": "@elastic/isomer-charts-elastic",
   "version": "0.0.0-development",
-  "description": "Elastic Charts engine for Isomer chart Scenes: a SceneRenderer that draws metric, xy, partition, heat map, gauge and tag cloud charts as Kibana does, in the browser.",
+  "description": "Elastic Charts engine for Isomer chart Scenes: a SceneRenderer that draws metric, xy, partition, heat map, gauge and tag cloud charts as Kibana does in the browser, and all but tag clouds on Node.",
   "license": "Elastic-2.0",
   "author": "Elastic",
   "repository": {
@@ -30,6 +30,12 @@
       "require": "./lib/cjs/engine.js",
       "default": "./lib/cjs/engine.js"
     },
+    "./node": {
+      "types": "./lib/cjs/node.d.ts",
+      "import": "./lib/esm/node.js",
+      "require": "./lib/cjs/node.js",
+      "default": "./lib/cjs/node.js"
+    },
     "./testing": {
       "types": "./lib/cjs/testing/index.d.ts",
       "module": "./lib/esm/testing/index.js",
@@ -43,6 +49,9 @@
     "*": {
       "engine": [
         "./lib/cjs/engine.d.ts"
+      ],
+      "node": [
+        "./lib/cjs/node.d.ts"
       ],
       "testing": [
         "./lib/cjs/testing/index.d.ts"
@@ -65,19 +74,20 @@
     "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.test.tsx,**/*.fixtures.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bench:check": "node ../../scripts/bench_charts.cjs --engine bench/engine.cjs --check"
   },
   "dependencies": {
     "@elastic/isomer-primitives-charts": "workspace:*"
   },
   "peerDependencies": {
-    "@elastic/charts": "^73.3.0",
+    "@elastic/charts": "^73.5.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "@elastic/charts": "73.3.2",
+    "@elastic/charts": "73.5.1",
     "@elastic/isomer-runtime": "workspace:*",
     "@elastic/isomer-sdk": "workspace:*",
     "@types/react": "^18.3.31",

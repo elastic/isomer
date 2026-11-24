@@ -22,10 +22,14 @@ export type AxisId = 'x' | 'y' | 'y2';
 export type SceneDomain =
   | {
       readonly kind: 'data';
-      /** Extend the domain to include zero. */
+      /** Extend the data's extent to include zero, before a fixed `min` replaces its lower end or a fixed `max` its upper end. */
       readonly includeZero: boolean;
       /** Round the domain out to readable values. */
       readonly rounding: boolean;
+      /** The one end a y axis fixes, exactly; the other comes from the data. */
+      readonly min?: number;
+      /** The one end a y axis fixes, exactly; the other comes from the data. */
+      readonly max?: number;
     }
   | { readonly kind: 'custom'; readonly min: number; readonly max: number };
 

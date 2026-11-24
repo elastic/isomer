@@ -184,15 +184,21 @@ const formatScalar = (
   }
 };
 
-const withSuffix = (text: string, format: PortableFormat): string =>
-  'suffix' in format && format.suffix !== undefined
-    ? `${text}${format.suffix}`
-    : text;
+// A sign, with the direction marks some locales put before it, as `ar-EG` does.
+const LEADING_SIGN = /^[\u061C\u200E\u200F]*[-+\u2212]/;
+
+/** `text` between the format's `prefix`, which follows a leading sign, and its `suffix`. */
+const withAffixes = (text: string, format: PortableFormat): string => {
+  const prefix = ('prefix' in format ? format.prefix : undefined) ?? '';
+  const suffix = ('suffix' in format ? format.suffix : undefined) ?? '';
+  const sign = prefix === '' ? '' : (LEADING_SIGN.exec(text)?.[0] ?? '');
+  return `${sign}${prefix}${text.slice(sign.length)}${suffix}`;
+};
 
 /**
  * Formats one cell with `Intl`: missing and empty values get their text,
  * and a multivalue cell becomes a JSON array of its formatted values. A
- * `suffix` is appended to the whole result, except to a missing or empty
+ * `prefix` and `suffix` wrap the whole result, except a missing or empty
  * value's text.
  */
 export const formatValue = (
@@ -210,7 +216,7 @@ export const formatValue = (
     },
   };
   if (Array.isArray(value)) {
-    return withSuffix(
+    return withAffixes(
       JSON.stringify(value.map((item) => formatScalar(item, format, context))),
       format
     );
@@ -218,7 +224,7 @@ export const formatValue = (
   const text = formatScalar(value, format, context);
   return value === null || value === undefined || value === ''
     ? text
-    : withSuffix(text, format);
+    : withAffixes(text, format);
 };
 
 /** The format a column of `type` gets when it declares none. */

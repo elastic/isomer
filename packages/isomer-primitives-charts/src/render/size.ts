@@ -8,7 +8,8 @@
 // How a chart sizes itself when nothing sizes it: Lens's chart size specs
 // (`ChartSizeSpec` in Kibana's chart expressions), with every length from
 // `CHARTS_THEME.chart`. A browser applies a spec as CSS; Node, which has no
-// container to fill, turns it into a box at the theme's width.
+// container to fill, turns it into a box at the width the surface lays out
+// in, else the theme's.
 
 import { wrappedHeight } from '../resolve';
 import type { Scene, SceneSize } from '../scene';
@@ -37,8 +38,11 @@ export const markNominalSize = (size: SceneSize): void => {
 export const isNominalSize = (size: SceneSize | undefined): boolean =>
   size !== undefined && nominalSizes.has(size);
 
-/** The size spec of a Scene's kind; none for a kind that sizes itself, such as a table. */
-export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
+/** The size spec of a Scene's kind, for a box `width` wide; none for a kind that sizes itself, such as a table. */
+export const chartSizeSpecAt = (
+  scene: Scene,
+  width: number
+): ChartSizeSpec | undefined => {
   switch (scene.kind) {
     case 'xy':
       return scene.axes.x.scale === 'time' && scene.orientation === 'vertical'
@@ -61,7 +65,7 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
         minHeight:
           wrappedHeight(
             scene.tiles.map(({ box }) => box),
-            chart.width
+            width
           ) +
           sceneNotes(scene).length * chart.legacyMetric.noteHeight,
       };
@@ -80,6 +84,10 @@ export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined => {
       return undefined;
   }
 };
+
+/** The size spec of a Scene's kind at the theme's chart width; none for a kind that sizes itself, such as a table. */
+export const chartSizeSpec = (scene: Scene): ChartSizeSpec | undefined =>
+  chartSizeSpecAt(scene, chart.width);
 
 /** The box a spec takes at `width`. */
 export const chartSize = (

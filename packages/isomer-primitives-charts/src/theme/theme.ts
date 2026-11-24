@@ -28,7 +28,7 @@ export const CHARTS_THEME = {
    * specs do. A grid panel or a host `size` overrides it.
    */
   chart: {
-    /** The width a chart lays out for on Node, where there is no container to fill, in pixels. */
+    /** The width a chart lays out for on Node when no surface states one, in pixels. */
     width: 480,
     xy: {
       /** Width to height. Lens uses it for a vertical time chart and fills a container otherwise. */
@@ -93,7 +93,7 @@ export const CHARTS_THEME = {
     rowHeight: 20,
     /** Space between panels, in pixels. */
     gap: 8,
-    /** Space between a section title and its panels, in pixels. */
+    /** Space between a grid's blocks, in pixels; a section's title sits half of it above its panels. */
     sectionGap: 16,
     /**
      * The width a grid lays out for when the host gives none, in pixels:

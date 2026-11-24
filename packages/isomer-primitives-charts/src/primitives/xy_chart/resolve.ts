@@ -31,6 +31,7 @@ import { categoricalColor, keyColor, resolveColor } from '../../theme';
 import type {
   SceneAnnotation,
   SceneAxis,
+  SceneDomain,
   SceneLegendItem,
   SceneReferenceLine,
   XyCategory,
@@ -599,6 +600,34 @@ const percentageAxis = (yEntries: readonly YEntry[], axis: YAxisId) => {
   );
 };
 
+type YDomain = NonNullable<
+  NonNullable<NonNullable<XyChartNode['axes']>['y']>['domain']
+>;
+
+/** A y axis's domain as intent. A `custom` domain with one bound is the data's, extended to zero except on a log axis, with that end fixed and the domain unrounded. */
+const yDomainOf = (
+  domain: YDomain,
+  {
+    scale,
+    rounding,
+    fromZero,
+  }: { scale: 'linear' | 'log' | 'sqrt'; rounding: boolean; fromZero: boolean }
+): SceneDomain => {
+  if (domain.kind !== 'custom') {
+    return { kind: 'data', includeZero: scale !== 'log' && fromZero, rounding };
+  }
+  const { min, max } = domain;
+  return min !== undefined && max !== undefined
+    ? { kind: 'custom', min, max }
+    : {
+        kind: 'data',
+        includeZero: scale !== 'log',
+        rounding: false,
+        ...(min === undefined ? {} : { min }),
+        ...(max === undefined ? {} : { max }),
+      };
+};
+
 const yFormatOf = (
   { resolution, yEntries }: XyContext,
   axis: YAxisId
@@ -671,20 +700,16 @@ const yAxisOf = (
         : 'right',
     scale,
     format: yFormatOf(context, id),
-    domain:
-      domain.kind === 'custom'
-        ? { kind: 'custom', min: domain.min, max: domain.max }
-        : {
-            kind: 'data',
-            includeZero:
-              scale !== 'log' &&
-              (percentageAxis(yEntries, id) ||
-                (domain.kind === 'full' &&
-                  onAxis.some(
-                    ({ layer }) => layer.mark === 'bar' || layer.mark === 'area'
-                  ))),
-            rounding: config?.rounding ?? true,
-          },
+    domain: yDomainOf(domain, {
+      scale,
+      rounding: config?.rounding ?? true,
+      fromZero:
+        percentageAxis(yEntries, id) ||
+        (domain.kind === 'full' &&
+          onAxis.some(
+            ({ layer }) => layer.mark === 'bar' || layer.mark === 'area'
+          )),
+    }),
     ...(config?.title === undefined ? {} : { title: config.title }),
     showTicks: config?.ticks ?? true,
     showGrid: config?.grid ?? true,
