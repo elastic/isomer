@@ -151,6 +151,38 @@ try {
   rmSync(dirname(stylesheetBundle), { force: true, recursive: true });
 }
 
+// The SDK's CommonJS build carries the ESM-only Markdown packages in one bundled file (`build:bundle`); no CommonJS module may require them, or Node loads them as separate ES modules again.
+const sdk = manifests.get('@elastic/isomer-sdk');
+const { metafile: parsersMetafile } = await build({
+  entryPoints: [join(sdk.dir, 'src/render/markdown/parsers.ts')],
+  bundle: true,
+  write: false,
+  metafile: true,
+  platform: 'node',
+  logLevel: 'silent',
+});
+const bundledPackages = new Set(
+  Object.keys(parsersMetafile.inputs).flatMap(
+    (input) =>
+      input.match(/.*node_modules\/((?:@[^/]+\/)?[^/]+)\//)?.slice(1) ?? []
+  )
+);
+const sdkCjs = join(sdk.dir, 'lib/cjs');
+const packageOf = (specifier) => specifier.match(/^(?:@[^/]+\/)?[^/]+/)?.[0];
+checked += 1;
+for (const file of readdirSync(sdkCjs, { recursive: true })) {
+  if (!/\.[cm]?js$/.test(file)) {
+    continue;
+  }
+  for (const specifier of specifiersIn(join(sdkCjs, file))) {
+    if (bundledPackages.has(packageOf(specifier))) {
+      violations.push(
+        `${relative(repoRoot, join(sdkCjs, file))} requires "${specifier}", which the SDK's \`build:bundle\` inlines; is the CommonJS build missing that step?`
+      );
+    }
+  }
+}
+
 if (violations.length > 0) {
   console.error(
     `Module graph check failed:\n${violations.map((line) => `  - ${line}`).join('\n')}`
