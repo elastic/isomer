@@ -40,8 +40,9 @@ export interface CompositionJsonSchemaOptions {
  * `$defs` are named per primitive type, plus `bodyNode` for the union, and two
  * different schemas under one name throw. It is the schema's structure, not
  * all the validator checks: a refinement, the input budget and duplicate ids
- * are not in it. It is also the shape a parse returns, so an object whose
- * unknown keys the validator accepts and keeps, such as `meta`, is closed here.
+ * are not in it. It is also the shape a parse returns, so an object a parse
+ * strips unknown keys from, such as `meta`, is closed here though the validator
+ * keeps them; a `z.looseObject` primitive stays open.
  * Agent-facing prompt text uses `buildAuthoringJsonSchema` instead.
  */
 export const buildCompositionJsonSchema = (

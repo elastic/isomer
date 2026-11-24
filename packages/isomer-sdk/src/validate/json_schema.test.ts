@@ -94,7 +94,26 @@ describe('buildCompositionJsonSchema', () => {
     }
   });
 
-  it('closes an object whose unknown keys the validator accepts and keeps', () => {
+  it('leaves a loose primitive open', () => {
+    const loose = define({
+      type: 'loose',
+      catalog: {
+        type: 'loose',
+        purpose: '',
+        useWhen: [],
+        avoidWhen: [],
+        example: {},
+      },
+      examples: [],
+      schema: z.looseObject({ type: z.literal('loose') }),
+      renderers,
+    });
+    expect(defsOf(buildCompositionJsonSchema([loose])).loose).toMatchObject({
+      additionalProperties: {},
+    });
+  });
+
+  it('closes an object a parse strips unknown keys from, though the validator keeps them', () => {
     const { properties } = buildCompositionJsonSchema([leaf('alpha')]) as {
       properties: { meta: { additionalProperties?: boolean } };
     };
