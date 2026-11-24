@@ -18,13 +18,7 @@ import type {
   RootContent,
   TableRow,
 } from 'mdast';
-import { gfmToMarkdown } from 'mdast-util-gfm';
-import {
-  defaultHandlers,
-  type Handle,
-  type Options,
-  toMarkdown,
-} from 'mdast-util-to-markdown';
+import type { Handle, Options } from 'mdast-util-to-markdown';
 
 import { oneLine } from '../../composition/one_line';
 import {
@@ -41,6 +35,7 @@ import {
 } from '../../validate/url';
 
 import { sanitizeAuthoredSource } from './format';
+import { defaultHandlers, gfmToMarkdown, toMarkdown } from './parsers';
 
 // A fence-info string only allows word-ish tokens; anything else would
 // terminate the fence early or inject markdown.
