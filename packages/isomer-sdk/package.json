@@ -19,54 +19,72 @@
   "exports": {
     ".": {
       "types": "./lib/cjs/entries/index.d.ts",
+      "module": "./lib/esm/entries/index.js",
+      "node": "./lib/cjs/entries/index.js",
       "import": "./lib/esm/entries/index.js",
       "require": "./lib/cjs/entries/index.js",
       "default": "./lib/cjs/entries/index.js"
     },
     "./schema": {
       "types": "./lib/cjs/entries/schema.d.ts",
+      "module": "./lib/esm/entries/schema.js",
+      "node": "./lib/cjs/entries/schema.js",
       "import": "./lib/esm/entries/schema.js",
       "require": "./lib/cjs/entries/schema.js",
       "default": "./lib/cjs/entries/schema.js"
     },
     "./html": {
       "types": "./lib/cjs/entries/html.d.ts",
+      "module": "./lib/esm/entries/html.js",
+      "node": "./lib/cjs/entries/html.js",
       "import": "./lib/esm/entries/html.js",
       "require": "./lib/cjs/entries/html.js",
       "default": "./lib/cjs/entries/html.js"
     },
     "./slack": {
       "types": "./lib/cjs/entries/slack.d.ts",
+      "module": "./lib/esm/entries/slack.js",
+      "node": "./lib/cjs/entries/slack.js",
       "import": "./lib/esm/entries/slack.js",
       "require": "./lib/cjs/entries/slack.js",
       "default": "./lib/cjs/entries/slack.js"
     },
     "./text": {
       "types": "./lib/cjs/entries/text.d.ts",
+      "module": "./lib/esm/entries/text.js",
+      "node": "./lib/cjs/entries/text.js",
       "import": "./lib/esm/entries/text.js",
       "require": "./lib/cjs/entries/text.js",
       "default": "./lib/cjs/entries/text.js"
     },
     "./markdown": {
       "types": "./lib/cjs/entries/markdown.d.ts",
+      "module": "./lib/esm/entries/markdown.js",
+      "node": "./lib/cjs/entries/markdown.js",
       "import": "./lib/esm/entries/markdown.js",
       "require": "./lib/cjs/entries/markdown.js",
       "default": "./lib/cjs/entries/markdown.js"
     },
     "./react": {
       "types": "./lib/cjs/entries/react.d.ts",
+      "module": "./lib/esm/entries/react.js",
+      "node": "./lib/cjs/entries/react.js",
       "import": "./lib/esm/entries/react.js",
       "require": "./lib/cjs/entries/react.js",
       "default": "./lib/cjs/entries/react.js"
     },
     "./author": {
       "types": "./lib/cjs/author/index.d.ts",
+      "module": "./lib/esm/author/index.js",
+      "node": "./lib/cjs/author/index.js",
       "import": "./lib/esm/author/index.js",
       "require": "./lib/cjs/author/index.js",
       "default": "./lib/cjs/author/index.js"
     },
     "./testing": {
       "types": "./lib/cjs/testing/index.d.ts",
+      "module": "./lib/esm/testing/index.js",
+      "node": "./lib/cjs/testing/index.js",
       "import": "./lib/esm/testing/index.js",
       "require": "./lib/cjs/testing/index.js",
       "default": "./lib/cjs/testing/index.js"
@@ -111,11 +129,12 @@
     "access": "public"
   },
   "scripts": {
-    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types && pnpm copy-files",
     "build:clean": "rimraf lib/",
     "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "copy-files": "cp src/testing/import_native.cjs lib/cjs/testing/import_native.cjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "peerDependencies": {

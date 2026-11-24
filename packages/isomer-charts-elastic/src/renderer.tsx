@@ -23,8 +23,8 @@ import type { ElasticChartsOptions } from './shared/options';
 import { elasticModule } from './shared/styles';
 import { sceneSpecs } from './specs';
 
-/** The Elastic Charts release this engine is built and tested against: Kibana's pin. */
-export const ELASTIC_CHARTS_VERSION = '73.3.2';
+/** The Elastic Charts release this engine is built and tested against. */
+export const ELASTIC_CHARTS_VERSION = '73.5.1';
 
 const KINDS: readonly SceneKind[] = [
   'metric',
@@ -43,7 +43,7 @@ const debugFlag = (): boolean =>
  * A Scene with nothing to draw, as its note. A title names the image, and the
  * note, which says why it is empty, describes it.
  */
-const EmptyChart = ({
+export const EmptyChart = ({
   scene,
   text,
   env,
