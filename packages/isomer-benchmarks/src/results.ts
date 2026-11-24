@@ -40,7 +40,11 @@ export interface Environment {
   /** The cgroup v2 memory limit, when the process runs under one. */
   cgroupMemoryLimitMb: number | null;
   nodeFlags: readonly string[];
-  env: { MALLOC_ARENA_MAX: string | null; UV_THREADPOOL_SIZE: string | null };
+  env: {
+    NODE_ENV: string | null;
+    MALLOC_ARENA_MAX: string | null;
+    UV_THREADPOOL_SIZE: string | null;
+  };
   commit: string | null;
   /** Resolved versions of the packages measured and their heavy dependencies. */
   packages: Record<string, string>;
@@ -125,6 +129,7 @@ export const describeEnvironment = ({
   cgroupMemoryLimitMb: cgroupMemoryLimitMb(),
   nodeFlags,
   env: {
+    NODE_ENV: process.env.NODE_ENV ?? null,
     MALLOC_ARENA_MAX: process.env.MALLOC_ARENA_MAX ?? null,
     UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE ?? null,
   },
@@ -140,6 +145,7 @@ export const describeEnvironmentLine = ({
   cpus: cores,
   totalMemoryMb,
   cgroupMemoryLimitMb: limit,
+  env: { NODE_ENV: nodeEnv },
   commit,
 }: Environment): string =>
   [
@@ -148,6 +154,7 @@ export const describeEnvironmentLine = ({
     `${cpuModel} (${cores} cores)`,
     `${Math.round(totalMemoryMb / 1024)} GB`,
     ...(limit === null ? [] : [`cgroup limit ${Math.round(limit)} MB`]),
+    `NODE_ENV ${nodeEnv ?? 'unset'}`,
     ...(commit === null ? [] : [`commit \`${commit.slice(0, 8)}\``]),
   ].join(', ');
 

@@ -11,7 +11,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 
 ## What each suite claims
 
-Every scenario runs in its own fresh Node process, started with `--expose-gc --disallow-code-generation-from-strings`. Each one runs several times, and the tables show the median. Peak RSS is the process's high-water mark (`process.resourceUsage().maxRSS`), so it includes Node itself.
+Every scenario runs in its own fresh Node process, started with `--expose-gc --disallow-code-generation-from-strings` and `NODE_ENV=production`, so React and other dependencies load their production builds, as a production host's do. Each one runs several times, and the tables show the median. Peak RSS is the process's high-water mark (`process.resourceUsage().maxRSS`), so it includes Node itself.
 
 | Suite | Claims | Does not claim |
 | --- | --- | --- |

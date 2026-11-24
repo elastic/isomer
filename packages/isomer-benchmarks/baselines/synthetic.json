@@ -16,10 +16,11 @@
       "--expose-gc"
     ],
     "env": {
+      "NODE_ENV": "production",
       "MALLOC_ARENA_MAX": null,
       "UV_THREADPOOL_SIZE": null
     },
-    "commit": "4760b00e0c051f21641655c540041a16928ae73e",
+    "commit": "2723bd02cd918fbc1277a6574def8e6b2bba91e6",
     "packages": {
       "@elastic/isomer-sdk": "0.0.0-development",
       "@elastic/isomer-runtime": "0.0.0-development",
@@ -145,1556 +146,1556 @@
   "runs": [
     {
       "scenario": "primitives-1",
-      "peakRssMb": 89.953125,
-      "assembleMs": 2.055749999999989,
-      "runtimeHeapMb": 0.2144927978515625,
-      "validateFirstMs": 2.027542000000011,
-      "validateMs": 0.18779099999997584,
-      "htmlMs": 0.49500000000000455,
-      "textMs": 0.126041999999984,
-      "snapshotMs": 0.26704199999997513
+      "peakRssMb": 88.515625,
+      "assembleMs": 1.888083000000023,
+      "runtimeHeapMb": 0.21624755859375,
+      "validateFirstMs": 1.9301250000000039,
+      "validateMs": 0.16799999999997794,
+      "htmlMs": 0.21000000000000796,
+      "textMs": 0.12275000000002478,
+      "snapshotMs": 0.17587499999999068
     },
     {
       "scenario": "primitives-1",
-      "peakRssMb": 90.0625,
-      "assembleMs": 1.9222499999999911,
-      "runtimeHeapMb": 0.21429443359375,
-      "validateFirstMs": 1.838124999999991,
-      "validateMs": 0.18166700000000446,
-      "htmlMs": 0.46120899999999665,
-      "textMs": 0.12929200000002083,
-      "snapshotMs": 0.26787500000000364
+      "peakRssMb": 88.484375,
+      "assembleMs": 1.8480419999999924,
+      "runtimeHeapMb": 0.2160491943359375,
+      "validateFirstMs": 1.7674169999999947,
+      "validateMs": 0.171291999999994,
+      "htmlMs": 0.2115000000000009,
+      "textMs": 0.1231249999999875,
+      "snapshotMs": 0.171291999999994
     },
     {
       "scenario": "primitives-1",
-      "peakRssMb": 90.125,
-      "assembleMs": 2.014125000000007,
-      "runtimeHeapMb": 0.2143402099609375,
-      "validateFirstMs": 2.216167000000013,
-      "validateMs": 0.19012499999999477,
-      "htmlMs": 0.43304200000000037,
-      "textMs": 0.12308300000000827,
-      "snapshotMs": 0.28404099999997356
+      "peakRssMb": 88.1875,
+      "assembleMs": 1.7954590000000223,
+      "runtimeHeapMb": 0.21551513671875,
+      "validateFirstMs": 1.594916000000012,
+      "validateMs": 0.16937500000000227,
+      "htmlMs": 0.21199999999998909,
+      "textMs": 0.12562499999998522,
+      "snapshotMs": 0.17549999999999955
     },
     {
       "scenario": "primitives-1",
-      "peakRssMb": 89.78125,
-      "assembleMs": 1.9027920000000051,
-      "runtimeHeapMb": 0.2156982421875,
-      "validateFirstMs": 1.8279170000000136,
-      "validateMs": 0.17191700000000765,
-      "htmlMs": 0.4133340000000203,
-      "textMs": 0.12812499999998295,
-      "snapshotMs": 0.2641659999999888
+      "peakRssMb": 88.828125,
+      "assembleMs": 1.8483329999999967,
+      "runtimeHeapMb": 0.21612548828125,
+      "validateFirstMs": 2.009791999999976,
+      "validateMs": 0.1733329999999853,
+      "htmlMs": 0.20745900000000006,
+      "textMs": 0.12770799999998417,
+      "snapshotMs": 0.17587499999999068
     },
     {
       "scenario": "primitives-1",
-      "peakRssMb": 89.515625,
-      "assembleMs": 2.136082999999985,
-      "runtimeHeapMb": 0.21462249755859375,
-      "validateFirstMs": 1.8492080000000044,
-      "validateMs": 0.16804100000001654,
-      "htmlMs": 0.41354200000000674,
-      "textMs": 0.12462500000000887,
-      "snapshotMs": 0.2665839999999946
+      "peakRssMb": 88.984375,
+      "assembleMs": 1.8679579999999874,
+      "runtimeHeapMb": 0.2160186767578125,
+      "validateFirstMs": 1.6602499999999907,
+      "validateMs": 0.18549999999999045,
+      "htmlMs": 0.21537499999999454,
+      "textMs": 0.12700000000000955,
+      "snapshotMs": 0.1803329999999903
     },
     {
       "scenario": "primitives-10",
-      "peakRssMb": 90.015625,
-      "assembleMs": 2.9645419999999945,
-      "runtimeHeapMb": 0.4516143798828125,
-      "validateFirstMs": 2.2526249999999948,
-      "validateMs": 0.19183400000000006,
-      "htmlMs": 0.42779100000001336,
-      "textMs": 0.13862499999999045,
-      "snapshotMs": 0.2660410000000013
+      "peakRssMb": 89.125,
+      "assembleMs": 2.8297079999999823,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 2.141874999999999,
+      "validateMs": 0.18562500000001592,
+      "htmlMs": 0.22820900000002098,
+      "textMs": 0.13733300000001236,
+      "snapshotMs": 0.19162500000001614
     },
     {
       "scenario": "primitives-10",
-      "peakRssMb": 89.953125,
-      "assembleMs": 2.9962089999999932,
-      "runtimeHeapMb": 0.45140838623046875,
-      "validateFirstMs": 2.0159579999999835,
-      "validateMs": 0.1990419999999915,
-      "htmlMs": 0.43549999999999045,
-      "textMs": 0.135249999999985,
-      "snapshotMs": 0.2737079999999992
+      "peakRssMb": 88.390625,
+      "assembleMs": 2.805082999999996,
+      "runtimeHeapMb": 0.45307159423828125,
+      "validateFirstMs": 1.891666000000015,
+      "validateMs": 0.19729200000000446,
+      "htmlMs": 0.24929099999999949,
+      "textMs": 0.14070800000001782,
+      "snapshotMs": 0.19183400000000006
     },
     {
       "scenario": "primitives-10",
-      "peakRssMb": 90.328125,
-      "assembleMs": 3.275624999999991,
-      "runtimeHeapMb": 0.45184326171875,
-      "validateFirstMs": 1.9868749999999977,
-      "validateMs": 0.20979099999999562,
-      "htmlMs": 0.44700000000000273,
-      "textMs": 0.14649999999997476,
-      "snapshotMs": 0.29033300000000395
+      "peakRssMb": 88.59375,
+      "assembleMs": 2.935165999999981,
+      "runtimeHeapMb": 0.45326995849609375,
+      "validateFirstMs": 2.0429579999999987,
+      "validateMs": 0.20729199999999537,
+      "htmlMs": 0.23791599999998425,
+      "textMs": 0.14229100000000017,
+      "snapshotMs": 0.1916670000000238
     },
     {
       "scenario": "primitives-10",
-      "peakRssMb": 89.8125,
-      "assembleMs": 2.9358330000000024,
-      "runtimeHeapMb": 0.451812744140625,
-      "validateFirstMs": 2.2009589999999832,
-      "validateMs": 0.1945840000000203,
-      "htmlMs": 0.4451249999999902,
-      "textMs": 0.14441600000000676,
-      "snapshotMs": 0.2803750000000207
+      "peakRssMb": 89.0625,
+      "assembleMs": 3.0567920000000015,
+      "runtimeHeapMb": 0.45319366455078125,
+      "validateFirstMs": 2.081582999999995,
+      "validateMs": 0.20608400000000415,
+      "htmlMs": 0.21295799999998621,
+      "textMs": 0.13941700000000878,
+      "snapshotMs": 0.1887919999999781
     },
     {
       "scenario": "primitives-10",
-      "peakRssMb": 89.890625,
-      "assembleMs": 2.8045840000000055,
-      "runtimeHeapMb": 0.45184326171875,
-      "validateFirstMs": 2.0130410000000154,
-      "validateMs": 0.20704200000000128,
-      "htmlMs": 0.41704200000000924,
-      "textMs": 0.14258399999999938,
-      "snapshotMs": 0.285665999999992
-    },
-    {
-      "scenario": "primitives-50",
-      "peakRssMb": 90.671875,
-      "assembleMs": 5.776791000000003,
-      "runtimeHeapMb": 1.291473388671875,
-      "validateFirstMs": 3.0037920000000042,
-      "validateMs": 0.21483299999999872,
-      "htmlMs": 0.4930829999999844,
-      "textMs": 0.158457999999996,
-      "snapshotMs": 0.30983399999999506
-    },
-    {
-      "scenario": "primitives-50",
-      "peakRssMb": 91.15625,
-      "assembleMs": 5.237707999999998,
-      "runtimeHeapMb": 1.2772979736328125,
-      "validateFirstMs": 3.3995419999999967,
-      "validateMs": 0.21512500000000045,
-      "htmlMs": 0.4930830000000128,
-      "textMs": 0.16579199999998195,
-      "snapshotMs": 0.30654100000000994
-    },
-    {
-      "scenario": "primitives-50",
-      "peakRssMb": 91.03125,
-      "assembleMs": 5.23191700000001,
-      "runtimeHeapMb": 1.277618408203125,
-      "validateFirstMs": 2.9999579999999924,
-      "validateMs": 0.2103749999999991,
-      "htmlMs": 0.4351249999999993,
-      "textMs": 0.1565830000000119,
-      "snapshotMs": 0.3051659999999856
-    },
-    {
-      "scenario": "primitives-50",
-      "peakRssMb": 91.46875,
-      "assembleMs": 5.353250000000003,
-      "runtimeHeapMb": 1.2787857055664062,
-      "validateFirstMs": 3.0226659999999868,
-      "validateMs": 0.20170899999999392,
-      "htmlMs": 0.4445410000000152,
-      "textMs": 0.1558339999999987,
-      "snapshotMs": 0.30733299999999986
-    },
-    {
-      "scenario": "primitives-50",
-      "peakRssMb": 91.4375,
-      "assembleMs": 12.112374999999986,
-      "runtimeHeapMb": 1.2779083251953125,
-      "validateFirstMs": 3.8582910000000084,
-      "validateMs": 0.20300000000000296,
-      "htmlMs": 0.4612079999999992,
-      "textMs": 0.15687499999998522,
-      "snapshotMs": 0.3025000000000091
-    },
-    {
-      "scenario": "primitives-200",
-      "peakRssMb": 111.140625,
-      "assembleMs": 16.906582999999983,
-      "runtimeHeapMb": 4.340179443359375,
-      "validateFirstMs": 5.886124999999993,
-      "validateMs": 0.22979200000000333,
-      "htmlMs": 0.5155839999999898,
-      "textMs": 0.16566700000001333,
-      "snapshotMs": 0.31741700000000606
-    },
-    {
-      "scenario": "primitives-200",
-      "peakRssMb": 110.375,
-      "assembleMs": 15.65025,
-      "runtimeHeapMb": 4.340476989746094,
-      "validateFirstMs": 5.21383400000002,
-      "validateMs": 0.22529199999999605,
-      "htmlMs": 0.47399999999998954,
-      "textMs": 0.1606249999999818,
-      "snapshotMs": 0.31587500000000546
-    },
-    {
-      "scenario": "primitives-200",
-      "peakRssMb": 110.609375,
-      "assembleMs": 16.563333,
-      "runtimeHeapMb": 4.34088134765625,
-      "validateFirstMs": 5.103082999999998,
-      "validateMs": 0.23383400000000165,
-      "htmlMs": 0.45245800000000713,
-      "textMs": 0.1615409999999997,
-      "snapshotMs": 0.3170829999999967
-    },
-    {
-      "scenario": "primitives-200",
-      "peakRssMb": 110.9375,
-      "assembleMs": 17.21395899999999,
-      "runtimeHeapMb": 4.3406982421875,
-      "validateFirstMs": 5.353707999999983,
-      "validateMs": 0.2277080000000069,
-      "htmlMs": 0.47195800000000077,
-      "textMs": 0.16083299999999667,
-      "snapshotMs": 0.30887500000000045
-    },
-    {
-      "scenario": "primitives-200",
-      "peakRssMb": 110.84375,
-      "assembleMs": 17.139542000000006,
-      "runtimeHeapMb": 4.3405609130859375,
-      "validateFirstMs": 5.491208,
-      "validateMs": 0.2341249999999775,
-      "htmlMs": 0.4744580000000269,
-      "textMs": 0.16254200000000196,
-      "snapshotMs": 0.3250419999999963
-    },
-    {
-      "scenario": "nodes-10",
-      "peakRssMb": 87.78125,
-      "assembleMs": 2.9940420000000074,
-      "runtimeHeapMb": 0.45244598388671875,
-      "validateFirstMs": 1.661042000000009,
-      "validateMs": 0.03866700000000378,
-      "htmlMs": 0.10745800000000827,
-      "textMs": 0.029415999999997666,
-      "snapshotMs": 0.060791999999992186
-    },
-    {
-      "scenario": "nodes-10",
-      "peakRssMb": 87.609375,
-      "assembleMs": 2.9717500000000143,
-      "runtimeHeapMb": 0.45147705078125,
-      "validateFirstMs": 1.7084170000000256,
-      "validateMs": 0.037042000000013786,
-      "htmlMs": 0.10745800000000827,
-      "textMs": 0.030292000000002872,
-      "snapshotMs": 0.06208300000000122
-    },
-    {
-      "scenario": "nodes-10",
-      "peakRssMb": 87.734375,
-      "assembleMs": 2.992750000000001,
-      "runtimeHeapMb": 0.4513397216796875,
-      "validateFirstMs": 1.7065000000000055,
-      "validateMs": 0.037583000000012134,
-      "htmlMs": 0.11099999999999,
-      "textMs": 0.029291999999998097,
-      "snapshotMs": 0.06408299999998235
-    },
-    {
-      "scenario": "nodes-10",
-      "peakRssMb": 87.421875,
-      "assembleMs": 2.8231250000000045,
-      "runtimeHeapMb": 0.45143890380859375,
-      "validateFirstMs": 1.7078329999999937,
-      "validateMs": 0.03700000000000614,
-      "htmlMs": 0.10983299999998053,
-      "textMs": 0.03129200000000765,
-      "snapshotMs": 0.060791999999992186
-    },
-    {
-      "scenario": "nodes-10",
-      "peakRssMb": 87.90625,
-      "assembleMs": 3.309375000000017,
-      "runtimeHeapMb": 0.45320892333984375,
-      "validateFirstMs": 1.7006669999999815,
-      "validateMs": 0.037749999999988404,
-      "htmlMs": 0.11104199999999764,
-      "textMs": 0.02837500000001114,
-      "snapshotMs": 0.061958000000004176
-    },
-    {
-      "scenario": "nodes-100",
-      "peakRssMb": 90.015625,
-      "assembleMs": 3.008999999999986,
-      "runtimeHeapMb": 0.453460693359375,
-      "validateFirstMs": 2.0833330000000103,
-      "validateMs": 0.18416600000000471,
-      "htmlMs": 0.426667000000009,
-      "textMs": 0.13554200000001515,
-      "snapshotMs": 0.27729199999998855
-    },
-    {
-      "scenario": "nodes-100",
-      "peakRssMb": 90.09375,
-      "assembleMs": 2.797832999999997,
-      "runtimeHeapMb": 0.451995849609375,
-      "validateFirstMs": 2.1061669999999992,
-      "validateMs": 0.18633299999999053,
-      "htmlMs": 0.43795800000000895,
-      "textMs": 0.14295799999999304,
-      "snapshotMs": 0.29341700000000515
-    },
-    {
-      "scenario": "nodes-100",
-      "peakRssMb": 89.640625,
-      "assembleMs": 3.336999999999989,
-      "runtimeHeapMb": 0.45201873779296875,
-      "validateFirstMs": 2.0871669999999938,
-      "validateMs": 0.21999999999999886,
-      "htmlMs": 0.44720799999998917,
-      "textMs": 0.15670799999998053,
-      "snapshotMs": 0.2939169999999933
-    },
-    {
-      "scenario": "nodes-100",
-      "peakRssMb": 89.828125,
-      "assembleMs": 2.7822500000000048,
-      "runtimeHeapMb": 0.45174407958984375,
-      "validateFirstMs": 2.1394160000000113,
-      "validateMs": 0.20208299999998758,
-      "htmlMs": 0.45187500000000114,
-      "textMs": 0.14333400000001006,
-      "snapshotMs": 0.3040420000000097
-    },
-    {
-      "scenario": "nodes-100",
-      "peakRssMb": 90.046875,
-      "assembleMs": 3.1069590000000176,
-      "runtimeHeapMb": 0.45186614990234375,
-      "validateFirstMs": 2.0037499999999966,
-      "validateMs": 0.18183300000001168,
-      "htmlMs": 0.42924999999999613,
-      "textMs": 0.13662500000000932,
-      "snapshotMs": 0.2837920000000054
-    },
-    {
-      "scenario": "nodes-1000",
-      "peakRssMb": 117.359375,
-      "assembleMs": 2.988624999999999,
-      "runtimeHeapMb": 0.45206451416015625,
-      "validateFirstMs": 4.718125000000015,
-      "validateMs": 1.2040000000000077,
-      "htmlMs": 2.7669580000000167,
-      "textMs": 1.2437920000000418,
-      "snapshotMs": 2.239250000000027
-    },
-    {
-      "scenario": "nodes-1000",
-      "peakRssMb": 117.671875,
-      "assembleMs": 3.0935409999999877,
-      "runtimeHeapMb": 0.4530181884765625,
-      "validateFirstMs": 4.776208999999994,
-      "validateMs": 1.2132500000000164,
-      "htmlMs": 2.728082999999998,
-      "textMs": 1.1907919999999876,
-      "snapshotMs": 2.1241249999999923
-    },
-    {
-      "scenario": "nodes-1000",
-      "peakRssMb": 117.328125,
-      "assembleMs": 2.9400839999999846,
-      "runtimeHeapMb": 0.45182037353515625,
-      "validateFirstMs": 4.926791999999978,
-      "validateMs": 1.1817499999999939,
-      "htmlMs": 2.617416999999989,
-      "textMs": 1.2202500000000214,
-      "snapshotMs": 2.2065829999999664
-    },
-    {
-      "scenario": "nodes-1000",
-      "peakRssMb": 117.6875,
-      "assembleMs": 2.9642080000000135,
-      "runtimeHeapMb": 0.45163726806640625,
-      "validateFirstMs": 5.183625000000006,
-      "validateMs": 1.204166000000015,
-      "htmlMs": 2.9317499999999654,
-      "textMs": 1.2647499999999923,
-      "snapshotMs": 2.1939159999999447
-    },
-    {
-      "scenario": "nodes-1000",
-      "peakRssMb": 117.796875,
-      "assembleMs": 3.011415999999997,
-      "runtimeHeapMb": 0.45223236083984375,
-      "validateFirstMs": 5.0680830000000014,
-      "validateMs": 1.2371669999999995,
-      "htmlMs": 2.800332999999995,
-      "textMs": 1.2479169999999726,
-      "snapshotMs": 2.168875000000014
-    },
-    {
-      "scenario": "nodes-4000",
-      "peakRssMb": 179.390625,
-      "assembleMs": 3.0739580000000046,
+      "peakRssMb": 88.9375,
+      "assembleMs": 3.025584000000009,
       "runtimeHeapMb": 0.45246124267578125,
-      "validateFirstMs": 12.507125000000002,
-      "validateMs": 4.657582999999988,
-      "htmlMs": 12.498166000000083,
-      "textMs": 5.158666000000039,
-      "snapshotMs": 9.640875000000051
+      "validateFirstMs": 1.9010409999999922,
+      "validateMs": 0.17924999999999613,
+      "htmlMs": 0.22829199999998195,
+      "textMs": 0.1370420000000081,
+      "snapshotMs": 0.18195800000000872
     },
     {
-      "scenario": "nodes-4000",
-      "peakRssMb": 176.578125,
-      "assembleMs": 3.2694999999999936,
-      "runtimeHeapMb": 0.45157623291015625,
-      "validateFirstMs": 18.762917000000016,
-      "validateMs": 5.0745000000000005,
-      "htmlMs": 12.429667000000109,
-      "textMs": 5.2970000000000255,
-      "snapshotMs": 9.595875000000092
+      "scenario": "primitives-50",
+      "peakRssMb": 89.515625,
+      "assembleMs": 5.3547080000000165,
+      "runtimeHeapMb": 1.2792510986328125,
+      "validateFirstMs": 2.6980000000000075,
+      "validateMs": 0.20900000000000318,
+      "htmlMs": 0.23245799999997985,
+      "textMs": 0.15212500000001228,
+      "snapshotMs": 0.205916000000002
     },
     {
-      "scenario": "nodes-4000",
-      "peakRssMb": 184.921875,
-      "assembleMs": 2.791540999999995,
-      "runtimeHeapMb": 0.45157623291015625,
-      "validateFirstMs": 12.740082999999998,
-      "validateMs": 4.598915999999974,
-      "htmlMs": 12.071749999999952,
-      "textMs": 4.893208000000072,
-      "snapshotMs": 9.478209000000106
-    },
-    {
-      "scenario": "nodes-4000",
-      "peakRssMb": 175.59375,
-      "assembleMs": 2.756458000000009,
-      "runtimeHeapMb": 0.452056884765625,
-      "validateFirstMs": 13.091917000000024,
-      "validateMs": 4.555000000000007,
-      "htmlMs": 11.985208000000057,
-      "textMs": 4.880125000000021,
-      "snapshotMs": 9.645166000000017
-    },
-    {
-      "scenario": "nodes-4000",
-      "peakRssMb": 187.359375,
-      "assembleMs": 2.8074160000000177,
-      "runtimeHeapMb": 0.45147705078125,
-      "validateFirstMs": 13.05125000000001,
-      "validateMs": 4.622833000000014,
-      "htmlMs": 11.909249999999986,
-      "textMs": 4.883042000000046,
-      "snapshotMs": 9.130291999999827
-    },
-    {
-      "scenario": "depth-1",
-      "peakRssMb": 89.375,
-      "assembleMs": 2.751374999999996,
-      "runtimeHeapMb": 0.452880859375,
-      "validateFirstMs": 1.9190419999999904,
-      "validateMs": 0.17841699999999605,
-      "htmlMs": 0.41741700000000037,
-      "textMs": 0.13599999999999568,
-      "snapshotMs": 0.2685830000000067
-    },
-    {
-      "scenario": "depth-1",
-      "peakRssMb": 90.015625,
-      "assembleMs": 2.7051249999999953,
-      "runtimeHeapMb": 0.45217132568359375,
-      "validateFirstMs": 1.890625,
-      "validateMs": 0.18099999999998317,
-      "htmlMs": 0.4052090000000135,
-      "textMs": 0.1307910000000163,
-      "snapshotMs": 0.2646249999999952
-    },
-    {
-      "scenario": "depth-1",
-      "peakRssMb": 89.65625,
-      "assembleMs": 2.792125000000013,
-      "runtimeHeapMb": 0.45221710205078125,
-      "validateFirstMs": 1.9458339999999907,
-      "validateMs": 0.19508400000000847,
-      "htmlMs": 0.41833299999998985,
-      "textMs": 0.13758299999997803,
-      "snapshotMs": 0.26541599999998766
-    },
-    {
-      "scenario": "depth-1",
-      "peakRssMb": 90.515625,
-      "assembleMs": 2.7941669999999874,
-      "runtimeHeapMb": 0.45134735107421875,
-      "validateFirstMs": 1.9061660000000131,
-      "validateMs": 0.18950000000000955,
-      "htmlMs": 0.4177919999999915,
-      "textMs": 0.13854100000000358,
-      "snapshotMs": 0.2607500000000016
-    },
-    {
-      "scenario": "depth-1",
-      "peakRssMb": 90.359375,
-      "assembleMs": 2.7917919999999867,
-      "runtimeHeapMb": 0.453521728515625,
-      "validateFirstMs": 1.9936669999999879,
-      "validateMs": 0.1847919999999874,
-      "htmlMs": 0.4428749999999866,
-      "textMs": 0.13325000000000387,
-      "snapshotMs": 0.2653330000000267
-    },
-    {
-      "scenario": "depth-8",
-      "peakRssMb": 93.46875,
-      "assembleMs": 2.743916999999982,
-      "runtimeHeapMb": 0.45136260986328125,
-      "validateFirstMs": 2.358833000000004,
-      "validateMs": 0.19225000000000136,
-      "htmlMs": 0.42241700000002425,
-      "textMs": 0.1485839999999996,
-      "snapshotMs": 0.2762910000000147
-    },
-    {
-      "scenario": "depth-8",
-      "peakRssMb": 92.859375,
-      "assembleMs": 2.759208000000001,
-      "runtimeHeapMb": 0.45137786865234375,
-      "validateFirstMs": 2.019040999999987,
-      "validateMs": 0.18608299999999645,
-      "htmlMs": 0.41579199999998195,
-      "textMs": 0.14270799999999895,
-      "snapshotMs": 0.2787089999999921
-    },
-    {
-      "scenario": "depth-8",
-      "peakRssMb": 92.484375,
-      "assembleMs": 2.887042000000008,
-      "runtimeHeapMb": 0.4532623291015625,
-      "validateFirstMs": 2.0929999999999893,
-      "validateMs": 0.19754199999999855,
-      "htmlMs": 0.4370830000000012,
-      "textMs": 0.14904200000000856,
-      "snapshotMs": 0.28650000000001796
-    },
-    {
-      "scenario": "depth-8",
-      "peakRssMb": 92.296875,
-      "assembleMs": 2.758042000000003,
-      "runtimeHeapMb": 0.454071044921875,
-      "validateFirstMs": 2.3755000000000166,
-      "validateMs": 0.19608400000001325,
-      "htmlMs": 0.4071660000000179,
-      "textMs": 0.14375000000001137,
-      "snapshotMs": 0.27683300000001054
-    },
-    {
-      "scenario": "depth-8",
-      "peakRssMb": 92.875,
-      "assembleMs": 2.7253749999999854,
-      "runtimeHeapMb": 0.45192718505859375,
-      "validateFirstMs": 2.293500000000023,
-      "validateMs": 0.19037499999998886,
-      "htmlMs": 0.4070000000000107,
-      "textMs": 0.14645799999999554,
-      "snapshotMs": 0.28033300000001304
-    },
-    {
-      "scenario": "depth-16",
-      "peakRssMb": 93.671875,
-      "assembleMs": 2.708042000000006,
-      "runtimeHeapMb": 0.45212554931640625,
-      "validateFirstMs": 2.1939999999999884,
-      "validateMs": 0.19999999999998863,
-      "htmlMs": 0.4242089999999905,
-      "textMs": 0.14645799999999554,
-      "snapshotMs": 0.27891700000000696
-    },
-    {
-      "scenario": "depth-16",
-      "peakRssMb": 93.359375,
-      "assembleMs": 2.7057920000000024,
-      "runtimeHeapMb": 0.45217132568359375,
-      "validateFirstMs": 1.9869999999999948,
-      "validateMs": 0.203125,
-      "htmlMs": 0.41929199999998445,
-      "textMs": 0.14629099999999085,
-      "snapshotMs": 0.2900419999999997
-    },
-    {
-      "scenario": "depth-16",
-      "peakRssMb": 93.65625,
-      "assembleMs": 3.1108330000000137,
-      "runtimeHeapMb": 0.45191192626953125,
-      "validateFirstMs": 2.2403750000000002,
-      "validateMs": 0.2157500000000141,
-      "htmlMs": 0.45008300000000645,
-      "textMs": 0.1537919999999815,
-      "snapshotMs": 0.30075000000002206
-    },
-    {
-      "scenario": "depth-16",
-      "peakRssMb": 93.515625,
-      "assembleMs": 2.771667000000008,
-      "runtimeHeapMb": 0.45217132568359375,
-      "validateFirstMs": 2.1334580000000187,
-      "validateMs": 0.21366699999998673,
-      "htmlMs": 0.453125,
-      "textMs": 0.15116599999998925,
-      "snapshotMs": 0.2825830000000167
-    },
-    {
-      "scenario": "depth-16",
-      "peakRssMb": 94,
-      "assembleMs": 2.7150839999999903,
-      "runtimeHeapMb": 0.453460693359375,
-      "validateFirstMs": 2.125290999999976,
-      "validateMs": 0.20779200000001197,
-      "htmlMs": 0.4267499999999984,
-      "textMs": 0.15054100000000403,
-      "snapshotMs": 0.2907920000000104
-    },
-    {
-      "scenario": "depth-24",
-      "peakRssMb": 93.765625,
-      "assembleMs": 2.7956669999999804,
-      "runtimeHeapMb": 0.452178955078125,
-      "validateFirstMs": 2.2403750000000002,
-      "validateMs": 0.22791699999999082,
-      "htmlMs": 0.442875000000015,
-      "textMs": 0.15524999999999523,
-      "snapshotMs": 0.2888329999999826
-    },
-    {
-      "scenario": "depth-24",
-      "peakRssMb": 93.484375,
-      "assembleMs": 2.8234170000000063,
-      "runtimeHeapMb": 0.45194244384765625,
-      "validateFirstMs": 2.1312499999999943,
-      "validateMs": 0.21870799999999235,
-      "htmlMs": 0.41533300000000395,
-      "textMs": 0.15458300000000236,
-      "snapshotMs": 0.2811659999999847
-    },
-    {
-      "scenario": "depth-24",
-      "peakRssMb": 93.421875,
-      "assembleMs": 2.773791000000017,
-      "runtimeHeapMb": 0.4517974853515625,
-      "validateFirstMs": 2.2168749999999875,
-      "validateMs": 0.21904100000000426,
-      "htmlMs": 0.42975000000001273,
-      "textMs": 0.15508299999999053,
-      "snapshotMs": 0.28854100000000926
-    },
-    {
-      "scenario": "depth-24",
-      "peakRssMb": 93.828125,
-      "assembleMs": 2.6993329999999958,
-      "runtimeHeapMb": 0.45302581787109375,
-      "validateFirstMs": 2.3783750000000055,
-      "validateMs": 0.21116600000001995,
-      "htmlMs": 0.43720899999999574,
-      "textMs": 0.15654200000000174,
-      "snapshotMs": 0.2831249999999841
-    },
-    {
-      "scenario": "depth-24",
-      "peakRssMb": 93.5625,
-      "assembleMs": 2.7567080000000033,
-      "runtimeHeapMb": 0.451568603515625,
-      "validateFirstMs": 2.1244590000000017,
-      "validateMs": 0.21137499999997544,
-      "htmlMs": 0.40995800000001736,
-      "textMs": 0.15654100000000426,
-      "snapshotMs": 0.2814170000000047
-    },
-    {
-      "scenario": "characters-1000",
-      "peakRssMb": 89.46875,
-      "assembleMs": 2.7575000000000074,
-      "runtimeHeapMb": 0.45203399658203125,
-      "validateFirstMs": 2.3203750000000127,
-      "validateMs": 0.18758399999998687,
-      "htmlMs": 0.4167500000000075,
-      "textMs": 0.1377080000000035,
-      "snapshotMs": 0.26474999999999227
-    },
-    {
-      "scenario": "characters-1000",
-      "peakRssMb": 90.03125,
-      "assembleMs": 2.764583000000016,
-      "runtimeHeapMb": 0.45357513427734375,
-      "validateFirstMs": 1.9823330000000112,
-      "validateMs": 0.18279200000000628,
-      "htmlMs": 0.410082999999986,
-      "textMs": 0.13479200000000446,
-      "snapshotMs": 0.2655420000000106
-    },
-    {
-      "scenario": "characters-1000",
-      "peakRssMb": 89.578125,
-      "assembleMs": 2.7393339999999853,
-      "runtimeHeapMb": 0.45174407958984375,
-      "validateFirstMs": 2.3609590000000082,
-      "validateMs": 0.18370799999999576,
-      "htmlMs": 0.4188339999999755,
-      "textMs": 0.13654099999999403,
-      "snapshotMs": 0.2667500000000018
-    },
-    {
-      "scenario": "characters-1000",
-      "peakRssMb": 89.984375,
-      "assembleMs": 2.7231669999999895,
-      "runtimeHeapMb": 0.4515228271484375,
-      "validateFirstMs": 2.1705420000000117,
-      "validateMs": 0.1882919999999899,
-      "htmlMs": 0.407416000000012,
-      "textMs": 0.13512500000001637,
-      "snapshotMs": 0.26445799999999053
-    },
-    {
-      "scenario": "characters-1000",
+      "scenario": "primitives-50",
       "peakRssMb": 89.484375,
-      "assembleMs": 2.916667000000004,
-      "runtimeHeapMb": 0.45171356201171875,
-      "validateFirstMs": 2.2377500000000055,
-      "validateMs": 0.18637499999999818,
-      "htmlMs": 0.41216700000001083,
-      "textMs": 0.13708300000001827,
-      "snapshotMs": 0.26433399999999097
+      "assembleMs": 4.803665999999993,
+      "runtimeHeapMb": 1.2786102294921875,
+      "validateFirstMs": 2.907457999999991,
+      "validateMs": 0.20558299999999008,
+      "htmlMs": 0.24708400000000097,
+      "textMs": 0.1526670000000081,
+      "snapshotMs": 0.20016699999999332
     },
     {
-      "scenario": "characters-10000",
-      "peakRssMb": 89.78125,
-      "assembleMs": 2.6651669999999967,
-      "runtimeHeapMb": 0.45355224609375,
-      "validateFirstMs": 1.9092919999999935,
-      "validateMs": 0.1787920000000156,
-      "htmlMs": 0.4252079999999978,
-      "textMs": 0.13304100000001995,
-      "snapshotMs": 0.2819160000000238
+      "scenario": "primitives-50",
+      "peakRssMb": 88.09375,
+      "assembleMs": 4.8699160000000035,
+      "runtimeHeapMb": 1.2785797119140625,
+      "validateFirstMs": 2.8523330000000158,
+      "validateMs": 0.2057500000000232,
+      "htmlMs": 0.2500830000000178,
+      "textMs": 0.1542090000000087,
+      "snapshotMs": 0.21112499999998136
     },
     {
-      "scenario": "characters-10000",
-      "peakRssMb": 90.25,
-      "assembleMs": 2.769166999999996,
-      "runtimeHeapMb": 0.45178985595703125,
-      "validateFirstMs": 1.9312499999999773,
-      "validateMs": 0.18079199999999673,
-      "htmlMs": 0.4437499999999943,
-      "textMs": 0.13724999999999454,
-      "snapshotMs": 0.2778340000000128
+      "scenario": "primitives-50",
+      "peakRssMb": 88.78125,
+      "assembleMs": 4.80841700000002,
+      "runtimeHeapMb": 1.279022216796875,
+      "validateFirstMs": 2.883874999999989,
+      "validateMs": 0.20983300000000327,
+      "htmlMs": 0.23775000000000546,
+      "textMs": 0.15554099999999949,
+      "snapshotMs": 0.20433300000001964
     },
     {
-      "scenario": "characters-10000",
-      "peakRssMb": 90.609375,
-      "assembleMs": 2.860083000000003,
-      "runtimeHeapMb": 0.45139312744140625,
-      "validateFirstMs": 1.9109169999999835,
-      "validateMs": 0.18925000000001546,
-      "htmlMs": 0.43312499999998977,
-      "textMs": 0.13191699999998718,
-      "snapshotMs": 0.27599999999998204
+      "scenario": "primitives-50",
+      "peakRssMb": 88.828125,
+      "assembleMs": 4.975458000000003,
+      "runtimeHeapMb": 1.2784881591796875,
+      "validateFirstMs": 2.778500000000008,
+      "validateMs": 0.19625000000002046,
+      "htmlMs": 0.24141599999998675,
+      "textMs": 0.15337499999998272,
+      "snapshotMs": 0.20191700000000878
     },
     {
-      "scenario": "characters-10000",
-      "peakRssMb": 89.15625,
-      "assembleMs": 2.799166000000014,
-      "runtimeHeapMb": 0.453521728515625,
-      "validateFirstMs": 1.8562909999999988,
-      "validateMs": 0.18533300000001418,
-      "htmlMs": 0.455332999999996,
-      "textMs": 0.13716700000000515,
-      "snapshotMs": 0.27691599999999994
+      "scenario": "primitives-200",
+      "peakRssMb": 108.8125,
+      "assembleMs": 16.363042000000007,
+      "runtimeHeapMb": 4.3415985107421875,
+      "validateFirstMs": 5.199957999999981,
+      "validateMs": 0.21700000000001296,
+      "htmlMs": 0.26712499999999295,
+      "textMs": 0.1549579999999935,
+      "snapshotMs": 0.21954200000001833
     },
     {
-      "scenario": "characters-10000",
-      "peakRssMb": 90.140625,
-      "assembleMs": 2.6975829999999945,
+      "scenario": "primitives-200",
+      "peakRssMb": 109.359375,
+      "assembleMs": 15.476042000000007,
+      "runtimeHeapMb": 4.341522216796875,
+      "validateFirstMs": 5.502666000000005,
+      "validateMs": 0.21587500000001114,
+      "htmlMs": 0.2590419999999938,
+      "textMs": 0.16241600000000744,
+      "snapshotMs": 0.23266699999999219
+    },
+    {
+      "scenario": "primitives-200",
+      "peakRssMb": 109.453125,
+      "assembleMs": 17.02087499999999,
+      "runtimeHeapMb": 4.3410491943359375,
+      "validateFirstMs": 5.411791000000022,
+      "validateMs": 0.22612499999999613,
+      "htmlMs": 0.26233300000001236,
+      "textMs": 0.16133300000001327,
+      "snapshotMs": 0.225750000000005
+    },
+    {
+      "scenario": "primitives-200",
+      "peakRssMb": 109.234375,
+      "assembleMs": 15.65154099999998,
+      "runtimeHeapMb": 4.34149169921875,
+      "validateFirstMs": 4.979042000000021,
+      "validateMs": 0.22120899999998755,
+      "htmlMs": 0.2478749999999934,
+      "textMs": 0.16183399999999892,
+      "snapshotMs": 0.23387500000001182
+    },
+    {
+      "scenario": "primitives-200",
+      "peakRssMb": 109.515625,
+      "assembleMs": 16.155999999999977,
+      "runtimeHeapMb": 4.341743469238281,
+      "validateFirstMs": 5.518040999999982,
+      "validateMs": 0.2215829999999812,
+      "htmlMs": 0.24262499999997544,
+      "textMs": 0.15474999999997863,
+      "snapshotMs": 0.21854200000001356
+    },
+    {
+      "scenario": "nodes-10",
+      "peakRssMb": 85.03125,
+      "assembleMs": 3.2323340000000087,
+      "runtimeHeapMb": 0.45301055908203125,
+      "validateFirstMs": 1.913833000000011,
+      "validateMs": 0.03787500000001387,
+      "htmlMs": 0.07687500000000114,
+      "textMs": 0.029625000000010004,
+      "snapshotMs": 0.04595900000001052
+    },
+    {
+      "scenario": "nodes-10",
+      "peakRssMb": 85.53125,
+      "assembleMs": 2.843999999999994,
+      "runtimeHeapMb": 0.45550537109375,
+      "validateFirstMs": 1.8075420000000122,
+      "validateMs": 0.038375000000002046,
+      "htmlMs": 0.07145900000000438,
+      "textMs": 0.030875000000008868,
+      "snapshotMs": 0.04233299999998508
+    },
+    {
+      "scenario": "nodes-10",
+      "peakRssMb": 85.09375,
+      "assembleMs": 2.921333000000004,
+      "runtimeHeapMb": 0.4531707763671875,
+      "validateFirstMs": 1.7927080000000046,
+      "validateMs": 0.03820800000002578,
+      "htmlMs": 0.08229199999999537,
+      "textMs": 0.03079199999999105,
+      "snapshotMs": 0.044749999999993406
+    },
+    {
+      "scenario": "nodes-10",
+      "peakRssMb": 84.640625,
+      "assembleMs": 2.770667000000003,
+      "runtimeHeapMb": 0.45317840576171875,
+      "validateFirstMs": 1.5714169999999967,
+      "validateMs": 0.03766699999999901,
+      "htmlMs": 0.07583400000001461,
+      "textMs": 0.029124999999993406,
+      "snapshotMs": 0.042416000000002896
+    },
+    {
+      "scenario": "nodes-10",
+      "peakRssMb": 85.328125,
+      "assembleMs": 2.969416999999993,
+      "runtimeHeapMb": 0.45325469970703125,
+      "validateFirstMs": 1.782624999999996,
+      "validateMs": 0.03791600000002404,
+      "htmlMs": 0.07304200000001515,
+      "textMs": 0.02816699999999628,
+      "snapshotMs": 0.04204200000000924
+    },
+    {
+      "scenario": "nodes-100",
+      "peakRssMb": 89.078125,
+      "assembleMs": 2.7923749999999927,
+      "runtimeHeapMb": 0.45326995849609375,
+      "validateFirstMs": 1.852125000000001,
+      "validateMs": 0.18729199999998514,
+      "htmlMs": 0.22758300000000986,
+      "textMs": 0.13416599999999335,
+      "snapshotMs": 0.1917500000000132
+    },
+    {
+      "scenario": "nodes-100",
+      "peakRssMb": 88.046875,
+      "assembleMs": 3.107666999999992,
+      "runtimeHeapMb": 0.45317840576171875,
+      "validateFirstMs": 1.8848329999999862,
+      "validateMs": 0.1825420000000122,
+      "htmlMs": 0.256416999999999,
+      "textMs": 0.1454999999999984,
+      "snapshotMs": 0.19420800000000327
+    },
+    {
+      "scenario": "nodes-100",
+      "peakRssMb": 89.109375,
+      "assembleMs": 2.7146669999999915,
+      "runtimeHeapMb": 0.45281982421875,
+      "validateFirstMs": 2.0112919999999974,
+      "validateMs": 0.18199999999998795,
+      "htmlMs": 0.2243750000000091,
+      "textMs": 0.1350840000000062,
+      "snapshotMs": 0.18166700000000446
+    },
+    {
+      "scenario": "nodes-100",
+      "peakRssMb": 88.796875,
+      "assembleMs": 3.0382919999999842,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 1.8594580000000178,
+      "validateMs": 0.19033300000000963,
+      "htmlMs": 0.22433399999999892,
+      "textMs": 0.1419170000000065,
+      "snapshotMs": 0.19041700000002493
+    },
+    {
+      "scenario": "nodes-100",
+      "peakRssMb": 88.96875,
+      "assembleMs": 2.723167000000018,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 2.0875420000000133,
+      "validateMs": 0.19412500000001387,
+      "htmlMs": 0.2382910000000038,
+      "textMs": 0.13870800000000827,
+      "snapshotMs": 0.1875829999999894
+    },
+    {
+      "scenario": "nodes-1000",
+      "peakRssMb": 111.625,
+      "assembleMs": 2.788000000000011,
+      "runtimeHeapMb": 0.45326995849609375,
+      "validateFirstMs": 5.182999999999993,
+      "validateMs": 1.1800420000000145,
+      "htmlMs": 1.4727920000000267,
+      "textMs": 1.2549999999999955,
+      "snapshotMs": 1.3695000000000164
+    },
+    {
+      "scenario": "nodes-1000",
+      "peakRssMb": 111.703125,
+      "assembleMs": 2.749375000000015,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 5.595292000000001,
+      "validateMs": 1.1394159999999829,
+      "htmlMs": 1.460374999999999,
+      "textMs": 1.2194170000000213,
+      "snapshotMs": 1.3565419999999904
+    },
+    {
+      "scenario": "nodes-1000",
+      "peakRssMb": 110.90625,
+      "assembleMs": 2.7845419999999876,
+      "runtimeHeapMb": 0.45252227783203125,
+      "validateFirstMs": 4.8716249999999945,
+      "validateMs": 1.1320829999999944,
+      "htmlMs": 1.4083339999999964,
+      "textMs": 1.197999999999979,
+      "snapshotMs": 1.3283329999999864
+    },
+    {
+      "scenario": "nodes-1000",
+      "peakRssMb": 111.03125,
+      "assembleMs": 2.907916,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 5.000124999999997,
+      "validateMs": 1.171999999999997,
+      "htmlMs": 1.477499999999992,
+      "textMs": 1.2353329999999687,
+      "snapshotMs": 1.3959580000000074
+    },
+    {
+      "scenario": "nodes-1000",
+      "peakRssMb": 105.203125,
+      "assembleMs": 4.640125000000012,
+      "runtimeHeapMb": 0.45127105712890625,
+      "validateFirstMs": 11.48558300000002,
+      "validateMs": 1.3351660000000152,
+      "htmlMs": 1.581333000000086,
+      "textMs": 1.258874999999989,
+      "snapshotMs": 1.363083999999958
+    },
+    {
+      "scenario": "nodes-4000",
+      "peakRssMb": 122.4375,
+      "assembleMs": 2.9273749999999836,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 13.904374999999987,
+      "validateMs": 4.837167000000022,
+      "htmlMs": 7.96712500000001,
+      "textMs": 6.637166999999977,
+      "snapshotMs": 8.586583999999903
+    },
+    {
+      "scenario": "nodes-4000",
+      "peakRssMb": 124.546875,
+      "assembleMs": 3.0111670000000004,
+      "runtimeHeapMb": 0.4515228271484375,
+      "validateFirstMs": 18.17870800000003,
+      "validateMs": 6.450958000000014,
+      "htmlMs": 15.440875000000005,
+      "textMs": 5.856792000000041,
+      "snapshotMs": 6.5075409999999465
+    },
+    {
+      "scenario": "nodes-4000",
+      "peakRssMb": 125.953125,
+      "assembleMs": 2.9268339999999853,
+      "runtimeHeapMb": 0.45310211181640625,
+      "validateFirstMs": 13.813500000000033,
+      "validateMs": 4.9267920000000345,
+      "htmlMs": 6.040917000000036,
+      "textMs": 5.18654099999992,
+      "snapshotMs": 6.103417000000036
+    },
+    {
+      "scenario": "nodes-4000",
+      "peakRssMb": 121.96875,
+      "assembleMs": 7.598000000000013,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 20.472666000000004,
+      "validateMs": 11.89224999999999,
+      "htmlMs": 15.085166999999956,
+      "textMs": 10.555084000000079,
+      "snapshotMs": 13.809541999999965
+    },
+    {
+      "scenario": "nodes-4000",
+      "peakRssMb": 128.1875,
+      "assembleMs": 9.163999999999987,
+      "runtimeHeapMb": 0.45186614990234375,
+      "validateFirstMs": 40.854124999999954,
+      "validateMs": 8.234708000000069,
+      "htmlMs": 8.443374999999833,
+      "textMs": 5.280416999999943,
+      "snapshotMs": 6.113000000000056
+    },
+    {
+      "scenario": "depth-1",
+      "peakRssMb": 88.015625,
+      "assembleMs": 3.0330830000000333,
+      "runtimeHeapMb": 0.45288848876953125,
+      "validateFirstMs": 2.003332999999998,
+      "validateMs": 0.19375000000002274,
+      "htmlMs": 0.2346249999999941,
+      "textMs": 0.1414169999999899,
+      "snapshotMs": 0.1980829999999969
+    },
+    {
+      "scenario": "depth-1",
+      "peakRssMb": 88.53125,
+      "assembleMs": 2.8856250000000045,
+      "runtimeHeapMb": 0.45320892333984375,
+      "validateFirstMs": 2.5038749999999936,
+      "validateMs": 0.18999999999999773,
+      "htmlMs": 0.22800000000000864,
+      "textMs": 0.14025000000000887,
+      "snapshotMs": 0.2015829999999994
+    },
+    {
+      "scenario": "depth-1",
+      "peakRssMb": 89.609375,
+      "assembleMs": 2.910082999999986,
+      "runtimeHeapMb": 0.45316314697265625,
+      "validateFirstMs": 2.519082999999995,
+      "validateMs": 0.1988749999999868,
+      "htmlMs": 0.2498329999999953,
+      "textMs": 0.13979199999999992,
+      "snapshotMs": 0.19154100000000085
+    },
+    {
+      "scenario": "depth-1",
+      "peakRssMb": 88.921875,
+      "assembleMs": 3.1810000000000116,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 2.2518750000000125,
+      "validateMs": 0.1985830000000135,
+      "htmlMs": 0.24662499999999454,
+      "textMs": 0.13937500000000114,
+      "snapshotMs": 0.19470799999999144
+    },
+    {
+      "scenario": "depth-1",
+      "peakRssMb": 88.34375,
+      "assembleMs": 3.0420410000000118,
+      "runtimeHeapMb": 0.45317840576171875,
+      "validateFirstMs": 2.3023749999999836,
+      "validateMs": 0.20050000000000523,
+      "htmlMs": 0.2519580000000019,
+      "textMs": 0.14166600000001495,
+      "snapshotMs": 0.20820799999998485
+    },
+    {
+      "scenario": "depth-8",
+      "peakRssMb": 92.96875,
+      "assembleMs": 2.9250839999999982,
+      "runtimeHeapMb": 0.45325469970703125,
+      "validateFirstMs": 2.126874999999984,
+      "validateMs": 0.19920799999999872,
+      "htmlMs": 0.2617079999999987,
+      "textMs": 0.150416000000007,
+      "snapshotMs": 0.20229199999999992
+    },
+    {
+      "scenario": "depth-8",
+      "peakRssMb": 92.25,
+      "assembleMs": 2.968500000000006,
+      "runtimeHeapMb": 0.45304107666015625,
+      "validateFirstMs": 2.2630000000000052,
+      "validateMs": 0.20770799999999667,
+      "htmlMs": 0.2427500000000009,
+      "textMs": 0.16629199999999855,
+      "snapshotMs": 0.20891700000001379
+    },
+    {
+      "scenario": "depth-8",
+      "peakRssMb": 91.609375,
+      "assembleMs": 2.87420800000001,
+      "runtimeHeapMb": 0.45310211181640625,
+      "validateFirstMs": 2.0661669999999788,
+      "validateMs": 0.21025000000000205,
+      "htmlMs": 0.2846669999999847,
+      "textMs": 0.1529999999999916,
+      "snapshotMs": 0.19608399999998483
+    },
+    {
+      "scenario": "depth-8",
+      "peakRssMb": 91.640625,
+      "assembleMs": 2.9115830000000074,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 2.397750000000002,
+      "validateMs": 0.19983299999998394,
+      "htmlMs": 0.2663750000000107,
+      "textMs": 0.14854099999999448,
+      "snapshotMs": 0.20479199999999764
+    },
+    {
+      "scenario": "depth-8",
+      "peakRssMb": 93.296875,
+      "assembleMs": 2.9237500000000125,
+      "runtimeHeapMb": 0.45326995849609375,
+      "validateFirstMs": 2.221665999999999,
+      "validateMs": 0.2038750000000107,
+      "htmlMs": 0.2525410000000079,
+      "textMs": 0.1581250000000125,
+      "snapshotMs": 0.20766599999998903
+    },
+    {
+      "scenario": "depth-16",
+      "peakRssMb": 91.84375,
+      "assembleMs": 2.9200830000000053,
+      "runtimeHeapMb": 0.45322418212890625,
+      "validateFirstMs": 2.2292500000000075,
+      "validateMs": 0.20412500000000477,
+      "htmlMs": 0.25766699999999787,
+      "textMs": 0.1527499999999975,
+      "snapshotMs": 0.19962500000002592
+    },
+    {
+      "scenario": "depth-16",
+      "peakRssMb": 92.265625,
+      "assembleMs": 2.7315419999999904,
+      "runtimeHeapMb": 0.45317840576171875,
+      "validateFirstMs": 2.1204579999999993,
+      "validateMs": 0.21887499999999704,
+      "htmlMs": 0.23929199999997763,
+      "textMs": 0.14579200000000014,
+      "snapshotMs": 0.20074999999999932
+    },
+    {
+      "scenario": "depth-16",
+      "peakRssMb": 92.25,
+      "assembleMs": 2.807333,
+      "runtimeHeapMb": 0.45319366455078125,
+      "validateFirstMs": 2.2038750000000107,
+      "validateMs": 0.20754199999998946,
+      "htmlMs": 0.24466699999999264,
+      "textMs": 0.1511250000000075,
+      "snapshotMs": 0.1997920000000022
+    },
+    {
+      "scenario": "depth-16",
+      "peakRssMb": 91.796875,
+      "assembleMs": 3.029750000000007,
+      "runtimeHeapMb": 0.45294952392578125,
+      "validateFirstMs": 2.416374999999988,
+      "validateMs": 0.22504200000000196,
+      "htmlMs": 0.2667500000000018,
+      "textMs": 0.15391699999997854,
+      "snapshotMs": 0.2033749999999941
+    },
+    {
+      "scenario": "depth-16",
+      "peakRssMb": 92.421875,
+      "assembleMs": 2.8101659999999953,
+      "runtimeHeapMb": 0.45310211181640625,
+      "validateFirstMs": 2.3520829999999933,
+      "validateMs": 0.21254200000001333,
+      "htmlMs": 0.24791600000000358,
+      "textMs": 0.15324999999998568,
+      "snapshotMs": 0.20300000000000296
+    },
+    {
+      "scenario": "depth-24",
+      "peakRssMb": 92.1875,
+      "assembleMs": 2.883207999999996,
       "runtimeHeapMb": 0.452789306640625,
-      "validateFirstMs": 2.0142910000000143,
-      "validateMs": 0.1775829999999985,
-      "htmlMs": 0.43641700000000583,
-      "textMs": 0.13620900000000802,
-      "snapshotMs": 0.2752920000000074
+      "validateFirstMs": 2.1644159999999886,
+      "validateMs": 0.21791699999999992,
+      "htmlMs": 0.2550410000000056,
+      "textMs": 0.15566700000002243,
+      "snapshotMs": 0.2019159999999829
+    },
+    {
+      "scenario": "depth-24",
+      "peakRssMb": 92.34375,
+      "assembleMs": 3.1241660000000024,
+      "runtimeHeapMb": 0.45273590087890625,
+      "validateFirstMs": 2.3129579999999805,
+      "validateMs": 0.22416699999999423,
+      "htmlMs": 0.26154100000002245,
+      "textMs": 0.15587500000000887,
+      "snapshotMs": 0.20912500000000023
+    },
+    {
+      "scenario": "depth-24",
+      "peakRssMb": 91.34375,
+      "assembleMs": 2.928375000000017,
+      "runtimeHeapMb": 0.45310211181640625,
+      "validateFirstMs": 2.144500000000022,
+      "validateMs": 0.22450000000000614,
+      "htmlMs": 0.2511250000000018,
+      "textMs": 0.15737500000000182,
+      "snapshotMs": 0.2074169999999924
+    },
+    {
+      "scenario": "depth-24",
+      "peakRssMb": 92.640625,
+      "assembleMs": 2.8326669999999865,
+      "runtimeHeapMb": 0.45501708984375,
+      "validateFirstMs": 2.2160840000000235,
+      "validateMs": 0.21958300000000008,
+      "htmlMs": 0.26987499999998477,
+      "textMs": 0.15629099999998175,
+      "snapshotMs": 0.21270800000002055
+    },
+    {
+      "scenario": "depth-24",
+      "peakRssMb": 92.984375,
+      "assembleMs": 3.0447499999999934,
+      "runtimeHeapMb": 0.45267486572265625,
+      "validateFirstMs": 2.3371659999999963,
+      "validateMs": 0.2222500000000025,
+      "htmlMs": 0.2693339999999864,
+      "textMs": 0.15375000000000227,
+      "snapshotMs": 0.20941700000000196
+    },
+    {
+      "scenario": "characters-1000",
+      "peakRssMb": 88.421875,
+      "assembleMs": 3.120332999999988,
+      "runtimeHeapMb": 0.45323944091796875,
+      "validateFirstMs": 1.9240830000000244,
+      "validateMs": 0.21016700000001265,
+      "htmlMs": 0.23716699999999946,
+      "textMs": 0.14279200000001424,
+      "snapshotMs": 0.19504200000000083
+    },
+    {
+      "scenario": "characters-1000",
+      "peakRssMb": 88.359375,
+      "assembleMs": 2.798749999999984,
+      "runtimeHeapMb": 0.45322418212890625,
+      "validateFirstMs": 1.9526250000000118,
+      "validateMs": 0.17766699999998536,
+      "htmlMs": 0.23112500000002,
+      "textMs": 0.13374999999999204,
+      "snapshotMs": 0.19104099999998425
+    },
+    {
+      "scenario": "characters-1000",
+      "peakRssMb": 88.890625,
+      "assembleMs": 2.80654100000001,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 1.9947909999999922,
+      "validateMs": 0.19204200000001492,
+      "htmlMs": 0.21887499999999704,
+      "textMs": 0.1392500000000041,
+      "snapshotMs": 0.18412499999999454
+    },
+    {
+      "scenario": "characters-1000",
+      "peakRssMb": 89,
+      "assembleMs": 2.9496249999999975,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 2.3782500000000084,
+      "validateMs": 0.19620800000001282,
+      "htmlMs": 0.22858300000001464,
+      "textMs": 0.14441700000000424,
+      "snapshotMs": 0.1974170000000015
+    },
+    {
+      "scenario": "characters-1000",
+      "peakRssMb": 88.890625,
+      "assembleMs": 2.8622500000000173,
+      "runtimeHeapMb": 0.45317840576171875,
+      "validateFirstMs": 1.8726249999999993,
+      "validateMs": 0.17916700000000674,
+      "htmlMs": 0.2324169999999981,
+      "textMs": 0.13670799999999872,
+      "snapshotMs": 0.18325000000001523
+    },
+    {
+      "scenario": "characters-10000",
+      "peakRssMb": 88.625,
+      "assembleMs": 2.9145409999999856,
+      "runtimeHeapMb": 0.45301055908203125,
+      "validateFirstMs": 1.940084000000013,
+      "validateMs": 0.18512499999999932,
+      "htmlMs": 0.252584000000013,
+      "textMs": 0.13974999999999227,
+      "snapshotMs": 0.1888749999999959
+    },
+    {
+      "scenario": "characters-10000",
+      "peakRssMb": 89.140625,
+      "assembleMs": 2.9735839999999882,
+      "runtimeHeapMb": 0.45320892333984375,
+      "validateFirstMs": 2.090042000000011,
+      "validateMs": 0.18966700000001424,
+      "htmlMs": 0.23937499999999545,
+      "textMs": 0.1419170000000065,
+      "snapshotMs": 0.18995799999999008
+    },
+    {
+      "scenario": "characters-10000",
+      "peakRssMb": 89.265625,
+      "assembleMs": 2.7717499999999973,
+      "runtimeHeapMb": 0.454498291015625,
+      "validateFirstMs": 2.5342919999999935,
+      "validateMs": 0.1996249999999975,
+      "htmlMs": 0.24004199999998832,
+      "textMs": 0.14245800000000486,
+      "snapshotMs": 0.19362499999999727
+    },
+    {
+      "scenario": "characters-10000",
+      "peakRssMb": 88.953125,
+      "assembleMs": 2.9812919999999963,
+      "runtimeHeapMb": 0.45333099365234375,
+      "validateFirstMs": 1.899000000000001,
+      "validateMs": 0.18766600000000722,
+      "htmlMs": 0.25833400000001916,
+      "textMs": 0.14616699999999128,
+      "snapshotMs": 0.19420800000000327
+    },
+    {
+      "scenario": "characters-10000",
+      "peakRssMb": 89.796875,
+      "assembleMs": 2.913499999999999,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 2.0064579999999808,
+      "validateMs": 0.1802500000000009,
+      "htmlMs": 0.2488750000000266,
+      "textMs": 0.1333750000000009,
+      "snapshotMs": 0.18691600000002495
     },
     {
       "scenario": "characters-100000",
-      "peakRssMb": 91.875,
-      "assembleMs": 2.740916999999996,
-      "runtimeHeapMb": 0.45169830322265625,
-      "validateFirstMs": 1.9596249999999884,
-      "validateMs": 0.1841670000000022,
-      "htmlMs": 0.6331670000000145,
-      "textMs": 0.13608400000001097,
-      "snapshotMs": 0.3006249999999966
-    },
-    {
-      "scenario": "characters-100000",
-      "peakRssMb": 91.0625,
-      "assembleMs": 2.7287919999999986,
-      "runtimeHeapMb": 0.45136260986328125,
-      "validateFirstMs": 2.1479169999999783,
-      "validateMs": 0.18233299999999986,
-      "htmlMs": 0.6015409999999974,
-      "textMs": 0.13912500000000705,
-      "snapshotMs": 0.30691699999999855
+      "peakRssMb": 94.046875,
+      "assembleMs": 2.841417000000007,
+      "runtimeHeapMb": 0.45301055908203125,
+      "validateFirstMs": 2.192292000000009,
+      "validateMs": 0.18916600000000017,
+      "htmlMs": 0.4507499999999993,
+      "textMs": 0.1490829999999903,
+      "snapshotMs": 0.22433300000000145
     },
     {
       "scenario": "characters-100000",
       "peakRssMb": 93.765625,
-      "assembleMs": 2.7352500000000077,
-      "runtimeHeapMb": 0.45288848876953125,
-      "validateFirstMs": 1.906458999999984,
-      "validateMs": 0.20379199999999287,
-      "htmlMs": 0.6912499999999966,
-      "textMs": 0.14674999999999727,
-      "snapshotMs": 0.324957999999981
+      "assembleMs": 2.900207999999992,
+      "runtimeHeapMb": 0.45304107666015625,
+      "validateFirstMs": 2.0436660000000018,
+      "validateMs": 0.19133400000001188,
+      "htmlMs": 0.4143329999999992,
+      "textMs": 0.14470900000000597,
+      "snapshotMs": 0.2119169999999997
     },
     {
       "scenario": "characters-100000",
-      "peakRssMb": 91.796875,
-      "assembleMs": 2.8995840000000044,
-      "runtimeHeapMb": 0.45157623291015625,
-      "validateFirstMs": 1.9803750000000093,
-      "validateMs": 0.198332999999991,
-      "htmlMs": 0.6420829999999853,
-      "textMs": 0.14720800000000622,
-      "snapshotMs": 0.30400000000000205
+      "peakRssMb": 92.328125,
+      "assembleMs": 2.9163750000000164,
+      "runtimeHeapMb": 0.45323944091796875,
+      "validateFirstMs": 2.1912920000000042,
+      "validateMs": 0.19462500000000205,
+      "htmlMs": 0.4459579999999903,
+      "textMs": 0.1404579999999953,
+      "snapshotMs": 0.2189170000000047
     },
     {
       "scenario": "characters-100000",
-      "peakRssMb": 92.671875,
-      "assembleMs": 2.8328750000000014,
-      "runtimeHeapMb": 0.4517822265625,
-      "validateFirstMs": 1.9767500000000098,
-      "validateMs": 0.19583399999999074,
-      "htmlMs": 0.6258330000000001,
-      "textMs": 0.14312499999999773,
-      "snapshotMs": 0.32416699999998855
+      "peakRssMb": 92.546875,
+      "assembleMs": 2.8179580000000044,
+      "runtimeHeapMb": 0.45310211181640625,
+      "validateFirstMs": 1.9727080000000115,
+      "validateMs": 0.1841670000000022,
+      "htmlMs": 0.4613329999999962,
+      "textMs": 0.1413750000000107,
+      "snapshotMs": 0.21466700000001993
+    },
+    {
+      "scenario": "characters-100000",
+      "peakRssMb": 90.875,
+      "assembleMs": 3.0934589999999957,
+      "runtimeHeapMb": 0.45319366455078125,
+      "validateFirstMs": 2.027542000000011,
+      "validateMs": 0.1826250000000016,
+      "htmlMs": 0.4243749999999977,
+      "textMs": 0.13983399999997914,
+      "snapshotMs": 0.22804199999998787
     },
     {
       "scenario": "characters-900000",
-      "peakRssMb": 129.625,
-      "assembleMs": 2.7945419999999785,
-      "runtimeHeapMb": 0.45241546630859375,
-      "validateFirstMs": 1.9514159999999947,
-      "validateMs": 0.18533299999998576,
-      "htmlMs": 2.2384580000000085,
-      "textMs": 0.2185000000000059,
-      "snapshotMs": 0.5240420000000086
+      "peakRssMb": 114.609375,
+      "assembleMs": 3.079499999999996,
+      "runtimeHeapMb": 0.45330047607421875,
+      "validateFirstMs": 1.9770829999999933,
+      "validateMs": 0.18683300000000713,
+      "htmlMs": 2.2762919999999838,
+      "textMs": 0.22199999999998,
+      "snapshotMs": 0.421875
     },
     {
       "scenario": "characters-900000",
-      "peakRssMb": 127.5,
-      "assembleMs": 2.9787080000000117,
-      "runtimeHeapMb": 0.4517822265625,
-      "validateFirstMs": 2.067791999999997,
-      "validateMs": 0.199292000000014,
-      "htmlMs": 2.2132500000000164,
-      "textMs": 0.23279100000002018,
-      "snapshotMs": 0.5103749999999536
+      "peakRssMb": 127.65625,
+      "assembleMs": 2.8407919999999933,
+      "runtimeHeapMb": 0.45307159423828125,
+      "validateFirstMs": 2.2196249999999793,
+      "validateMs": 0.181666000000007,
+      "htmlMs": 2.2825830000000167,
+      "textMs": 0.22183300000000372,
+      "snapshotMs": 0.4341660000000047
     },
     {
       "scenario": "characters-900000",
-      "peakRssMb": 125.4375,
-      "assembleMs": 2.927125000000018,
-      "runtimeHeapMb": 0.45171356201171875,
-      "validateFirstMs": 1.903250000000014,
-      "validateMs": 0.1803340000000162,
-      "htmlMs": 2.2177499999999952,
-      "textMs": 0.21962500000000773,
-      "snapshotMs": 0.5184590000000071
+      "peakRssMb": 118.578125,
+      "assembleMs": 2.897541000000018,
+      "runtimeHeapMb": 0.4557342529296875,
+      "validateFirstMs": 2.0519169999999747,
+      "validateMs": 0.1839170000000081,
+      "htmlMs": 2.2259590000000173,
+      "textMs": 0.2188340000000153,
+      "snapshotMs": 0.4310419999999908
     },
     {
       "scenario": "characters-900000",
-      "peakRssMb": 122.8125,
-      "assembleMs": 3.1109580000000108,
-      "runtimeHeapMb": 0.45191192626953125,
-      "validateFirstMs": 2.335958000000005,
-      "validateMs": 0.19754099999997266,
-      "htmlMs": 2.2892079999999737,
-      "textMs": 0.22133400000001302,
-      "snapshotMs": 0.5091249999999832
+      "peakRssMb": 121.28125,
+      "assembleMs": 2.774000000000001,
+      "runtimeHeapMb": 0.45304107666015625,
+      "validateFirstMs": 2.0303329999999846,
+      "validateMs": 0.18487500000000523,
+      "htmlMs": 2.293542000000002,
+      "textMs": 0.21829200000001947,
+      "snapshotMs": 0.42308399999996027
     },
     {
       "scenario": "characters-900000",
-      "peakRssMb": 122.328125,
-      "assembleMs": 3.118707999999998,
-      "runtimeHeapMb": 0.45189666748046875,
-      "validateFirstMs": 2.0649589999999876,
-      "validateMs": 0.19225000000000136,
-      "htmlMs": 2.381042000000008,
-      "textMs": 0.22995900000000802,
-      "snapshotMs": 0.5093749999999773
+      "peakRssMb": 111.5,
+      "assembleMs": 2.81929199999999,
+      "runtimeHeapMb": 0.4527740478515625,
+      "validateFirstMs": 2.3693330000000117,
+      "validateMs": 0.18779200000000174,
+      "htmlMs": 2.260333000000003,
+      "textMs": 0.22637500000001864,
+      "snapshotMs": 0.4396669999999858
     }
   ],
   "summary": {
     "primitives-1": {
       "assembleMs": {
-        "median": 2.014125000000007,
-        "min": 1.9027920000000051,
-        "max": 2.136082999999985
+        "median": 1.8483329999999967,
+        "min": 1.7954590000000223,
+        "max": 1.888083000000023
       },
       "runtimeHeapMb": {
-        "median": 0.2144927978515625,
-        "min": 0.21429443359375,
-        "max": 0.2156982421875
+        "median": 0.2160491943359375,
+        "min": 0.21551513671875,
+        "max": 0.21624755859375
       },
       "validateFirstMs": {
-        "median": 1.8492080000000044,
-        "min": 1.8279170000000136,
-        "max": 2.216167000000013
+        "median": 1.7674169999999947,
+        "min": 1.594916000000012,
+        "max": 2.009791999999976
       },
       "validateMs": {
-        "median": 0.18166700000000446,
-        "min": 0.16804100000001654,
-        "max": 0.19012499999999477
+        "median": 0.171291999999994,
+        "min": 0.16799999999997794,
+        "max": 0.18549999999999045
       },
       "htmlMs": {
-        "median": 0.43304200000000037,
-        "min": 0.4133340000000203,
-        "max": 0.49500000000000455
+        "median": 0.2115000000000009,
+        "min": 0.20745900000000006,
+        "max": 0.21537499999999454
       },
       "textMs": {
-        "median": 0.126041999999984,
-        "min": 0.12308300000000827,
-        "max": 0.12929200000002083
+        "median": 0.12562499999998522,
+        "min": 0.12275000000002478,
+        "max": 0.12770799999998417
       },
       "snapshotMs": {
-        "median": 0.26704199999997513,
-        "min": 0.2641659999999888,
-        "max": 0.28404099999997356
+        "median": 0.17587499999999068,
+        "min": 0.171291999999994,
+        "max": 0.1803329999999903
       },
       "peakRssMb": {
-        "median": 89.953125,
-        "min": 89.515625,
-        "max": 90.125
+        "median": 88.515625,
+        "min": 88.1875,
+        "max": 88.984375
       }
     },
     "primitives-10": {
       "assembleMs": {
-        "median": 2.9645419999999945,
-        "min": 2.8045840000000055,
-        "max": 3.275624999999991
+        "median": 2.935165999999981,
+        "min": 2.805082999999996,
+        "max": 3.0567920000000015
       },
       "runtimeHeapMb": {
-        "median": 0.451812744140625,
-        "min": 0.45140838623046875,
-        "max": 0.45184326171875
+        "median": 0.45319366455078125,
+        "min": 0.45246124267578125,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 2.0159579999999835,
-        "min": 1.9868749999999977,
-        "max": 2.2526249999999948
+        "median": 2.0429579999999987,
+        "min": 1.891666000000015,
+        "max": 2.141874999999999
       },
       "validateMs": {
-        "median": 0.1990419999999915,
-        "min": 0.19183400000000006,
-        "max": 0.20979099999999562
+        "median": 0.19729200000000446,
+        "min": 0.17924999999999613,
+        "max": 0.20729199999999537
       },
       "htmlMs": {
-        "median": 0.43549999999999045,
-        "min": 0.41704200000000924,
-        "max": 0.44700000000000273
+        "median": 0.22829199999998195,
+        "min": 0.21295799999998621,
+        "max": 0.24929099999999949
       },
       "textMs": {
-        "median": 0.14258399999999938,
-        "min": 0.135249999999985,
-        "max": 0.14649999999997476
+        "median": 0.13941700000000878,
+        "min": 0.1370420000000081,
+        "max": 0.14229100000000017
       },
       "snapshotMs": {
-        "median": 0.2803750000000207,
-        "min": 0.2660410000000013,
-        "max": 0.29033300000000395
+        "median": 0.19162500000001614,
+        "min": 0.18195800000000872,
+        "max": 0.19183400000000006
       },
       "peakRssMb": {
-        "median": 89.953125,
-        "min": 89.8125,
-        "max": 90.328125
+        "median": 88.9375,
+        "min": 88.390625,
+        "max": 89.125
       }
     },
     "primitives-50": {
       "assembleMs": {
-        "median": 5.353250000000003,
-        "min": 5.23191700000001,
-        "max": 12.112374999999986
+        "median": 4.8699160000000035,
+        "min": 4.803665999999993,
+        "max": 5.3547080000000165
       },
       "runtimeHeapMb": {
-        "median": 1.2779083251953125,
-        "min": 1.2772979736328125,
-        "max": 1.291473388671875
+        "median": 1.2786102294921875,
+        "min": 1.2784881591796875,
+        "max": 1.2792510986328125
       },
       "validateFirstMs": {
-        "median": 3.0226659999999868,
-        "min": 2.9999579999999924,
-        "max": 3.8582910000000084
+        "median": 2.8523330000000158,
+        "min": 2.6980000000000075,
+        "max": 2.907457999999991
       },
       "validateMs": {
-        "median": 0.2103749999999991,
-        "min": 0.20170899999999392,
-        "max": 0.21512500000000045
+        "median": 0.2057500000000232,
+        "min": 0.19625000000002046,
+        "max": 0.20983300000000327
       },
       "htmlMs": {
-        "median": 0.4612079999999992,
-        "min": 0.4351249999999993,
-        "max": 0.4930830000000128
+        "median": 0.24141599999998675,
+        "min": 0.23245799999997985,
+        "max": 0.2500830000000178
       },
       "textMs": {
-        "median": 0.15687499999998522,
-        "min": 0.1558339999999987,
-        "max": 0.16579199999998195
+        "median": 0.15337499999998272,
+        "min": 0.15212500000001228,
+        "max": 0.15554099999999949
       },
       "snapshotMs": {
-        "median": 0.30654100000000994,
-        "min": 0.3025000000000091,
-        "max": 0.30983399999999506
+        "median": 0.20433300000001964,
+        "min": 0.20016699999999332,
+        "max": 0.21112499999998136
       },
       "peakRssMb": {
-        "median": 91.15625,
-        "min": 90.671875,
-        "max": 91.46875
+        "median": 88.828125,
+        "min": 88.09375,
+        "max": 89.515625
       }
     },
     "primitives-200": {
       "assembleMs": {
-        "median": 16.906582999999983,
-        "min": 15.65025,
-        "max": 17.21395899999999
+        "median": 16.155999999999977,
+        "min": 15.476042000000007,
+        "max": 17.02087499999999
       },
       "runtimeHeapMb": {
-        "median": 4.3405609130859375,
-        "min": 4.340179443359375,
-        "max": 4.34088134765625
+        "median": 4.341522216796875,
+        "min": 4.3410491943359375,
+        "max": 4.341743469238281
       },
       "validateFirstMs": {
-        "median": 5.353707999999983,
-        "min": 5.103082999999998,
-        "max": 5.886124999999993
+        "median": 5.411791000000022,
+        "min": 4.979042000000021,
+        "max": 5.518040999999982
       },
       "validateMs": {
-        "median": 0.22979200000000333,
-        "min": 0.22529199999999605,
-        "max": 0.2341249999999775
+        "median": 0.22120899999998755,
+        "min": 0.21587500000001114,
+        "max": 0.22612499999999613
       },
       "htmlMs": {
-        "median": 0.47399999999998954,
-        "min": 0.45245800000000713,
-        "max": 0.5155839999999898
+        "median": 0.2590419999999938,
+        "min": 0.24262499999997544,
+        "max": 0.26712499999999295
       },
       "textMs": {
-        "median": 0.1615409999999997,
-        "min": 0.1606249999999818,
-        "max": 0.16566700000001333
+        "median": 0.16133300000001327,
+        "min": 0.15474999999997863,
+        "max": 0.16241600000000744
       },
       "snapshotMs": {
-        "median": 0.3170829999999967,
-        "min": 0.30887500000000045,
-        "max": 0.3250419999999963
+        "median": 0.225750000000005,
+        "min": 0.21854200000001356,
+        "max": 0.23387500000001182
       },
       "peakRssMb": {
-        "median": 110.84375,
-        "min": 110.375,
-        "max": 111.140625
+        "median": 109.359375,
+        "min": 108.8125,
+        "max": 109.515625
       }
     },
     "nodes-10": {
       "assembleMs": {
-        "median": 2.992750000000001,
-        "min": 2.8231250000000045,
-        "max": 3.309375000000017
+        "median": 2.921333000000004,
+        "min": 2.770667000000003,
+        "max": 3.2323340000000087
       },
       "runtimeHeapMb": {
-        "median": 0.45147705078125,
-        "min": 0.4513397216796875,
-        "max": 0.45320892333984375
+        "median": 0.45317840576171875,
+        "min": 0.45301055908203125,
+        "max": 0.45550537109375
       },
       "validateFirstMs": {
-        "median": 1.7065000000000055,
-        "min": 1.661042000000009,
-        "max": 1.7084170000000256
+        "median": 1.7927080000000046,
+        "min": 1.5714169999999967,
+        "max": 1.913833000000011
       },
       "validateMs": {
-        "median": 0.037583000000012134,
-        "min": 0.03700000000000614,
-        "max": 0.03866700000000378
+        "median": 0.03791600000002404,
+        "min": 0.03766699999999901,
+        "max": 0.038375000000002046
       },
       "htmlMs": {
-        "median": 0.10983299999998053,
-        "min": 0.10745800000000827,
-        "max": 0.11104199999999764
+        "median": 0.07583400000001461,
+        "min": 0.07145900000000438,
+        "max": 0.08229199999999537
       },
       "textMs": {
-        "median": 0.029415999999997666,
-        "min": 0.02837500000001114,
-        "max": 0.03129200000000765
+        "median": 0.029625000000010004,
+        "min": 0.02816699999999628,
+        "max": 0.030875000000008868
       },
       "snapshotMs": {
-        "median": 0.061958000000004176,
-        "min": 0.060791999999992186,
-        "max": 0.06408299999998235
+        "median": 0.042416000000002896,
+        "min": 0.04204200000000924,
+        "max": 0.04595900000001052
       },
       "peakRssMb": {
-        "median": 87.734375,
-        "min": 87.421875,
-        "max": 87.90625
+        "median": 85.09375,
+        "min": 84.640625,
+        "max": 85.53125
       }
     },
     "nodes-100": {
       "assembleMs": {
-        "median": 3.008999999999986,
-        "min": 2.7822500000000048,
-        "max": 3.336999999999989
+        "median": 2.7923749999999927,
+        "min": 2.7146669999999915,
+        "max": 3.107666999999992
       },
       "runtimeHeapMb": {
-        "median": 0.451995849609375,
-        "min": 0.45174407958984375,
-        "max": 0.453460693359375
+        "median": 0.45326995849609375,
+        "min": 0.45281982421875,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 2.0871669999999938,
-        "min": 2.0037499999999966,
-        "max": 2.1394160000000113
+        "median": 1.8848329999999862,
+        "min": 1.852125000000001,
+        "max": 2.0875420000000133
       },
       "validateMs": {
-        "median": 0.18633299999999053,
-        "min": 0.18183300000001168,
-        "max": 0.21999999999999886
+        "median": 0.18729199999998514,
+        "min": 0.18199999999998795,
+        "max": 0.19412500000001387
       },
       "htmlMs": {
-        "median": 0.43795800000000895,
-        "min": 0.426667000000009,
-        "max": 0.45187500000000114
+        "median": 0.22758300000000986,
+        "min": 0.22433399999999892,
+        "max": 0.256416999999999
       },
       "textMs": {
-        "median": 0.14295799999999304,
-        "min": 0.13554200000001515,
-        "max": 0.15670799999998053
+        "median": 0.13870800000000827,
+        "min": 0.13416599999999335,
+        "max": 0.1454999999999984
       },
       "snapshotMs": {
-        "median": 0.29341700000000515,
-        "min": 0.27729199999998855,
-        "max": 0.3040420000000097
+        "median": 0.19041700000002493,
+        "min": 0.18166700000000446,
+        "max": 0.19420800000000327
       },
       "peakRssMb": {
-        "median": 90.015625,
-        "min": 89.640625,
-        "max": 90.09375
+        "median": 88.96875,
+        "min": 88.046875,
+        "max": 89.109375
       }
     },
     "nodes-1000": {
       "assembleMs": {
-        "median": 2.988624999999999,
-        "min": 2.9400839999999846,
-        "max": 3.0935409999999877
+        "median": 2.788000000000011,
+        "min": 2.749375000000015,
+        "max": 4.640125000000012
       },
       "runtimeHeapMb": {
-        "median": 0.45206451416015625,
-        "min": 0.45163726806640625,
-        "max": 0.4530181884765625
+        "median": 0.45326995849609375,
+        "min": 0.45127105712890625,
+        "max": 0.45330047607421875
       },
       "validateFirstMs": {
-        "median": 4.926791999999978,
-        "min": 4.718125000000015,
-        "max": 5.183625000000006
+        "median": 5.182999999999993,
+        "min": 4.8716249999999945,
+        "max": 11.48558300000002
       },
       "validateMs": {
-        "median": 1.204166000000015,
-        "min": 1.1817499999999939,
-        "max": 1.2371669999999995
+        "median": 1.171999999999997,
+        "min": 1.1320829999999944,
+        "max": 1.3351660000000152
       },
       "htmlMs": {
-        "median": 2.7669580000000167,
-        "min": 2.617416999999989,
-        "max": 2.9317499999999654
+        "median": 1.4727920000000267,
+        "min": 1.4083339999999964,
+        "max": 1.581333000000086
       },
       "textMs": {
-        "median": 1.2437920000000418,
-        "min": 1.1907919999999876,
-        "max": 1.2647499999999923
+        "median": 1.2353329999999687,
+        "min": 1.197999999999979,
+        "max": 1.258874999999989
       },
       "snapshotMs": {
-        "median": 2.1939159999999447,
-        "min": 2.1241249999999923,
-        "max": 2.239250000000027
+        "median": 1.363083999999958,
+        "min": 1.3283329999999864,
+        "max": 1.3959580000000074
       },
       "peakRssMb": {
-        "median": 117.671875,
-        "min": 117.328125,
-        "max": 117.796875
+        "median": 111.03125,
+        "min": 105.203125,
+        "max": 111.703125
       }
     },
     "nodes-4000": {
       "assembleMs": {
-        "median": 2.8074160000000177,
-        "min": 2.756458000000009,
-        "max": 3.2694999999999936
+        "median": 3.0111670000000004,
+        "min": 2.9268339999999853,
+        "max": 9.163999999999987
       },
       "runtimeHeapMb": {
-        "median": 0.45157623291015625,
-        "min": 0.45147705078125,
-        "max": 0.45246124267578125
+        "median": 0.45310211181640625,
+        "min": 0.4515228271484375,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 13.05125000000001,
-        "min": 12.507125000000002,
-        "max": 18.762917000000016
+        "median": 18.17870800000003,
+        "min": 13.813500000000033,
+        "max": 40.854124999999954
       },
       "validateMs": {
-        "median": 4.622833000000014,
-        "min": 4.555000000000007,
-        "max": 5.0745000000000005
+        "median": 6.450958000000014,
+        "min": 4.837167000000022,
+        "max": 11.89224999999999
       },
       "htmlMs": {
-        "median": 12.071749999999952,
-        "min": 11.909249999999986,
-        "max": 12.498166000000083
+        "median": 8.443374999999833,
+        "min": 6.040917000000036,
+        "max": 15.440875000000005
       },
       "textMs": {
-        "median": 4.893208000000072,
-        "min": 4.880125000000021,
-        "max": 5.2970000000000255
+        "median": 5.856792000000041,
+        "min": 5.18654099999992,
+        "max": 10.555084000000079
       },
       "snapshotMs": {
-        "median": 9.595875000000092,
-        "min": 9.130291999999827,
-        "max": 9.645166000000017
+        "median": 6.5075409999999465,
+        "min": 6.103417000000036,
+        "max": 13.809541999999965
       },
       "peakRssMb": {
-        "median": 179.390625,
-        "min": 175.59375,
-        "max": 187.359375
+        "median": 124.546875,
+        "min": 121.96875,
+        "max": 128.1875
       }
     },
     "depth-1": {
       "assembleMs": {
-        "median": 2.7917919999999867,
-        "min": 2.7051249999999953,
-        "max": 2.7941669999999874
+        "median": 3.0330830000000333,
+        "min": 2.8856250000000045,
+        "max": 3.1810000000000116
       },
       "runtimeHeapMb": {
-        "median": 0.45221710205078125,
-        "min": 0.45134735107421875,
-        "max": 0.453521728515625
+        "median": 0.45317840576171875,
+        "min": 0.45288848876953125,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 1.9190419999999904,
-        "min": 1.890625,
-        "max": 1.9936669999999879
+        "median": 2.3023749999999836,
+        "min": 2.003332999999998,
+        "max": 2.519082999999995
       },
       "validateMs": {
-        "median": 0.1847919999999874,
-        "min": 0.17841699999999605,
-        "max": 0.19508400000000847
+        "median": 0.1985830000000135,
+        "min": 0.18999999999999773,
+        "max": 0.20050000000000523
       },
       "htmlMs": {
-        "median": 0.4177919999999915,
-        "min": 0.4052090000000135,
-        "max": 0.4428749999999866
+        "median": 0.24662499999999454,
+        "min": 0.22800000000000864,
+        "max": 0.2519580000000019
       },
       "textMs": {
-        "median": 0.13599999999999568,
-        "min": 0.1307910000000163,
-        "max": 0.13854100000000358
+        "median": 0.14025000000000887,
+        "min": 0.13937500000000114,
+        "max": 0.14166600000001495
       },
       "snapshotMs": {
-        "median": 0.2653330000000267,
-        "min": 0.2607500000000016,
-        "max": 0.2685830000000067
+        "median": 0.1980829999999969,
+        "min": 0.19154100000000085,
+        "max": 0.20820799999998485
       },
       "peakRssMb": {
-        "median": 90.015625,
-        "min": 89.375,
-        "max": 90.515625
+        "median": 88.53125,
+        "min": 88.015625,
+        "max": 89.609375
       }
     },
     "depth-8": {
       "assembleMs": {
-        "median": 2.758042000000003,
-        "min": 2.7253749999999854,
-        "max": 2.887042000000008
+        "median": 2.9237500000000125,
+        "min": 2.87420800000001,
+        "max": 2.968500000000006
       },
       "runtimeHeapMb": {
-        "median": 0.45192718505859375,
-        "min": 0.45136260986328125,
-        "max": 0.454071044921875
+        "median": 0.45325469970703125,
+        "min": 0.45304107666015625,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 2.293500000000023,
-        "min": 2.019040999999987,
-        "max": 2.3755000000000166
+        "median": 2.221665999999999,
+        "min": 2.0661669999999788,
+        "max": 2.397750000000002
       },
       "validateMs": {
-        "median": 0.19225000000000136,
-        "min": 0.18608299999999645,
-        "max": 0.19754199999999855
+        "median": 0.2038750000000107,
+        "min": 0.19920799999999872,
+        "max": 0.21025000000000205
       },
       "htmlMs": {
-        "median": 0.41579199999998195,
-        "min": 0.4070000000000107,
-        "max": 0.4370830000000012
+        "median": 0.2617079999999987,
+        "min": 0.2427500000000009,
+        "max": 0.2846669999999847
       },
       "textMs": {
-        "median": 0.14645799999999554,
-        "min": 0.14270799999999895,
-        "max": 0.14904200000000856
+        "median": 0.1529999999999916,
+        "min": 0.14854099999999448,
+        "max": 0.16629199999999855
       },
       "snapshotMs": {
-        "median": 0.2787089999999921,
-        "min": 0.2762910000000147,
-        "max": 0.28650000000001796
+        "median": 0.20479199999999764,
+        "min": 0.19608399999998483,
+        "max": 0.20891700000001379
       },
       "peakRssMb": {
-        "median": 92.859375,
-        "min": 92.296875,
-        "max": 93.46875
+        "median": 92.25,
+        "min": 91.609375,
+        "max": 93.296875
       }
     },
     "depth-16": {
       "assembleMs": {
-        "median": 2.7150839999999903,
-        "min": 2.7057920000000024,
-        "max": 3.1108330000000137
+        "median": 2.8101659999999953,
+        "min": 2.7315419999999904,
+        "max": 3.029750000000007
       },
       "runtimeHeapMb": {
-        "median": 0.45217132568359375,
-        "min": 0.45191192626953125,
-        "max": 0.453460693359375
+        "median": 0.45317840576171875,
+        "min": 0.45294952392578125,
+        "max": 0.45322418212890625
       },
       "validateFirstMs": {
-        "median": 2.1334580000000187,
-        "min": 1.9869999999999948,
-        "max": 2.2403750000000002
+        "median": 2.2292500000000075,
+        "min": 2.1204579999999993,
+        "max": 2.416374999999988
       },
       "validateMs": {
-        "median": 0.20779200000001197,
-        "min": 0.19999999999998863,
-        "max": 0.2157500000000141
+        "median": 0.21254200000001333,
+        "min": 0.20412500000000477,
+        "max": 0.22504200000000196
       },
       "htmlMs": {
-        "median": 0.4267499999999984,
-        "min": 0.41929199999998445,
-        "max": 0.453125
+        "median": 0.24791600000000358,
+        "min": 0.23929199999997763,
+        "max": 0.2667500000000018
       },
       "textMs": {
-        "median": 0.15054100000000403,
-        "min": 0.14629099999999085,
-        "max": 0.1537919999999815
+        "median": 0.1527499999999975,
+        "min": 0.14579200000000014,
+        "max": 0.15391699999997854
       },
       "snapshotMs": {
-        "median": 0.2900419999999997,
-        "min": 0.27891700000000696,
-        "max": 0.30075000000002206
+        "median": 0.20074999999999932,
+        "min": 0.19962500000002592,
+        "max": 0.2033749999999941
       },
       "peakRssMb": {
-        "median": 93.65625,
-        "min": 93.359375,
-        "max": 94
+        "median": 92.25,
+        "min": 91.796875,
+        "max": 92.421875
       }
     },
     "depth-24": {
       "assembleMs": {
-        "median": 2.773791000000017,
-        "min": 2.6993329999999958,
-        "max": 2.8234170000000063
+        "median": 2.928375000000017,
+        "min": 2.8326669999999865,
+        "max": 3.1241660000000024
       },
       "runtimeHeapMb": {
-        "median": 0.45194244384765625,
-        "min": 0.451568603515625,
-        "max": 0.45302581787109375
+        "median": 0.452789306640625,
+        "min": 0.45267486572265625,
+        "max": 0.45501708984375
       },
       "validateFirstMs": {
-        "median": 2.2168749999999875,
-        "min": 2.1244590000000017,
-        "max": 2.3783750000000055
+        "median": 2.2160840000000235,
+        "min": 2.144500000000022,
+        "max": 2.3371659999999963
       },
       "validateMs": {
-        "median": 0.21870799999999235,
-        "min": 0.21116600000001995,
-        "max": 0.22791699999999082
+        "median": 0.2222500000000025,
+        "min": 0.21791699999999992,
+        "max": 0.22450000000000614
       },
       "htmlMs": {
-        "median": 0.42975000000001273,
-        "min": 0.40995800000001736,
-        "max": 0.442875000000015
+        "median": 0.26154100000002245,
+        "min": 0.2511250000000018,
+        "max": 0.26987499999998477
       },
       "textMs": {
-        "median": 0.15524999999999523,
-        "min": 0.15458300000000236,
-        "max": 0.15654200000000174
+        "median": 0.15587500000000887,
+        "min": 0.15375000000000227,
+        "max": 0.15737500000000182
       },
       "snapshotMs": {
-        "median": 0.2831249999999841,
-        "min": 0.2811659999999847,
-        "max": 0.2888329999999826
+        "median": 0.20912500000000023,
+        "min": 0.2019159999999829,
+        "max": 0.21270800000002055
       },
       "peakRssMb": {
-        "median": 93.5625,
-        "min": 93.421875,
-        "max": 93.828125
+        "median": 92.34375,
+        "min": 91.34375,
+        "max": 92.984375
       }
     },
     "characters-1000": {
       "assembleMs": {
-        "median": 2.7575000000000074,
-        "min": 2.7231669999999895,
-        "max": 2.916667000000004
+        "median": 2.8622500000000173,
+        "min": 2.798749999999984,
+        "max": 3.120332999999988
       },
       "runtimeHeapMb": {
-        "median": 0.45174407958984375,
-        "min": 0.4515228271484375,
-        "max": 0.45357513427734375
+        "median": 0.45323944091796875,
+        "min": 0.45317840576171875,
+        "max": 0.45333099365234375
       },
       "validateFirstMs": {
-        "median": 2.2377500000000055,
-        "min": 1.9823330000000112,
-        "max": 2.3609590000000082
+        "median": 1.9526250000000118,
+        "min": 1.8726249999999993,
+        "max": 2.3782500000000084
       },
       "validateMs": {
-        "median": 0.18637499999999818,
-        "min": 0.18279200000000628,
-        "max": 0.1882919999999899
+        "median": 0.19204200000001492,
+        "min": 0.17766699999998536,
+        "max": 0.21016700000001265
       },
       "htmlMs": {
-        "median": 0.41216700000001083,
-        "min": 0.407416000000012,
-        "max": 0.4188339999999755
+        "median": 0.23112500000002,
+        "min": 0.21887499999999704,
+        "max": 0.23716699999999946
       },
       "textMs": {
-        "median": 0.13654099999999403,
-        "min": 0.13479200000000446,
-        "max": 0.1377080000000035
+        "median": 0.1392500000000041,
+        "min": 0.13374999999999204,
+        "max": 0.14441700000000424
       },
       "snapshotMs": {
-        "median": 0.26474999999999227,
-        "min": 0.26433399999999097,
-        "max": 0.2667500000000018
+        "median": 0.19104099999998425,
+        "min": 0.18325000000001523,
+        "max": 0.1974170000000015
       },
       "peakRssMb": {
-        "median": 89.578125,
-        "min": 89.46875,
-        "max": 90.03125
+        "median": 88.890625,
+        "min": 88.359375,
+        "max": 89
       }
     },
     "characters-10000": {
       "assembleMs": {
-        "median": 2.769166999999996,
-        "min": 2.6651669999999967,
-        "max": 2.860083000000003
+        "median": 2.9145409999999856,
+        "min": 2.7717499999999973,
+        "max": 2.9812919999999963
       },
       "runtimeHeapMb": {
-        "median": 0.452789306640625,
-        "min": 0.45139312744140625,
-        "max": 0.45355224609375
+        "median": 0.45330047607421875,
+        "min": 0.45301055908203125,
+        "max": 0.454498291015625
       },
       "validateFirstMs": {
-        "median": 1.9109169999999835,
-        "min": 1.8562909999999988,
-        "max": 2.0142910000000143
+        "median": 2.0064579999999808,
+        "min": 1.899000000000001,
+        "max": 2.5342919999999935
       },
       "validateMs": {
-        "median": 0.18079199999999673,
-        "min": 0.1775829999999985,
-        "max": 0.18925000000001546
+        "median": 0.18766600000000722,
+        "min": 0.1802500000000009,
+        "max": 0.1996249999999975
       },
       "htmlMs": {
-        "median": 0.43641700000000583,
-        "min": 0.4252079999999978,
-        "max": 0.455332999999996
+        "median": 0.2488750000000266,
+        "min": 0.23937499999999545,
+        "max": 0.25833400000001916
       },
       "textMs": {
-        "median": 0.13620900000000802,
-        "min": 0.13191699999998718,
-        "max": 0.13724999999999454
+        "median": 0.1419170000000065,
+        "min": 0.1333750000000009,
+        "max": 0.14616699999999128
       },
       "snapshotMs": {
-        "median": 0.27691599999999994,
-        "min": 0.2752920000000074,
-        "max": 0.2819160000000238
+        "median": 0.18995799999999008,
+        "min": 0.18691600000002495,
+        "max": 0.19420800000000327
       },
       "peakRssMb": {
-        "median": 90.140625,
-        "min": 89.15625,
-        "max": 90.609375
+        "median": 89.140625,
+        "min": 88.625,
+        "max": 89.796875
       }
     },
     "characters-100000": {
       "assembleMs": {
-        "median": 2.740916999999996,
-        "min": 2.7287919999999986,
-        "max": 2.8995840000000044
+        "median": 2.900207999999992,
+        "min": 2.8179580000000044,
+        "max": 3.0934589999999957
       },
       "runtimeHeapMb": {
-        "median": 0.45169830322265625,
-        "min": 0.45136260986328125,
-        "max": 0.45288848876953125
+        "median": 0.45310211181640625,
+        "min": 0.45301055908203125,
+        "max": 0.45323944091796875
       },
       "validateFirstMs": {
-        "median": 1.9767500000000098,
-        "min": 1.906458999999984,
-        "max": 2.1479169999999783
+        "median": 2.0436660000000018,
+        "min": 1.9727080000000115,
+        "max": 2.192292000000009
       },
       "validateMs": {
-        "median": 0.19583399999999074,
-        "min": 0.18233299999999986,
-        "max": 0.20379199999999287
+        "median": 0.18916600000000017,
+        "min": 0.1826250000000016,
+        "max": 0.19462500000000205
       },
       "htmlMs": {
-        "median": 0.6331670000000145,
-        "min": 0.6015409999999974,
-        "max": 0.6912499999999966
+        "median": 0.4459579999999903,
+        "min": 0.4143329999999992,
+        "max": 0.4613329999999962
       },
       "textMs": {
-        "median": 0.14312499999999773,
-        "min": 0.13608400000001097,
-        "max": 0.14720800000000622
+        "median": 0.1413750000000107,
+        "min": 0.13983399999997914,
+        "max": 0.1490829999999903
       },
       "snapshotMs": {
-        "median": 0.30691699999999855,
-        "min": 0.3006249999999966,
-        "max": 0.324957999999981
+        "median": 0.2189170000000047,
+        "min": 0.2119169999999997,
+        "max": 0.22804199999998787
       },
       "peakRssMb": {
-        "median": 91.875,
-        "min": 91.0625,
-        "max": 93.765625
+        "median": 92.546875,
+        "min": 90.875,
+        "max": 94.046875
       }
     },
     "characters-900000": {
       "assembleMs": {
-        "median": 2.9787080000000117,
-        "min": 2.7945419999999785,
-        "max": 3.118707999999998
+        "median": 2.8407919999999933,
+        "min": 2.774000000000001,
+        "max": 3.079499999999996
       },
       "runtimeHeapMb": {
-        "median": 0.45189666748046875,
-        "min": 0.45171356201171875,
-        "max": 0.45241546630859375
+        "median": 0.45307159423828125,
+        "min": 0.4527740478515625,
+        "max": 0.4557342529296875
       },
       "validateFirstMs": {
-        "median": 2.0649589999999876,
-        "min": 1.903250000000014,
-        "max": 2.335958000000005
+        "median": 2.0519169999999747,
+        "min": 1.9770829999999933,
+        "max": 2.3693330000000117
       },
       "validateMs": {
-        "median": 0.19225000000000136,
-        "min": 0.1803340000000162,
-        "max": 0.199292000000014
+        "median": 0.18487500000000523,
+        "min": 0.181666000000007,
+        "max": 0.18779200000000174
       },
       "htmlMs": {
-        "median": 2.2384580000000085,
-        "min": 2.2132500000000164,
-        "max": 2.381042000000008
+        "median": 2.2762919999999838,
+        "min": 2.2259590000000173,
+        "max": 2.293542000000002
       },
       "textMs": {
-        "median": 0.22133400000001302,
-        "min": 0.2185000000000059,
-        "max": 0.23279100000002018
+        "median": 0.22183300000000372,
+        "min": 0.21829200000001947,
+        "max": 0.22637500000001864
       },
       "snapshotMs": {
-        "median": 0.5103749999999536,
-        "min": 0.5091249999999832,
-        "max": 0.5240420000000086
+        "median": 0.4310419999999908,
+        "min": 0.421875,
+        "max": 0.4396669999999858
       },
       "peakRssMb": {
-        "median": 125.4375,
-        "min": 122.328125,
-        "max": 129.625
+        "median": 118.578125,
+        "min": 111.5,
+        "max": 127.65625
       }
     }
   }

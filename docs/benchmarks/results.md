@@ -13,34 +13,34 @@ Each table is generated from a committed baseline. [Measuring Isomer](index.md) 
 
 What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up. Rows past the SDK's own packages come from each pack's config, resolved from that pack's directory; a pack bundled from source excludes what transpiling it would cost.
 
-Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, commit `49f4b343`.
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `2723bd02`.
 
 | Scenario                                    | Load (ms) | Modules | Heap held (MB) | RSS after (MB) | Peak RSS (MB) |
 | ------------------------------------------- | --------: | ------: | -------------: | -------------: | ------------: |
 | `node`                                      |         0 |       0 |            0.0 |             42 |            42 |
-| `@elastic/isomer-sdk`                       |        77 |     152 |            7.0 |             68 |            68 |
-| `@elastic/isomer-sdk/schema`                |       104 |     108 |            3.8 |             57 |            57 |
-| `@elastic/isomer-sdk/html`                  |       170 |     127 |            6.2 |             60 |            60 |
-| `@elastic/isomer-sdk/slack`                 |        79 |     127 |            6.2 |             67 |            67 |
-| `@elastic/isomer-sdk/text`                  |         2 |       3 |            0.1 |             47 |            47 |
+| `@elastic/isomer-sdk`                       |        84 |     152 |            6.9 |             67 |            67 |
+| `@elastic/isomer-sdk/schema`                |        31 |     108 |            3.8 |             56 |            56 |
+| `@elastic/isomer-sdk/html`                  |        40 |     127 |            5.0 |             59 |            59 |
+| `@elastic/isomer-sdk/slack`                 |        77 |     127 |            6.2 |             66 |            66 |
+| `@elastic/isomer-sdk/text`                  |         2 |       3 |            0.1 |             46 |            47 |
 | `@elastic/isomer-sdk/markdown`              |        77 |     110 |            6.0 |             65 |            65 |
-| `@elastic/isomer-sdk/react`                 |        79 |     120 |            6.1 |             67 |            67 |
-| `@elastic/isomer-sdk/author`                |        39 |     129 |            4.3 |             58 |            58 |
-| `@elastic/isomer-runtime`                   |        91 |     219 |            9.7 |             72 |            72 |
-| `@elastic/isomer-agent-tools`               |        87 |     170 |            7.3 |             69 |            69 |
-| `@elastic/isomer-image-takumi`              |         9 |      16 |            0.6 |             50 |            50 |
-| `host:image`                                |       109 |     235 |           10.0 |             73 |            73 |
-| `host:agent`                                |       104 |     225 |            9.7 |             72 |            72 |
-| `@elastic/isomer-primitives-slides`         |       210 |     639 |           15.4 |            100 |           100 |
-| `slides:host`                               |       231 |     669 |           17.7 |             96 |            96 |
-| `@elastic/isomer-primitives-charts`         |       127 |     323 |           11.6 |             77 |            77 |
-| `@elastic/isomer-primitives-charts/schema`  |        50 |     161 |            6.6 |             62 |            63 |
-| `@elastic/isomer-primitives-charts/scene`   |        12 |      49 |            0.9 |             50 |            50 |
-| `@elastic/isomer-primitives-charts/resolve` |         8 |      26 |            0.6 |             49 |            49 |
-| `charts:host`                               |       142 |     371 |           14.1 |             78 |            78 |
-| `@elastic/isomer-charts-elastic`            |       213 |     718 |           15.9 |             95 |            95 |
-| `@elastic/isomer-charts-elastic/engine`     |       214 |     717 |           15.9 |             95 |            95 |
-| `charts-elastic:host`                       |       306 |     935 |           25.0 |            115 |           115 |
+| `@elastic/isomer-sdk/react`                 |        83 |     120 |            6.0 |             66 |            66 |
+| `@elastic/isomer-sdk/author`                |        38 |     129 |            4.2 |             57 |            57 |
+| `@elastic/isomer-runtime`                   |       108 |     219 |            8.5 |             71 |            71 |
+| `@elastic/isomer-agent-tools`               |        95 |     170 |            7.2 |             69 |            69 |
+| `@elastic/isomer-image-takumi`              |        11 |      16 |            0.6 |             50 |            50 |
+| `host:image`                                |       115 |     235 |            8.9 |             72 |            72 |
+| `host:agent`                                |       103 |     225 |            8.6 |             71 |            71 |
+| `@elastic/isomer-primitives-slides`         |       211 |     639 |           15.2 |             93 |            93 |
+| `slides:host`                               |       219 |     669 |           16.5 |             95 |            95 |
+| `@elastic/isomer-primitives-charts`         |       130 |     323 |           11.4 |             76 |            76 |
+| `@elastic/isomer-primitives-charts/schema`  |        52 |     161 |            6.6 |             62 |            62 |
+| `@elastic/isomer-primitives-charts/scene`   |        14 |      49 |            0.9 |             50 |            50 |
+| `@elastic/isomer-primitives-charts/resolve` |         9 |      26 |            0.6 |             49 |            49 |
+| `charts:host`                               |       148 |     371 |           12.8 |             78 |            78 |
+| `@elastic/isomer-charts-elastic`            |       219 |     718 |           13.5 |             92 |            92 |
+| `@elastic/isomer-charts-elastic/engine`     |       226 |     717 |           13.5 |             92 |            92 |
+| `charts-elastic:host`                       |       307 |     935 |           21.5 |            115 |           116 |
 
 - `node`: nothing: what the harness itself holds
 - `host:image`: what a server that draws images needs besides a pack: the SDK, the runtime and takumi
@@ -53,26 +53,26 @@ Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cor
 
 A generated pack whose renderers each return one element or line, so the cost is the SDK's and the runtime's: assembling a runtime (which builds the composition schema), validating, and rendering. Each axis moves alone from 10 primitive types, 100 flat nodes and 800 label characters. Times past the first validate are the median of repeated calls in the same process.
 
-Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, commit `4760b00e`.
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `2723bd02`.
 
 | Scenario            | Assemble (ms) | Runtime heap (MB) | First validate (ms) | Validate (ms) | HTML (ms) | Text (ms) | Snapshot (ms) | Peak RSS (MB) |
 | ------------------- | ------------: | ----------------: | ------------------: | ------------: | --------: | --------: | ------------: | ------------: |
-| `primitives-1`      |           2.0 |               0.2 |                1.85 |          0.18 |      0.43 |      0.13 |          0.27 |            90 |
-| `primitives-10`     |           3.0 |               0.5 |                2.02 |          0.20 |      0.44 |      0.14 |          0.28 |            90 |
-| `primitives-50`     |           5.4 |               1.3 |                3.02 |          0.21 |      0.46 |      0.16 |          0.31 |            91 |
-| `primitives-200`    |          16.9 |               4.3 |                5.35 |          0.23 |      0.47 |      0.16 |          0.32 |           111 |
-| `nodes-10`          |           3.0 |               0.5 |                1.71 |          0.04 |      0.11 |      0.03 |          0.06 |            88 |
-| `nodes-100`         |           3.0 |               0.5 |                2.09 |          0.19 |      0.44 |      0.14 |          0.29 |            90 |
-| `nodes-1000`        |           3.0 |               0.5 |                4.93 |          1.20 |      2.77 |      1.24 |          2.19 |           118 |
-| `nodes-4000`        |           2.8 |               0.5 |               13.05 |          4.62 |     12.07 |      4.89 |          9.60 |           179 |
-| `depth-1`           |           2.8 |               0.5 |                1.92 |          0.18 |      0.42 |      0.14 |          0.27 |            90 |
-| `depth-8`           |           2.8 |               0.5 |                2.29 |          0.19 |      0.42 |      0.15 |          0.28 |            93 |
-| `depth-16`          |           2.7 |               0.5 |                2.13 |          0.21 |      0.43 |      0.15 |          0.29 |            94 |
-| `depth-24`          |           2.8 |               0.5 |                2.22 |          0.22 |      0.43 |      0.16 |          0.28 |            94 |
-| `characters-1000`   |           2.8 |               0.5 |                2.24 |          0.19 |      0.41 |      0.14 |          0.26 |            90 |
-| `characters-10000`  |           2.8 |               0.5 |                1.91 |          0.18 |      0.44 |      0.14 |          0.28 |            90 |
-| `characters-100000` |           2.7 |               0.5 |                1.98 |          0.20 |      0.63 |      0.14 |          0.31 |            92 |
-| `characters-900000` |           3.0 |               0.5 |                2.06 |          0.19 |      2.24 |      0.22 |          0.51 |           125 |
+| `primitives-1`      |           1.8 |               0.2 |                1.77 |          0.17 |      0.21 |      0.13 |          0.18 |            89 |
+| `primitives-10`     |           2.9 |               0.5 |                2.04 |          0.20 |      0.23 |      0.14 |          0.19 |            89 |
+| `primitives-50`     |           4.9 |               1.3 |                2.85 |          0.21 |      0.24 |      0.15 |          0.20 |            89 |
+| `primitives-200`    |          16.2 |               4.3 |                5.41 |          0.22 |      0.26 |      0.16 |          0.23 |           109 |
+| `nodes-10`          |           2.9 |               0.5 |                1.79 |          0.04 |      0.08 |      0.03 |          0.04 |            85 |
+| `nodes-100`         |           2.8 |               0.5 |                1.88 |          0.19 |      0.23 |      0.14 |          0.19 |            89 |
+| `nodes-1000`        |           2.8 |               0.5 |                5.18 |          1.17 |      1.47 |      1.24 |          1.36 |           111 |
+| `nodes-4000`        |           3.0 |               0.5 |               18.18 |          6.45 |      8.44 |      5.86 |          6.51 |           125 |
+| `depth-1`           |           3.0 |               0.5 |                2.30 |          0.20 |      0.25 |      0.14 |          0.20 |            89 |
+| `depth-8`           |           2.9 |               0.5 |                2.22 |          0.20 |      0.26 |      0.15 |          0.20 |            92 |
+| `depth-16`          |           2.8 |               0.5 |                2.23 |          0.21 |      0.25 |      0.15 |          0.20 |            92 |
+| `depth-24`          |           2.9 |               0.5 |                2.22 |          0.22 |      0.26 |      0.16 |          0.21 |            92 |
+| `characters-1000`   |           2.9 |               0.5 |                1.95 |          0.19 |      0.23 |      0.14 |          0.19 |            89 |
+| `characters-10000`  |           2.9 |               0.5 |                2.01 |          0.19 |      0.25 |      0.14 |          0.19 |            89 |
+| `characters-100000` |           2.9 |               0.5 |                2.04 |          0.19 |      0.45 |      0.14 |          0.22 |            93 |
+| `characters-900000` |           2.8 |               0.5 |                2.05 |          0.18 |      2.28 |      0.22 |          0.43 |           119 |
 
 - `primitives-1`: a pack of 1 primitive type
 - `primitives-10`: a pack of 10 primitive types
@@ -95,7 +95,7 @@ Each added unit along an axis costs, in microseconds, from the axis's first and 
 
 | Axis       | Per                        | Assemble (µs) | Validate (µs) | HTML (µs) | Snapshot (µs) |
 | ---------- | -------------------------- | ------------: | ------------: | --------: | ------------: |
-| primitives | primitive type in the pack |          74.8 |           0.2 |       0.2 |           0.3 |
-| nodes      | node                       |           0.0 |           1.1 |       3.0 |           2.4 |
-| depth      | level of nesting           |          -0.8 |           1.5 |       0.5 |           0.8 |
-| characters | 1,000 label characters     |           0.2 |           0.0 |       2.0 |           0.3 |
+| primitives | primitive type in the pack |          71.9 |           0.3 |       0.2 |           0.3 |
+| nodes      | node                       |           0.0 |           1.6 |       2.1 |           1.6 |
+| depth      | level of nesting           |          -4.6 |           1.0 |       0.6 |           0.5 |
+| characters | 1,000 label characters     |           0.0 |           0.0 |       2.3 |           0.3 |

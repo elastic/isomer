@@ -117,6 +117,9 @@ const loadConfigs = (paths) =>
   });
 
 const runSuite = async (suiteName, args) => {
+  // Children inherit it: React and others load their production builds, as a
+  // production host's do, and the environment records it.
+  process.env.NODE_ENV = 'production';
   const suite = suiteOf(suiteName);
   const runs = Number(option(args, '--runs', 5));
   const passed = options(args, '--config');
