@@ -21,6 +21,7 @@ Read this root first, then the scopes below and any nested `AGENTS.md` along aff
 | Studio CLI, browser app, config loading | [Studio](packages/isomer-studio/AGENTS.md) |
 | Transport-neutral tools, resources, prompts | [Agent tools](packages/isomer-agent-tools/AGENTS.md) |
 | Scorers, harnesses, recorded corpus | [Evals](packages/isomer-evals/AGENTS.md) |
+| Load, run and size costs, baselines, host sizing | [Benchmarks](packages/isomer-benchmarks/AGENTS.md) |
 | `scripts/**`, root build/test/release configuration, `.buildkite/**` | [Scripts and CI](scripts/AGENTS.md) |
 | `.github/**`, including workflows and composite actions | [GitHub automation routing](.github/AGENTS.md), then its linked concern guidance |
 
@@ -61,13 +62,15 @@ The runtime lives in `packages/isomer-runtime` under `assemble/`, `registry/`, a
 
 `packages/isomer-evals` scores whether a model produces valid, well-chosen compositions from a pack's authoring context. It depends on the SDK's public API alone and runs with no credentials.
 
+`packages/isomer-benchmarks` measures what each package costs to load, run and ship, apart from any host, by loading the built packages through their public entries in a fresh process per run. Its `docs/results.md` is generated from the committed `baselines/`. The charts pack's memory gate is still `scripts/bench_charts.cjs`.
+
 `packages/isomer-studio` is the `isomer-studio` CLI: `dev`, `build` and `check` over a consumer's `isomer-studio.config.ts`. Its `bin` runs the CommonJS build, which loads Vite with `import()`; it ships its browser app prebuilt in `lib/app` and keeps React at 18 until EUI allows 19. `dev` runs on Vite and hot-updates a changed config in place; `build` stays on esbuild. `pnpm studio:dev` runs the CLI from source against the root `isomer-studio.config.ts`, which gathers the in-repo packs with `images: false`. `pnpm test:browser` and `scripts/check_studio_consumer.js` drive it in Chromium.
 
 `packages/isomer-agent-tools` turns any runtime into transport-neutral agent tools, resources, and a `compose` prompt. It declares the runtime structurally and depends on the SDK alone; hosts bring the transport, and it must never reach `@modelcontextprotocol/sdk`, which `scripts/check_module_graph.js` enforces.
 
 ## Release posture
 
-Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the Elastic Charts engine is what browser hosts draw charts with, the charts pack is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals is a harness run from this repository and stays private; agent-tools is private until its API settles. A package marked `isomer.unseeded` is private only until npm seeds its name, and the packed checks and license files treat it as published. A package that publishes now never lists a private one, unseeded included, in `dependencies` or `peerDependencies`, and an unseeded package lists none that never publishes, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
+Every package under `packages/` without `"private": true` publishes, at one version, through the release workflow: `@elastic/isomer-sdk` and `@elastic/isomer-runtime` are what a host installs, takumi is a host-side rasterizer, the Elastic Charts engine is what browser hosts draw charts with, the charts pack is what Kibana and the render service share, and the Studio is the CLI a pack installs to browse and check its primitives. The slides pack is an exemplar to copy and stays private; evals and benchmarks are harnesses run from this repository and stay private; agent-tools is private until its API settles. A package marked `isomer.unseeded` is private only until npm seeds its name, and the packed checks and license files treat it as published. A package that publishes now never lists a private one, unseeded included, in `dependencies` or `peerDependencies`, and an unseeded package lists none that never publishes, which `scripts/check_pack_consumer.js` enforces. Do not raise publication, registry access, or dependency licensing as a constraint when planning work in this repository.
 
 ## Where work happens
 

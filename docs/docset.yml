@@ -15,5 +15,6 @@ toc:
   - toc: image-takumi
   - toc: studio
   - toc: evals
+  - toc: benchmarks
   - toc: agent-tools
   - toc: reference

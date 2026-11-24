@@ -186,6 +186,40 @@ importers:
         specifier: workspace:*
         version: link:../isomer-runtime
 
+  packages/isomer-benchmarks:
+    dependencies:
+      '@elastic/isomer-sdk':
+        specifier: workspace:*
+        version: link:../isomer-sdk
+      react:
+        specifier: '>=18 <20'
+        version: 18.3.1
+      react-dom:
+        specifier: '>=18 <20'
+        version: 18.3.1(react@18.3.1)
+      zod:
+        specifier: ^4.5.4
+        version: 4.6.5
+    devDependencies:
+      '@elastic/isomer-agent-tools':
+        specifier: workspace:*
+        version: link:../isomer-agent-tools
+      '@elastic/isomer-charts-elastic':
+        specifier: workspace:*
+        version: link:../isomer-charts-elastic
+      '@elastic/isomer-image-takumi':
+        specifier: workspace:*
+        version: link:../isomer-image-takumi
+      '@elastic/isomer-primitives-charts':
+        specifier: workspace:*
+        version: link:../isomer-primitives-charts
+      '@elastic/isomer-primitives-slides':
+        specifier: workspace:*
+        version: link:../isomer-primitives-slides
+      '@elastic/isomer-runtime':
+        specifier: workspace:*
+        version: link:../isomer-runtime
+
   packages/isomer-charts-elastic:
     dependencies:
       '@elastic/isomer-primitives-charts':

@@ -1,0 +1,1666 @@
+{
+  "schemaVersion": 1,
+  "suite": "load",
+  "about": "What `require` of each public entry costs a fresh Node process, as a CommonJS host loads it, before any call into it. Each row adds to `node`, the harness alone; an entry's row includes the packages it pulls in, so rows overlap and don't add up.",
+  "environment": {
+    "node": "v22.22.0",
+    "v8": "12.4.254.21-node.33",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 14,
+    "cpuModel": "Apple M4 Pro",
+    "totalMemoryMb": 49152,
+    "cgroupMemoryLimitMb": null,
+    "nodeFlags": [
+      "--disallow-code-generation-from-strings",
+      "--expose-gc"
+    ],
+    "env": {
+      "MALLOC_ARENA_MAX": null,
+      "UV_THREADPOOL_SIZE": null
+    },
+    "commit": "4760b00e0c051f21641655c540041a16928ae73e",
+    "packages": {
+      "@elastic/isomer-sdk": "0.0.0-development",
+      "@elastic/isomer-runtime": "0.0.0-development",
+      "@elastic/isomer-agent-tools": "0.0.0-development",
+      "@elastic/isomer-image-takumi": "0.0.0-development",
+      "@elastic/isomer-primitives-charts": "0.0.0-development",
+      "@elastic/isomer-charts-elastic": "0.0.0-development",
+      "@elastic/isomer-primitives-slides": "0.0.0-development",
+      "react": "18.3.1",
+      "react-dom": "18.3.1",
+      "zod": "4.6.5"
+    }
+  },
+  "runsPerScenario": 5,
+  "measures": [
+    {
+      "key": "loadMs",
+      "label": "Load (ms)",
+      "digits": 0
+    },
+    {
+      "key": "modules",
+      "label": "Modules",
+      "digits": 0
+    },
+    {
+      "key": "heapRetainedMb",
+      "label": "Heap held (MB)",
+      "digits": 1
+    },
+    {
+      "key": "rssMb",
+      "label": "RSS after (MB)",
+      "digits": 0
+    },
+    {
+      "key": "peakRssMb",
+      "label": "Peak RSS (MB)",
+      "digits": 0
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "node",
+      "about": "nothing: what the harness itself holds"
+    },
+    {
+      "name": "@elastic/isomer-sdk",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/schema",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/html",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/slack",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/text",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/markdown",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/react",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/author",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-runtime",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-agent-tools",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-image-takumi",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/schema",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/scene",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/resolve",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-charts-elastic",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-charts-elastic/engine",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-slides",
+      "about": ""
+    },
+    {
+      "name": "host:image",
+      "about": "what a server that draws images loads: the SDK, the runtime, the charts pack and takumi"
+    },
+    {
+      "name": "host:agent",
+      "about": "what an agent host loads: the SDK, the runtime, agent-tools and the slides pack"
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "node",
+      "peakRssMb": 41.984375,
+      "loadMs": 0.000708,
+      "modules": 0,
+      "heapRetainedMb": -0.00335693359375,
+      "rssMb": 41.921875,
+      "held": 0
+    },
+    {
+      "scenario": "node",
+      "peakRssMb": 41.828125,
+      "loadMs": 0.000833,
+      "modules": 0,
+      "heapRetainedMb": -0.00335693359375,
+      "rssMb": 41.765625,
+      "held": 0
+    },
+    {
+      "scenario": "node",
+      "peakRssMb": 41.875,
+      "loadMs": 0.000583,
+      "modules": 0,
+      "heapRetainedMb": -0.00335693359375,
+      "rssMb": 41.8125,
+      "held": 0
+    },
+    {
+      "scenario": "node",
+      "peakRssMb": 41.53125,
+      "loadMs": 0.001042,
+      "modules": 0,
+      "heapRetainedMb": -0.00335693359375,
+      "rssMb": 41.46875,
+      "held": 0
+    },
+    {
+      "scenario": "node",
+      "peakRssMb": 41.53125,
+      "loadMs": 0.000833,
+      "modules": 0,
+      "heapRetainedMb": -0.00335693359375,
+      "rssMb": 41.46875,
+      "held": 0
+    },
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 68.046875,
+      "loadMs": 135.023334,
+      "modules": 152,
+      "heapRetainedMb": 7.0035400390625,
+      "rssMb": 68,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 67.390625,
+      "loadMs": 91.168375,
+      "modules": 152,
+      "heapRetainedMb": 7.0029296875,
+      "rssMb": 67.34375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 67.5,
+      "loadMs": 90.341958,
+      "modules": 152,
+      "heapRetainedMb": 7.003021240234375,
+      "rssMb": 67.453125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 67.375,
+      "loadMs": 93.485375,
+      "modules": 152,
+      "heapRetainedMb": 7.00390625,
+      "rssMb": 67.328125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 67.6875,
+      "loadMs": 90.054625,
+      "modules": 152,
+      "heapRetainedMb": 7.002647399902344,
+      "rssMb": 67.640625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 56.015625,
+      "loadMs": 32.425875,
+      "modules": 108,
+      "heapRetainedMb": 3.769683837890625,
+      "rssMb": 55.953125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 56.515625,
+      "loadMs": 35.709709,
+      "modules": 108,
+      "heapRetainedMb": 3.7691879272460938,
+      "rssMb": 56.453125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 56.375,
+      "loadMs": 36.746208,
+      "modules": 108,
+      "heapRetainedMb": 3.7696380615234375,
+      "rssMb": 56.3125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 56.109375,
+      "loadMs": 34.794667,
+      "modules": 108,
+      "heapRetainedMb": 3.7696075439453125,
+      "rssMb": 56.046875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 56.265625,
+      "loadMs": 31.894709,
+      "modules": 108,
+      "heapRetainedMb": 3.7696456909179688,
+      "rssMb": 56.203125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 59.6875,
+      "loadMs": 50.0895,
+      "modules": 127,
+      "heapRetainedMb": 6.1567230224609375,
+      "rssMb": 59.640625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 59.609375,
+      "loadMs": 46.15225,
+      "modules": 127,
+      "heapRetainedMb": 6.156562805175781,
+      "rssMb": 59.5625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 59.546875,
+      "loadMs": 46.372125,
+      "modules": 127,
+      "heapRetainedMb": 6.156852722167969,
+      "rssMb": 59.5,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 59.53125,
+      "loadMs": 44.931791,
+      "modules": 127,
+      "heapRetainedMb": 6.156547546386719,
+      "rssMb": 59.484375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 59.140625,
+      "loadMs": 44.566375,
+      "modules": 127,
+      "heapRetainedMb": 6.1559295654296875,
+      "rssMb": 59.09375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 66.703125,
+      "loadMs": 87.597834,
+      "modules": 127,
+      "heapRetainedMb": 6.198394775390625,
+      "rssMb": 66.65625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 66.21875,
+      "loadMs": 84.449667,
+      "modules": 127,
+      "heapRetainedMb": 6.1974639892578125,
+      "rssMb": 66.171875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 66.234375,
+      "loadMs": 85.744625,
+      "modules": 127,
+      "heapRetainedMb": 6.197654724121094,
+      "rssMb": 66.1875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 66.296875,
+      "loadMs": 75.562084,
+      "modules": 127,
+      "heapRetainedMb": 6.1980133056640625,
+      "rssMb": 66.25,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 66.234375,
+      "loadMs": 74.320417,
+      "modules": 127,
+      "heapRetainedMb": 6.197273254394531,
+      "rssMb": 66.1875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 44.421875,
+      "loadMs": 2.465041,
+      "modules": 3,
+      "heapRetainedMb": 0.115692138671875,
+      "rssMb": 44.1875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 44.34375,
+      "loadMs": 2.012333,
+      "modules": 3,
+      "heapRetainedMb": 0.115692138671875,
+      "rssMb": 44.078125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 44.421875,
+      "loadMs": 2.0775,
+      "modules": 3,
+      "heapRetainedMb": 0.11576080322265625,
+      "rssMb": 44.203125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 44.375,
+      "loadMs": 2.23875,
+      "modules": 3,
+      "heapRetainedMb": 0.115692138671875,
+      "rssMb": 44.140625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 44.53125,
+      "loadMs": 2.170583,
+      "modules": 3,
+      "heapRetainedMb": 0.115692138671875,
+      "rssMb": 44.3125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 65.625,
+      "loadMs": 81.11225,
+      "modules": 110,
+      "heapRetainedMb": 5.9810028076171875,
+      "rssMb": 65.578125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 65.171875,
+      "loadMs": 78.31225,
+      "modules": 110,
+      "heapRetainedMb": 5.98162841796875,
+      "rssMb": 65.125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 64.890625,
+      "loadMs": 76.738916,
+      "modules": 110,
+      "heapRetainedMb": 5.9814300537109375,
+      "rssMb": 64.84375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 65.640625,
+      "loadMs": 85.456792,
+      "modules": 110,
+      "heapRetainedMb": 5.9808807373046875,
+      "rssMb": 65.59375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 65.359375,
+      "loadMs": 82.117584,
+      "modules": 110,
+      "heapRetainedMb": 5.981941223144531,
+      "rssMb": 65.3125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 66.421875,
+      "loadMs": 82.687042,
+      "modules": 120,
+      "heapRetainedMb": 6.169303894042969,
+      "rssMb": 66.375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 66.5,
+      "loadMs": 82.856458,
+      "modules": 120,
+      "heapRetainedMb": 6.1700286865234375,
+      "rssMb": 66.453125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 66.640625,
+      "loadMs": 84.075084,
+      "modules": 120,
+      "heapRetainedMb": 6.1704559326171875,
+      "rssMb": 66.59375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 66.453125,
+      "loadMs": 84.642041,
+      "modules": 120,
+      "heapRetainedMb": 6.1698150634765625,
+      "rssMb": 66.40625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 66.171875,
+      "loadMs": 81.534167,
+      "modules": 120,
+      "heapRetainedMb": 6.169654846191406,
+      "rssMb": 66.125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 56.75,
+      "loadMs": 40.747583,
+      "modules": 129,
+      "heapRetainedMb": 4.313819885253906,
+      "rssMb": 56.65625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 56.890625,
+      "loadMs": 39.564375,
+      "modules": 129,
+      "heapRetainedMb": 4.313629150390625,
+      "rssMb": 56.828125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 56.984375,
+      "loadMs": 37.768667,
+      "modules": 129,
+      "heapRetainedMb": 4.314399719238281,
+      "rssMb": 56.921875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 56.859375,
+      "loadMs": 38.375083,
+      "modules": 129,
+      "heapRetainedMb": 4.31341552734375,
+      "rssMb": 56.796875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 56.859375,
+      "loadMs": 39.388875,
+      "modules": 129,
+      "heapRetainedMb": 4.3145751953125,
+      "rssMb": 56.796875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 72,
+      "loadMs": 109.659958,
+      "modules": 219,
+      "heapRetainedMb": 9.677444458007812,
+      "rssMb": 71.96875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 71.828125,
+      "loadMs": 106.683666,
+      "modules": 219,
+      "heapRetainedMb": 9.677444458007812,
+      "rssMb": 71.796875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 71.828125,
+      "loadMs": 114.482375,
+      "modules": 219,
+      "heapRetainedMb": 9.677658081054688,
+      "rssMb": 71.796875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 72.234375,
+      "loadMs": 107.57325,
+      "modules": 219,
+      "heapRetainedMb": 9.677024841308594,
+      "rssMb": 72.203125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 71.765625,
+      "loadMs": 109.395375,
+      "modules": 219,
+      "heapRetainedMb": 9.677520751953125,
+      "rssMb": 71.734375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 69.4375,
+      "loadMs": 99.937334,
+      "modules": 170,
+      "heapRetainedMb": 7.282829284667969,
+      "rssMb": 69.390625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 68.609375,
+      "loadMs": 94.505667,
+      "modules": 170,
+      "heapRetainedMb": 7.283042907714844,
+      "rssMb": 68.5625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 68.84375,
+      "loadMs": 90.84375,
+      "modules": 170,
+      "heapRetainedMb": 7.2835540771484375,
+      "rssMb": 68.796875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 68.765625,
+      "loadMs": 92.5085,
+      "modules": 170,
+      "heapRetainedMb": 7.2833251953125,
+      "rssMb": 68.71875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 68.859375,
+      "loadMs": 96.936917,
+      "modules": 170,
+      "heapRetainedMb": 7.2835540771484375,
+      "rssMb": 68.8125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 50.03125,
+      "loadMs": 27.688917,
+      "modules": 16,
+      "heapRetainedMb": 0.6527786254882812,
+      "rssMb": 49.96875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 50.078125,
+      "loadMs": 9.8485,
+      "modules": 16,
+      "heapRetainedMb": 0.6527786254882812,
+      "rssMb": 50.015625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 49.953125,
+      "loadMs": 9.529667,
+      "modules": 16,
+      "heapRetainedMb": 0.6527786254882812,
+      "rssMb": 49.890625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 49.875,
+      "loadMs": 10.109542,
+      "modules": 16,
+      "heapRetainedMb": 0.6527786254882812,
+      "rssMb": 49.8125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 49.796875,
+      "loadMs": 10.949666,
+      "modules": 16,
+      "heapRetainedMb": 0.6527786254882812,
+      "rssMb": 49.734375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 76.109375,
+      "loadMs": 155.602125,
+      "modules": 323,
+      "heapRetainedMb": 11.57086181640625,
+      "rssMb": 76.078125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 76.390625,
+      "loadMs": 128.514833,
+      "modules": 323,
+      "heapRetainedMb": 11.570831298828125,
+      "rssMb": 76.359375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 77.15625,
+      "loadMs": 136.651167,
+      "modules": 323,
+      "heapRetainedMb": 11.582954406738281,
+      "rssMb": 77.125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 76.296875,
+      "loadMs": 128.658334,
+      "modules": 323,
+      "heapRetainedMb": 11.582817077636719,
+      "rssMb": 76.265625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 76.4375,
+      "loadMs": 134.170083,
+      "modules": 323,
+      "heapRetainedMb": 11.570831298828125,
+      "rssMb": 76.40625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 62.59375,
+      "loadMs": 50.168291,
+      "modules": 161,
+      "heapRetainedMb": 6.609527587890625,
+      "rssMb": 62.546875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 62.046875,
+      "loadMs": 49.858625,
+      "modules": 161,
+      "heapRetainedMb": 6.6094512939453125,
+      "rssMb": 62,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 62.234375,
+      "loadMs": 50.72925,
+      "modules": 161,
+      "heapRetainedMb": 6.609588623046875,
+      "rssMb": 62.1875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 62.28125,
+      "loadMs": 49.909375,
+      "modules": 161,
+      "heapRetainedMb": 6.609474182128906,
+      "rssMb": 62.234375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 62.40625,
+      "loadMs": 47.371833,
+      "modules": 161,
+      "heapRetainedMb": 6.609413146972656,
+      "rssMb": 62.359375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 49.765625,
+      "loadMs": 13.574333,
+      "modules": 49,
+      "heapRetainedMb": 0.933929443359375,
+      "rssMb": 49.6875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 49.875,
+      "loadMs": 12.81975,
+      "modules": 49,
+      "heapRetainedMb": 0.933929443359375,
+      "rssMb": 49.8125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 49.9375,
+      "loadMs": 12.953167,
+      "modules": 49,
+      "heapRetainedMb": 0.933929443359375,
+      "rssMb": 49.875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 49.765625,
+      "loadMs": 12.870417,
+      "modules": 49,
+      "heapRetainedMb": 0.933929443359375,
+      "rssMb": 49.6875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 50.03125,
+      "loadMs": 12.816333,
+      "modules": 49,
+      "heapRetainedMb": 0.933929443359375,
+      "rssMb": 49.953125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 49.203125,
+      "loadMs": 8.689833,
+      "modules": 26,
+      "heapRetainedMb": 0.6035232543945312,
+      "rssMb": 49.140625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 49.03125,
+      "loadMs": 8.627959,
+      "modules": 26,
+      "heapRetainedMb": 0.6035232543945312,
+      "rssMb": 48.96875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 48.9375,
+      "loadMs": 7.97025,
+      "modules": 26,
+      "heapRetainedMb": 0.6035232543945312,
+      "rssMb": 48.859375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 48.96875,
+      "loadMs": 8.580625,
+      "modules": 26,
+      "heapRetainedMb": 0.6035232543945312,
+      "rssMb": 48.90625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 48.75,
+      "loadMs": 8.741209,
+      "modules": 26,
+      "heapRetainedMb": 0.6035232543945312,
+      "rssMb": 48.6875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 95.046875,
+      "loadMs": 377.718667,
+      "modules": 718,
+      "heapRetainedMb": 15.959747314453125,
+      "rssMb": 95.015625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 95.28125,
+      "loadMs": 209.287125,
+      "modules": 718,
+      "heapRetainedMb": 15.959991455078125,
+      "rssMb": 95.234375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 95.21875,
+      "loadMs": 216.22475,
+      "modules": 718,
+      "heapRetainedMb": 15.960769653320312,
+      "rssMb": 95.1875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 95.046875,
+      "loadMs": 220.176583,
+      "modules": 718,
+      "heapRetainedMb": 15.959129333496094,
+      "rssMb": 95.015625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 95.078125,
+      "loadMs": 227.0795,
+      "modules": 718,
+      "heapRetainedMb": 15.959754943847656,
+      "rssMb": 95.046875,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 95.984375,
+      "loadMs": 222.630708,
+      "modules": 717,
+      "heapRetainedMb": 15.954216003417969,
+      "rssMb": 95.953125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 95.359375,
+      "loadMs": 224.295458,
+      "modules": 717,
+      "heapRetainedMb": 15.950538635253906,
+      "rssMb": 95.3125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 95.40625,
+      "loadMs": 228.557083,
+      "modules": 717,
+      "heapRetainedMb": 15.949905395507812,
+      "rssMb": 95.375,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 95.5625,
+      "loadMs": 218.03675,
+      "modules": 717,
+      "heapRetainedMb": 15.953956604003906,
+      "rssMb": 95.53125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 95.109375,
+      "loadMs": 223.92175,
+      "modules": 717,
+      "heapRetainedMb": 15.949729919433594,
+      "rssMb": 95.078125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 94.359375,
+      "loadMs": 248.5545,
+      "modules": 639,
+      "heapRetainedMb": 15.430259704589844,
+      "rssMb": 94.328125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 94.359375,
+      "loadMs": 250.653125,
+      "modules": 639,
+      "heapRetainedMb": 15.426795959472656,
+      "rssMb": 94.328125,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 100.9375,
+      "loadMs": 208.854333,
+      "modules": 639,
+      "heapRetainedMb": 15.421035766601562,
+      "rssMb": 100.90625,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 94.03125,
+      "loadMs": 201.678333,
+      "modules": 639,
+      "heapRetainedMb": 15.427375793457031,
+      "rssMb": 94,
+      "held": 1
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 93.28125,
+      "loadMs": 203.450208,
+      "modules": 639,
+      "heapRetainedMb": 15.426841735839844,
+      "rssMb": 93.25,
+      "held": 1
+    },
+    {
+      "scenario": "host:image",
+      "peakRssMb": 80.421875,
+      "loadMs": 162.440084,
+      "modules": 387,
+      "heapRetainedMb": 14.49554443359375,
+      "rssMb": 80.390625,
+      "held": 4
+    },
+    {
+      "scenario": "host:image",
+      "peakRssMb": 80.28125,
+      "loadMs": 167.195083,
+      "modules": 387,
+      "heapRetainedMb": 14.492530822753906,
+      "rssMb": 80.25,
+      "held": 4
+    },
+    {
+      "scenario": "host:image",
+      "peakRssMb": 80.453125,
+      "loadMs": 157.019542,
+      "modules": 387,
+      "heapRetainedMb": 14.494613647460938,
+      "rssMb": 80.421875,
+      "held": 4
+    },
+    {
+      "scenario": "host:image",
+      "peakRssMb": 81.734375,
+      "loadMs": 162.695791,
+      "modules": 387,
+      "heapRetainedMb": 14.481132507324219,
+      "rssMb": 81.703125,
+      "held": 4
+    },
+    {
+      "scenario": "host:image",
+      "peakRssMb": 80.375,
+      "loadMs": 160.390917,
+      "modules": 387,
+      "heapRetainedMb": 14.494728088378906,
+      "rssMb": 80.34375,
+      "held": 4
+    },
+    {
+      "scenario": "host:agent",
+      "peakRssMb": 95.890625,
+      "loadMs": 251.222959,
+      "modules": 675,
+      "heapRetainedMb": 17.794044494628906,
+      "rssMb": 95.859375,
+      "held": 4
+    },
+    {
+      "scenario": "host:agent",
+      "peakRssMb": 95.9375,
+      "loadMs": 239.088,
+      "modules": 675,
+      "heapRetainedMb": 17.793907165527344,
+      "rssMb": 95.90625,
+      "held": 4
+    },
+    {
+      "scenario": "host:agent",
+      "peakRssMb": 96.765625,
+      "loadMs": 291.197042,
+      "modules": 675,
+      "heapRetainedMb": 17.7923583984375,
+      "rssMb": 96.734375,
+      "held": 4
+    },
+    {
+      "scenario": "host:agent",
+      "peakRssMb": 96.25,
+      "loadMs": 238.999916,
+      "modules": 675,
+      "heapRetainedMb": 17.793548583984375,
+      "rssMb": 96.203125,
+      "held": 4
+    },
+    {
+      "scenario": "host:agent",
+      "peakRssMb": 102.875,
+      "loadMs": 237.603458,
+      "modules": 675,
+      "heapRetainedMb": 17.78272247314453,
+      "rssMb": 102.84375,
+      "held": 4
+    }
+  ],
+  "summary": {
+    "node": {
+      "loadMs": {
+        "median": 0.000833,
+        "min": 0.000583,
+        "max": 0.001042
+      },
+      "modules": {
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "heapRetainedMb": {
+        "median": -0.00335693359375,
+        "min": -0.00335693359375,
+        "max": -0.00335693359375
+      },
+      "rssMb": {
+        "median": 41.765625,
+        "min": 41.46875,
+        "max": 41.921875
+      },
+      "peakRssMb": {
+        "median": 41.828125,
+        "min": 41.53125,
+        "max": 41.984375
+      }
+    },
+    "@elastic/isomer-sdk": {
+      "loadMs": {
+        "median": 91.168375,
+        "min": 90.054625,
+        "max": 135.023334
+      },
+      "modules": {
+        "median": 152,
+        "min": 152,
+        "max": 152
+      },
+      "heapRetainedMb": {
+        "median": 7.003021240234375,
+        "min": 7.002647399902344,
+        "max": 7.00390625
+      },
+      "rssMb": {
+        "median": 67.453125,
+        "min": 67.328125,
+        "max": 68
+      },
+      "peakRssMb": {
+        "median": 67.5,
+        "min": 67.375,
+        "max": 68.046875
+      }
+    },
+    "@elastic/isomer-sdk/schema": {
+      "loadMs": {
+        "median": 34.794667,
+        "min": 31.894709,
+        "max": 36.746208
+      },
+      "modules": {
+        "median": 108,
+        "min": 108,
+        "max": 108
+      },
+      "heapRetainedMb": {
+        "median": 3.7696380615234375,
+        "min": 3.7691879272460938,
+        "max": 3.769683837890625
+      },
+      "rssMb": {
+        "median": 56.203125,
+        "min": 55.953125,
+        "max": 56.453125
+      },
+      "peakRssMb": {
+        "median": 56.265625,
+        "min": 56.015625,
+        "max": 56.515625
+      }
+    },
+    "@elastic/isomer-sdk/html": {
+      "loadMs": {
+        "median": 46.15225,
+        "min": 44.566375,
+        "max": 50.0895
+      },
+      "modules": {
+        "median": 127,
+        "min": 127,
+        "max": 127
+      },
+      "heapRetainedMb": {
+        "median": 6.156562805175781,
+        "min": 6.1559295654296875,
+        "max": 6.156852722167969
+      },
+      "rssMb": {
+        "median": 59.5,
+        "min": 59.09375,
+        "max": 59.640625
+      },
+      "peakRssMb": {
+        "median": 59.546875,
+        "min": 59.140625,
+        "max": 59.6875
+      }
+    },
+    "@elastic/isomer-sdk/slack": {
+      "loadMs": {
+        "median": 84.449667,
+        "min": 74.320417,
+        "max": 87.597834
+      },
+      "modules": {
+        "median": 127,
+        "min": 127,
+        "max": 127
+      },
+      "heapRetainedMb": {
+        "median": 6.197654724121094,
+        "min": 6.197273254394531,
+        "max": 6.198394775390625
+      },
+      "rssMb": {
+        "median": 66.1875,
+        "min": 66.171875,
+        "max": 66.65625
+      },
+      "peakRssMb": {
+        "median": 66.234375,
+        "min": 66.21875,
+        "max": 66.703125
+      }
+    },
+    "@elastic/isomer-sdk/text": {
+      "loadMs": {
+        "median": 2.170583,
+        "min": 2.012333,
+        "max": 2.465041
+      },
+      "modules": {
+        "median": 3,
+        "min": 3,
+        "max": 3
+      },
+      "heapRetainedMb": {
+        "median": 0.115692138671875,
+        "min": 0.115692138671875,
+        "max": 0.11576080322265625
+      },
+      "rssMb": {
+        "median": 44.1875,
+        "min": 44.078125,
+        "max": 44.3125
+      },
+      "peakRssMb": {
+        "median": 44.421875,
+        "min": 44.34375,
+        "max": 44.53125
+      }
+    },
+    "@elastic/isomer-sdk/markdown": {
+      "loadMs": {
+        "median": 81.11225,
+        "min": 76.738916,
+        "max": 85.456792
+      },
+      "modules": {
+        "median": 110,
+        "min": 110,
+        "max": 110
+      },
+      "heapRetainedMb": {
+        "median": 5.9814300537109375,
+        "min": 5.9808807373046875,
+        "max": 5.981941223144531
+      },
+      "rssMb": {
+        "median": 65.3125,
+        "min": 64.84375,
+        "max": 65.59375
+      },
+      "peakRssMb": {
+        "median": 65.359375,
+        "min": 64.890625,
+        "max": 65.640625
+      }
+    },
+    "@elastic/isomer-sdk/react": {
+      "loadMs": {
+        "median": 82.856458,
+        "min": 81.534167,
+        "max": 84.642041
+      },
+      "modules": {
+        "median": 120,
+        "min": 120,
+        "max": 120
+      },
+      "heapRetainedMb": {
+        "median": 6.1698150634765625,
+        "min": 6.169303894042969,
+        "max": 6.1704559326171875
+      },
+      "rssMb": {
+        "median": 66.40625,
+        "min": 66.125,
+        "max": 66.59375
+      },
+      "peakRssMb": {
+        "median": 66.453125,
+        "min": 66.171875,
+        "max": 66.640625
+      }
+    },
+    "@elastic/isomer-sdk/author": {
+      "loadMs": {
+        "median": 39.388875,
+        "min": 37.768667,
+        "max": 40.747583
+      },
+      "modules": {
+        "median": 129,
+        "min": 129,
+        "max": 129
+      },
+      "heapRetainedMb": {
+        "median": 4.313819885253906,
+        "min": 4.31341552734375,
+        "max": 4.3145751953125
+      },
+      "rssMb": {
+        "median": 56.796875,
+        "min": 56.65625,
+        "max": 56.921875
+      },
+      "peakRssMb": {
+        "median": 56.859375,
+        "min": 56.75,
+        "max": 56.984375
+      }
+    },
+    "@elastic/isomer-runtime": {
+      "loadMs": {
+        "median": 109.395375,
+        "min": 106.683666,
+        "max": 114.482375
+      },
+      "modules": {
+        "median": 219,
+        "min": 219,
+        "max": 219
+      },
+      "heapRetainedMb": {
+        "median": 9.677444458007812,
+        "min": 9.677024841308594,
+        "max": 9.677658081054688
+      },
+      "rssMb": {
+        "median": 71.796875,
+        "min": 71.734375,
+        "max": 72.203125
+      },
+      "peakRssMb": {
+        "median": 71.828125,
+        "min": 71.765625,
+        "max": 72.234375
+      }
+    },
+    "@elastic/isomer-agent-tools": {
+      "loadMs": {
+        "median": 94.505667,
+        "min": 90.84375,
+        "max": 99.937334
+      },
+      "modules": {
+        "median": 170,
+        "min": 170,
+        "max": 170
+      },
+      "heapRetainedMb": {
+        "median": 7.2833251953125,
+        "min": 7.282829284667969,
+        "max": 7.2835540771484375
+      },
+      "rssMb": {
+        "median": 68.796875,
+        "min": 68.5625,
+        "max": 69.390625
+      },
+      "peakRssMb": {
+        "median": 68.84375,
+        "min": 68.609375,
+        "max": 69.4375
+      }
+    },
+    "@elastic/isomer-image-takumi": {
+      "loadMs": {
+        "median": 10.109542,
+        "min": 9.529667,
+        "max": 27.688917
+      },
+      "modules": {
+        "median": 16,
+        "min": 16,
+        "max": 16
+      },
+      "heapRetainedMb": {
+        "median": 0.6527786254882812,
+        "min": 0.6527786254882812,
+        "max": 0.6527786254882812
+      },
+      "rssMb": {
+        "median": 49.890625,
+        "min": 49.734375,
+        "max": 50.015625
+      },
+      "peakRssMb": {
+        "median": 49.953125,
+        "min": 49.796875,
+        "max": 50.078125
+      }
+    },
+    "@elastic/isomer-primitives-charts": {
+      "loadMs": {
+        "median": 134.170083,
+        "min": 128.514833,
+        "max": 155.602125
+      },
+      "modules": {
+        "median": 323,
+        "min": 323,
+        "max": 323
+      },
+      "heapRetainedMb": {
+        "median": 11.57086181640625,
+        "min": 11.570831298828125,
+        "max": 11.582954406738281
+      },
+      "rssMb": {
+        "median": 76.359375,
+        "min": 76.078125,
+        "max": 77.125
+      },
+      "peakRssMb": {
+        "median": 76.390625,
+        "min": 76.109375,
+        "max": 77.15625
+      }
+    },
+    "@elastic/isomer-primitives-charts/schema": {
+      "loadMs": {
+        "median": 49.909375,
+        "min": 47.371833,
+        "max": 50.72925
+      },
+      "modules": {
+        "median": 161,
+        "min": 161,
+        "max": 161
+      },
+      "heapRetainedMb": {
+        "median": 6.609474182128906,
+        "min": 6.609413146972656,
+        "max": 6.609588623046875
+      },
+      "rssMb": {
+        "median": 62.234375,
+        "min": 62,
+        "max": 62.546875
+      },
+      "peakRssMb": {
+        "median": 62.28125,
+        "min": 62.046875,
+        "max": 62.59375
+      }
+    },
+    "@elastic/isomer-primitives-charts/scene": {
+      "loadMs": {
+        "median": 12.870417,
+        "min": 12.816333,
+        "max": 13.574333
+      },
+      "modules": {
+        "median": 49,
+        "min": 49,
+        "max": 49
+      },
+      "heapRetainedMb": {
+        "median": 0.933929443359375,
+        "min": 0.933929443359375,
+        "max": 0.933929443359375
+      },
+      "rssMb": {
+        "median": 49.8125,
+        "min": 49.6875,
+        "max": 49.953125
+      },
+      "peakRssMb": {
+        "median": 49.875,
+        "min": 49.765625,
+        "max": 50.03125
+      }
+    },
+    "@elastic/isomer-primitives-charts/resolve": {
+      "loadMs": {
+        "median": 8.627959,
+        "min": 7.97025,
+        "max": 8.741209
+      },
+      "modules": {
+        "median": 26,
+        "min": 26,
+        "max": 26
+      },
+      "heapRetainedMb": {
+        "median": 0.6035232543945312,
+        "min": 0.6035232543945312,
+        "max": 0.6035232543945312
+      },
+      "rssMb": {
+        "median": 48.90625,
+        "min": 48.6875,
+        "max": 49.140625
+      },
+      "peakRssMb": {
+        "median": 48.96875,
+        "min": 48.75,
+        "max": 49.203125
+      }
+    },
+    "@elastic/isomer-charts-elastic": {
+      "loadMs": {
+        "median": 220.176583,
+        "min": 209.287125,
+        "max": 377.718667
+      },
+      "modules": {
+        "median": 718,
+        "min": 718,
+        "max": 718
+      },
+      "heapRetainedMb": {
+        "median": 15.959754943847656,
+        "min": 15.959129333496094,
+        "max": 15.960769653320312
+      },
+      "rssMb": {
+        "median": 95.046875,
+        "min": 95.015625,
+        "max": 95.234375
+      },
+      "peakRssMb": {
+        "median": 95.078125,
+        "min": 95.046875,
+        "max": 95.28125
+      }
+    },
+    "@elastic/isomer-charts-elastic/engine": {
+      "loadMs": {
+        "median": 223.92175,
+        "min": 218.03675,
+        "max": 228.557083
+      },
+      "modules": {
+        "median": 717,
+        "min": 717,
+        "max": 717
+      },
+      "heapRetainedMb": {
+        "median": 15.950538635253906,
+        "min": 15.949729919433594,
+        "max": 15.954216003417969
+      },
+      "rssMb": {
+        "median": 95.375,
+        "min": 95.078125,
+        "max": 95.953125
+      },
+      "peakRssMb": {
+        "median": 95.40625,
+        "min": 95.109375,
+        "max": 95.984375
+      }
+    },
+    "@elastic/isomer-primitives-slides": {
+      "loadMs": {
+        "median": 208.854333,
+        "min": 201.678333,
+        "max": 250.653125
+      },
+      "modules": {
+        "median": 639,
+        "min": 639,
+        "max": 639
+      },
+      "heapRetainedMb": {
+        "median": 15.426841735839844,
+        "min": 15.421035766601562,
+        "max": 15.430259704589844
+      },
+      "rssMb": {
+        "median": 94.328125,
+        "min": 93.25,
+        "max": 100.90625
+      },
+      "peakRssMb": {
+        "median": 94.359375,
+        "min": 93.28125,
+        "max": 100.9375
+      }
+    },
+    "host:image": {
+      "loadMs": {
+        "median": 162.440084,
+        "min": 157.019542,
+        "max": 167.195083
+      },
+      "modules": {
+        "median": 387,
+        "min": 387,
+        "max": 387
+      },
+      "heapRetainedMb": {
+        "median": 14.494613647460938,
+        "min": 14.481132507324219,
+        "max": 14.49554443359375
+      },
+      "rssMb": {
+        "median": 80.390625,
+        "min": 80.25,
+        "max": 81.703125
+      },
+      "peakRssMb": {
+        "median": 80.421875,
+        "min": 80.28125,
+        "max": 81.734375
+      }
+    },
+    "host:agent": {
+      "loadMs": {
+        "median": 239.088,
+        "min": 237.603458,
+        "max": 291.197042
+      },
+      "modules": {
+        "median": 675,
+        "min": 675,
+        "max": 675
+      },
+      "heapRetainedMb": {
+        "median": 17.793548583984375,
+        "min": 17.78272247314453,
+        "max": 17.794044494628906
+      },
+      "rssMb": {
+        "median": 96.203125,
+        "min": 95.859375,
+        "max": 102.84375
+      },
+      "peakRssMb": {
+        "median": 96.25,
+        "min": 95.890625,
+        "max": 102.875
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "name": "@elastic/isomer-benchmarks",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Benchmarks for Isomer: what each package costs to load, run and ship, measured apart from any host.",
+  "license": "Elastic-2.0",
+  "author": "Elastic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elastic/isomer.git",
+    "directory": "packages/isomer-benchmarks"
+  },
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "main": "lib/cjs/index.js",
+  "module": "lib/esm/index.js",
+  "types": "lib/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/index.d.ts",
+      "import": "./lib/esm/index.js",
+      "require": "./lib/cjs/index.js",
+      "default": "./lib/cjs/index.js"
+    }
+  },
+  "files": [
+    "lib",
+    "!**/*.tsbuildinfo",
+    "NOTICE.txt",
+    "THIRD_PARTY_LICENSES.md",
+    "LICENSE.txt"
+  ],
+  "scripts": {
+    "bench": "node cli/run.cjs",
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types",
+    "build:clean": "rimraf lib/",
+    "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:compile:esm": "tsc --project ./tsconfig.esm.json",
+    "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@elastic/isomer-sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": ">=18 <20",
+    "react-dom": ">=18 <20",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@elastic/isomer-agent-tools": "workspace:*",
+    "@elastic/isomer-charts-elastic": "workspace:*",
+    "@elastic/isomer-image-takumi": "workspace:*",
+    "@elastic/isomer-primitives-charts": "workspace:*",
+    "@elastic/isomer-primitives-slides": "workspace:*",
+    "@elastic/isomer-runtime": "workspace:*"
+  }
+}
