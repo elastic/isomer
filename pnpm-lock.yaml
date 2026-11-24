@@ -40,6 +40,9 @@ importers:
       '@elastic/isomer-agent-tools':
         specifier: workspace:*
         version: link:packages/isomer-agent-tools
+      '@elastic/isomer-benchmarks':
+        specifier: workspace:*
+        version: link:packages/isomer-benchmarks
       '@elastic/isomer-charts-elastic':
         specifier: workspace:*
         version: link:packages/isomer-charts-elastic
