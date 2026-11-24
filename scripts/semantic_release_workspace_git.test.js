@@ -99,12 +99,16 @@ describe('shipsSince in a git repository', { timeout: TIMEOUT_MS }, () => {
   });
 
   beforeEach(() => {
+    // A failed `mkdtempSync` must not leave `afterEach` holding the template.
+    repo = '';
     repo = mkdtempSync(join(tmpdir(), 'isomer-ships-since-'));
     cpSync(template, repo, { recursive: true });
   });
 
   afterEach(() => {
-    rmSync(repo, { recursive: true, force: true });
+    if (repo !== '') {
+      rmSync(repo, { recursive: true, force: true });
+    }
   });
 
   it('ships a change to a published package', () => {
