@@ -6,7 +6,13 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -69,6 +75,31 @@ describe('check_pack_contents', () => {
     expect(stderr).toContain(
       "fixture-unlisted: ships runtime code Kibana's build deletes from node_modules: lib/examples/index.js"
     );
+    expect(status).toBe(1);
+  });
+
+  it("runs no package's pack scripts", () => {
+    writePackage(
+      'scripted',
+      {
+        name: 'fixture-scripted',
+        scripts: {
+          prepack: `node -e "require('fs').writeFileSync('prepack-ran', '')"`,
+        },
+      },
+      {}
+    );
+    const { status } = run();
+    expect(status).toBe(0);
+    expect(existsSync(join(root, 'packages', 'scripted', 'prepack-ran'))).toBe(
+      false
+    );
+  });
+
+  it('fails a root that holds no packages', () => {
+    const { status, stderr, stdout } = run();
+    expect(stderr).toContain(`${root}: no packages found`);
+    expect(stdout).not.toContain('Pack contents check passed.');
     expect(status).toBe(1);
   });
 

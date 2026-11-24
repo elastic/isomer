@@ -60,17 +60,24 @@ const packedPath = (from, target) => {
 
 // `node scripts/check_pack_contents.js [root]` checks another workspace root.
 const [root] = process.argv.slice(2);
+const packages = workspacePackages(root);
+
+if (root !== undefined && packages.length === 0) {
+  console.error(`${root}: no packages found under ${join(root, 'packages')}`);
+  process.exit(1);
+}
 
 let allPassed = true;
 
-for (const pkg of packedPackages(workspacePackages(root), isPublishable)) {
+for (const pkg of packedPackages(packages, isPublishable)) {
   const { exports: exportMap, name, files: filesField = [] } = pkg.manifest;
 
   let packOutput;
   try {
     packOutput = execFileSync(
       'npm',
-      ['pack', '--dry-run', '--json', '--cache', npmCache],
+      // `--dry-run` still runs `prepack` and `postpack`.
+      ['pack', '--dry-run', '--ignore-scripts', '--json', '--cache', npmCache],
       {
         cwd: pkg.dir,
         encoding: 'utf-8',
