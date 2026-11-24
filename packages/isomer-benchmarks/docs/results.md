@@ -100,3 +100,55 @@ Each added unit along an axis costs, in microseconds, from the axis's first and 
 | nodes      | node                       |           0.0 |           2.1 |                  2.4 |                      2.4 |
 | depth      | level of nesting           |           2.0 |           0.9 |                  0.3 |                      0.6 |
 | characters | 1,000 label characters     |          -0.1 |           0.0 |                  2.1 |                      0.3 |
+
+## Bundling each entry
+
+What each public entry adds to a host that bundles it, such as a render service or a browser app: esbuild bundles the entry's ESM build, minified, with the entry's peers and React and zod left external, since the host brings them. A peer such as `@elastic/charts` is not counted. The browser column is empty for an entry that only runs on Node. Sizes don't vary between runs or machines.
+
+Measured once. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `af8bb69b`.
+
+| Scenario                                    | Node (KB) | Node gzip (KB) | Browser (KB) | Browser gzip (KB) | Own code (KB) |
+| ------------------------------------------- | --------: | -------------: | -----------: | ----------------: | ------------: |
+| `@elastic/isomer-sdk`                       |     184.7 |           60.0 |        149.8 |              47.5 |          41.5 |
+| `@elastic/isomer-sdk/schema`                |       1.7 |            1.1 |          1.7 |               1.1 |           1.6 |
+| `@elastic/isomer-sdk/html`                  |     134.9 |           40.8 |        134.9 |              40.8 |          16.6 |
+| `@elastic/isomer-sdk/slack`                 |     152.7 |           48.0 |        117.8 |              35.6 |          23.8 |
+| `@elastic/isomer-sdk/text`                  |       0.2 |            0.2 |          0.2 |               0.2 |           0.1 |
+| `@elastic/isomer-sdk/markdown`              |     152.0 |           47.4 |        117.1 |              35.0 |          10.2 |
+| `@elastic/isomer-sdk/react`                 |     137.7 |           43.0 |        102.8 |              30.7 |           9.0 |
+| `@elastic/isomer-sdk/author`                |      35.5 |           13.4 |         35.5 |              13.4 |          35.1 |
+| `@elastic/isomer-runtime`                   |     338.9 |          106.8 |        304.0 |              94.5 |          11.6 |
+| `@elastic/isomer-agent-tools`               |      13.9 |            5.3 |         13.9 |               5.3 |           7.8 |
+| `@elastic/isomer-image-takumi`              |      46.4 |           14.0 |              |                   |           6.4 |
+| `@elastic/isomer-primitives-slides`         |     543.7 |          175.3 |        508.8 |             162.8 |         314.7 |
+| `@elastic/isomer-primitives-charts`         |     397.8 |          129.2 |        363.0 |             116.9 |         207.4 |
+| `@elastic/isomer-primitives-charts/schema`  |     123.7 |           37.2 |        123.7 |              37.2 |         120.4 |
+| `@elastic/isomer-primitives-charts/scene`   |      47.2 |           17.3 |         47.2 |              17.3 |          12.6 |
+| `@elastic/isomer-primitives-charts/resolve` |      51.5 |           20.0 |         51.5 |              20.0 |          51.5 |
+| `@elastic/isomer-charts-elastic`            |      66.0 |           24.5 |         66.0 |              24.5 |          25.7 |
+| `@elastic/isomer-charts-elastic/engine`     |      64.8 |           24.1 |         64.8 |              24.1 |          24.4 |
+| `@elastic/isomer-charts-elastic/node`       |      66.5 |           24.8 |         66.5 |              24.8 |          26.3 |
+
+The largest other packages in each entry's Node bundle, in KB:
+
+| Entry                                       | Largest other packages                                                               |
+| ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `@elastic/isomer-sdk`                       | `character-entities` 35, `micromark-core-commonmark` 27, `mdast-util-to-markdown` 23 |
+| `@elastic/isomer-sdk/schema`                | none                                                                                 |
+| `@elastic/isomer-sdk/html`                  | `acorn` 118                                                                          |
+| `@elastic/isomer-sdk/slack`                 | `character-entities` 35, `micromark-core-commonmark` 27, `mdast-util-to-markdown` 11 |
+| `@elastic/isomer-sdk/text`                  | none                                                                                 |
+| `@elastic/isomer-sdk/markdown`              | `character-entities` 35, `micromark-core-commonmark` 27, `mdast-util-to-markdown` 23 |
+| `@elastic/isomer-sdk/react`                 | `character-entities` 35, `micromark-core-commonmark` 27, `mdast-util-to-markdown` 11 |
+| `@elastic/isomer-sdk/author`                | none                                                                                 |
+| `@elastic/isomer-runtime`                   | `acorn` 119, `@elastic/isomer-sdk` 67, `character-entities` 35                       |
+| `@elastic/isomer-agent-tools`               | `@elastic/isomer-sdk` 6                                                              |
+| `@elastic/isomer-image-takumi`              | `@takumi-rs/helpers` 21, `@takumi-rs/core` 18                                        |
+| `@elastic/isomer-primitives-slides`         | `@elastic/isomer-sdk` 50, `character-entities` 35, `@elastic/distillate` 32          |
+| `@elastic/isomer-primitives-charts`         | `character-entities` 35, `@elastic/distillate` 31, `micromark-core-commonmark` 27    |
+| `@elastic/isomer-primitives-charts/schema`  | `@elastic/isomer-sdk` 2                                                              |
+| `@elastic/isomer-primitives-charts/scene`   | `@elastic/distillate` 31, `stylis` 3                                                 |
+| `@elastic/isomer-primitives-charts/resolve` | none                                                                                 |
+| `@elastic/isomer-charts-elastic`            | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
+| `@elastic/isomer-charts-elastic/engine`     | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
+| `@elastic/isomer-charts-elastic/node`       | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |

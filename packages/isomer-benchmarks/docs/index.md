@@ -12,6 +12,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 - **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and rendering it as HTML or a snapshot adds well under 0.1 ms more. Each further node adds about 2 µs, almost all of it validation.
 - **Loading code at startup is where the cost is.** The SDK and the runtime with takumi hold about 72 MB RSS before any request, against 42 MB for Node alone. A pack adds its own: about 78 MB with the charts pack and 95 MB with the slides pack.
 - **The heaviest single entry is the Elastic Charts engine,** at about 730 CommonJS modules, because it loads `@elastic/charts`. With the SDK and the runtime it reaches about 118 MB. A host that only validates or resolves charts doesn't need it.
+- **Bundled, the SDK root is about 185 KB minified, but only about 40 KB is its own code.** The rest is the Markdown parser, which `./react` and `./slack` pull in too. The runtime is about 340 KB, since it also bundles `acorn`, about 120 KB, to check embedded scripts.
 - **Subpaths help:** `@elastic/isomer-sdk/text` loads 3 modules against about 150 for the SDK root, and the charts pack's `/scene` and `/resolve` load under 50 against about 320 for its root.
 - **Pay one-time costs at startup:** assemble the runtime once (about 2 ms for 10 primitive types, 7 ms for 200) and validate one composition, since the first costs about ten times the rest.
 - **Not measured yet:** real pack render cost, takumi rasterizing, chart drawing, concurrency and container limits. Those will likely outweigh everything above.
@@ -24,7 +25,8 @@ Every scenario runs in its own fresh Node process, started with `--expose-gc --d
 
 | Suite | Claims | Does not claim |
 | --- | --- | --- |
-| `load` | What `require` of each public entry a host loads costs before any call: time, CommonJS modules loaded, heap held after a GC, and RSS. It covers the SDK's own packages and each [pack config](#benchmarking-a-pack)'s entries. `host:*` rows load what a host needs besides a pack, and each `<pack>:host` row adds that pack to the SDK and the runtime. | What an ESM bundle costs; bundle bytes are a separate measurement. Rows overlap, so they don't add up. ES modules a CommonJS entry loads, which `require.cache` doesn't list. `./testing` entries and the Studio's CLI, which no host loads. For a pack bundled from source, what transpiling it costs. |
+| `load` | What `require` of each public entry a host loads costs before any call: time, CommonJS modules loaded, heap held after a GC, and RSS. It covers the SDK's own packages and each [pack config](#benchmarking-a-pack)'s entries. `host:*` rows load what a host needs besides a pack, and each `<pack>:host` row adds that pack to the SDK and the runtime. | What an ESM bundle costs; `size` measures that. Rows overlap, so they don't add up. ES modules a CommonJS entry loads, which `require.cache` doesn't list. `./testing` entries and the Studio's CLI, which no host loads. For a pack bundled from source, what transpiling it costs. |
+| `size` | What each public entry adds to a host that bundles it, for Node and for the browser: minified and gzipped bytes of an esbuild bundle of its ESM build, measured once since sizes don't vary. It also gives the entry's own share and the largest packages it pulls in. It covers the SDK's own packages and each pack config's entries. The entry's peers, React and zod stay external. | What a peer adds: the Elastic Charts engine's rows exclude `@elastic/charts`, and takumi's excludes its native binary. How a host's own bundler splits or tree-shakes an import. |
 | `synthetic` | What the SDK and runtime cost on their own. It uses a generated pack whose renderers each return one element or line, swept one axis at a time: primitive types, nodes (8 label characters each), nesting depth up to 24 levels, and label characters. Every composition uses one of the pack's types, so the primitive axis changes only the pack, and assembling excludes defining the pack. | What a real pack costs. A real pack's schemas and renderers add their own cost on top. Rendering apart from validating: each surface's `render` validates first, so its column includes a validate. Depth past 24 levels. |
 
 Times measure the machine they ran on. Compare them within one environment, never across environments. Memory moves less between machines, but still differs by platform and allocator.
@@ -41,7 +43,7 @@ pnpm --filter @elastic/isomer-benchmarks bench synthetic --runs 3 --scenarios no
 
 | Option | Default | |
 | --- | --- | --- |
-| `--config <file>` | this repository's packs | A [pack config](#benchmarking-a-pack) to measure, for `load`. Repeat it for several packs. |
+| `--config <file>` | this repository's packs | A [pack config](#benchmarking-a-pack) to measure, for `load` and `size`. Repeat it for several packs. |
 | `--runs <n>` | 5 | Fresh processes per scenario, at least 1. |
 | `--scenarios <a,b>` | all | Only these scenarios. |
 | `--write <file>` | | Also write the full result as JSON: environment, every run, and the summary. |
@@ -90,4 +92,12 @@ Commit the baseline, `docs/results.md`, and the assembled copy under the root `d
 
 ## Bounds
 
-Nothing here gates yet. When a measure gets a bound, the bound is about twice the measured median, as the charts pack's memory bench sets it. That holds across platforms and still catches a doubling. Timing is recorded and never gated.
+`bounds/<suite>.json` holds the most each scenario's median may reach, per measure. `bench <suite> --check` runs the suite over this repository's packs and fails when a median is over its bound. It also fails when a bound names a scenario or measure the run didn't produce, so a bound can't pass by going unmeasured. It takes no `--config` or `--scenarios`.
+
+| Gate | Holds | Runs in |
+| --- | --- | --- |
+| `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`) | `pnpm verify` and CI |
+
+A bound is about twice the measured median, rounded up to 10, as the charts pack's memory bench sets its own. That still catches an entry that newly pulls in a dependency as large as itself. Sizes don't vary by machine, so a size bound can be set from any machine; a memory bound comes from the CI host. Timing is recorded and never gated.
+
+To change a bound, change the code or the dependency first. Then refresh the baseline, and raise the bound in the same pull request with the reason.

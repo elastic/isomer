@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+export { type BoundCheck, type Bounds, checkBounds } from './bounds';
 export { bundleSourceEntry } from './bundle_source';
 export {
   type BenchConfig,
