@@ -32,6 +32,8 @@
     },
     "./node": {
       "types": "./lib/cjs/node.d.ts",
+      "module": "./lib/esm/node.js",
+      "node": "./lib/cjs/node.js",
       "import": "./lib/esm/node.js",
       "require": "./lib/cjs/node.js",
       "default": "./lib/cjs/node.js"
