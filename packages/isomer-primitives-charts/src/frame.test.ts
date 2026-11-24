@@ -17,7 +17,7 @@ import { examples as gridExamples } from './primitives/grid/examples';
 import type { GridNode } from './primitives/grid/schema';
 import type { ChartNode } from './render/context';
 import type { ResolveChartOptions } from './resolve/common';
-import { metricSingleValueScene } from './scene/examples';
+import { metricSingleValueScene, xyTimeSeriesScene } from './scene/examples';
 import type { Scene } from './scene/types';
 import { CHART_CHROME } from './theme/palette';
 
@@ -205,6 +205,59 @@ describe('chartsFrame', () => {
       const unstated = html.render(composition, { css: 'separate' });
       expect(unstated.html).toContain('chartsGrid-panels');
       expect(unstated.css).not.toContain('.chartsGrid-column');
+    });
+
+    describe('a chart on its own', () => {
+      const sizes: ResolveChartOptions['size'][] = [];
+      const { snapshot } = createIsomerRuntime({
+        packs: [
+          createChartsPack({
+            resolveScene: (_, { size, scheme }) => {
+              sizes.push(size);
+              return { ...scenes.current, scheme };
+            },
+          }),
+        ],
+        frames: { charts: chartsFrame },
+      }).surfaces;
+      const scenes: { current: Scene } = { current: xyTimeSeriesScene };
+      const boxes = () => sizes.filter((size) => size !== undefined);
+      const view = { type: 'view' as const, body: [chart] };
+
+      it.each([
+        // 928 × 9/16.
+        [{}, { width: 928, height: 522 }],
+        // 568 × 9/16 = 319.5.
+        [{ width: 600 }, { width: 568, height: 320 }],
+        // 368 × 9/16 = 207, under a vertical time chart's least height.
+        [{ width: 400 }, { width: 368, height: 300 }],
+      ])(
+        "takes its size spec at the page's content width (%j)",
+        (options, box) => {
+          sizes.length = 0;
+          scenes.current = xyTimeSeriesScene;
+          const { height } = snapshot.render(view, options);
+          expect(boxes()).toEqual([box]);
+          expect(height).toBe(32 + box.height);
+        }
+      );
+
+      it("stays within its spec's greatest width", () => {
+        sizes.length = 0;
+        scenes.current = metricSingleValueScene;
+        const { height } = snapshot.render(view);
+        expect(boxes()).toEqual([{ width: 300, height: 160 }]);
+        expect(height).toBe(32 + 160);
+      });
+
+      it('takes the whole page with no surround', () => {
+        sizes.length = 0;
+        scenes.current = xyTimeSeriesScene;
+        const { height } = snapshot.renderNode(chart);
+        expect(boxes()).toEqual([{ width: 960, height: 540 }]);
+        // The reported height is the frame's estimate, padding included.
+        expect(height).toBe(32 + 540);
+      });
     });
 
     it('draws a chart on its own in the light scheme by default', () => {

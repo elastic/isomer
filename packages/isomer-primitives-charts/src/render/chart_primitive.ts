@@ -5,11 +5,15 @@
  * 2.0.
  */
 
-import { sanitizeNavigationHref } from '@elastic/isomer-sdk';
+import {
+  sanitizeNavigationHref,
+  type SnapshotHeightOptions,
+} from '@elastic/isomer-sdk';
 import { md } from '@elastic/isomer-sdk/markdown';
 
 import type { Scene } from '../scene';
 import { sceneToMarkdown, sceneToText } from '../text';
+import { CHARTS_THEME } from '../theme';
 
 import type { ChartNode, ChartsReactEnv } from './context';
 import { createFailureGuard, FAILURE_HEIGHT, failureText } from './failure';
@@ -76,16 +80,21 @@ const sanitizeLink =
     }));
   };
 
-/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws, and its link line. */
+/** A chart's `snapshot` height: its size spec's box on Node, which is where `snapshot` draws, at the page's content width, and its link line. */
 const snapshotHeight =
   (config: SceneShim) =>
-  (node: ChartNode): number =>
+  (
+    node: ChartNode,
+    { width = CHARTS_THEME.chart.width }: SnapshotHeightOptions = {}
+  ): number =>
     config.guard(
       node,
       () => {
         const scene = resolveForText(node, config);
-        const spec = chartSizeSpec(scene);
-        return (spec ? chartSize(spec).height : 0) + linkLineHeight(scene);
+        const spec = chartSizeSpec(scene, width);
+        return (
+          (spec ? chartSize(spec, width).height : 0) + linkLineHeight(scene)
+        );
       },
       () => FAILURE_HEIGHT
     );

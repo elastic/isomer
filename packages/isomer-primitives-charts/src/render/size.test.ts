@@ -187,6 +187,21 @@ describe('chartSizeSpec for a legacy metric', () => {
     });
   });
 
+  it('wraps its tiles at the width it is sized for', () => {
+    const boxes = [
+      { width: 300, height: 40 },
+      { width: 300, height: 60 },
+    ];
+    const two = {
+      ...scene,
+      tiles: boxes.map((box) => ({ ...scene.tiles[0]!, box })),
+      interactions: { ...scene.interactions, emphasis: [] },
+    };
+    // Two rows at 480 px, one at 600.
+    expect(chartSizeSpec(two)?.minHeight).toBe(100);
+    expect(chartSizeSpec(two, 600)?.minHeight).toBe(60);
+  });
+
   it('adds a line for each emphasis note', () => {
     expect(
       chartSizeSpec({

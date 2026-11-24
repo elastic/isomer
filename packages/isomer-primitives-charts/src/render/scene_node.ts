@@ -11,6 +11,7 @@
 
 import { createElement, type ReactNode } from 'react';
 import {
+  layoutWidthOf,
   nodeAnchor,
   sanitizeNavigationHref,
   styleScopeOf,
@@ -134,18 +135,19 @@ const renderEnv = (
   };
 };
 
-/** The box a chart resolves for without a host size; none where its container sizes it. */
+/** The box a chart resolves for without a host size, `width` wide at most; none where its container sizes it. */
 const fixedBox = (
   scene: Scene,
   environment: SceneEnvironment,
-  { sized }: ReactSceneRenderer
+  { sized }: ReactSceneRenderer,
+  width: number
 ): SceneSize | undefined => {
   if (sized === true && scene.kind === 'table') {
-    return { width: CHARTS_THEME.chart.width, height: tableHeight(scene) };
+    return { width, height: tableHeight(scene) };
   }
-  const spec = chartSizeSpec(scene);
+  const spec = chartSizeSpec(scene, width);
   return spec && (environment === 'node' || sized === true)
-    ? chartSize(spec)
+    ? chartSize(spec, width)
     : undefined;
 };
 
@@ -155,7 +157,8 @@ const fixedBox = (
  * on a line below it.
  *
  * Without a host `size`, the chart takes its kind's size spec. On Node, or
- * for a `sized` renderer, it resolves for the spec's box; in a browser, a
+ * for a `sized` renderer, it resolves for the spec's box at the surface's
+ * layout width, else the theme's chart width; in a browser, a
  * `fluid` renderer's box takes the spec's shape and the renderer fills it.
  * A host `size` holds the link line too.
  */
@@ -174,7 +177,12 @@ const drawSceneNode = (
         width: context.size.width,
         height: Math.max(0, context.size.height - linkHeight),
       }
-    : fixedBox(unsized, environment, renderer);
+    : fixedBox(
+        unsized,
+        environment,
+        renderer,
+        layoutWidthOf(context) ?? CHARTS_THEME.chart.width
+      );
   const scene = box ? resolveForReact(node, env, config, box) : unsized;
   const spec =
     !context?.size && !box && environment === 'browser' && renderer.fluid
