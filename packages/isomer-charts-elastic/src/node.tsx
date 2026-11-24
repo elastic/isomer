@@ -6,7 +6,7 @@
  */
 
 // The engine on a server: the browser renderer's specs, drawn to static markup
-// by Elastic Charts' `renderChart`, which needs `@elastic/charts` 73.5.0.
+// by Elastic Charts' `renderChart`.
 
 import type { ReactNode } from 'react';
 import { Chart } from '@elastic/charts';
