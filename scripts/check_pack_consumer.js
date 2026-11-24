@@ -390,7 +390,17 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     join(primitivesDir, 'demo', 'index.ts'),
     "exports.demoPrimitive = { type: 'demo', catalog: {}, schema: {}, renderers: {} };\n"
   );
-  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }] })`;
+  // `require()` refuses a module with top-level `await`; Node's `import()` loads it.
+  mkdirSync(join(primitivesDir, 'awaited'), { recursive: true });
+  writeFileSync(
+    join(primitivesDir, 'awaited', 'package.json'),
+    '{ "type": "module" }\n'
+  );
+  writeFileSync(
+    join(primitivesDir, 'awaited', 'index.ts'),
+    "const type: string = await Promise.resolve('awaited');\nexport const awaitedPrimitive = { type, catalog: {}, schema: {}, renderers: {} };\n"
+  );
+  const registrationCall = `assertPackRegistrationComplete({ primitivesDir: ${JSON.stringify(relative(sdkConsumerDir, primitivesDir))}, registered: [{ type: 'demo' }, { type: 'awaited' }] })`;
   // Node strips TypeScript by default only from 22.18.
   const stripTypes = process.features.typescript
     ? []
@@ -421,13 +431,23 @@ if (pdf.subarray(0, 5).toString('latin1') !== '%PDF-') throw new Error('rendered
     process.execPath,
     [
       ...stripTypes,
+      '--input-type=module',
+      '--eval',
+      `const { assertPackRegistrationComplete } = await import('${sdkName}/testing'); await ${registrationCall};`,
+    ],
+    { cwd: sdkConsumerDir, stdio: 'inherit' }
+  );
+  execFileSync(
+    process.execPath,
+    [
+      ...stripTypes,
       '--eval',
       `const { assertPackRegistrationComplete } = require('${sdkName}/testing'); ${registrationCall}.catch((error) => { console.error(error); process.exit(1); });`,
     ],
     { cwd: sdkConsumerDir, stdio: 'inherit' }
   );
   console.log(
-    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle and require.`
+    `${sdkName}: packed assertPackRegistrationComplete loaded primitives through an ESM bundle, a native import and require.`
   );
 } finally {
   rmSync(tempDir, { force: true, recursive: true });

@@ -14,6 +14,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import type { AnyPrimitiveDefinition } from '../define/primitive_module';
 
+import { importNative } from './import_native.cjs';
+
 /** What {@link assertPackRegistrationComplete} needs to compare a pack against its directory. */
 export interface PackRegistrationOptions {
   /** Directory whose subdirectories are one primitive each. A relative path resolves against the working directory; a `URL` is resolved with `fileURLToPath`. */
@@ -59,11 +61,26 @@ const entryFileIn = (dir: string): string | undefined => {
   return undefined;
 };
 
-// The CommonJS build compiles `import()` to `require()`, which rejects `file:` URLs.
-const loadEntry = async (entry: string): Promise<Record<string, unknown>> =>
-  (await import(
-    typeof require === 'function' ? entry : pathToFileURL(entry).href
-  )) as Record<string, unknown>;
+const REQUIRE_REFUSED = new Set([
+  'ERR_REQUIRE_ASYNC_MODULE',
+  'ERR_REQUIRE_ESM',
+]);
+
+// The CommonJS build compiles `import()` to `require()`, which Jest needs but which refuses `file:` URLs and top-level `await`.
+const loadEntry = async (entry: string): Promise<Record<string, unknown>> => {
+  if (typeof require !== 'function') {
+    return (await import(pathToFileURL(entry).href)) as Record<string, unknown>;
+  }
+  try {
+    return (await import(entry)) as Record<string, unknown>;
+  } catch (error) {
+    const { code } = error as { code?: unknown };
+    if (typeof code === 'string' && REQUIRE_REFUSED.has(code)) {
+      return importNative(pathToFileURL(entry).href);
+    }
+    throw error;
+  }
+};
 
 const subdirectoriesOf = (root: string, ignore: readonly string[]): string[] =>
   readdirSync(root, { withFileTypes: true })
