@@ -154,15 +154,25 @@ const run = async ({
   const { createRenderers, stylesheet } =
     engine === null ? { createRenderers: () => [] } : require(engine);
   const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
-  // Counts the engine's draws, so a row that falls back to the pack's summary fails instead of passing its bound.
+  // Counts the engine's drawings, so a row the engine draws nothing for fails instead of passing its bound.
   let drawn = 0;
-  const counted = (renderer) =>
-    Object.assign(Object.create(renderer), {
-      render: (...args) => {
-        drawn += 1;
-        return renderer.render(...args);
+  const counted = (renderer) => {
+    const { id, environments, sized, fluid } = renderer;
+    return {
+      id,
+      environments,
+      ...(sized === undefined ? {} : { sized }),
+      ...(fluid === undefined ? {} : { fluid }),
+      supports: (kind) => renderer.supports(kind),
+      render: (scene, env) => {
+        const drawing = renderer.render(scene, env);
+        if (drawing !== null && drawing !== undefined && drawing !== false) {
+          drawn += 1;
+        }
+        return drawing;
       },
-    });
+    };
+  };
 
   const takumi =
     stage === 'png'
@@ -302,9 +312,7 @@ const run = async ({
       });
       scenes.push(ms(sceneStart));
       if (engine !== null && drawn === drawsBefore) {
-        throw new Error(
-          'the engine drew nothing; the pack fell back to its summary'
-        );
+        throw new Error('the engine drew nothing for this chart');
       }
       if (takumi !== null) {
         const rasterStart = process.hrtime.bigint();

@@ -108,3 +108,61 @@ describe('bench --check on a measured scenario', () => {
     expect(over.stderr).toContain('1 of 1 over their bound.');
   });
 });
+
+describe('bench charts with an engine', () => {
+  const cache = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../node_modules/.cache'
+  );
+  mkdirSync(cache, { recursive: true });
+  const dir = mkdtempSync(join(cache, 'engine-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const draw = (name: string, adapter: string) => {
+    writeFileSync(join(dir, `${name}.engine.cjs`), adapter);
+    const file = join(dir, `${name}.cjs`);
+    writeFileSync(
+      file,
+      `module.exports = ${JSON.stringify({
+        name,
+        entries: ['@elastic/isomer-primitives-charts'],
+        charts: { engine: `./${name}.engine.cjs` },
+      })};`
+    );
+    return bench(
+      'charts',
+      '--runs',
+      '1',
+      '--config',
+      file,
+      '--scenarios',
+      `${name}:one`
+    );
+  };
+
+  it('fails a row the engine draws nothing for', () => {
+    const { status, stderr } = draw(
+      'blank',
+      `module.exports = { createRenderers: () => [{
+        id: 'blank', environments: ['node'], supports: () => true, render: () => null,
+      }] };`
+    );
+    expect(status).not.toBe(0);
+    expect(stderr).toContain('the engine drew nothing for this chart');
+  });
+
+  it('draws with a frozen engine whose methods read private fields', () => {
+    const { status, stderr } = draw(
+      'private',
+      `class Engine {
+        #kinds = new Set(['xy']);
+        id = 'private';
+        environments = ['node'];
+        supports(kind) { return this.#kinds.has(kind); }
+        render() { return this.#kinds.size > 0 ? 'drawn' : null; }
+      }
+      module.exports = { createRenderers: () => [Object.freeze(new Engine())] };`
+    );
+    expect(stderr).toBe('');
+    expect(status).toBe(0);
+  });
+});

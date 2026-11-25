@@ -118,7 +118,7 @@ Bounds on what this package measures itself are in `bounds/<suite>.json`, which 
 | Gate | Holds | Runs in |
 | --- | --- | --- |
 | `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`), from `bounds/size.json` | `pnpm verify` and CI |
-| `pnpm check:memory` | Each bounded chart scenario's peak RSS (`peakRssMb`), and for the largest, the peak above what loading holds (`renderRssMb`), from the charts pack's and the Elastic Charts engine's configs. Other rows, such as `budget-grid` and `burst-limited`, are reported but not gated | `pnpm verify` and CI |
+| `pnpm check:memory` | Each bounded chart scenario's peak RSS (`peakRssMb`), and for the largest, the peak above what loading holds (`renderRssMb`), from the charts pack's and the Elastic Charts engine's configs. It runs only those scenarios; others, such as `budget-grid` and `burst-limited`, appear only in `pnpm bench charts` and the results page | `pnpm verify` and CI |
 
 A bound is about twice the measured median, rounded up to 10. That still catches an entry that newly pulls in a dependency as large as itself. Sizes don't vary by machine, so a size bound can be set from any machine; a memory bound comes from the CI host. Timing is recorded and never gated.
 
