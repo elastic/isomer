@@ -22,7 +22,7 @@ const pdf = await takumi.pdf(runtime.surfaces.snapshot.renderPages(deck));
 
 ## What it is
 
-The `snapshot` surface returns `{ element, html, css, width, height }`: the same React tree the DOM gets, that tree's static markup, the pack's stylesheet, and the viewport it was measured for. This package reads `html`, hands it and the stylesheet to takumi's `fromHtml`, and lays it out. No primitive writes an image renderer, and this package holds no opinion about compositions.
+The `snapshot` surface returns `{ element, html, css, width, height }`: the same React tree the DOM gets, that tree's static markup, the pack's stylesheet, and the viewport it was measured for. This package reads `html`, hands it to takumi with the stylesheet inlined as a `<style>` element, and takumi parses and lays it out, applying its HTML defaults as a browser does (a table cell centres its content vertically, for one). No primitive writes an image renderer, and this package holds no opinion about compositions.
 
 `ImageInput`, `{ html, css, width, height }`, is declared structurally rather than imported, so this package depends on no isomer package and on no React. `SnapshotRenderResult` from `@elastic/isomer-runtime` satisfies it, and `SnapshotPagesResult`, what the surface's `renderPages` returns, satisfies `PdfInput` the same way. Because the input is plain data, a host can render a snapshot in one process and rasterize it in another.
 

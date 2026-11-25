@@ -14,7 +14,7 @@
 import { setTimeout as delay } from 'node:timers/promises';
 
 const REPO = 'kane50613/takumi';
-const DEFAULT_REF = 'fb133cb935852004959b353777eda569e151bcd5'; // matches @takumi-rs/core@2.18.1
+const DEFAULT_REF = 'ed533141a3b1229e00b860b1e0573616c8d6e8fc'; // matches @takumi-rs/core@2.22.1
 
 // Crates whose expression cannot resolve to one of these (after splitting on
 // AND/OR) are flagged, not silently skipped.
@@ -42,6 +42,10 @@ const KNOWN_GIT_SOURCES = {
   'https://github.com/kane50613/harfrust': {
     verifiedLicense: 'MIT',
     note: "Matches upstream harfbuzz/harfrust; confirmed via the fork's package.license and LICENSE at the pinned rev.",
+  },
+  'https://github.com/kane50613/image-png': {
+    verifiedLicense: 'MIT OR Apache-2.0',
+    note: "Matches upstream image-rs/image-png; confirmed via the fork's package.license and LICENSE-MIT/LICENSE-APACHE at the pinned rev.",
   },
 };
 

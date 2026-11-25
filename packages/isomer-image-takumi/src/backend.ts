@@ -162,9 +162,9 @@ export interface LayoutBox {
 /**
  * Rasterizes the `snapshot` surface's output.
  *
- * Both methods are one call over takumi: the tree is serialized, `fromHtml`
- * turns it into a takumi node tree and lifts the stylesheet out, and takumi
- * lays the result out at the input's viewport.
+ * Both methods are one call over takumi: the stylesheet is inlined ahead of
+ * the markup, and takumi parses the HTML and lays it out at the input's
+ * viewport.
  */
 export interface TakumiImageBackend {
   /** Renders to an encoded PNG. */
@@ -293,15 +293,16 @@ const escapeStyleEndTags = (css: string) =>
   css.replace(/<\/style/gi, (tag) => tag.replace('/', '\\/'));
 
 /**
- * Inlines the stylesheet ahead of the markup, the form `fromHtml` lifts into
- * its own `css` list. Passing the stylesheet as a separate `CssInput` entry is
- * a different path through takumi and changes the committed PNG bytes.
+ * Inlines the stylesheet ahead of the markup, as takumi reads an HTML source.
+ * Passing it as a separate `css` option is a different path through takumi
+ * and changes the committed PNG bytes.
  */
 const withStylesheet = (css: string, markup: string) =>
   `<style>${escapeStyleEndTags(css)}</style>${markup}`;
 
+/** An HTML string, which takumi parses itself; a `fromHtml` tree of the same markup renders with several times the memory. */
 const toTakumiSource = ({ html, css }: Pick<ImageInput, 'html' | 'css'>) =>
-  fromHtml(withStylesheet(css, html));
+  withStylesheet(css, html);
 
 /**
  * The viewport takumi lays out against. Under `content`, `height` is left out
@@ -347,7 +348,7 @@ const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
     .map(({ html }) => pageBlock(html, width, height))
     .join('');
   return {
-    ...fromHtml(withStylesheet(css, `<div>${markup}</div>`)),
+    source: withStylesheet(css, `<div>${markup}</div>`),
     width,
     height,
   };
@@ -396,15 +397,12 @@ export const createTakumiImageBackend = ({
     }
     const heights: number[] = [];
     for (const page of input.pages) {
-      const { node, css } = fromHtml(
-        withStylesheet(
-          input.css,
-          `<div>${pageBlock(page.html, input.width)}</div>`
-        )
+      const source = withStylesheet(
+        input.css,
+        `<div>${pageBlock(page.html, input.width)}</div>`
       );
-      const { height } = await engine.measure(node, {
+      const { height } = await engine.measure(source, {
         viewport: { width: input.width },
-        css,
         ...(images === undefined ? {} : { images }),
         ...(lang === undefined ? {} : { lang }),
       });
@@ -426,11 +424,9 @@ export const createTakumiImageBackend = ({
         );
       }
       await ready();
-      const { node, css } = toTakumiSource(input);
       const renderOptions: RenderOptions = {
         width: toRasterSide(input.width, scale),
         format: 'png',
-        css,
       };
       if (input.heightMode !== 'content') {
         renderOptions.height = toRasterSide(input.height, scale);
@@ -438,31 +434,25 @@ export const createTakumiImageBackend = ({
       if (devicePixelRatio !== undefined || scale !== 1) {
         renderOptions.devicePixelRatio = (devicePixelRatio ?? 1) * scale;
       }
-      return renderer.render(node, renderOptions);
+      return renderer.render(toTakumiSource(input), renderOptions);
     },
     svg: async (input) => {
       await ready();
-      const { node, css } = toTakumiSource(input);
-      return renderer.renderSvg(node, { ...viewportOf(input), css });
+      return renderer.renderSvg(toTakumiSource(input), viewportOf(input));
     },
     measure: async (input) => {
       await ready();
-      const { node, css } = toTakumiSource(input);
-      const measured = await renderer.measure(node, {
-        ...viewportOf(input),
-        css,
-      });
-      return toLayoutBox(measured, node);
+      const source = toTakumiSource(input);
+      const measured = await renderer.measure(source, viewportOf(input));
+      return toLayoutBox(measured, fromHtml(source).node);
     },
     fit: async (input, { devicePixelRatio } = {}) => {
       if (input.heightMode !== 'content') {
         return input;
       }
       await ready();
-      const { node, css } = toTakumiSource(input);
-      const measured = await renderer.measure(node, {
+      const measured = await renderer.measure(toTakumiSource(input), {
         width: input.width,
-        css,
         ...(devicePixelRatio === undefined ? {} : { devicePixelRatio }),
       });
       return {
@@ -475,16 +465,15 @@ export const createTakumiImageBackend = ({
     pdf: async (input, options = {}) => {
       // Measured and drawn on one engine, so `close` cannot start another.
       const engine = pdfEngine;
-      const { node, css, width, height } = toPagedSource(
+      const { source, width, height } = toPagedSource(
         await fitPagesOn(engine, input, options)
       );
       const renderOptions: PdfRenderOptions = {
         ...options,
         size: { width, height },
         margin: 0,
-        css,
       };
-      const bytes = await engine.render(node, renderOptions);
+      const bytes = await engine.render(source, renderOptions);
       return Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     },
     close: () => {

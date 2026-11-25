@@ -21,6 +21,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   createTakumiImageBackend,
   type ImageInput,
+  type LayoutBox,
   type PdfInput,
   type TakumiPdfMetadata,
   type TakumiPdfOptions,
@@ -474,6 +475,33 @@ describe('createTakumiImageBackend', () => {
         undefined,
         undefined,
       ]);
+    });
+
+    it('centres table cell content vertically, as a browser does', async () => {
+      const box = await measure(
+        createElement(
+          'table',
+          null,
+          createElement(
+            'tbody',
+            null,
+            createElement(
+              'tr',
+              null,
+              createElement('td', { style: { height: 60 } }, 'cell')
+            )
+          )
+        ),
+        'table { border-spacing: 0 } td { padding: 0 }'
+      );
+      const runs = (node: LayoutBox): LayoutBox['runs'] => [
+        ...node.runs,
+        ...node.children.flatMap(runs),
+      ];
+      const [run] = runs(box).filter(({ text }) => text === 'cell');
+
+      expect(run).toBeDefined();
+      expect((run?.y ?? 0) + (run?.height ?? 0) / 2).toBeCloseTo(30, 0);
     });
 
     it('drops attributes where inline content folds children together', async () => {
