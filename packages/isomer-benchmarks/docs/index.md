@@ -9,7 +9,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 
 ## TL;DR
 
-- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and rendering it as HTML or a snapshot adds well under 0.1 ms more. Each further node adds about 2 µs, almost all of it validation.
+- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and validating and rendering it as HTML or a snapshot takes about 0.2 to 0.25 ms end to end. Each further node adds about 2 µs, almost all of it validation.
 - **Loading code at startup is where the cost is.** The SDK and the runtime with takumi hold about 72 MB RSS before any request, against 42 MB for Node alone. A pack adds its own: about 78 MB with the charts pack and 95 MB with the slides pack.
 - **The heaviest single entry is the Elastic Charts engine,** at about 730 CommonJS modules, because it loads `@elastic/charts`. With the SDK and the runtime it reaches about 118 MB. A host that only validates or resolves charts doesn't need it.
 - **Bundled, the SDK root is about 185 KB minified, but only about 40 KB is its own code.** The rest is the Markdown parser, which `./react` and `./slack` pull in too. The runtime is about 340 KB, since it also bundles `acorn`, about 120 KB, to check embedded scripts.
@@ -18,7 +18,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 - **Drawing charts outweighs all of that.** With the Elastic Charts engine loaded, a process holds about 133 MB before its first chart. One xy line at the charts pack's whole input budget takes about 1 s to validate and render as a snapshot, under 0.1 s to rasterize, and peaks at about 470 MB. A host bounds that with `inputBudget` and a limiter: 16 small charts at once peak about 45 MB lower through a limiter of 2, and finish about 65 ms later.
 - **Not measured yet:** the slides pack's render cost, takumi's first draw and PDF worker, and container limits.
 
-All figures are medians on one Apple M4 Pro. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
+All figures are medians on one Apple M4 Pro, except bundle sizes, which are measured once and are the same on any machine. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
 
 ## What each suite claims
 
