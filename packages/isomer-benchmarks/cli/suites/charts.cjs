@@ -161,7 +161,8 @@ const run = async ({
   );
   const { createRenderers, stylesheet } =
     engine === null ? { createRenderers: () => [] } : require(engine);
-  const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
+  // Its own file: the package's main entry would load more than the suite measures.
+  const { limit } = require(join(PACKAGE, 'lib/cjs/limit.js'));
   // The charts the engine drew in the current snapshot, so a row it doesn't draw every chart in fails instead of passing its bound.
   let drawnIds = new Set();
   const counted = (renderer) => ({

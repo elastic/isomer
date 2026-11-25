@@ -239,6 +239,22 @@ const runSuite = async (suiteName, args) => {
       )
     : [];
   const bounds = check ? boundsFor(suiteName, configs, passed.length > 0) : {};
+  if (check && suite.mustBound !== undefined) {
+    // With `--config`, only those packs' rows: the SDK's own are held from `bounds/`.
+    const missing = helpers().unbounded(
+      Object.fromEntries(
+        (await suite.scenarios(configs))
+          .filter(({ core }) => !(passed.length > 0 && core))
+          .map((scenario) => [scenario.name, suite.mustBound(scenario)])
+      ),
+      bounds
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `${suiteName}: no bound for ${missing.join(', ')}; add each to bounds/${suiteName}.json or its pack's config`
+      );
+    }
+  }
   const before = revision();
   const { scenarios, records } = await measure(suiteName, {
     runs,
@@ -321,21 +337,18 @@ const boundsFor = (suiteName, configs, passedConfigs) => {
     !passedConfigs && existsSync(file)
       ? [JSON.parse(readFileSync(file, 'utf8'))]
       : [];
+  // A config's bounds were held to the same rule when it loaded.
+  const problem = own.map(helpers().boundsProblem).find(Boolean);
+  if (problem !== undefined) {
+    throw new Error(`bounds/${suiteName}.json: ${problem}`);
+  }
   const bounds = {};
   for (const each of [
     ...own,
     ...configs.map(({ bounds: mine }) => mine?.[suiteName] ?? {}),
   ]) {
     for (const [scenario, measures] of Object.entries(each)) {
-      if (Object.keys(measures).length === 0) {
-        throw new Error(`${scenario}: a bound needs at least one measure`);
-      }
       for (const [key, bound] of Object.entries(measures)) {
-        if (typeof bound !== 'number' || !(bound >= 0)) {
-          throw new Error(
-            `${scenario} ${key}: a bound is a number, at least 0`
-          );
-        }
         if (bounds[scenario]?.[key] !== undefined) {
           throw new Error(`${scenario} ${key}: bounded twice`);
         }
@@ -382,8 +395,7 @@ const smoke = async () => {
 };
 
 const suiteSection = (result) => {
-  const { describeEnvironmentLine, summarize, tableText, toMarkdown } =
-    helpers();
+  const { describeEnvironmentLine, summarize, toMarkdown } = helpers();
   const { suite, environment, runsPerScenario, scenarios } = result;
   // From the suite's code and the raw runs, so neither a saved description nor a saved summary drifts.
   const { about, measures: labels } = suiteOf(suite);
@@ -408,7 +420,7 @@ const suiteSection = (result) => {
     // A scenario its name describes has no `about`.
     ...scenarios
       .filter(({ about: what }) => what !== '')
-      .map(({ name, about: what }) => `- \`${tableText(name)}\`: ${what}`),
+      .map(({ name, about: what }) => `- \`${name}\`: ${what}`),
     ...notes.flatMap((note) => ['', note]),
   ].join('\n');
 };

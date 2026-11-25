@@ -141,6 +141,44 @@ describe('bench --check with a bound of 0', () => {
   });
 });
 
+describe('bench size --check', () => {
+  const cache = join(
+    dirname(fileURLToPath(import.meta.url)),
+    '../node_modules/.cache'
+  );
+  mkdirSync(cache, { recursive: true });
+  const dir = mkdtempSync(join(cache, 'size-'));
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const entry = '@elastic/isomer-primitives-charts/scene';
+  const check = (name: string, measures: object) => {
+    const file = join(dir, `${name}.cjs`);
+    writeFileSync(
+      file,
+      `module.exports = ${JSON.stringify({
+        name,
+        entries: [entry],
+        bounds: { size: { [entry]: measures } },
+      })};`
+    );
+    return bench('size', '--check', '--config', file);
+  };
+
+  it('refuses an entry with a size it has no bound for', () => {
+    const { status, stderr } = check('gap', { nodeKb: 100_000 });
+    expect(status).toBe(1);
+    expect(stderr).toContain(`size: no bound for ${entry} browserKb`);
+  });
+
+  it('passes an entry under both bounds and fails one over', () => {
+    expect(check('under', { nodeKb: 100_000, browserKb: 100_000 }).status).toBe(
+      0
+    );
+    const over = check('over', { nodeKb: 100_000, browserKb: 0 });
+    expect(over.status).toBe(1);
+    expect(over.stdout).toContain(`✗ ${entry} browserKb`);
+  });
+});
+
 describe('bench charts with an engine', () => {
   const cache = join(
     dirname(fileURLToPath(import.meta.url)),

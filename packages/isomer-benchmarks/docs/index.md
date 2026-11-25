@@ -69,10 +69,11 @@ module.exports = {
 ```
 
 - `name` labels the pack's rows: lowercase letters, digits and dashes.
-- `entries` are specifiers, resolved from the config's directory, so they load the copies that pack's host would. Each one needs a name no other config or core package uses; a repeated name refuses the run. The first entry is the pack's main one, which its `<name>:host` row loads with the SDK and the runtime, also resolved from there. A pack with no runtime installed beside it gets no host row.
+- `entries` are specifiers, of letters, digits and `@ . / _ -`, resolved from the config's directory, so they load the copies that pack's host would. Each one needs a name no other config or core package uses; a repeated name refuses the run. The first entry is the pack's main one, which its `<name>:host` row loads with the SDK and the runtime, also resolved from there. A pack with no runtime installed beside it gets no host row.
 - `charts: {}` marks a charts pack for the `charts` suite, which draws its examples with no engine. `charts: { engine: './bench/engine.cjs' }` instead names a module, relative to the config, that exports `createRenderers()`, the scene renderers to draw with, and optionally `stylesheet(theme)`, CSS the engine's markup needs on `snapshot`. The suite then draws with that engine, resolving the charts pack, the runtime and takumi from the config's directory.
 - `bounds` holds, per suite, the most each of this config's scenarios may reach; see [Bounds](#bounds).
-- `build: 'source'` is for a pack whose entries are TypeScript that its host transpiles, such as a Kibana package. Each picked entry is bundled with esbuild to one CommonJS file under the pack's `node_modules/.cache/isomer-benchmarks/<name>/`, then loaded. What resolves to TypeScript is inlined. Everything else stays external at the path Node's `require` resolves from its importer, so it loads the CommonJS build and the copy the host would. Its rows exclude what transpiling would cost. The default, `built`, loads entries as they are.
+- `build: 'source'` is for a pack whose entries are TypeScript that its host transpiles, such as a Kibana package. For `load`, each picked entry is bundled with esbuild to one CommonJS file under the pack's `node_modules/.cache/isomer-benchmarks/<name>/`, then loaded. What resolves to TypeScript is inlined. Everything else stays external at the path Node's `require` resolves from its importer, so it loads the CommonJS build and the copy the host would. Its rows exclude what transpiling would cost. The default, `built`, loads entries as they are. `size` ignores `build`: it bundles every entry the same way, TypeScript included, with everything but the entry's peers, React and zod counted.
+- `nodeOnly` lists the entries that run only on Node. `size` gives them no browser bundle, and `check:size` asks them for no browser bound.
 
 Then point `load` at it from this repository's root, here with Kibana checked out beside it:
 
@@ -80,7 +81,7 @@ Then point `load` at it from this repository's root, here with Kibana checked ou
 pnpm --filter @elastic/isomer-benchmarks bench load --config ../kibana/x-pack/platform/packages/shared/isomer/isomer-components/isomer-bench.config.cjs
 ```
 
-The suite reads a config in the parent process. A child gets only what to load and where to resolve it from, and writes its record on its own file descriptor, so neither a config's imports nor what a pack logs shows up in the numbers. The result records each pack's own SDK and runtime versions beside this repository's. The `synthetic` suite measures its own generated pack and takes no `--config`.
+The suite reads a config in the parent process. A child gets only what to load and where to resolve it from, and writes its record on its own file descriptor, so a config's imports stay out of the numbers and what a pack logs stays out of the record. A pack that logs while it loads still pays for that logging in its own rows. The result records each pack's own SDK and runtime versions beside this repository's. The `synthetic` suite measures its own generated pack and takes no `--config`.
 
 This repository's packs keep their configs beside their `isomer-studio.config.ts`. They are the configs the suites use when no `--config` is passed, and the configs the baselines record.
 
@@ -119,7 +120,7 @@ Bounds on what this package measures itself are in `bounds/<suite>.json`, which 
 
 | Gate | Holds | Runs in |
 | --- | --- | --- |
-| `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`), from `bounds/size.json` | `pnpm verify` and CI |
+| `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`), from `bounds/size.json`. Every entry needs a bound for each size it has, so a new entry fails until a bound names it | `pnpm verify` and CI |
 | `pnpm check:memory` | Each bounded chart scenario's peak RSS (`peakRssMb`), and for the largest, the peak above what loading holds (`renderRssMb`), from the charts pack's and the Elastic Charts engine's configs. It runs only those scenarios; others, such as `budget-grid` and `burst-limited`, appear only in `pnpm bench charts` and the results page | `pnpm verify` and CI |
 
 A bound is about twice the measured median, rounded up to 10. That still catches an entry that newly pulls in a dependency as large as itself. Sizes don't vary by machine, so a size bound can be set from any machine; a memory bound comes from the CI host. Timing is recorded and never gated.

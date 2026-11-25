@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Bounds } from './bounds';
+import { type Bounds, boundsProblem } from './bounds';
 
 /**
  * What the benchmarks measure for one primitive pack, or anything else a host
@@ -31,30 +31,24 @@ export interface BenchConfig {
   charts?: { engine?: string };
   /** Per suite, what `bench <suite> --check` holds this config's scenarios to. */
   bounds?: Record<string, Bounds>;
+  /** The entries that run only on Node, so `size` gives them no browser bundle. */
+  nodeOnly?: readonly string[];
 }
-
-const isBounds = (value: unknown): value is Bounds =>
-  isRecord(value) &&
-  Object.values(value).every(
-    (measures) =>
-      isRecord(measures) &&
-      Object.keys(measures).length > 0 &&
-      Object.values(measures).every(
-        (bound) => typeof bound === 'number' && bound >= 0
-      )
-  );
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defineBenchConfig = (config: BenchConfig): BenchConfig => config;
 
+/** What an entry may hold, so its name needs no escaping in a table or a path. */
+const SPECIFIER = /^[\w@./-]+$/;
+
 /** Why `value` isn't a {@link BenchConfig}, or `undefined` when it is one. */
 export const benchConfigProblem = (value: unknown): string | undefined => {
   if (typeof value !== 'object' || value === null) {
     return 'a config exports an object';
   }
-  const { name, entries, build, charts, bounds } = value as Record<
+  const { name, entries, build, nodeOnly, charts, bounds } = value as Record<
     string,
     unknown
   >;
@@ -64,12 +58,23 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   if (
     !Array.isArray(entries) ||
     entries.length === 0 ||
-    !entries.every((entry) => typeof entry === 'string' && entry.length > 0)
+    !entries.every(
+      (entry) => typeof entry === 'string' && SPECIFIER.test(entry)
+    )
   ) {
-    return '`entries` lists at least one specifier';
+    return '`entries` lists at least one specifier, of letters, digits and `@ . / _ -`';
   }
   if (build !== undefined && build !== 'built' && build !== 'source') {
     return "`build` is 'built' or 'source'";
+  }
+  if (
+    nodeOnly !== undefined &&
+    !(
+      Array.isArray(nodeOnly) &&
+      nodeOnly.every((entry) => entries.includes(entry))
+    )
+  ) {
+    return '`nodeOnly` lists some of `entries`';
   }
   if (
     charts !== undefined &&
@@ -83,7 +88,10 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   }
   if (
     bounds !== undefined &&
-    !(isRecord(bounds) && Object.values(bounds).every(isBounds))
+    !(
+      isRecord(bounds) &&
+      Object.values(bounds).every((each) => boundsProblem(each) === undefined)
+    )
   ) {
     return '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0';
   }

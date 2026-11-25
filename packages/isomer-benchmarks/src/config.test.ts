@@ -17,8 +17,9 @@ describe('benchConfigProblem', () => {
     expect(
       benchConfigProblem({
         name: 'kbn-components',
-        entries: ['a', 'a/b'],
+        entries: ['@kbn/a', './src/index.ts', '../b_c/d-e'],
         build: 'source',
+        nodeOnly: ['./src/index.ts'],
       })
     ).toBe(undefined);
     expect(
@@ -41,9 +42,12 @@ describe('benchConfigProblem', () => {
       { name: 'a:b', entries: ['a'] },
       '`name` is lowercase letters, digits and dashes',
     ],
-    [{ name: 'a', entries: [] }, '`entries` lists at least one specifier'],
-    [{ name: 'a', entries: [''] }, '`entries` lists at least one specifier'],
-    [{ name: 'a', entries: 'a' }, '`entries` lists at least one specifier'],
+    ...[[], [''], 'a', ['./chart|debug.cjs'], ['./has`tick.ts'], ['a\nb']].map(
+      (entries): [unknown, string] => [
+        { name: 'a', entries },
+        '`entries` lists at least one specifier, of letters, digits and `@ . / _ -`',
+      ]
+    ),
     [
       { name: 'a', entries: ['a'], build: 'ts' },
       "`build` is 'built' or 'source'",
@@ -67,6 +71,14 @@ describe('benchConfigProblem', () => {
     [
       { name: 'a', entries: ['a'], bounds: { charts: { one: {} } } },
       '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0',
+    ],
+    [
+      { name: 'a', entries: ['a'], nodeOnly: ['a/node'] },
+      '`nodeOnly` lists some of `entries`',
+    ],
+    [
+      { name: 'a', entries: ['a'], nodeOnly: 'a' },
+      '`nodeOnly` lists some of `entries`',
     ],
   ])('refuses %j', (config, problem) => {
     expect(benchConfigProblem(config)).toBe(problem);

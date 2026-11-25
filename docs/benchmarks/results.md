@@ -105,7 +105,7 @@ Each added unit along an axis costs, in microseconds, from the axis's first and 
 
 What each public entry adds to a host that bundles it, such as a render service or a browser app: esbuild bundles the entry's ESM build, minified, with the entry's peers and React and zod left external, since the host brings them. A peer such as `@elastic/charts` is not counted. The browser column is empty for an entry that only runs on Node. Sizes don't vary between runs or machines.
 
-Measured once. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `af8bb69b`.
+Measured once. Node v22.23.5, linux x64, Intel(R) Xeon(R) Processor @ 2.10GHz (2 cores), 8 GB, NODE_ENV production, commit `5db4fa63`.
 
 | Scenario                                    | Node (KB) | Node gzip (KB) | Browser (KB) | Browser gzip (KB) | Own code (KB) |
 | ------------------------------------------- | --------: | -------------: | -----------: | ----------------: | ------------: |
@@ -127,7 +127,7 @@ Measured once. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE
 | `@elastic/isomer-primitives-charts/resolve` |      51.5 |           20.0 |         51.5 |              20.0 |          51.5 |
 | `@elastic/isomer-charts-elastic`            |      66.0 |           24.5 |         66.0 |              24.5 |          25.7 |
 | `@elastic/isomer-charts-elastic/engine`     |      64.8 |           24.1 |         64.8 |              24.1 |          24.4 |
-| `@elastic/isomer-charts-elastic/node`       |      66.5 |           24.8 |         66.5 |              24.8 |          26.3 |
+| `@elastic/isomer-charts-elastic/node`       |      66.5 |           24.8 |              |                   |          26.3 |
 
 The largest other packages in each entry's Node bundle, in KB:
 

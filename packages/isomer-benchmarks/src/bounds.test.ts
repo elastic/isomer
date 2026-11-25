@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { checkBounds } from './bounds';
+import { boundsProblem, checkBounds, unbounded } from './bounds';
 
 const spread = (median: number) => ({ median, min: median, max: median });
 
@@ -43,5 +43,38 @@ describe('checkBounds', () => {
     expect(() => checkBounds(summary, { takumi: { browserKb: 1 } })).toThrow(
       'takumi browserKb: bounded but not measured'
     );
+  });
+});
+
+describe('unbounded', () => {
+  it('names each required measure with no bound', () => {
+    expect(
+      unbounded(
+        { sdk: ['nodeKb', 'browserKb'], takumi: ['nodeKb'], pack: ['nodeKb'] },
+        { sdk: { nodeKb: 180 }, takumi: { nodeKb: 0 } }
+      )
+    ).toEqual(['sdk browserKb', 'pack nodeKb']);
+  });
+});
+
+describe('boundsProblem', () => {
+  it('accepts a ceiling of 0, which holds a measure at nothing', () => {
+    expect(boundsProblem({ node: { modules: 0 }, sdk: { nodeKb: 180 } })).toBe(
+      undefined
+    );
+  });
+
+  it.each([
+    [[], 'bounds map each scenario to its measures'],
+    [
+      { sdk: { nodeKb: 180 }, pack: {} },
+      'pack: a bound needs at least one measure',
+    ],
+    [{ sdk: 180 }, 'sdk: a bound needs at least one measure'],
+    [{ sdk: { nodeKb: -1 } }, 'sdk nodeKb: a bound is a number, at least 0'],
+    [{ sdk: { nodeKb: '180' } }, 'sdk nodeKb: a bound is a number, at least 0'],
+    [{ sdk: { nodeKb: NaN } }, 'sdk nodeKb: a bound is a number, at least 0'],
+  ])('refuses %j', (bounds, problem) => {
+    expect(boundsProblem(bounds)).toBe(problem);
   });
 });

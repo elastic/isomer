@@ -12,7 +12,7 @@ This page turns the [raw results](results.md) into guidance for a host. Every fi
 A bare Node process holds about 42 MB RSS before it loads anything ([`node`](results.md#loading-each-entry)). Loading Isomer adds to that:
 
 - The SDK and the runtime with takumi, what a server that draws images needs besides a pack, reach about 72 MB RSS with 9 MB of heap held ([`host:image`](results.md#loading-each-entry)). With agent-tools instead of takumi, about 71 MB ([`host:agent`](results.md#loading-each-entry)).
-- A pack adds its own. With the SDK and the runtime, the charts pack reaches about 78 MB ([`charts:host`](results.md#loading-each-entry)) and the slides pack about 95 MB ([`slides:host`](results.md#loading-each-entry)). Compare a pack's host row with `host:agent` or `host:image` for what the pack adds.
+- A pack adds its own. With the SDK and the runtime, the charts pack reaches about 78 MB ([`charts:host`](results.md#loading-each-entry)) and the slides pack about 95 MB ([`slides:host`](results.md#loading-each-entry)). Compare a pack's host row with the [`@elastic/isomer-runtime`](results.md#loading-each-entry) row, about 71 MB, for what the pack adds: loading the runtime loads the SDK's root entry with it.
 - The Elastic Charts engine is the heaviest single entry: about 730 CommonJS modules, 17 MB of heap and 97 MB RSS, since it loads `@elastic/charts` with it. Its `./engine` and `./node` entries load as much. With the SDK and the runtime it reaches about 118 MB ([`charts-elastic:host`](results.md#loading-each-entry)). A process that only validates or resolves charts never needs it.
 
 To see what your own pack adds, [benchmark it](index.md#benchmarking-a-pack).
@@ -27,7 +27,8 @@ The SDK's root entry loads about 150 modules and bundles to about 185 KB minifie
 | A pack's schema helpers (`z`, `requiredString`, URL rules), no React | `@elastic/isomer-sdk/schema` | about 110 modules, 3.8 MB heap, most of it zod | about 2 KB, zod aside |
 | Chart contracts for a materializer | `@elastic/isomer-primitives-charts/schema` | about 160 modules | about 125 KB |
 | Scene resolution alone | `@elastic/isomer-primitives-charts/resolve` | about 30 modules | about 50 KB |
-| The composition validator and parser, and every surface | the SDK root, or the runtime | about 150, or about 220 | about 185 KB, or about 340 KB |
+| The composition validator and parser | `@elastic/isomer-sdk` | about 150 modules | about 185 KB |
+| Every surface, assembled from your packs | `@elastic/isomer-runtime` | about 220 modules | about 340 KB |
 
 Loading takumi costs little on its own (about 16 modules and 10 ms). Its fonts register on the first draw; see [First draw](#first-draw).
 
@@ -47,7 +48,7 @@ What it costs to assemble a runtime and to validate and render a composition, ap
 
 - **Assembling a runtime** builds the composition schema, so its cost grows with the number of primitive types: about 2 ms and 0.2 MB of heap for 10 types, and about 7 ms and 1.7 MB for 200, apart from defining the pack. Assemble once per process and reuse the runtime.
 - **The first validate** costs about ten times the later ones: about 2 ms against 0.2 ms at 10 types and 100 nodes, and about 5 ms at 200 types. Validate one composition at startup if the first request's latency matters.
-- **Validation is most of a composition's cost, and it grows with nodes:** about 2 µs per node with 8-character labels, so 4,000 nodes, about 60% of what the SDK's default input budget admits for nodes this small, validate in about 8 ms. Each surface's `render` validates first; past that, HTML adds about 1.3 ms at 4,000 nodes and a snapshot about 1.5 ms. Peak RSS rises about 14 KB per node, to about 145 MB at 4,000. That is the high-water mark of a process rendering them many times over, garbage included, so it overstates what one render holds.
+- **Validation is most of a composition's cost, and it grows with nodes:** about 2 µs per node with 8-character labels, so 4,000 nodes, about 60% of what the SDK's default input budget admits for nodes this small, validate in about 8 ms. Each surface's `render` validates first, so the render columns are end to end: at 4,000 nodes, about 9.6 ms for HTML, 7.2 ms for text and 9.7 ms for a snapshot. Each column is its own timing loop with its own warm-up, and text comes out below validating alone, so don't subtract one column from another. Peak RSS rises about 14 KB per node, to about 145 MB at 4,000. That is the high-water mark of a process rendering them many times over, garbage included, so it overstates what one render holds.
 - **Nesting depth** costs almost nothing up to 24 levels, the deepest measured.
 - **Text length** costs HTML rendering, which escapes it: 900,000 label characters add about 2 ms. Validation doesn't notice it.
 
@@ -57,7 +58,7 @@ A real pack's renderers cost more than these trivial ones; [Drawing a chart](#dr
 
 What a server pays to draw charts to PNG with the charts pack, the Elastic Charts engine and takumi, with Inter Latin registered ([Drawing charts](results.md#drawing-charts)):
 
-- **Loading the engine is most of the baseline.** Loaded and with fonts registered, a process holds about 90 MB RSS without an engine and about 133 MB with Elastic Charts. One cold xy chart at 2× is ready about 440 ms after the process starts and peaks at about 180 MB.
+- **Loading the engine is most of the baseline.** Loaded and with fonts registered, a process holds about 90 MB RSS without an engine and about 133 MB with Elastic Charts. One cold xy chart at 2× is ready about 480 ms after the process starts and peaks at about 180 MB.
 - **A small chart is cheap once loaded:** about 5 ms to resolve and draw and 7 ms to rasterize at 1×, for the pack's metric and xy examples.
 - **Data size drives memory, and the `snapshot` surface drives time.** One xy line at the charts pack's whole input budget, about 250,000 values, takes about 75 ms to validate, about 870 ms to render as a snapshot, and under 100 ms to rasterize. Resolving its Scene once takes about 340 ms, and with no engine the same snapshot takes about 750 ms, so Elastic Charts itself adds about 120 ms; the rest is the surface's own work around the chart, including validating again. It peaks at about 470 MB, about 340 MB above what loading holds, the request's data included. At a quarter and half of the budget, that peak above loading is about 125 MB and 175 MB.
 - **Splitting the same data across a 40-panel grid** peaks lower, at about 420 MB, but takes about 270 ms to rasterize, since the picture holds 40 charts.
