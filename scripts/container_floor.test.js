@@ -147,7 +147,13 @@ describe('the runner, against a stub Docker', () => {
     stub,
     `const { appendFileSync } = require('node:fs');
 const args = process.argv.slice(2);
-appendFileSync(process.env.STUB_LOG, args.join(' ') + '\\n');
+const record = () => appendFileSync(process.env.STUB_LOG, args.join(' ') + '\\n');
+// A removal is logged only once it ends, so a runner that exits before then misses it.
+if (args[0] === 'rm') {
+  setTimeout(record, 500);
+} else {
+  record();
+}
 const mode = process.env.STUB_MODE;
 const format = args[args.indexOf('--format') + 1] ?? '';
 if (args[0] === 'info') {

@@ -144,7 +144,7 @@ const searchOptions = (options) => {
 const KEEP = 64 * 1024;
 const tail = (kept, chunk) => (kept + chunk).slice(-KEEP);
 /** V8's diagnostic for running out of heap, looked for across the whole stream, not just what is kept. */
-const HEAP_MESSAGE = /JavaScript heap out of memory|Reached heap limit/;
+const HEAP_MESSAGE = /FATAL ERROR: [^\n]*JavaScript heap out of memory/;
 
 /** Docker calls in flight. An interrupt stops only attached runs, and waits for the rest. */
 const running = new Map();
@@ -166,7 +166,7 @@ const docker = (args, { cleanup = false } = {}) => {
     });
     child.stderr.on('data', (chunk) => {
       // The kept tail's end joins the chunk, so a diagnostic split across chunks still matches.
-      heapMessage ||= HEAP_MESSAGE.test(stderr.slice(-64) + chunk);
+      heapMessage ||= HEAP_MESSAGE.test(stderr.slice(-256) + chunk);
       stderr = tail(stderr, chunk);
     });
     child.on('error', (error) => {
@@ -260,16 +260,10 @@ const attemptIn =
     }
   };
 
-/** Removes `ids`, saying which are left behind and how to retry when Docker can't. */
-/** IDs removed or being removed, so two cleanups never remove one container twice. */
-const handled = new Set();
+/** Removals started, by ID, so a later cleanup waits for one in flight instead of repeating it. */
+const removing = new Map();
 
-const remove = async (requested) => {
-  const ids = requested.filter((id) => !handled.has(id));
-  ids.forEach((id) => handled.add(id));
-  if (ids.length === 0) {
-    return;
-  }
+const removeNow = async (ids) => {
   const result = await docker(['rm', '-f', ...ids], { cleanup: true }).catch(
     (error) => ({
       status: 1,
@@ -278,12 +272,22 @@ const remove = async (requested) => {
   );
   if (result.status === 0) {
     ids.forEach((id) => created.delete(id));
-    return;
+  } else {
+    ids.forEach((id) => removing.delete(id));
+    process.stderr.write(
+      `Couldn't remove ${ids.join(' ')}:\n${result.stderr}\nRetry with: docker rm -f ${ids.join(' ')}\n`
+    );
   }
-  ids.forEach((id) => handled.delete(id));
-  process.stderr.write(
-    `Couldn't remove ${ids.join(' ')}:\n${result.stderr}\nRetry with: docker rm -f ${ids.join(' ')}\n`
-  );
+};
+
+/** Removes `ids`, saying which are left behind and how to retry when Docker can't. */
+const remove = async (requested) => {
+  const ids = requested.filter((id) => !removing.has(id));
+  if (ids.length > 0) {
+    const removal = removeNow(ids);
+    ids.forEach((id) => removing.set(id, removal));
+  }
+  await Promise.all(new Set(requested.map((id) => removing.get(id))));
 };
 
 /**
@@ -397,7 +401,7 @@ const main = async () => {
   process.on('SIGINT', () => {
     if (shuttingDown) {
       process.stderr.write(
-        `Stopped before cleanup finished. Remove what's left with: docker rm -f $(docker ps -aq --filter label=isomer-floor=${runId})\n`
+        `Stopped before cleanup finished. Once its Docker calls end, remove what's left with: docker rm -f $(docker ps -aq --filter label=isomer-floor=${runId})\n`
       );
       process.exit(130);
     }
