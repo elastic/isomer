@@ -218,6 +218,23 @@ const runSuite = async (suiteName, args) => {
           : DEFAULT_CONFIGS.map((path) => join(REPO, path))
       )
     : [];
+  const bounds = check ? boundsFor(suiteName) : {};
+  if (check && suite.mustBound !== undefined) {
+    const missing = helpers().unbounded(
+      Object.fromEntries(
+        (await suite.scenarios(configs)).map((scenario) => [
+          scenario.name,
+          suite.mustBound(scenario),
+        ])
+      ),
+      bounds
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `${suiteName}: no bound for ${missing.join(', ')}; add each to bounds/${suiteName}.json`
+      );
+    }
+  }
   const { scenarios, records } = await measure(suiteName, {
     runs,
     configs,
@@ -259,7 +276,7 @@ const runSuite = async (suiteName, args) => {
     writeFileSync(fromStart(write), `${JSON.stringify(result, null, 2)}\n`);
   }
   if (check) {
-    holdToBounds(suiteName, result);
+    holdToBounds(suiteName, result, bounds);
     return;
   }
   process.stdout.write(
@@ -269,10 +286,12 @@ const runSuite = async (suiteName, args) => {
   );
 };
 
-const holdToBounds = (suiteName, { summary }) => {
-  const bounds = JSON.parse(
+const boundsFor = (suiteName) =>
+  JSON.parse(
     readFileSync(join(PACKAGE, 'bounds', `${suiteName}.json`), 'utf8')
   );
+
+const holdToBounds = (suiteName, { summary }, bounds) => {
   const checks = helpers().checkBounds(summary, bounds);
   for (const { scenario, key, median, bound, ok } of checks) {
     process.stdout.write(

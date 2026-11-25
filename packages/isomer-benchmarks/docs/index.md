@@ -66,7 +66,8 @@ module.exports = {
 
 - `name` labels the pack's rows: lowercase letters, digits and dashes.
 - `entries` are specifiers, of letters, digits and `@ . / _ -`, resolved from the config's directory, so they load the copies that pack's host would. Each one needs a name no other config or core package uses; a repeated name refuses the run. The first entry is the pack's main one, which its `<name>:host` row loads with the SDK and the runtime, also resolved from there. A pack with no runtime installed beside it gets no host row.
-- `build: 'source'` is for a pack whose entries are TypeScript that its host transpiles, such as a Kibana package. Each picked entry is bundled with esbuild to one CommonJS file under the pack's `node_modules/.cache/isomer-benchmarks/<name>/`, then loaded. What resolves to TypeScript is inlined. Everything else stays external at the path Node's `require` resolves from its importer, so it loads the CommonJS build and the copy the host would. Its rows exclude what transpiling would cost. The default, `built`, loads entries as they are.
+- `build: 'source'` is for a pack whose entries are TypeScript that its host transpiles, such as a Kibana package. For `load`, each picked entry is bundled with esbuild to one CommonJS file under the pack's `node_modules/.cache/isomer-benchmarks/<name>/`, then loaded. What resolves to TypeScript is inlined. Everything else stays external at the path Node's `require` resolves from its importer, so it loads the CommonJS build and the copy the host would. Its rows exclude what transpiling would cost. The default, `built`, loads entries as they are. `size` ignores `build`: it bundles every entry the same way, TypeScript included, with everything but the entry's peers, React and zod counted.
+- `nodeOnly` lists the entries that run only on Node. `size` gives them no browser bundle, and `check:size` asks them for no browser bound.
 
 Then point `load` at it from this repository's root, here with Kibana checked out beside it:
 
@@ -96,7 +97,7 @@ Commit the baseline, `docs/results.md`, and the assembled copy under the root `d
 
 | Gate | Holds | Runs in |
 | --- | --- | --- |
-| `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`) | `pnpm verify` and CI |
+| `pnpm check:size` | Each entry's minified Node and browser bundle bytes (`nodeKb`, `browserKb`). Every entry needs a bound for each size it has, so a new entry fails until `bounds/size.json` names it | `pnpm verify` and CI |
 
 A bound is about twice the measured median, rounded up to 10, as the charts pack's memory bench sets its own. That still catches an entry that newly pulls in a dependency as large as itself. Sizes don't vary by machine, so a size bound can be set from any machine; a memory bound comes from the CI host. Timing is recorded and never gated.
 

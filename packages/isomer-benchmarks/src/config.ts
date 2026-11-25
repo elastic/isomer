@@ -21,6 +21,8 @@ export interface BenchConfig {
    * built JavaScript external. Defaults to `built`.
    */
   build?: 'built' | 'source';
+  /** The entries that run only on Node, so `size` gives them no browser bundle. */
+  nodeOnly?: readonly string[];
 }
 
 export const defineBenchConfig = (config: BenchConfig): BenchConfig => config;
@@ -33,7 +35,7 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   if (typeof value !== 'object' || value === null) {
     return 'a config exports an object';
   }
-  const { name, entries, build } = value as Partial<BenchConfig>;
+  const { name, entries, build, nodeOnly } = value as Partial<BenchConfig>;
   if (typeof name !== 'string' || !/^[a-z0-9-]+$/.test(name)) {
     return '`name` is lowercase letters, digits and dashes';
   }
@@ -48,6 +50,15 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   }
   if (build !== undefined && build !== 'built' && build !== 'source') {
     return "`build` is 'built' or 'source'";
+  }
+  if (
+    nodeOnly !== undefined &&
+    !(
+      Array.isArray(nodeOnly) &&
+      nodeOnly.every((entry) => entries.includes(entry))
+    )
+  ) {
+    return '`nodeOnly` lists some of `entries`';
   }
   return undefined;
 };

@@ -19,6 +19,7 @@ describe('benchConfigProblem', () => {
         name: 'kbn-components',
         entries: ['@kbn/a', './src/index.ts', '../b_c/d-e'],
         build: 'source',
+        nodeOnly: ['./src/index.ts'],
       })
     ).toBe(undefined);
   });
@@ -42,6 +43,14 @@ describe('benchConfigProblem', () => {
     [
       { name: 'a', entries: ['a'], build: 'ts' },
       "`build` is 'built' or 'source'",
+    ],
+    [
+      { name: 'a', entries: ['a'], nodeOnly: ['a/node'] },
+      '`nodeOnly` lists some of `entries`',
+    ],
+    [
+      { name: 'a', entries: ['a'], nodeOnly: 'a' },
+      '`nodeOnly` lists some of `entries`',
     ],
   ])('refuses %j', (config, problem) => {
     expect(benchConfigProblem(config)).toBe(problem);

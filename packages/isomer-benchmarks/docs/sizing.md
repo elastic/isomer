@@ -27,7 +27,8 @@ The SDK's root entry loads about 150 modules and bundles to about 185 KB minifie
 | A pack's schema helpers (`z`, `requiredString`, URL rules), no React | `@elastic/isomer-sdk/schema` | about 110 modules, 3.8 MB heap, most of it zod | about 2 KB, zod aside |
 | Chart contracts for a materializer | `@elastic/isomer-primitives-charts/schema` | about 160 modules | about 125 KB |
 | Scene resolution alone | `@elastic/isomer-primitives-charts/resolve` | about 30 modules | about 50 KB |
-| The composition validator and parser, and every surface | the SDK root, or the runtime | about 150, or about 220 | about 185 KB, or about 340 KB |
+| The composition validator and parser | `@elastic/isomer-sdk` | about 150 modules | about 185 KB |
+| Every surface, assembled from your packs | `@elastic/isomer-runtime` | about 220 modules | about 340 KB |
 
 Loading takumi costs little on its own (about 16 modules and 10 ms). Its fonts register on the first draw; see [First draw](#first-draw).
 

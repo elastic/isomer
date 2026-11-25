@@ -13,4 +13,5 @@ module.exports = {
     '@elastic/isomer-charts-elastic/engine',
     '@elastic/isomer-charts-elastic/node',
   ],
+  nodeOnly: ['@elastic/isomer-charts-elastic/node'],
 };
