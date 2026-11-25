@@ -226,12 +226,13 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
 
   const estimateNodeHeight = (
     node: PrimitiveNode,
-    { nodeWidth }: PageWidths
+    { nodeWidth }: PageWidths,
+    theme: unknown
   ): number =>
-    dispatcher.estimateSnapshotHeight(
-      node,
-      nodeWidth === undefined ? {} : { width: nodeWidth }
-    );
+    dispatcher.estimateSnapshotHeight(node, {
+      ...(nodeWidth !== undefined && { width: nodeWidth }),
+      ...(theme !== undefined && { theme }),
+    });
 
   /** A page `width` wide: its nodes are laid out in the frame's content width. */
   const pageWidths = (frame: BoundFrame, width: number): PageWidths => ({
@@ -257,7 +258,8 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     frame: BoundFrame,
     composition: Composition,
     prefix: string,
-    widths: PageWidths
+    widths: PageWidths,
+    theme: unknown
   ): { height: number; warnings: readonly SnapshotHeightWarning[] } => {
     let consulted = false;
     const height = frame.estimateHeight(
@@ -266,7 +268,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
         renderSnapshotNode: () => null,
         estimateSnapshotHeight: (node) => {
           consulted = true;
-          return estimateNodeHeight(node, widths);
+          return estimateNodeHeight(node, widths, theme);
         },
       },
       { width: widths.width }
@@ -289,7 +291,8 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     frame: BoundFrame,
     compositions: readonly Composition[],
     options: Pick<SnapshotRenderOptions, 'width' | 'height'>,
-    pagePaths: boolean
+    pagePaths: boolean,
+    theme: unknown
   ): {
     width: number;
     height: number;
@@ -310,7 +313,8 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
         frame,
         composition,
         pagePaths ? `pages[${index}]` : '',
-        pageWidths(frame, width)
+        pageWidths(frame, width),
+        theme
       )
     );
     return {
@@ -336,7 +340,7 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     return {
       renderSnapshotNode: (node, key) =>
         dispatcher.renderSnapshot(node, drawn, theme, key),
-      estimateSnapshotHeight: (node) => estimateNodeHeight(node, widths),
+      estimateSnapshotHeight: (node) => estimateNodeHeight(node, widths, theme),
     };
   };
 
@@ -404,14 +408,15 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
     compositions.forEach((composition, index) => {
       assertBody(named, composition, subject(index));
     });
+    const mode = options.theme ?? first.theme;
+    const theme = named.frame.resolveTheme(mode);
     const { warnings, heightMode, ...size } = viewportFor(
       named.frame,
       compositions,
       options,
-      pagePaths
+      pagePaths,
+      theme
     );
-    const mode = options.theme ?? first.theme;
-    const theme = named.frame.resolveTheme(mode);
     const page = (composition: CheckedComposition): StyledPage => ({
       composition,
       build: (context) =>
@@ -475,7 +480,8 @@ export const createSnapshotSurface = <TRenderContext = unknown>(
         frame,
         composition,
         '',
-        widths
+        widths,
+        theme
       );
       const {
         pages: [page],

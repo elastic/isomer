@@ -20,13 +20,19 @@ vi.mock('../primitives/xy_chart/resolve', async (importOriginal) => {
 });
 
 describe('a snapshot render with the pack resolver', () => {
-  it('resolves an xyChart once for its estimate and its drawn box', () => {
-    const runtime = createIsomerRuntime({
-      packs: [chartsPack],
-      frames: { page: chartsFrame },
-    });
-    vi.mocked(resolveXy).mockClear();
-    runtime.surfaces.snapshot.render({ type: 'view', body: [xyTimeSeries] });
-    expect(resolveXy).toHaveBeenCalledTimes(1);
-  });
+  it.each(['light', 'dark'] as const)(
+    'resolves an xyChart once for its estimate and its drawn box: %s',
+    (theme) => {
+      const runtime = createIsomerRuntime({
+        packs: [chartsPack],
+        frames: { page: chartsFrame },
+      });
+      vi.mocked(resolveXy).mockClear();
+      runtime.surfaces.snapshot.render(
+        { type: 'view', body: [xyTimeSeries] },
+        { theme }
+      );
+      expect(resolveXy).toHaveBeenCalledTimes(1);
+    }
+  );
 });

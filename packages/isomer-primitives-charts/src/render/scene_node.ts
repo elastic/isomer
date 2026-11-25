@@ -84,7 +84,8 @@ export const linkLineHeight = (scene: Scene): number =>
 const detectSceneEnvironment = (): SceneEnvironment =>
   typeof document === 'undefined' ? 'node' : 'browser';
 
-const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
+/** The `scheme` a frame's resolved theme carries, if any. */
+export const schemeOfTheme = (theme: unknown): ColorScheme | undefined => {
   if (typeof theme !== 'object' || theme === null || !('scheme' in theme)) {
     return undefined;
   }
