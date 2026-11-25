@@ -127,10 +127,11 @@ Slack gets its blocks through the Markdown fallback, because the pack wrote no S
 | Draw chart Scenes in the browser as Kibana does | [`@elastic/isomer-charts-elastic`](packages/isomer-charts-elastic/README.md) |
 | Turn the `snapshot` surface into PNG, SVG, or PDF | [`@elastic/isomer-image-takumi`](packages/isomer-image-takumi/README.md) |
 | Score what a model composes from your pack | [`@elastic/isomer-evals`](packages/isomer-evals/README.md) |
+| Measure what Isomer, or your pack, costs to load, run and ship | [`@elastic/isomer-benchmarks`](packages/isomer-benchmarks/README.md) |
 | Browse, check, and publish a pack's primitives | [`@elastic/isomer-studio`](packages/isomer-studio/README.md) |
 | Hand a runtime to an agent as tools | [`@elastic/isomer-agent-tools`](packages/isomer-agent-tools/README.md) |
 
-The published packages ship together at one version: the two a host installs, a host-side rasterizer, the chart pack and its Elastic Charts engine, and the Studio. The reference pack, the evals harness, and the agent tools stay private in the repository.
+The published packages ship together at one version: the two a host installs, a host-side rasterizer, the chart pack and its Elastic Charts engine, and the Studio. The reference pack, the evals harness, the benchmarks, and the agent tools stay private in the repository.
 
 ## Development
 

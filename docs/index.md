@@ -72,9 +72,10 @@ A model owns the composition. The runtime hands it `getAuthoringContext()`: a JS
 | [`@elastic/isomer-image-takumi`](image-takumi/index.md) | Turns the `svg` surface's element and stylesheet into PNG, SVG, or PDF bytes with Takumi. Declares the input shape structurally, so it depends on no Isomer package. |
 | [`@elastic/isomer-studio`](studio/index.md) | A gallery, per-primitive docs, a JSX editor and a preview of every surface for any pack, run as a dev server, a static site, or a CI check that renders every example. A command-line tool with EUI and Monaco bundled; the reference pack's Studio is at [studio-app](https://elastic.github.io/isomer/studio-app/). |
 | [`@elastic/isomer-evals`](evals/index.md) | A harness a pack author runs against their own runtime: how often a model's compositions parse, validate, recover on retry, pick the right primitives, and answer the question. Runs with no credentials on a replayed corpus. |
+| [`@elastic/isomer-benchmarks`](benchmarks/index.md) | Measures what each package, and any pack, costs to load, run and ship, apart from any host, with a summary and guidance for sizing a host. Runs from this repository. |
 | [`@elastic/isomer-agent-tools`](agent-tools/index.md) | Turns any runtime into transport-neutral agent tools, resources, and a prompt: authoring guide, primitive lookups, validate, render, and registered views. The host brings the transport: MCP, the AI SDK, or its own framework. Not on npm yet. |
 
-Every package except the reference pack, evals, the Studio, and the agent tools publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, the eval harness is something a pack author runs against their own runtime, and the Studio stays in this repository as a pack's dev dependency. The agent tools stay in the repository until their API settles.
+Every package except the reference pack, evals, the benchmarks, the Studio, and the agent tools publishes together at one version. A host installs the SDK and the runtime. The reference pack is there to copy from or to render slide decks with, the rasterizer is added by a host that draws images, the eval harness is something a pack author runs against their own runtime, the benchmarks run from this repository, and the Studio stays in this repository as a pack's dev dependency. The agent tools stay in the repository until their API settles.
 
 **Peers.** The SDK and the runtime need `react` and `zod`. The runtime also needs `react-dom`, because its single entry constructs the HTML surface and that surface renders through `react-dom/server`; the SDK marks `react-dom` optional and confines it to its `./html` entry.
 
@@ -103,6 +104,7 @@ Every package except the reference pack, evals, the Studio, and the agent tools 
 | Wire up an agent | The runtime's [Authoring context](runtime/authoring-context.md) and the SDK's [Authoring](sdk/authoring.md), or [Agent tools](agent-tools/index.md) for a ready-made tool set |
 | Turn images into PNG | [Takumi image backend](image-takumi/index.md) |
 | Measure a model against your pack | [Evals](evals/index.md), including how to read the numbers |
+| Size a host, or measure what your pack costs | [Benchmarks](benchmarks/index.md), then [Sizing a host](benchmarks/sizing.md) |
 | Contribute or release | [CONTRIBUTING.md](https://github.com/elastic/isomer/blob/main/CONTRIBUTING.md), [RELEASING.md](https://github.com/elastic/isomer/blob/main/RELEASING.md), and [AGENTS.md](https://github.com/elastic/isomer/blob/main/AGENTS.md) for the invariants |
 
 Package pages are authored in each package's own `docs/` directory and assembled here.
