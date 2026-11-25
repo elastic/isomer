@@ -295,11 +295,20 @@ const boundsFor = (suiteName, configs, passedConfigs) => {
     !passedConfigs && existsSync(file)
       ? [JSON.parse(readFileSync(file, 'utf8'))]
       : [];
-  const bounds = Object.assign(
-    {},
+  const bounds = {};
+  for (const each of [
     ...own,
-    ...configs.map(({ bounds: each }) => each?.[suiteName] ?? {})
-  );
+    ...configs.map(({ bounds: mine }) => mine?.[suiteName] ?? {}),
+  ]) {
+    for (const [scenario, measures] of Object.entries(each)) {
+      for (const [key, bound] of Object.entries(measures)) {
+        if (bounds[scenario]?.[key] !== undefined) {
+          throw new Error(`${scenario} ${key}: bounded twice`);
+        }
+        bounds[scenario] = { ...bounds[scenario], [key]: bound };
+      }
+    }
+  }
   if (Object.keys(bounds).length === 0) {
     throw new Error(
       `${suiteName}: nothing to check; no bounds name this suite`

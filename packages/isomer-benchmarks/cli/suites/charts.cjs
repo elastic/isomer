@@ -153,6 +153,16 @@ const run = async ({
   );
   const { createRenderers, stylesheet } =
     engine === null ? { createRenderers: () => [] } : require(engine);
+  const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
+  // Counts the engine's draws, so a row that falls back to the pack's summary fails instead of passing its bound.
+  let drawn = 0;
+  const counted = (renderer) =>
+    Object.assign(Object.create(renderer), {
+      render: (...args) => {
+        drawn += 1;
+        return renderer.render(...args);
+      },
+    });
 
   const takumi =
     stage === 'png'
@@ -173,7 +183,7 @@ const run = async ({
       : null;
   // A chart that fails would draw its small failure note and pass any bound.
   const pack = createChartsPack({
-    sceneRenderers: createRenderers(),
+    sceneRenderers: createRenderers().map(counted),
     onFailure: (error) => {
       throw error;
     },
@@ -226,7 +236,7 @@ const run = async ({
       theme: 'light',
       scale: 2,
     }));
-  const jobs = {
+  const buildJobs = {
     examples: () =>
       pack.primitives
         .filter(({ type }) => type === 'metric' || type === 'xyChart')
@@ -253,13 +263,15 @@ const run = async ({
     ],
     burst: () => xyAt2x(BURST),
     one: () => xyAt2x(1),
-  }[shape]();
+  }[shape];
 
   // Fonts register on the first render; an empty one registers them, so what
   // is loaded includes them and nothing drawn.
   await takumi?.svg({ html: '<div></div>', css: '', width: 1, height: 1 });
   global.gc();
   const loadedRss = process.memoryUsage().rss;
+  // Built after the sample, so `Render RSS` includes the request's own data, as a service holds it.
+  const jobs = buildJobs();
 
   const validates = [];
   const scenes = [];
@@ -276,6 +288,7 @@ const run = async ({
       );
     }
     validates.push(ms(validateStart));
+    const drawsBefore = drawn;
     const sceneStart = process.hrtime.bigint();
     if (stage === 'resolve') {
       for (const node of validation.composition.body) {
@@ -288,6 +301,11 @@ const run = async ({
         onValidationError: 'collect',
       });
       scenes.push(ms(sceneStart));
+      if (engine !== null && drawn === drawsBefore) {
+        throw new Error(
+          'the engine drew nothing; the pack fell back to its summary'
+        );
+      }
       if (takumi !== null) {
         const rasterStart = process.hrtime.bigint();
         const fitted = await takumi.fit(
@@ -303,8 +321,8 @@ const run = async ({
     firstChart ??= ms(started);
   };
 
+  const allStart = process.hrtime.bigint();
   if (shape === 'burst') {
-    const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
     const limited =
       inFlight === undefined ? (each) => each() : limit(inFlight, jobs.length);
     await Promise.all(jobs.map((job) => limited(() => render(job))));
@@ -314,10 +332,12 @@ const run = async ({
     }
   }
 
-  // `maxRSS` is in kilobytes.
+  const allMs = ms(allStart);
+  // `maxRSS` is in kilobytes. Sampled before the bookkeeping below, for both measures.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
   global.gc();
   return {
+    peakRssMb,
     charts: jobs.length,
     values: Math.max(
       ...jobs.map(({ composition }) => countValues(composition))
@@ -326,6 +346,7 @@ const run = async ({
     renderRssMb: peakRssMb - mb(loadedRss),
     heapAfterGcMb: mb(process.memoryUsage().heapUsed),
     coldStartMs: firstChart,
+    allMs,
     validateMs: median(validates),
     sceneMs: median(scenes),
     ...(takumi === null
@@ -337,7 +358,7 @@ const run = async ({
 module.exports = {
   title: 'Drawing charts',
   about:
-    "What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config. Each row stops at one stage, `resolve`, `draw` or PNG, so the difference between two rows over the same charts is the later stage's cost. `Loaded RSS` is after loading and registering fonts; `Render RSS` is the peak above it. Per-chart times are medians, and each render starts in a new task, as a request does.",
+    "What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config; an engine row fails if the engine draws nothing. A `resolve` row calls `resolveChart` once per chart. Every other row renders the `snapshot` surface, which validates again and may resolve a chart more than once, so its `Resolve, or snapshot` column is the whole surface: compare an engine row with the no-engine row over the same charts for what the engine adds. `Loaded RSS` is after loading and registering fonts, before the request's data is built; `Render RSS` is the peak above it. Per-chart times are medians; `All charts` runs from the first render's start to the last one's end. Each render starts in a new task, as a request does.",
   usesConfigs: true,
   measures: [
     { key: 'charts', label: 'Charts', digits: 0 },
@@ -347,8 +368,9 @@ module.exports = {
     { key: 'renderRssMb', label: 'Render RSS (MB)', digits: 0 },
     { key: 'heapAfterGcMb', label: 'Heap after (MB)', digits: 1 },
     { key: 'coldStartMs', label: 'First chart (ms)', digits: 0 },
+    { key: 'allMs', label: 'All charts (ms)', digits: 0 },
     { key: 'validateMs', label: 'Validate (ms)', digits: 1 },
-    { key: 'sceneMs', label: 'Resolve or draw (ms)', digits: 1 },
+    { key: 'sceneMs', label: 'Resolve, or snapshot (ms)', digits: 1 },
     { key: 'rasterMs', label: 'PNG (ms)', digits: 1 },
     { key: 'pngKb', label: 'PNG (KB)', digits: 0 },
   ],

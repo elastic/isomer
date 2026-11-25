@@ -58,11 +58,15 @@ describe('benchConfigProblem', () => {
     ],
     [
       { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: '1' } } } },
-      '`bounds` maps each suite to scenarios, then measures, then a positive number',
+      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
     ],
     [
       { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: 0 } } } },
-      '`bounds` maps each suite to scenarios, then measures, then a positive number',
+      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
+    ],
+    [
+      { name: 'a', entries: ['a'], bounds: { charts: { one: {} } } },
+      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
     ],
   ])('refuses %j', (config, problem) => {
     expect(benchConfigProblem(config)).toBe(problem);

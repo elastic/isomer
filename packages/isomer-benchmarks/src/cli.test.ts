@@ -6,9 +6,9 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { afterAll, describe, expect, it } from 'vitest';
@@ -49,5 +49,62 @@ describe('bench --check', () => {
     const { status, stderr } = bench('charts', '--check', '--config', file);
     expect(status).not.toBe(0);
     expect(stderr).toContain('charts: unknown scenario a:nope');
+  });
+
+  it('refuses a measure two configs both bound', () => {
+    const body = (peakRssMb: number) => ({
+      name: 't',
+      entries: ['a'],
+      charts: {},
+      bounds: { charts: { 't:resolve': { peakRssMb } } },
+    });
+    const { status, stderr } = bench(
+      'charts',
+      '--check',
+      '--config',
+      config('first', body(1)),
+      '--config',
+      config('second', body(2))
+    );
+    expect(status).not.toBe(0);
+    expect(stderr).toContain('t:resolve peakRssMb: bounded twice');
+  });
+});
+
+describe('bench --check on a measured scenario', () => {
+  // Inside this package, so the charts pack and the runtime resolve from the config.
+  mkdirSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../node_modules/.cache'),
+    { recursive: true }
+  );
+  const dir = mkdtempSync(
+    join(
+      dirname(fileURLToPath(import.meta.url)),
+      '../node_modules/.cache/check-'
+    )
+  );
+  afterAll(() => rmSync(dir, { recursive: true, force: true }));
+  const check = (peakRssMb: number) => {
+    const file = join(dir, `bound-${peakRssMb}.cjs`);
+    writeFileSync(
+      file,
+      `module.exports = ${JSON.stringify({
+        name: 't',
+        entries: ['@elastic/isomer-primitives-charts'],
+        charts: {},
+        bounds: { charts: { 't:resolve': { peakRssMb } } },
+      })};`
+    );
+    return bench('charts', '--check', '--runs', '1', '--config', file);
+  };
+
+  it('passes a median under its bound and fails one over it', () => {
+    const under = check(100_000);
+    expect(under.status).toBe(0);
+    expect(under.stdout).toContain('✓ t:resolve peakRssMb');
+    const over = check(1);
+    expect(over.status).toBe(1);
+    expect(over.stdout).toContain('✗ t:resolve peakRssMb');
+    expect(over.stderr).toContain('1 of 1 over their bound.');
   });
 });
