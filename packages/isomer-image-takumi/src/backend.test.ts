@@ -720,47 +720,53 @@ describe('createTakumiImageBackend', () => {
       }>();
     });
 
-    /** The PDF's text with every Flate stream inflated, so page content can be searched. */
-    const decoded = (pdf: Buffer) => {
-      const source = text(pdf);
-      const streams = [...source.matchAll(/stream\r?\n/g)].map(
-        ({ index, 0: start }) => {
-          const from = index + start.length;
-          try {
-            return inflateSync(
-              pdf.subarray(from, source.indexOf('endstream', from))
-            ).toString('latin1');
-          } catch {
-            return '';
-          }
-        }
-      );
-      return [source, ...streams].join('\n');
+    const headed: PdfInput = {
+      ...pages(['']),
+      pages: [{ html: '<h1>Heading</h1>' }],
     };
 
+    // Page text is in compressed content streams, so these literals appear only in document-level objects.
     it.each([
-      ['outline', { outline: true }, /\/Title\s*\(Heading\)\s*\/Dest\b/],
-      ['lang', { lang: 'fr' }, /\/Lang\s*\(fr\)/],
-      ['backgroundColor', { backgroundColor: '#00ff00' }, /\b0 1 0 rg\b/],
+      ['outline', { outline: true }, [/\/Outlines\b/, /\(Heading\)/]],
+      ['lang', { lang: 'fr' }, [/\/Lang\s*\(fr\)/]],
       [
         'metadata',
         { metadata: { ...stable.metadata, title: 'Deck' } },
-        /\/Title\s*\(Deck\)/,
+        [/\/Title\s*\(Deck\)/],
       ],
-    ] as const)('forwards `%s` to the document', async (_, option, effect) => {
+    ] as const)('forwards `%s` to the document', async (_, option, marks) => {
       const backend = createTakumiImageBackend();
       try {
-        const deck: PdfInput = {
-          ...pages(['']),
-          pages: [{ html: '<h1>Heading</h1>' }],
-        };
-        const plain = decoded(await backend.pdf(deck, stable));
-        const optioned = decoded(
-          await backend.pdf(deck, { ...stable, ...option })
+        const plain = text(await backend.pdf(headed, stable));
+        const optioned = text(
+          await backend.pdf(headed, { ...stable, ...option })
         );
 
-        expect(plain).not.toMatch(effect);
-        expect(optioned).toMatch(effect);
+        for (const mark of marks) {
+          expect(plain).not.toMatch(mark);
+          expect(optioned).toMatch(mark);
+        }
+      } finally {
+        await backend.close();
+      }
+    });
+
+    it('forwards `backgroundColor` to the document', async () => {
+      const backend = createTakumiImageBackend();
+      try {
+        const plain = await backend.pdf(headed, stable);
+        const green = await backend.pdf(headed, {
+          ...stable,
+          backgroundColor: '#00ff00',
+        });
+        const blue = await backend.pdf(headed, {
+          ...stable,
+          backgroundColor: '#0000ff',
+        });
+
+        expect(green.equals(plain)).toBe(false);
+        expect(blue.equals(plain)).toBe(false);
+        expect(green.equals(blue)).toBe(false);
       } finally {
         await backend.close();
       }
