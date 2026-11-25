@@ -21,6 +21,14 @@ describe('benchConfigProblem', () => {
         build: 'source',
       })
     ).toBe(undefined);
+    expect(
+      benchConfigProblem({
+        name: 'engine',
+        entries: ['a'],
+        charts: { engine: './bench/engine.cjs' },
+        bounds: { charts: { 'engine:one': { peakRssMb: 320 } } },
+      })
+    ).toBe(undefined);
   });
 
   it.each([
@@ -39,6 +47,22 @@ describe('benchConfigProblem', () => {
     [
       { name: 'a', entries: ['a'], build: 'ts' },
       "`build` is 'built' or 'source'",
+    ],
+    [
+      { name: 'a', entries: ['a'], charts: { engine: '' } },
+      '`charts` is an object whose `engine`, if any, is a path',
+    ],
+    [
+      { name: 'a', entries: ['a'], charts: true },
+      '`charts` is an object whose `engine`, if any, is a path',
+    ],
+    [
+      { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: '1' } } } },
+      '`bounds` maps each suite to scenarios, then measures, then a positive number',
+    ],
+    [
+      { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: 0 } } } },
+      '`bounds` maps each suite to scenarios, then measures, then a positive number',
     ],
   ])('refuses %j', (config, problem) => {
     expect(benchConfigProblem(config)).toBe(problem);

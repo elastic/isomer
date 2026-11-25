@@ -14,4 +14,12 @@ module.exports = {
     '@elastic/isomer-primitives-charts/scene',
     '@elastic/isomer-primitives-charts/resolve',
   ],
+  charts: {},
+  // About twice what Node 22 measures on arm64 macOS, to hold across platforms and still catch a doubling.
+  bounds: {
+    charts: {
+      'charts:baseline': { peakRssMb: 280 },
+      'charts:budget': { peakRssMb: 900, renderRssMb: 800 },
+    },
+  },
 };

@@ -152,3 +152,41 @@ The largest other packages in each entry's Node bundle, in KB:
 | `@elastic/isomer-charts-elastic`            | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
 | `@elastic/isomer-charts-elastic/engine`     | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
 | `@elastic/isomer-charts-elastic/node`       | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
+
+## Drawing charts
+
+What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config. Each row stops at one stage, `resolve`, `draw` or PNG, so the difference between two rows over the same charts is the later stage's cost. `Loaded RSS` is after loading and registering fonts; `Render RSS` is the peak above it. Per-chart times are medians, and each render starts in a new task, as a request does.
+
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `6de3e8a3`.
+
+| Scenario                         | Charts | Input values, largest | Peak RSS (MB) | Loaded RSS (MB) | Render RSS (MB) | Heap after (MB) | First chart (ms) | Validate (ms) | Resolve or draw (ms) | PNG (ms) | PNG (KB) |
+| -------------------------------- | -----: | --------------------: | ------------: | --------------: | --------------: | --------------: | ---------------: | ------------: | -------------------: | -------: | -------: |
+| `charts:resolve`                 |     54 |                   399 |            95 |              81 |              14 |            17.9 |              173 |           0.2 |                  0.2 |          |          |
+| `charts:resolve-budget`          |      1 |                249999 |           212 |              87 |             125 |            35.0 |              583 |          78.5 |                334.8 |          |          |
+| `charts:baseline`                |     54 |                   399 |           117 |              88 |              29 |            19.1 |              184 |           0.2 |                  0.6 |      0.5 |        5 |
+| `charts:budget`                  |      1 |                249999 |           402 |              90 |             313 |            35.7 |             1006 |          78.6 |                745.0 |      3.8 |        6 |
+| `charts-elastic:draw`            |     54 |                   399 |           186 |             129 |              57 |            39.1 |              423 |           0.3 |                  4.3 |          |          |
+| `charts-elastic:engine`          |     54 |                   399 |           285 |             132 |             153 |            39.8 |              465 |           0.4 |                  4.8 |      7.2 |       33 |
+| `charts-elastic:xy-quarter`      |      1 |                 62499 |           258 |             134 |             124 |            39.4 |              748 |          27.8 |                266.1 |     59.8 |       71 |
+| `charts-elastic:xy-half`         |      1 |                124998 |           317 |             134 |             182 |            43.8 |              975 |          43.1 |                460.6 |     73.7 |       69 |
+| `charts-elastic:budget-draw`     |      1 |                249999 |           435 |             131 |             304 |            52.2 |             1330 |          69.3 |                866.1 |          |          |
+| `charts-elastic:budget-xy`       |      1 |                249999 |           465 |             136 |             328 |            52.7 |             1460 |          70.7 |                859.2 |     96.0 |       62 |
+| `charts-elastic:budget-grid`     |      1 |                249998 |           435 |             135 |             299 |            54.6 |             1316 |          61.1 |                593.5 |    266.9 |      189 |
+| `charts-elastic:burst-limited`   |     16 |                   399 |           323 |             132 |             190 |            38.8 |              463 |           0.4 |                  7.9 |     25.6 |       77 |
+| `charts-elastic:burst-unlimited` |     16 |                   399 |           372 |             132 |             240 |            38.8 |              612 |           0.4 |                  7.4 |    139.5 |       77 |
+| `charts-elastic:one`             |      1 |                    57 |           182 |             131 |              50 |            35.2 |              439 |           3.1 |                 39.3 |     17.8 |       27 |
+
+- `charts:resolve`: every metric and xy example, light and dark: validate and resolve each Scene
+- `charts:resolve-budget`: one xy line at the pack's whole input budget: validate and resolve its Scene
+- `charts:baseline`: every metric and xy example, light and dark, to PNG at 1× with no engine: the summary fallback
+- `charts:budget`: one xy line at the pack's whole input budget, to PNG at 2× with no engine
+- `charts-elastic:draw`: every metric and xy example, light and dark: validate, resolve and draw to snapshot markup
+- `charts-elastic:engine`: every metric and xy example, light and dark, to PNG at 1×
+- `charts-elastic:xy-quarter`: one xy line at a quarter of the pack's input budget, to PNG at 2×
+- `charts-elastic:xy-half`: one xy line at half the pack's input budget, to PNG at 2×
+- `charts-elastic:budget-draw`: one xy line at the pack's whole input budget: validate, resolve and draw to snapshot markup
+- `charts-elastic:budget-xy`: one xy line at the pack's whole input budget, to PNG at 2×
+- `charts-elastic:budget-grid`: 40 xy panels in a grid sharing the whole input budget, to PNG at 2×
+- `charts-elastic:burst-limited`: 16 xy PNGs at 2× requested at once, through a limiter of 2
+- `charts-elastic:burst-unlimited`: 16 xy PNGs at 2× requested at once, no limiter
+- `charts-elastic:one`: one cold xy PNG at 2×, the one-off case

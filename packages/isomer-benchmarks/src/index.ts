@@ -12,6 +12,7 @@ export {
   benchConfigProblem,
   defineBenchConfig,
 } from './config';
+export { limit } from './limit';
 export {
   type BenchResult,
   type Environment,

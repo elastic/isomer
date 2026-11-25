@@ -5,8 +5,8 @@
  * 2.0.
  */
 
-// The Node renderer as `scripts/bench_charts.cjs --engine` loads an engine,
-// with the stylesheet its markup needs on `snapshot`.
+// The Node renderer as the benchmarks' `charts` suite loads an engine, with
+// the stylesheet its markup needs on `snapshot`.
 
 const { readFileSync } = require('node:fs');
 
@@ -27,15 +27,4 @@ const stylesheet = (theme) =>
 
 const createRenderers = () => [createElasticChartsNodeRenderer()];
 
-/**
- * Ceilings for `--check`, in MB: about twice what Node 22 measures on arm64
- * macOS, to hold across platforms and still catch a doubling.
- */
-const bounds = {
-  engine: { peakRssMb: 480 },
-  one: { peakRssMb: 320 },
-  'budget-xy': { peakRssMb: 950, renderRssMb: 670 },
-  'burst-unlimited': { peakRssMb: 560 },
-};
-
-module.exports = { bounds, createRenderers, stylesheet };
+module.exports = { createRenderers, stylesheet };
