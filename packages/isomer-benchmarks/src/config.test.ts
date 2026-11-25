@@ -17,7 +17,7 @@ describe('benchConfigProblem', () => {
     expect(
       benchConfigProblem({
         name: 'kbn-components',
-        entries: ['a', 'a/b'],
+        entries: ['@kbn/a', './src/index.ts', '../b_c/d-e'],
         build: 'source',
       })
     ).toBe(undefined);
@@ -33,9 +33,12 @@ describe('benchConfigProblem', () => {
       { name: 'a:b', entries: ['a'] },
       '`name` is lowercase letters, digits and dashes',
     ],
-    [{ name: 'a', entries: [] }, '`entries` lists at least one specifier'],
-    [{ name: 'a', entries: [''] }, '`entries` lists at least one specifier'],
-    [{ name: 'a', entries: 'a' }, '`entries` lists at least one specifier'],
+    ...[[], [''], 'a', ['./chart|debug.cjs'], ['./has`tick.ts'], ['a\nb']].map(
+      (entries): [unknown, string] => [
+        { name: 'a', entries },
+        '`entries` lists at least one specifier, of letters, digits and `@ . / _ -`',
+      ]
+    ),
     [
       { name: 'a', entries: ['a'], build: 'ts' },
       "`build` is 'built' or 'source'",

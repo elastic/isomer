@@ -140,7 +140,6 @@ const peersOf = (base, entry) => {
 
 /** The largest packages in each entry's Node bundle besides the entry's own. */
 const largestInputs = ({ runs }) => {
-  const { tableText } = require(join(PACKAGE, 'lib/cjs/index.js'));
   const rows = runs.map(({ scenario, nodePackages }) => {
     const own = scenario.startsWith('@')
       ? scenario.split('/').slice(0, 2).join('/')
@@ -150,7 +149,7 @@ const largestInputs = ({ runs }) => {
       .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
       .map(([name, bytes]) => `\`${name}\` ${kb(bytes).toFixed(0)}`);
-    return `| \`${tableText(scenario)}\` | ${ranked.join(', ') || 'none'} |`;
+    return `| \`${scenario}\` | ${ranked.join(', ') || 'none'} |`;
   });
   return [
     "The largest other packages in each entry's Node bundle, in KB:",

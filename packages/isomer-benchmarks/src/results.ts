@@ -194,10 +194,6 @@ export const describeEnvironmentLine = ({
     ...(commit === null ? [] : [`commit \`${commit.slice(0, 8)}\``]),
   ].join(', ');
 
-/** Escapes text for a Markdown table cell. */
-export const tableText = (text: string): string =>
-  text.replace(/[\\|]/g, '\\$&');
-
 const cell = (spread: Spread | undefined, digits: number) => {
   if (spread === undefined) {
     return '';
@@ -218,7 +214,7 @@ export const toMarkdown = ({
     `| --- | ${measures.map(() => '---:').join(' | ')} |`,
     ...scenarios.map(
       ({ name }) =>
-        `| \`${tableText(name)}\` | ${measures
+        `| \`${name}\` | ${measures
           .map(({ key, digits }) => cell(summary[name]?.[key], digits))
           .join(' | ')} |`
     ),

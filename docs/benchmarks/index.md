@@ -65,7 +65,7 @@ module.exports = {
 ```
 
 - `name` labels the pack's rows: lowercase letters, digits and dashes.
-- `entries` are specifiers, resolved from the config's directory, so they load the copies that pack's host would. Each one needs a name no other config or core package uses; a repeated name refuses the run. The first entry is the pack's main one, which its `<name>:host` row loads with the SDK and the runtime, also resolved from there. A pack with no runtime installed beside it gets no host row.
+- `entries` are specifiers, of letters, digits and `@ . / _ -`, resolved from the config's directory, so they load the copies that pack's host would. Each one needs a name no other config or core package uses; a repeated name refuses the run. The first entry is the pack's main one, which its `<name>:host` row loads with the SDK and the runtime, also resolved from there. A pack with no runtime installed beside it gets no host row.
 - `build: 'source'` is for a pack whose entries are TypeScript that its host transpiles, such as a Kibana package. Each picked entry is bundled with esbuild to one CommonJS file under the pack's `node_modules/.cache/isomer-benchmarks/<name>/`, then loaded. What resolves to TypeScript is inlined. Everything else stays external at the path Node's `require` resolves from its importer, so it loads the CommonJS build and the copy the host would. Its rows exclude what transpiling would cost. The default, `built`, loads entries as they are.
 
 Then point `load` at it from this repository's root, here with Kibana checked out beside it:
@@ -74,7 +74,7 @@ Then point `load` at it from this repository's root, here with Kibana checked ou
 pnpm --filter @elastic/isomer-benchmarks bench load --config ../kibana/x-pack/platform/packages/shared/isomer/isomer-components/isomer-bench.config.cjs
 ```
 
-The suite reads a config in the parent process. A child gets only what to load and where to resolve it from, and writes its record on its own file descriptor, so neither a config's imports nor what a pack logs shows up in the numbers. The result records each pack's own SDK and runtime versions beside this repository's. The `synthetic` suite measures its own generated pack and takes no `--config`.
+The suite reads a config in the parent process. A child gets only what to load and where to resolve it from, and writes its record on its own file descriptor, so a config's imports stay out of the numbers and what a pack logs stays out of the record. A pack that logs while it loads still pays for that logging in its own rows. The result records each pack's own SDK and runtime versions beside this repository's. The `synthetic` suite measures its own generated pack and takes no `--config`.
 
 This repository's packs keep their configs beside their `isomer-studio.config.ts`. They are the configs the suites use when no `--config` is passed, and the configs the baselines record.
 

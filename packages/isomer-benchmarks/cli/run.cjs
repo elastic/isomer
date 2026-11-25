@@ -305,8 +305,7 @@ const smoke = async () => {
 };
 
 const suiteSection = (result) => {
-  const { describeEnvironmentLine, summarize, tableText, toMarkdown } =
-    helpers();
+  const { describeEnvironmentLine, summarize, toMarkdown } = helpers();
   const { suite, about, environment, runsPerScenario, scenarios, measures } =
     result;
   // Derived from the raw runs, so a saved summary can't drift from them.
@@ -328,7 +327,7 @@ const suiteSection = (result) => {
     // A scenario its name describes has no `about`.
     ...scenarios
       .filter(({ about: what }) => what !== '')
-      .map(({ name, about: what }) => `- \`${tableText(name)}\`: ${what}`),
+      .map(({ name, about: what }) => `- \`${name}\`: ${what}`),
     ...notes.flatMap((note) => ['', note]),
   ].join('\n');
 };

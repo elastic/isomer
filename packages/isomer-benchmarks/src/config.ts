@@ -25,6 +25,9 @@ export interface BenchConfig {
 
 export const defineBenchConfig = (config: BenchConfig): BenchConfig => config;
 
+/** What an entry may hold, so its name needs no escaping in a table or a path. */
+const SPECIFIER = /^[\w@./-]+$/;
+
 /** Why `value` isn't a {@link BenchConfig}, or `undefined` when it is one. */
 export const benchConfigProblem = (value: unknown): string | undefined => {
   if (typeof value !== 'object' || value === null) {
@@ -37,9 +40,11 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   if (
     !Array.isArray(entries) ||
     entries.length === 0 ||
-    !entries.every((entry) => typeof entry === 'string' && entry.length > 0)
+    !entries.every(
+      (entry) => typeof entry === 'string' && SPECIFIER.test(entry)
+    )
   ) {
-    return '`entries` lists at least one specifier';
+    return '`entries` lists at least one specifier, of letters, digits and `@ . / _ -`';
   }
   if (build !== undefined && build !== 'built' && build !== 'source') {
     return "`build` is 'built' or 'source'";
