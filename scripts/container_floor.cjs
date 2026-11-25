@@ -52,7 +52,7 @@ const PROFILES = {
  * or `'heap'` (V8 aborted out of heap), or an error message for anything else,
  * including a container that didn't exit or a kill the kernel didn't report.
  */
-const classify = ({ status, oomKilled, exitCode, stderr }) => {
+const classify = ({ status, oomKilled, exitCode, stderr, heapMessage }) => {
   if (status !== 'exited') {
     return `the container is ${status}, not exited`;
   }
@@ -63,10 +63,7 @@ const classify = ({ status, oomKilled, exitCode, stderr }) => {
     return 'oom';
   }
   // An abort, as SIGABRT or as `--init` reports it, with V8's own diagnostic.
-  if (
-    (exitCode === 134 || exitCode === 133) &&
-    /JavaScript heap out of memory|Reached heap limit/.test(stderr)
-  ) {
+  if ((exitCode === 134 || exitCode === 133) && heapMessage) {
     return 'heap';
   }
   return `exit ${exitCode}:\n${stderr.slice(-2000)}`;
@@ -146,6 +143,8 @@ const searchOptions = (options) => {
 /** Kept of each stream, so a verbose command can't fill this process's heap. */
 const KEEP = 64 * 1024;
 const tail = (kept, chunk) => (kept + chunk).slice(-KEEP);
+/** V8's diagnostic for running out of heap, looked for across the whole stream, not just what is kept. */
+const HEAP_MESSAGE = /JavaScript heap out of memory|Reached heap limit/;
 
 /** Docker calls in flight. An interrupt stops only attached runs, and waits for the rest. */
 const running = new Map();
@@ -161,10 +160,13 @@ const docker = (args, { cleanup = false } = {}) => {
   const call = new Promise((done, fail) => {
     let stdout = '';
     let stderr = '';
+    let heapMessage = false;
     child.stdout.on('data', (chunk) => {
       stdout = tail(stdout, chunk);
     });
     child.stderr.on('data', (chunk) => {
+      // The kept tail's end joins the chunk, so a diagnostic split across chunks still matches.
+      heapMessage ||= HEAP_MESSAGE.test(stderr.slice(-64) + chunk);
       stderr = tail(stderr, chunk);
     });
     child.on('error', (error) => {
@@ -173,7 +175,7 @@ const docker = (args, { cleanup = false } = {}) => {
     });
     child.on('close', (status) => {
       running.delete(child);
-      done({ status, stdout: stdout.trim(), stderr });
+      done({ status, stdout: stdout.trim(), stderr, heapMessage });
     });
   });
   running.set(child, call);
@@ -182,7 +184,7 @@ const docker = (args, { cleanup = false } = {}) => {
 
 /** Containers this run created, by ID; cleanup removes these and no others. */
 const created = new Set();
-const runId = randomUUID().slice(0, 8);
+const runId = randomUUID();
 
 /** A Docker call whose output is read as state, refused with Docker's own message when it fails. */
 const probe = async (args) => {
@@ -243,6 +245,7 @@ const attemptIn =
         oomKilled: oomKilled === 'true',
         exitCode: Number(exitCode),
         stderr: started.stderr,
+        heapMessage: started.heapMessage,
       });
       if (status !== 'exited') {
         return `${outcome}; docker start said:\n${started.stderr}`;
@@ -283,12 +286,18 @@ const remove = async (requested) => {
   );
 };
 
-/** Waits until no Docker call is in flight, including the cleanup an interrupted attempt starts. */
+/**
+ * Waits until no create or remove is in flight, including one an interrupted
+ * attempt starts. Attached runs aren't waited for: removing their containers
+ * ends them, whether or not the command heeds a signal.
+ */
 const drain = async () => {
+  const pending = () =>
+    [...running].filter(([child]) => !child.attached).map(([, call]) => call);
   do {
-    await Promise.allSettled([...running.values()]);
+    await Promise.allSettled(pending());
     await new Promise((done) => setImmediate(done));
-  } while (running.size > 0);
+  } while (pending().length > 0);
 };
 
 /**
@@ -299,7 +308,12 @@ const cleanUp = async () => {
   const listed = await docker(
     ['ps', '-aq', '--no-trunc', '--filter', `label=isomer-floor=${runId}`],
     { cleanup: true }
-  ).catch(() => ({ status: 1, stdout: '' }));
+  ).catch((error) => ({ status: 1, stdout: '', stderr: String(error) }));
+  if (listed.status !== 0) {
+    process.stderr.write(
+      `Couldn't list this run's containers:\n${listed.stderr}\nRetry with: docker rm -f $(docker ps -aq --filter label=isomer-floor=${runId})\n`
+    );
+  }
   for (const id of listed.status === 0 ? listed.stdout.split('\n') : []) {
     if (id !== '') {
       created.add(id);
@@ -314,7 +328,15 @@ const describeHost = async (image) => {
     '--format',
     '{{.OSType}} {{.Architecture}}, {{.NCPU}} CPUs, {{.MemTotal}} bytes, kernel {{.KernelVersion}}',
   ]);
-  const { stdout: node } = await docker(['run', '--rm', image, 'node', '-v']);
+  const { stdout: node } = await docker([
+    'run',
+    '--rm',
+    '--label',
+    `isomer-floor=${runId}`,
+    image,
+    'node',
+    '-v',
+  ]);
   return `Docker ${info}; Node ${node} in \`scripts/container/Dockerfile\`, image \`${image.slice(0, 19)}\``;
 };
 
@@ -374,10 +396,13 @@ const main = async () => {
   }
   process.on('SIGINT', () => {
     if (shuttingDown) {
-      return;
+      process.stderr.write(
+        `Stopped before cleanup finished. Remove what's left with: docker rm -f $(docker ps -aq --filter label=isomer-floor=${runId})\n`
+      );
+      process.exit(130);
     }
     shuttingDown = true;
-    // Stop attached runs; let a create or remove in flight finish, so its container is known.
+    // Stop attached clients; let a create or remove in flight finish, so its container is known.
     for (const [child] of running) {
       if (child.attached) {
         child.kill('SIGTERM');

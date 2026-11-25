@@ -90,7 +90,7 @@ describe('classify', () => {
         ...exited,
         oomKilled: true,
         exitCode: 137,
-        stderr: 'JavaScript heap out of memory',
+        heapMessage: true,
       })
     ).toBe('oom');
   });
@@ -100,18 +100,19 @@ describe('classify', () => {
       classify({
         ...exited,
         exitCode: 134,
-        stderr: 'FATAL ERROR: Reached heap limit',
+        heapMessage: true,
       })
     ).toBe('heap');
   });
 
   it('refuses a kill the kernel did not report, and a heap message without an abort', () => {
     expect(classify({ ...exited, exitCode: 137 })).toMatch(/^exit 137/);
+    expect(classify({ ...exited, exitCode: 134 })).toMatch(/^exit 134/);
     expect(
       classify({
         ...exited,
         exitCode: 1,
-        stderr: 'JavaScript heap out of memory',
+        heapMessage: true,
       })
     ).toMatch(/^exit 1/);
   });
