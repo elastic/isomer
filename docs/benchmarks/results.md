@@ -152,3 +152,41 @@ The largest other packages in each entry's Node bundle, in KB:
 | `@elastic/isomer-charts-elastic`            | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
 | `@elastic/isomer-charts-elastic/engine`     | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
 | `@elastic/isomer-charts-elastic/node`       | `@elastic/distillate` 31, `@elastic/isomer-primitives-charts` 6, `stylis` 3          |
+
+## Drawing charts
+
+What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config; an engine row fails unless the engine draws every chart. A `resolve` row calls `resolveChart` once per chart. Every other row renders the `snapshot` surface, which validates again and may resolve a chart more than once, so its `Resolve, or snapshot` column is the whole surface: compare an engine row with the no-engine row over the same charts for what the engine adds. `Loaded RSS` is after loading and registering fonts, before the request's data is built; `Render RSS` is the peak above it. Per-chart times are medians; `All charts` runs from the first render's start to the last one's end. Each render starts in a new task, as a request does.
+
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `f974d52e`.
+
+| Scenario                         | Charts | Input values, largest | Peak RSS (MB) | Loaded RSS (MB) | Render RSS (MB) | Heap after (MB) | First chart (ms) | All charts (ms) | Validate (ms) | Resolve, or snapshot (ms) | PNG (ms) | PNG (KB) |
+| -------------------------------- | -----: | --------------------: | ------------: | --------------: | --------------: | --------------: | ---------------: | --------------: | ------------: | ------------------------: | -------: | -------: |
+| `charts:resolve`                 |     54 |                   400 |            95 |              82 |              13 |            18.5 |              167 |              37 |           0.2 |                       0.1 |          |          |
+| `charts:resolve-budget`          |      1 |                250000 |           256 |              82 |             173 |            35.5 |              578 |             417 |          81.4 |                     335.9 |          |          |
+| `charts:baseline`                |     54 |                   400 |           118 |              90 |              28 |            19.6 |              186 |              96 |           0.2 |                       0.6 |      0.5 |        5 |
+| `charts:budget`                  |      1 |                250000 |           401 |              90 |             310 |            36.2 |              998 |             823 |          80.4 |                     740.5 |      2.7 |        6 |
+| `charts-elastic:draw`            |     54 |                   400 |           186 |             129 |              57 |            39.5 |              425 |             329 |           0.3 |                       4.3 |          |          |
+| `charts-elastic:engine`          |     54 |                   400 |           286 |             134 |             152 |            40.1 |              438 |             678 |           0.3 |                       4.5 |      7.0 |       33 |
+| `charts-elastic:xy-quarter`      |      1 |                 62500 |           257 |             134 |             123 |            39.7 |              758 |             347 |          29.0 |                     258.4 |     59.6 |       71 |
+| `charts-elastic:xy-half`         |      1 |                124999 |           306 |             134 |             173 |            44.1 |              985 |             581 |          44.2 |                     463.8 |     74.7 |       69 |
+| `charts-elastic:budget-draw`     |      1 |                250000 |           442 |             129 |             313 |            52.6 |             1363 |             957 |          75.3 |                     881.2 |          |          |
+| `charts-elastic:budget-xy`       |      1 |                250000 |           471 |             134 |             338 |            53.0 |             1445 |            1032 |          73.0 |                     865.6 |     95.6 |       62 |
+| `charts-elastic:budget-grid`     |      1 |                249999 |           418 |             134 |             284 |            54.9 |             1403 |             992 |          65.1 |                     652.1 |    277.4 |      196 |
+| `charts-elastic:burst-limited`   |     16 |                   400 |           326 |             134 |             192 |            38.8 |              478 |             361 |           0.5 |                       8.0 |     26.4 |       77 |
+| `charts-elastic:burst-unlimited` |     16 |                   400 |           370 |             134 |             236 |            38.8 |              644 |             297 |           0.4 |                       8.0 |    140.2 |       77 |
+| `charts-elastic:one`             |      1 |                    58 |           183 |             134 |              48 |            35.5 |              479 |              64 |           3.2 |                      40.4 |     18.9 |       27 |
+
+- `charts:resolve`: every metric and xy example, light and dark: validate and resolve each Scene
+- `charts:resolve-budget`: one xy line at the pack's whole input budget: validate and resolve its Scene
+- `charts:baseline`: every metric and xy example, light and dark, to PNG at 1× with no engine: the summary fallback
+- `charts:budget`: one xy line at the pack's whole input budget, to PNG at 2× with no engine
+- `charts-elastic:draw`: every metric and xy example, light and dark: validate, resolve and draw to snapshot markup
+- `charts-elastic:engine`: every metric and xy example, light and dark, to PNG at 1×
+- `charts-elastic:xy-quarter`: one xy line at a quarter of the pack's input budget, to PNG at 2×
+- `charts-elastic:xy-half`: one xy line at half the pack's input budget, to PNG at 2×
+- `charts-elastic:budget-draw`: one xy line at the pack's whole input budget: validate, resolve and draw to snapshot markup
+- `charts-elastic:budget-xy`: one xy line at the pack's whole input budget, to PNG at 2×
+- `charts-elastic:budget-grid`: 40 xy panels in a grid sharing the whole input budget, to PNG at 2×
+- `charts-elastic:burst-limited`: 16 xy PNGs at 2× requested at once, through a limiter of 2
+- `charts-elastic:burst-unlimited`: 16 xy PNGs at 2× requested at once, no limiter
+- `charts-elastic:one`: one cold xy PNG at 2×, the one-off case

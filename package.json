@@ -54,8 +54,7 @@
     "verify:packed": "pnpm check:export-parity && pnpm check:exports && pnpm check:declarations && pnpm check:pack-contents && pnpm check:module-graph && pnpm check:pack-consumer",
     "semantic-release": "semantic-release",
     "prepare": "husky",
-    "bench": "pnpm --filter @elastic/isomer-benchmarks bench",
-    "bench:charts": "node scripts/bench_charts.cjs"
+    "bench": "pnpm --filter @elastic/isomer-benchmarks bench"
   },
   "devDependencies": {
     "@babel/cli": "^7.29.7",

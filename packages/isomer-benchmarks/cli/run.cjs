@@ -10,7 +10,7 @@
 // committed baselines.
 //
 //   node cli/run.cjs <suite> [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
-//   node cli/run.cjs <suite> --check
+//   node cli/run.cjs <suite> --check [--config <file>]... [--runs 3]
 //   node cli/run.cjs report [--check]
 //   node cli/run.cjs smoke
 //
@@ -18,12 +18,12 @@
 // `pnpm --filter`. Run `pnpm build` first.
 
 const { execFileSync, spawnSync } = require('node:child_process');
-const { readFileSync, writeFileSync } = require('node:fs');
+const { existsSync, readFileSync, writeFileSync } = require('node:fs');
 const { dirname, join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '..');
 const REPO = resolve(PACKAGE, '../..');
-const SUITES = ['load', 'synthetic', 'size'];
+const SUITES = ['load', 'synthetic', 'size', 'charts'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
 /** What a child writes its one JSON record to, apart from anything a package logs. */
 const RECORD_FD = 3;
@@ -49,8 +49,15 @@ const VERSIONED = [
   'zod',
 ];
 
-/** Where `pnpm --filter` was started, so relative paths mean what the user typed. */
-const startedIn = process.env.INIT_CWD ?? process.cwd();
+/**
+ * Where the command was started, so relative paths mean what the user typed:
+ * through `pnpm --filter` into this package that is `INIT_CWD`, and from
+ * another package's script, that package.
+ */
+const startedIn =
+  process.cwd() === PACKAGE
+    ? (process.env.INIT_CWD ?? process.cwd())
+    : process.cwd();
 const fromStart = (path) => resolve(startedIn, path);
 
 const helpers = () => require(join(PACKAGE, 'lib/cjs/index.js'));
@@ -120,8 +127,12 @@ const option = (args, name, fallback) => {
 const options = (args, name) =>
   args.flatMap((arg, at) => (arg === name ? [args[at + 1]] : []));
 
-const runsOption = (args) => {
-  const raw = option(args, '--runs', '5');
+const RUNS = 5;
+/** Fewer than a report's, so a gate stays quick; a median of 3 still drops one outlier. */
+const CHECK_RUNS = 3;
+
+const runsOption = (args, fallback) => {
+  const raw = option(args, '--runs', String(fallback));
   const runs = Number(raw);
   if (!Number.isInteger(runs) || runs < 1) {
     throw new Error(`--runs ${raw}: a whole number of runs, at least 1`);
@@ -200,12 +211,19 @@ const measure = async (suiteName, { runs, configs, names }) => {
 
 const runSuite = async (suiteName, args) => {
   const suite = suiteOf(suiteName);
-  const runs = suite.deterministic ? 1 : runsOption(args);
-  const passed = options(args, '--config');
   const check = args.includes('--check');
-  if (check && (passed.length > 0 || args.includes('--scenarios'))) {
+  const runs = suite.deterministic
+    ? 1
+    : runsOption(args, check ? CHECK_RUNS : RUNS);
+  const passed = options(args, '--config');
+  if (check && args.includes('--write')) {
     throw new Error(
-      "--check holds this repository's packs to bounds/; it takes no --config or --scenarios"
+      '--check runs only the bounded scenarios, so it takes no --write: a baseline needs every row'
+    );
+  }
+  if (check && args.includes('--scenarios')) {
+    throw new Error(
+      '--check runs the bounded scenarios; it takes no --scenarios'
     );
   }
   if (passed.length > 0 && !suite.usesConfigs) {
@@ -218,27 +236,29 @@ const runSuite = async (suiteName, args) => {
           : DEFAULT_CONFIGS.map((path) => join(REPO, path))
       )
     : [];
-  const bounds = check ? boundsFor(suiteName) : {};
+  const bounds = check ? boundsFor(suiteName, configs, passed.length > 0) : {};
   if (check && suite.mustBound !== undefined) {
+    // With `--config`, only those packs' rows: the SDK's own are held from `bounds/`.
     const missing = helpers().unbounded(
       Object.fromEntries(
-        (await suite.scenarios(configs)).map((scenario) => [
-          scenario.name,
-          suite.mustBound(scenario),
-        ])
+        (await suite.scenarios(configs))
+          .filter(({ core }) => !(passed.length > 0 && core))
+          .map((scenario) => [scenario.name, suite.mustBound(scenario)])
       ),
       bounds
     );
     if (missing.length > 0) {
       throw new Error(
-        `${suiteName}: no bound for ${missing.join(', ')}; add each to bounds/${suiteName}.json`
+        `${suiteName}: no bound for ${missing.join(', ')}; add each to bounds/${suiteName}.json or its pack's config`
       );
     }
   }
   const { scenarios, records } = await measure(suiteName, {
     runs,
     configs,
-    names: option(args, '--scenarios', undefined)?.split(','),
+    names: check
+      ? Object.keys(bounds)
+      : option(args, '--scenarios', undefined)?.split(','),
   });
 
   const { describeEnvironment, summarize } = helpers();
@@ -276,7 +296,7 @@ const runSuite = async (suiteName, args) => {
     writeFileSync(fromStart(write), `${JSON.stringify(result, null, 2)}\n`);
   }
   if (check) {
-    holdToBounds(suiteName, result, bounds);
+    holdToBounds(result, bounds);
     return;
   }
   process.stdout.write(
@@ -286,12 +306,44 @@ const runSuite = async (suiteName, args) => {
   );
 };
 
-const boundsFor = (suiteName) =>
-  JSON.parse(
-    readFileSync(join(PACKAGE, 'bounds', `${suiteName}.json`), 'utf8')
-  );
+/**
+ * What `--check` holds a suite to: each config's own bounds, and with no
+ * `--config`, also this package's `bounds/<suite>.json`.
+ */
+const boundsFor = (suiteName, configs, passedConfigs) => {
+  const file = join(PACKAGE, 'bounds', `${suiteName}.json`);
+  const own =
+    !passedConfigs && existsSync(file)
+      ? [JSON.parse(readFileSync(file, 'utf8'))]
+      : [];
+  // A config's bounds were held to the same rule when it loaded.
+  const problem = own.map(helpers().boundsProblem).find(Boolean);
+  if (problem !== undefined) {
+    throw new Error(`bounds/${suiteName}.json: ${problem}`);
+  }
+  const bounds = {};
+  for (const each of [
+    ...own,
+    ...configs.map(({ bounds: mine }) => mine?.[suiteName] ?? {}),
+  ]) {
+    for (const [scenario, measures] of Object.entries(each)) {
+      for (const [key, bound] of Object.entries(measures)) {
+        if (bounds[scenario]?.[key] !== undefined) {
+          throw new Error(`${scenario} ${key}: bounded twice`);
+        }
+        bounds[scenario] = { ...bounds[scenario], [key]: bound };
+      }
+    }
+  }
+  if (Object.keys(bounds).length === 0) {
+    throw new Error(
+      `${suiteName}: nothing to check; no bounds name this suite`
+    );
+  }
+  return bounds;
+};
 
-const holdToBounds = (suiteName, { summary }, bounds) => {
+const holdToBounds = ({ summary }, bounds) => {
   const checks = helpers().checkBounds(summary, bounds);
   for (const { scenario, key, median, bound, ok } of checks) {
     process.stdout.write(
@@ -300,9 +352,7 @@ const holdToBounds = (suiteName, { summary }, bounds) => {
   }
   const over = checks.filter(({ ok }) => !ok).length;
   if (over > 0) {
-    process.stderr.write(
-      `${over} of ${checks.length} over their bound in bounds/${suiteName}.json.\n`
-    );
+    process.stderr.write(`${over} of ${checks.length} over their bound.\n`);
     process.exitCode = 1;
   }
 };
@@ -325,9 +375,9 @@ const smoke = async () => {
 
 const suiteSection = (result) => {
   const { describeEnvironmentLine, summarize, toMarkdown } = helpers();
-  const { suite, about, environment, runsPerScenario, scenarios, measures } =
-    result;
-  // Derived from the raw runs, so a saved summary can't drift from them.
+  const { suite, environment, runsPerScenario, scenarios, measures } = result;
+  // From the suite's code and the raw runs, so neither a saved description nor a saved summary drifts.
+  const { about } = suiteOf(suite);
   const summary = summarize(result.runs, scenarios, measures);
   const notes = suiteOf(suite).notes?.({ ...result, summary }) ?? [];
   return [

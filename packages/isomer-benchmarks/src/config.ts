@@ -5,6 +5,8 @@
  * 2.0.
  */
 
+import { type Bounds, boundsProblem } from './bounds';
+
 /**
  * What the benchmarks measure for one primitive pack, or anything else a host
  * loads beside the SDK, such as a chart engine. A config is plain data: the
@@ -21,9 +23,20 @@ export interface BenchConfig {
    * built JavaScript external. Defaults to `built`.
    */
   build?: 'built' | 'source';
+  /**
+   * Marks a charts pack for the `charts` suite, which draws its examples with
+   * no engine. With `engine`, a module relative to the config exporting
+   * `{ createRenderers, stylesheet? }`, it draws them with that engine instead.
+   */
+  charts?: { engine?: string };
+  /** Per suite, what `bench <suite> --check` holds this config's scenarios to. */
+  bounds?: Record<string, Bounds>;
   /** The entries that run only on Node, so `size` gives them no browser bundle. */
   nodeOnly?: readonly string[];
 }
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defineBenchConfig = (config: BenchConfig): BenchConfig => config;
 
@@ -35,7 +48,10 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   if (typeof value !== 'object' || value === null) {
     return 'a config exports an object';
   }
-  const { name, entries, build, nodeOnly } = value as Partial<BenchConfig>;
+  const { name, entries, build, nodeOnly, charts, bounds } = value as Record<
+    string,
+    unknown
+  >;
   if (typeof name !== 'string' || !/^[a-z0-9-]+$/.test(name)) {
     return '`name` is lowercase letters, digits and dashes';
   }
@@ -59,6 +75,25 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
     )
   ) {
     return '`nodeOnly` lists some of `entries`';
+  }
+  if (
+    charts !== undefined &&
+    !(
+      isRecord(charts) &&
+      (charts.engine === undefined ||
+        (typeof charts.engine === 'string' && charts.engine.length > 0))
+    )
+  ) {
+    return '`charts` is an object whose `engine`, if any, is a path';
+  }
+  if (
+    bounds !== undefined &&
+    !(
+      isRecord(bounds) &&
+      Object.values(bounds).every((each) => boundsProblem(each) === undefined)
+    )
+  ) {
+    return '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0';
   }
   return undefined;
 };

@@ -77,7 +77,7 @@
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "bench:check": "node ../../scripts/bench_charts.cjs --engine bench/engine.cjs --check"
+    "bench:check": "node ../isomer-benchmarks/cli/run.cjs charts --check --config isomer-bench.config.cjs"
   },
   "dependencies": {
     "@elastic/isomer-primitives-charts": "workspace:*"

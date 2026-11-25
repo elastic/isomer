@@ -117,6 +117,7 @@ const scenarios = async (configs) => [
   ...CORE.map((entry) => ({
     name: entry,
     about: '',
+    core: true,
     spec: { base: PACKAGE, entry, nodeOnly: entry.endsWith('image-takumi') },
   })),
   ...configs.flatMap(({ dir, entries, nodeOnly = [] }) =>

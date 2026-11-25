@@ -18,6 +18,7 @@ This package is private and not published to npm; it runs from this repository.
 pnpm build
 pnpm --filter @elastic/isomer-benchmarks bench load
 pnpm --filter @elastic/isomer-benchmarks bench synthetic
+pnpm --filter @elastic/isomer-benchmarks bench charts
 ```
 
 See [the docs](docs/index.md) for what each suite claims, [the results](docs/results.md), and [sizing a host](docs/sizing.md).

@@ -116,7 +116,7 @@ jobs:
       - uses: ./.github/actions/playwright-chromium
       - run: pnpm check:studio-consumer
 
-  # Peak RSS of server-side chart PNGs: the charts pack's and each chart engine's `bench:check`, through `scripts/bench_charts.cjs`; bundle bytes per public entry against the benchmarks' bounds; and the benchmarks results page against its baselines, with one run of each suite.
+  # Peak RSS of server-side chart PNGs: the charts pack's and each chart engine's `bench:check`, through the benchmarks' `charts` suite; bundle bytes per public entry against the benchmarks' bounds; and the benchmarks results page against its baselines, with one run of each suite.
   memory:
     name: memory
     runs-on: ubuntu-latest
