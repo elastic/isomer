@@ -12,14 +12,16 @@
 
 import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, rmSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { build } from 'esbuild';
 
 import {
+  bundledPackagesOf,
   forbiddenReachable,
   matchesForbidden,
+  requiresBundled,
   RULES,
 } from './module_graph_rules.js';
 import { specifiersIn as specifiersInSource } from './specifiers.js';
@@ -149,6 +151,29 @@ try {
   }
 } finally {
   rmSync(dirname(stylesheetBundle), { force: true, recursive: true });
+}
+
+// The SDK's CommonJS build carries the ESM-only Markdown packages in one bundled file (`build:bundle`); a CommonJS entry that still requires one makes Node load them as separate ES modules again.
+const sdk = manifests.get('@elastic/isomer-sdk');
+const bundledMarkdown = await bundledPackagesOf(
+  join(sdk.dir, 'src/render/markdown/parsers.ts')
+);
+const sdkCjsEntries = [
+  ...new Set(
+    Object.values(sdk.manifest.exports)
+      .map((target) => target?.require)
+      .filter((target) => target?.endsWith('.js'))
+      .map((target) => join(sdk.dir, target))
+  ),
+];
+checked += sdkCjsEntries.length;
+for (const { input, specifier } of await requiresBundled(
+  sdkCjsEntries,
+  bundledMarkdown
+)) {
+  violations.push(
+    `${relative(repoRoot, resolve(input))} requires "${specifier}", which the SDK's \`build:bundle\` inlines; is the CommonJS build missing that step?`
+  );
 }
 
 if (violations.length > 0) {

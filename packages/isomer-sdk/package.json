@@ -129,9 +129,10 @@
     "access": "public"
   },
   "scripts": {
-    "build": "pnpm build:clean && pnpm build:compile && pnpm build:compile:esm && pnpm build:types && pnpm copy-files",
+    "build": "pnpm build:clean && pnpm build:compile && pnpm build:bundle && pnpm build:compile:esm && pnpm build:types && pnpm copy-files",
     "build:clean": "rimraf lib/",
     "build:compile": "NODE_ENV=production babel src --out-dir=lib/cjs --extensions .js,.ts,.tsx --ignore \"**/*.test.ts,**/*.fixtures.ts\"",
+    "build:bundle": "node build/bundle_parsers.mjs",
     "build:compile:esm": "tsc --project ./tsconfig.esm.json",
     "build:types": "NODE_ENV=production tsc --project tsconfig.types.json",
     "copy-files": "cp src/testing/import_native.cjs lib/cjs/testing/import_native.cjs",
@@ -156,6 +157,7 @@
   },
   "devDependencies": {
     "@types/mdast": "^4.0.4",
+    "esbuild": "0.28.2",
     "parse5": "^7.3.0"
   }
 }

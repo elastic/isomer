@@ -9,15 +9,14 @@
 // parse it shares with the Slack fallback.
 
 import type { Definition, Nodes, Parents, Root } from 'mdast';
-import { fromMarkdown } from 'mdast-util-from-markdown';
-import { gfmFromMarkdown } from 'mdast-util-gfm';
-import { gfm } from 'micromark-extension-gfm';
 
 import {
   BLOCKED_HREF,
   sanitizeParsedAssetUrl,
   sanitizeParsedNavigationHref,
 } from '../../validate/url';
+
+import { fromMarkdown, gfm, gfmFromMarkdown } from './parsers';
 
 // Escapes label characters that could close a `[...]` early and smuggle in a
 // hostile destination of their own.

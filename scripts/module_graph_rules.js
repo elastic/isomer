@@ -88,3 +88,43 @@ export const forbiddenReachable = async (entryFile, forbidden) =>
   [...(await reachableBareSpecifiers(entryFile))].filter((specifier) =>
     forbidden.some((rule) => matchesForbidden(specifier, rule))
   );
+
+/** The packages an esbuild bundle drew from `node_modules`, read from its metafile. */
+export const bundledPackagesOf = async (entryFile) => {
+  const { metafile } = await build({
+    entryPoints: [entryFile],
+    bundle: true,
+    write: false,
+    metafile: true,
+    platform: 'node',
+    logLevel: 'silent',
+  });
+  return new Set(
+    Object.keys(metafile.inputs).flatMap(
+      (input) =>
+        input.match(/.*node_modules\/((?:@[^/]+\/)?[^/]+)\//)?.slice(1) ?? []
+    )
+  );
+};
+
+const packageOf = (specifier) => specifier.match(/^(?:@[^/]+\/)?[^/]+/)?.[0];
+
+/** Bare specifiers the CommonJS graph from `entryFiles` still loads from one of `bundled`, as esbuild parses each `require`. */
+export const requiresBundled = async (entryFiles, bundled) => {
+  const { metafile } = await build({
+    entryPoints: entryFiles,
+    bundle: true,
+    write: false,
+    metafile: true,
+    outdir: 'out',
+    packages: 'external',
+    platform: 'node',
+    format: 'cjs',
+    logLevel: 'silent',
+  });
+  return Object.entries(metafile.inputs).flatMap(([input, { imports }]) =>
+    imports
+      .filter(({ external, path }) => external && bundled.has(packageOf(path)))
+      .map(({ path }) => ({ input, specifier: path }))
+  );
+};
