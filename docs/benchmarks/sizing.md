@@ -69,17 +69,17 @@ Size a render process for the largest chart it accepts. The input budget bounds 
 
 What takumi costs on its own, drawing the slides pack's 33-slide `isomer-every-surface` deck with the theme's 10 font faces registered ([Rasterizing with takumi](results.md#rasterizing-with-takumi)):
 
-- **Loading takumi is cheap.** A process that has loaded it, created a backend and drawn an empty SVG holds about 54 MB RSS. Registering the 10 faces on that first draw adds about 1 MB and a few milliseconds.
-- **A PNG is quick once fonts are in.** One 1920×1080 slide at 1× takes about 15 ms cold and about 6 ms after that. At 2× each takes about 17 ms, and the whole deck peaks at about 140 MB against about 90 MB at 1×. SVG is cheaper still, about 1.5 ms a slide.
-- **The first PDF starts a worker.** A cold one-page PDF takes about 100 ms in all and raises peak RSS by about 70 MB. That includes starting the worker, its WebAssembly engine and its own copy of the fonts, as well as drawing the page; the suite doesn't separate them. The whole deck as one PDF takes about 205 ms and peaks at about 165 MB, so each page past the first costs a few milliseconds. Later PDFs of the deck take about 70 ms.
-- **`close()` gives some of that back.** After the deck's PDF, closing the worker brought RSS down by about 26 MB on macOS, which seldom returns freed pages to the system.
+- **Loading takumi is cheap.** A process that has loaded it, created a backend and drawn an empty SVG holds about 53 MB RSS. Registering the 10 faces on that first draw adds about 1 MB and a few milliseconds.
+- **A PNG is quick once fonts are in.** One 1920×1080 slide at 1× takes about 15 ms cold and about 6 ms after that. At 2× each takes about 18 ms, and the whole deck peaks at about 140 MB against about 90 MB at 1×. SVG is cheaper still, about 1.5 ms a slide.
+- **The first PDF starts a worker.** A cold one-page PDF takes about 100 ms in all and raises peak RSS by about 70 MB. That includes starting the worker, its WebAssembly engine and its own copy of the fonts, as well as drawing the page; the suite doesn't separate them. The whole deck as one PDF takes about 210 ms and peaks at about 165 MB, so each page past the first costs a few milliseconds. Later PDFs of the deck take about 70 ms.
+- **`close()` gives some of that back.** After the deck's PDF, closing the worker brought RSS down by about 27 MB on macOS, which seldom returns freed pages to the system.
 
 ### Under repeated draws
 
 Over 20 passes of the deck, RSS keeps rising ([`png-repeat`](results.md#rasterizing-with-takumi), [`pdf-repeat`](results.md#rasterizing-with-takumi)):
 
 - **PNG:** about 24 MB past the first pass after 660 PNGs, about 40 KB each, steadily. Turning takumi's resource cache off with `cacheMaxBytes: 0` makes no difference for this deck, which has no images, so the growth isn't that cache.
-- **PDF:** about 70 MB past the first PDF after 20. Separate runs of 2 and 10 PDFs grew by about 27 and 52 MB, so it slowed. The growth slowed over these 20 PDFs but hadn't stopped, and the suite doesn't measure the worker's WebAssembly memory apart from the rest, so don't assume it levels off at any given size.
+- **PDF:** about 65 MB past the first PDF after 20. Separate runs of 2 and 10 PDFs grew by about 27 and 52 MB, so it slowed. The growth slowed over these 20 PDFs but hadn't stopped, and the suite doesn't measure the worker's WebAssembly memory apart from the rest, so don't assume it levels off at any given size.
 
 Both were measured on macOS only. A long-running render process should watch its RSS, and a process that only draws PDFs now and then can `close()` the worker between them.
 
