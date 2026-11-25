@@ -289,4 +289,22 @@ describe('scene cache', () => {
     ]);
     expect(drawn).toEqual([true, false]);
   });
+
+  it.each(
+    examples.filter(
+      ({ label }) => !/^(legacyMetric|grid|unsupported) /.test(label)
+    )
+  )(
+    'resolves the same Scene at any size, but for its `size`: $label',
+    ({ composition }) => {
+      const node = composition.body[0] as ChartNode;
+      const size = { width: 640, height: 320 };
+      const cache = createSceneCache();
+      for (const scheme of ['light', 'dark'] as const) {
+        expect(
+          JSON.stringify(cache.resolve(node, { scheme, size }, resolveChart))
+        ).toBe(JSON.stringify(resolveChart(node, { scheme, size })));
+      }
+    }
+  );
 });
