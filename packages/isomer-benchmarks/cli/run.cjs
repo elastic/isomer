@@ -96,15 +96,22 @@ const versionFrom = (base, name) => {
   }
 };
 
-const commit = () => {
+const git = (...args) => {
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: REPO,
-      encoding: 'utf8',
-    }).trim();
+    return execFileSync('git', args, { cwd: REPO, encoding: 'utf8' }).trim();
   } catch {
     return null;
   }
+};
+
+/** The commit checked out, and whether tracked files differ from it. */
+const revision = () => {
+  const commit = git('rev-parse', 'HEAD');
+  const status = git('status', '--porcelain', '--untracked-files=no');
+  return {
+    commit,
+    ...(status === null ? {} : { uncommitted: status !== '' }),
+  };
 };
 
 // The child gets only the scenario's spec, never a config, so nothing a
@@ -246,7 +253,7 @@ const runSuite = async (suiteName, args) => {
     suite: suiteName,
     about: suite.about,
     environment: describeEnvironment({
-      commit: commit(),
+      ...revision(),
       packages: Object.fromEntries([
         ...VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)]),
         // takumi's own dependencies resolve only from its package.

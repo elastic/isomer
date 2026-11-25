@@ -47,6 +47,8 @@ export interface Environment {
     UV_THREADPOOL_SIZE: string | null;
   };
   commit: string | null;
+  /** True when tracked files differed from `commit`, so it alone can't reproduce the run. Absent in older results. */
+  uncommitted?: boolean;
   /** Resolved versions of the packages measured and their heavy dependencies. */
   packages: Record<string, string>;
 }
@@ -150,9 +152,13 @@ const cgroupMemoryLimitMb = (): number | null => {
 
 export const describeEnvironment = ({
   commit,
+  uncommitted,
   packages,
   nodeFlags,
-}: Pick<Environment, 'commit' | 'packages' | 'nodeFlags'>): Environment => ({
+}: Pick<
+  Environment,
+  'commit' | 'uncommitted' | 'packages' | 'nodeFlags'
+>): Environment => ({
   node: process.version,
   v8: process.versions.v8,
   platform: process.platform,
@@ -169,6 +175,7 @@ export const describeEnvironment = ({
     UV_THREADPOOL_SIZE: process.env.UV_THREADPOOL_SIZE ?? null,
   },
   commit,
+  ...(uncommitted === undefined ? {} : { uncommitted }),
   packages,
 });
 
@@ -182,6 +189,7 @@ export const describeEnvironmentLine = ({
   cgroupMemoryLimitMb: limit,
   env: { NODE_ENV: nodeEnv, NODE_OPTIONS: nodeOptions },
   commit,
+  uncommitted,
 }: Environment): string =>
   [
     `Node ${node}`,
@@ -191,7 +199,11 @@ export const describeEnvironmentLine = ({
     ...(limit === null ? [] : [`cgroup limit ${Math.round(limit)} MB`]),
     `NODE_ENV ${nodeEnv ?? 'unset'}`,
     ...(nodeOptions === null ? [] : [`NODE_OPTIONS \`${nodeOptions}\``]),
-    ...(commit === null ? [] : [`commit \`${commit.slice(0, 8)}\``]),
+    ...(commit === null
+      ? []
+      : [
+          `commit \`${commit.slice(0, 8)}\`${uncommitted === true ? ' with uncommitted changes' : ''}`,
+        ]),
   ].join(', ');
 
 /** Escapes text for a Markdown table cell. */

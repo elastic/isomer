@@ -9,6 +9,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   cgroupLimitBytes,
+  describeEnvironment,
+  describeEnvironmentLine,
   median,
   summarize,
   tableText,
@@ -113,5 +115,26 @@ describe('tableText', () => {
 
   it('escapes a backslash, so one before a pipe cannot cancel its escape', () => {
     expect(tableText('a\\|b')).toBe('a\\\\\\|b');
+  });
+});
+
+describe('describeEnvironmentLine', () => {
+  const line = (uncommitted?: boolean) =>
+    describeEnvironmentLine(
+      describeEnvironment({
+        commit: '0123456789abcdef',
+        ...(uncommitted === undefined ? {} : { uncommitted }),
+        packages: {},
+        nodeFlags: [],
+      })
+    );
+
+  it('says when the run had uncommitted changes', () => {
+    expect(line(true)).toContain('commit `01234567` with uncommitted changes');
+  });
+
+  it('names the commit alone for a clean run or an older result', () => {
+    expect(line(false)).toMatch(/commit `01234567`$/);
+    expect(line()).toMatch(/commit `01234567`$/);
   });
 });

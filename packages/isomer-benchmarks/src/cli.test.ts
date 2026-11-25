@@ -224,7 +224,7 @@ describe('bench takumi', () => {
       '1',
       '--json',
       '--scenarios',
-      'backend,png-deck,pdf-repeat'
+      'backend,png-deck,pdf-repeat,pdf-page'
     );
     expect(stderr).toBe('');
     expect(status).toBe(0);
@@ -237,7 +237,8 @@ describe('bench takumi', () => {
     expect(row('backend')).not.toHaveProperty('inputKb');
     expect(row('png-deck')).toMatchObject({ outputs: 33 });
     expect(row('png-deck')).not.toHaveProperty('growthMb');
-    expect(row('pdf-repeat')).toMatchObject({ outputs: 20 });
+    expect(row('pdf-repeat')).toMatchObject({ outputs: 20, pages: 33 });
     expect(row('pdf-repeat')).toHaveProperty('growthMb');
+    expect(row('pdf-page')).toMatchObject({ outputs: 1, pages: 1 });
   }, 120_000);
 });

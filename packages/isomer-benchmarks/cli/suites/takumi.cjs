@@ -8,7 +8,6 @@
 // What takumi costs on its own, drawing input the slides pack's `snapshot`
 // surface made in the parent: a child loads only takumi and its fonts.
 
-const { createHash } = require('node:crypto');
 const {
   existsSync,
   mkdirSync,
@@ -106,8 +105,9 @@ const ROWS = [
   },
 ];
 
-/** The deck's `snapshot` input and the fonts its theme names, made once in the parent. */
+/** The deck's `snapshot` input, one file per shape a row draws, and the fonts its theme names; made in the parent. */
 const prepare = async (picked) => {
+  const { createHash } = require('node:crypto');
   const requireFrom = createRequire(join(SLIDES, 'noop.js'));
   const { createIsomerRuntime } = requireFrom('@elastic/isomer-runtime');
   const { slideDeckFrame, slideFontFaces, slidesPack } = requireFrom(
@@ -136,48 +136,59 @@ const prepare = async (picked) => {
       ),
     };
   });
-  const strip = ({ html, css, width, height, heightMode }) => ({
-    html,
-    css,
-    width,
-    height,
-    heightMode,
-  });
-  const pagesOf = ({ pages, css, width, height, heightMode }) => ({
-    pages: pages.map(({ html }) => ({ html })),
-    css,
-    width,
-    height,
-    heightMode,
-  });
-  const content = JSON.stringify({
-    deck: DECK,
-    slides: slides.map((slide) =>
-      strip(snapshot.render(slide, { onValidationError: 'collect' }))
-    ),
-    deckPages: pagesOf(
-      snapshot.renderPages(slides, { onValidationError: 'collect' })
-    ),
-    firstPage: pagesOf(
-      snapshot.renderPages(slides.slice(0, 1), {
-        onValidationError: 'collect',
-      })
-    ),
-  });
+  const collect = { onValidationError: 'collect' };
+  const image = (slide) => {
+    const { html, css, width, height, heightMode } = snapshot.render(
+      slide,
+      collect
+    );
+    return { html, css, width, height, heightMode };
+  };
+  const paged = (list) => {
+    const { pages, css, width, height, heightMode } = snapshot.renderPages(
+      list,
+      collect
+    );
+    return {
+      pages: pages.map(({ html }) => ({ html })),
+      css,
+      width,
+      height,
+      heightMode,
+    };
+  };
   // Named for its content and moved into place whole, so a concurrent run never reads it half written.
-  const input = join(
-    CACHE,
-    `${DECK}-${createHash('sha256').update(content).digest('hex').slice(0, 16)}.json`
-  );
-  if (!existsSync(input)) {
-    mkdirSync(CACHE, { recursive: true });
-    const partial = `${input}.${process.pid}.tmp`;
-    writeFileSync(partial, content);
-    renameSync(partial, input);
-  }
+  const write = (name, value) => {
+    const content = JSON.stringify(value);
+    const file = join(
+      CACHE,
+      `${DECK}-${name}-${createHash('sha256').update(content).digest('hex').slice(0, 16)}.json`
+    );
+    if (!existsSync(file)) {
+      mkdirSync(CACHE, { recursive: true });
+      const partial = `${file}.${process.pid}.tmp`;
+      writeFileSync(partial, content);
+      renameSync(partial, file);
+    }
+    return file;
+  };
+  const inputs = {};
+  const inputFor = ({ work, slides: count }) => {
+    if (work === 'none') {
+      return undefined;
+    }
+    const shape = `${work === 'pdf' ? 'pages' : 'images'}-${count === 1 ? 'first' : 'all'}`;
+    inputs[shape] ??= write(
+      shape,
+      work === 'pdf'
+        ? paged(slides.slice(0, count))
+        : slides.slice(0, count).map(image)
+    );
+    return inputs[shape];
+  };
   return picked.map((scenario) => ({
     ...scenario,
-    spec: { ...scenario.spec, input, fonts },
+    spec: { ...scenario.spec, input: inputFor(scenario.spec), fonts },
   }));
 };
 
@@ -200,7 +211,6 @@ const run = async ({
   work,
   fonts: faces,
   register = true,
-  slides: count,
   scale = 1,
   repeat = 1,
   cacheMaxBytes,
@@ -212,7 +222,7 @@ const run = async ({
     require.resolve('@elastic/isomer-image-takumi', { paths: [PACKAGE] })
   );
   // Its own file, since the package's main entry would load the SDK too.
-  const { limit } = require(join(PACKAGE, 'lib/cjs/limit.js'));
+  const { timeDraws } = require(join(PACKAGE, 'lib/cjs/time_draws.js'));
   const fonts = register
     ? faces.map(({ file, ...face }) => ({
         ...face,
@@ -223,47 +233,34 @@ const run = async ({
     fonts,
     ...(cacheMaxBytes === undefined ? {} : { cacheMaxBytes }),
   });
+  // Read before the sample, so `Loaded RSS` holds the row's own input, as a host holds a request's.
+  const data =
+    input === undefined ? null : JSON.parse(readFileSync(input, 'utf8'));
   const loadedRss = settledRss();
 
-  // The rows that draw nothing never read the deck.
-  const data = work === 'none' ? null : JSON.parse(readFileSync(input, 'utf8'));
-  const slides = data?.slides.slice(0, count);
-  const pages = count === 1 ? data?.firstPage : data?.deckPages;
   const bytes = (text) => Buffer.byteLength(text, 'utf8');
   const inputKb =
     data === null
       ? undefined
       : (work === 'pdf'
-          ? bytes(pages.css) +
-            pages.pages.reduce((n, { html }) => n + bytes(html), 0)
-          : slides.reduce(
+          ? bytes(data.css) +
+            data.pages.reduce((n, { html }) => n + bytes(html), 0)
+          : data.reduce(
               (n, { html, css }) => n + bytes(html) + bytes(css),
               0
             )) / 1024;
+  const draws = {
+    png: () => data.map((slide) => () => takumi.png(slide, { scale })),
+    svg: () => data.map((slide) => () => takumi.svg(slide)),
+    pdf: () => [
+      () => takumi.pdf(data, { metadata: { creationDate: '2026-01-01' } }),
+    ],
+  };
 
   const times = [];
   let outKb = 0;
   let outputs = 0;
   let firstMs;
-  const timed = async (draw) => {
-    const from = process.hrtime.bigint();
-    const out = await draw();
-    times.push(ms(from));
-    outKb = Math.max(
-      outKb,
-      (typeof out === 'string' ? bytes(out) : out.length) / 1024
-    );
-    outputs += 1;
-    firstMs ??= ms(started);
-  };
-  const draws = {
-    png: () => slides.map((slide) => () => takumi.png(slide, { scale })),
-    svg: () => slides.map((slide) => () => takumi.svg(slide)),
-    pdf: () => [
-      () => takumi.pdf(pages, { metadata: { creationDate: '2026-01-01' } }),
-    ],
-  };
-
   let allMs = 0;
   let afterFirstPass;
   if (work === 'none') {
@@ -272,19 +269,22 @@ const run = async ({
     firstMs = ms(started);
   } else {
     for (let pass = 0; pass < repeat; pass += 1) {
-      const batch = draws[work]();
       const passStart = process.hrtime.bigint();
-      if (inFlight === undefined) {
-        for (const draw of batch) {
-          await timed(draw);
-        }
-      } else {
-        const limited =
-          inFlight === 'all' ? (each) => each() : limit(inFlight, batch.length);
-        // Timed from the request, so a limited row's time includes its wait in the limiter.
-        await Promise.all(batch.map((draw) => timed(() => limited(draw))));
-      }
+      const results = await timeDraws(
+        // Each output is reduced to its size at once, so no pass holds its outputs.
+        draws[work]().map((draw) => async () => {
+          const out = await draw();
+          firstMs ??= ms(started);
+          return (typeof out === 'string' ? bytes(out) : out.length) / 1024;
+        }),
+        { inFlight }
+      );
       allMs += ms(passStart);
+      for (const { value: kb, ms: each } of results) {
+        times.push(each);
+        outputs += 1;
+        outKb = Math.max(outKb, kb);
+      }
       if (pass === 0 && repeat > 1) {
         afterFirstPass = settledRss();
       }
@@ -302,6 +302,7 @@ const run = async ({
   return {
     peakRssMb,
     outputs,
+    ...(work === 'pdf' ? { pages: data.pages.length } : {}),
     ...(inputKb === undefined ? {} : { inputKb }),
     loadedRssMb: mb(loadedRss),
     renderRssMb: peakRssMb - mb(loadedRss),
@@ -316,9 +317,10 @@ const run = async ({
 
 module.exports = {
   title: 'Rasterizing with takumi',
-  about: `What takumi costs a fresh Node process on its own, drawing the slides pack's \`${DECK}\` deck: the parent renders the deck with the \`snapshot\` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. \`Loaded RSS\` is after creating the backend, before any font registers; \`Render RSS\` is the peak above it, and \`RSS after\` is after the run, a GC and, for \`pdf-close\`, \`close()\`. \`Growth\` is how much \`RSS after\` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; \`Heap after\` is the main thread's alone. Per-output time is the median, from the request to its output; under a burst it includes the wait in the limiter or for one of the libuv thread pool's threads, and \`UV_THREADPOOL_SIZE\` is in the environment. \`All outputs\` excludes the GC between passes. Both no-output rows draw one empty SVG, so their difference is the fonts' registration. Report only: nothing here is bounded yet.`,
+  about: `What takumi costs a fresh Node process on its own, drawing the slides pack's \`${DECK}\` deck: the parent renders the deck with the \`snapshot\` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. \`Loaded RSS\` is after creating the backend and reading the row's input, before any font registers; \`Render RSS\` is the peak above it, and \`RSS after\` is after the run, a GC and, for \`pdf-close\`, \`close()\`. \`Growth\` is how much \`RSS after\` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; \`Heap after\` is the main thread's alone. Per-output time is the median, from the request to its output; under a burst it includes the wait in the limiter or for one of the libuv thread pool's threads, and \`UV_THREADPOOL_SIZE\` is in the environment. \`All outputs\` excludes the GC between passes. Both no-output rows draw one empty SVG, so their difference is the fonts' registration. Report only: nothing here is bounded yet.`,
   measures: [
     { key: 'outputs', label: 'Outputs', digits: 0 },
+    { key: 'pages', label: 'PDF pages', digits: 0 },
     { key: 'inputKb', label: 'Input (KB)', digits: 0 },
     { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
     { key: 'loadedRssMb', label: 'Loaded RSS (MB)', digits: 0 },
