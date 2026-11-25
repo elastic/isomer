@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import type { Bounds } from './bounds';
+import { type Bounds, boundsProblem } from './bounds';
 
 /**
  * What the benchmarks measure for one primitive pack, or anything else a host
@@ -34,17 +34,6 @@ export interface BenchConfig {
   /** The entries that run only on Node, so `size` gives them no browser bundle. */
   nodeOnly?: readonly string[];
 }
-
-const isBounds = (value: unknown): value is Bounds =>
-  isRecord(value) &&
-  Object.values(value).every(
-    (measures) =>
-      isRecord(measures) &&
-      Object.keys(measures).length > 0 &&
-      Object.values(measures).every(
-        (bound) => typeof bound === 'number' && bound >= 0
-      )
-  );
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -99,7 +88,10 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   }
   if (
     bounds !== undefined &&
-    !(isRecord(bounds) && Object.values(bounds).every(isBounds))
+    !(
+      isRecord(bounds) &&
+      Object.values(bounds).every((each) => boundsProblem(each) === undefined)
+    )
   ) {
     return '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0';
   }

@@ -58,7 +58,7 @@ A real pack's renderers cost more than these trivial ones; [Drawing a chart](#dr
 
 What a server pays to draw charts to PNG with the charts pack, the Elastic Charts engine and takumi, with Inter Latin registered ([Drawing charts](results.md#drawing-charts)):
 
-- **Loading the engine is most of the baseline.** Loaded and with fonts registered, a process holds about 90 MB RSS without an engine and about 133 MB with Elastic Charts. One cold xy chart at 2× is ready about 440 ms after the process starts and peaks at about 180 MB.
+- **Loading the engine is most of the baseline.** Loaded and with fonts registered, a process holds about 90 MB RSS without an engine and about 133 MB with Elastic Charts. One cold xy chart at 2× is ready about 480 ms after the process starts and peaks at about 180 MB.
 - **A small chart is cheap once loaded:** about 5 ms to resolve and draw and 7 ms to rasterize at 1×, for the pack's metric and xy examples.
 - **Data size drives memory, and the `snapshot` surface drives time.** One xy line at the charts pack's whole input budget, about 250,000 values, takes about 75 ms to validate, about 870 ms to render as a snapshot, and under 100 ms to rasterize. Resolving its Scene once takes about 340 ms, and with no engine the same snapshot takes about 750 ms, so Elastic Charts itself adds about 120 ms; the rest is the surface's own work around the chart, including validating again. It peaks at about 470 MB, about 340 MB above what loading holds, the request's data included. At a quarter and half of the budget, that peak above loading is about 125 MB and 175 MB.
 - **Splitting the same data across a 40-panel grid** peaks lower, at about 420 MB, but takes about 270 ms to rasterize, since the picture holds 40 charts.

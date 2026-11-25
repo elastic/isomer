@@ -311,21 +311,18 @@ const boundsFor = (suiteName, configs, passedConfigs) => {
     !passedConfigs && existsSync(file)
       ? [JSON.parse(readFileSync(file, 'utf8'))]
       : [];
+  // A config's bounds were held to the same rule when it loaded.
+  const problem = own.map(helpers().boundsProblem).find(Boolean);
+  if (problem !== undefined) {
+    throw new Error(`bounds/${suiteName}.json: ${problem}`);
+  }
   const bounds = {};
   for (const each of [
     ...own,
     ...configs.map(({ bounds: mine }) => mine?.[suiteName] ?? {}),
   ]) {
     for (const [scenario, measures] of Object.entries(each)) {
-      if (Object.keys(measures).length === 0) {
-        throw new Error(`${scenario}: a bound needs at least one measure`);
-      }
       for (const [key, bound] of Object.entries(measures)) {
-        if (typeof bound !== 'number' || !(bound >= 0)) {
-          throw new Error(
-            `${scenario} ${key}: a bound is a number, at least 0`
-          );
-        }
         if (bounds[scenario]?.[key] !== undefined) {
           throw new Error(`${scenario} ${key}: bounded twice`);
         }
