@@ -9,7 +9,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 
 ## TL;DR
 
-- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and rendering it as HTML or a snapshot adds well under 0.1 ms more. Each further node adds about 2 µs, almost all of it validation.
+- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and validating and rendering it as HTML or a snapshot takes about 0.2 to 0.25 ms end to end. Each further node adds about 2 µs, almost all of it validation.
 - **Loading code at startup is where the cost is.** The SDK and the runtime with takumi hold about 72 MB RSS before any request, against 42 MB for Node alone. A pack adds its own: about 78 MB with the charts pack and 95 MB with the slides pack.
 - **The heaviest single entry is the Elastic Charts engine,** at about 730 CommonJS modules, because it loads `@elastic/charts`. With the SDK and the runtime it reaches about 118 MB. A host that only validates or resolves charts doesn't need it.
 - **Subpaths help:** `@elastic/isomer-sdk/text` loads 3 modules against about 150 for the SDK root, and the charts pack's `/scene` and `/resolve` load under 50 against about 320 for its root.
