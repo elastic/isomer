@@ -21,6 +21,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import {
   createTakumiImageBackend,
   type ImageInput,
+  type LayoutBox,
   type PdfInput,
   type TakumiPdfMetadata,
   type TakumiPdfOptions,
@@ -160,6 +161,20 @@ describe('createTakumiImageBackend', () => {
     // IHDR carries the dimensions as big-endian u32s at a fixed offset.
     expect(png.readUInt32BE(16)).toBe(64);
     expect(png.readUInt32BE(20)).toBe(32);
+  });
+
+  it('draws table cell content centred vertically, as a browser does', async () => {
+    const { pixel } = decodePng(
+      await createTakumiImageBackend().png({
+        html: '<table><tbody><tr><td><div class="mark"></div></td></tr></tbody></table>',
+        css: 'table { border-spacing: 0; background: #fff } td { height: 60px; padding: 0 } .mark { width: 20px; height: 20px; background: #000 }',
+        width: 64,
+        height: 60,
+      })
+    );
+
+    expect(pixel(10, 5)).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    expect(pixel(10, 30)).toEqual({ r: 0, g: 0, b: 0, a: 255 });
   });
 
   it('renders the same input twice to identical bytes', async () => {
@@ -476,6 +491,33 @@ describe('createTakumiImageBackend', () => {
       ]);
     });
 
+    it('centres table cell content vertically, as a browser does', async () => {
+      const box = await measure(
+        createElement(
+          'table',
+          null,
+          createElement(
+            'tbody',
+            null,
+            createElement(
+              'tr',
+              null,
+              createElement('td', { style: { height: 60 } }, 'cell')
+            )
+          )
+        ),
+        'table { border-spacing: 0 } td { padding: 0 }'
+      );
+      const runs = (node: LayoutBox): LayoutBox['runs'] => [
+        ...node.runs,
+        ...node.children.flatMap(runs),
+      ];
+      const [run] = runs(box).filter(({ text }) => text === 'cell');
+
+      expect(run).toBeDefined();
+      expect((run?.y ?? 0) + (run?.height ?? 0) / 2).toBeCloseTo(30, 0);
+    });
+
     it('drops attributes where inline content folds children together', async () => {
       const box = await measure(
         createElement(
@@ -599,6 +641,17 @@ describe('createTakumiImageBackend', () => {
       );
     });
 
+    it('draws with the input stylesheet alone, ignoring a stray `css` option', async () => {
+      const backend = createTakumiImageBackend();
+      const plain = await backend.pdf(pages(['a']), stable);
+      const stray = await backend.pdf(pages(['a']), {
+        ...stable,
+        css: '.box { background: #0000ff; height: 400px }',
+      } as TakumiPdfOptions);
+
+      expect(stray.equals(plain)).toBe(true);
+    });
+
     it('adds no page for content clipped inside a page', async () => {
       const rows = Array.from(
         { length: 200 },
@@ -665,6 +718,58 @@ describe('createTakumiImageBackend', () => {
         lang?: string;
         backgroundColor?: string;
       }>();
+    });
+
+    const headed: PdfInput = {
+      ...pages(['']),
+      pages: [{ html: '<h1>Heading</h1>' }],
+    };
+
+    // Page text is in compressed content streams, so these literals appear only in document-level objects.
+    it.each([
+      ['outline', { outline: true }, [/\/Outlines\b/, /\(Heading\)/]],
+      ['lang', { lang: 'fr' }, [/\/Lang\s*\(fr\)/]],
+      [
+        'metadata',
+        { metadata: { ...stable.metadata, title: 'Deck' } },
+        [/\/Title\s*\(Deck\)/],
+      ],
+    ] as const)('forwards `%s` to the document', async (_, option, marks) => {
+      const backend = createTakumiImageBackend();
+      try {
+        const plain = text(await backend.pdf(headed, stable));
+        const optioned = text(
+          await backend.pdf(headed, { ...stable, ...option })
+        );
+
+        for (const mark of marks) {
+          expect(plain).not.toMatch(mark);
+          expect(optioned).toMatch(mark);
+        }
+      } finally {
+        await backend.close();
+      }
+    });
+
+    it('forwards `backgroundColor` to the document', async () => {
+      const backend = createTakumiImageBackend();
+      try {
+        const plain = await backend.pdf(headed, stable);
+        const green = await backend.pdf(headed, {
+          ...stable,
+          backgroundColor: '#00ff00',
+        });
+        const blue = await backend.pdf(headed, {
+          ...stable,
+          backgroundColor: '#0000ff',
+        });
+
+        expect(green.equals(plain)).toBe(false);
+        expect(blue.equals(plain)).toBe(false);
+        expect(green.equals(blue)).toBe(false);
+      } finally {
+        await backend.close();
+      }
     });
 
     it('rejects a glyph no registered font covers unless told otherwise', async () => {
