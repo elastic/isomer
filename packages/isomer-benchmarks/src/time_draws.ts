@@ -36,6 +36,11 @@ export const timeDraws = async <T>(
     }
     return results;
   }
+  if (inFlight !== 'all' && !(Number.isInteger(inFlight) && inFlight >= 1)) {
+    throw new RangeError(
+      `inFlight ${inFlight}: a whole number of at least 1, or 'all'`
+    );
+  }
   const limited =
     inFlight === 'all'
       ? (draw: () => Promise<T>) => draw()

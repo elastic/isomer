@@ -320,7 +320,7 @@ module.exports = {
   about: `What takumi costs a fresh Node process on its own, drawing the slides pack's \`${DECK}\` deck: the parent renders the deck with the \`snapshot\` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. \`Loaded RSS\` is after creating the backend and reading the row's input, before any font registers; \`Render RSS\` is the peak above it, and \`RSS after\` is after the run, a GC and, for \`pdf-close\`, \`close()\`. \`Growth\` is how much \`RSS after\` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; \`Heap after\` is the main thread's alone. Per-output time is the median, from the request to its output; under a burst it includes the wait in the limiter or for one of the libuv thread pool's threads, and \`UV_THREADPOOL_SIZE\` is in the environment. \`All outputs\` excludes the GC between passes. Both no-output rows draw one empty SVG, so their difference is the fonts' registration. Report only: nothing here is bounded yet.`,
   measures: [
     { key: 'outputs', label: 'Outputs', digits: 0 },
-    { key: 'pages', label: 'PDF pages', digits: 0 },
+    { key: 'pages', label: 'Pages per PDF, requested', digits: 0 },
     { key: 'inputKb', label: 'Input (KB)', digits: 0 },
     { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
     { key: 'loadedRssMb', label: 'Loaded RSS (MB)', digits: 0 },

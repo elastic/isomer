@@ -239,6 +239,7 @@ const runSuite = async (suiteName, args) => {
       )
     : [];
   const bounds = check ? boundsFor(suiteName, configs, passed.length > 0) : {};
+  const before = revision();
   const { scenarios, records } = await measure(suiteName, {
     runs,
     configs,
@@ -247,13 +248,26 @@ const runSuite = async (suiteName, args) => {
       : option(args, '--scenarios', undefined)?.split(','),
   });
 
+  // A checkout that changed during the run can't reproduce it either.
+  const after = revision();
+  const checkout = {
+    commit: before.commit,
+    ...(before.uncommitted === undefined
+      ? {}
+      : {
+          uncommitted:
+            before.uncommitted ||
+            after.uncommitted === true ||
+            before.commit !== after.commit,
+        }),
+  };
   const { describeEnvironment, summarize } = helpers();
   const result = {
     schemaVersion: 1,
     suite: suiteName,
     about: suite.about,
     environment: describeEnvironment({
-      ...revision(),
+      ...checkout,
       packages: Object.fromEntries([
         ...VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)]),
         // takumi's own dependencies resolve only from its package.
@@ -370,9 +384,12 @@ const smoke = async () => {
 const suiteSection = (result) => {
   const { describeEnvironmentLine, summarize, tableText, toMarkdown } =
     helpers();
-  const { suite, environment, runsPerScenario, scenarios, measures } = result;
+  const { suite, environment, runsPerScenario, scenarios } = result;
   // From the suite's code and the raw runs, so neither a saved description nor a saved summary drifts.
-  const { about } = suiteOf(suite);
+  const { about, measures: labels } = suiteOf(suite);
+  const measures = result.measures.map(
+    (measure) => labels.find(({ key }) => key === measure.key) ?? measure
+  );
   const summary = summarize(result.runs, scenarios, measures);
   const notes = suiteOf(suite).notes?.({ ...result, summary }) ?? [];
   return [

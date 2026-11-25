@@ -55,4 +55,8 @@ describe('timeDraws', () => {
     expect(first).toEqual({ value: 0, ms: 10 });
     expect(second).toEqual({ value: 1, ms: 15 });
   });
+
+  it.each([0, -1, 1.5])('refuses inFlight %s', async (inFlight) => {
+    await expect(timeDraws([], { inFlight })).rejects.toThrow(RangeError);
+  });
 });
