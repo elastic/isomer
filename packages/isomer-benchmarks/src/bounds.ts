@@ -36,3 +36,17 @@ export const checkBounds = (
       return { scenario, key, median, bound, ok: median <= bound };
     })
   );
+
+/**
+ * The `required` measures of each scenario that `bounds` leaves out, as
+ * `scenario key`, so a gate that must cover every row can refuse a new one.
+ */
+export const unbounded = (
+  required: Record<string, readonly string[]>,
+  bounds: Bounds
+): string[] =>
+  Object.entries(required).flatMap(([scenario, keys]) =>
+    keys
+      .filter((key) => bounds[scenario]?.[key] === undefined)
+      .map((key) => `${scenario} ${key}`)
+  );

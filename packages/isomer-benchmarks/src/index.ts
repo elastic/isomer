@@ -5,8 +5,7 @@
  * 2.0.
  */
 
-export { type BoundCheck, type Bounds, checkBounds } from './bounds';
-export { bundleSourceEntry } from './bundle_source';
+export { type BoundCheck, type Bounds, checkBounds, unbounded } from './bounds';
 export {
   type BenchConfig,
   benchConfigProblem,
@@ -25,7 +24,6 @@ export {
   describeEnvironmentLine,
   median,
   summarize,
-  tableText,
   toMarkdown,
 } from './results';
 export {

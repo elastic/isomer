@@ -7,7 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { checkBounds } from './bounds';
+import { checkBounds, unbounded } from './bounds';
 
 const spread = (median: number) => ({ median, min: median, max: median });
 
@@ -43,5 +43,16 @@ describe('checkBounds', () => {
     expect(() => checkBounds(summary, { takumi: { browserKb: 1 } })).toThrow(
       'takumi browserKb: bounded but not measured'
     );
+  });
+});
+
+describe('unbounded', () => {
+  it('names each required measure with no bound', () => {
+    expect(
+      unbounded(
+        { sdk: ['nodeKb', 'browserKb'], takumi: ['nodeKb'], pack: ['nodeKb'] },
+        { sdk: { nodeKb: 180 }, takumi: { nodeKb: 0 } }
+      )
+    ).toEqual(['sdk browserKb', 'pack nodeKb']);
   });
 });

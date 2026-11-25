@@ -31,6 +31,8 @@ export interface BenchConfig {
   charts?: { engine?: string };
   /** Per suite, what `bench <suite> --check` holds this config's scenarios to. */
   bounds?: Record<string, Bounds>;
+  /** The entries that run only on Node, so `size` gives them no browser bundle. */
+  nodeOnly?: readonly string[];
 }
 
 const isBounds = (value: unknown): value is Bounds =>
@@ -49,12 +51,15 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const defineBenchConfig = (config: BenchConfig): BenchConfig => config;
 
+/** What an entry may hold, so its name needs no escaping in a table or a path. */
+const SPECIFIER = /^[\w@./-]+$/;
+
 /** Why `value` isn't a {@link BenchConfig}, or `undefined` when it is one. */
 export const benchConfigProblem = (value: unknown): string | undefined => {
   if (typeof value !== 'object' || value === null) {
     return 'a config exports an object';
   }
-  const { name, entries, build, charts, bounds } = value as Record<
+  const { name, entries, build, nodeOnly, charts, bounds } = value as Record<
     string,
     unknown
   >;
@@ -64,12 +69,23 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
   if (
     !Array.isArray(entries) ||
     entries.length === 0 ||
-    !entries.every((entry) => typeof entry === 'string' && entry.length > 0)
+    !entries.every(
+      (entry) => typeof entry === 'string' && SPECIFIER.test(entry)
+    )
   ) {
-    return '`entries` lists at least one specifier';
+    return '`entries` lists at least one specifier, of letters, digits and `@ . / _ -`';
   }
   if (build !== undefined && build !== 'built' && build !== 'source') {
     return "`build` is 'built' or 'source'";
+  }
+  if (
+    nodeOnly !== undefined &&
+    !(
+      Array.isArray(nodeOnly) &&
+      nodeOnly.every((entry) => entries.includes(entry))
+    )
+  ) {
+    return '`nodeOnly` lists some of `entries`';
   }
   if (
     charts !== undefined &&

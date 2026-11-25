@@ -71,7 +71,6 @@
     "browserKb": 130
   },
   "@elastic/isomer-charts-elastic/node": {
-    "nodeKb": 140,
-    "browserKb": 140
+    "nodeKb": 140
   }
 }

@@ -13,6 +13,7 @@ module.exports = {
     '@elastic/isomer-charts-elastic/engine',
     '@elastic/isomer-charts-elastic/node',
   ],
+  nodeOnly: ['@elastic/isomer-charts-elastic/node'],
   charts: { engine: './bench/engine.cjs' },
   // About twice what Node 22 measures on arm64 macOS, to hold across platforms and still catch a doubling.
   bounds: {

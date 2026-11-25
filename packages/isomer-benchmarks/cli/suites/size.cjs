@@ -64,7 +64,8 @@ const owningManifest = (file) => {
 
 /** Bytes in the output, per package that owns the input. */
 const byPackage = (metafile, cwd) => {
-  const totals = {};
+  // No prototype, so a package named `constructor` starts from nothing too.
+  const totals = Object.create(null);
   for (const output of Object.values(metafile.outputs)) {
     for (const [input, { bytesInOutput }] of Object.entries(output.inputs)) {
       if (input === '<stdin>') {
@@ -116,41 +117,37 @@ const scenarios = async (configs) => [
   ...CORE.map((entry) => ({
     name: entry,
     about: '',
+    core: true,
     spec: { base: PACKAGE, entry, nodeOnly: entry.endsWith('image-takumi') },
   })),
-  ...configs.flatMap(({ dir, entries }) =>
+  ...configs.flatMap(({ dir, entries, nodeOnly = [] }) =>
     entries.map((entry) => ({
       name: entry,
       about: '',
-      spec: { base: dir, entry, nodeOnly: false },
+      spec: { base: dir, entry, nodeOnly: nodeOnly.includes(entry) },
     }))
   ),
 ];
 
-/** A package's peers stay external: its host brings them. */
-const peersOf = (base, entry) => {
+/** The manifest of the package `entry` resolves into from `base`, a relative entry's included. */
+const ownerOf = (base, entry) => {
   const { createRequire } = require('node:module');
   try {
-    const resolved = createRequire(join(base, 'noop.js')).resolve(entry);
-    return Object.keys(owningManifest(resolved)?.peerDependencies ?? {});
+    return owningManifest(createRequire(join(base, 'noop.js')).resolve(entry));
   } catch {
-    return [];
+    return null;
   }
 };
 
 /** The largest packages in each entry's Node bundle besides the entry's own. */
 const largestInputs = ({ runs }) => {
-  const { tableText } = require(join(PACKAGE, 'lib/cjs/index.js'));
-  const rows = runs.map(({ scenario, nodePackages }) => {
-    const own = scenario.startsWith('@')
-      ? scenario.split('/').slice(0, 2).join('/')
-      : scenario.split('/')[0];
+  const rows = runs.map(({ scenario, ownPackage, nodePackages }) => {
     const ranked = Object.entries(JSON.parse(nodePackages))
-      .filter(([name]) => name !== own)
+      .filter(([name]) => name !== ownPackage)
       .sort(([, a], [, b]) => b - a)
       .slice(0, 3)
       .map(([name, bytes]) => `\`${name}\` ${kb(bytes).toFixed(0)}`);
-    return `| \`${tableText(scenario)}\` | ${ranked.join(', ') || 'none'} |`;
+    return `| \`${scenario}\` | ${ranked.join(', ') || 'none'} |`;
   });
   return [
     "The largest other packages in each entry's Node bundle, in KB:",
@@ -175,10 +172,20 @@ module.exports = {
     { key: 'ownKb', label: 'Own code (KB)', digits: 1 },
   ],
   scenarios,
+  /** The measures `--check` needs a bound for: every size the entry has. */
+  mustBound: ({ spec }) =>
+    spec.nodeOnly ? ['nodeKb'] : ['nodeKb', 'browserKb'],
   notes: (result) => [largestInputs(result)],
   run: async ({ base, entry, nodeOnly }) => {
     const esbuild = require('esbuild');
-    const external = [...new Set([...HOST_PROVIDED, ...peersOf(base, entry)])];
+    const owner = ownerOf(base, entry);
+    // A package's peers stay external: its host brings them.
+    const external = [
+      ...new Set([
+        ...HOST_PROVIDED,
+        ...Object.keys(owner?.peerDependencies ?? {}),
+      ]),
+    ];
     const node = await bundle(esbuild, {
       base,
       entry,
@@ -188,9 +195,7 @@ module.exports = {
     const browser = nodeOnly
       ? undefined
       : await bundle(esbuild, { base, entry, platform: 'browser', external });
-    const own = entry.startsWith('@')
-      ? entry.split('/').slice(0, 2).join('/')
-      : entry.split('/')[0];
+    const ownPackage = owner?.name ?? '';
     return {
       nodeKb: kb(node.bytes),
       nodeGzipKb: kb(node.gzipBytes),
@@ -200,7 +205,8 @@ module.exports = {
             browserKb: kb(browser.bytes),
             browserGzipKb: kb(browser.gzipBytes),
           }),
-      ownKb: kb(node.packages[own] ?? 0),
+      ownKb: kb(node.packages[ownPackage] ?? 0),
+      ownPackage,
       nodePackages: JSON.stringify(node.packages),
     };
   },

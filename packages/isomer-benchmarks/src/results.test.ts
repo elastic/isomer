@@ -7,13 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import {
-  cgroupLimitBytes,
-  median,
-  summarize,
-  tableText,
-  toMarkdown,
-} from './results';
+import { cgroupLimitBytes, median, summarize, toMarkdown } from './results';
 
 const measures = [
   { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
@@ -103,15 +97,5 @@ describe('cgroupLimitBytes', () => {
   it('is null with no limit set or no cgroup v2 line', () => {
     expect(cgroupLimitBytes('0::/bench/run/child', () => 'max')).toBe(null);
     expect(cgroupLimitBytes('12:memory:/x\n', () => '1')).toBe(null);
-  });
-});
-
-describe('tableText', () => {
-  it('keeps a pipe from splitting a table cell', () => {
-    expect(tableText('./chart|debug.cjs')).toBe('./chart\\|debug.cjs');
-  });
-
-  it('escapes a backslash, so one before a pipe cannot cancel its escape', () => {
-    expect(tableText('a\\|b')).toBe('a\\\\\\|b');
   });
 });
