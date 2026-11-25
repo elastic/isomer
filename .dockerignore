@@ -1,0 +1,9 @@
+# scripts/container/Dockerfile copies the repository; install and build happen inside.
+.git
+.claude
+**/node_modules
+**/lib
+**/.cache
+coverage
+playwright-report
+test-results
