@@ -86,7 +86,7 @@ This repository's packs keep their configs beside their `isomer-studio.config.ts
 
 ## Refreshing the baselines
 
-`baselines/<suite>.json` holds one full result per suite, with the environment it ran in, including the commit checked out and whether tracked files differed from it. Commit any change to a suite or to what it measures first, so a baseline recorded from that clean tree names the commit that reproduces it; the results page says when one was recorded with uncommitted changes, or the checkout changed while it ran. The commit covers this repository alone: for a pack measured through `--config` from another checkout, record that checkout's commit and state yourself. [Raw results](results.md) is generated from those files' raw runs and the suites' own descriptions. From this repository's root:
+`baselines/<suite>.json` holds one full result per suite, with the environment it ran in, including the commit checked out and whether tracked files differed from it. Commit any change to a suite or to what it measures first, so a baseline recorded from that clean tree names the commit that reproduces it; the results page says when one was recorded with uncommitted changes, or the checkout changed while it ran. Those are two checks, before the run and after it, so an edit made and undone in between goes unnoticed: leave the checkout alone while a suite runs. The commit covers this repository alone: for a pack measured through `--config` from another checkout, record that checkout's commit and state yourself. [Raw results](results.md) is generated from those files' raw runs and the suites' own descriptions. From this repository's root:
 
 ```sh
 pnpm --filter @elastic/isomer-benchmarks bench load --write packages/isomer-benchmarks/baselines/load.json
