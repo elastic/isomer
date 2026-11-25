@@ -127,12 +127,13 @@ module.exports = {
   notes: (result) => [perUnit(result)],
   run: async (options) => {
     const { createIsomerRuntime } = require('@elastic/isomer-runtime');
-    const {
-      createStepRecorder,
-      createSyntheticPack,
-      syntheticFrame,
-      synthTree,
-    } = require(join(__dirname, '../../lib/cjs/index.js'));
+    // Each from its own file: the package's main entry would load more than the suite measures.
+    const { createStepRecorder } = require(
+      join(__dirname, '../../lib/cjs/steps.js')
+    );
+    const { createSyntheticPack, syntheticFrame, synthTree } = require(
+      join(__dirname, '../../lib/cjs/synthetic_pack.js')
+    );
 
     const pack = createSyntheticPack({
       primitives: options.primitives,

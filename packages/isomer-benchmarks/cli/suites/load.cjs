@@ -119,7 +119,10 @@ const scenarios = async (configs) => [
 
 /** Bundles the source entries the picked scenarios load, once each. */
 const prepare = async (picked) => {
-  const { bundleSourceEntry } = require(join(PACKAGE, 'lib/cjs/index.js'));
+  // Its own file, so esbuild loads only here, in the parent.
+  const { bundleSourceEntry } = require(
+    join(PACKAGE, 'lib/cjs/bundle_source.js')
+  );
   const bundles = new Map();
   for (const { spec } of picked) {
     for (const each of spec.load) {

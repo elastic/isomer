@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-export { bundleSourceEntry } from './bundle_source';
 export {
   type BenchConfig,
   benchConfigProblem,
@@ -23,7 +22,6 @@ export {
   describeEnvironmentLine,
   median,
   summarize,
-  tableText,
   toMarkdown,
 } from './results';
 export {
