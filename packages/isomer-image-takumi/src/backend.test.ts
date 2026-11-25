@@ -720,21 +720,50 @@ describe('createTakumiImageBackend', () => {
       }>();
     });
 
-    it.each([
-      ['outline', { outline: true }],
-      ['lang', { lang: 'fr' }],
-      ['backgroundColor', { backgroundColor: '#00ff00' }],
-      ['metadata', { metadata: { ...stable.metadata, title: 'Deck' } }],
-    ] as const)('forwards `%s` to the document', async (_, option) => {
-      const backend = createTakumiImageBackend();
-      const deck: PdfInput = {
-        ...pages(['']),
-        pages: [{ html: '<h1>Heading</h1>' }],
-      };
-      const plain = await backend.pdf(deck, stable);
-      const optioned = await backend.pdf(deck, { ...stable, ...option });
+    /** The PDF's text with every Flate stream inflated, so page content can be searched. */
+    const decoded = (pdf: Buffer) => {
+      const source = text(pdf);
+      const streams = [...source.matchAll(/stream\r?\n/g)].map(
+        ({ index, 0: start }) => {
+          const from = index + start.length;
+          try {
+            return inflateSync(
+              pdf.subarray(from, source.indexOf('endstream', from))
+            ).toString('latin1');
+          } catch {
+            return '';
+          }
+        }
+      );
+      return [source, ...streams].join('\n');
+    };
 
-      expect(optioned.equals(plain)).toBe(false);
+    it.each([
+      ['outline', { outline: true }, /\/Title\s*\(Heading\)\s*\/Dest\b/],
+      ['lang', { lang: 'fr' }, /\/Lang\s*\(fr\)/],
+      ['backgroundColor', { backgroundColor: '#00ff00' }, /\b0 1 0 rg\b/],
+      [
+        'metadata',
+        { metadata: { ...stable.metadata, title: 'Deck' } },
+        /\/Title\s*\(Deck\)/,
+      ],
+    ] as const)('forwards `%s` to the document', async (_, option, effect) => {
+      const backend = createTakumiImageBackend();
+      try {
+        const deck: PdfInput = {
+          ...pages(['']),
+          pages: [{ html: '<h1>Heading</h1>' }],
+        };
+        const plain = decoded(await backend.pdf(deck, stable));
+        const optioned = decoded(
+          await backend.pdf(deck, { ...stable, ...option })
+        );
+
+        expect(plain).not.toMatch(effect);
+        expect(optioned).toMatch(effect);
+      } finally {
+        await backend.close();
+      }
     });
 
     it('rejects a glyph no registered font covers unless told otherwise', async () => {
