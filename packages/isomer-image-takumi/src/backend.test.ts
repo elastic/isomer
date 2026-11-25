@@ -720,6 +720,23 @@ describe('createTakumiImageBackend', () => {
       }>();
     });
 
+    it.each([
+      ['outline', { outline: true }],
+      ['lang', { lang: 'fr' }],
+      ['backgroundColor', { backgroundColor: '#00ff00' }],
+      ['metadata', { metadata: { ...stable.metadata, title: 'Deck' } }],
+    ] as const)('forwards `%s` to the document', async (_, option) => {
+      const backend = createTakumiImageBackend();
+      const deck: PdfInput = {
+        ...pages(['']),
+        pages: [{ html: '<h1>Heading</h1>' }],
+      };
+      const plain = await backend.pdf(deck, stable);
+      const optioned = await backend.pdf(deck, { ...stable, ...option });
+
+      expect(optioned.equals(plain)).toBe(false);
+    });
+
     it('rejects a glyph no registered font covers unless told otherwise', async () => {
       const backend = createTakumiImageBackend();
 
