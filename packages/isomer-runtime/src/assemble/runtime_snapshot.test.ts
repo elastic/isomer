@@ -472,8 +472,11 @@ describe('createIsomerRuntime', () => {
       schema: z.object({ type: z.literal('palette') }),
       metrics: {
         snapshotHeight: (_node, options) =>
-          ({ 'light-theme': 100, 'dark-theme': 200 })[String(options?.theme)] ??
-          -1,
+          options?.theme === 'dark-theme'
+            ? 200
+            : options?.theme === 'light-theme'
+              ? 100
+              : -1,
       },
       renderers: {
         react: () => null,
