@@ -67,7 +67,21 @@ Size a render process for the largest chart it accepts. The input budget bounds 
 
 ## First draw
 
-Pending: takumi's suite. It will cover font registration on the first draw, PDF worker start-up, and `cacheMaxBytes`.
+What takumi costs on its own, drawing the slides pack's 33-slide `isomer-every-surface` deck with the theme's 10 font faces registered ([Rasterizing with takumi](results.md#rasterizing-with-takumi)):
+
+- **Loading takumi is cheap.** A process that has loaded it and created a backend holds about 53 MB RSS. Registering the 10 faces adds about 3 MB and a few milliseconds, on the first draw.
+- **A PNG is quick once fonts are in.** One 1920×1080 slide at 1× takes about 15 ms cold and about 6 ms after that. At 2× each takes about 18 ms, and the whole deck peaks at about 140 MB against about 90 MB at 1×. SVG is cheaper still, about 1.5 ms a slide.
+- **The first PDF starts a worker.** A one-page PDF from cold takes about 110 ms and adds about 70 MB RSS: the worker, its WebAssembly engine and its own copy of the fonts. The whole deck as one PDF takes about 220 ms and peaks at about 160 MB, so each page past the first costs a few milliseconds. Later PDFs of the deck take about 70 ms.
+- **`close()` gives some of that back.** After the deck's PDF, closing the worker brought RSS down by about 27 MB on macOS, which seldom returns freed pages to the system.
+
+### Under repeated draws
+
+Over 20 passes of the deck, RSS keeps rising ([`png-repeat`](results.md#rasterizing-with-takumi), [`pdf-repeat`](results.md#rasterizing-with-takumi)):
+
+- **PNG:** about 24 MB past the first pass after 660 PNGs, about 40 KB each, steadily. Turning takumi's resource cache off with `cacheMaxBytes: 0` makes no difference for this deck, which has no images, so the growth isn't that cache.
+- **PDF:** about 65 MB past the first PDF after 20, but slowing: about 27 MB after 2 and 52 MB after 10, as the worker's WebAssembly memory reaches a high-water mark it keeps.
+
+Both were measured on macOS only. A long-running render process should watch its RSS, and a process that only draws PDFs now and then can `close()` the worker between them.
 
 ## Concurrent draws
 
@@ -82,7 +96,7 @@ A limiter trades a little latency for a lower, bounded peak, so limit draws in f
 pnpm bench charts --scenarios charts-elastic:burst-limited,charts-elastic:burst-unlimited
 ```
 
-PNG, SVG and measure calls run on the libuv thread pool ([Rendering a PDF](../../isomer-image-takumi/docs/index.md#rendering-a-pdf)), so draws in flight at once each hold their memory at once.
+PNG, SVG and measure calls run on the libuv thread pool ([Rendering a PDF](../../isomer-image-takumi/docs/index.md#rendering-a-pdf)), so draws in flight at once each hold their memory at once. The pool has 4 threads unless `UV_THREADPOOL_SIZE` says otherwise, and that caps takumi's parallelism: the 33 slides requested at once finish in about 75 ms against about 210 ms one at a time, and peak about 40 MB higher, whether a limiter of 4 holds them or none does ([`png-burst-4`, `png-burst`](results.md#rasterizing-with-takumi)). Past 4 in flight, more requests only wait, so a limiter above the pool's size buys nothing.
 
 ## Containers and heap limits
 

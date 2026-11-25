@@ -190,3 +190,41 @@ Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cor
 - `charts-elastic:burst-limited`: 16 xy PNGs at 2× requested at once, through a limiter of 2
 - `charts-elastic:burst-unlimited`: 16 xy PNGs at 2× requested at once, no limiter
 - `charts-elastic:one`: one cold xy PNG at 2×, the one-off case
+
+## Rasterizing with takumi
+
+What takumi costs a fresh Node process on its own, drawing the slides pack's `isomer-every-surface` deck: the parent renders the deck with the `snapshot` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. `Loaded RSS` is after creating the backend, before any font registers; `Render RSS` is the peak above it, and `RSS after` is after the run, a GC and, for `pdf-close`, `close()`. `Growth` is how much `RSS after` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; `Heap after` is the main thread's alone. Per-output time is the median; under a burst it includes the wait for one of the libuv thread pool's threads, and `UV_THREADPOOL_SIZE` is in the environment. Report only: nothing here is bounded yet.
+
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `bc6d5d88`.
+
+| Scenario             | Outputs | Input (KB) | Peak RSS (MB) | Loaded RSS (MB) | Render RSS (MB) | RSS after (MB) | Growth (MB) | Heap after (MB) | First output (ms) | Each output (ms) | All outputs (ms) | Largest output (KB) |
+| -------------------- | ------: | ---------: | ------------: | --------------: | --------------: | -------------: | ----------: | --------------: | ----------------: | ---------------: | ---------------: | ------------------: |
+| `backend`            |       0 |            |            54 |              53 |               1 |             53 |             |             4.8 |                13 |                  |                  |                     |
+| `fonts`              |       0 |            |            56 |              53 |               3 |             56 |             |             4.9 |                19 |                  |                  |                     |
+| `png-first`          |       1 |         11 |            71 |              53 |              18 |             71 |             |             4.9 |                27 |             14.3 |               16 |                  67 |
+| `png-deck`           |      33 |        223 |            89 |              53 |              36 |             89 |             |             5.0 |                29 |              5.8 |              208 |                  94 |
+| `png-deck-2x`        |      33 |        223 |           141 |              53 |              88 |            141 |             |             5.0 |                40 |             18.0 |              607 |                 218 |
+| `png-repeat`         |     660 |        223 |           112 |              53 |              59 |            112 |        23.7 |             5.1 |                29 |              4.7 |             3325 |                  94 |
+| `png-repeat-nocache` |     660 |        223 |           111 |              53 |              58 |            111 |        23.9 |             5.1 |                29 |              5.0 |             3503 |                  94 |
+| `png-burst-4`        |      33 |        223 |           126 |              53 |              73 |            126 |             |             5.0 |                30 |              8.6 |               76 |                  94 |
+| `png-burst`          |      33 |        223 |           130 |              53 |              77 |            130 |             |             5.0 |                34 |             48.7 |               74 |                  94 |
+| `svg-deck`           |      33 |        223 |            65 |              53 |              12 |             65 |             |             5.1 |                23 |              1.5 |               57 |                  92 |
+| `pdf-deck`           |       1 |        144 |           162 |              53 |             109 |            162 |             |             5.1 |               232 |            218.4 |              221 |                 170 |
+| `pdf-repeat`         |      20 |        144 |           227 |              53 |             174 |            225 |        64.7 |             5.3 |               229 |             71.9 |             1605 |                 170 |
+| `pdf-close`          |       1 |        144 |           161 |              53 |             108 |            134 |             |             5.1 |               229 |            217.0 |              220 |                 170 |
+| `pdf-page`           |       1 |         11 |           125 |              53 |              72 |            125 |             |             5.1 |               122 |            108.1 |              110 |                  29 |
+
+- `backend`: load takumi and create a backend, with no font registered
+- `fonts`: register the slides theme's 10 font faces, drawing nothing
+- `png-first`: one slide to PNG at 1×, cold
+- `png-deck`: every slide to PNG at 1×, one at a time
+- `png-deck-2x`: every slide to PNG at 2×, one at a time
+- `png-repeat`: every slide to PNG at 1×, 20 times over, with the default 64 MiB cache
+- `png-repeat-nocache`: every slide to PNG at 1×, 20 times over, with `cacheMaxBytes: 0`
+- `png-burst-4`: every slide to PNG at 1×, requested at once through a limiter of 4
+- `png-burst`: every slide to PNG at 1×, requested at once, no limiter
+- `svg-deck`: every slide to SVG, one at a time
+- `pdf-deck`: the whole deck to one PDF, cold: the worker starts and registers the fonts
+- `pdf-repeat`: the whole deck to PDF 20 times over
+- `pdf-close`: the whole deck to PDF, then `close()` the worker
+- `pdf-page`: the deck's first slide to a one-page PDF, cold

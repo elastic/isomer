@@ -23,7 +23,7 @@ const { dirname, join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '..');
 const REPO = resolve(PACKAGE, '../..');
-const SUITES = ['load', 'synthetic', 'size', 'charts'];
+const SUITES = ['load', 'synthetic', 'size', 'charts', 'takumi'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
 /** What a child writes its one JSON record to, apart from anything a package logs. */
 const RECORD_FD = 3;
@@ -247,9 +247,14 @@ const runSuite = async (suiteName, args) => {
     about: suite.about,
     environment: describeEnvironment({
       commit: commit(),
-      packages: Object.fromEntries(
-        VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)])
-      ),
+      packages: Object.fromEntries([
+        ...VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)]),
+        // takumi's own dependencies resolve only from its package.
+        ...['@takumi-rs/core', 'takumi-pdf'].map((name) => [
+          name,
+          versionFrom(join(PACKAGE, '../isomer-image-takumi'), name),
+        ]),
+      ]),
       nodeFlags: NODE_FLAGS,
     }),
     // Each pack's own SDK and runtime, which its rows load.

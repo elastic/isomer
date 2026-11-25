@@ -1,0 +1,1894 @@
+{
+  "schemaVersion": 1,
+  "suite": "takumi",
+  "about": "What takumi costs a fresh Node process on its own, drawing the slides pack's `isomer-every-surface` deck: the parent renders the deck with the `snapshot` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. `Loaded RSS` is after creating the backend, before any font registers; `Render RSS` is the peak above it, and `RSS after` is after the run, a GC and, for `pdf-close`, `close()`. `Growth` is how much `RSS after` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; `Heap after` is the main thread's alone. Per-output time is the median; under a burst it includes the wait for one of the libuv thread pool's threads, and `UV_THREADPOOL_SIZE` is in the environment. Report only: nothing here is bounded yet.",
+  "environment": {
+    "node": "v22.22.0",
+    "v8": "12.4.254.21-node.33",
+    "platform": "darwin",
+    "arch": "arm64",
+    "cpus": 14,
+    "cpuModel": "Apple M4 Pro",
+    "totalMemoryMb": 49152,
+    "cgroupMemoryLimitMb": null,
+    "nodeFlags": [
+      "--disallow-code-generation-from-strings",
+      "--expose-gc"
+    ],
+    "env": {
+      "NODE_ENV": "production",
+      "NODE_OPTIONS": null,
+      "MALLOC_ARENA_MAX": null,
+      "UV_THREADPOOL_SIZE": null
+    },
+    "commit": "bc6d5d88f33318bcf087b64598700893839a238f",
+    "packages": {
+      "@elastic/isomer-sdk": "0.0.0-development",
+      "@elastic/isomer-runtime": "0.0.0-development",
+      "@elastic/isomer-agent-tools": "0.0.0-development",
+      "@elastic/isomer-image-takumi": "0.0.0-development",
+      "@elastic/isomer-primitives-charts": "0.0.0-development",
+      "@elastic/isomer-charts-elastic": "0.0.0-development",
+      "@elastic/isomer-primitives-slides": "0.0.0-development",
+      "react": "18.3.1",
+      "react-dom": "18.3.1",
+      "zod": "4.6.5",
+      "@takumi-rs/core": "2.18.1",
+      "takumi-pdf": "0.18.3"
+    }
+  },
+  "packs": [],
+  "runsPerScenario": 5,
+  "measures": [
+    {
+      "key": "outputs",
+      "label": "Outputs",
+      "digits": 0
+    },
+    {
+      "key": "inputKb",
+      "label": "Input (KB)",
+      "digits": 0
+    },
+    {
+      "key": "peakRssMb",
+      "label": "Peak RSS (MB)",
+      "digits": 0
+    },
+    {
+      "key": "loadedRssMb",
+      "label": "Loaded RSS (MB)",
+      "digits": 0
+    },
+    {
+      "key": "renderRssMb",
+      "label": "Render RSS (MB)",
+      "digits": 0
+    },
+    {
+      "key": "rssAfterMb",
+      "label": "RSS after (MB)",
+      "digits": 0
+    },
+    {
+      "key": "growthMb",
+      "label": "Growth (MB)",
+      "digits": 1
+    },
+    {
+      "key": "heapAfterMb",
+      "label": "Heap after (MB)",
+      "digits": 1
+    },
+    {
+      "key": "firstMs",
+      "label": "First output (ms)",
+      "digits": 0
+    },
+    {
+      "key": "eachMs",
+      "label": "Each output (ms)",
+      "digits": 1
+    },
+    {
+      "key": "allMs",
+      "label": "All outputs (ms)",
+      "digits": 0
+    },
+    {
+      "key": "outKb",
+      "label": "Largest output (KB)",
+      "digits": 0
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "backend",
+      "about": "load takumi and create a backend, with no font registered"
+    },
+    {
+      "name": "fonts",
+      "about": "register the slides theme's 10 font faces, drawing nothing"
+    },
+    {
+      "name": "png-first",
+      "about": "one slide to PNG at 1×, cold"
+    },
+    {
+      "name": "png-deck",
+      "about": "every slide to PNG at 1×, one at a time"
+    },
+    {
+      "name": "png-deck-2x",
+      "about": "every slide to PNG at 2×, one at a time"
+    },
+    {
+      "name": "png-repeat",
+      "about": "every slide to PNG at 1×, 20 times over, with the default 64 MiB cache"
+    },
+    {
+      "name": "png-repeat-nocache",
+      "about": "every slide to PNG at 1×, 20 times over, with `cacheMaxBytes: 0`"
+    },
+    {
+      "name": "png-burst-4",
+      "about": "every slide to PNG at 1×, requested at once through a limiter of 4"
+    },
+    {
+      "name": "png-burst",
+      "about": "every slide to PNG at 1×, requested at once, no limiter"
+    },
+    {
+      "name": "svg-deck",
+      "about": "every slide to SVG, one at a time"
+    },
+    {
+      "name": "pdf-deck",
+      "about": "the whole deck to one PDF, cold: the worker starts and registers the fonts"
+    },
+    {
+      "name": "pdf-repeat",
+      "about": "the whole deck to PDF 20 times over"
+    },
+    {
+      "name": "pdf-close",
+      "about": "the whole deck to PDF, then `close()` the worker"
+    },
+    {
+      "name": "pdf-page",
+      "about": "the deck's first slide to a one-page PDF, cold"
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "backend",
+      "peakRssMb": 53.625,
+      "outputs": 0,
+      "loadedRssMb": 52.84375,
+      "renderRssMb": 0.78125,
+      "rssAfterMb": 52.90625,
+      "heapAfterMb": 4.79052734375,
+      "firstMs": 15.147209
+    },
+    {
+      "scenario": "backend",
+      "peakRssMb": 53.65625,
+      "outputs": 0,
+      "loadedRssMb": 52.875,
+      "renderRssMb": 0.78125,
+      "rssAfterMb": 52.90625,
+      "heapAfterMb": 4.790534973144531,
+      "firstMs": 13.695875
+    },
+    {
+      "scenario": "backend",
+      "peakRssMb": 53.5,
+      "outputs": 0,
+      "loadedRssMb": 52.71875,
+      "renderRssMb": 0.78125,
+      "rssAfterMb": 52.75,
+      "heapAfterMb": 4.790534973144531,
+      "firstMs": 12.327417
+    },
+    {
+      "scenario": "backend",
+      "peakRssMb": 53.546875,
+      "outputs": 0,
+      "loadedRssMb": 52.765625,
+      "renderRssMb": 0.78125,
+      "rssAfterMb": 52.8125,
+      "heapAfterMb": 4.790534973144531,
+      "firstMs": 13.052334
+    },
+    {
+      "scenario": "backend",
+      "peakRssMb": 53.40625,
+      "outputs": 0,
+      "loadedRssMb": 52.625,
+      "renderRssMb": 0.78125,
+      "rssAfterMb": 52.65625,
+      "heapAfterMb": 4.790534973144531,
+      "firstMs": 13.055083
+    },
+    {
+      "scenario": "fonts",
+      "peakRssMb": 55.703125,
+      "outputs": 0,
+      "loadedRssMb": 52.703125,
+      "renderRssMb": 3,
+      "rssAfterMb": 55.828125,
+      "heapAfterMb": 4.871025085449219,
+      "firstMs": 17.9125
+    },
+    {
+      "scenario": "fonts",
+      "peakRssMb": 55.90625,
+      "outputs": 0,
+      "loadedRssMb": 52.875,
+      "renderRssMb": 3.03125,
+      "rssAfterMb": 55.984375,
+      "heapAfterMb": 4.871025085449219,
+      "firstMs": 17.525541
+    },
+    {
+      "scenario": "fonts",
+      "peakRssMb": 56.0625,
+      "outputs": 0,
+      "loadedRssMb": 52.96875,
+      "renderRssMb": 3.09375,
+      "rssAfterMb": 56.140625,
+      "heapAfterMb": 4.870750427246094,
+      "firstMs": 19.27825
+    },
+    {
+      "scenario": "fonts",
+      "peakRssMb": 56.21875,
+      "outputs": 0,
+      "loadedRssMb": 53.09375,
+      "renderRssMb": 3.125,
+      "rssAfterMb": 56.28125,
+      "heapAfterMb": 4.870750427246094,
+      "firstMs": 18.811125
+    },
+    {
+      "scenario": "fonts",
+      "peakRssMb": 55.875,
+      "outputs": 0,
+      "loadedRssMb": 52.796875,
+      "renderRssMb": 3.078125,
+      "rssAfterMb": 55.953125,
+      "heapAfterMb": 4.870979309082031,
+      "firstMs": 20.043042
+    },
+    {
+      "scenario": "png-first",
+      "peakRssMb": 70.5625,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.953125,
+      "renderRssMb": 17.609375,
+      "rssAfterMb": 70.59375,
+      "heapAfterMb": 4.934684753417969,
+      "firstMs": 26.824917,
+      "eachMs": 14.124916,
+      "allMs": 15.423291,
+      "outKb": 66.58984375
+    },
+    {
+      "scenario": "png-first",
+      "peakRssMb": 70.375,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 53.046875,
+      "renderRssMb": 17.328125,
+      "rssAfterMb": 70.421875,
+      "heapAfterMb": 4.934684753417969,
+      "firstMs": 26.480791,
+      "eachMs": 13.83975,
+      "allMs": 15.043125,
+      "outKb": 66.58984375
+    },
+    {
+      "scenario": "png-first",
+      "peakRssMb": 71.125,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.796875,
+      "renderRssMb": 18.328125,
+      "rssAfterMb": 71.140625,
+      "heapAfterMb": 4.934539794921875,
+      "firstMs": 26.779625,
+      "eachMs": 14.287833,
+      "allMs": 15.7625,
+      "outKb": 66.58984375
+    },
+    {
+      "scenario": "png-first",
+      "peakRssMb": 72.375,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.640625,
+      "renderRssMb": 19.734375,
+      "rssAfterMb": 72.390625,
+      "heapAfterMb": 4.9346160888671875,
+      "firstMs": 30.802458,
+      "eachMs": 19.142083,
+      "allMs": 20.531583,
+      "outKb": 66.58984375
+    },
+    {
+      "scenario": "png-first",
+      "peakRssMb": 70.78125,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.78125,
+      "renderRssMb": 18,
+      "rssAfterMb": 70.796875,
+      "heapAfterMb": 4.934539794921875,
+      "firstMs": 29.018625,
+      "eachMs": 15.348292,
+      "allMs": 18.109958,
+      "outKb": 66.58984375
+    },
+    {
+      "scenario": "png-deck",
+      "peakRssMb": 89.375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.734375,
+      "renderRssMb": 36.640625,
+      "rssAfterMb": 89.375,
+      "heapAfterMb": 5.0024871826171875,
+      "firstMs": 33.480667,
+      "eachMs": 5.652958,
+      "allMs": 202.708417,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-deck",
+      "peakRssMb": 88.296875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.609375,
+      "renderRssMb": 35.6875,
+      "rssAfterMb": 88.3125,
+      "heapAfterMb": 5.0025177001953125,
+      "firstMs": 28.06325,
+      "eachMs": 5.772459,
+      "allMs": 209.292375,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-deck",
+      "peakRssMb": 89.5625,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.828125,
+      "renderRssMb": 36.734375,
+      "rssAfterMb": 89.578125,
+      "heapAfterMb": 5.0025177001953125,
+      "firstMs": 26.931208,
+      "eachMs": 5.8445,
+      "allMs": 207.888292,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-deck",
+      "peakRssMb": 89.09375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 36.34375,
+      "rssAfterMb": 89.09375,
+      "heapAfterMb": 5.002449035644531,
+      "firstMs": 31.548042,
+      "eachMs": 5.9175,
+      "allMs": 208.99075,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-deck",
+      "peakRssMb": 89.046875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.078125,
+      "renderRssMb": 35.96875,
+      "rssAfterMb": 89.0625,
+      "heapAfterMb": 5.002418518066406,
+      "firstMs": 28.946,
+      "eachMs": 5.658167,
+      "allMs": 202.531792,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-deck-2x",
+      "peakRssMb": 141.453125,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.875,
+      "renderRssMb": 88.578125,
+      "rssAfterMb": 141.453125,
+      "heapAfterMb": 5.002593994140625,
+      "firstMs": 37.785958,
+      "eachMs": 18.243584,
+      "allMs": 620.164375,
+      "outKb": 217.5498046875
+    },
+    {
+      "scenario": "png-deck-2x",
+      "peakRssMb": 141.796875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.890625,
+      "renderRssMb": 88.90625,
+      "rssAfterMb": 141.796875,
+      "heapAfterMb": 5.0025634765625,
+      "firstMs": 52.895833,
+      "eachMs": 17.526583,
+      "allMs": 614.494292,
+      "outKb": 217.5498046875
+    },
+    {
+      "scenario": "png-deck-2x",
+      "peakRssMb": 140.609375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 87.859375,
+      "rssAfterMb": 140.625,
+      "heapAfterMb": 5.002593994140625,
+      "firstMs": 38.536292,
+      "eachMs": 17.955083,
+      "allMs": 607.012375,
+      "outKb": 217.5498046875
+    },
+    {
+      "scenario": "png-deck-2x",
+      "peakRssMb": 140.796875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.640625,
+      "renderRssMb": 88.15625,
+      "rssAfterMb": 140.8125,
+      "heapAfterMb": 5.0027008056640625,
+      "firstMs": 49.899958,
+      "eachMs": 17.985042,
+      "allMs": 557.216666,
+      "outKb": 217.5498046875
+    },
+    {
+      "scenario": "png-deck-2x",
+      "peakRssMb": 140.859375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.09375,
+      "renderRssMb": 87.765625,
+      "rssAfterMb": 140.875,
+      "heapAfterMb": 5.0025634765625,
+      "firstMs": 40.37425,
+      "eachMs": 17.561375,
+      "allMs": 553.74375,
+      "outKb": 217.5498046875
+    },
+    {
+      "scenario": "png-repeat",
+      "peakRssMb": 111.203125,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.96875,
+      "renderRssMb": 58.234375,
+      "rssAfterMb": 111.21875,
+      "growthMb": 22.6875,
+      "heapAfterMb": 5.1457672119140625,
+      "firstMs": 31.373958,
+      "eachMs": 4.639,
+      "allMs": 3320.343917,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat",
+      "peakRssMb": 111.59375,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.84375,
+      "renderRssMb": 58.75,
+      "rssAfterMb": 111.59375,
+      "growthMb": 23.6875,
+      "heapAfterMb": 5.145805358886719,
+      "firstMs": 27.775167,
+      "eachMs": 4.671125,
+      "allMs": 3304.452417,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat",
+      "peakRssMb": 113.375,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.59375,
+      "renderRssMb": 60.78125,
+      "rssAfterMb": 113.375,
+      "growthMb": 25.34375,
+      "heapAfterMb": 5.171875,
+      "firstMs": 31.302709,
+      "eachMs": 4.763084,
+      "allMs": 3348.3755,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat",
+      "peakRssMb": 111.046875,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.828125,
+      "renderRssMb": 58.21875,
+      "rssAfterMb": 111.046875,
+      "growthMb": 23.203125,
+      "heapAfterMb": 5.171913146972656,
+      "firstMs": 29.062291,
+      "eachMs": 4.719166,
+      "allMs": 3325.464333,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat",
+      "peakRssMb": 114.328125,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.90625,
+      "renderRssMb": 61.421875,
+      "rssAfterMb": 114.34375,
+      "growthMb": 25.234375,
+      "heapAfterMb": 5.1457672119140625,
+      "firstMs": 28.059292,
+      "eachMs": 4.727833,
+      "allMs": 3349.276667,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat-nocache",
+      "peakRssMb": 111.8125,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.953125,
+      "renderRssMb": 58.859375,
+      "rssAfterMb": 111.828125,
+      "growthMb": 23.8125,
+      "heapAfterMb": 5.172515869140625,
+      "firstMs": 29.437666,
+      "eachMs": 5.000792,
+      "allMs": 3490.483625,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat-nocache",
+      "peakRssMb": 111.28125,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.859375,
+      "renderRssMb": 58.421875,
+      "rssAfterMb": 111.28125,
+      "growthMb": 24.453125,
+      "heapAfterMb": 5.146385192871094,
+      "firstMs": 28.193875,
+      "eachMs": 5.008541,
+      "allMs": 3503.390708,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat-nocache",
+      "peakRssMb": 110.8125,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.65625,
+      "renderRssMb": 58.15625,
+      "rssAfterMb": 110.8125,
+      "growthMb": 22.953125,
+      "heapAfterMb": 5.146415710449219,
+      "firstMs": 28.848792,
+      "eachMs": 5.267959,
+      "allMs": 3781.734041,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat-nocache",
+      "peakRssMb": 110.46875,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.640625,
+      "renderRssMb": 57.828125,
+      "rssAfterMb": 110.46875,
+      "growthMb": 23.921875,
+      "heapAfterMb": 5.146385192871094,
+      "firstMs": 28.838292,
+      "eachMs": 4.97475,
+      "allMs": 3475.178042,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-repeat-nocache",
+      "peakRssMb": 112.859375,
+      "outputs": 660,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.6875,
+      "renderRssMb": 60.171875,
+      "rssAfterMb": 112.859375,
+      "growthMb": 24.40625,
+      "heapAfterMb": 5.146453857421875,
+      "firstMs": 28.574833,
+      "eachMs": 5.312083,
+      "allMs": 4087.101833,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst-4",
+      "peakRssMb": 125.875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.859375,
+      "renderRssMb": 73.015625,
+      "rssAfterMb": 125.875,
+      "heapAfterMb": 5.00933837890625,
+      "firstMs": 30.902625,
+      "eachMs": 7.945958,
+      "allMs": 74.205792,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst-4",
+      "peakRssMb": 125.59375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.046875,
+      "renderRssMb": 72.546875,
+      "rssAfterMb": 125.59375,
+      "heapAfterMb": 5.0094146728515625,
+      "firstMs": 29.473959,
+      "eachMs": 8.586917,
+      "allMs": 75.846333,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst-4",
+      "peakRssMb": 126.046875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.125,
+      "renderRssMb": 72.921875,
+      "rssAfterMb": 126.046875,
+      "heapAfterMb": 5.009269714355469,
+      "firstMs": 28.504584,
+      "eachMs": 8.102834,
+      "allMs": 75.321792,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst-4",
+      "peakRssMb": 128.46875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.15625,
+      "renderRssMb": 75.3125,
+      "rssAfterMb": 128.46875,
+      "heapAfterMb": 5.009239196777344,
+      "firstMs": 31.088125,
+      "eachMs": 9.27725,
+      "allMs": 81.33275,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst-4",
+      "peakRssMb": 128.203125,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.90625,
+      "renderRssMb": 75.296875,
+      "rssAfterMb": 128.203125,
+      "heapAfterMb": 5.009269714355469,
+      "firstMs": 30.013542,
+      "eachMs": 8.586333,
+      "allMs": 77.089084,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst",
+      "peakRssMb": 134.5625,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.734375,
+      "renderRssMb": 81.828125,
+      "rssAfterMb": 134.5625,
+      "heapAfterMb": 5.005027770996094,
+      "firstMs": 36.963292,
+      "eachMs": 57.165958,
+      "allMs": 90.665792,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst",
+      "peakRssMb": 127.234375,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.984375,
+      "renderRssMb": 74.25,
+      "rssAfterMb": 127.234375,
+      "heapAfterMb": 5.005073547363281,
+      "firstMs": 33.209375,
+      "eachMs": 44.79675,
+      "allMs": 74.088625,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst",
+      "peakRssMb": 125.6875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 72.9375,
+      "rssAfterMb": 125.6875,
+      "heapAfterMb": 5.005027770996094,
+      "firstMs": 34.371166,
+      "eachMs": 45.055958,
+      "allMs": 77.947584,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst",
+      "peakRssMb": 135.390625,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.9375,
+      "renderRssMb": 82.453125,
+      "rssAfterMb": 135.40625,
+      "heapAfterMb": 5.004997253417969,
+      "firstMs": 34.444083,
+      "eachMs": 48.725834,
+      "allMs": 72.371041,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "png-burst",
+      "peakRssMb": 129.78125,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.734375,
+      "renderRssMb": 77.046875,
+      "rssAfterMb": 129.796875,
+      "heapAfterMb": 5.005027770996094,
+      "firstMs": 33.594209,
+      "eachMs": 49.723334,
+      "allMs": 73.263541,
+      "outKb": 93.6357421875
+    },
+    {
+      "scenario": "svg-deck",
+      "peakRssMb": 64.71875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.9375,
+      "renderRssMb": 11.78125,
+      "rssAfterMb": 64.734375,
+      "heapAfterMb": 5.05218505859375,
+      "firstMs": 21.702166,
+      "eachMs": 1.471458,
+      "allMs": 56.1125,
+      "outKb": 92.1083984375
+    },
+    {
+      "scenario": "svg-deck",
+      "peakRssMb": 64.8125,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.765625,
+      "renderRssMb": 12.046875,
+      "rssAfterMb": 64.8125,
+      "heapAfterMb": 5.052177429199219,
+      "firstMs": 22.586791,
+      "eachMs": 1.5135,
+      "allMs": 56.7085,
+      "outKb": 92.1083984375
+    },
+    {
+      "scenario": "svg-deck",
+      "peakRssMb": 64.6875,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 52.828125,
+      "renderRssMb": 11.859375,
+      "rssAfterMb": 64.703125,
+      "heapAfterMb": 5.052154541015625,
+      "firstMs": 21.978667,
+      "eachMs": 1.41,
+      "allMs": 55.174667,
+      "outKb": 92.1083984375
+    },
+    {
+      "scenario": "svg-deck",
+      "peakRssMb": 65.0625,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.09375,
+      "renderRssMb": 11.96875,
+      "rssAfterMb": 65.078125,
+      "heapAfterMb": 5.052253723144531,
+      "firstMs": 23.856625,
+      "eachMs": 1.495416,
+      "allMs": 60.031375,
+      "outKb": 92.1083984375
+    },
+    {
+      "scenario": "svg-deck",
+      "peakRssMb": 65.390625,
+      "outputs": 33,
+      "inputKb": 223.2626953125,
+      "loadedRssMb": 53.1875,
+      "renderRssMb": 12.203125,
+      "rssAfterMb": 65.40625,
+      "heapAfterMb": 5.0520782470703125,
+      "firstMs": 26.5935,
+      "eachMs": 1.63875,
+      "allMs": 62.305959,
+      "outKb": 92.1083984375
+    },
+    {
+      "scenario": "pdf-deck",
+      "peakRssMb": 160.84375,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.953125,
+      "renderRssMb": 107.890625,
+      "rssAfterMb": 160.359375,
+      "heapAfterMb": 5.0906829833984375,
+      "firstMs": 237.371292,
+      "eachMs": 221.578042,
+      "allMs": 222.866875,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-deck",
+      "peakRssMb": 163.75,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.734375,
+      "renderRssMb": 111.015625,
+      "rssAfterMb": 163.578125,
+      "heapAfterMb": 5.090614318847656,
+      "firstMs": 229.761875,
+      "eachMs": 215.92025,
+      "allMs": 217.526042,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-deck",
+      "peakRssMb": 163.828125,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.921875,
+      "renderRssMb": 110.90625,
+      "rssAfterMb": 163.71875,
+      "heapAfterMb": 5.090568542480469,
+      "firstMs": 229.061417,
+      "eachMs": 216.595625,
+      "allMs": 218.118625,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-deck",
+      "peakRssMb": 162.078125,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 53.09375,
+      "renderRssMb": 108.984375,
+      "rssAfterMb": 161.5625,
+      "heapAfterMb": 5.090545654296875,
+      "firstMs": 232.092959,
+      "eachMs": 218.359541,
+      "allMs": 220.682917,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-deck",
+      "peakRssMb": 161.703125,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 53.03125,
+      "renderRssMb": 108.671875,
+      "rssAfterMb": 161.171875,
+      "heapAfterMb": 5.090492248535156,
+      "firstMs": 235.105333,
+      "eachMs": 222.227458,
+      "allMs": 224.2825,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-repeat",
+      "peakRssMb": 230.0625,
+      "outputs": 20,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.90625,
+      "renderRssMb": 177.15625,
+      "rssAfterMb": 227.296875,
+      "growthMb": 68.046875,
+      "heapAfterMb": 5.318092346191406,
+      "firstMs": 228.235292,
+      "eachMs": 71.896209,
+      "allMs": 1605.040333,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-repeat",
+      "peakRssMb": 232.046875,
+      "outputs": 20,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.765625,
+      "renderRssMb": 179.28125,
+      "rssAfterMb": 229.234375,
+      "growthMb": 68.921875,
+      "heapAfterMb": 5.321098327636719,
+      "firstMs": 226.659459,
+      "eachMs": 71.540708,
+      "allMs": 1579.431625,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-repeat",
+      "peakRssMb": 226.765625,
+      "outputs": 20,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.9375,
+      "renderRssMb": 173.828125,
+      "rssAfterMb": 224.828125,
+      "growthMb": 61.640625,
+      "heapAfterMb": 5.318931579589844,
+      "firstMs": 229.377375,
+      "eachMs": 149.883959,
+      "allMs": 2828.997958,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-repeat",
+      "peakRssMb": 226.65625,
+      "outputs": 20,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 53,
+      "renderRssMb": 173.65625,
+      "rssAfterMb": 224.109375,
+      "growthMb": 64.71875,
+      "heapAfterMb": 5.318939208984375,
+      "firstMs": 793.009375,
+      "eachMs": 72.640583,
+      "allMs": 2436.35325,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-repeat",
+      "peakRssMb": 225.609375,
+      "outputs": 20,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.40625,
+      "renderRssMb": 173.203125,
+      "rssAfterMb": 223.703125,
+      "growthMb": 60.234375,
+      "heapAfterMb": 5.318931579589844,
+      "firstMs": 255.726666,
+      "eachMs": 70.76925,
+      "allMs": 1603.68525,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-close",
+      "peakRssMb": 162.390625,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.8125,
+      "renderRssMb": 109.578125,
+      "rssAfterMb": 135.71875,
+      "heapAfterMb": 5.064552307128906,
+      "firstMs": 232.586792,
+      "eachMs": 218.201708,
+      "allMs": 219.717292,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-close",
+      "peakRssMb": 163.0625,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.90625,
+      "renderRssMb": 110.15625,
+      "rssAfterMb": 136.40625,
+      "heapAfterMb": 5.0650177001953125,
+      "firstMs": 222.255,
+      "eachMs": 210.897542,
+      "allMs": 212.219666,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-close",
+      "peakRssMb": 160.296875,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.515625,
+      "renderRssMb": 107.78125,
+      "rssAfterMb": 133.625,
+      "heapAfterMb": 5.064552307128906,
+      "firstMs": 224.022625,
+      "eachMs": 211.278041,
+      "allMs": 212.742667,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-close",
+      "peakRssMb": 161,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 108.25,
+      "rssAfterMb": 134.359375,
+      "heapAfterMb": 5.0645294189453125,
+      "firstMs": 229.416334,
+      "eachMs": 216.972417,
+      "allMs": 221.179,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-close",
+      "peakRssMb": 158.984375,
+      "outputs": 1,
+      "inputKb": 143.8271484375,
+      "loadedRssMb": 52.671875,
+      "renderRssMb": 106.3125,
+      "rssAfterMb": 132.34375,
+      "heapAfterMb": 5.0645294189453125,
+      "firstMs": 389.252708,
+      "eachMs": 366.8355,
+      "allMs": 368.952417,
+      "outKb": 170.0439453125
+    },
+    {
+      "scenario": "pdf-page",
+      "peakRssMb": 125.734375,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 53.125,
+      "renderRssMb": 72.609375,
+      "rssAfterMb": 125.78125,
+      "heapAfterMb": 5.06634521484375,
+      "firstMs": 114.793792,
+      "eachMs": 102.543542,
+      "allMs": 103.821208,
+      "outKb": 29.103515625
+    },
+    {
+      "scenario": "pdf-page",
+      "peakRssMb": 124.65625,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 71.90625,
+      "rssAfterMb": 124.6875,
+      "heapAfterMb": 5.066368103027344,
+      "firstMs": 122.091709,
+      "eachMs": 108.11625,
+      "allMs": 109.591041,
+      "outKb": 29.103515625
+    },
+    {
+      "scenario": "pdf-page",
+      "peakRssMb": 123.609375,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 53.046875,
+      "renderRssMb": 70.5625,
+      "rssAfterMb": 123.640625,
+      "heapAfterMb": 5.0664215087890625,
+      "firstMs": 115.0215,
+      "eachMs": 102.451667,
+      "allMs": 103.8805,
+      "outKb": 29.103515625
+    },
+    {
+      "scenario": "pdf-page",
+      "peakRssMb": 126.1875,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.75,
+      "renderRssMb": 73.4375,
+      "rssAfterMb": 126.203125,
+      "heapAfterMb": 5.066368103027344,
+      "firstMs": 123.290625,
+      "eachMs": 110.33325,
+      "allMs": 113.474792,
+      "outKb": 29.103515625
+    },
+    {
+      "scenario": "pdf-page",
+      "peakRssMb": 124.984375,
+      "outputs": 1,
+      "inputKb": 11.3056640625,
+      "loadedRssMb": 52.828125,
+      "renderRssMb": 72.15625,
+      "rssAfterMb": 125.03125,
+      "heapAfterMb": 5.066436767578125,
+      "firstMs": 129.7855,
+      "eachMs": 112.813541,
+      "allMs": 114.169208,
+      "outKb": 29.103515625
+    }
+  ],
+  "summary": {
+    "backend": {
+      "outputs": {
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "peakRssMb": {
+        "median": 53.546875,
+        "min": 53.40625,
+        "max": 53.65625
+      },
+      "loadedRssMb": {
+        "median": 52.765625,
+        "min": 52.625,
+        "max": 52.875
+      },
+      "renderRssMb": {
+        "median": 0.78125,
+        "min": 0.78125,
+        "max": 0.78125
+      },
+      "rssAfterMb": {
+        "median": 52.8125,
+        "min": 52.65625,
+        "max": 52.90625
+      },
+      "heapAfterMb": {
+        "median": 4.790534973144531,
+        "min": 4.79052734375,
+        "max": 4.790534973144531
+      },
+      "firstMs": {
+        "median": 13.055083,
+        "min": 12.327417,
+        "max": 15.147209
+      }
+    },
+    "fonts": {
+      "outputs": {
+        "median": 0,
+        "min": 0,
+        "max": 0
+      },
+      "peakRssMb": {
+        "median": 55.90625,
+        "min": 55.703125,
+        "max": 56.21875
+      },
+      "loadedRssMb": {
+        "median": 52.875,
+        "min": 52.703125,
+        "max": 53.09375
+      },
+      "renderRssMb": {
+        "median": 3.078125,
+        "min": 3,
+        "max": 3.125
+      },
+      "rssAfterMb": {
+        "median": 55.984375,
+        "min": 55.828125,
+        "max": 56.28125
+      },
+      "heapAfterMb": {
+        "median": 4.870979309082031,
+        "min": 4.870750427246094,
+        "max": 4.871025085449219
+      },
+      "firstMs": {
+        "median": 18.811125,
+        "min": 17.525541,
+        "max": 20.043042
+      }
+    },
+    "png-first": {
+      "outputs": {
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "inputKb": {
+        "median": 11.3056640625,
+        "min": 11.3056640625,
+        "max": 11.3056640625
+      },
+      "peakRssMb": {
+        "median": 70.78125,
+        "min": 70.375,
+        "max": 72.375
+      },
+      "loadedRssMb": {
+        "median": 52.796875,
+        "min": 52.640625,
+        "max": 53.046875
+      },
+      "renderRssMb": {
+        "median": 18,
+        "min": 17.328125,
+        "max": 19.734375
+      },
+      "rssAfterMb": {
+        "median": 70.796875,
+        "min": 70.421875,
+        "max": 72.390625
+      },
+      "heapAfterMb": {
+        "median": 4.9346160888671875,
+        "min": 4.934539794921875,
+        "max": 4.934684753417969
+      },
+      "firstMs": {
+        "median": 26.824917,
+        "min": 26.480791,
+        "max": 30.802458
+      },
+      "eachMs": {
+        "median": 14.287833,
+        "min": 13.83975,
+        "max": 19.142083
+      },
+      "allMs": {
+        "median": 15.7625,
+        "min": 15.043125,
+        "max": 20.531583
+      },
+      "outKb": {
+        "median": 66.58984375,
+        "min": 66.58984375,
+        "max": 66.58984375
+      }
+    },
+    "png-deck": {
+      "outputs": {
+        "median": 33,
+        "min": 33,
+        "max": 33
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 89.09375,
+        "min": 88.296875,
+        "max": 89.5625
+      },
+      "loadedRssMb": {
+        "median": 52.75,
+        "min": 52.609375,
+        "max": 53.078125
+      },
+      "renderRssMb": {
+        "median": 36.34375,
+        "min": 35.6875,
+        "max": 36.734375
+      },
+      "rssAfterMb": {
+        "median": 89.09375,
+        "min": 88.3125,
+        "max": 89.578125
+      },
+      "heapAfterMb": {
+        "median": 5.0024871826171875,
+        "min": 5.002418518066406,
+        "max": 5.0025177001953125
+      },
+      "firstMs": {
+        "median": 28.946,
+        "min": 26.931208,
+        "max": 33.480667
+      },
+      "eachMs": {
+        "median": 5.772459,
+        "min": 5.652958,
+        "max": 5.9175
+      },
+      "allMs": {
+        "median": 207.888292,
+        "min": 202.531792,
+        "max": 209.292375
+      },
+      "outKb": {
+        "median": 93.6357421875,
+        "min": 93.6357421875,
+        "max": 93.6357421875
+      }
+    },
+    "png-deck-2x": {
+      "outputs": {
+        "median": 33,
+        "min": 33,
+        "max": 33
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 140.859375,
+        "min": 140.609375,
+        "max": 141.796875
+      },
+      "loadedRssMb": {
+        "median": 52.875,
+        "min": 52.640625,
+        "max": 53.09375
+      },
+      "renderRssMb": {
+        "median": 88.15625,
+        "min": 87.765625,
+        "max": 88.90625
+      },
+      "rssAfterMb": {
+        "median": 140.875,
+        "min": 140.625,
+        "max": 141.796875
+      },
+      "heapAfterMb": {
+        "median": 5.002593994140625,
+        "min": 5.0025634765625,
+        "max": 5.0027008056640625
+      },
+      "firstMs": {
+        "median": 40.37425,
+        "min": 37.785958,
+        "max": 52.895833
+      },
+      "eachMs": {
+        "median": 17.955083,
+        "min": 17.526583,
+        "max": 18.243584
+      },
+      "allMs": {
+        "median": 607.012375,
+        "min": 553.74375,
+        "max": 620.164375
+      },
+      "outKb": {
+        "median": 217.5498046875,
+        "min": 217.5498046875,
+        "max": 217.5498046875
+      }
+    },
+    "png-repeat": {
+      "outputs": {
+        "median": 660,
+        "min": 660,
+        "max": 660
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 111.59375,
+        "min": 111.046875,
+        "max": 114.328125
+      },
+      "loadedRssMb": {
+        "median": 52.84375,
+        "min": 52.59375,
+        "max": 52.96875
+      },
+      "renderRssMb": {
+        "median": 58.75,
+        "min": 58.21875,
+        "max": 61.421875
+      },
+      "rssAfterMb": {
+        "median": 111.59375,
+        "min": 111.046875,
+        "max": 114.34375
+      },
+      "growthMb": {
+        "median": 23.6875,
+        "min": 22.6875,
+        "max": 25.34375
+      },
+      "heapAfterMb": {
+        "median": 5.145805358886719,
+        "min": 5.1457672119140625,
+        "max": 5.171913146972656
+      },
+      "firstMs": {
+        "median": 29.062291,
+        "min": 27.775167,
+        "max": 31.373958
+      },
+      "eachMs": {
+        "median": 4.719166,
+        "min": 4.639,
+        "max": 4.763084
+      },
+      "allMs": {
+        "median": 3325.464333,
+        "min": 3304.452417,
+        "max": 3349.276667
+      },
+      "outKb": {
+        "median": 93.6357421875,
+        "min": 93.6357421875,
+        "max": 93.6357421875
+      }
+    },
+    "png-repeat-nocache": {
+      "outputs": {
+        "median": 660,
+        "min": 660,
+        "max": 660
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 111.28125,
+        "min": 110.46875,
+        "max": 112.859375
+      },
+      "loadedRssMb": {
+        "median": 52.6875,
+        "min": 52.640625,
+        "max": 52.953125
+      },
+      "renderRssMb": {
+        "median": 58.421875,
+        "min": 57.828125,
+        "max": 60.171875
+      },
+      "rssAfterMb": {
+        "median": 111.28125,
+        "min": 110.46875,
+        "max": 112.859375
+      },
+      "growthMb": {
+        "median": 23.921875,
+        "min": 22.953125,
+        "max": 24.453125
+      },
+      "heapAfterMb": {
+        "median": 5.146415710449219,
+        "min": 5.146385192871094,
+        "max": 5.172515869140625
+      },
+      "firstMs": {
+        "median": 28.838292,
+        "min": 28.193875,
+        "max": 29.437666
+      },
+      "eachMs": {
+        "median": 5.008541,
+        "min": 4.97475,
+        "max": 5.312083
+      },
+      "allMs": {
+        "median": 3503.390708,
+        "min": 3475.178042,
+        "max": 4087.101833
+      },
+      "outKb": {
+        "median": 93.6357421875,
+        "min": 93.6357421875,
+        "max": 93.6357421875
+      }
+    },
+    "png-burst-4": {
+      "outputs": {
+        "median": 33,
+        "min": 33,
+        "max": 33
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 126.046875,
+        "min": 125.59375,
+        "max": 128.46875
+      },
+      "loadedRssMb": {
+        "median": 53.046875,
+        "min": 52.859375,
+        "max": 53.15625
+      },
+      "renderRssMb": {
+        "median": 73.015625,
+        "min": 72.546875,
+        "max": 75.3125
+      },
+      "rssAfterMb": {
+        "median": 126.046875,
+        "min": 125.59375,
+        "max": 128.46875
+      },
+      "heapAfterMb": {
+        "median": 5.009269714355469,
+        "min": 5.009239196777344,
+        "max": 5.0094146728515625
+      },
+      "firstMs": {
+        "median": 30.013542,
+        "min": 28.504584,
+        "max": 31.088125
+      },
+      "eachMs": {
+        "median": 8.586333,
+        "min": 7.945958,
+        "max": 9.27725
+      },
+      "allMs": {
+        "median": 75.846333,
+        "min": 74.205792,
+        "max": 81.33275
+      },
+      "outKb": {
+        "median": 93.6357421875,
+        "min": 93.6357421875,
+        "max": 93.6357421875
+      }
+    },
+    "png-burst": {
+      "outputs": {
+        "median": 33,
+        "min": 33,
+        "max": 33
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 129.78125,
+        "min": 125.6875,
+        "max": 135.390625
+      },
+      "loadedRssMb": {
+        "median": 52.75,
+        "min": 52.734375,
+        "max": 52.984375
+      },
+      "renderRssMb": {
+        "median": 77.046875,
+        "min": 72.9375,
+        "max": 82.453125
+      },
+      "rssAfterMb": {
+        "median": 129.796875,
+        "min": 125.6875,
+        "max": 135.40625
+      },
+      "heapAfterMb": {
+        "median": 5.005027770996094,
+        "min": 5.004997253417969,
+        "max": 5.005073547363281
+      },
+      "firstMs": {
+        "median": 34.371166,
+        "min": 33.209375,
+        "max": 36.963292
+      },
+      "eachMs": {
+        "median": 48.725834,
+        "min": 44.79675,
+        "max": 57.165958
+      },
+      "allMs": {
+        "median": 74.088625,
+        "min": 72.371041,
+        "max": 90.665792
+      },
+      "outKb": {
+        "median": 93.6357421875,
+        "min": 93.6357421875,
+        "max": 93.6357421875
+      }
+    },
+    "svg-deck": {
+      "outputs": {
+        "median": 33,
+        "min": 33,
+        "max": 33
+      },
+      "inputKb": {
+        "median": 223.2626953125,
+        "min": 223.2626953125,
+        "max": 223.2626953125
+      },
+      "peakRssMb": {
+        "median": 64.8125,
+        "min": 64.6875,
+        "max": 65.390625
+      },
+      "loadedRssMb": {
+        "median": 52.9375,
+        "min": 52.765625,
+        "max": 53.1875
+      },
+      "renderRssMb": {
+        "median": 11.96875,
+        "min": 11.78125,
+        "max": 12.203125
+      },
+      "rssAfterMb": {
+        "median": 64.8125,
+        "min": 64.703125,
+        "max": 65.40625
+      },
+      "heapAfterMb": {
+        "median": 5.052177429199219,
+        "min": 5.0520782470703125,
+        "max": 5.052253723144531
+      },
+      "firstMs": {
+        "median": 22.586791,
+        "min": 21.702166,
+        "max": 26.5935
+      },
+      "eachMs": {
+        "median": 1.495416,
+        "min": 1.41,
+        "max": 1.63875
+      },
+      "allMs": {
+        "median": 56.7085,
+        "min": 55.174667,
+        "max": 62.305959
+      },
+      "outKb": {
+        "median": 92.1083984375,
+        "min": 92.1083984375,
+        "max": 92.1083984375
+      }
+    },
+    "pdf-deck": {
+      "outputs": {
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "inputKb": {
+        "median": 143.8271484375,
+        "min": 143.8271484375,
+        "max": 143.8271484375
+      },
+      "peakRssMb": {
+        "median": 162.078125,
+        "min": 160.84375,
+        "max": 163.828125
+      },
+      "loadedRssMb": {
+        "median": 52.953125,
+        "min": 52.734375,
+        "max": 53.09375
+      },
+      "renderRssMb": {
+        "median": 108.984375,
+        "min": 107.890625,
+        "max": 111.015625
+      },
+      "rssAfterMb": {
+        "median": 161.5625,
+        "min": 160.359375,
+        "max": 163.71875
+      },
+      "heapAfterMb": {
+        "median": 5.090568542480469,
+        "min": 5.090492248535156,
+        "max": 5.0906829833984375
+      },
+      "firstMs": {
+        "median": 232.092959,
+        "min": 229.061417,
+        "max": 237.371292
+      },
+      "eachMs": {
+        "median": 218.359541,
+        "min": 215.92025,
+        "max": 222.227458
+      },
+      "allMs": {
+        "median": 220.682917,
+        "min": 217.526042,
+        "max": 224.2825
+      },
+      "outKb": {
+        "median": 170.0439453125,
+        "min": 170.0439453125,
+        "max": 170.0439453125
+      }
+    },
+    "pdf-repeat": {
+      "outputs": {
+        "median": 20,
+        "min": 20,
+        "max": 20
+      },
+      "inputKb": {
+        "median": 143.8271484375,
+        "min": 143.8271484375,
+        "max": 143.8271484375
+      },
+      "peakRssMb": {
+        "median": 226.765625,
+        "min": 225.609375,
+        "max": 232.046875
+      },
+      "loadedRssMb": {
+        "median": 52.90625,
+        "min": 52.40625,
+        "max": 53
+      },
+      "renderRssMb": {
+        "median": 173.828125,
+        "min": 173.203125,
+        "max": 179.28125
+      },
+      "rssAfterMb": {
+        "median": 224.828125,
+        "min": 223.703125,
+        "max": 229.234375
+      },
+      "growthMb": {
+        "median": 64.71875,
+        "min": 60.234375,
+        "max": 68.921875
+      },
+      "heapAfterMb": {
+        "median": 5.318931579589844,
+        "min": 5.318092346191406,
+        "max": 5.321098327636719
+      },
+      "firstMs": {
+        "median": 229.377375,
+        "min": 226.659459,
+        "max": 793.009375
+      },
+      "eachMs": {
+        "median": 71.896209,
+        "min": 70.76925,
+        "max": 149.883959
+      },
+      "allMs": {
+        "median": 1605.040333,
+        "min": 1579.431625,
+        "max": 2828.997958
+      },
+      "outKb": {
+        "median": 170.0439453125,
+        "min": 170.0439453125,
+        "max": 170.0439453125
+      }
+    },
+    "pdf-close": {
+      "outputs": {
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "inputKb": {
+        "median": 143.8271484375,
+        "min": 143.8271484375,
+        "max": 143.8271484375
+      },
+      "peakRssMb": {
+        "median": 161,
+        "min": 158.984375,
+        "max": 163.0625
+      },
+      "loadedRssMb": {
+        "median": 52.75,
+        "min": 52.515625,
+        "max": 52.90625
+      },
+      "renderRssMb": {
+        "median": 108.25,
+        "min": 106.3125,
+        "max": 110.15625
+      },
+      "rssAfterMb": {
+        "median": 134.359375,
+        "min": 132.34375,
+        "max": 136.40625
+      },
+      "heapAfterMb": {
+        "median": 5.064552307128906,
+        "min": 5.0645294189453125,
+        "max": 5.0650177001953125
+      },
+      "firstMs": {
+        "median": 229.416334,
+        "min": 222.255,
+        "max": 389.252708
+      },
+      "eachMs": {
+        "median": 216.972417,
+        "min": 210.897542,
+        "max": 366.8355
+      },
+      "allMs": {
+        "median": 219.717292,
+        "min": 212.219666,
+        "max": 368.952417
+      },
+      "outKb": {
+        "median": 170.0439453125,
+        "min": 170.0439453125,
+        "max": 170.0439453125
+      }
+    },
+    "pdf-page": {
+      "outputs": {
+        "median": 1,
+        "min": 1,
+        "max": 1
+      },
+      "inputKb": {
+        "median": 11.3056640625,
+        "min": 11.3056640625,
+        "max": 11.3056640625
+      },
+      "peakRssMb": {
+        "median": 124.984375,
+        "min": 123.609375,
+        "max": 126.1875
+      },
+      "loadedRssMb": {
+        "median": 52.828125,
+        "min": 52.75,
+        "max": 53.125
+      },
+      "renderRssMb": {
+        "median": 72.15625,
+        "min": 70.5625,
+        "max": 73.4375
+      },
+      "rssAfterMb": {
+        "median": 125.03125,
+        "min": 123.640625,
+        "max": 126.203125
+      },
+      "heapAfterMb": {
+        "median": 5.066368103027344,
+        "min": 5.06634521484375,
+        "max": 5.066436767578125
+      },
+      "firstMs": {
+        "median": 122.091709,
+        "min": 114.793792,
+        "max": 129.7855
+      },
+      "eachMs": {
+        "median": 108.11625,
+        "min": 102.451667,
+        "max": 112.813541
+      },
+      "allMs": {
+        "median": 109.591041,
+        "min": 103.821208,
+        "max": 114.169208
+      },
+      "outKb": {
+        "median": 29.103515625,
+        "min": 29.103515625,
+        "max": 29.103515625
+      }
+    }
+  }
+}

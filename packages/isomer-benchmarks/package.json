@@ -59,6 +59,7 @@
     "@elastic/isomer-primitives-charts": "workspace:*",
     "@elastic/isomer-primitives-slides": "workspace:*",
     "@elastic/isomer-runtime": "workspace:*",
-    "@fontsource/inter": "^5.3.0"
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/roboto-mono": "^5.3.0"
   }
 }
