@@ -10,6 +10,7 @@
 // committed baselines.
 //
 //   node cli/run.cjs <suite> [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
+//   node cli/run.cjs <suite> --check
 //   node cli/run.cjs report [--check]
 //   node cli/run.cjs smoke
 //
@@ -22,7 +23,7 @@ const { dirname, join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '..');
 const REPO = resolve(PACKAGE, '../..');
-const SUITES = ['load', 'synthetic'];
+const SUITES = ['load', 'synthetic', 'size'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
 /** What a child writes its one JSON record to, apart from anything a package logs. */
 const RECORD_FD = 3;
@@ -201,6 +202,12 @@ const runSuite = async (suiteName, args) => {
   const suite = suiteOf(suiteName);
   const runs = suite.deterministic ? 1 : runsOption(args);
   const passed = options(args, '--config');
+  const check = args.includes('--check');
+  if (check && (passed.length > 0 || args.includes('--scenarios'))) {
+    throw new Error(
+      "--check holds this repository's packs to bounds/; it takes no --config or --scenarios"
+    );
+  }
   if (passed.length > 0 && !suite.usesConfigs) {
     throw new Error(`${suiteName} measures its own pack; it takes no --config`);
   }
@@ -211,6 +218,23 @@ const runSuite = async (suiteName, args) => {
           : DEFAULT_CONFIGS.map((path) => join(REPO, path))
       )
     : [];
+  const bounds = check ? boundsFor(suiteName) : {};
+  if (check && suite.mustBound !== undefined) {
+    const missing = helpers().unbounded(
+      Object.fromEntries(
+        (await suite.scenarios(configs)).map((scenario) => [
+          scenario.name,
+          suite.mustBound(scenario),
+        ])
+      ),
+      bounds
+    );
+    if (missing.length > 0) {
+      throw new Error(
+        `${suiteName}: no bound for ${missing.join(', ')}; add each to bounds/${suiteName}.json`
+      );
+    }
+  }
   const { scenarios, records } = await measure(suiteName, {
     runs,
     configs,
@@ -251,11 +275,36 @@ const runSuite = async (suiteName, args) => {
   if (write !== undefined) {
     writeFileSync(fromStart(write), `${JSON.stringify(result, null, 2)}\n`);
   }
+  if (check) {
+    holdToBounds(suiteName, result, bounds);
+    return;
+  }
   process.stdout.write(
     args.includes('--json')
       ? `${JSON.stringify(result, null, 2)}\n`
       : `${suiteSection(result)}\n`
   );
+};
+
+const boundsFor = (suiteName) =>
+  JSON.parse(
+    readFileSync(join(PACKAGE, 'bounds', `${suiteName}.json`), 'utf8')
+  );
+
+const holdToBounds = (suiteName, { summary }, bounds) => {
+  const checks = helpers().checkBounds(summary, bounds);
+  for (const { scenario, key, median, bound, ok } of checks) {
+    process.stdout.write(
+      `${ok ? '✓' : '✗'} ${scenario} ${key}: ${median.toFixed(1)}, bound ${bound}\n`
+    );
+  }
+  const over = checks.filter(({ ok }) => !ok).length;
+  if (over > 0) {
+    process.stderr.write(
+      `${over} of ${checks.length} over their bound in bounds/${suiteName}.json.\n`
+    );
+    process.exitCode = 1;
+  }
 };
 
 /** One run of each suite's first and last scenario: does every suite still run? */

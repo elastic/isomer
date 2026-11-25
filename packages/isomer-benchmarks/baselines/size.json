@@ -1,0 +1,872 @@
+{
+  "schemaVersion": 1,
+  "suite": "size",
+  "about": "What each public entry adds to a host that bundles it, such as a render service or a browser app: esbuild bundles the entry's ESM build, minified, with the entry's peers and React and zod left external, since the host brings them. A peer such as `@elastic/charts` is not counted. The browser column is empty for an entry that only runs on Node. Sizes don't vary between runs or machines.",
+  "environment": {
+    "node": "v22.23.5",
+    "v8": "12.4.254.21-node.57",
+    "platform": "linux",
+    "arch": "x64",
+    "cpus": 2,
+    "cpuModel": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+    "totalMemoryMb": 8024,
+    "cgroupMemoryLimitMb": null,
+    "nodeFlags": [
+      "--disallow-code-generation-from-strings",
+      "--expose-gc"
+    ],
+    "env": {
+      "NODE_ENV": "production",
+      "NODE_OPTIONS": null,
+      "MALLOC_ARENA_MAX": null,
+      "UV_THREADPOOL_SIZE": null
+    },
+    "commit": "5db4fa63e7f7ee7b2ef306af2686929d7d952fa8",
+    "packages": {
+      "@elastic/isomer-sdk": "0.0.0-development",
+      "@elastic/isomer-runtime": "0.0.0-development",
+      "@elastic/isomer-agent-tools": "0.0.0-development",
+      "@elastic/isomer-image-takumi": "0.0.0-development",
+      "@elastic/isomer-primitives-charts": "0.0.0-development",
+      "@elastic/isomer-charts-elastic": "0.0.0-development",
+      "@elastic/isomer-primitives-slides": "0.0.0-development",
+      "react": "18.3.1",
+      "react-dom": "18.3.1",
+      "zod": "4.6.5"
+    }
+  },
+  "packs": [
+    {
+      "name": "slides",
+      "build": "built",
+      "packages": {
+        "@elastic/isomer-sdk": "0.0.0-development",
+        "@elastic/isomer-runtime": "0.0.0-development"
+      }
+    },
+    {
+      "name": "charts",
+      "build": "built",
+      "packages": {
+        "@elastic/isomer-sdk": "0.0.0-development",
+        "@elastic/isomer-runtime": "0.0.0-development"
+      }
+    },
+    {
+      "name": "charts-elastic",
+      "build": "built",
+      "packages": {
+        "@elastic/isomer-sdk": "0.0.0-development",
+        "@elastic/isomer-runtime": "0.0.0-development"
+      }
+    }
+  ],
+  "runsPerScenario": 1,
+  "measures": [
+    {
+      "key": "nodeKb",
+      "label": "Node (KB)",
+      "digits": 1
+    },
+    {
+      "key": "nodeGzipKb",
+      "label": "Node gzip (KB)",
+      "digits": 1
+    },
+    {
+      "key": "browserKb",
+      "label": "Browser (KB)",
+      "digits": 1
+    },
+    {
+      "key": "browserGzipKb",
+      "label": "Browser gzip (KB)",
+      "digits": 1
+    },
+    {
+      "key": "ownKb",
+      "label": "Own code (KB)",
+      "digits": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "@elastic/isomer-sdk",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/schema",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/html",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/slack",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/text",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/markdown",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/react",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-sdk/author",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-runtime",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-agent-tools",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-image-takumi",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-slides",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/schema",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/scene",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-primitives-charts/resolve",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-charts-elastic",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-charts-elastic/engine",
+      "about": ""
+    },
+    {
+      "name": "@elastic/isomer-charts-elastic/node",
+      "about": ""
+    }
+  ],
+  "runs": [
+    {
+      "scenario": "@elastic/isomer-sdk",
+      "peakRssMb": 50.03515625,
+      "nodeKb": 184.6943359375,
+      "nodeGzipKb": 60.0400390625,
+      "browserKb": 149.83203125,
+      "browserGzipKb": 47.47265625,
+      "ownKb": 41.4814453125,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":42477,\"ccount\":172,\"micromark-util-character\":433,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":99,\"mdast-util-gfm-footnote\":1645,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"zwitch\":278,\"mdast-util-to-markdown\":24062,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":67,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":300,\"micromark-util-combine-extensions\":369,\"micromark-factory-space\":187,\"micromark\":9401,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27308,\"micromark-util-subtokenize\":3533,\"micromark-factory-destination\":925,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10235,\"micromark-extension-gfm-autolink-literal\":3733,\"micromark-extension-gfm-footnote\":4029,\"micromark-extension-gfm-strikethrough\":1553,\"micromark-extension-gfm-table\":5614,\"micromark-extension-gfm-task-list-item\":827,\"micromark-extension-gfm\":54}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/schema",
+      "peakRssMb": 47.921875,
+      "nodeKb": 1.7451171875,
+      "nodeGzipKb": 1.0537109375,
+      "browserKb": 1.7451171875,
+      "browserGzipKb": 1.0537109375,
+      "ownKb": 1.6025390625,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":1641}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/html",
+      "peakRssMb": 48.97265625,
+      "nodeKb": 134.9462890625,
+      "nodeGzipKb": 40.798828125,
+      "browserKb": 134.9462890625,
+      "browserGzipKb": 40.798828125,
+      "ownKb": 16.603515625,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":17002,\"acorn\":121084}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/slack",
+      "peakRssMb": 49.78515625,
+      "nodeKb": 152.70703125,
+      "nodeGzipKb": 47.95703125,
+      "browserKb": 117.8447265625,
+      "browserGzipKb": 35.57421875,
+      "ownKb": 23.7705078125,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":24341,\"ccount\":172,\"micromark-util-character\":433,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":100,\"mdast-util-gfm-footnote\":1647,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"mdast-util-to-markdown\":10879,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":67,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":300,\"micromark-util-combine-extensions\":369,\"micromark-factory-space\":187,\"micromark\":9414,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27313,\"micromark-util-subtokenize\":3533,\"micromark-factory-destination\":925,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10238,\"micromark-extension-gfm-autolink-literal\":3733,\"micromark-extension-gfm-footnote\":4032,\"micromark-extension-gfm-strikethrough\":1553,\"micromark-extension-gfm-table\":5614,\"micromark-extension-gfm-task-list-item\":827,\"micromark-extension-gfm\":54}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/text",
+      "peakRssMb": 47.95703125,
+      "nodeKb": 0.1669921875,
+      "nodeGzipKb": 0.1572265625,
+      "browserKb": 0.1669921875,
+      "browserGzipKb": 0.1572265625,
+      "ownKb": 0.134765625,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":138}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/markdown",
+      "peakRssMb": 49.28515625,
+      "nodeKb": 151.974609375,
+      "nodeGzipKb": 47.4091796875,
+      "browserKb": 117.1123046875,
+      "browserGzipKb": 34.9794921875,
+      "ownKb": 10.1962890625,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"ccount\":172,\"micromark-util-character\":433,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":99,\"mdast-util-gfm-footnote\":1645,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"zwitch\":278,\"mdast-util-to-markdown\":24056,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":66,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"@elastic/isomer-sdk\":10441,\"micromark-util-chunked\":299,\"micromark-util-combine-extensions\":369,\"micromark-factory-space\":187,\"micromark\":9396,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27287,\"micromark-util-subtokenize\":3533,\"micromark-factory-destination\":925,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10233,\"micromark-extension-gfm-autolink-literal\":3733,\"micromark-extension-gfm-footnote\":4029,\"micromark-extension-gfm-strikethrough\":1551,\"micromark-extension-gfm-table\":5614,\"micromark-extension-gfm-task-list-item\":827,\"micromark-extension-gfm\":54}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/react",
+      "peakRssMb": 49.30859375,
+      "nodeKb": 137.703125,
+      "nodeGzipKb": 43.0302734375,
+      "browserKb": 102.8408203125,
+      "browserGzipKb": 30.7294921875,
+      "ownKb": 8.9931640625,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":9209,\"ccount\":172,\"micromark-util-character\":433,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":99,\"mdast-util-gfm-footnote\":1645,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"mdast-util-to-markdown\":10879,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":67,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":299,\"micromark-util-combine-extensions\":369,\"micromark-factory-space\":187,\"micromark\":9396,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27289,\"micromark-util-subtokenize\":3533,\"micromark-factory-destination\":925,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10233,\"micromark-extension-gfm-autolink-literal\":3733,\"micromark-extension-gfm-footnote\":4029,\"micromark-extension-gfm-strikethrough\":1553,\"micromark-extension-gfm-table\":5614,\"micromark-extension-gfm-task-list-item\":827,\"micromark-extension-gfm\":54}"
+    },
+    {
+      "scenario": "@elastic/isomer-sdk/author",
+      "peakRssMb": 48.3203125,
+      "nodeKb": 35.451171875,
+      "nodeGzipKb": 13.4169921875,
+      "browserKb": 35.451171875,
+      "browserGzipKb": 13.4169921875,
+      "ownKb": 35.1201171875,
+      "ownPackage": "@elastic/isomer-sdk",
+      "nodePackages": "{\"@elastic/isomer-sdk\":35963}"
+    },
+    {
+      "scenario": "@elastic/isomer-runtime",
+      "peakRssMb": 50.8515625,
+      "nodeKb": 338.89453125,
+      "nodeGzipKb": 106.8359375,
+      "browserKb": 304.0322265625,
+      "browserGzipKb": 94.5283203125,
+      "ownKb": 11.61328125,
+      "ownPackage": "@elastic/isomer-runtime",
+      "nodePackages": "{\"@elastic/isomer-sdk\":68379,\"ccount\":172,\"micromark-util-character\":435,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":100,\"mdast-util-gfm-footnote\":1647,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"zwitch\":278,\"mdast-util-to-markdown\":24065,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":67,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":302,\"micromark-util-combine-extensions\":370,\"micromark-factory-space\":187,\"micromark\":9433,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27338,\"micromark-util-subtokenize\":3534,\"micromark-factory-destination\":925,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10266,\"micromark-extension-gfm-autolink-literal\":3741,\"micromark-extension-gfm-footnote\":4032,\"micromark-extension-gfm-strikethrough\":1556,\"micromark-extension-gfm-table\":5614,\"micromark-extension-gfm-task-list-item\":827,\"micromark-extension-gfm\":54,\"@elastic/isomer-runtime\":11892,\"acorn\":121385}"
+    },
+    {
+      "scenario": "@elastic/isomer-agent-tools",
+      "peakRssMb": 49.06640625,
+      "nodeKb": 13.896484375,
+      "nodeGzipKb": 5.345703125,
+      "browserKb": 13.896484375,
+      "browserGzipKb": 5.345703125,
+      "ownKb": 7.767578125,
+      "ownPackage": "@elastic/isomer-agent-tools",
+      "nodePackages": "{\"@elastic/isomer-sdk\":5960,\"@elastic/isomer-agent-tools\":7954}"
+    },
+    {
+      "scenario": "@elastic/isomer-image-takumi",
+      "peakRssMb": 47.95703125,
+      "nodeKb": 46.3671875,
+      "nodeGzipKb": 13.9794921875,
+      "ownKb": 6.3642578125,
+      "ownPackage": "@elastic/isomer-image-takumi",
+      "nodePackages": "{\"@elastic/isomer-image-takumi\":6517,\"@takumi-rs/core\":18218,\"@takumi-rs/helpers\":21808}"
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-slides",
+      "peakRssMb": 56.015625,
+      "nodeKb": 543.705078125,
+      "nodeGzipKb": 175.34765625,
+      "browserKb": 508.8427734375,
+      "browserGzipKb": 162.822265625,
+      "ownKb": 314.66015625,
+      "ownPackage": "@elastic/isomer-primitives-slides",
+      "nodePackages": "{\"@elastic/isomer-sdk\":51601,\"ccount\":172,\"micromark-util-character\":437,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1176,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":100,\"mdast-util-gfm-footnote\":1647,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1578,\"mdast-util-phrasing\":218,\"zwitch\":278,\"mdast-util-to-markdown\":24065,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":68,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":302,\"micromark-util-combine-extensions\":370,\"micromark-factory-space\":190,\"micromark\":9571,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27529,\"micromark-util-subtokenize\":3534,\"micromark-factory-destination\":926,\"micromark-factory-label\":636,\"micromark-factory-title\":596,\"micromark-factory-whitespace\":174,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10375,\"micromark-extension-gfm-autolink-literal\":3747,\"micromark-extension-gfm-footnote\":4038,\"micromark-extension-gfm-strikethrough\":1556,\"micromark-extension-gfm-table\":5654,\"micromark-extension-gfm-task-list-item\":830,\"micromark-extension-gfm\":54,\"@elastic/isomer-primitives-slides\":322212,\"@elastic/distillate\":32821,\"stylis\":3535}"
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts",
+      "peakRssMb": 51.8125,
+      "nodeKb": 397.8447265625,
+      "nodeGzipKb": 129.203125,
+      "browserKb": 362.982421875,
+      "browserGzipKb": 116.853515625,
+      "ownKb": 207.4443359375,
+      "ownPackage": "@elastic/isomer-primitives-charts",
+      "nodePackages": "{\"@elastic/isomer-primitives-charts\":212423,\"@elastic/isomer-sdk\":25548,\"ccount\":172,\"micromark-util-character\":436,\"escape-string-regexp\":147,\"unist-util-is\":766,\"unist-util-visit-parents\":871,\"mdast-util-find-and-replace\":1174,\"mdast-util-gfm-autolink-literal\":2097,\"micromark-util-normalize-identifier\":100,\"mdast-util-gfm-footnote\":1647,\"mdast-util-gfm-strikethrough\":751,\"markdown-table\":1571,\"mdast-util-phrasing\":218,\"mdast-util-to-markdown\":10879,\"longest-streak\":199,\"unist-util-visit\":205,\"mdast-util-to-string\":500,\"micromark-util-html-tag-name\":528,\"character-entities\":35745,\"decode-named-character-reference\":70,\"micromark-util-decode-numeric-character-reference\":207,\"micromark-util-decode-string\":262,\"micromark-util-classify-character\":68,\"mdast-util-gfm-table\":1774,\"mdast-util-gfm-task-list-item\":1147,\"mdast-util-gfm\":110,\"micromark-util-chunked\":302,\"micromark-util-combine-extensions\":370,\"micromark-factory-space\":187,\"micromark\":9405,\"micromark-util-resolve-all\":124,\"micromark-core-commonmark\":27338,\"micromark-util-subtokenize\":3534,\"micromark-factory-destination\":926,\"micromark-factory-label\":635,\"micromark-factory-title\":595,\"micromark-factory-whitespace\":172,\"unist-util-stringify-position\":310,\"mdast-util-from-markdown\":10281,\"micromark-extension-gfm-autolink-literal\":3747,\"micromark-extension-gfm-footnote\":4036,\"micromark-extension-gfm-strikethrough\":1556,\"micromark-extension-gfm-table\":5616,\"micromark-extension-gfm-task-list-item\":828,\"micromark-extension-gfm\":54,\"@elastic/distillate\":31949,\"stylis\":3519}"
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/schema",
+      "peakRssMb": 48.79296875,
+      "nodeKb": 123.7060546875,
+      "nodeGzipKb": 37.203125,
+      "browserKb": 123.7060546875,
+      "browserGzipKb": 37.203125,
+      "ownKb": 120.3798828125,
+      "ownPackage": "@elastic/isomer-primitives-charts",
+      "nodePackages": "{\"@elastic/isomer-primitives-charts\":123269,\"@elastic/isomer-sdk\":1615}"
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/scene",
+      "peakRssMb": 48.453125,
+      "nodeKb": 47.1923828125,
+      "nodeGzipKb": 17.3154296875,
+      "browserKb": 47.1923828125,
+      "browserGzipKb": 17.3154296875,
+      "ownKb": 12.6162109375,
+      "ownPackage": "@elastic/isomer-primitives-charts",
+      "nodePackages": "{\"@elastic/isomer-primitives-charts\":12919,\"@elastic/distillate\":31727,\"stylis\":3415}"
+    },
+    {
+      "scenario": "@elastic/isomer-primitives-charts/resolve",
+      "peakRssMb": 48.19140625,
+      "nodeKb": 51.482421875,
+      "nodeGzipKb": 20.009765625,
+      "browserKb": 51.482421875,
+      "browserGzipKb": 20.009765625,
+      "ownKb": 51.455078125,
+      "ownPackage": "@elastic/isomer-primitives-charts",
+      "nodePackages": "{\"@elastic/isomer-primitives-charts\":52690}"
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic",
+      "peakRssMb": 48.7109375,
+      "nodeKb": 66.025390625,
+      "nodeGzipKb": 24.4609375,
+      "browserKb": 66.025390625,
+      "browserGzipKb": 24.4609375,
+      "ownKb": 25.7099609375,
+      "ownPackage": "@elastic/isomer-charts-elastic",
+      "nodePackages": "{\"@elastic/isomer-charts-elastic\":26327,\"@elastic/isomer-primitives-charts\":5989,\"@elastic/distillate\":31752,\"stylis\":3440}"
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/engine",
+      "peakRssMb": 48.6953125,
+      "nodeKb": 64.806640625,
+      "nodeGzipKb": 24.115234375,
+      "browserKb": 64.806640625,
+      "browserGzipKb": 24.115234375,
+      "ownKb": 24.4248046875,
+      "ownPackage": "@elastic/isomer-charts-elastic",
+      "nodePackages": "{\"@elastic/isomer-charts-elastic\":25011,\"@elastic/isomer-primitives-charts\":5992,\"@elastic/distillate\":31731,\"stylis\":3440}"
+    },
+    {
+      "scenario": "@elastic/isomer-charts-elastic/node",
+      "peakRssMb": 47.6484375,
+      "nodeKb": 66.54296875,
+      "nodeGzipKb": 24.80078125,
+      "ownKb": 26.255859375,
+      "ownPackage": "@elastic/isomer-charts-elastic",
+      "nodePackages": "{\"@elastic/isomer-charts-elastic\":26886,\"@elastic/isomer-primitives-charts\":5989,\"@elastic/distillate\":31746,\"stylis\":3440}"
+    }
+  ],
+  "summary": {
+    "@elastic/isomer-sdk": {
+      "nodeKb": {
+        "median": 184.6943359375,
+        "min": 184.6943359375,
+        "max": 184.6943359375
+      },
+      "nodeGzipKb": {
+        "median": 60.0400390625,
+        "min": 60.0400390625,
+        "max": 60.0400390625
+      },
+      "browserKb": {
+        "median": 149.83203125,
+        "min": 149.83203125,
+        "max": 149.83203125
+      },
+      "browserGzipKb": {
+        "median": 47.47265625,
+        "min": 47.47265625,
+        "max": 47.47265625
+      },
+      "ownKb": {
+        "median": 41.4814453125,
+        "min": 41.4814453125,
+        "max": 41.4814453125
+      }
+    },
+    "@elastic/isomer-sdk/schema": {
+      "nodeKb": {
+        "median": 1.7451171875,
+        "min": 1.7451171875,
+        "max": 1.7451171875
+      },
+      "nodeGzipKb": {
+        "median": 1.0537109375,
+        "min": 1.0537109375,
+        "max": 1.0537109375
+      },
+      "browserKb": {
+        "median": 1.7451171875,
+        "min": 1.7451171875,
+        "max": 1.7451171875
+      },
+      "browserGzipKb": {
+        "median": 1.0537109375,
+        "min": 1.0537109375,
+        "max": 1.0537109375
+      },
+      "ownKb": {
+        "median": 1.6025390625,
+        "min": 1.6025390625,
+        "max": 1.6025390625
+      }
+    },
+    "@elastic/isomer-sdk/html": {
+      "nodeKb": {
+        "median": 134.9462890625,
+        "min": 134.9462890625,
+        "max": 134.9462890625
+      },
+      "nodeGzipKb": {
+        "median": 40.798828125,
+        "min": 40.798828125,
+        "max": 40.798828125
+      },
+      "browserKb": {
+        "median": 134.9462890625,
+        "min": 134.9462890625,
+        "max": 134.9462890625
+      },
+      "browserGzipKb": {
+        "median": 40.798828125,
+        "min": 40.798828125,
+        "max": 40.798828125
+      },
+      "ownKb": {
+        "median": 16.603515625,
+        "min": 16.603515625,
+        "max": 16.603515625
+      }
+    },
+    "@elastic/isomer-sdk/slack": {
+      "nodeKb": {
+        "median": 152.70703125,
+        "min": 152.70703125,
+        "max": 152.70703125
+      },
+      "nodeGzipKb": {
+        "median": 47.95703125,
+        "min": 47.95703125,
+        "max": 47.95703125
+      },
+      "browserKb": {
+        "median": 117.8447265625,
+        "min": 117.8447265625,
+        "max": 117.8447265625
+      },
+      "browserGzipKb": {
+        "median": 35.57421875,
+        "min": 35.57421875,
+        "max": 35.57421875
+      },
+      "ownKb": {
+        "median": 23.7705078125,
+        "min": 23.7705078125,
+        "max": 23.7705078125
+      }
+    },
+    "@elastic/isomer-sdk/text": {
+      "nodeKb": {
+        "median": 0.1669921875,
+        "min": 0.1669921875,
+        "max": 0.1669921875
+      },
+      "nodeGzipKb": {
+        "median": 0.1572265625,
+        "min": 0.1572265625,
+        "max": 0.1572265625
+      },
+      "browserKb": {
+        "median": 0.1669921875,
+        "min": 0.1669921875,
+        "max": 0.1669921875
+      },
+      "browserGzipKb": {
+        "median": 0.1572265625,
+        "min": 0.1572265625,
+        "max": 0.1572265625
+      },
+      "ownKb": {
+        "median": 0.134765625,
+        "min": 0.134765625,
+        "max": 0.134765625
+      }
+    },
+    "@elastic/isomer-sdk/markdown": {
+      "nodeKb": {
+        "median": 151.974609375,
+        "min": 151.974609375,
+        "max": 151.974609375
+      },
+      "nodeGzipKb": {
+        "median": 47.4091796875,
+        "min": 47.4091796875,
+        "max": 47.4091796875
+      },
+      "browserKb": {
+        "median": 117.1123046875,
+        "min": 117.1123046875,
+        "max": 117.1123046875
+      },
+      "browserGzipKb": {
+        "median": 34.9794921875,
+        "min": 34.9794921875,
+        "max": 34.9794921875
+      },
+      "ownKb": {
+        "median": 10.1962890625,
+        "min": 10.1962890625,
+        "max": 10.1962890625
+      }
+    },
+    "@elastic/isomer-sdk/react": {
+      "nodeKb": {
+        "median": 137.703125,
+        "min": 137.703125,
+        "max": 137.703125
+      },
+      "nodeGzipKb": {
+        "median": 43.0302734375,
+        "min": 43.0302734375,
+        "max": 43.0302734375
+      },
+      "browserKb": {
+        "median": 102.8408203125,
+        "min": 102.8408203125,
+        "max": 102.8408203125
+      },
+      "browserGzipKb": {
+        "median": 30.7294921875,
+        "min": 30.7294921875,
+        "max": 30.7294921875
+      },
+      "ownKb": {
+        "median": 8.9931640625,
+        "min": 8.9931640625,
+        "max": 8.9931640625
+      }
+    },
+    "@elastic/isomer-sdk/author": {
+      "nodeKb": {
+        "median": 35.451171875,
+        "min": 35.451171875,
+        "max": 35.451171875
+      },
+      "nodeGzipKb": {
+        "median": 13.4169921875,
+        "min": 13.4169921875,
+        "max": 13.4169921875
+      },
+      "browserKb": {
+        "median": 35.451171875,
+        "min": 35.451171875,
+        "max": 35.451171875
+      },
+      "browserGzipKb": {
+        "median": 13.4169921875,
+        "min": 13.4169921875,
+        "max": 13.4169921875
+      },
+      "ownKb": {
+        "median": 35.1201171875,
+        "min": 35.1201171875,
+        "max": 35.1201171875
+      }
+    },
+    "@elastic/isomer-runtime": {
+      "nodeKb": {
+        "median": 338.89453125,
+        "min": 338.89453125,
+        "max": 338.89453125
+      },
+      "nodeGzipKb": {
+        "median": 106.8359375,
+        "min": 106.8359375,
+        "max": 106.8359375
+      },
+      "browserKb": {
+        "median": 304.0322265625,
+        "min": 304.0322265625,
+        "max": 304.0322265625
+      },
+      "browserGzipKb": {
+        "median": 94.5283203125,
+        "min": 94.5283203125,
+        "max": 94.5283203125
+      },
+      "ownKb": {
+        "median": 11.61328125,
+        "min": 11.61328125,
+        "max": 11.61328125
+      }
+    },
+    "@elastic/isomer-agent-tools": {
+      "nodeKb": {
+        "median": 13.896484375,
+        "min": 13.896484375,
+        "max": 13.896484375
+      },
+      "nodeGzipKb": {
+        "median": 5.345703125,
+        "min": 5.345703125,
+        "max": 5.345703125
+      },
+      "browserKb": {
+        "median": 13.896484375,
+        "min": 13.896484375,
+        "max": 13.896484375
+      },
+      "browserGzipKb": {
+        "median": 5.345703125,
+        "min": 5.345703125,
+        "max": 5.345703125
+      },
+      "ownKb": {
+        "median": 7.767578125,
+        "min": 7.767578125,
+        "max": 7.767578125
+      }
+    },
+    "@elastic/isomer-image-takumi": {
+      "nodeKb": {
+        "median": 46.3671875,
+        "min": 46.3671875,
+        "max": 46.3671875
+      },
+      "nodeGzipKb": {
+        "median": 13.9794921875,
+        "min": 13.9794921875,
+        "max": 13.9794921875
+      },
+      "ownKb": {
+        "median": 6.3642578125,
+        "min": 6.3642578125,
+        "max": 6.3642578125
+      }
+    },
+    "@elastic/isomer-primitives-slides": {
+      "nodeKb": {
+        "median": 543.705078125,
+        "min": 543.705078125,
+        "max": 543.705078125
+      },
+      "nodeGzipKb": {
+        "median": 175.34765625,
+        "min": 175.34765625,
+        "max": 175.34765625
+      },
+      "browserKb": {
+        "median": 508.8427734375,
+        "min": 508.8427734375,
+        "max": 508.8427734375
+      },
+      "browserGzipKb": {
+        "median": 162.822265625,
+        "min": 162.822265625,
+        "max": 162.822265625
+      },
+      "ownKb": {
+        "median": 314.66015625,
+        "min": 314.66015625,
+        "max": 314.66015625
+      }
+    },
+    "@elastic/isomer-primitives-charts": {
+      "nodeKb": {
+        "median": 397.8447265625,
+        "min": 397.8447265625,
+        "max": 397.8447265625
+      },
+      "nodeGzipKb": {
+        "median": 129.203125,
+        "min": 129.203125,
+        "max": 129.203125
+      },
+      "browserKb": {
+        "median": 362.982421875,
+        "min": 362.982421875,
+        "max": 362.982421875
+      },
+      "browserGzipKb": {
+        "median": 116.853515625,
+        "min": 116.853515625,
+        "max": 116.853515625
+      },
+      "ownKb": {
+        "median": 207.4443359375,
+        "min": 207.4443359375,
+        "max": 207.4443359375
+      }
+    },
+    "@elastic/isomer-primitives-charts/schema": {
+      "nodeKb": {
+        "median": 123.7060546875,
+        "min": 123.7060546875,
+        "max": 123.7060546875
+      },
+      "nodeGzipKb": {
+        "median": 37.203125,
+        "min": 37.203125,
+        "max": 37.203125
+      },
+      "browserKb": {
+        "median": 123.7060546875,
+        "min": 123.7060546875,
+        "max": 123.7060546875
+      },
+      "browserGzipKb": {
+        "median": 37.203125,
+        "min": 37.203125,
+        "max": 37.203125
+      },
+      "ownKb": {
+        "median": 120.3798828125,
+        "min": 120.3798828125,
+        "max": 120.3798828125
+      }
+    },
+    "@elastic/isomer-primitives-charts/scene": {
+      "nodeKb": {
+        "median": 47.1923828125,
+        "min": 47.1923828125,
+        "max": 47.1923828125
+      },
+      "nodeGzipKb": {
+        "median": 17.3154296875,
+        "min": 17.3154296875,
+        "max": 17.3154296875
+      },
+      "browserKb": {
+        "median": 47.1923828125,
+        "min": 47.1923828125,
+        "max": 47.1923828125
+      },
+      "browserGzipKb": {
+        "median": 17.3154296875,
+        "min": 17.3154296875,
+        "max": 17.3154296875
+      },
+      "ownKb": {
+        "median": 12.6162109375,
+        "min": 12.6162109375,
+        "max": 12.6162109375
+      }
+    },
+    "@elastic/isomer-primitives-charts/resolve": {
+      "nodeKb": {
+        "median": 51.482421875,
+        "min": 51.482421875,
+        "max": 51.482421875
+      },
+      "nodeGzipKb": {
+        "median": 20.009765625,
+        "min": 20.009765625,
+        "max": 20.009765625
+      },
+      "browserKb": {
+        "median": 51.482421875,
+        "min": 51.482421875,
+        "max": 51.482421875
+      },
+      "browserGzipKb": {
+        "median": 20.009765625,
+        "min": 20.009765625,
+        "max": 20.009765625
+      },
+      "ownKb": {
+        "median": 51.455078125,
+        "min": 51.455078125,
+        "max": 51.455078125
+      }
+    },
+    "@elastic/isomer-charts-elastic": {
+      "nodeKb": {
+        "median": 66.025390625,
+        "min": 66.025390625,
+        "max": 66.025390625
+      },
+      "nodeGzipKb": {
+        "median": 24.4609375,
+        "min": 24.4609375,
+        "max": 24.4609375
+      },
+      "browserKb": {
+        "median": 66.025390625,
+        "min": 66.025390625,
+        "max": 66.025390625
+      },
+      "browserGzipKb": {
+        "median": 24.4609375,
+        "min": 24.4609375,
+        "max": 24.4609375
+      },
+      "ownKb": {
+        "median": 25.7099609375,
+        "min": 25.7099609375,
+        "max": 25.7099609375
+      }
+    },
+    "@elastic/isomer-charts-elastic/engine": {
+      "nodeKb": {
+        "median": 64.806640625,
+        "min": 64.806640625,
+        "max": 64.806640625
+      },
+      "nodeGzipKb": {
+        "median": 24.115234375,
+        "min": 24.115234375,
+        "max": 24.115234375
+      },
+      "browserKb": {
+        "median": 64.806640625,
+        "min": 64.806640625,
+        "max": 64.806640625
+      },
+      "browserGzipKb": {
+        "median": 24.115234375,
+        "min": 24.115234375,
+        "max": 24.115234375
+      },
+      "ownKb": {
+        "median": 24.4248046875,
+        "min": 24.4248046875,
+        "max": 24.4248046875
+      }
+    },
+    "@elastic/isomer-charts-elastic/node": {
+      "nodeKb": {
+        "median": 66.54296875,
+        "min": 66.54296875,
+        "max": 66.54296875
+      },
+      "nodeGzipKb": {
+        "median": 24.80078125,
+        "min": 24.80078125,
+        "max": 24.80078125
+      },
+      "ownKb": {
+        "median": 26.255859375,
+        "min": 26.255859375,
+        "max": 26.255859375
+      }
+    }
+  }
+}

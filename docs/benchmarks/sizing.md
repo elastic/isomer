@@ -19,16 +19,28 @@ To see what your own pack adds, [benchmark it](index.md#benchmarking-a-pack).
 
 ## Importing only what you use
 
-The SDK's root entry loads about 150 modules. Its subpaths load less:
+The SDK's root entry loads about 150 modules and bundles to about 185 KB minified for Node. Its subpaths cost less ([Loading each entry](results.md#loading-each-entry), [Bundling each entry](results.md#bundling-each-entry)):
 
-| You need | Import | Instead of |
-| --- | --- | --- |
-| Plain-text rendering | `@elastic/isomer-sdk/text`: 3 modules | the root: about 150 |
-| A pack's schema helpers (`z`, `requiredString`, URL rules), no React | `@elastic/isomer-sdk/schema`: about 110 modules, 3.8 MB heap | the root: about 150 modules, 7 MB heap. The composition validator and parser are only on the root and the runtime. |
-| Chart contracts for a materializer | `@elastic/isomer-primitives-charts/schema`: about 160 modules | the pack root: about 320 |
-| Scene resolution alone | `@elastic/isomer-primitives-charts/resolve`: about 30 modules | the pack root |
+| You need | Import | Loads | Bundles (Node, minified) |
+| --- | --- | --- | --- |
+| Plain-text rendering | `@elastic/isomer-sdk/text` | 3 modules | under 1 KB |
+| A pack's schema helpers (`z`, `requiredString`, URL rules), no React | `@elastic/isomer-sdk/schema` | about 110 modules, 3.8 MB heap, most of it zod | about 2 KB, zod aside |
+| Chart contracts for a materializer | `@elastic/isomer-primitives-charts/schema` | about 160 modules | about 125 KB |
+| Scene resolution alone | `@elastic/isomer-primitives-charts/resolve` | about 30 modules | about 50 KB |
+| The composition validator and parser | `@elastic/isomer-sdk` | about 150 modules | about 185 KB |
+| Every surface, assembled from your packs | `@elastic/isomer-runtime` | about 220 modules | about 340 KB |
 
 Loading takumi costs little on its own (about 16 modules and 10 ms). Its fonts register on the first draw; see [First draw](#first-draw).
+
+## Bundling
+
+A host that bundles Isomer, such as a render service or a browser app, ships what each entry pulls in besides its peers ([Bundling each entry](results.md#bundling-each-entry)):
+
+- Most of the SDK root's 185 KB isn't the SDK's own code, which is about 40 KB. The rest is the Markdown parser that renders Markdown content (`micromark`, `mdast-util-to-markdown`, and `character-entities` at 35 KB on its own). `./react` and `./slack` pull the parser in too.
+- `./html` pulls in `acorn`, about 120 KB, which checks embedded scripts. So does the runtime, which bundles every surface: about 340 KB for Node and about 300 KB for the browser.
+- The slides pack bundles to about 545 KB and the charts pack to about 400 KB. Each pack's own code is a little over half of that; the rest is mostly the SDK, the Markdown parser and `@elastic/distillate`.
+- The Elastic Charts engine's entries are about 65 KB each, but `@elastic/charts`, their peer, isn't counted. A host that draws with Elastic Charts ships it anyway.
+- takumi bundles only for Node, to about 46 KB. Its native renderer is a per-platform binary that the bundle loads at runtime; see [Installing](#installing).
 
 ## What a composition costs
 

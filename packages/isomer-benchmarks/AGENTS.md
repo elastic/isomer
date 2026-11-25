@@ -18,7 +18,7 @@ Yield or use fresh inputs between iterations wherever a package caches per task 
 
 `docs/results.md` is generated: change the suite or the baseline, then run `bench report`. Explain any measure that moved beyond run-to-run noise before committing a refreshed baseline, and name the environment it came from. Never refresh one suite's baseline on a different machine from the others without saying so.
 
-Set a bound at about twice the measured median, from numbers on the CI host. Never gate timing.
+Set a bound in `bounds/<suite>.json` at about twice the measured median. A memory bound comes from numbers on the CI host; a size bound from any machine. Never gate timing.
 
 ## Evidence required
 

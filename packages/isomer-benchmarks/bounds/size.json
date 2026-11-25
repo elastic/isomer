@@ -1,0 +1,76 @@
+{
+  "@elastic/isomer-sdk": {
+    "nodeKb": 370,
+    "browserKb": 300
+  },
+  "@elastic/isomer-sdk/schema": {
+    "nodeKb": 10,
+    "browserKb": 10
+  },
+  "@elastic/isomer-sdk/html": {
+    "nodeKb": 270,
+    "browserKb": 270
+  },
+  "@elastic/isomer-sdk/slack": {
+    "nodeKb": 310,
+    "browserKb": 240
+  },
+  "@elastic/isomer-sdk/text": {
+    "nodeKb": 10,
+    "browserKb": 10
+  },
+  "@elastic/isomer-sdk/markdown": {
+    "nodeKb": 310,
+    "browserKb": 240
+  },
+  "@elastic/isomer-sdk/react": {
+    "nodeKb": 280,
+    "browserKb": 210
+  },
+  "@elastic/isomer-sdk/author": {
+    "nodeKb": 80,
+    "browserKb": 80
+  },
+  "@elastic/isomer-runtime": {
+    "nodeKb": 680,
+    "browserKb": 610
+  },
+  "@elastic/isomer-agent-tools": {
+    "nodeKb": 30,
+    "browserKb": 30
+  },
+  "@elastic/isomer-image-takumi": {
+    "nodeKb": 100
+  },
+  "@elastic/isomer-primitives-slides": {
+    "nodeKb": 1090,
+    "browserKb": 1020
+  },
+  "@elastic/isomer-primitives-charts": {
+    "nodeKb": 800,
+    "browserKb": 730
+  },
+  "@elastic/isomer-primitives-charts/schema": {
+    "nodeKb": 250,
+    "browserKb": 250
+  },
+  "@elastic/isomer-primitives-charts/scene": {
+    "nodeKb": 100,
+    "browserKb": 100
+  },
+  "@elastic/isomer-primitives-charts/resolve": {
+    "nodeKb": 110,
+    "browserKb": 110
+  },
+  "@elastic/isomer-charts-elastic": {
+    "nodeKb": 140,
+    "browserKb": 140
+  },
+  "@elastic/isomer-charts-elastic/engine": {
+    "nodeKb": 130,
+    "browserKb": 130
+  },
+  "@elastic/isomer-charts-elastic/node": {
+    "nodeKb": 140
+  }
+}
