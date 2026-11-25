@@ -8,18 +8,21 @@
 // What takumi costs on its own, drawing input the slides pack's `snapshot`
 // surface made in the parent: a child loads only takumi and its fonts.
 
-const { mkdirSync, readFileSync, writeFileSync } = require('node:fs');
+const { createHash } = require('node:crypto');
+const {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync,
+} = require('node:fs');
 const { createRequire } = require('node:module');
 const { join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '../..');
 const SLIDES = resolve(PACKAGE, '../isomer-primitives-slides');
 const DECK = 'isomer-every-surface';
-const INPUT = join(
-  PACKAGE,
-  'node_modules/.cache/isomer-benchmarks/takumi',
-  `${DECK}.json`
-);
+const CACHE = join(PACKAGE, 'node_modules/.cache/isomer-benchmarks/takumi');
 const REPEAT = 20;
 const FONTSOURCE = {
   Inter: ['@fontsource/inter', 'inter'],
@@ -30,12 +33,14 @@ const FONTSOURCE = {
 const ROWS = [
   {
     name: 'backend',
-    about: 'load takumi and create a backend, with no font registered',
-    spec: { work: 'none', fonts: false },
+    about:
+      'load takumi, create a backend and draw an empty 1×1 SVG, with no font registered',
+    spec: { work: 'none', register: false },
   },
   {
     name: 'fonts',
-    about: "register the slides theme's 10 font faces, drawing nothing",
+    about:
+      "the same, with the slides theme's 10 font faces registered by that first draw",
     spec: { work: 'none' },
   },
   {
@@ -131,7 +136,6 @@ const prepare = async (picked) => {
       ),
     };
   });
-  mkdirSync(join(INPUT, '..'), { recursive: true });
   const strip = ({ html, css, width, height, heightMode }) => ({
     html,
     css,
@@ -146,27 +150,34 @@ const prepare = async (picked) => {
     height,
     heightMode,
   });
-  writeFileSync(
-    INPUT,
-    JSON.stringify({
-      deck: DECK,
-      fonts,
-      slides: slides.map((slide) =>
-        strip(snapshot.render(slide, { onValidationError: 'collect' }))
-      ),
-      deckPages: pagesOf(
-        snapshot.renderPages(slides, { onValidationError: 'collect' })
-      ),
-      firstPage: pagesOf(
-        snapshot.renderPages(slides.slice(0, 1), {
-          onValidationError: 'collect',
-        })
-      ),
-    })
+  const content = JSON.stringify({
+    deck: DECK,
+    slides: slides.map((slide) =>
+      strip(snapshot.render(slide, { onValidationError: 'collect' }))
+    ),
+    deckPages: pagesOf(
+      snapshot.renderPages(slides, { onValidationError: 'collect' })
+    ),
+    firstPage: pagesOf(
+      snapshot.renderPages(slides.slice(0, 1), {
+        onValidationError: 'collect',
+      })
+    ),
+  });
+  // Named for its content and moved into place whole, so a concurrent run never reads it half written.
+  const input = join(
+    CACHE,
+    `${DECK}-${createHash('sha256').update(content).digest('hex').slice(0, 16)}.json`
   );
+  if (!existsSync(input)) {
+    mkdirSync(CACHE, { recursive: true });
+    const partial = `${input}.${process.pid}.tmp`;
+    writeFileSync(partial, content);
+    renameSync(partial, input);
+  }
   return picked.map((scenario) => ({
     ...scenario,
-    spec: { ...scenario.spec, input: INPUT },
+    spec: { ...scenario.spec, input, fonts },
   }));
 };
 
@@ -187,7 +198,8 @@ const settledRss = () => {
 const run = async ({
   input,
   work,
-  fonts: withFonts = true,
+  fonts: faces,
+  register = true,
   slides: count,
   scale = 1,
   repeat = 1,
@@ -201,9 +213,8 @@ const run = async ({
   );
   // Its own file, since the package's main entry would load the SDK too.
   const { limit } = require(join(PACKAGE, 'lib/cjs/limit.js'));
-  const data = JSON.parse(readFileSync(input, 'utf8'));
-  const fonts = withFonts
-    ? data.fonts.map(({ file, ...face }) => ({
+  const fonts = register
+    ? faces.map(({ file, ...face }) => ({
         ...face,
         data: () => readFileSync(file),
       }))
@@ -214,16 +225,19 @@ const run = async ({
   });
   const loadedRss = settledRss();
 
-  const slides = data.slides.slice(0, count);
-  const pages = count === 1 ? data.firstPage : data.deckPages;
+  // The rows that draw nothing never read the deck.
+  const data = work === 'none' ? null : JSON.parse(readFileSync(input, 'utf8'));
+  const slides = data?.slides.slice(0, count);
+  const pages = count === 1 ? data?.firstPage : data?.deckPages;
+  const bytes = (text) => Buffer.byteLength(text, 'utf8');
   const inputKb =
-    work === 'none'
+    data === null
       ? undefined
       : (work === 'pdf'
-          ? pages.css.length +
-            pages.pages.reduce((n, { html }) => n + html.length, 0)
+          ? bytes(pages.css) +
+            pages.pages.reduce((n, { html }) => n + bytes(html), 0)
           : slides.reduce(
-              (n, { html, css }) => n + html.length + css.length,
+              (n, { html, css }) => n + bytes(html) + bytes(css),
               0
             )) / 1024;
 
@@ -235,7 +249,10 @@ const run = async ({
     const from = process.hrtime.bigint();
     const out = await draw();
     times.push(ms(from));
-    outKb = Math.max(outKb, out.length / 1024);
+    outKb = Math.max(
+      outKb,
+      (typeof out === 'string' ? bytes(out) : out.length) / 1024
+    );
     outputs += 1;
     firstMs ??= ms(started);
   };
@@ -247,17 +264,16 @@ const run = async ({
     ],
   };
 
-  const allStart = process.hrtime.bigint();
+  let allMs = 0;
   let afterFirstPass;
   if (work === 'none') {
-    if (withFonts) {
-      // An empty render registers the fonts and draws nothing.
-      await takumi.svg({ html: '<div></div>', css: '', width: 1, height: 1 });
-    }
+    // An empty render registers any fonts and draws nothing.
+    await takumi.svg({ html: '<div></div>', css: '', width: 1, height: 1 });
     firstMs = ms(started);
   } else {
     for (let pass = 0; pass < repeat; pass += 1) {
       const batch = draws[work]();
+      const passStart = process.hrtime.bigint();
       if (inFlight === undefined) {
         for (const draw of batch) {
           await timed(draw);
@@ -265,14 +281,15 @@ const run = async ({
       } else {
         const limited =
           inFlight === 'all' ? (each) => each() : limit(inFlight, batch.length);
-        await Promise.all(batch.map((draw) => limited(() => timed(draw))));
+        // Timed from the request, so a limited row's time includes its wait in the limiter.
+        await Promise.all(batch.map((draw) => timed(() => limited(draw))));
       }
-      if (pass === 0) {
+      allMs += ms(passStart);
+      if (pass === 0 && repeat > 1) {
         afterFirstPass = settledRss();
       }
     }
   }
-  const allMs = ms(allStart);
   // `maxRSS` is in kilobytes. Sampled before closing and the settling below.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
   if (close) {
@@ -299,7 +316,7 @@ const run = async ({
 
 module.exports = {
   title: 'Rasterizing with takumi',
-  about: `What takumi costs a fresh Node process on its own, drawing the slides pack's \`${DECK}\` deck: the parent renders the deck with the \`snapshot\` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. \`Loaded RSS\` is after creating the backend, before any font registers; \`Render RSS\` is the peak above it, and \`RSS after\` is after the run, a GC and, for \`pdf-close\`, \`close()\`. \`Growth\` is how much \`RSS after\` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; \`Heap after\` is the main thread's alone. Per-output time is the median; under a burst it includes the wait for one of the libuv thread pool's threads, and \`UV_THREADPOOL_SIZE\` is in the environment. Report only: nothing here is bounded yet.`,
+  about: `What takumi costs a fresh Node process on its own, drawing the slides pack's \`${DECK}\` deck: the parent renders the deck with the \`snapshot\` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. \`Loaded RSS\` is after creating the backend, before any font registers; \`Render RSS\` is the peak above it, and \`RSS after\` is after the run, a GC and, for \`pdf-close\`, \`close()\`. \`Growth\` is how much \`RSS after\` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; \`Heap after\` is the main thread's alone. Per-output time is the median, from the request to its output; under a burst it includes the wait in the limiter or for one of the libuv thread pool's threads, and \`UV_THREADPOOL_SIZE\` is in the environment. \`All outputs\` excludes the GC between passes. Both no-output rows draw one empty SVG, so their difference is the fonts' registration. Report only: nothing here is bounded yet.`,
   measures: [
     { key: 'outputs', label: 'Outputs', digits: 0 },
     { key: 'inputKb', label: 'Input (KB)', digits: 0 },

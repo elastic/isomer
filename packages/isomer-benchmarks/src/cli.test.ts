@@ -215,3 +215,29 @@ describe('bench charts with an engine', () => {
     );
   }, 60_000);
 });
+
+describe('bench takumi', () => {
+  it('draws every slide, repeats the repeated rows and reports their growth', () => {
+    const { status, stdout, stderr } = bench(
+      'takumi',
+      '--runs',
+      '1',
+      '--json',
+      '--scenarios',
+      'backend,png-deck,pdf-repeat'
+    );
+    expect(stderr).toBe('');
+    expect(status).toBe(0);
+    const { runs } = JSON.parse(stdout) as {
+      runs: Array<Record<string, unknown>>;
+    };
+    const row = (name: string) =>
+      runs.find(({ scenario }) => scenario === name);
+    expect(row('backend')).toMatchObject({ outputs: 0 });
+    expect(row('backend')).not.toHaveProperty('inputKb');
+    expect(row('png-deck')).toMatchObject({ outputs: 33 });
+    expect(row('png-deck')).not.toHaveProperty('growthMb');
+    expect(row('pdf-repeat')).toMatchObject({ outputs: 20 });
+    expect(row('pdf-repeat')).toHaveProperty('growthMb');
+  }, 120_000);
+});
