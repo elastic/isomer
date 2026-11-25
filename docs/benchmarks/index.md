@@ -97,7 +97,7 @@ Commit the baseline, `docs/results.md`, and the assembled copy under the root `d
 
 ## Bounds
 
-A bound is the most a scenario's median may reach, per measure. `bench <suite> --check` runs only the bounded scenarios and fails when a median is over its bound. It also fails when a bound names a scenario or measure the run didn't produce, so a bound can't pass by going unmeasured, and when nothing bounds the suite. It takes no `--scenarios`.
+A bound is the most a scenario's median may reach, per measure. `bench <suite> --check` runs only the bounded scenarios and fails when a median is over its bound. Since it runs only those, it takes no `--scenarios` and no `--write`. It also fails when a bound names a scenario or measure the run didn't produce, so a bound can't pass by going unmeasured, and when nothing bounds the suite. It takes no `--scenarios`.
 
 Bounds live with what they hold. A pack or engine keeps its own in its config's `bounds`, keyed by suite and then by scenario, and gates itself from its own `bench:check`:
 
