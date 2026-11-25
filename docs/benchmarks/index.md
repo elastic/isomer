@@ -17,7 +17,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 - **Pay one-time costs at startup:** assemble the runtime once (about 2 ms for 10 primitive types, 7 ms for 200) and validate one composition, since the first costs about ten times the rest.
 - **Not measured yet:** real pack render cost, takumi rasterizing, chart drawing, concurrency and container limits. Those will likely outweigh everything above.
 
-All figures are medians on one Apple M4 Pro. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
+All figures are medians on one Apple M4 Pro, except bundle sizes, which are measured once and are the same on any machine. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
 
 ## What each suite claims
 
