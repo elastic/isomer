@@ -13,17 +13,21 @@
 //
 //   node scripts/container_floor.cjs [--profile name]... [--min 64] [--max 2048] [--step 8] [--tries 2] [--no-build] -- <command...>
 //
+// Bisection assumes a command that passes at a limit passes at every higher
+// one; a command that sizes itself from the memory it sees may not.
+//
 // For example, one chart PNG with the Elastic Charts engine:
 //
-//   node scripts/container_floor.cjs -- node --expose-gc --disallow-code-generation-from-strings scripts/bench_charts.cjs --child one packages/isomer-charts-elastic/bench/engine.cjs 1 '' ''
+//   node scripts/container_floor.cjs -- node --expose-gc --disallow-code-generation-from-strings scripts/bench_charts.cjs --child one /isomer/packages/isomer-charts-elastic/bench/engine.cjs 1 '' ''
 
-const { spawnSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
+const { randomUUID } = require('node:crypto');
 const { resolve } = require('node:path');
 
 const REPO = resolve(__dirname, '..');
 const IMAGE = 'isomer-container-floor';
-/** Every container this script starts carries this prefix, so cleanup touches no other. */
-const PREFIX = `isomer-floor-${process.pid}-`;
+/** The Docker CLI; tests point it at a stub. */
+const DOCKER = process.env.ISOMER_FLOOR_DOCKER ?? 'docker';
 
 /** What each profile adds to the run, as a Kibana-forked render process or a tuned host would. */
 const PROFILES = {
@@ -40,11 +44,35 @@ const PROFILES = {
 };
 
 /**
+ * What one run says about the limit: `'pass'`, `'oom'` (the kernel killed it)
+ * or `'heap'` (V8 aborted out of heap), or an error message for anything else,
+ * including a container that didn't exit or a kill the kernel didn't report.
+ */
+const classify = ({ status, oomKilled, exitCode, stderr }) => {
+  if (status !== 'exited') {
+    return `the container is ${status}, not exited`;
+  }
+  if (oomKilled) {
+    return 'oom';
+  }
+  if (exitCode === 0) {
+    return 'pass';
+  }
+  // An abort, as SIGABRT or as `--init` reports it, with V8's own diagnostic.
+  if (
+    (exitCode === 134 || exitCode === 133) &&
+    /JavaScript heap out of memory|Reached heap limit/.test(stderr)
+  ) {
+    return 'heap';
+  }
+  return `exit ${exitCode}:\n${stderr.slice(-2000)}`;
+};
+
+/**
  * The lowest limit, in MB, at which every one of `tries` attempts passes,
  * found by bisection between `min` and `max` to within `step`.
- * `attempt(limit)` resolves to `'pass'`, `'oom'` (the kernel killed it) or
- * `'heap'` (V8 ran out of heap); any other outcome is an error, which stops
- * the search. Returns what bounded it, or why there is no floor in range.
+ * `attempt(limit)` resolves to what {@link classify} returns; anything but a
+ * pass or a memory failure stops the search.
  */
 const findFloor = async ({ min, max, step, tries, attempt }) => {
   const at = async (limit) => {
@@ -61,7 +89,7 @@ const findFloor = async ({ min, max, step, tries, attempt }) => {
   };
   const atMax = await at(max);
   if (atMax !== 'pass') {
-    return { result: 'fails at every limit', failsAt: max, kind: atMax };
+    return { result: 'fails at the maximum', failsAt: max, kind: atMax };
   }
   const atMin = await at(min);
   if (atMin === 'pass') {
@@ -86,74 +114,149 @@ const findFloor = async ({ min, max, step, tries, attempt }) => {
   return { result: 'floor', passesAt: high, failsAt: low, kind };
 };
 
-const docker = (args, options = {}) =>
-  spawnSync('docker', args, {
-    encoding: 'utf8',
-    maxBuffer: 1 << 26,
-    ...options,
+/** The search options, refused before anything runs when they can't describe a search. */
+const searchOptions = (options) => {
+  const option = (name, fallback) => {
+    const at = options.indexOf(name);
+    const raw = at === -1 ? String(fallback) : options[at + 1];
+    const value = Number(raw);
+    if (!Number.isInteger(value) || value < 1) {
+      throw new Error(`${name} ${raw}: a whole number of at least 1`);
+    }
+    return value;
+  };
+  const settings = {
+    min: option('--min', 64),
+    max: option('--max', 2048),
+    step: option('--step', 8),
+    tries: option('--tries', 2),
+  };
+  if (settings.min >= settings.max) {
+    throw new Error(
+      `--min ${settings.min} must be below --max ${settings.max}`
+    );
+  }
+  return settings;
+};
+
+/** The Docker calls in flight, so an interrupt can stop them. */
+const running = new Set();
+
+const docker = (args) =>
+  new Promise((done, fail) => {
+    const child = spawn(DOCKER, args, { cwd: REPO });
+    running.add(child);
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk;
+    });
+    child.on('error', (error) => {
+      running.delete(child);
+      fail(error);
+    });
+    child.on('close', (status) => {
+      running.delete(child);
+      done({ status, stdout: stdout.trim(), stderr });
+    });
   });
 
-/** One run under `limit` MB, classified. */
-const attemptIn = ({ command, profile }) => {
-  let count = 0;
-  return async (limit) => {
-    count += 1;
-    const name = `${PREFIX}${count}`;
+/** Containers this run created, by ID; cleanup removes these and no others. */
+const created = new Set();
+const runId = randomUUID().slice(0, 8);
+
+/** One run of `command` in `image` under `limit` MB, classified. */
+const attemptIn =
+  ({ image, command, profile }) =>
+  async (limit) => {
     const env = Object.entries(PROFILES[profile]).flatMap(([key, value]) => [
       '-e',
       `${key}=${value}`,
     ]);
-    const run = docker([
-      'run',
-      '--name',
-      name,
+    const create = await docker([
+      'create',
+      '--init',
+      '--label',
+      `isomer-floor=${runId}`,
       `--memory=${limit}m`,
       `--memory-swap=${limit}m`,
       ...env,
-      IMAGE,
+      image,
       ...command,
     ]);
-    const inspected = docker([
-      'inspect',
-      '--format',
-      '{{.State.OOMKilled}} {{.State.ExitCode}}',
-      name,
-    ]).stdout.trim();
-    docker(['rm', '-f', name]);
-    const [oomKilled, exitCode] = inspected.split(' ');
-    if (exitCode === '0') {
-      return 'pass';
+    if (create.status !== 0) {
+      throw new Error(`docker create failed:\n${create.stderr}`);
     }
-    if (/heap out of memory|Reached heap limit/.test(run.stderr)) {
-      return 'heap';
+    const id = create.stdout.split('\n').at(-1);
+    created.add(id);
+    try {
+      const limits = await docker([
+        'inspect',
+        '--format',
+        '{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}}',
+        id,
+      ]);
+      const bytes = String(limit * 1024 * 1024);
+      if (limits.stdout !== `${bytes} ${bytes}`) {
+        throw new Error(
+          `${limit} MB: Docker set the limits to ${limits.stdout}, not ${bytes}`
+        );
+      }
+      const started = await docker(['start', '--attach', id]);
+      const inspected = await docker([
+        'inspect',
+        '--format',
+        '{{.State.Status}} {{.State.OOMKilled}} {{.State.ExitCode}}',
+        id,
+      ]);
+      const [status, oomKilled, exitCode] = inspected.stdout.split(' ');
+      const outcome = classify({
+        status,
+        oomKilled: oomKilled === 'true',
+        exitCode: Number(exitCode),
+        stderr: started.stderr,
+      });
+      // `start --attach` exits with the container's code; anything else means the client lost it.
+      if (outcome === 'pass' && started.status !== 0) {
+        return `docker start exited ${started.status} for a container that exited 0:\n${started.stderr}`;
+      }
+      return outcome;
+    } finally {
+      await remove([id]);
     }
-    if (oomKilled === 'true' || exitCode === '137') {
-      return 'oom';
-    }
-    return `exit ${exitCode}:\n${run.stderr.slice(-2000)}`;
   };
-};
 
-const cleanUp = () => {
-  const names = docker([
-    'ps',
-    '-aq',
-    '--filter',
-    `name=^${PREFIX}`,
-  ]).stdout.trim();
-  if (names !== '') {
-    docker(['rm', '-f', ...names.split('\n')]);
+/** Removes `ids`, saying which are left behind and how to retry when Docker can't. */
+const remove = async (requested) => {
+  // Claimed first, so two cleanups never remove one container twice.
+  const ids = requested.filter((id) => created.delete(id));
+  if (ids.length === 0) {
+    return;
   }
+  const result = await docker(['rm', '-f', ...ids]).catch((error) => ({
+    status: 1,
+    stderr: String(error),
+  }));
+  if (result.status === 0) {
+    return;
+  }
+  ids.forEach((id) => created.add(id));
+  process.stderr.write(
+    `Couldn't remove ${ids.join(' ')}:\n${result.stderr}\nRetry with: docker rm -f ${ids.join(' ')}\n`
+  );
 };
 
-const describeHost = () => {
-  const info = docker([
+const describeHost = async (image) => {
+  const { stdout: info } = await docker([
     'info',
     '--format',
     '{{.OSType}} {{.Architecture}}, {{.NCPU}} CPUs, {{.MemTotal}} bytes, kernel {{.KernelVersion}}',
-  ]).stdout.trim();
-  const node = docker(['run', '--rm', IMAGE, 'node', '-v']).stdout.trim();
-  return `Docker ${info}; Node ${node} in \`scripts/container/Dockerfile\``;
+  ]);
+  const { stdout: node } = await docker(['run', '--rm', image, 'node', '-v']);
+  return `Docker ${info}; Node ${node} in \`scripts/container/Dockerfile\`, image \`${image.slice(0, 19)}\``;
 };
 
 const main = async () => {
@@ -164,10 +267,7 @@ const main = async () => {
   }
   const options = args.slice(0, split);
   const command = args.slice(split + 1);
-  const option = (name, fallback) => {
-    const at = options.indexOf(name);
-    return at === -1 ? fallback : Number(options[at + 1]);
-  };
+  const settings = searchOptions(options);
   const profiles = options.flatMap((arg, at) =>
     arg === '--profile' ? [options[at + 1]] : []
   );
@@ -178,27 +278,50 @@ const main = async () => {
       );
     }
   }
-  if (!options.includes('--no-build')) {
-    const build = docker(
-      ['build', '-q', '-f', 'scripts/container/Dockerfile', '-t', IMAGE, '.'],
-      { cwd: REPO, stdio: ['ignore', 'ignore', 'inherit'] }
+  const { stdout: enforced } = await docker([
+    'info',
+    '--format',
+    '{{.MemoryLimit}} {{.SwapLimit}}',
+  ]);
+  if (enforced !== 'true true') {
+    throw new Error(
+      `This Docker daemon can't enforce memory and swap limits (${enforced}).`
     );
+  }
+  if (!options.includes('--no-build')) {
+    const build = await docker([
+      'build',
+      '-q',
+      '-f',
+      'scripts/container/Dockerfile',
+      '-t',
+      IMAGE,
+      '.',
+    ]);
     if (build.status !== 0) {
-      throw new Error('docker build failed');
+      throw new Error(`docker build failed:\n${build.stderr}`);
     }
   }
+  // One image for the whole search, even if another checkout rebuilds the tag meanwhile.
+  const { stdout: image, status } = await docker([
+    'image',
+    'inspect',
+    '--format',
+    '{{.Id}}',
+    IMAGE,
+  ]);
+  if (status !== 0) {
+    throw new Error(`No ${IMAGE} image; run without --no-build.`);
+  }
   process.on('SIGINT', () => {
-    cleanUp();
-    process.exit(130);
+    for (const child of running) {
+      child.kill('SIGTERM');
+    }
+    void remove([...created]).finally(() => process.exit(130));
   });
-  const settings = {
-    min: option('--min', 64),
-    max: option('--max', 2048),
-    step: option('--step', 8),
-    tries: option('--tries', 2),
-  };
+
   const lines = [
-    describeHost(),
+    await describeHost(image),
     `Command: \`${command.join(' ')}\``,
     '',
     '| Profile | Floor | Bounded by |',
@@ -210,14 +333,14 @@ const main = async () => {
       : Object.keys(PROFILES)) {
       const found = await findFloor({
         ...settings,
-        attempt: attemptIn({ command, profile }),
+        attempt: attemptIn({ image, command, profile }),
       });
       const floor =
         found.result === 'floor'
           ? `${found.passesAt} MB (fails at ${found.failsAt})`
           : found.result === 'passes at the minimum'
-            ? `under ${found.passesAt} MB`
-            : `over ${found.failsAt} MB`;
+            ? `${found.passesAt} MB or less`
+            : `fails at ${found.failsAt} MB, the maximum tried`;
       const by =
         found.kind === undefined
           ? ''
@@ -228,12 +351,12 @@ const main = async () => {
       process.stderr.write(`${profile}: ${floor}\n`);
     }
   } finally {
-    cleanUp();
+    await remove([...created]);
   }
   process.stdout.write(`${lines.join('\n')}\n`);
 };
 
-module.exports = { PROFILES, findFloor };
+module.exports = { PROFILES, classify, findFloor, searchOptions };
 
 if (require.main === module) {
   main().catch((error) => {
