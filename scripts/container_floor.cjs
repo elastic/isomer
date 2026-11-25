@@ -26,8 +26,12 @@ const { resolve } = require('node:path');
 
 const REPO = resolve(__dirname, '..');
 const IMAGE = 'isomer-container-floor';
-/** The Docker CLI; tests point it at a stub. */
+/** The Docker CLI; tests point it at a `.cjs` stub, which runs on this Node. */
 const DOCKER = process.env.ISOMER_FLOOR_DOCKER ?? 'docker';
+const dockerCommand = (args) =>
+  DOCKER.endsWith('.cjs')
+    ? [process.execPath, [DOCKER, ...args]]
+    : [DOCKER, args];
 
 /** What each profile adds to the run, as a Kibana-forked render process or a tuned host would. */
 const PROFILES = {
@@ -52,11 +56,11 @@ const classify = ({ status, oomKilled, exitCode, stderr }) => {
   if (status !== 'exited') {
     return `the container is ${status}, not exited`;
   }
-  if (oomKilled) {
-    return 'oom';
-  }
   if (exitCode === 0) {
     return 'pass';
+  }
+  if (oomKilled) {
+    return 'oom';
   }
   // An abort, as SIGABRT or as `--init` reports it, with V8's own diagnostic.
   if (
@@ -139,20 +143,29 @@ const searchOptions = (options) => {
   return settings;
 };
 
-/** The Docker calls in flight, so an interrupt can stop them. */
-const running = new Set();
+/** Kept of each stream, so a verbose command can't fill this process's heap. */
+const KEEP = 64 * 1024;
+const tail = (kept, chunk) => (kept + chunk).slice(-KEEP);
 
-const docker = (args) =>
-  new Promise((done, fail) => {
-    const child = spawn(DOCKER, args, { cwd: REPO });
-    running.add(child);
+/** Docker calls in flight. An interrupt stops only attached runs, and waits for the rest. */
+const running = new Map();
+let shuttingDown = false;
+
+const docker = (args, { cleanup = false } = {}) => {
+  if (shuttingDown && !cleanup) {
+    return Promise.reject(new Error('interrupted'));
+  }
+  const [file, argv] = dockerCommand(args);
+  const child = spawn(file, argv, { cwd: REPO });
+  child.attached = args[0] === 'start';
+  const call = new Promise((done, fail) => {
     let stdout = '';
     let stderr = '';
     child.stdout.on('data', (chunk) => {
-      stdout += chunk;
+      stdout = tail(stdout, chunk);
     });
     child.stderr.on('data', (chunk) => {
-      stderr += chunk;
+      stderr = tail(stderr, chunk);
     });
     child.on('error', (error) => {
       running.delete(child);
@@ -163,10 +176,22 @@ const docker = (args) =>
       done({ status, stdout: stdout.trim(), stderr });
     });
   });
+  running.set(child, call);
+  return call;
+};
 
 /** Containers this run created, by ID; cleanup removes these and no others. */
 const created = new Set();
 const runId = randomUUID().slice(0, 8);
+
+/** A Docker call whose output is read as state, refused with Docker's own message when it fails. */
+const probe = async (args) => {
+  const result = await docker(args);
+  if (result.status !== 0) {
+    throw new Error(`docker ${args[0]} failed:\n${result.stderr}`);
+  }
+  return result;
+};
 
 /** One run of `command` in `image` under `limit` MB, classified. */
 const attemptIn =
@@ -193,7 +218,7 @@ const attemptIn =
     const id = create.stdout.split('\n').at(-1);
     created.add(id);
     try {
-      const limits = await docker([
+      const limits = await probe([
         'inspect',
         '--format',
         '{{.HostConfig.Memory}} {{.HostConfig.MemorySwap}}',
@@ -206,7 +231,7 @@ const attemptIn =
         );
       }
       const started = await docker(['start', '--attach', id]);
-      const inspected = await docker([
+      const inspected = await probe([
         'inspect',
         '--format',
         '{{.State.Status}} {{.State.OOMKilled}} {{.State.ExitCode}}',
@@ -219,6 +244,9 @@ const attemptIn =
         exitCode: Number(exitCode),
         stderr: started.stderr,
       });
+      if (status !== 'exited') {
+        return `${outcome}; docker start said:\n${started.stderr}`;
+      }
       // `start --attach` exits with the container's code; anything else means the client lost it.
       if (outcome === 'pass' && started.status !== 0) {
         return `docker start exited ${started.status} for a container that exited 0:\n${started.stderr}`;
@@ -230,23 +258,54 @@ const attemptIn =
   };
 
 /** Removes `ids`, saying which are left behind and how to retry when Docker can't. */
+/** IDs removed or being removed, so two cleanups never remove one container twice. */
+const handled = new Set();
+
 const remove = async (requested) => {
-  // Claimed first, so two cleanups never remove one container twice.
-  const ids = requested.filter((id) => created.delete(id));
+  const ids = requested.filter((id) => !handled.has(id));
+  ids.forEach((id) => handled.add(id));
   if (ids.length === 0) {
     return;
   }
-  const result = await docker(['rm', '-f', ...ids]).catch((error) => ({
-    status: 1,
-    stderr: String(error),
-  }));
+  const result = await docker(['rm', '-f', ...ids], { cleanup: true }).catch(
+    (error) => ({
+      status: 1,
+      stderr: String(error),
+    })
+  );
   if (result.status === 0) {
+    ids.forEach((id) => created.delete(id));
     return;
   }
-  ids.forEach((id) => created.add(id));
+  ids.forEach((id) => handled.delete(id));
   process.stderr.write(
     `Couldn't remove ${ids.join(' ')}:\n${result.stderr}\nRetry with: docker rm -f ${ids.join(' ')}\n`
   );
+};
+
+/** Waits until no Docker call is in flight, including the cleanup an interrupted attempt starts. */
+const drain = async () => {
+  do {
+    await Promise.allSettled([...running.values()]);
+    await new Promise((done) => setImmediate(done));
+  } while (running.size > 0);
+};
+
+/**
+ * Removes every container this run made: those it holds IDs for, and any the
+ * daemon created under this run's label before `docker create` returned one.
+ */
+const cleanUp = async () => {
+  const listed = await docker(
+    ['ps', '-aq', '--no-trunc', '--filter', `label=isomer-floor=${runId}`],
+    { cleanup: true }
+  ).catch(() => ({ status: 1, stdout: '' }));
+  for (const id of listed.status === 0 ? listed.stdout.split('\n') : []) {
+    if (id !== '') {
+      created.add(id);
+    }
+  }
+  await remove([...created]);
 };
 
 const describeHost = async (image) => {
@@ -314,10 +373,19 @@ const main = async () => {
     throw new Error(`No ${IMAGE} image; run without --no-build.`);
   }
   process.on('SIGINT', () => {
-    for (const child of running) {
-      child.kill('SIGTERM');
+    if (shuttingDown) {
+      return;
     }
-    void remove([...created]).finally(() => process.exit(130));
+    shuttingDown = true;
+    // Stop attached runs; let a create or remove in flight finish, so its container is known.
+    for (const [child] of running) {
+      if (child.attached) {
+        child.kill('SIGTERM');
+      }
+    }
+    void drain()
+      .then(cleanUp)
+      .finally(() => process.exit(130));
   });
 
   const lines = [
@@ -351,7 +419,7 @@ const main = async () => {
       process.stderr.write(`${profile}: ${floor}\n`);
     }
   } finally {
-    await remove([...created]);
+    await cleanUp();
   }
   process.stdout.write(`${lines.join('\n')}\n`);
 };

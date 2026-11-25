@@ -6,13 +6,7 @@
  */
 
 import { spawn, spawnSync } from 'node:child_process';
-import {
-  chmodSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -86,6 +80,10 @@ describe('classify', () => {
     expect(classify(exited)).toBe('pass');
   });
 
+  it('passes a command that exited 0 though the kernel killed something else', () => {
+    expect(classify({ ...exited, oomKilled: true })).toBe('pass');
+  });
+
   it('calls a kill the kernel reported an OOM, whatever stderr says', () => {
     expect(
       classify({
@@ -142,12 +140,11 @@ describe('the runner, against a stub Docker', () => {
   const dir = mkdtempSync(join(tmpdir(), 'isomer-floor-'));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
   const log = join(dir, 'calls.log');
-  const stub = join(dir, 'docker');
+  const stub = join(dir, 'docker.cjs');
   // Answers each Docker call the runner makes; MODE picks what `start` does.
   writeFileSync(
     stub,
-    `#!/usr/bin/env node
-const { appendFileSync } = require('node:fs');
+    `const { appendFileSync } = require('node:fs');
 const args = process.argv.slice(2);
 appendFileSync(process.env.STUB_LOG, args.join(' ') + '\\n');
 const mode = process.env.STUB_MODE;
@@ -159,6 +156,8 @@ if (args[0] === 'info') {
 } else if (args[0] === 'run') {
   console.log('v24.0.0');
 } else if (args[0] === 'create') {
+  setTimeout(() => console.log('container-a'), mode === 'slow-create' ? 3000 : 0);
+} else if (args[0] === 'ps') {
   console.log('container-a');
 } else if (args[0] === 'inspect' && format.includes('HostConfig')) {
   console.log('2147483648 2147483648');
@@ -173,7 +172,6 @@ if (args[0] === 'info') {
 }
 `
   );
-  chmodSync(stub, 0o755);
   const env = (mode) => ({
     ...process.env,
     ISOMER_FLOOR_DOCKER: stub,
@@ -196,21 +194,29 @@ if (args[0] === 'info') {
     expect(readFileSync(log, 'utf8')).toContain('rm -f container-a');
   });
 
-  it('removes only its own container when interrupted', async () => {
-    writeFileSync(log, '');
-    const child = spawn(process.execPath, command, { env: env('hang') });
-    for (let wait = 0; wait < 100; wait += 1) {
-      if (readFileSync(log, 'utf8').includes('start --attach')) {
-        break;
+  // Windows delivers no SIGINT a script can handle.
+  it.skipIf(process.platform === 'win32').each([
+    ['an attached run', 'hang', 'start --attach'],
+    ['a create still in flight', 'slow-create', 'create '],
+  ])(
+    'removes only its own container when interrupted during %s',
+    async (_, mode, during) => {
+      writeFileSync(log, '');
+      const child = spawn(process.execPath, command, { env: env(mode) });
+      for (let wait = 0; wait < 100; wait += 1) {
+        if (readFileSync(log, 'utf8').includes(during)) {
+          break;
+        }
+        await new Promise((done) => setTimeout(done, 100));
       }
-      await new Promise((done) => setTimeout(done, 100));
-    }
-    child.kill('SIGINT');
-    const code = await new Promise((done) => child.on('close', done));
-    expect(code).toBe(130);
-    const removals = readFileSync(log, 'utf8')
-      .split('\n')
-      .filter((line) => line.startsWith('rm '));
-    expect(removals).toEqual(['rm -f container-a']);
-  }, 30_000);
+      child.kill('SIGINT');
+      const code = await new Promise((done) => child.on('close', done));
+      expect(code).toBe(130);
+      const removals = readFileSync(log, 'utf8')
+        .split('\n')
+        .filter((line) => line.startsWith('rm '));
+      expect(removals).toEqual(['rm -f container-a']);
+    },
+    30_000
+  );
 });
