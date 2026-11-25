@@ -6,7 +6,13 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,6 +36,14 @@ describe('bench --check', () => {
     const { status, stderr } = bench('charts', '--check', '--scenarios', 'a');
     expect(status).not.toBe(0);
     expect(stderr).toContain('it takes no --scenarios');
+  });
+
+  it('refuses --write, since a baseline needs every row', () => {
+    const file = join(dir, 'baseline.json');
+    const { status, stderr } = bench('charts', '--check', '--write', file);
+    expect(status).toBe(1);
+    expect(stderr).toContain('it takes no --write');
+    expect(existsSync(file)).toBe(false);
   });
 
   it('refuses a suite nothing bounds', () => {

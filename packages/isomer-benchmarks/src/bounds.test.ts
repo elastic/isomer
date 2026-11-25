@@ -74,6 +74,10 @@ describe('boundsProblem', () => {
     [{ sdk: { nodeKb: -1 } }, 'sdk nodeKb: a bound is a number, at least 0'],
     [{ sdk: { nodeKb: '180' } }, 'sdk nodeKb: a bound is a number, at least 0'],
     [{ sdk: { nodeKb: NaN } }, 'sdk nodeKb: a bound is a number, at least 0'],
+    [
+      { sdk: { nodeKb: Infinity } },
+      'sdk nodeKb: a bound is a number, at least 0',
+    ],
   ])('refuses %j', (bounds, problem) => {
     expect(boundsProblem(bounds)).toBe(problem);
   });

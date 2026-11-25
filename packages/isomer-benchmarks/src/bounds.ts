@@ -27,7 +27,8 @@ export const boundsProblem = (value: unknown): string | undefined => {
       return `${scenario}: a bound needs at least one measure`;
     }
     for (const [key, bound] of Object.entries(measures)) {
-      if (typeof bound !== 'number' || !(bound >= 0)) {
+      // Finite, since `1e999` in a JSON file parses to a ceiling nothing reaches.
+      if (typeof bound !== 'number' || !Number.isFinite(bound) || bound < 0) {
         return `${scenario} ${key}: a bound is a number, at least 0`;
       }
     }

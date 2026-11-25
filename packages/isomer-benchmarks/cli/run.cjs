@@ -223,6 +223,11 @@ const runSuite = async (suiteName, args) => {
     ? 1
     : runsOption(args, check ? CHECK_RUNS : RUNS);
   const passed = options(args, '--config');
+  if (check && args.includes('--write')) {
+    throw new Error(
+      '--check runs only the bounded scenarios, so it takes no --write: a baseline needs every row'
+    );
+  }
   if (check && args.includes('--scenarios')) {
     throw new Error(
       '--check runs the bounded scenarios; it takes no --scenarios'

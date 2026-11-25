@@ -9,7 +9,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 
 ## TL;DR
 
-- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and rendering it as HTML or a snapshot adds well under 0.1 ms more. Each further node adds about 2 µs, almost all of it validation.
+- **Isomer's per-request work is cheap.** A 100-node composition validates in about 0.2 ms, and validating and rendering it as HTML or a snapshot takes about 0.2 to 0.25 ms end to end. Each further node adds about 2 µs, almost all of it validation.
 - **Loading code at startup is where the cost is.** The SDK and the runtime with takumi hold about 72 MB RSS before any request, against 42 MB for Node alone. A pack adds its own: about 78 MB with the charts pack and 95 MB with the slides pack.
 - **The heaviest single entry is the Elastic Charts engine,** at about 730 CommonJS modules, because it loads `@elastic/charts`. With the SDK and the runtime it reaches about 118 MB. A host that only validates or resolves charts doesn't need it.
 - **Bundled, the SDK root is about 185 KB minified, but only about 40 KB is its own code.** The rest is the Markdown parser, which `./react` and `./slack` pull in too. The runtime is about 340 KB, since it also bundles `acorn`, about 120 KB, to check embedded scripts.
@@ -19,7 +19,7 @@ description: Measures what each Isomer package costs to load, run and ship, apar
 - **takumi itself is light; its PDF worker isn't.** Loading takumi and registering the slides theme's 10 font faces holds about 54 MB RSS, and a 1920×1080 slide takes about 6 ms to PNG. A cold one-page PDF, which starts the PDF worker, takes about 100 ms and raises peak RSS by about 70 MB. Over repeated draws RSS keeps rising, by about 40 KB a PNG, on macOS.
 - **Not measured yet:** the slides pack's own render cost, and container limits.
 
-All figures are medians on one Apple M4 Pro. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
+All figures are medians on one Apple M4 Pro, except bundle sizes, which are measured once and are the same on any machine. Expect slower hardware to take longer; memory carries across machines better than time does. [Sizing a host](sizing.md) turns the numbers into guidance, and [Raw results](results.md) holds the tables from the committed baselines.
 
 ## What each suite claims
 
@@ -99,7 +99,7 @@ Commit the baseline, `docs/results.md`, and the assembled copy under the root `d
 
 ## Bounds
 
-A bound is the most a scenario's median may reach, per measure. `bench <suite> --check` runs only the bounded scenarios and fails when a median is over its bound. It also fails when a bound names a scenario or measure the run didn't produce, so a bound can't pass by going unmeasured, and when nothing bounds the suite. It takes no `--scenarios`.
+A bound is the most a scenario's median may reach, per measure. `bench <suite> --check` runs only the bounded scenarios and fails when a median is over its bound. Since it runs only those, it takes no `--scenarios` and no `--write`. It also fails when a bound names a scenario or measure the run didn't produce, so a bound can't pass by going unmeasured, and when nothing bounds the suite. It takes no `--scenarios`.
 
 Bounds live with what they hold. A pack or engine keeps its own in its config's `bounds`, keyed by suite and then by scenario, and gates itself from its own `bench:check`:
 
