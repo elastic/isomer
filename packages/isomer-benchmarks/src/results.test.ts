@@ -7,7 +7,14 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { cgroupLimitBytes, median, summarize, toMarkdown } from './results';
+import {
+  cgroupLimitBytes,
+  describeEnvironment,
+  describeEnvironmentLine,
+  median,
+  summarize,
+  toMarkdown,
+} from './results';
 
 const measures = [
   { key: 'peakRssMb', label: 'Peak RSS (MB)', digits: 0 },
@@ -97,5 +104,26 @@ describe('cgroupLimitBytes', () => {
   it('is null with no limit set or no cgroup v2 line', () => {
     expect(cgroupLimitBytes('0::/bench/run/child', () => 'max')).toBe(null);
     expect(cgroupLimitBytes('12:memory:/x\n', () => '1')).toBe(null);
+  });
+});
+
+describe('describeEnvironmentLine', () => {
+  const line = (uncommitted?: boolean) =>
+    describeEnvironmentLine(
+      describeEnvironment({
+        commit: '0123456789abcdef',
+        ...(uncommitted === undefined ? {} : { uncommitted }),
+        packages: {},
+        nodeFlags: [],
+      })
+    );
+
+  it('says when the run had uncommitted changes', () => {
+    expect(line(true)).toContain('commit `01234567` with uncommitted changes');
+  });
+
+  it('names the commit alone for a clean run or an older result', () => {
+    expect(line(false)).toMatch(/commit `01234567`$/);
+    expect(line()).toMatch(/commit `01234567`$/);
   });
 });

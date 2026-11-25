@@ -48,3 +48,4 @@ export {
   syntheticType,
   synthTree,
 } from './synthetic_pack';
+export { type Timed, timeDraws } from './time_draws';

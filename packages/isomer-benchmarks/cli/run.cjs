@@ -23,7 +23,7 @@ const { dirname, join, resolve } = require('node:path');
 
 const PACKAGE = resolve(__dirname, '..');
 const REPO = resolve(PACKAGE, '../..');
-const SUITES = ['load', 'synthetic', 'size', 'charts'];
+const SUITES = ['load', 'synthetic', 'size', 'charts', 'takumi'];
 const NODE_FLAGS = ['--disallow-code-generation-from-strings', '--expose-gc'];
 /** What a child writes its one JSON record to, apart from anything a package logs. */
 const RECORD_FD = 3;
@@ -96,15 +96,22 @@ const versionFrom = (base, name) => {
   }
 };
 
-const commit = () => {
+const git = (...args) => {
   try {
-    return execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: REPO,
-      encoding: 'utf8',
-    }).trim();
+    return execFileSync('git', args, { cwd: REPO, encoding: 'utf8' }).trim();
   } catch {
     return null;
   }
+};
+
+/** The commit checked out, and whether tracked files differ from it. */
+const revision = () => {
+  const commit = git('rev-parse', 'HEAD');
+  const status = git('status', '--porcelain', '--untracked-files=no');
+  return {
+    commit,
+    ...(status === null ? {} : { uncommitted: status !== '' }),
+  };
 };
 
 // The child gets only the scenario's spec, never a config, so nothing a
@@ -253,6 +260,7 @@ const runSuite = async (suiteName, args) => {
       );
     }
   }
+  const before = revision();
   const { scenarios, records } = await measure(suiteName, {
     runs,
     configs,
@@ -261,16 +269,34 @@ const runSuite = async (suiteName, args) => {
       : option(args, '--scenarios', undefined)?.split(','),
   });
 
+  // A checkout that changed during the run can't reproduce it either.
+  const after = revision();
+  const checkout = {
+    commit: before.commit,
+    ...(before.uncommitted === undefined
+      ? {}
+      : {
+          uncommitted:
+            before.uncommitted ||
+            after.uncommitted === true ||
+            before.commit !== after.commit,
+        }),
+  };
   const { describeEnvironment, summarize } = helpers();
   const result = {
     schemaVersion: 1,
     suite: suiteName,
     about: suite.about,
     environment: describeEnvironment({
-      commit: commit(),
-      packages: Object.fromEntries(
-        VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)])
-      ),
+      ...checkout,
+      packages: Object.fromEntries([
+        ...VERSIONED.map((name) => [name, versionFrom(PACKAGE, name)]),
+        // takumi's own dependencies resolve only from its package.
+        ...['@takumi-rs/core', 'takumi-pdf'].map((name) => [
+          name,
+          versionFrom(join(PACKAGE, '../isomer-image-takumi'), name),
+        ]),
+      ]),
       nodeFlags: NODE_FLAGS,
     }),
     // Each pack's own SDK and runtime, which its rows load.
@@ -375,9 +401,12 @@ const smoke = async () => {
 
 const suiteSection = (result) => {
   const { describeEnvironmentLine, summarize, toMarkdown } = helpers();
-  const { suite, environment, runsPerScenario, scenarios, measures } = result;
+  const { suite, environment, runsPerScenario, scenarios } = result;
   // From the suite's code and the raw runs, so neither a saved description nor a saved summary drifts.
-  const { about } = suiteOf(suite);
+  const { about, measures: labels } = suiteOf(suite);
+  const measures = result.measures.map(
+    (measure) => labels.find(({ key }) => key === measure.key) ?? measure
+  );
   const summary = summarize(result.runs, scenarios, measures);
   const notes = suiteOf(suite).notes?.({ ...result, summary }) ?? [];
   return [

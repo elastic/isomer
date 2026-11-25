@@ -190,3 +190,41 @@ Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cor
 - `charts-elastic:burst-limited`: 16 xy PNGs at 2× requested at once, through a limiter of 2
 - `charts-elastic:burst-unlimited`: 16 xy PNGs at 2× requested at once, no limiter
 - `charts-elastic:one`: one cold xy PNG at 2×, the one-off case
+
+## Rasterizing with takumi
+
+What takumi costs a fresh Node process on its own, drawing the slides pack's `isomer-every-surface` deck: the parent renders the deck with the `snapshot` surface once, and each child loads only takumi, registers the theme's font faces and draws that input. `Loaded RSS` is after creating the backend and reading the row's input, before any font registers; `Render RSS` is the peak above it, and `RSS after` is after the run, a GC and, for `pdf-close`, `close()`. `Growth` is how much `RSS after` rose past the first pass of a repeated row. Native memory and the PDF worker's show only in RSS; `Heap after` is the main thread's alone. Per-output time is the median, from the request to its output; under a burst it includes the wait in the limiter or for one of the libuv thread pool's threads, and `UV_THREADPOOL_SIZE` is in the environment. `All outputs` excludes the GC between passes. Both no-output rows draw one empty SVG, so their difference is the fonts' registration. Report only: nothing here is bounded yet.
+
+Median of 5 runs per scenario. Node v22.22.0, darwin arm64, Apple M4 Pro (14 cores), 48 GB, NODE_ENV production, commit `4657656c`.
+
+| Scenario             | Outputs | Pages per PDF, requested | Input (KB) | Peak RSS (MB) | Loaded RSS (MB) | Render RSS (MB) | RSS after (MB) | Growth (MB) | Heap after (MB) | First output (ms) | Each output (ms) | All outputs (ms) | Largest output (KB) |
+| -------------------- | ------: | -----------------------: | ---------: | ------------: | --------------: | --------------: | -------------: | ----------: | --------------: | ----------------: | ---------------: | ---------------: | ------------------: |
+| `backend`            |       0 |                          |            |            53 |              51 |               2 |             53 |             |             4.3 |                13 |                  |                  |                     |
+| `fonts`              |       0 |                          |            |            54 |              51 |               3 |             54 |             |             4.4 |                18 |                  |                  |                     |
+| `png-first`          |       1 |                          |         11 |            70 |              51 |              18 |             70 |             |             4.5 |                28 |             15.0 |               16 |                  67 |
+| `png-deck`           |      33 |                          |        223 |            89 |              53 |              36 |             88 |             |             4.9 |                30 |              6.6 |              257 |                  94 |
+| `png-deck-2x`        |      33 |                          |        223 |           141 |              53 |              88 |            141 |             |             4.9 |                41 |             18.1 |              561 |                 218 |
+| `png-repeat`         |     660 |                          |        223 |           111 |              53 |              58 |            111 |        23.5 |             5.0 |                29 |              4.6 |             3282 |                  94 |
+| `png-repeat-nocache` |     660 |                          |        223 |           110 |              53 |              57 |            110 |        23.2 |             5.0 |                28 |              4.8 |             3378 |                  94 |
+| `png-burst-4`        |      33 |                          |        223 |           126 |              53 |              73 |            125 |             |             4.9 |                30 |             48.9 |               74 |                  94 |
+| `png-burst`          |      33 |                          |        223 |           129 |              53 |              76 |            129 |             |             4.9 |                33 |             46.2 |               73 |                  94 |
+| `svg-deck`           |      33 |                          |        223 |            65 |              53 |              12 |             64 |             |             4.9 |                22 |              1.4 |               53 |                  92 |
+| `pdf-deck`           |       1 |                       33 |        144 |           162 |              52 |             110 |            161 |             |             4.9 |               221 |            208.1 |              209 |                 170 |
+| `pdf-repeat`         |      20 |                       33 |        144 |           231 |              52 |             179 |            228 |        66.2 |             5.1 |               225 |             71.0 |             1573 |                 170 |
+| `pdf-close`          |       1 |                       33 |        144 |           162 |              52 |             110 |            135 |             |             4.9 |               223 |            210.0 |              211 |                 170 |
+| `pdf-page`           |       1 |                        1 |         11 |           123 |              51 |              72 |            123 |             |             4.7 |               115 |            101.7 |              103 |                  29 |
+
+- `backend`: load takumi, create a backend and draw an empty 1×1 SVG, with no font registered
+- `fonts`: the same, with the slides theme's 10 font faces registered by that first draw
+- `png-first`: one slide to PNG at 1×, cold
+- `png-deck`: every slide to PNG at 1×, one at a time
+- `png-deck-2x`: every slide to PNG at 2×, one at a time
+- `png-repeat`: every slide to PNG at 1×, 20 times over, with the default 64 MiB cache
+- `png-repeat-nocache`: every slide to PNG at 1×, 20 times over, with `cacheMaxBytes: 0`
+- `png-burst-4`: every slide to PNG at 1×, requested at once through a limiter of 4
+- `png-burst`: every slide to PNG at 1×, requested at once, no limiter
+- `svg-deck`: every slide to SVG, one at a time
+- `pdf-deck`: the whole deck to one PDF, cold: the worker starts and registers the fonts
+- `pdf-repeat`: the whole deck to PDF 20 times over
+- `pdf-close`: the whole deck to PDF, then `close()` the worker
+- `pdf-page`: the deck's first slide to a one-page PDF, cold
