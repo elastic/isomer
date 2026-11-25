@@ -163,6 +163,20 @@ describe('createTakumiImageBackend', () => {
     expect(png.readUInt32BE(20)).toBe(32);
   });
 
+  it('draws table cell content centred vertically, as a browser does', async () => {
+    const { pixel } = decodePng(
+      await createTakumiImageBackend().png({
+        html: '<table><tbody><tr><td><div class="mark"></div></td></tr></tbody></table>',
+        css: 'table { border-spacing: 0; background: #fff } td { height: 60px; padding: 0 } .mark { width: 20px; height: 20px; background: #000 }',
+        width: 64,
+        height: 60,
+      })
+    );
+
+    expect(pixel(10, 5)).toEqual({ r: 255, g: 255, b: 255, a: 255 });
+    expect(pixel(10, 30)).toEqual({ r: 0, g: 0, b: 0, a: 255 });
+  });
+
   it('renders the same input twice to identical bytes', async () => {
     const backend = createTakumiImageBackend();
     const first = await backend.png(input('.box { background: #ff0000; }'));
@@ -625,6 +639,17 @@ describe('createTakumiImageBackend', () => {
       expect(text(pdf)).toMatch(
         /MediaBox\s*\[\s*0\s+0\s+48(?:\.0+)?\s+24(?:\.0+)?\s*\]/
       );
+    });
+
+    it('draws with the input stylesheet alone, ignoring a stray `css` option', async () => {
+      const backend = createTakumiImageBackend();
+      const plain = await backend.pdf(pages(['a']), stable);
+      const stray = await backend.pdf(pages(['a']), {
+        ...stable,
+        css: '.box { background: #0000ff; height: 400px }',
+      } as TakumiPdfOptions);
+
+      expect(stray.equals(plain)).toBe(true);
     });
 
     it('adds no page for content clipped inside a page', async () => {

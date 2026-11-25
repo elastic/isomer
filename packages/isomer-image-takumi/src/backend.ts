@@ -354,6 +354,12 @@ const toPagedSource = ({ pages, css, width, height }: PdfInput) => {
   };
 };
 
+/** `fields` without its `undefined` entries, so an option left unset stays absent. */
+const withDefined = <T extends object>(fields: T) =>
+  Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  ) as { [K in keyof T]?: Exclude<T[K], undefined> };
+
 /** Runs `create` once for every caller, forgetting a rejection so the next call retries. */
 const once = <T>(create: () => Promise<T>): (() => Promise<T>) => {
   let value: Promise<T> | undefined;
@@ -468,8 +474,23 @@ export const createTakumiImageBackend = ({
       const { source, width, height } = toPagedSource(
         await fitPagesOn(engine, input, options)
       );
+      const {
+        metadata,
+        uncoveredText,
+        images,
+        outline,
+        lang,
+        backgroundColor,
+      } = options;
       const renderOptions: PdfRenderOptions = {
-        ...options,
+        ...withDefined({
+          metadata,
+          uncoveredText,
+          images,
+          outline,
+          lang,
+          backgroundColor,
+        }),
         size: { width, height },
         margin: 0,
       };
