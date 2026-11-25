@@ -21,7 +21,7 @@
       "MALLOC_ARENA_MAX": null,
       "UV_THREADPOOL_SIZE": null
     },
-    "commit": "0eeb099042926eae0cb8a0eff4c0b1f4968f5c8b",
+    "commit": "f974d52e741aac79f504e9c5cb1d2492908888a5",
     "packages": {
       "@elastic/isomer-sdk": "0.0.0-development",
       "@elastic/isomer-runtime": "0.0.0-development",
@@ -185,1012 +185,1012 @@
   "runs": [
     {
       "scenario": "charts:resolve",
-      "peakRssMb": 95.578125,
+      "peakRssMb": 95.546875,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 82.46875,
-      "renderRssMb": 13.109375,
-      "heapAfterGcMb": 18.468002319335938,
-      "coldStartMs": 164.004625,
-      "allMs": 36.075125,
-      "validateMs": 0.150459,
-      "sceneMs": 0.112333
+      "values": 400,
+      "loadedRssMb": 82.296875,
+      "renderRssMb": 13.25,
+      "heapAfterGcMb": 18.47759246826172,
+      "coldStartMs": 163.552584,
+      "allMs": 36.300208,
+      "validateMs": 0.175,
+      "sceneMs": 0.140333
     },
     {
       "scenario": "charts:resolve",
-      "peakRssMb": 101.46875,
+      "peakRssMb": 95.453125,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 82.4375,
-      "renderRssMb": 19.03125,
-      "heapAfterGcMb": 18.470550537109375,
-      "coldStartMs": 163.959083,
-      "allMs": 38.134333,
-      "validateMs": 0.179208,
-      "sceneMs": 0.144375
+      "values": 400,
+      "loadedRssMb": 82.953125,
+      "renderRssMb": 12.5,
+      "heapAfterGcMb": 18.480690002441406,
+      "coldStartMs": 168.070792,
+      "allMs": 36.777208,
+      "validateMs": 0.157083,
+      "sceneMs": 0.142375
     },
     {
       "scenario": "charts:resolve",
-      "peakRssMb": 102.046875,
+      "peakRssMb": 95.875,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 83.453125,
-      "renderRssMb": 18.59375,
-      "heapAfterGcMb": 18.469947814941406,
-      "coldStartMs": 164.408667,
-      "allMs": 36.771,
-      "validateMs": 0.163125,
-      "sceneMs": 0.119417
+      "values": 400,
+      "loadedRssMb": 82.953125,
+      "renderRssMb": 12.921875,
+      "heapAfterGcMb": 18.479598999023438,
+      "coldStartMs": 168.534292,
+      "allMs": 37.739208,
+      "validateMs": 0.164667,
+      "sceneMs": 0.1465
     },
     {
       "scenario": "charts:resolve",
-      "peakRssMb": 102.359375,
+      "peakRssMb": 95.390625,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 83.578125,
-      "renderRssMb": 18.78125,
-      "heapAfterGcMb": 18.470382690429688,
-      "coldStartMs": 171.86975,
-      "allMs": 39.253958,
-      "validateMs": 0.171167,
-      "sceneMs": 0.127
+      "values": 400,
+      "loadedRssMb": 82.109375,
+      "renderRssMb": 13.28125,
+      "heapAfterGcMb": 18.47901153564453,
+      "coldStartMs": 167.337334,
+      "allMs": 37.577875,
+      "validateMs": 0.161792,
+      "sceneMs": 0.142667
     },
     {
       "scenario": "charts:resolve",
-      "peakRssMb": 96.046875,
+      "peakRssMb": 95.359375,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 82.671875,
-      "renderRssMb": 13.375,
-      "heapAfterGcMb": 18.46954345703125,
-      "coldStartMs": 166.064917,
-      "allMs": 38.62775,
-      "validateMs": 0.162667,
-      "sceneMs": 0.119166
+      "values": 400,
+      "loadedRssMb": 82.40625,
+      "renderRssMb": 12.953125,
+      "heapAfterGcMb": 18.481056213378906,
+      "coldStartMs": 167.036958,
+      "allMs": 35.921917,
+      "validateMs": 0.156459,
+      "sceneMs": 0.145958
     },
     {
       "scenario": "charts:resolve-budget",
-      "peakRssMb": 248.75,
+      "peakRssMb": 256.359375,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 84.15625,
-      "renderRssMb": 164.59375,
-      "heapAfterGcMb": 35.527000427246094,
-      "coldStartMs": 582.233708,
-      "allMs": 416.181958,
-      "validateMs": 80.012667,
-      "sceneMs": 335.99775
+      "values": 250000,
+      "loadedRssMb": 82.90625,
+      "renderRssMb": 173.453125,
+      "heapAfterGcMb": 35.53412628173828,
+      "coldStartMs": 574.636625,
+      "allMs": 417.29775,
+      "validateMs": 81.925583,
+      "sceneMs": 335.168042
     },
     {
       "scenario": "charts:resolve-budget",
-      "peakRssMb": 250.59375,
+      "peakRssMb": 254.046875,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 82.25,
-      "renderRssMb": 168.34375,
-      "heapAfterGcMb": 35.526397705078125,
-      "coldStartMs": 584.20875,
-      "allMs": 415.843958,
-      "validateMs": 78.773459,
-      "sceneMs": 336.916541
+      "values": 250000,
+      "loadedRssMb": 82.453125,
+      "renderRssMb": 171.59375,
+      "heapAfterGcMb": 35.53056335449219,
+      "coldStartMs": 574.50125,
+      "allMs": 415.722458,
+      "validateMs": 82.244417,
+      "sceneMs": 333.315375
     },
     {
       "scenario": "charts:resolve-budget",
-      "peakRssMb": 276.53125,
+      "peakRssMb": 255.765625,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 83.453125,
-      "renderRssMb": 193.078125,
-      "heapAfterGcMb": 35.52558135986328,
-      "coldStartMs": 586.563209,
-      "allMs": 424.29125,
-      "validateMs": 80.214875,
-      "sceneMs": 343.930333
+      "values": 250000,
+      "loadedRssMb": 82.484375,
+      "renderRssMb": 173.28125,
+      "heapAfterGcMb": 35.53031921386719,
+      "coldStartMs": 585.610584,
+      "allMs": 424.836917,
+      "validateMs": 81.0065,
+      "sceneMs": 343.633125
     },
     {
       "scenario": "charts:resolve-budget",
-      "peakRssMb": 248.84375,
+      "peakRssMb": 255.96875,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 83.390625,
-      "renderRssMb": 165.453125,
-      "heapAfterGcMb": 35.525726318359375,
-      "coldStartMs": 579.463875,
-      "allMs": 418.370625,
-      "validateMs": 81.103375,
-      "sceneMs": 337.08225
+      "values": 250000,
+      "loadedRssMb": 82.6875,
+      "renderRssMb": 173.28125,
+      "heapAfterGcMb": 35.52892303466797,
+      "coldStartMs": 607.395667,
+      "allMs": 439.909541,
+      "validateMs": 81.418042,
+      "sceneMs": 358.325792
     },
     {
       "scenario": "charts:resolve-budget",
-      "peakRssMb": 253.828125,
+      "peakRssMb": 256.59375,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 83.046875,
-      "renderRssMb": 170.78125,
-      "heapAfterGcMb": 35.526329040527344,
-      "coldStartMs": 583.18925,
-      "allMs": 416.66975,
-      "validateMs": 80.58375,
-      "sceneMs": 335.89625
+      "values": 250000,
+      "loadedRssMb": 82.0625,
+      "renderRssMb": 174.53125,
+      "heapAfterGcMb": 35.529747009277344,
+      "coldStartMs": 578.28425,
+      "allMs": 416.438083,
+      "validateMs": 80.367166,
+      "sceneMs": 335.856542
     },
     {
       "scenario": "charts:baseline",
-      "peakRssMb": 116.765625,
+      "peakRssMb": 117.234375,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 86.015625,
-      "renderRssMb": 30.75,
-      "heapAfterGcMb": 19.608184814453125,
-      "coldStartMs": 179.952708,
-      "allMs": 94.416833,
-      "validateMs": 0.167375,
-      "sceneMs": 0.558458,
-      "rasterMs": 0.453833,
+      "values": 400,
+      "loadedRssMb": 88.6875,
+      "renderRssMb": 28.546875,
+      "heapAfterGcMb": 19.633255004882812,
+      "coldStartMs": 185.931583,
+      "allMs": 95.862375,
+      "validateMs": 0.1555,
+      "sceneMs": 0.551625,
+      "rasterMs": 0.494583,
       "pngKb": 5.224609375
     },
     {
       "scenario": "charts:baseline",
-      "peakRssMb": 118.328125,
+      "peakRssMb": 117.390625,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 89.96875,
-      "renderRssMb": 28.359375,
-      "heapAfterGcMb": 19.608718872070312,
-      "coldStartMs": 182.373375,
-      "allMs": 102.389042,
-      "validateMs": 0.195458,
-      "sceneMs": 0.610166,
-      "rasterMs": 0.521541,
+      "values": 400,
+      "loadedRssMb": 86.328125,
+      "renderRssMb": 31.0625,
+      "heapAfterGcMb": 19.632644653320312,
+      "coldStartMs": 184.954459,
+      "allMs": 95.928208,
+      "validateMs": 0.169333,
+      "sceneMs": 0.558125,
+      "rasterMs": 0.475667,
       "pngKb": 5.224609375
     },
     {
       "scenario": "charts:baseline",
-      "peakRssMb": 118.46875,
+      "peakRssMb": 118.5,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 90.09375,
-      "renderRssMb": 28.375,
-      "heapAfterGcMb": 19.613555908203125,
-      "coldStartMs": 182.394583,
-      "allMs": 92.90175,
-      "validateMs": 0.15275,
-      "sceneMs": 0.547584,
-      "rasterMs": 0.484333,
+      "values": 400,
+      "loadedRssMb": 90.640625,
+      "renderRssMb": 27.859375,
+      "heapAfterGcMb": 19.63519287109375,
+      "coldStartMs": 187.258292,
+      "allMs": 96.236625,
+      "validateMs": 0.158791,
+      "sceneMs": 0.568792,
+      "rasterMs": 0.4865,
       "pngKb": 5.224609375
     },
     {
       "scenario": "charts:baseline",
-      "peakRssMb": 117.453125,
+      "peakRssMb": 118.1875,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 90.125,
-      "renderRssMb": 27.328125,
-      "heapAfterGcMb": 19.61035919189453,
-      "coldStartMs": 180.831334,
-      "allMs": 93.413667,
-      "validateMs": 0.152209,
-      "sceneMs": 0.530083,
-      "rasterMs": 0.469083,
+      "values": 400,
+      "loadedRssMb": 90.203125,
+      "renderRssMb": 27.984375,
+      "heapAfterGcMb": 19.636001586914062,
+      "coldStartMs": 184.967875,
+      "allMs": 95.033833,
+      "validateMs": 0.174292,
+      "sceneMs": 0.578708,
+      "rasterMs": 0.477291,
       "pngKb": 5.224609375
     },
     {
       "scenario": "charts:baseline",
-      "peakRssMb": 118.046875,
+      "peakRssMb": 119.34375,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 89.921875,
-      "renderRssMb": 28.125,
-      "heapAfterGcMb": 19.614166259765625,
-      "coldStartMs": 184.171833,
-      "allMs": 96.143083,
-      "validateMs": 0.169833,
-      "sceneMs": 0.571334,
-      "rasterMs": 0.496584,
+      "values": 400,
+      "loadedRssMb": 91.109375,
+      "renderRssMb": 28.234375,
+      "heapAfterGcMb": 19.636138916015625,
+      "coldStartMs": 187.578792,
+      "allMs": 94.36,
+      "validateMs": 0.169083,
+      "sceneMs": 0.579916,
+      "rasterMs": 0.458084,
       "pngKb": 5.224609375
     },
     {
       "scenario": "charts:budget",
-      "peakRssMb": 403.640625,
+      "peakRssMb": 408.625,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 90.28125,
-      "renderRssMb": 313.359375,
-      "heapAfterGcMb": 36.184043884277344,
-      "coldStartMs": 994.86975,
-      "allMs": 825.0585,
-      "validateMs": 80.458458,
-      "sceneMs": 741.783083,
-      "rasterMs": 2.703,
+      "values": 250000,
+      "loadedRssMb": 87.046875,
+      "renderRssMb": 321.578125,
+      "heapAfterGcMb": 36.19673156738281,
+      "coldStartMs": 1010.6015,
+      "allMs": 835.391917,
+      "validateMs": 81.904667,
+      "sceneMs": 750.565542,
+      "rasterMs": 2.749917,
       "pngKb": 5.5029296875
     },
     {
       "scenario": "charts:budget",
-      "peakRssMb": 404.625,
+      "peakRssMb": 400.734375,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 90.34375,
-      "renderRssMb": 314.28125,
-      "heapAfterGcMb": 36.17283630371094,
-      "coldStartMs": 1001.903375,
-      "allMs": 829.333291,
-      "validateMs": 78.041958,
-      "sceneMs": 748.583125,
-      "rasterMs": 2.594084,
+      "values": 250000,
+      "loadedRssMb": 90.265625,
+      "renderRssMb": 310.46875,
+      "heapAfterGcMb": 36.18952178955078,
+      "coldStartMs": 1010.502375,
+      "allMs": 833.847417,
+      "validateMs": 79.721125,
+      "sceneMs": 751.261417,
+      "rasterMs": 2.69325,
       "pngKb": 5.5029296875
     },
     {
       "scenario": "charts:budget",
-      "peakRssMb": 403.328125,
+      "peakRssMb": 397.28125,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 86.296875,
-      "renderRssMb": 317.03125,
-      "heapAfterGcMb": 36.184226989746094,
-      "coldStartMs": 1007.936584,
-      "allMs": 836.860583,
-      "validateMs": 81.131417,
-      "sceneMs": 753.04375,
-      "rasterMs": 2.556791,
+      "values": 250000,
+      "loadedRssMb": 90.015625,
+      "renderRssMb": 307.265625,
+      "heapAfterGcMb": 36.192481994628906,
+      "coldStartMs": 994.723333,
+      "allMs": 823.327833,
+      "validateMs": 81.453125,
+      "sceneMs": 739.205167,
+      "rasterMs": 2.49425,
       "pngKb": 5.5029296875
     },
     {
       "scenario": "charts:budget",
-      "peakRssMb": 403.984375,
+      "peakRssMb": 398.1875,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 90.84375,
-      "renderRssMb": 313.140625,
-      "heapAfterGcMb": 36.18360137939453,
-      "coldStartMs": 1001.052458,
-      "allMs": 828.257334,
-      "validateMs": 79.414875,
-      "sceneMs": 746.118542,
-      "rasterMs": 2.5625,
+      "values": 250000,
+      "loadedRssMb": 89.640625,
+      "renderRssMb": 308.546875,
+      "heapAfterGcMb": 36.191383361816406,
+      "coldStartMs": 996.867917,
+      "allMs": 822.937542,
+      "validateMs": 80.384875,
+      "sceneMs": 739.706792,
+      "rasterMs": 2.674334,
       "pngKb": 5.5029296875
     },
     {
       "scenario": "charts:budget",
-      "peakRssMb": 398.171875,
+      "peakRssMb": 404.578125,
       "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 86.9375,
-      "renderRssMb": 311.234375,
-      "heapAfterGcMb": 36.18324279785156,
-      "coldStartMs": 999.631833,
-      "allMs": 827.3855,
-      "validateMs": 80.920709,
-      "sceneMs": 743.704375,
-      "rasterMs": 2.639458,
+      "values": 250000,
+      "loadedRssMb": 90.390625,
+      "renderRssMb": 314.1875,
+      "heapAfterGcMb": 36.19232177734375,
+      "coldStartMs": 998.347917,
+      "allMs": 822.502583,
+      "validateMs": 78.984041,
+      "sceneMs": 740.539959,
+      "rasterMs": 2.803209,
       "pngKb": 5.5029296875
     },
     {
       "scenario": "charts-elastic:draw",
-      "peakRssMb": 185.78125,
+      "peakRssMb": 186.125,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 127.96875,
-      "renderRssMb": 57.8125,
-      "heapAfterGcMb": 39.450408935546875,
-      "coldStartMs": 427.108208,
-      "allMs": 308.158791,
-      "validateMs": 0.233458,
-      "sceneMs": 3.983042
+      "values": 400,
+      "loadedRssMb": 129.65625,
+      "renderRssMb": 56.46875,
+      "heapAfterGcMb": 39.457374572753906,
+      "coldStartMs": 432.371416,
+      "allMs": 336.240541,
+      "validateMs": 0.288333,
+      "sceneMs": 4.440375
     },
     {
       "scenario": "charts-elastic:draw",
-      "peakRssMb": 187.1875,
+      "peakRssMb": 185.53125,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 129.375,
-      "renderRssMb": 57.8125,
-      "heapAfterGcMb": 39.44342041015625,
-      "coldStartMs": 411.114,
-      "allMs": 303.809541,
-      "validateMs": 0.220542,
-      "sceneMs": 3.799875
+      "values": 400,
+      "loadedRssMb": 129.75,
+      "renderRssMb": 55.78125,
+      "heapAfterGcMb": 39.43083953857422,
+      "coldStartMs": 420.04675,
+      "allMs": 328.995,
+      "validateMs": 0.270458,
+      "sceneMs": 4.025416
     },
     {
       "scenario": "charts-elastic:draw",
-      "peakRssMb": 187.203125,
+      "peakRssMb": 185.84375,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 129.40625,
-      "renderRssMb": 57.796875,
-      "heapAfterGcMb": 39.42500305175781,
-      "coldStartMs": 403.739625,
-      "allMs": 317.312709,
-      "validateMs": 0.277917,
-      "sceneMs": 4.417125
-    },
-    {
-      "scenario": "charts-elastic:draw",
-      "peakRssMb": 186.234375,
-      "charts": 54,
-      "values": 399,
-      "loadedRssMb": 128.84375,
+      "values": 400,
+      "loadedRssMb": 128.453125,
       "renderRssMb": 57.390625,
-      "heapAfterGcMb": 39.43687438964844,
-      "coldStartMs": 413.179959,
-      "allMs": 322.9205,
-      "validateMs": 0.259458,
-      "sceneMs": 4.040083
+      "heapAfterGcMb": 39.467506408691406,
+      "coldStartMs": 425.279375,
+      "allMs": 317.894875,
+      "validateMs": 0.251208,
+      "sceneMs": 4.296625
     },
     {
       "scenario": "charts-elastic:draw",
-      "peakRssMb": 186.328125,
+      "peakRssMb": 185.890625,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 129.640625,
-      "renderRssMb": 56.6875,
-      "heapAfterGcMb": 39.43738555908203,
-      "coldStartMs": 410.520375,
-      "allMs": 323.805834,
-      "validateMs": 0.25775,
-      "sceneMs": 4.534459
+      "values": 400,
+      "loadedRssMb": 128.703125,
+      "renderRssMb": 57.1875,
+      "heapAfterGcMb": 39.456878662109375,
+      "coldStartMs": 403.748458,
+      "allMs": 321.33025,
+      "validateMs": 0.290459,
+      "sceneMs": 4.161333
+    },
+    {
+      "scenario": "charts-elastic:draw",
+      "peakRssMb": 186.171875,
+      "charts": 54,
+      "values": 400,
+      "loadedRssMb": 129.3125,
+      "renderRssMb": 56.859375,
+      "heapAfterGcMb": 39.45124816894531,
+      "coldStartMs": 427.245584,
+      "allMs": 330.020792,
+      "validateMs": 0.268834,
+      "sceneMs": 4.424875
     },
     {
       "scenario": "charts-elastic:engine",
-      "peakRssMb": 285.0625,
+      "peakRssMb": 284.21875,
       "charts": 54,
-      "values": 399,
-      "loadedRssMb": 133.265625,
-      "renderRssMb": 151.796875,
-      "heapAfterGcMb": 40.06129455566406,
-      "coldStartMs": 446.826208,
-      "allMs": 699.548125,
-      "validateMs": 0.392,
-      "sceneMs": 4.781917,
-      "rasterMs": 6.864792,
-      "pngKb": 32.8974609375
-    },
-    {
-      "scenario": "charts-elastic:engine",
-      "peakRssMb": 289.765625,
-      "charts": 54,
-      "values": 399,
-      "loadedRssMb": 133.796875,
-      "renderRssMb": 155.96875,
-      "heapAfterGcMb": 40.08241271972656,
-      "coldStartMs": 440.205875,
-      "allMs": 680.283167,
-      "validateMs": 0.376667,
-      "sceneMs": 4.712042,
-      "rasterMs": 7.062959,
-      "pngKb": 32.8974609375
-    },
-    {
-      "scenario": "charts-elastic:engine",
-      "peakRssMb": 289.703125,
-      "charts": 54,
-      "values": 399,
-      "loadedRssMb": 133.453125,
-      "renderRssMb": 156.25,
-      "heapAfterGcMb": 40.081138610839844,
-      "coldStartMs": 415.465625,
-      "allMs": 667.714792,
-      "validateMs": 0.351792,
-      "sceneMs": 4.551083,
-      "rasterMs": 6.9185,
-      "pngKb": 32.8974609375
-    },
-    {
-      "scenario": "charts-elastic:engine",
-      "peakRssMb": 284.234375,
-      "charts": 54,
-      "values": 399,
-      "loadedRssMb": 134.421875,
-      "renderRssMb": 149.8125,
-      "heapAfterGcMb": 40.085975646972656,
-      "coldStartMs": 415.674125,
-      "allMs": 659.422334,
-      "validateMs": 0.330708,
-      "sceneMs": 4.516375,
-      "rasterMs": 6.784083,
-      "pngKb": 32.8974609375
-    },
-    {
-      "scenario": "charts-elastic:engine",
-      "peakRssMb": 285.828125,
-      "charts": 54,
-      "values": 399,
-      "loadedRssMb": 133.8125,
-      "renderRssMb": 152.015625,
-      "heapAfterGcMb": 40.07494354248047,
-      "coldStartMs": 411.643875,
-      "allMs": 659.713416,
-      "validateMs": 0.338291,
-      "sceneMs": 4.562917,
-      "rasterMs": 6.655959,
-      "pngKb": 32.8974609375
-    },
-    {
-      "scenario": "charts-elastic:xy-quarter",
-      "peakRssMb": 255.515625,
-      "charts": 1,
-      "values": 62499,
-      "loadedRssMb": 134.171875,
-      "renderRssMb": 121.34375,
-      "heapAfterGcMb": 39.65071105957031,
-      "coldStartMs": 735.217542,
-      "allMs": 339.403958,
-      "validateMs": 28.01375,
-      "sceneMs": 252.633833,
-      "rasterMs": 58.6345,
-      "pngKb": 70.83984375
-    },
-    {
-      "scenario": "charts-elastic:xy-quarter",
-      "peakRssMb": 257.1875,
-      "charts": 1,
-      "values": 62499,
-      "loadedRssMb": 133.265625,
-      "renderRssMb": 123.921875,
-      "heapAfterGcMb": 39.64978790283203,
-      "coldStartMs": 725.122541,
-      "allMs": 340.97825,
-      "validateMs": 27.322625,
-      "sceneMs": 254.76575,
-      "rasterMs": 58.777,
-      "pngKb": 70.83984375
-    },
-    {
-      "scenario": "charts-elastic:xy-quarter",
-      "peakRssMb": 255.203125,
-      "charts": 1,
-      "values": 62499,
-      "loadedRssMb": 133.46875,
-      "renderRssMb": 121.734375,
-      "heapAfterGcMb": 39.660484313964844,
-      "coldStartMs": 728.0885,
-      "allMs": 341.997459,
-      "validateMs": 28.392208,
-      "sceneMs": 254.035291,
-      "rasterMs": 59.45075,
-      "pngKb": 70.83984375
-    },
-    {
-      "scenario": "charts-elastic:xy-quarter",
-      "peakRssMb": 259.65625,
-      "charts": 1,
-      "values": 62499,
-      "loadedRssMb": 133.25,
-      "renderRssMb": 126.40625,
-      "heapAfterGcMb": 39.66072082519531,
-      "coldStartMs": 730.486417,
-      "allMs": 341.544292,
-      "validateMs": 26.729,
-      "sceneMs": 255.956375,
-      "rasterMs": 58.732458,
-      "pngKb": 70.83984375
-    },
-    {
-      "scenario": "charts-elastic:xy-quarter",
-      "peakRssMb": 256.421875,
-      "charts": 1,
-      "values": 62499,
-      "loadedRssMb": 133.125,
-      "renderRssMb": 123.296875,
-      "heapAfterGcMb": 39.647987365722656,
-      "coldStartMs": 725.145416,
-      "allMs": 336.988542,
-      "validateMs": 26.628083,
-      "sceneMs": 251.145833,
-      "rasterMs": 59.090167,
-      "pngKb": 70.83984375
-    },
-    {
-      "scenario": "charts-elastic:xy-half",
-      "peakRssMb": 306.0625,
-      "charts": 1,
-      "values": 124998,
-      "loadedRssMb": 133.53125,
-      "renderRssMb": 172.53125,
-      "heapAfterGcMb": 44.09996795654297,
-      "coldStartMs": 963.001084,
-      "allMs": 574.571833,
-      "validateMs": 43.886291,
-      "sceneMs": 455.778333,
-      "rasterMs": 74.776417,
-      "pngKb": 68.732421875
-    },
-    {
-      "scenario": "charts-elastic:xy-half",
-      "peakRssMb": 308.796875,
-      "charts": 1,
-      "values": 124998,
-      "loadedRssMb": 132.984375,
-      "renderRssMb": 175.8125,
-      "heapAfterGcMb": 44.099998474121094,
-      "coldStartMs": 972.246125,
-      "allMs": 579.035834,
-      "validateMs": 43.376958,
-      "sceneMs": 459.084125,
-      "rasterMs": 76.44575,
-      "pngKb": 68.732421875
-    },
-    {
-      "scenario": "charts-elastic:xy-half",
-      "peakRssMb": 305.671875,
-      "charts": 1,
-      "values": 124998,
-      "loadedRssMb": 133.1875,
-      "renderRssMb": 172.484375,
-      "heapAfterGcMb": 44.09800720214844,
-      "coldStartMs": 982.573458,
-      "allMs": 579.442541,
-      "validateMs": 42.848709,
-      "sceneMs": 457.805834,
-      "rasterMs": 78.633459,
-      "pngKb": 68.732421875
-    },
-    {
-      "scenario": "charts-elastic:xy-half",
-      "peakRssMb": 306.4375,
-      "charts": 1,
-      "values": 124998,
-      "loadedRssMb": 133.34375,
-      "renderRssMb": 173.09375,
-      "heapAfterGcMb": 44.101341247558594,
-      "coldStartMs": 964.483417,
-      "allMs": 573.397,
-      "validateMs": 42.108875,
-      "sceneMs": 454.848208,
-      "rasterMs": 76.305625,
-      "pngKb": 68.732421875
-    },
-    {
-      "scenario": "charts-elastic:xy-half",
-      "peakRssMb": 304.84375,
-      "charts": 1,
-      "values": 124998,
-      "loadedRssMb": 133.90625,
-      "renderRssMb": 170.9375,
-      "heapAfterGcMb": 44.079994201660156,
-      "coldStartMs": 1000.102667,
-      "allMs": 577.087375,
-      "validateMs": 44.712875,
-      "sceneMs": 458.6565,
-      "rasterMs": 73.561875,
-      "pngKb": 68.732421875
-    },
-    {
-      "scenario": "charts-elastic:budget-draw",
-      "peakRssMb": 441.546875,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 128.1875,
-      "renderRssMb": 313.359375,
-      "heapAfterGcMb": 52.564964294433594,
-      "coldStartMs": 1788.578292,
-      "allMs": 1276.348417,
-      "validateMs": 74.399042,
-      "sceneMs": 1201.6555
-    },
-    {
-      "scenario": "charts-elastic:budget-draw",
-      "peakRssMb": 440.78125,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 128.546875,
-      "renderRssMb": 312.234375,
-      "heapAfterGcMb": 52.550994873046875,
-      "coldStartMs": 2403.454959,
-      "allMs": 939.689416,
-      "validateMs": 73.202333,
-      "sceneMs": 866.273333
-    },
-    {
-      "scenario": "charts-elastic:budget-draw",
-      "peakRssMb": 438.671875,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 129.859375,
-      "renderRssMb": 308.8125,
-      "heapAfterGcMb": 52.55804443359375,
-      "coldStartMs": 1523.196375,
-      "allMs": 948.021792,
-      "validateMs": 73.771125,
-      "sceneMs": 874.081709
-    },
-    {
-      "scenario": "charts-elastic:budget-draw",
-      "peakRssMb": 442.03125,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 129.078125,
-      "renderRssMb": 312.953125,
-      "heapAfterGcMb": 52.560585021972656,
-      "coldStartMs": 1352.450875,
-      "allMs": 940.770208,
-      "validateMs": 70.852542,
-      "sceneMs": 869.735791
-    },
-    {
-      "scenario": "charts-elastic:budget-draw",
-      "peakRssMb": 441.78125,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 128.484375,
-      "renderRssMb": 313.296875,
-      "heapAfterGcMb": 52.558143615722656,
-      "coldStartMs": 1317.99075,
-      "allMs": 933.042167,
-      "validateMs": 72.525542,
-      "sceneMs": 860.351709
-    },
-    {
-      "scenario": "charts-elastic:budget-xy",
-      "peakRssMb": 472.765625,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 134.53125,
-      "renderRssMb": 338.234375,
-      "heapAfterGcMb": 53.00867462158203,
-      "coldStartMs": 1493.312167,
-      "allMs": 1055.824666,
-      "validateMs": 74.313125,
-      "sceneMs": 878.937542,
-      "rasterMs": 102.438125,
-      "pngKb": 62.3388671875
-    },
-    {
-      "scenario": "charts-elastic:budget-xy",
-      "peakRssMb": 468.953125,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 133.171875,
-      "renderRssMb": 335.78125,
-      "heapAfterGcMb": 52.99608612060547,
-      "coldStartMs": 1436.690042,
-      "allMs": 1034.497791,
-      "validateMs": 78.720709,
-      "sceneMs": 859.528292,
-      "rasterMs": 96.063125,
-      "pngKb": 62.3388671875
-    },
-    {
-      "scenario": "charts-elastic:budget-xy",
-      "peakRssMb": 473.390625,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 134.015625,
-      "renderRssMb": 339.375,
-      "heapAfterGcMb": 53.00787353515625,
-      "coldStartMs": 1442.062667,
-      "allMs": 1039.809709,
-      "validateMs": 72.484834,
-      "sceneMs": 871.955708,
-      "rasterMs": 95.201667,
-      "pngKb": 62.3388671875
-    },
-    {
-      "scenario": "charts-elastic:budget-xy",
-      "peakRssMb": 467.421875,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 134.1875,
-      "renderRssMb": 333.234375,
-      "heapAfterGcMb": 53.008201599121094,
-      "coldStartMs": 1428.813,
-      "allMs": 1027.337834,
-      "validateMs": 72.028458,
-      "sceneMs": 859.895084,
-      "rasterMs": 95.288958,
-      "pngKb": 62.3388671875
-    },
-    {
-      "scenario": "charts-elastic:budget-xy",
-      "peakRssMb": 472.859375,
-      "charts": 1,
-      "values": 249999,
-      "loadedRssMb": 133.8125,
-      "renderRssMb": 339.046875,
-      "heapAfterGcMb": 53.005348205566406,
-      "coldStartMs": 1425.025542,
-      "allMs": 1036.139792,
-      "validateMs": 73.748708,
-      "sceneMs": 866.779041,
-      "rasterMs": 95.484125,
-      "pngKb": 62.3388671875
-    },
-    {
-      "scenario": "charts-elastic:budget-grid",
-      "peakRssMb": 419,
-      "charts": 1,
-      "values": 249998,
-      "loadedRssMb": 133.046875,
-      "renderRssMb": 285.953125,
-      "heapAfterGcMb": 54.89537048339844,
-      "coldStartMs": 1364.537834,
-      "allMs": 962.253333,
-      "validateMs": 62.181167,
-      "sceneMs": 626.002291,
-      "rasterMs": 273.916042,
-      "pngKb": 188.7255859375
-    },
-    {
-      "scenario": "charts-elastic:budget-grid",
-      "peakRssMb": 418.625,
-      "charts": 1,
-      "values": 249998,
-      "loadedRssMb": 133.28125,
-      "renderRssMb": 285.34375,
-      "heapAfterGcMb": 54.88788604736328,
-      "coldStartMs": 1360.685833,
-      "allMs": 961.307708,
-      "validateMs": 64.656708,
-      "sceneMs": 627.657875,
-      "rasterMs": 268.857458,
-      "pngKb": 188.7255859375
-    },
-    {
-      "scenario": "charts-elastic:budget-grid",
-      "peakRssMb": 419.21875,
-      "charts": 1,
-      "values": 249998,
-      "loadedRssMb": 133.1875,
-      "renderRssMb": 286.03125,
-      "heapAfterGcMb": 54.8812255859375,
-      "coldStartMs": 1381.141125,
-      "allMs": 991.405458,
-      "validateMs": 60.96425,
-      "sceneMs": 652.865375,
-      "rasterMs": 277.412542,
-      "pngKb": 188.7255859375
-    },
-    {
-      "scenario": "charts-elastic:budget-grid",
-      "peakRssMb": 419.453125,
-      "charts": 1,
-      "values": 249998,
-      "loadedRssMb": 133.484375,
-      "renderRssMb": 285.96875,
-      "heapAfterGcMb": 54.884033203125,
-      "coldStartMs": 1377.015,
-      "allMs": 981.287417,
-      "validateMs": 63.727583,
-      "sceneMs": 645.518916,
-      "rasterMs": 271.894833,
-      "pngKb": 188.7255859375
-    },
-    {
-      "scenario": "charts-elastic:budget-grid",
-      "peakRssMb": 421.359375,
-      "charts": 1,
-      "values": 249998,
-      "loadedRssMb": 133.734375,
-      "renderRssMb": 287.625,
-      "heapAfterGcMb": 54.90239715576172,
-      "coldStartMs": 1358.221917,
-      "allMs": 962.863916,
-      "validateMs": 63.333417,
-      "sceneMs": 633.446625,
-      "rasterMs": 265.935417,
-      "pngKb": 188.7255859375
-    },
-    {
-      "scenario": "charts-elastic:burst-limited",
-      "peakRssMb": 321.90625,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.375,
-      "renderRssMb": 188.53125,
-      "heapAfterGcMb": 38.80046081542969,
-      "coldStartMs": 453.207083,
-      "allMs": 355.578167,
-      "validateMs": 0.437375,
-      "sceneMs": 8.472333,
-      "rasterMs": 25.384583,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-limited",
-      "peakRssMb": 324.8125,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.296875,
-      "renderRssMb": 191.515625,
-      "heapAfterGcMb": 38.80406188964844,
-      "coldStartMs": 458.574334,
-      "allMs": 354.991667,
-      "validateMs": 0.440042,
-      "sceneMs": 8.614292,
-      "rasterMs": 25.655792,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-limited",
-      "peakRssMb": 317.453125,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.296875,
-      "renderRssMb": 184.15625,
-      "heapAfterGcMb": 38.80200958251953,
-      "coldStartMs": 461.760541,
-      "allMs": 353.730083,
-      "validateMs": 0.434958,
-      "sceneMs": 8.23825,
-      "rasterMs": 26.058375,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-limited",
-      "peakRssMb": 323.796875,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.734375,
-      "renderRssMb": 190.0625,
-      "heapAfterGcMb": 38.80426788330078,
-      "coldStartMs": 448.425,
-      "allMs": 355.985541,
-      "validateMs": 0.483625,
-      "sceneMs": 7.760833,
-      "rasterMs": 27.218417,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-limited",
-      "peakRssMb": 322.78125,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 132.65625,
-      "renderRssMb": 190.125,
-      "heapAfterGcMb": 38.80255126953125,
-      "coldStartMs": 453.634167,
-      "allMs": 357.170625,
-      "validateMs": 0.442959,
-      "sceneMs": 8.13925,
-      "rasterMs": 25.588125,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-unlimited",
-      "peakRssMb": 371.65625,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 132.75,
-      "renderRssMb": 238.90625,
-      "heapAfterGcMb": 38.80217742919922,
-      "coldStartMs": 609.380208,
-      "allMs": 287.412708,
-      "validateMs": 0.490708,
-      "sceneMs": 7.464625,
-      "rasterMs": 135.275916,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-unlimited",
-      "peakRssMb": 360.765625,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.671875,
-      "renderRssMb": 227.09375,
-      "heapAfterGcMb": 38.807655334472656,
-      "coldStartMs": 603.050709,
-      "allMs": 286.484958,
-      "validateMs": 0.411,
-      "sceneMs": 7.662875,
-      "rasterMs": 134.915375,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-unlimited",
-      "peakRssMb": 360.6875,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.1875,
-      "renderRssMb": 227.5,
-      "heapAfterGcMb": 38.80632781982422,
-      "coldStartMs": 615.923125,
-      "allMs": 294.809542,
-      "validateMs": 0.406042,
-      "sceneMs": 8.278167,
-      "rasterMs": 143.848916,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-unlimited",
-      "peakRssMb": 365.09375,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.390625,
-      "renderRssMb": 231.703125,
-      "heapAfterGcMb": 38.80792236328125,
-      "coldStartMs": 611.693791,
-      "allMs": 287.675167,
-      "validateMs": 0.38125,
-      "sceneMs": 8.448625,
-      "rasterMs": 135.147667,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:burst-unlimited",
-      "peakRssMb": 367.453125,
-      "charts": 16,
-      "values": 399,
-      "loadedRssMb": 133.234375,
-      "renderRssMb": 234.21875,
-      "heapAfterGcMb": 38.81523132324219,
-      "coldStartMs": 606.612125,
-      "allMs": 283.578167,
-      "validateMs": 0.425875,
-      "sceneMs": 7.46375,
-      "rasterMs": 137.284875,
-      "pngKb": 76.7802734375
-    },
-    {
-      "scenario": "charts-elastic:one",
-      "peakRssMb": 182.59375,
-      "charts": 1,
-      "values": 57,
-      "loadedRssMb": 133.328125,
-      "renderRssMb": 49.265625,
-      "heapAfterGcMb": 35.45672607421875,
-      "coldStartMs": 435.822416,
-      "allMs": 59.592125,
-      "validateMs": 3.023291,
-      "sceneMs": 38.801083,
-      "rasterMs": 17.645167,
-      "pngKb": 27.4140625
-    },
-    {
-      "scenario": "charts-elastic:one",
-      "peakRssMb": 182.734375,
-      "charts": 1,
-      "values": 57,
-      "loadedRssMb": 133.421875,
-      "renderRssMb": 49.3125,
-      "heapAfterGcMb": 35.456947326660156,
-      "coldStartMs": 434.512417,
-      "allMs": 59.326083,
-      "validateMs": 3.120458,
-      "sceneMs": 38.805416,
-      "rasterMs": 17.27775,
-      "pngKb": 27.4140625
-    },
-    {
-      "scenario": "charts-elastic:one",
-      "peakRssMb": 182.546875,
-      "charts": 1,
-      "values": 57,
-      "loadedRssMb": 133.421875,
-      "renderRssMb": 49.125,
-      "heapAfterGcMb": 35.45764923095703,
-      "coldStartMs": 442.803333,
-      "allMs": 60.569709,
-      "validateMs": 3.125666,
-      "sceneMs": 39.422875,
-      "rasterMs": 17.900958,
-      "pngKb": 27.4140625
-    },
-    {
-      "scenario": "charts-elastic:one",
-      "peakRssMb": 182.765625,
-      "charts": 1,
-      "values": 57,
-      "loadedRssMb": 133.125,
-      "renderRssMb": 49.640625,
-      "heapAfterGcMb": 35.45928192138672,
-      "coldStartMs": 438.089958,
-      "allMs": 59.611792,
-      "validateMs": 3.303292,
-      "sceneMs": 38.670167,
-      "rasterMs": 17.5215,
-      "pngKb": 27.4140625
-    },
-    {
-      "scenario": "charts-elastic:one",
-      "peakRssMb": 183.21875,
-      "charts": 1,
-      "values": 57,
+      "values": 400,
       "loadedRssMb": 133.59375,
-      "renderRssMb": 49.625,
-      "heapAfterGcMb": 35.45561218261719,
-      "coldStartMs": 459.028958,
-      "allMs": 62.547292,
-      "validateMs": 3.189583,
-      "sceneMs": 41.072084,
-      "rasterMs": 18.148,
+      "renderRssMb": 150.625,
+      "heapAfterGcMb": 40.105934143066406,
+      "coldStartMs": 438.054625,
+      "allMs": 695.625125,
+      "validateMs": 0.326875,
+      "sceneMs": 4.44575,
+      "rasterMs": 6.6525,
+      "pngKb": 32.8974609375
+    },
+    {
+      "scenario": "charts-elastic:engine",
+      "peakRssMb": 281.765625,
+      "charts": 54,
+      "values": 400,
+      "loadedRssMb": 134.078125,
+      "renderRssMb": 147.6875,
+      "heapAfterGcMb": 40.10338592529297,
+      "coldStartMs": 436.436292,
+      "allMs": 678.259209,
+      "validateMs": 0.345875,
+      "sceneMs": 4.508625,
+      "rasterMs": 6.998125,
+      "pngKb": 32.8974609375
+    },
+    {
+      "scenario": "charts-elastic:engine",
+      "peakRssMb": 285.59375,
+      "charts": 54,
+      "values": 400,
+      "loadedRssMb": 133.546875,
+      "renderRssMb": 152.046875,
+      "heapAfterGcMb": 40.09803009033203,
+      "coldStartMs": 434.599625,
+      "allMs": 668.300625,
+      "validateMs": 0.365042,
+      "sceneMs": 4.74775,
+      "rasterMs": 6.973125,
+      "pngKb": 32.8974609375
+    },
+    {
+      "scenario": "charts-elastic:engine",
+      "peakRssMb": 286.296875,
+      "charts": 54,
+      "values": 400,
+      "loadedRssMb": 134.25,
+      "renderRssMb": 152.046875,
+      "heapAfterGcMb": 40.08909606933594,
+      "coldStartMs": 454.126125,
+      "allMs": 682.475084,
+      "validateMs": 0.355209,
+      "sceneMs": 4.794417,
+      "rasterMs": 7.1315,
+      "pngKb": 32.8974609375
+    },
+    {
+      "scenario": "charts-elastic:engine",
+      "peakRssMb": 286.65625,
+      "charts": 54,
+      "values": 400,
+      "loadedRssMb": 134.109375,
+      "renderRssMb": 152.546875,
+      "heapAfterGcMb": 40.103759765625,
+      "coldStartMs": 452.744291,
+      "allMs": 671.725416,
+      "validateMs": 0.3475,
+      "sceneMs": 4.415709,
+      "rasterMs": 6.919167,
+      "pngKb": 32.8974609375
+    },
+    {
+      "scenario": "charts-elastic:xy-quarter",
+      "peakRssMb": 256.703125,
+      "charts": 1,
+      "values": 62500,
+      "loadedRssMb": 133.65625,
+      "renderRssMb": 123.046875,
+      "heapAfterGcMb": 39.67018127441406,
+      "coldStartMs": 759.322041,
+      "allMs": 345.874958,
+      "validateMs": 28.8165,
+      "sceneMs": 257.705583,
+      "rasterMs": 59.163708,
+      "pngKb": 70.83984375
+    },
+    {
+      "scenario": "charts-elastic:xy-quarter",
+      "peakRssMb": 257.28125,
+      "charts": 1,
+      "values": 62500,
+      "loadedRssMb": 133.734375,
+      "renderRssMb": 123.546875,
+      "heapAfterGcMb": 39.654319763183594,
+      "coldStartMs": 757.7695,
+      "allMs": 347.132958,
+      "validateMs": 28.950292,
+      "sceneMs": 258.381458,
+      "rasterMs": 59.645292,
+      "pngKb": 70.83984375
+    },
+    {
+      "scenario": "charts-elastic:xy-quarter",
+      "peakRssMb": 257.09375,
+      "charts": 1,
+      "values": 62500,
+      "loadedRssMb": 134.1875,
+      "renderRssMb": 122.90625,
+      "heapAfterGcMb": 39.66619873046875,
+      "coldStartMs": 749.974666,
+      "allMs": 346.213542,
+      "validateMs": 27.191875,
+      "sceneMs": 259.298583,
+      "rasterMs": 59.571459,
+      "pngKb": 70.83984375
+    },
+    {
+      "scenario": "charts-elastic:xy-quarter",
+      "peakRssMb": 257.734375,
+      "charts": 1,
+      "values": 62500,
+      "loadedRssMb": 133.578125,
+      "renderRssMb": 124.15625,
+      "heapAfterGcMb": 39.65697479248047,
+      "coldStartMs": 749.980541,
+      "allMs": 346.8475,
+      "validateMs": 29.188458,
+      "sceneMs": 257.371,
+      "rasterMs": 60.111917,
+      "pngKb": 70.83984375
+    },
+    {
+      "scenario": "charts-elastic:xy-quarter",
+      "peakRssMb": 257,
+      "charts": 1,
+      "values": 62500,
+      "loadedRssMb": 133.796875,
+      "renderRssMb": 123.203125,
+      "heapAfterGcMb": 39.65302276611328,
+      "coldStartMs": 786.493916,
+      "allMs": 352.3245,
+      "validateMs": 29.02475,
+      "sceneMs": 264.548041,
+      "rasterMs": 58.611417,
+      "pngKb": 70.83984375
+    },
+    {
+      "scenario": "charts-elastic:xy-half",
+      "peakRssMb": 308.28125,
+      "charts": 1,
+      "values": 124999,
+      "loadedRssMb": 133.84375,
+      "renderRssMb": 174.4375,
+      "heapAfterGcMb": 44.107276916503906,
+      "coldStartMs": 975.482708,
+      "allMs": 578.306041,
+      "validateMs": 44.3705,
+      "sceneMs": 459.406458,
+      "rasterMs": 74.345709,
+      "pngKb": 68.732421875
+    },
+    {
+      "scenario": "charts-elastic:xy-half",
+      "peakRssMb": 306,
+      "charts": 1,
+      "values": 124999,
+      "loadedRssMb": 134.203125,
+      "renderRssMb": 171.796875,
+      "heapAfterGcMb": 44.10832977294922,
+      "coldStartMs": 985.359333,
+      "allMs": 580.967041,
+      "validateMs": 42.98125,
+      "sceneMs": 463.806167,
+      "rasterMs": 74.022208,
+      "pngKb": 68.732421875
+    },
+    {
+      "scenario": "charts-elastic:xy-half",
+      "peakRssMb": 310.15625,
+      "charts": 1,
+      "values": 124999,
+      "loadedRssMb": 133.015625,
+      "renderRssMb": 177.140625,
+      "heapAfterGcMb": 44.10749816894531,
+      "coldStartMs": 984.71525,
+      "allMs": 577.67125,
+      "validateMs": 44.163458,
+      "sceneMs": 458.127458,
+      "rasterMs": 75.227209,
+      "pngKb": 68.732421875
+    },
+    {
+      "scenario": "charts-elastic:xy-half",
+      "peakRssMb": 305.9375,
+      "charts": 1,
+      "values": 124999,
+      "loadedRssMb": 133.1875,
+      "renderRssMb": 172.75,
+      "heapAfterGcMb": 44.11003112792969,
+      "coldStartMs": 985.9255,
+      "allMs": 587.52175,
+      "validateMs": 43.916042,
+      "sceneMs": 468.706542,
+      "rasterMs": 74.693875,
+      "pngKb": 68.732421875
+    },
+    {
+      "scenario": "charts-elastic:xy-half",
+      "peakRssMb": 305.84375,
+      "charts": 1,
+      "values": 124999,
+      "loadedRssMb": 133.59375,
+      "renderRssMb": 172.25,
+      "heapAfterGcMb": 44.08350372314453,
+      "coldStartMs": 1052.638,
+      "allMs": 588.346792,
+      "validateMs": 46.440834,
+      "sceneMs": 466.53275,
+      "rasterMs": 75.2075,
+      "pngKb": 68.732421875
+    },
+    {
+      "scenario": "charts-elastic:budget-draw",
+      "peakRssMb": 441.109375,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 128.484375,
+      "renderRssMb": 312.625,
+      "heapAfterGcMb": 52.56989288330078,
+      "coldStartMs": 1346.51675,
+      "allMs": 942.933083,
+      "validateMs": 71.667709,
+      "sceneMs": 871.047084
+    },
+    {
+      "scenario": "charts-elastic:budget-draw",
+      "peakRssMb": 442.1875,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 129.34375,
+      "renderRssMb": 312.84375,
+      "heapAfterGcMb": 52.568634033203125,
+      "coldStartMs": 1365.012042,
+      "allMs": 962.921708,
+      "validateMs": 75.315709,
+      "sceneMs": 887.364167
+    },
+    {
+      "scenario": "charts-elastic:budget-draw",
+      "peakRssMb": 443.359375,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 129.703125,
+      "renderRssMb": 313.65625,
+      "heapAfterGcMb": 52.57994842529297,
+      "coldStartMs": 1362.290833,
+      "allMs": 956.886375,
+      "validateMs": 75.486458,
+      "sceneMs": 881.166709
+    },
+    {
+      "scenario": "charts-elastic:budget-draw",
+      "peakRssMb": 442.828125,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 129.46875,
+      "renderRssMb": 313.359375,
+      "heapAfterGcMb": 52.56889343261719,
+      "coldStartMs": 1363.370542,
+      "allMs": 957.491042,
+      "validateMs": 73.388417,
+      "sceneMs": 883.905042
+    },
+    {
+      "scenario": "charts-elastic:budget-draw",
+      "peakRssMb": 441.796875,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 129.96875,
+      "renderRssMb": 311.828125,
+      "heapAfterGcMb": 52.56477355957031,
+      "coldStartMs": 1367.694417,
+      "allMs": 955.931709,
+      "validateMs": 76.717083,
+      "sceneMs": 878.973291
+    },
+    {
+      "scenario": "charts-elastic:budget-xy",
+      "peakRssMb": 475.8125,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 133.890625,
+      "renderRssMb": 341.921875,
+      "heapAfterGcMb": 53.012535095214844,
+      "coldStartMs": 1500.180958,
+      "allMs": 1064.558209,
+      "validateMs": 73.17425,
+      "sceneMs": 894.904667,
+      "rasterMs": 96.285375,
+      "pngKb": 62.3388671875
+    },
+    {
+      "scenario": "charts-elastic:budget-xy",
+      "peakRssMb": 474.90625,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 133.6875,
+      "renderRssMb": 341.21875,
+      "heapAfterGcMb": 53.01521301269531,
+      "coldStartMs": 1436.878542,
+      "allMs": 1023.817041,
+      "validateMs": 73.045459,
+      "sceneMs": 854.439334,
+      "rasterMs": 96.098208,
+      "pngKb": 62.3388671875
+    },
+    {
+      "scenario": "charts-elastic:budget-xy",
+      "peakRssMb": 467.75,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 134.640625,
+      "renderRssMb": 333.109375,
+      "heapAfterGcMb": 53.002357482910156,
+      "coldStartMs": 1445.104584,
+      "allMs": 1031.787084,
+      "validateMs": 72.039625,
+      "sceneMs": 865.562333,
+      "rasterMs": 94.012375,
+      "pngKb": 62.3388671875
+    },
+    {
+      "scenario": "charts-elastic:budget-xy",
+      "peakRssMb": 470.921875,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 133.34375,
+      "renderRssMb": 337.578125,
+      "heapAfterGcMb": 53.00556182861328,
+      "coldStartMs": 1453.524834,
+      "allMs": 1039.983542,
+      "validateMs": 73.23175,
+      "sceneMs": 871.428667,
+      "rasterMs": 95.147125,
+      "pngKb": 62.3388671875
+    },
+    {
+      "scenario": "charts-elastic:budget-xy",
+      "peakRssMb": 470.609375,
+      "charts": 1,
+      "values": 250000,
+      "loadedRssMb": 133.59375,
+      "renderRssMb": 337.015625,
+      "heapAfterGcMb": 53.01085662841797,
+      "coldStartMs": 1434.736,
+      "allMs": 1029.010834,
+      "validateMs": 71.238875,
+      "sceneMs": 861.985375,
+      "rasterMs": 95.622625,
+      "pngKb": 62.3388671875
+    },
+    {
+      "scenario": "charts-elastic:budget-grid",
+      "peakRssMb": 418.359375,
+      "charts": 1,
+      "values": 249999,
+      "loadedRssMb": 133.921875,
+      "renderRssMb": 284.4375,
+      "heapAfterGcMb": 54.895896911621094,
+      "coldStartMs": 1403.288459,
+      "allMs": 991.594208,
+      "validateMs": 64.391458,
+      "sceneMs": 652.075167,
+      "rasterMs": 274.903667,
+      "pngKb": 195.7705078125
+    },
+    {
+      "scenario": "charts-elastic:budget-grid",
+      "peakRssMb": 417.484375,
+      "charts": 1,
+      "values": 249999,
+      "loadedRssMb": 133.703125,
+      "renderRssMb": 283.78125,
+      "heapAfterGcMb": 54.891502380371094,
+      "coldStartMs": 1391.263708,
+      "allMs": 982.962458,
+      "validateMs": 65.052167,
+      "sceneMs": 640.291875,
+      "rasterMs": 277.399333,
+      "pngKb": 195.7705078125
+    },
+    {
+      "scenario": "charts-elastic:budget-grid",
+      "peakRssMb": 418.65625,
+      "charts": 1,
+      "values": 249999,
+      "loadedRssMb": 134.203125,
+      "renderRssMb": 284.453125,
+      "heapAfterGcMb": 54.884498596191406,
+      "coldStartMs": 3361.244125,
+      "allMs": 2581.704209,
+      "validateMs": 66.584584,
+      "sceneMs": 2055.587084,
+      "rasterMs": 459.301417,
+      "pngKb": 195.7705078125
+    },
+    {
+      "scenario": "charts-elastic:budget-grid",
+      "peakRssMb": 419.4375,
+      "charts": 1,
+      "values": 249999,
+      "loadedRssMb": 133.6875,
+      "renderRssMb": 285.75,
+      "heapAfterGcMb": 54.89967346191406,
+      "coldStartMs": 1748.615875,
+      "allMs": 1001.38175,
+      "validateMs": 65.753542,
+      "sceneMs": 657.235916,
+      "rasterMs": 278.14425,
+      "pngKb": 195.7705078125
+    },
+    {
+      "scenario": "charts-elastic:budget-grid",
+      "peakRssMb": 417.5625,
+      "charts": 1,
+      "values": 249999,
+      "loadedRssMb": 133.796875,
+      "renderRssMb": 283.765625,
+      "heapAfterGcMb": 54.902732849121094,
+      "coldStartMs": 1376.339375,
+      "allMs": 971.706792,
+      "validateMs": 63.166375,
+      "sceneMs": 636.442583,
+      "rasterMs": 271.863541,
+      "pngKb": 195.7705078125
+    },
+    {
+      "scenario": "charts-elastic:burst-limited",
+      "peakRssMb": 321.40625,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 134.15625,
+      "renderRssMb": 187.25,
+      "heapAfterGcMb": 38.81462860107422,
+      "coldStartMs": 478.41975,
+      "allMs": 358.372375,
+      "validateMs": 0.460875,
+      "sceneMs": 7.875375,
+      "rasterMs": 27.596334,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-limited",
+      "peakRssMb": 324.609375,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.34375,
+      "renderRssMb": 191.265625,
+      "heapAfterGcMb": 38.816490173339844,
+      "coldStartMs": 475.647584,
+      "allMs": 360.347,
+      "validateMs": 0.482042,
+      "sceneMs": 7.956625,
+      "rasterMs": 27.385209,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-limited",
+      "peakRssMb": 327.640625,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.625,
+      "renderRssMb": 194.015625,
+      "heapAfterGcMb": 38.816192626953125,
+      "coldStartMs": 483.937459,
+      "allMs": 363.933584,
+      "validateMs": 0.462333,
+      "sceneMs": 8.175709,
+      "rasterMs": 25.53875,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-limited",
+      "peakRssMb": 326.140625,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.796875,
+      "renderRssMb": 192.34375,
+      "heapAfterGcMb": 38.81658172607422,
+      "coldStartMs": 475.5955,
+      "allMs": 360.59775,
+      "validateMs": 0.469167,
+      "sceneMs": 7.853167,
+      "rasterMs": 24.9875,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-limited",
+      "peakRssMb": 326.3125,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.609375,
+      "renderRssMb": 192.703125,
+      "heapAfterGcMb": 38.815582275390625,
+      "coldStartMs": 478.2495,
+      "allMs": 360.804959,
+      "validateMs": 0.434667,
+      "sceneMs": 8.434834,
+      "rasterMs": 26.3815,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-unlimited",
+      "peakRssMb": 379.75,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.9375,
+      "renderRssMb": 245.8125,
+      "heapAfterGcMb": 38.83006286621094,
+      "coldStartMs": 628.516709,
+      "allMs": 292.368083,
+      "validateMs": 0.423166,
+      "sceneMs": 7.956459,
+      "rasterMs": 138.615209,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-unlimited",
+      "peakRssMb": 369.984375,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.609375,
+      "renderRssMb": 236.375,
+      "heapAfterGcMb": 38.831459045410156,
+      "coldStartMs": 638.093333,
+      "allMs": 297.648542,
+      "validateMs": 0.46875,
+      "sceneMs": 8.428334,
+      "rasterMs": 142.523208,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-unlimited",
+      "peakRssMb": 356.90625,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 134.3125,
+      "renderRssMb": 222.59375,
+      "heapAfterGcMb": 38.8292236328125,
+      "coldStartMs": 653.325792,
+      "allMs": 292.998,
+      "validateMs": 0.425458,
+      "sceneMs": 7.806417,
+      "rasterMs": 139.13,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-unlimited",
+      "peakRssMb": 367.703125,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.203125,
+      "renderRssMb": 234.5,
+      "heapAfterGcMb": 38.81316375732422,
+      "coldStartMs": 655.038208,
+      "allMs": 301.934,
+      "validateMs": 0.487583,
+      "sceneMs": 8.183792,
+      "rasterMs": 147.479709,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:burst-unlimited",
+      "peakRssMb": 377.5,
+      "charts": 16,
+      "values": 400,
+      "loadedRssMb": 133.59375,
+      "renderRssMb": 243.90625,
+      "heapAfterGcMb": 38.83079528808594,
+      "coldStartMs": 644.372,
+      "allMs": 296.700875,
+      "validateMs": 0.438667,
+      "sceneMs": 7.646,
+      "rasterMs": 140.199083,
+      "pngKb": 76.7802734375
+    },
+    {
+      "scenario": "charts-elastic:one",
+      "peakRssMb": 181.109375,
+      "charts": 1,
+      "values": 58,
+      "loadedRssMb": 133.734375,
+      "renderRssMb": 47.375,
+      "heapAfterGcMb": 35.46417236328125,
+      "coldStartMs": 478.84975,
+      "allMs": 64.251416,
+      "validateMs": 3.165791,
+      "sceneMs": 40.426375,
+      "rasterMs": 20.514416,
+      "pngKb": 27.4140625
+    },
+    {
+      "scenario": "charts-elastic:one",
+      "peakRssMb": 181.9375,
+      "charts": 1,
+      "values": 58,
+      "loadedRssMb": 133.65625,
+      "renderRssMb": 48.28125,
+      "heapAfterGcMb": 35.44218444824219,
+      "coldStartMs": 474.448416,
+      "allMs": 61.835833,
+      "validateMs": 3.181875,
+      "sceneMs": 40.332208,
+      "rasterMs": 18.192625,
+      "pngKb": 27.4140625
+    },
+    {
+      "scenario": "charts-elastic:one",
+      "peakRssMb": 184.03125,
+      "charts": 1,
+      "values": 58,
+      "loadedRssMb": 133.796875,
+      "renderRssMb": 50.234375,
+      "heapAfterGcMb": 35.46368408203125,
+      "coldStartMs": 500.81975,
+      "allMs": 64.9015,
+      "validateMs": 3.742458,
+      "sceneMs": 42.121542,
+      "rasterMs": 18.877167,
+      "pngKb": 27.4140625
+    },
+    {
+      "scenario": "charts-elastic:one",
+      "peakRssMb": 183.15625,
+      "charts": 1,
+      "values": 58,
+      "loadedRssMb": 134.875,
+      "renderRssMb": 48.28125,
+      "heapAfterGcMb": 35.45317840576172,
+      "coldStartMs": 493.881709,
+      "allMs": 63.068958,
+      "validateMs": 3.37075,
+      "sceneMs": 41.394334,
+      "rasterMs": 18.162166,
+      "pngKb": 27.4140625
+    },
+    {
+      "scenario": "charts-elastic:one",
+      "peakRssMb": 183.484375,
+      "charts": 1,
+      "values": 58,
+      "loadedRssMb": 133.390625,
+      "renderRssMb": 50.09375,
+      "heapAfterGcMb": 35.440879821777344,
+      "coldStartMs": 465.170833,
+      "allMs": 63.830291,
+      "validateMs": 3.219042,
+      "sceneMs": 40.176667,
+      "rasterMs": 20.283458,
       "pngKb": 27.4140625
     }
   ],
@@ -1202,49 +1202,49 @@
         "max": 54
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 101.46875,
-        "min": 95.578125,
-        "max": 102.359375
+        "median": 95.453125,
+        "min": 95.359375,
+        "max": 95.875
       },
       "loadedRssMb": {
-        "median": 82.671875,
-        "min": 82.4375,
-        "max": 83.578125
+        "median": 82.40625,
+        "min": 82.109375,
+        "max": 82.953125
       },
       "renderRssMb": {
-        "median": 18.59375,
-        "min": 13.109375,
-        "max": 19.03125
+        "median": 12.953125,
+        "min": 12.5,
+        "max": 13.28125
       },
       "heapAfterGcMb": {
-        "median": 18.469947814941406,
-        "min": 18.468002319335938,
-        "max": 18.470550537109375
+        "median": 18.479598999023438,
+        "min": 18.47759246826172,
+        "max": 18.481056213378906
       },
       "coldStartMs": {
-        "median": 164.408667,
-        "min": 163.959083,
-        "max": 171.86975
+        "median": 167.337334,
+        "min": 163.552584,
+        "max": 168.534292
       },
       "allMs": {
-        "median": 38.134333,
-        "min": 36.075125,
-        "max": 39.253958
+        "median": 36.777208,
+        "min": 35.921917,
+        "max": 37.739208
       },
       "validateMs": {
-        "median": 0.163125,
-        "min": 0.150459,
-        "max": 0.179208
+        "median": 0.161792,
+        "min": 0.156459,
+        "max": 0.175
       },
       "sceneMs": {
-        "median": 0.119417,
-        "min": 0.112333,
-        "max": 0.144375
+        "median": 0.142667,
+        "min": 0.140333,
+        "max": 0.1465
       }
     },
     "charts:resolve-budget": {
@@ -1254,49 +1254,49 @@
         "max": 1
       },
       "values": {
-        "median": 249999,
-        "min": 249999,
-        "max": 249999
+        "median": 250000,
+        "min": 250000,
+        "max": 250000
       },
       "peakRssMb": {
-        "median": 250.59375,
-        "min": 248.75,
-        "max": 276.53125
+        "median": 255.96875,
+        "min": 254.046875,
+        "max": 256.59375
       },
       "loadedRssMb": {
-        "median": 83.390625,
-        "min": 82.25,
-        "max": 84.15625
+        "median": 82.484375,
+        "min": 82.0625,
+        "max": 82.90625
       },
       "renderRssMb": {
-        "median": 168.34375,
-        "min": 164.59375,
-        "max": 193.078125
+        "median": 173.28125,
+        "min": 171.59375,
+        "max": 174.53125
       },
       "heapAfterGcMb": {
-        "median": 35.526329040527344,
-        "min": 35.52558135986328,
-        "max": 35.527000427246094
+        "median": 35.53031921386719,
+        "min": 35.52892303466797,
+        "max": 35.53412628173828
       },
       "coldStartMs": {
-        "median": 583.18925,
-        "min": 579.463875,
-        "max": 586.563209
+        "median": 578.28425,
+        "min": 574.50125,
+        "max": 607.395667
       },
       "allMs": {
-        "median": 416.66975,
-        "min": 415.843958,
-        "max": 424.29125
+        "median": 417.29775,
+        "min": 415.722458,
+        "max": 439.909541
       },
       "validateMs": {
-        "median": 80.214875,
-        "min": 78.773459,
-        "max": 81.103375
+        "median": 81.418042,
+        "min": 80.367166,
+        "max": 82.244417
       },
       "sceneMs": {
-        "median": 336.916541,
-        "min": 335.89625,
-        "max": 343.930333
+        "median": 335.856542,
+        "min": 333.315375,
+        "max": 358.325792
       }
     },
     "charts:baseline": {
@@ -1306,54 +1306,54 @@
         "max": 54
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 118.046875,
-        "min": 116.765625,
-        "max": 118.46875
+        "median": 118.1875,
+        "min": 117.234375,
+        "max": 119.34375
       },
       "loadedRssMb": {
-        "median": 89.96875,
-        "min": 86.015625,
-        "max": 90.125
+        "median": 90.203125,
+        "min": 86.328125,
+        "max": 91.109375
       },
       "renderRssMb": {
-        "median": 28.359375,
-        "min": 27.328125,
-        "max": 30.75
+        "median": 28.234375,
+        "min": 27.859375,
+        "max": 31.0625
       },
       "heapAfterGcMb": {
-        "median": 19.61035919189453,
-        "min": 19.608184814453125,
-        "max": 19.614166259765625
+        "median": 19.63519287109375,
+        "min": 19.632644653320312,
+        "max": 19.636138916015625
       },
       "coldStartMs": {
-        "median": 182.373375,
-        "min": 179.952708,
-        "max": 184.171833
+        "median": 185.931583,
+        "min": 184.954459,
+        "max": 187.578792
       },
       "allMs": {
-        "median": 94.416833,
-        "min": 92.90175,
-        "max": 102.389042
+        "median": 95.862375,
+        "min": 94.36,
+        "max": 96.236625
       },
       "validateMs": {
-        "median": 0.167375,
-        "min": 0.152209,
-        "max": 0.195458
+        "median": 0.169083,
+        "min": 0.1555,
+        "max": 0.174292
       },
       "sceneMs": {
-        "median": 0.558458,
-        "min": 0.530083,
-        "max": 0.610166
+        "median": 0.568792,
+        "min": 0.551625,
+        "max": 0.579916
       },
       "rasterMs": {
-        "median": 0.484333,
-        "min": 0.453833,
-        "max": 0.521541
+        "median": 0.477291,
+        "min": 0.458084,
+        "max": 0.494583
       },
       "pngKb": {
         "median": 5.224609375,
@@ -1368,54 +1368,54 @@
         "max": 1
       },
       "values": {
-        "median": 249999,
-        "min": 249999,
-        "max": 249999
+        "median": 250000,
+        "min": 250000,
+        "max": 250000
       },
       "peakRssMb": {
-        "median": 403.640625,
-        "min": 398.171875,
-        "max": 404.625
+        "median": 400.734375,
+        "min": 397.28125,
+        "max": 408.625
       },
       "loadedRssMb": {
-        "median": 90.28125,
-        "min": 86.296875,
-        "max": 90.84375
+        "median": 90.015625,
+        "min": 87.046875,
+        "max": 90.390625
       },
       "renderRssMb": {
-        "median": 313.359375,
-        "min": 311.234375,
-        "max": 317.03125
+        "median": 310.46875,
+        "min": 307.265625,
+        "max": 321.578125
       },
       "heapAfterGcMb": {
-        "median": 36.18360137939453,
-        "min": 36.17283630371094,
-        "max": 36.184226989746094
+        "median": 36.19232177734375,
+        "min": 36.18952178955078,
+        "max": 36.19673156738281
       },
       "coldStartMs": {
-        "median": 1001.052458,
-        "min": 994.86975,
-        "max": 1007.936584
+        "median": 998.347917,
+        "min": 994.723333,
+        "max": 1010.6015
       },
       "allMs": {
-        "median": 828.257334,
-        "min": 825.0585,
-        "max": 836.860583
+        "median": 823.327833,
+        "min": 822.502583,
+        "max": 835.391917
       },
       "validateMs": {
-        "median": 80.458458,
-        "min": 78.041958,
-        "max": 81.131417
+        "median": 80.384875,
+        "min": 78.984041,
+        "max": 81.904667
       },
       "sceneMs": {
-        "median": 746.118542,
-        "min": 741.783083,
-        "max": 753.04375
+        "median": 740.539959,
+        "min": 739.205167,
+        "max": 751.261417
       },
       "rasterMs": {
-        "median": 2.594084,
-        "min": 2.556791,
-        "max": 2.703
+        "median": 2.69325,
+        "min": 2.49425,
+        "max": 2.803209
       },
       "pngKb": {
         "median": 5.5029296875,
@@ -1430,49 +1430,49 @@
         "max": 54
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 186.328125,
-        "min": 185.78125,
-        "max": 187.203125
+        "median": 185.890625,
+        "min": 185.53125,
+        "max": 186.171875
       },
       "loadedRssMb": {
-        "median": 129.375,
-        "min": 127.96875,
-        "max": 129.640625
+        "median": 129.3125,
+        "min": 128.453125,
+        "max": 129.75
       },
       "renderRssMb": {
-        "median": 57.796875,
-        "min": 56.6875,
-        "max": 57.8125
+        "median": 56.859375,
+        "min": 55.78125,
+        "max": 57.390625
       },
       "heapAfterGcMb": {
-        "median": 39.43738555908203,
-        "min": 39.42500305175781,
-        "max": 39.450408935546875
+        "median": 39.456878662109375,
+        "min": 39.43083953857422,
+        "max": 39.467506408691406
       },
       "coldStartMs": {
-        "median": 411.114,
-        "min": 403.739625,
-        "max": 427.108208
+        "median": 425.279375,
+        "min": 403.748458,
+        "max": 432.371416
       },
       "allMs": {
-        "median": 317.312709,
-        "min": 303.809541,
-        "max": 323.805834
+        "median": 328.995,
+        "min": 317.894875,
+        "max": 336.240541
       },
       "validateMs": {
-        "median": 0.25775,
-        "min": 0.220542,
-        "max": 0.277917
+        "median": 0.270458,
+        "min": 0.251208,
+        "max": 0.290459
       },
       "sceneMs": {
-        "median": 4.040083,
-        "min": 3.799875,
-        "max": 4.534459
+        "median": 4.296625,
+        "min": 4.025416,
+        "max": 4.440375
       }
     },
     "charts-elastic:engine": {
@@ -1482,54 +1482,54 @@
         "max": 54
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 285.828125,
-        "min": 284.234375,
-        "max": 289.765625
+        "median": 285.59375,
+        "min": 281.765625,
+        "max": 286.65625
       },
       "loadedRssMb": {
-        "median": 133.796875,
-        "min": 133.265625,
-        "max": 134.421875
+        "median": 134.078125,
+        "min": 133.546875,
+        "max": 134.25
       },
       "renderRssMb": {
-        "median": 152.015625,
-        "min": 149.8125,
-        "max": 156.25
+        "median": 152.046875,
+        "min": 147.6875,
+        "max": 152.546875
       },
       "heapAfterGcMb": {
-        "median": 40.081138610839844,
-        "min": 40.06129455566406,
-        "max": 40.085975646972656
+        "median": 40.10338592529297,
+        "min": 40.08909606933594,
+        "max": 40.105934143066406
       },
       "coldStartMs": {
-        "median": 415.674125,
-        "min": 411.643875,
-        "max": 446.826208
+        "median": 438.054625,
+        "min": 434.599625,
+        "max": 454.126125
       },
       "allMs": {
-        "median": 667.714792,
-        "min": 659.422334,
-        "max": 699.548125
+        "median": 678.259209,
+        "min": 668.300625,
+        "max": 695.625125
       },
       "validateMs": {
-        "median": 0.351792,
-        "min": 0.330708,
-        "max": 0.392
+        "median": 0.3475,
+        "min": 0.326875,
+        "max": 0.365042
       },
       "sceneMs": {
-        "median": 4.562917,
-        "min": 4.516375,
-        "max": 4.781917
+        "median": 4.508625,
+        "min": 4.415709,
+        "max": 4.794417
       },
       "rasterMs": {
-        "median": 6.864792,
-        "min": 6.655959,
-        "max": 7.062959
+        "median": 6.973125,
+        "min": 6.6525,
+        "max": 7.1315
       },
       "pngKb": {
         "median": 32.8974609375,
@@ -1544,54 +1544,54 @@
         "max": 1
       },
       "values": {
-        "median": 62499,
-        "min": 62499,
-        "max": 62499
+        "median": 62500,
+        "min": 62500,
+        "max": 62500
       },
       "peakRssMb": {
-        "median": 256.421875,
-        "min": 255.203125,
-        "max": 259.65625
+        "median": 257.09375,
+        "min": 256.703125,
+        "max": 257.734375
       },
       "loadedRssMb": {
-        "median": 133.265625,
-        "min": 133.125,
-        "max": 134.171875
+        "median": 133.734375,
+        "min": 133.578125,
+        "max": 134.1875
       },
       "renderRssMb": {
-        "median": 123.296875,
-        "min": 121.34375,
-        "max": 126.40625
+        "median": 123.203125,
+        "min": 122.90625,
+        "max": 124.15625
       },
       "heapAfterGcMb": {
-        "median": 39.65071105957031,
-        "min": 39.647987365722656,
-        "max": 39.66072082519531
+        "median": 39.65697479248047,
+        "min": 39.65302276611328,
+        "max": 39.67018127441406
       },
       "coldStartMs": {
-        "median": 728.0885,
-        "min": 725.122541,
-        "max": 735.217542
+        "median": 757.7695,
+        "min": 749.974666,
+        "max": 786.493916
       },
       "allMs": {
-        "median": 340.97825,
-        "min": 336.988542,
-        "max": 341.997459
+        "median": 346.8475,
+        "min": 345.874958,
+        "max": 352.3245
       },
       "validateMs": {
-        "median": 27.322625,
-        "min": 26.628083,
-        "max": 28.392208
+        "median": 28.950292,
+        "min": 27.191875,
+        "max": 29.188458
       },
       "sceneMs": {
-        "median": 254.035291,
-        "min": 251.145833,
-        "max": 255.956375
+        "median": 258.381458,
+        "min": 257.371,
+        "max": 264.548041
       },
       "rasterMs": {
-        "median": 58.777,
-        "min": 58.6345,
-        "max": 59.45075
+        "median": 59.571459,
+        "min": 58.611417,
+        "max": 60.111917
       },
       "pngKb": {
         "median": 70.83984375,
@@ -1606,54 +1606,54 @@
         "max": 1
       },
       "values": {
-        "median": 124998,
-        "min": 124998,
-        "max": 124998
+        "median": 124999,
+        "min": 124999,
+        "max": 124999
       },
       "peakRssMb": {
-        "median": 306.0625,
-        "min": 304.84375,
-        "max": 308.796875
+        "median": 306,
+        "min": 305.84375,
+        "max": 310.15625
       },
       "loadedRssMb": {
-        "median": 133.34375,
-        "min": 132.984375,
-        "max": 133.90625
+        "median": 133.59375,
+        "min": 133.015625,
+        "max": 134.203125
       },
       "renderRssMb": {
-        "median": 172.53125,
-        "min": 170.9375,
-        "max": 175.8125
+        "median": 172.75,
+        "min": 171.796875,
+        "max": 177.140625
       },
       "heapAfterGcMb": {
-        "median": 44.09996795654297,
-        "min": 44.079994201660156,
-        "max": 44.101341247558594
+        "median": 44.10749816894531,
+        "min": 44.08350372314453,
+        "max": 44.11003112792969
       },
       "coldStartMs": {
-        "median": 972.246125,
-        "min": 963.001084,
-        "max": 1000.102667
+        "median": 985.359333,
+        "min": 975.482708,
+        "max": 1052.638
       },
       "allMs": {
-        "median": 577.087375,
-        "min": 573.397,
-        "max": 579.442541
+        "median": 580.967041,
+        "min": 577.67125,
+        "max": 588.346792
       },
       "validateMs": {
-        "median": 43.376958,
-        "min": 42.108875,
-        "max": 44.712875
+        "median": 44.163458,
+        "min": 42.98125,
+        "max": 46.440834
       },
       "sceneMs": {
-        "median": 457.805834,
-        "min": 454.848208,
-        "max": 459.084125
+        "median": 463.806167,
+        "min": 458.127458,
+        "max": 468.706542
       },
       "rasterMs": {
-        "median": 76.305625,
-        "min": 73.561875,
-        "max": 78.633459
+        "median": 74.693875,
+        "min": 74.022208,
+        "max": 75.227209
       },
       "pngKb": {
         "median": 68.732421875,
@@ -1668,49 +1668,49 @@
         "max": 1
       },
       "values": {
-        "median": 249999,
-        "min": 249999,
-        "max": 249999
+        "median": 250000,
+        "min": 250000,
+        "max": 250000
       },
       "peakRssMb": {
-        "median": 441.546875,
-        "min": 438.671875,
-        "max": 442.03125
+        "median": 442.1875,
+        "min": 441.109375,
+        "max": 443.359375
       },
       "loadedRssMb": {
-        "median": 128.546875,
-        "min": 128.1875,
-        "max": 129.859375
+        "median": 129.46875,
+        "min": 128.484375,
+        "max": 129.96875
       },
       "renderRssMb": {
-        "median": 312.953125,
-        "min": 308.8125,
-        "max": 313.359375
+        "median": 312.84375,
+        "min": 311.828125,
+        "max": 313.65625
       },
       "heapAfterGcMb": {
-        "median": 52.558143615722656,
-        "min": 52.550994873046875,
-        "max": 52.564964294433594
+        "median": 52.56889343261719,
+        "min": 52.56477355957031,
+        "max": 52.57994842529297
       },
       "coldStartMs": {
-        "median": 1523.196375,
-        "min": 1317.99075,
-        "max": 2403.454959
+        "median": 1363.370542,
+        "min": 1346.51675,
+        "max": 1367.694417
       },
       "allMs": {
-        "median": 940.770208,
-        "min": 933.042167,
-        "max": 1276.348417
+        "median": 956.886375,
+        "min": 942.933083,
+        "max": 962.921708
       },
       "validateMs": {
-        "median": 73.202333,
-        "min": 70.852542,
-        "max": 74.399042
+        "median": 75.315709,
+        "min": 71.667709,
+        "max": 76.717083
       },
       "sceneMs": {
-        "median": 869.735791,
-        "min": 860.351709,
-        "max": 1201.6555
+        "median": 881.166709,
+        "min": 871.047084,
+        "max": 887.364167
       }
     },
     "charts-elastic:budget-xy": {
@@ -1720,54 +1720,54 @@
         "max": 1
       },
       "values": {
-        "median": 249999,
-        "min": 249999,
-        "max": 249999
+        "median": 250000,
+        "min": 250000,
+        "max": 250000
       },
       "peakRssMb": {
-        "median": 472.765625,
-        "min": 467.421875,
-        "max": 473.390625
+        "median": 470.921875,
+        "min": 467.75,
+        "max": 475.8125
       },
       "loadedRssMb": {
-        "median": 134.015625,
-        "min": 133.171875,
-        "max": 134.53125
+        "median": 133.6875,
+        "min": 133.34375,
+        "max": 134.640625
       },
       "renderRssMb": {
-        "median": 338.234375,
-        "min": 333.234375,
-        "max": 339.375
+        "median": 337.578125,
+        "min": 333.109375,
+        "max": 341.921875
       },
       "heapAfterGcMb": {
-        "median": 53.00787353515625,
-        "min": 52.99608612060547,
-        "max": 53.00867462158203
+        "median": 53.01085662841797,
+        "min": 53.002357482910156,
+        "max": 53.01521301269531
       },
       "coldStartMs": {
-        "median": 1436.690042,
-        "min": 1425.025542,
-        "max": 1493.312167
+        "median": 1445.104584,
+        "min": 1434.736,
+        "max": 1500.180958
       },
       "allMs": {
-        "median": 1036.139792,
-        "min": 1027.337834,
-        "max": 1055.824666
+        "median": 1031.787084,
+        "min": 1023.817041,
+        "max": 1064.558209
       },
       "validateMs": {
-        "median": 73.748708,
-        "min": 72.028458,
-        "max": 78.720709
+        "median": 73.045459,
+        "min": 71.238875,
+        "max": 73.23175
       },
       "sceneMs": {
-        "median": 866.779041,
-        "min": 859.528292,
-        "max": 878.937542
+        "median": 865.562333,
+        "min": 854.439334,
+        "max": 894.904667
       },
       "rasterMs": {
-        "median": 95.484125,
-        "min": 95.201667,
-        "max": 102.438125
+        "median": 95.622625,
+        "min": 94.012375,
+        "max": 96.285375
       },
       "pngKb": {
         "median": 62.3388671875,
@@ -1782,59 +1782,59 @@
         "max": 1
       },
       "values": {
-        "median": 249998,
-        "min": 249998,
-        "max": 249998
+        "median": 249999,
+        "min": 249999,
+        "max": 249999
       },
       "peakRssMb": {
-        "median": 419.21875,
-        "min": 418.625,
-        "max": 421.359375
+        "median": 418.359375,
+        "min": 417.484375,
+        "max": 419.4375
       },
       "loadedRssMb": {
-        "median": 133.28125,
-        "min": 133.046875,
-        "max": 133.734375
+        "median": 133.796875,
+        "min": 133.6875,
+        "max": 134.203125
       },
       "renderRssMb": {
-        "median": 285.96875,
-        "min": 285.34375,
-        "max": 287.625
+        "median": 284.4375,
+        "min": 283.765625,
+        "max": 285.75
       },
       "heapAfterGcMb": {
-        "median": 54.88788604736328,
-        "min": 54.8812255859375,
-        "max": 54.90239715576172
+        "median": 54.895896911621094,
+        "min": 54.884498596191406,
+        "max": 54.902732849121094
       },
       "coldStartMs": {
-        "median": 1364.537834,
-        "min": 1358.221917,
-        "max": 1381.141125
+        "median": 1403.288459,
+        "min": 1376.339375,
+        "max": 3361.244125
       },
       "allMs": {
-        "median": 962.863916,
-        "min": 961.307708,
-        "max": 991.405458
+        "median": 991.594208,
+        "min": 971.706792,
+        "max": 2581.704209
       },
       "validateMs": {
-        "median": 63.333417,
-        "min": 60.96425,
-        "max": 64.656708
+        "median": 65.052167,
+        "min": 63.166375,
+        "max": 66.584584
       },
       "sceneMs": {
-        "median": 633.446625,
-        "min": 626.002291,
-        "max": 652.865375
+        "median": 652.075167,
+        "min": 636.442583,
+        "max": 2055.587084
       },
       "rasterMs": {
-        "median": 271.894833,
-        "min": 265.935417,
-        "max": 277.412542
+        "median": 277.399333,
+        "min": 271.863541,
+        "max": 459.301417
       },
       "pngKb": {
-        "median": 188.7255859375,
-        "min": 188.7255859375,
-        "max": 188.7255859375
+        "median": 195.7705078125,
+        "min": 195.7705078125,
+        "max": 195.7705078125
       }
     },
     "charts-elastic:burst-limited": {
@@ -1844,54 +1844,54 @@
         "max": 16
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 322.78125,
-        "min": 317.453125,
-        "max": 324.8125
+        "median": 326.140625,
+        "min": 321.40625,
+        "max": 327.640625
       },
       "loadedRssMb": {
-        "median": 133.296875,
-        "min": 132.65625,
-        "max": 133.734375
+        "median": 133.625,
+        "min": 133.34375,
+        "max": 134.15625
       },
       "renderRssMb": {
-        "median": 190.0625,
-        "min": 184.15625,
-        "max": 191.515625
+        "median": 192.34375,
+        "min": 187.25,
+        "max": 194.015625
       },
       "heapAfterGcMb": {
-        "median": 38.80255126953125,
-        "min": 38.80046081542969,
-        "max": 38.80426788330078
+        "median": 38.816192626953125,
+        "min": 38.81462860107422,
+        "max": 38.81658172607422
       },
       "coldStartMs": {
-        "median": 453.634167,
-        "min": 448.425,
-        "max": 461.760541
+        "median": 478.2495,
+        "min": 475.5955,
+        "max": 483.937459
       },
       "allMs": {
-        "median": 355.578167,
-        "min": 353.730083,
-        "max": 357.170625
+        "median": 360.59775,
+        "min": 358.372375,
+        "max": 363.933584
       },
       "validateMs": {
-        "median": 0.440042,
-        "min": 0.434958,
-        "max": 0.483625
+        "median": 0.462333,
+        "min": 0.434667,
+        "max": 0.482042
       },
       "sceneMs": {
-        "median": 8.23825,
-        "min": 7.760833,
-        "max": 8.614292
+        "median": 7.956625,
+        "min": 7.853167,
+        "max": 8.434834
       },
       "rasterMs": {
-        "median": 25.655792,
-        "min": 25.384583,
-        "max": 27.218417
+        "median": 26.3815,
+        "min": 24.9875,
+        "max": 27.596334
       },
       "pngKb": {
         "median": 76.7802734375,
@@ -1906,54 +1906,54 @@
         "max": 16
       },
       "values": {
-        "median": 399,
-        "min": 399,
-        "max": 399
+        "median": 400,
+        "min": 400,
+        "max": 400
       },
       "peakRssMb": {
-        "median": 365.09375,
-        "min": 360.6875,
-        "max": 371.65625
+        "median": 369.984375,
+        "min": 356.90625,
+        "max": 379.75
       },
       "loadedRssMb": {
-        "median": 133.234375,
-        "min": 132.75,
-        "max": 133.671875
+        "median": 133.609375,
+        "min": 133.203125,
+        "max": 134.3125
       },
       "renderRssMb": {
-        "median": 231.703125,
-        "min": 227.09375,
-        "max": 238.90625
+        "median": 236.375,
+        "min": 222.59375,
+        "max": 245.8125
       },
       "heapAfterGcMb": {
-        "median": 38.807655334472656,
-        "min": 38.80217742919922,
-        "max": 38.81523132324219
+        "median": 38.83006286621094,
+        "min": 38.81316375732422,
+        "max": 38.831459045410156
       },
       "coldStartMs": {
-        "median": 609.380208,
-        "min": 603.050709,
-        "max": 615.923125
+        "median": 644.372,
+        "min": 628.516709,
+        "max": 655.038208
       },
       "allMs": {
-        "median": 287.412708,
-        "min": 283.578167,
-        "max": 294.809542
+        "median": 296.700875,
+        "min": 292.368083,
+        "max": 301.934
       },
       "validateMs": {
-        "median": 0.411,
-        "min": 0.38125,
-        "max": 0.490708
+        "median": 0.438667,
+        "min": 0.423166,
+        "max": 0.487583
       },
       "sceneMs": {
-        "median": 7.662875,
-        "min": 7.46375,
-        "max": 8.448625
+        "median": 7.956459,
+        "min": 7.646,
+        "max": 8.428334
       },
       "rasterMs": {
-        "median": 135.275916,
-        "min": 134.915375,
-        "max": 143.848916
+        "median": 140.199083,
+        "min": 138.615209,
+        "max": 147.479709
       },
       "pngKb": {
         "median": 76.7802734375,
@@ -1968,54 +1968,54 @@
         "max": 1
       },
       "values": {
-        "median": 57,
-        "min": 57,
-        "max": 57
+        "median": 58,
+        "min": 58,
+        "max": 58
       },
       "peakRssMb": {
-        "median": 182.734375,
-        "min": 182.546875,
-        "max": 183.21875
+        "median": 183.15625,
+        "min": 181.109375,
+        "max": 184.03125
       },
       "loadedRssMb": {
-        "median": 133.421875,
-        "min": 133.125,
-        "max": 133.59375
+        "median": 133.734375,
+        "min": 133.390625,
+        "max": 134.875
       },
       "renderRssMb": {
-        "median": 49.3125,
-        "min": 49.125,
-        "max": 49.640625
+        "median": 48.28125,
+        "min": 47.375,
+        "max": 50.234375
       },
       "heapAfterGcMb": {
-        "median": 35.456947326660156,
-        "min": 35.45561218261719,
-        "max": 35.45928192138672
+        "median": 35.45317840576172,
+        "min": 35.440879821777344,
+        "max": 35.46417236328125
       },
       "coldStartMs": {
-        "median": 438.089958,
-        "min": 434.512417,
-        "max": 459.028958
+        "median": 478.84975,
+        "min": 465.170833,
+        "max": 500.81975
       },
       "allMs": {
-        "median": 59.611792,
-        "min": 59.326083,
-        "max": 62.547292
+        "median": 63.830291,
+        "min": 61.835833,
+        "max": 64.9015
       },
       "validateMs": {
-        "median": 3.125666,
-        "min": 3.023291,
-        "max": 3.303292
+        "median": 3.219042,
+        "min": 3.165791,
+        "max": 3.742458
       },
       "sceneMs": {
-        "median": 38.805416,
-        "min": 38.670167,
-        "max": 41.072084
+        "median": 40.426375,
+        "min": 40.176667,
+        "max": 42.121542
       },
       "rasterMs": {
-        "median": 17.645167,
-        "min": 17.27775,
-        "max": 18.148
+        "median": 18.877167,
+        "min": 18.162166,
+        "max": 20.514416
       },
       "pngKb": {
         "median": 27.4140625,

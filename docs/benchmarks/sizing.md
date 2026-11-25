@@ -74,7 +74,7 @@ Pending: takumi's suite. It will cover font registration on the first draw, PDF 
 A burst of 16 small xy PNGs at 2×, requested at once and drawn with the Elastic Charts engine ([Drawing charts](results.md#drawing-charts)):
 
 - Through a limiter of 2, it peaks at about 325 MB, 190 MB above what loading holds. Each PNG takes about 26 ms to rasterize, and all 16 are done in about 360 ms.
-- With no limiter, it peaks at about 365 MB, and each PNG takes about 135 ms, since all of them rasterize on the thread pool at once. All 16 are done in about 290 ms, about 70 ms sooner, for about 40 MB more.
+- With no limiter, it peaks at about 370 MB, and each PNG takes about 140 ms, since all of them rasterize on the thread pool at once. All 16 are done in about 300 ms, about 65 ms sooner, for about 45 MB more.
 
 A limiter trades a little latency for a lower, bounded peak, so limit draws in flight with the limiter the takumi docs give. To run the bursts:
 

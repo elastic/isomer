@@ -130,11 +130,12 @@ const countValues = (value) =>
     ? 1 + Object.values(value).reduce((n, each) => n + countValues(each), 0)
     : 1;
 
-/** The charts a generated composition holds: its body's, or a grid's panels. */
-const chartsIn = ({ body }) =>
-  body.reduce(
-    (count, node) => count + (node.type === 'grid' ? node.panels.length : 1),
-    0
+/** The ids of a generated composition's charts: its body's, or a grid's panels'. */
+const chartIds = ({ body }) =>
+  body.flatMap((node) =>
+    node.type === 'grid'
+      ? node.panels.map(({ node: panel }) => panel.id)
+      : [node.id]
   );
 
 /** A new task, so the charts pack's per-task scene cache can't serve one render's Scene to the next. */
@@ -161,8 +162,8 @@ const run = async ({
   const { createRenderers, stylesheet } =
     engine === null ? { createRenderers: () => [] } : require(engine);
   const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
-  // Counts the engine's drawings, so a row the engine doesn't draw every chart in fails instead of passing its bound.
-  let drawn = 0;
+  // The charts the engine drew in the current snapshot, so a row it doesn't draw every chart in fails instead of passing its bound.
+  let drawnIds = new Set();
   const counted = (renderer) => ({
     get id() {
       return renderer.id;
@@ -180,7 +181,7 @@ const run = async ({
     render: (scene, env) => {
       const drawing = renderer.render(scene, env);
       if (drawing !== null && drawing !== undefined && drawing !== false) {
-        drawn += 1;
+        drawnIds.add(env.nodeId);
       }
       return drawing;
     },
@@ -242,9 +243,12 @@ const run = async ({
           y: Math.floor(index / 4) * 8,
           w: 12,
           h: 8,
-          node: withRows(
-            Math.floor(rows / PANELS) + (index < rows % PANELS ? 1 : 0)
-          ),
+          node: {
+            ...withRows(
+              Math.floor(rows / PANELS) + (index < rows % PANELS ? 1 : 0)
+            ),
+            id: `panel-${index}`,
+          },
         })),
       },
     ],
@@ -253,7 +257,12 @@ const run = async ({
     Array.from({ length: count }, (_, index) => ({
       composition: {
         type: 'view',
-        body: [xyChartExamples[index % xyChartExamples.length].node],
+        body: [
+          {
+            ...xyChartExamples[index % xyChartExamples.length].node,
+            id: 'chart',
+          },
+        ],
       },
       theme: 'light',
       scale: 2,
@@ -265,7 +274,7 @@ const run = async ({
         .flatMap((definition) => primitiveExamples(definition))
         .flatMap(({ node }) =>
           ['light', 'dark'].map((theme) => ({
-            composition: { type: 'view', body: [node] },
+            composition: { type: 'view', body: [{ ...node, id: 'chart' }] },
             theme,
             scale: 1,
           }))
@@ -274,7 +283,7 @@ const run = async ({
       {
         composition: atBudget((rows) => ({
           type: 'view',
-          body: [withRows(rows)],
+          body: [{ ...withRows(rows), id: 'chart' }],
         })),
         theme: 'light',
         scale: 2,
@@ -310,7 +319,6 @@ const run = async ({
       );
     }
     validates.push(ms(validateStart));
-    const drawsBefore = drawn;
     const sceneStart = process.hrtime.bigint();
     if (stage === 'resolve') {
       for (const node of validation.composition.body) {
@@ -318,15 +326,18 @@ const run = async ({
       }
       scenes.push(ms(sceneStart));
     } else {
+      drawnIds = new Set();
       const input = runtime.surfaces.snapshot.render(validation.composition, {
         theme,
         onValidationError: 'collect',
       });
       scenes.push(ms(sceneStart));
-      const charts = chartsIn(validation.composition);
-      if (engine !== null && drawn - drawsBefore < charts) {
+      const missed = chartIds(validation.composition).filter(
+        (id) => !drawnIds.has(id)
+      );
+      if (engine !== null && missed.length > 0) {
         throw new Error(
-          `the engine drew ${drawn - drawsBefore} of this composition's ${charts} charts`
+          `the engine drew nothing for ${missed.length} of this composition's charts, such as ${missed[0]}`
         );
       }
       if (takumi !== null) {
