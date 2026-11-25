@@ -458,6 +458,53 @@ describe('createIsomerRuntime', () => {
     expect(element.props).toMatchObject({ width: 800, height: 120 });
   });
 
+  it('measures each node in the theme it draws in', () => {
+    const palettePrimitive = definePrimitive<PrimitiveNode>({
+      type: 'palette',
+      catalog: {
+        type: 'palette',
+        purpose: 'Palette fixture.',
+        useWhen: [],
+        avoidWhen: [],
+        example: { type: 'palette' },
+      },
+      examples: [{ type: 'palette' }],
+      schema: z.object({ type: z.literal('palette') }),
+      metrics: {
+        snapshotHeight: (_node, options) =>
+          options?.theme === 'dark-theme'
+            ? 200
+            : options?.theme === 'light-theme'
+              ? 100
+              : -1,
+      },
+      renderers: {
+        react: () => null,
+        text: () => 'palette',
+        markdown: () => md.paragraph('palette'),
+      },
+    });
+    const { snapshot } = createIsomerRuntime({
+      packs: [snapshotPackOf(palettePrimitive)],
+      frames: { card: testFrame },
+    }).surfaces;
+    const spec: Composition = { type: 'view', body: [{ type: 'palette' }] };
+    // `testFrame` adds 40 per node.
+    expect(snapshot.render(spec).height).toBe(140);
+    expect(snapshot.render(spec, { theme: 'dark' }).height).toBe(240);
+    expect(snapshot.render({ ...spec, theme: 'dark' }).height).toBe(240);
+    expect(
+      snapshot.renderPages([{ ...spec, theme: 'dark' }, spec]).height
+    ).toBe(240);
+    expect(snapshot.renderPages([spec, spec], { theme: 'dark' }).height).toBe(
+      240
+    );
+    expect(snapshot.renderNode({ type: 'palette' }).height).toBe(140);
+    expect(
+      snapshot.renderNode({ type: 'palette' }, { theme: 'dark' }).height
+    ).toBe(240);
+  });
+
   describe('a frame that states its content width', () => {
     // Draws the width it is told, and is as tall as the width it is measured at.
     const widthPrimitive = definePrimitive<PrimitiveNode>({

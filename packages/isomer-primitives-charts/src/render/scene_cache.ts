@@ -15,14 +15,15 @@
 import type { ReactNode } from 'react';
 
 import { afterTask } from '../after_task';
+import { resolveChart } from '../primitives/resolve_chart';
 import type { ResolveChartOptions } from '../resolve';
-import type { Scene, SceneRenderEnv } from '../scene';
+import type { Scene, SceneRenderEnv, SceneSize } from '../scene';
 
 import type { ChartNode, ReactSceneRenderer, SceneResolver } from './context';
 
 /** Resolves and draws each chart node once per render. */
 export interface SceneCache {
-  /** `resolveScene(node, options)`, once per node and options. */
+  /** `resolveScene(node, options)`, once per node and options; with the pack's own resolver, a chart that only stamps its `size` resolves once for every size. */
   readonly resolve: (
     node: ChartNode,
     options: ResolveChartOptions,
@@ -77,6 +78,18 @@ const fingerprintOf = (source: object): string | undefined => {
   }
 };
 
+// `resolveChart` only stamps `size` on these kinds' Scenes; `legacyMetric` lays out against it.
+const stampsSize = (node: ChartNode, resolveScene: SceneResolver): boolean =>
+  resolveScene === resolveChart && node.type !== 'legacyMetric';
+
+// `size` where `sceneBase` puts it, after `scheme`.
+const withSize = (scene: Scene, size: SceneSize): Scene =>
+  Object.fromEntries(
+    Object.entries(scene).flatMap((entry) =>
+      entry[0] === 'scheme' ? [entry, ['size', size]] : [entry]
+    )
+  ) as unknown as Scene;
+
 const optionsKey = ({
   scheme,
   size,
@@ -116,15 +129,35 @@ export const createSceneCache = (): SceneCache => {
         byOptions = new Map();
         scenes.set(node, byOptions);
       }
-      const key = optionsKey(options);
+      const entries = byOptions;
       const fingerprint = fingerprintOf(node);
-      const hit = byOptions.get(key);
-      if (hit && fingerprint !== undefined && hit.fingerprint === fingerprint) {
-        return hit.value;
+      const cached = (
+        resolveOptions: ResolveChartOptions,
+        resolve: () => Scene
+      ): Scene => {
+        const key = optionsKey(resolveOptions);
+        const hit = entries.get(key);
+        if (
+          hit &&
+          fingerprint !== undefined &&
+          hit.fingerprint === fingerprint
+        ) {
+          return hit.value;
+        }
+        const scene = resolve();
+        entries.set(key, { fingerprint, value: scene });
+        return scene;
+      };
+      const { size, ...unsized } = options;
+      if (size && stampsSize(node, resolveScene)) {
+        return cached(options, () =>
+          withSize(
+            cached(unsized, () => resolveScene(node, unsized)),
+            size
+          )
+        );
       }
-      const scene = resolveScene(node, options);
-      byOptions.set(key, { fingerprint, value: scene });
-      return scene;
+      return cached(options, () => resolveScene(node, options));
     },
     draw: (scene, renderer, env, { styles, events }) => {
       const { drawings } = current();

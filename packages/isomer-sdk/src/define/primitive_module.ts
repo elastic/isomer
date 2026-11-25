@@ -334,6 +334,8 @@ export interface PrimitiveMetrics<TNode extends PrimitiveNode> {
 export interface SnapshotHeightOptions {
   /** The width the node is laid out in, in pixels, as `layoutWidthOf` reads it when the node draws. */
   width?: number;
+  /** The frame's resolved theme the node draws in, as its `react` renderer receives it. */
+  theme?: unknown;
 }
 
 /**

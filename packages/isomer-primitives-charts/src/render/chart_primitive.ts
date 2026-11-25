@@ -23,6 +23,7 @@ import {
   renderSceneNode,
   type SceneShim,
   type SceneShimConfig,
+  schemeOfTheme,
 } from './scene_node';
 import { chartSize, chartSizeSpecAt } from './size';
 
@@ -85,12 +86,17 @@ const snapshotHeight =
   (config: SceneShim) =>
   (
     node: ChartNode,
-    { width = CHARTS_THEME.chart.width }: SnapshotHeightOptions = {}
+    { width = CHARTS_THEME.chart.width, theme }: SnapshotHeightOptions = {}
   ): number =>
     config.guard(
       node,
       () => {
-        const scene = resolveForText(node, config);
+        // The scheme `snapshot` draws in, so its drawn pass reuses this Scene.
+        const scene = config.cache.resolve(
+          node,
+          { scheme: schemeOfTheme(theme) ?? 'light' },
+          config.resolveScene
+        );
         const spec = chartSizeSpecAt(scene, width);
         return (
           (spec ? chartSize(spec, width).height : 0) + linkLineHeight(scene)

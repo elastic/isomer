@@ -289,4 +289,57 @@ describe('scene cache', () => {
     ]);
     expect(drawn).toEqual([true, false]);
   });
+
+  it.each(
+    examples.filter(
+      ({ label }) => !/^(legacyMetric|grid|unsupported) /.test(label)
+    )
+  )(
+    'resolves the same Scene at any size, but for its `size`: $label',
+    ({ composition }) => {
+      const node = composition.body[0] as ChartNode;
+      const size = { width: 640, height: 320 };
+      const cache = createSceneCache();
+      for (const scheme of ['light', 'dark'] as const) {
+        expect(
+          JSON.stringify(cache.resolve(node, { scheme, size }, resolveChart))
+        ).toBe(JSON.stringify(resolveChart(node, { scheme, size })));
+      }
+    }
+  );
+
+  it('resolves a legacyMetric afresh for a box that scales its tiles', () => {
+    const node = examples.find(({ label }) =>
+      label.startsWith('legacyMetric ')
+    )!.composition.body[0] as ChartNode;
+    const size = { width: 60, height: 30 };
+    const sized = resolveChart(node, { scheme: 'light', size });
+    expect(sized).not.toEqual({
+      ...resolveChart(node, { scheme: 'light' }),
+      size,
+    });
+    expect(
+      createSceneCache().resolve(node, { scheme: 'light', size }, resolveChart)
+    ).toEqual(sized);
+  });
+
+  it('resolves a changed node afresh at another size', () => {
+    const node = structuredClone(
+      examples.find(({ label }) => label.startsWith('xyChart '))!.composition
+        .body[0]
+    ) as ChartNode;
+    const cache = createSceneCache();
+    cache.resolve(
+      node,
+      { scheme: 'light', size: { width: 640, height: 320 } },
+      resolveChart
+    );
+    node.title = 'Changed';
+    const scene = cache.resolve(
+      node,
+      { scheme: 'light', size: { width: 480, height: 240 } },
+      resolveChart
+    );
+    expect(scene.title).toBe('Changed');
+  });
 });
