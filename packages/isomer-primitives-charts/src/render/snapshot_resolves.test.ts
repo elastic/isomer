@@ -9,9 +9,13 @@ import { createIsomerRuntime } from '@elastic/isomer-runtime';
 import { describe, expect, it, vi } from 'vitest';
 
 import { chartsFrame } from '../frame';
-import { chartsPack } from '../pack';
+import { createChartsPack } from '../pack';
 import { xyTimeSeries } from '../primitives/xy_chart/examples';
 import { resolveXy } from '../primitives/xy_chart/resolve';
+import type { Scene } from '../scene';
+import { SCENE_KINDS } from '../scene/base';
+
+import type { ReactSceneRenderer } from './context';
 
 vi.mock('../primitives/xy_chart/resolve', async (importOriginal) => {
   const original =
@@ -21,10 +25,21 @@ vi.mock('../primitives/xy_chart/resolve', async (importOriginal) => {
 
 describe('a snapshot render with the pack resolver', () => {
   it.each(['light', 'dark'] as const)(
-    'resolves an xyChart once for its estimate and its drawn box: %s',
+    'resolves and draws an xyChart once, at its box: %s',
     (theme) => {
+      const drawn: Scene[] = [];
+      const counting: ReactSceneRenderer = {
+        id: 'counting',
+        environments: ['node'],
+        sized: true,
+        supports: (kind) => SCENE_KINDS.includes(kind),
+        render: (scene) => {
+          drawn.push(scene);
+          return null;
+        },
+      };
       const runtime = createIsomerRuntime({
-        packs: [chartsPack],
+        packs: [createChartsPack({ sceneRenderers: [counting] })],
         frames: { page: chartsFrame },
       });
       vi.mocked(resolveXy).mockClear();
@@ -33,6 +48,8 @@ describe('a snapshot render with the pack resolver', () => {
         { theme }
       );
       expect(resolveXy).toHaveBeenCalledTimes(1);
+      expect(drawn).toHaveLength(1);
+      expect(drawn[0]?.size).toBeDefined();
     }
   );
 });

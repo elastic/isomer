@@ -307,4 +307,39 @@ describe('scene cache', () => {
       }
     }
   );
+
+  it('resolves a legacyMetric afresh for a box that scales its tiles', () => {
+    const node = examples.find(({ label }) =>
+      label.startsWith('legacyMetric ')
+    )!.composition.body[0] as ChartNode;
+    const size = { width: 60, height: 30 };
+    const sized = resolveChart(node, { scheme: 'light', size });
+    expect(sized).not.toEqual({
+      ...resolveChart(node, { scheme: 'light' }),
+      size,
+    });
+    expect(
+      createSceneCache().resolve(node, { scheme: 'light', size }, resolveChart)
+    ).toEqual(sized);
+  });
+
+  it('resolves a changed node afresh at another size', () => {
+    const node = structuredClone(
+      examples.find(({ label }) => label.startsWith('xyChart '))!.composition
+        .body[0]
+    ) as ChartNode;
+    const cache = createSceneCache();
+    cache.resolve(
+      node,
+      { scheme: 'light', size: { width: 640, height: 320 } },
+      resolveChart
+    );
+    node.title = 'Changed';
+    const scene = cache.resolve(
+      node,
+      { scheme: 'light', size: { width: 480, height: 240 } },
+      resolveChart
+    );
+    expect(scene.title).toBe('Changed');
+  });
 });
