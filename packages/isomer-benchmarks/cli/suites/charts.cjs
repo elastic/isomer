@@ -7,8 +7,8 @@
 
 // What drawing charts costs a server, as a render service draws them: validate,
 // resolve each chart's Scene, draw it with an engine and rasterize it with
-// takumi, with Inter Latin registered once. Each scenario stops at one stage,
-// so the difference between two rows is the later stage's cost.
+// takumi, with Inter Latin registered once. Each scenario stops at one stage:
+// `resolve`, the whole `snapshot` surface, or PNG.
 
 const { readFileSync } = require('node:fs');
 const { createRequire } = require('node:module');
@@ -130,6 +130,13 @@ const countValues = (value) =>
     ? 1 + Object.values(value).reduce((n, each) => n + countValues(each), 0)
     : 1;
 
+/** The charts a generated composition holds: its body's, or a grid's panels. */
+const chartsIn = ({ body }) =>
+  body.reduce(
+    (count, node) => count + (node.type === 'grid' ? node.panels.length : 1),
+    0
+  );
+
 /** A new task, so the charts pack's per-task scene cache can't serve one render's Scene to the next. */
 const nextTask = () => new Promise((done) => setImmediate(done));
 
@@ -154,25 +161,30 @@ const run = async ({
   const { createRenderers, stylesheet } =
     engine === null ? { createRenderers: () => [] } : require(engine);
   const { limit } = require(join(PACKAGE, 'lib/cjs/index.js'));
-  // Counts the engine's drawings, so a row the engine draws nothing for fails instead of passing its bound.
+  // Counts the engine's drawings, so a row the engine doesn't draw every chart in fails instead of passing its bound.
   let drawn = 0;
-  const counted = (renderer) => {
-    const { id, environments, sized, fluid } = renderer;
-    return {
-      id,
-      environments,
-      ...(sized === undefined ? {} : { sized }),
-      ...(fluid === undefined ? {} : { fluid }),
-      supports: (kind) => renderer.supports(kind),
-      render: (scene, env) => {
-        const drawing = renderer.render(scene, env);
-        if (drawing !== null && drawing !== undefined && drawing !== false) {
-          drawn += 1;
-        }
-        return drawing;
-      },
-    };
-  };
+  const counted = (renderer) => ({
+    get id() {
+      return renderer.id;
+    },
+    get environments() {
+      return renderer.environments;
+    },
+    get sized() {
+      return renderer.sized;
+    },
+    get fluid() {
+      return renderer.fluid;
+    },
+    supports: (kind) => renderer.supports(kind),
+    render: (scene, env) => {
+      const drawing = renderer.render(scene, env);
+      if (drawing !== null && drawing !== undefined && drawing !== false) {
+        drawn += 1;
+      }
+      return drawing;
+    },
+  });
 
   const takumi =
     stage === 'png'
@@ -311,8 +323,11 @@ const run = async ({
         onValidationError: 'collect',
       });
       scenes.push(ms(sceneStart));
-      if (engine !== null && drawn === drawsBefore) {
-        throw new Error('the engine drew nothing for this chart');
+      const charts = chartsIn(validation.composition);
+      if (engine !== null && drawn - drawsBefore < charts) {
+        throw new Error(
+          `the engine drew ${drawn - drawsBefore} of this composition's ${charts} charts`
+        );
       }
       if (takumi !== null) {
         const rasterStart = process.hrtime.bigint();
@@ -366,7 +381,7 @@ const run = async ({
 module.exports = {
   title: 'Drawing charts',
   about:
-    "What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config; an engine row fails if the engine draws nothing. A `resolve` row calls `resolveChart` once per chart. Every other row renders the `snapshot` surface, which validates again and may resolve a chart more than once, so its `Resolve, or snapshot` column is the whole surface: compare an engine row with the no-engine row over the same charts for what the engine adds. `Loaded RSS` is after loading and registering fonts, before the request's data is built; `Render RSS` is the peak above it. Per-chart times are medians; `All charts` runs from the first render's start to the last one's end. Each render starts in a new task, as a request does.",
+    "What drawing charts costs a fresh Node process, as a render service draws them: validate, resolve each chart's Scene, draw it with an engine, and rasterize it with takumi to PNG, with Inter Latin registered once. Rows come from each charts pack's config, drawn with no engine, and each engine's config; an engine row fails unless the engine draws every chart. A `resolve` row calls `resolveChart` once per chart. Every other row renders the `snapshot` surface, which validates again and may resolve a chart more than once, so its `Resolve, or snapshot` column is the whole surface: compare an engine row with the no-engine row over the same charts for what the engine adds. `Loaded RSS` is after loading and registering fonts, before the request's data is built; `Render RSS` is the peak above it. Per-chart times are medians; `All charts` runs from the first render's start to the last one's end. Each render starts in a new task, as a request does.",
   usesConfigs: true,
   measures: [
     { key: 'charts', label: 'Charts', digits: 0 },

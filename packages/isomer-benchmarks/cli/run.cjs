@@ -305,8 +305,10 @@ const boundsFor = (suiteName, configs, passedConfigs) => {
         throw new Error(`${scenario}: a bound needs at least one measure`);
       }
       for (const [key, bound] of Object.entries(measures)) {
-        if (typeof bound !== 'number' || !(bound > 0)) {
-          throw new Error(`${scenario} ${key}: a bound is a positive number`);
+        if (typeof bound !== 'number' || !(bound >= 0)) {
+          throw new Error(
+            `${scenario} ${key}: a bound is a number, at least 0`
+          );
         }
         if (bounds[scenario]?.[key] !== undefined) {
           throw new Error(`${scenario} ${key}: bounded twice`);
@@ -356,9 +358,9 @@ const smoke = async () => {
 const suiteSection = (result) => {
   const { describeEnvironmentLine, summarize, tableText, toMarkdown } =
     helpers();
-  const { suite, about, environment, runsPerScenario, scenarios, measures } =
-    result;
-  // Derived from the raw runs, so a saved summary can't drift from them.
+  const { suite, environment, runsPerScenario, scenarios, measures } = result;
+  // From the suite's code and the raw runs, so neither a saved description nor a saved summary drifts.
+  const { about } = suiteOf(suite);
   const summary = summarize(result.runs, scenarios, measures);
   const notes = suiteOf(suite).notes?.({ ...result, summary }) ?? [];
   return [

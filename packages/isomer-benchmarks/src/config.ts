@@ -40,7 +40,7 @@ const isBounds = (value: unknown): value is Bounds =>
       isRecord(measures) &&
       Object.keys(measures).length > 0 &&
       Object.values(measures).every(
-        (bound) => typeof bound === 'number' && bound > 0
+        (bound) => typeof bound === 'number' && bound >= 0
       )
   );
 
@@ -85,7 +85,7 @@ export const benchConfigProblem = (value: unknown): string | undefined => {
     bounds !== undefined &&
     !(isRecord(bounds) && Object.values(bounds).every(isBounds))
   ) {
-    return '`bounds` maps each suite to scenarios, then at least one measure, then a positive number';
+    return '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0';
   }
   return undefined;
 };

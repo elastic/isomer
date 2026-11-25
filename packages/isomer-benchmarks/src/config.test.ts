@@ -26,7 +26,7 @@ describe('benchConfigProblem', () => {
         name: 'engine',
         entries: ['a'],
         charts: { engine: './bench/engine.cjs' },
-        bounds: { charts: { 'engine:one': { peakRssMb: 320 } } },
+        bounds: { charts: { 'engine:one': { peakRssMb: 320, modules: 0 } } },
       })
     ).toBe(undefined);
   });
@@ -58,15 +58,15 @@ describe('benchConfigProblem', () => {
     ],
     [
       { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: '1' } } } },
-      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
+      '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0',
     ],
     [
-      { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: 0 } } } },
-      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
+      { name: 'a', entries: ['a'], bounds: { charts: { one: { peak: -1 } } } },
+      '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0',
     ],
     [
       { name: 'a', entries: ['a'], bounds: { charts: { one: {} } } },
-      '`bounds` maps each suite to scenarios, then at least one measure, then a positive number',
+      '`bounds` maps each suite to scenarios, then at least one measure, then a number of at least 0',
     ],
   ])('refuses %j', (config, problem) => {
     expect(benchConfigProblem(config)).toBe(problem);

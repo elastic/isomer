@@ -147,7 +147,9 @@ describe('bench charts with an engine', () => {
       }] };`
     );
     expect(status).not.toBe(0);
-    expect(stderr).toContain('the engine drew nothing for this chart');
+    expect(stderr).toContain(
+      "the engine drew 0 of this composition's 1 charts"
+    );
   });
 
   it('draws with a frozen engine whose methods read private fields', () => {
