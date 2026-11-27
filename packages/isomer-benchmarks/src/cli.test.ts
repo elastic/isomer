@@ -23,6 +23,55 @@ const RUN = fileURLToPath(new URL('../cli/run.cjs', import.meta.url));
 const bench = (...args: string[]) =>
   spawnSync(process.execPath, [RUN, ...args], { encoding: 'utf8' });
 
+describe('bench compare', () => {
+  it('needs suites to run', () => {
+    const { status, stderr } = bench('compare', '--swap', 'a=b');
+    expect(status).toBe(1);
+    expect(stderr).toContain('compare: name the suites to run');
+  });
+
+  it('needs one --swap', () => {
+    const { status, stderr } = bench('compare', 'load');
+    expect(status).toBe(1);
+    expect(stderr).toContain('give one --swap');
+  });
+
+  it('refuses a --swap that is not <package>=<path>', () => {
+    const { status, stderr } = bench('compare', 'load', '--swap', 'react');
+    expect(status).toBe(1);
+    expect(stderr).toContain('<package>=<value>');
+  });
+
+  it('refuses --check, since it gates nothing', () => {
+    const { status, stderr } = bench(
+      'compare',
+      'charts',
+      '--check',
+      '--swap',
+      'a=b'
+    );
+    expect(status).toBe(1);
+    expect(stderr).toContain('compare takes no --check');
+  });
+
+  it('refuses a build of another package', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isomer-bench-swap-'));
+    try {
+      writeFileSync(join(dir, 'package.json'), '{"name":"not-react"}');
+      const { status, stderr } = bench(
+        'compare',
+        'load',
+        '--swap',
+        `react=${dir}`
+      );
+      expect(status).toBe(1);
+      expect(stderr).toContain('that build is not-react');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
 describe('bench --check', () => {
   const dir = mkdtempSync(join(tmpdir(), 'isomer-bench-'));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));

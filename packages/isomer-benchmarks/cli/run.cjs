@@ -11,6 +11,7 @@
 //
 //   node cli/run.cjs <suite> [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
 //   node cli/run.cjs <suite> --check [--config <file>]... [--runs 3]
+//   node cli/run.cjs compare <suite>[,<suite>] --swap <package>=<dir or .tgz> [--alias <from>=<to>]... [--config <file>]... [--runs 5] [--scenarios a,b] [--write <file>] [--json]
 //   node cli/run.cjs report [--check]
 //   node cli/run.cjs smoke
 //
@@ -117,7 +118,9 @@ const revision = () => {
 // The child gets only the scenario's spec, never a config, so nothing a
 // config imports is loaded where the suite measures.
 const child = async (suiteName, scenario, spec) => {
-  const record = await suiteOf(suiteName).run(JSON.parse(spec));
+  const record = await (
+    suiteName === 'parity' ? require('./parity.cjs') : suiteOf(suiteName)
+  ).run(JSON.parse(spec));
   // `maxRSS` is in kilobytes.
   const peakRssMb = process.resourceUsage().maxRSS / 1024;
   require('node:fs').writeSync(
@@ -179,11 +182,13 @@ const pick = (suiteName, planned, names) => {
       });
 };
 
-const spawnChild = (suiteName, { name, spec }) => {
+/** `flags` and `env` are what `compare` adds to a child on the swapped side. */
+const spawnChild = (suiteName, { name, spec }, { flags = [], env } = {}) => {
   const run = spawnSync(
     process.execPath,
     [
       ...NODE_FLAGS,
+      ...flags,
       __filename,
       '--child',
       suiteName,
@@ -192,6 +197,7 @@ const spawnChild = (suiteName, { name, spec }) => {
     ],
     {
       cwd: PACKAGE,
+      ...(env === undefined ? {} : { env: { ...process.env, ...env } }),
       stdio: ['ignore', 'ignore', 'pipe', 'pipe'],
       maxBuffer: 1 << 24,
     }
@@ -478,9 +484,26 @@ const main = async () => {
     await report(args.slice(1));
   } else if (args[0] === 'smoke') {
     await smoke();
+  } else if (args[0] === 'compare') {
+    await require('./compare.cjs').compare(args.slice(1), {
+      DEFAULT_CONFIGS,
+      NODE_FLAGS,
+      PACKAGE,
+      REPO,
+      fromStart,
+      helpers,
+      loadConfigs,
+      option,
+      options,
+      pick,
+      revision,
+      runsOption,
+      spawnChild,
+      suiteOf,
+    });
   } else if (args[0] === undefined) {
     throw new Error(
-      `Name a suite (${SUITES.join(', ')}), \`report\` or \`smoke\`.`
+      `Name a suite (${SUITES.join(', ')}), \`compare\`, \`report\` or \`smoke\`.`
     );
   } else {
     await runSuite(args[0], args.slice(1));
