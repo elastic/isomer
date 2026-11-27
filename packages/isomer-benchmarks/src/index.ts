@@ -13,6 +13,15 @@ export {
   unbounded,
 } from './bounds';
 export {
+  type Comparison,
+  type Delta,
+  type Drawn,
+  compareSummaries,
+  comparisonToMarkdown,
+  parityProblems,
+  parsePair,
+} from './compare';
+export {
   type BenchConfig,
   benchConfigProblem,
   defineBenchConfig,
